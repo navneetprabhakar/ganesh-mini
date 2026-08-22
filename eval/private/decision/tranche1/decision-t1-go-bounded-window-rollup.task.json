@@ -1,0 +1,53 @@
+{
+  "candidate_path": "solution.go",
+  "family": "go",
+  "files": [
+    {
+      "content": "module private.invalid/ganesh/decision/tranche1\n\ngo 1.22\n",
+      "path": "go.mod",
+      "role": "support",
+      "sha256": "b96679a1bcedd7c7fc78e8ea499db7a0c6de34cdf24b5c4c5d1be53c1f995129"
+    },
+    {
+      "content": "package solution\nimport \"testing\"\nfunc TestContract(t *testing.T){if g,ok:=BoundedWindowRollup(\"3,10,2;8=5,3=2,8=7,10=99\");!ok||g!=\"2:12\"{t.Fatal(g,ok)};if g,ok:=BoundedWindowRollup(\"-3,10,2;-3=5,0=-2\");!ok||g!=\"2:3\"{t.Fatal(g,ok)};if g,ok:=BoundedWindowRollup(\"3,10,0;4=9\");!ok||g!=\"0:0\"{t.Fatal(g,ok)};if _,ok:=BoundedWindowRollup(\"10,3,2;\");ok{t.Fatal(\"invalid\")};if _,ok:=BoundedWindowRollup(\"+3,10,2;\");ok{t.Fatal(\"invalid\")};if _,ok:=BoundedWindowRollup(\"03,10,2;\");ok{t.Fatal(\"invalid\")};if _,ok:=BoundedWindowRollup(\"3,10,2147483648;\");ok{t.Fatal(\"invalid\")};if _,ok:=BoundedWindowRollup(\"-9223372036854775809,0,1;\");ok{t.Fatal(\"invalid\")};if _,ok:=BoundedWindowRollup(\"0,2,2;0=9223372036854775807,1=1\");ok{t.Fatal(\"invalid\")}}\n",
+      "path": "solution_test.go",
+      "role": "test",
+      "sha256": "979cdc9ff3ebbfbe7a4d70884b842bebb77e8bf3ad11613fcd4673a071718875"
+    }
+  ],
+  "language": "go",
+  "limits": {
+    "cpus": 1,
+    "memory_mb": 512,
+    "output_bytes": 65536,
+    "pids": 64,
+    "timeout_seconds": 60
+  },
+  "prompt": {
+    "sha256": "4819f34858c09930f244448e380e86c734fa478dc006bfcc894deaafcafc013b",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.go in package solution.\nRequired API: func BoundedWindowRollup(input string) (string, bool)\nBehavior: Parse start,end,limit;timestamp=value records. Start, end, timestamps, and values are canonical signed decimals in -9223372036854775808..9223372036854775807; limit is canonical unsigned decimal in 0..2147483647. Require start <= end. Select timestamps in [start,end), stable-sort by timestamp, retain the latest limit records, and return count:sum with signed-64-bit overflow rejection. Limit zero returns 0:0.\nVisible example: 3,10,2;8=5,3=2,8=7,10=99 returns 2:12.\n\nBuggy source to repair:\n\npackage solution\nfunc BoundedWindowRollup(input string)(string,bool){return input,true}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "rendered_prompt": {
+    "sha256": "4819f34858c09930f244448e380e86c734fa478dc006bfcc894deaafcafc013b",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.go in package solution.\nRequired API: func BoundedWindowRollup(input string) (string, bool)\nBehavior: Parse start,end,limit;timestamp=value records. Start, end, timestamps, and values are canonical signed decimals in -9223372036854775808..9223372036854775807; limit is canonical unsigned decimal in 0..2147483647. Require start <= end. Select timestamps in [start,end), stable-sort by timestamp, retain the latest limit records, and return count:sum with signed-64-bit overflow rejection. Limit zero returns 0:0.\nVisible example: 3,10,2;8=5,3=2,8=7,10=99 returns 2:12.\n\nBuggy source to repair:\n\npackage solution\nfunc BoundedWindowRollup(input string)(string,bool){return input,true}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "runtime_id": "go-1.22.12",
+  "schema_version": "1.0",
+  "surface": "decision",
+  "task_id": "decision-t1-go-bounded-window-rollup",
+  "task_type": "repair",
+  "validation": {
+    "known_bad": [
+      {
+        "code": "package solution\nfunc BoundedWindowRollup(input string)(string,bool){return input,true}\n",
+        "label": "identity-instead-of-contract",
+        "sha256": "649a3164975c31e14410751576df4cdfc78d7cbe651c868d660c7bace110d1da"
+      }
+    ],
+    "reference": {
+      "code": "package solution\nimport(\"math\";\"sort\";\"strconv\";\"strings\")\nfunc BoundedWindowRollup(s string)(string,bool){p:=strings.Split(s,\";\");if len(p)!=2{return \"\",false};h:=strings.Split(p[0],\",\");if len(h)!=3{return \"\",false};start,e1:=strconv.ParseInt(h[0],10,64);end,e2:=strconv.ParseInt(h[1],10,64);limit,e3:=strconv.ParseInt(h[2],10,32);if e1!=nil||e2!=nil||e3!=nil||strconv.FormatInt(start,10)!=h[0]||strconv.FormatInt(end,10)!=h[1]||strconv.FormatInt(limit,10)!=h[2]||start>end||limit<0{return \"\",false};type row struct{t,v int64;i int};r:=[]row{};if p[1]!=\"\"{for i,x:=range strings.Split(p[1],\",\"){q:=strings.SplitN(x,\"=\",2);if len(q)!=2{return \"\",false};t,x1:=strconv.ParseInt(q[0],10,64);v,x2:=strconv.ParseInt(q[1],10,64);if x1!=nil||x2!=nil||strconv.FormatInt(t,10)!=q[0]||strconv.FormatInt(v,10)!=q[1]{return \"\",false};if t>=start&&t<end{r=append(r,row{t,v,i})}}};sort.SliceStable(r,func(i,j int)bool{return r[i].t<r[j].t});if int64(len(r))>limit{r=r[len(r)-int(limit):]};if limit==0{r=nil};var sum int64;for _,x:=range r{if x.v>0&&sum>math.MaxInt64-x.v||x.v<0&&sum<math.MinInt64-x.v{return \"\",false};sum+=x.v};return strconv.Itoa(len(r))+\":\"+strconv.FormatInt(sum,10),true}\n",
+      "label": "author-reference",
+      "sha256": "a7c6eacd78af712de76746619f53d6b140194c153deb1b892a49939185afe919"
+    }
+  }
+}

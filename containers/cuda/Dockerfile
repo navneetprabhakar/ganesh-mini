@@ -21,8 +21,7 @@ COPY pyproject.toml uv.lock ./
 # uv.lock is the package lock. Keeping compilation in this CUDA devel image is
 # necessary for causal-conv1d; runtime qualification records the resulting
 # package and CUDA identities before accepting any result.
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project --extra train-candidate \
+RUN uv sync --frozen --no-dev --no-install-project --extra train-candidate \
       --no-install-package causal-conv1d \
     && uv pip install --no-build-isolation --no-deps \
       'https://files.pythonhosted.org/packages/f4/d1/eba27735f31bd5527d39a3c7f693e6ded7b844cab275db719a15ad37b6cd/causal_conv1d-1.7.0.tar.gz#sha256=3202758494eaa7b597ce1c282dfa188889506bfcb92cad3c407d26736bfcd32b' \

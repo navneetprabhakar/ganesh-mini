@@ -1,0 +1,47 @@
+{
+  "candidate_path": "solution.rs",
+  "family": "rust",
+  "files": [
+    {
+      "content": "mod solution;use solution::bounded_window_rollup;#[test]fn contract(){assert_eq!(bounded_window_rollup(\"3,10,2;8=5,3=2,8=7,10=99\"),Some(\"2:12\".to_string()));\nassert_eq!(bounded_window_rollup(\"-3,10,2;-3=5,0=-2\"),Some(\"2:3\".to_string()));\nassert_eq!(bounded_window_rollup(\"3,10,0;4=9\"),Some(\"0:0\".to_string()));\nassert_eq!(bounded_window_rollup(\"10,3,2;\"),None);\nassert_eq!(bounded_window_rollup(\"+3,10,2;\"),None);\nassert_eq!(bounded_window_rollup(\"03,10,2;\"),None);\nassert_eq!(bounded_window_rollup(\"3,10,2147483648;\"),None);\nassert_eq!(bounded_window_rollup(\"-9223372036854775809,0,1;\"),None);\nassert_eq!(bounded_window_rollup(\"0,2,2;0=9223372036854775807,1=1\"),None);}\n",
+      "path": "solution_test.rs",
+      "role": "test",
+      "sha256": "02ed60e5207bbb6522a1276e82b6cfb5d19729c97ee5204eedc3641f0c62450c"
+    }
+  ],
+  "language": "rust",
+  "limits": {
+    "cpus": 1,
+    "memory_mb": 512,
+    "output_bytes": 65536,
+    "pids": 64,
+    "timeout_seconds": 60
+  },
+  "prompt": {
+    "sha256": "25ea6f9e0c526e5549fb39e0802e322cd7bbcbcab3e378c246207fc0a078725d",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.rs with the public function at module scope.\nRequired API: pub fn bounded_window_rollup(input: &str) -> Option<String>\nBehavior: Parse start,end,limit;timestamp=value records. Start, end, timestamps, and values are canonical signed decimals in -9223372036854775808..9223372036854775807; limit is canonical unsigned decimal in 0..2147483647. Require start <= end. Select timestamps in [start,end), stable-sort by timestamp, retain the latest limit records, and return count:sum with signed-64-bit overflow rejection. Limit zero returns 0:0.\nVisible example: 3,10,2;8=5,3=2,8=7,10=99 returns 2:12.\n\nBuggy source to repair:\n\npub fn bounded_window_rollup(input:&str)->Option<String>{Some(input.to_string())}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "rendered_prompt": {
+    "sha256": "25ea6f9e0c526e5549fb39e0802e322cd7bbcbcab3e378c246207fc0a078725d",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.rs with the public function at module scope.\nRequired API: pub fn bounded_window_rollup(input: &str) -> Option<String>\nBehavior: Parse start,end,limit;timestamp=value records. Start, end, timestamps, and values are canonical signed decimals in -9223372036854775808..9223372036854775807; limit is canonical unsigned decimal in 0..2147483647. Require start <= end. Select timestamps in [start,end), stable-sort by timestamp, retain the latest limit records, and return count:sum with signed-64-bit overflow rejection. Limit zero returns 0:0.\nVisible example: 3,10,2;8=5,3=2,8=7,10=99 returns 2:12.\n\nBuggy source to repair:\n\npub fn bounded_window_rollup(input:&str)->Option<String>{Some(input.to_string())}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "runtime_id": "rust-1.85.0",
+  "schema_version": "1.0",
+  "surface": "decision",
+  "task_id": "decision-t1-rust-bounded-window-rollup",
+  "task_type": "repair",
+  "validation": {
+    "known_bad": [
+      {
+        "code": "pub fn bounded_window_rollup(input:&str)->Option<String>{Some(input.to_string())}\n",
+        "label": "identity-instead-of-contract",
+        "sha256": "ed62aba07c1a2bb523da27f11fc22f56a13f38e99903e658122b2a3b999ab27a"
+      }
+    ],
+    "reference": {
+      "code": "fn sint(s:&str)->Option<i64>{if s==\"0\"{return Some(0)}let d=s.strip_prefix('-').unwrap_or(s);if d==s&&s.starts_with('+')||d.is_empty()||d.starts_with('0')||!d.bytes().all(|c|c.is_ascii_digit()){return None}s.parse().ok()}pub fn bounded_window_rollup(input:&str)->Option<String>{let(h,b)=input.split_once(';')?;let a:Vec<_>=h.split(',').collect();if a.len()!=3{return None}let start=sint(a[0])?;let end=sint(a[1])?;if !a[2].bytes().all(|c|c.is_ascii_digit())||a[2].is_empty()||(a[2].len()>1&&a[2].starts_with('0')){return None}let limit:i32=a[2].parse().ok()?;if start>end{return None}let mut r=vec![];if !b.is_empty(){for(i,x)in b.split(',').enumerate(){let(t,v)=x.split_once('=')?;let(t,v)=(sint(t)?,sint(v)?);if t>=start&&t<end{r.push((t,i,v))}}}r.sort_by_key(|x|(x.0,x.1));let limit=limit as usize;if limit==0{r.clear()}else if r.len()>limit{r=r.split_off(r.len()-limit)}let sum=r.iter().try_fold(0i64,|q,x|q.checked_add(x.2))?;Some(format!(\"{}:{}\",r.len(),sum))}\n",
+      "label": "author-reference",
+      "sha256": "3fadde936b33e66d8a48d5e218641787a7ddeff730811b390c254cb703baafdd"
+    }
+  }
+}

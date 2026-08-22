@@ -124,3 +124,46 @@ Mandatory lifecycle order:
 
 A missing backup seal or failed VM deletion is a terminal run failure and
 cannot support Gate 0B qualification.
+
+## 2026-08-22 — Gate 0B authorization exhausted; prebuild before another GPU run
+
+The approved Gate 0B scope was exercised through three fail-closed, fully
+sealed attempts. Navneet Prabhakar also explicitly approved the exact temporary
+custom VPC, subnet, router, and NAT required by organization policy for a VM
+without an external IP.
+
+Observed terminal outcomes:
+
+1. The pinned CUDA DLVM image did not include Docker. The VM stopped before
+   input download, controller start, model loading, or training.
+2. After pinning `docker.io=29.1.3-0ubuntu3~22.04.2`, the Dockerfile's optional
+   BuildKit cache mount failed under the legacy CLI path. The VM stopped before
+   model loading or training.
+3. After removing that cache-only directive, GCE emitted a verified
+   `compute.instances.preempted` system event while the Spot A100 was compiling
+   `causal-conv1d`. The model and training still never started.
+
+All attempts backed run data to generation-pinned GCS objects before VM
+deletion. All run-scoped VMs, NATs, routers, subnets, and VPCs are absent. The
+cumulative GPU upper cost is `$0.79037286`; the conservative retained bound is
+`$4.92111752`, below the `$5` authorization ceiling. No CUDA qualification is
+claimed, and the authorization permits no further VM recreation.
+
+Consequence: another Gate 0B design must prebuild and content-seal the CUDA
+image outside the bounded GPU window, then use preemption-resilient compute for
+the actual qualification. Any such GCloud work requires fresh explicit user
+approval.
+
+## 2026-08-22 — Compiled decision lanes use a 60-second aggregate limit
+
+Two fail-closed Docker directionality runs showed the frozen 30-second
+aggregate task limit was flaky on the local Docker host: one Rust reference and
+one Java reference timed out after successful compilation activity. The
+verifier also exposed and fixed a bytes/string normalization defect in
+`TimeoutExpired` reporting; the defect never converted a timeout into a pass.
+
+The decision contract now uses 60 seconds for Go, Java, and Rust, while
+JavaScript, TypeScript, and Python remain at 30 seconds. Tranche manifests,
+intra-set overlap reports, the cross-tranche seal, runner bindings, and tests
+were regenerated. Superseded evidence remains preserved and cannot satisfy the
+current release gate.

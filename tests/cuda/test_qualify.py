@@ -84,6 +84,22 @@ def test_runner_defaults_primary_and_guards_fallback_order() -> None:
     assert '--recipe "$recipe"' in runner
 
 
+def test_gcloud_startup_pins_docker_inside_absolute_deadline() -> None:
+    startup = (ROOT / "scripts/cuda/gcloud_startup_gate0b.sh").read_text()
+    deadline = startup.index('hard_deadline_epoch="$((started_epoch + 1700))"')
+    install = startup.index('docker_package_version="29.1.3-0ubuntu3~22.04.2"')
+    qualification = startup.index('"$work_dir/workspace/scripts/cuda/run_qualification.sh"')
+    assert deadline < install < qualification
+    assert '"docker.io=$docker_package_version"' in startup
+    assert "nvidia-ctk runtime configure --runtime=docker" in startup
+
+
+def test_cuda_dockerfile_does_not_require_optional_buildx_component() -> None:
+    dockerfile = (ROOT / "containers/cuda/Dockerfile").read_text()
+    assert "--mount=type=cache" not in dockerfile
+    assert "uv sync --frozen" in dockerfile
+
+
 def test_execution_card_never_claims_executed_evidence() -> None:
     card = json.loads((ROOT / "measurement/cuda/execution_card.json").read_text())
     assert card["status"] == "not_ready"

@@ -1,0 +1,47 @@
+{
+  "candidate_path": "solution.rs",
+  "family": "rust",
+  "files": [
+    {
+      "content": "mod solution;use solution::tag_patch;#[test]fn contract(){assert_eq!(tag_patch(\"a=1,b=2;unset:a,set:b=3,set:c=4\"),Some(\"b=3,c=4\".to_string()));\nassert_eq!(tag_patch(\";set:x=a=b\"),Some(\"x=a=b\".to_string()));\nassert_eq!(tag_patch(\"x=a=b;\"),Some(\"x=a=b\".to_string()));\nassert_eq!(tag_patch(\"a=1,a=2;\"),None);\nassert_eq!(tag_patch(\"a--b=1;\"),None);\nassert_eq!(tag_patch(\"1a=1;\"),None);\nassert_eq!(tag_patch(\";set:x--y=1\"),None);\nassert_eq!(tag_patch(\";unset:\"),None);\nassert_eq!(tag_patch(\";set:x=a;b\"),None);}\n",
+      "path": "solution_test.rs",
+      "role": "test",
+      "sha256": "8c604af0c13e548027740bb7ea060e4e818abb68403205826c351e434a448781"
+    }
+  ],
+  "language": "rust",
+  "limits": {
+    "cpus": 1,
+    "memory_mb": 512,
+    "output_bytes": 65536,
+    "pids": 64,
+    "timeout_seconds": 60
+  },
+  "prompt": {
+    "sha256": "c872a2ddeffd3ba059f70d6533d086238cec43e19f82d72fafc11e8e863becab",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.rs with the public function at module scope.\nRequired API: pub fn tag_patch(input: &str) -> Option<String>\nBehavior: Parse base;operations. Keys start with a lowercase ASCII letter and contain lowercase letters or digits separated by single interior hyphens. Values may contain = but not comma or semicolon. Base key=value pairs are comma-separated and unique; operations are set:key=value or unset:key and apply in order. Reject malformed data or duplicate base keys. Return sorted final key=value pairs joined by commas.\nVisible example: a=1,b=2;unset:a,set:b=3,set:c=4 returns b=3,c=4.\n\nBuggy source to repair:\n\npub fn tag_patch(input:&str)->Option<String>{Some(input.to_string())}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "rendered_prompt": {
+    "sha256": "c872a2ddeffd3ba059f70d6533d086238cec43e19f82d72fafc11e8e863becab",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.rs with the public function at module scope.\nRequired API: pub fn tag_patch(input: &str) -> Option<String>\nBehavior: Parse base;operations. Keys start with a lowercase ASCII letter and contain lowercase letters or digits separated by single interior hyphens. Values may contain = but not comma or semicolon. Base key=value pairs are comma-separated and unique; operations are set:key=value or unset:key and apply in order. Reject malformed data or duplicate base keys. Return sorted final key=value pairs joined by commas.\nVisible example: a=1,b=2;unset:a,set:b=3,set:c=4 returns b=3,c=4.\n\nBuggy source to repair:\n\npub fn tag_patch(input:&str)->Option<String>{Some(input.to_string())}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "runtime_id": "rust-1.85.0",
+  "schema_version": "1.0",
+  "surface": "decision",
+  "task_id": "decision-t1-rust-tag-patch",
+  "task_type": "repair",
+  "validation": {
+    "known_bad": [
+      {
+        "code": "pub fn tag_patch(input:&str)->Option<String>{Some(input.to_string())}\n",
+        "label": "identity-instead-of-contract",
+        "sha256": "ec3b202c85e6013b1a05628749269d4e1e48d0d8542f40192711407658193bf0"
+      }
+    ],
+    "reference": {
+      "code": "use std::collections::BTreeMap;fn key(s:&str)->bool{let mut p=s.split('-');p.all(|x|!x.is_empty()&&x.as_bytes()[0].is_ascii_lowercase()&&x.bytes().all(|c|c.is_ascii_lowercase()||c.is_ascii_digit()))}pub fn tag_patch(input:&str)->Option<String>{if input.matches(';').count()!=1{return None}let(base,ops)=input.split_once(';')?;let mut d=BTreeMap::new();if !base.is_empty(){for r in base.split(','){let(k,v)=r.split_once('=')?;if !key(k)||d.insert(k.to_string(),v.to_string()).is_some(){return None}}}if !ops.is_empty(){for op in ops.split(','){if let Some(x)=op.strip_prefix(\"set:\"){let(k,v)=x.split_once('=')?;if !key(k){return None}d.insert(k.into(),v.into());}else if let Some(k)=op.strip_prefix(\"unset:\"){if !key(k){return None}d.remove(k);}else{return None}}}Some(d.into_iter().map(|(k,v)|k+\"=\"+&v).collect::<Vec<_>>().join(\",\"))}\n",
+      "label": "author-reference",
+      "sha256": "a97fddd3543235ebd3825b8b1443257a727eddbbcaafd255c936889b772689d4"
+    }
+  }
+}

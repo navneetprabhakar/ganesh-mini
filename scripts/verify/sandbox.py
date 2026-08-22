@@ -88,6 +88,15 @@ def _docker_argv(image: str, command: list[str], root: Path, limits: dict[str, A
     ]
 
 
+def _captured_text(value: str | bytes | None) -> str:
+    """Normalize TimeoutExpired output, which may be bytes even with text=True."""
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
 def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, Any]:
     validate_task(task)
     runtime = load_runtime(runtime_config, task["runtime_id"], task["language"], task["candidate_path"])
@@ -125,8 +134,8 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
                 )
             except subprocess.TimeoutExpired as error:
                 timed_out = True
-                stdout_parts.append(error.stdout or "")
-                stderr_parts.append(error.stderr or "")
+                stdout_parts.append(_captured_text(error.stdout))
+                stderr_parts.append(_captured_text(error.stderr))
                 break
             except OSError as error:
                 stderr_parts.append(str(error))

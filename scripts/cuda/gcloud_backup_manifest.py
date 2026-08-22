@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Independently download and hash every object in a run-scoped GCS prefix."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import subprocess
+import tempfile
+from pathlib import Path
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def canonical_sha256(value: object) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def run(*args: str) -> str:
+    return subprocess.run(args, check=True, capture_output=True, text=True).stdout
+
+
+def download(project: str, uri: str, destination: Path) -> None:
+    subprocess.run(["gsutil", "-u", project, "cp", uri, str(destination)], check=True)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--project", required=True)
+    parser.add_argument("--prefix", required=True, help="gs:// bucket prefix without wildcard")
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--download-dir", type=Path, required=True)
+    parser.add_argument("--map", action="append", default=[], metavar="REMOTE_SUBPREFIX=LOCAL_ROOT")
+    args = parser.parse_args()
+    mappings = []
+    for value in args.map:
+        remote, local = value.split("=", 1)
+        mappings.append((remote.strip("/"), Path(local).resolve()))
+    listing = json.loads(run("gcloud", "storage", "ls", "--json", f"{args.prefix}/**", f"--project={args.project}"))
+    if not listing:
+        raise SystemExit("refusing to seal an empty GCS prefix")
+    args.download_dir.mkdir(parents=True, exist_ok=True)
+    entries = []
+    prefix_path = args.prefix.split("/", 3)[3].rstrip("/")
+    with tempfile.TemporaryDirectory(prefix="ganesh-gcs-verify-") as second_root:
+        for item in sorted(listing, key=lambda value: value["metadata"]["name"]):
+            metadata = item["metadata"]
+            relative = metadata["name"].removeprefix(prefix_path + "/")
+            first = args.download_dir / relative
+            first.parent.mkdir(parents=True, exist_ok=True)
+            download(args.project, item["url"], first)
+            downloaded_hash = sha256(first)
+            local_path = None
+            for remote, root in mappings:
+                if relative == remote or relative.startswith(remote + "/"):
+                    local_path = root if relative == remote and root.is_file() else root / relative.removeprefix(remote).lstrip("/")
+                    break
+            if local_path is not None:
+                if not local_path.is_file():
+                    raise SystemExit(f"mapped local source missing: {local_path}")
+                local_hash = sha256(local_path)
+                verified_hash = downloaded_hash
+            else:
+                second = Path(second_root) / relative
+                second.parent.mkdir(parents=True, exist_ok=True)
+                download(args.project, item["url"], second)
+                local_hash = downloaded_hash
+                verified_hash = sha256(second)
+            size = first.stat().st_size
+            passed = local_hash == downloaded_hash == verified_hash and size == int(metadata["size"])
+            if not passed:
+                raise SystemExit(f"backup verification failed for {item['url']}")
+            entries.append({
+                "object_uri": "gs://" + metadata["bucket"] + "/" + metadata["name"],
+                "generation": metadata["generation"], "size": size,
+                "local_sha256": local_hash, "downloaded_sha256": downloaded_hash,
+                "verified_download_sha256": verified_hash, "verified": True,
+            })
+    evidence = {
+        "schema_version": "ganesh-mini-gcs-backup-manifest/v1", "status": "verified",
+        "project": args.project, "prefix": args.prefix, "object_count": len(entries), "objects": entries,
+    }
+    evidence["evidence_sha256"] = canonical_sha256(evidence)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

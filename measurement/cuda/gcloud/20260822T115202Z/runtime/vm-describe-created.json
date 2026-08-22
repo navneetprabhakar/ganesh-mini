@@ -1,0 +1,117 @@
+{
+  "canIpForward": false,
+  "cpuPlatform": "Intel Cascade Lake",
+  "creationTimestamp": "2026-08-22T07:59:35.637-07:00",
+  "deletionProtection": false,
+  "disks": [
+    {
+      "autoDelete": true,
+      "boot": true,
+      "deviceName": "persistent-disk-0",
+      "diskSizeGb": "200",
+      "guestOsFeatures": [
+        {
+          "type": "VIRTIO_SCSI_MULTIQUEUE"
+        },
+        {
+          "type": "UEFI_COMPATIBLE"
+        },
+        {
+          "type": "GVNIC"
+        }
+      ],
+      "index": 0,
+      "interface": "SCSI",
+      "kind": "compute#attachedDisk",
+      "licenses": [
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-dlvm",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gvnic",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-py310",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gpu-common-cu129",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-ubuntu-2204"
+      ],
+      "mode": "READ_WRITE",
+      "source": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/disks/ganesh-mini-g0b-20260822t115202z",
+      "type": "PERSISTENT"
+    }
+  ],
+  "fingerprint": "yd7kiUW4V9c=",
+  "guestAccelerators": [
+    {
+      "acceleratorCount": 1,
+      "acceleratorType": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/acceleratorTypes/nvidia-tesla-a100"
+    }
+  ],
+  "id": "2259998930750408632",
+  "kind": "compute#instance",
+  "labelFingerprint": "OiUXderNAX0=",
+  "labels": {
+    "gate": "gate0b",
+    "project": "ganesh-mini",
+    "run": "20260822t115202z"
+  },
+  "lastStartTimestamp": "2026-08-22T07:59:51.365-07:00",
+  "machineType": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/machineTypes/a2-highgpu-1g",
+  "metadata": {
+    "fingerprint": "0aAZF7KWXLg=",
+    "items": [
+      {
+        "key": "startup-script",
+        "value": "#!/usr/bin/env bash\nset -Eeuo pipefail\n\nproject=\"executespecv1\"\nbucket=\"ganesh-gate0-model-transfer-1061994342941\"\nprefix=\"ganesh-mini-1.0/gate0b/20260822T115202Z\"\nwork_dir=\"/opt/ganesh-mini-gate0b\"\nevidence_dir=\"/var/lib/ganesh-mini-gate0b\"\noutput_dir=\"$evidence_dir/output\"\nmkdir -p \"$work_dir\" \"$output_dir\"\nexec > >(tee -a \"$evidence_dir/startup.stdout.log\") \\\n  2> >(tee -a \"$evidence_dir/startup.stderr.log\" >&2)\n\nbackup() {\n  stamp=\"$(date -u +%Y%m%dT%H%M%S%NZ)-$$-$RANDOM\"\n  date -u +%Y-%m-%dT%H:%M:%SZ > \"$evidence_dir/last-backup-at.txt\"\n  gcloud storage rsync \"$evidence_dir\" \"gs://$bucket/$prefix/runtime-checkpoints/$stamp\" \\\n    --recursive --project=\"$project\" >> \"$evidence_dir/gcs-backup.log\" 2>&1 || true\n}\nfinish() {\n  status=\"$?\"\n  printf '%s\\n' \"$status\" > \"$evidence_dir/startup-exit-code.txt\"\n  backup\n  exit \"$status\"\n}\ntrap finish EXIT\n\nstarted_epoch=\"$(date +%s)\"\nhard_deadline_epoch=\"$((started_epoch + 1800))\"\ncontroller_deadline_epoch=\"$((started_epoch + 1500))\"\ndate -u +%Y-%m-%dT%H:%M:%SZ > \"$evidence_dir/vm-run-started-at.txt\"\nprintf '%s\\n' \"$started_epoch\" > \"$evidence_dir/vm-started-epoch.txt\"\nprintf '%s\\n' \"$controller_deadline_epoch\" > \"$evidence_dir/controller-deadline-epoch.txt\"\nprintf '%s\\n' \"$hard_deadline_epoch\" > \"$evidence_dir/hard-stop-deadline-epoch.txt\"\nuname -a > \"$evidence_dir/uname.txt\"\nenv | sed -E 's/(TOKEN|SECRET|PASSWORD|KEY)=.*/\\1=REDACTED/' | sort > \"$evidence_dir/environment-redacted.txt\"\nnvidia-smi -q > \"$evidence_dir/nvidia-smi-q.txt\"\nnvidia-smi --query-gpu=timestamp,name,uuid,driver_version,memory.total --format=csv,noheader > \"$evidence_dir/gpu-identity.csv\"\ndocker version > \"$evidence_dir/docker-version.txt\" 2>&1\ndocker info > \"$evidence_dir/docker-info.txt\" 2>&1\n\ngcloud storage rsync \"gs://$bucket/$prefix/input/workspace\" \"$work_dir/workspace\" --recursive --project=\"$project\"\ngcloud storage rsync \"gs://$bucket/$prefix/input/model\" \"$work_dir/model\" --recursive --project=\"$project\"\nchmod +x \"$work_dir/workspace/scripts/cuda/run_qualification.sh\"\nfind \"$work_dir\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$evidence_dir/downloaded-inputs.sha256\"\n\n(\n  while true; do\n    nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu --format=csv,noheader,nounits >> \"$evidence_dir/nvml-samples.csv\"\n    sleep 5\n  done\n) &\nnvml_pid=\"$!\"\n(\n  while true; do backup; sleep 30; done\n) &\nbackup_pid=\"$!\"\n\nset +e\nGANESH_GPU_HOURLY_USD=2.12081 \\\nGANESH_CONTROLLER_DEADLINE_EPOCH=\"$controller_deadline_epoch\" \\\n  \"$work_dir/workspace/scripts/cuda/run_qualification.sh\" \\\n  \"$work_dir/model\" \\\n  \"$work_dir/workspace/data/seed/ganesh_v01/train.jsonl\" \\\n  \"$output_dir\" \\\n  bf16-lora-primary-v1 \\\n  > >(tee \"$evidence_dir/controller.stdout.log\") \\\n  2> >(tee \"$evidence_dir/controller.stderr.log\" >&2)\nrun_status=\"$?\"\nset -e\nkill \"$nvml_pid\" \"$backup_pid\" 2>/dev/null || true\nwait \"$nvml_pid\" \"$backup_pid\" 2>/dev/null || true\nprintf '%s\\n' \"$run_status\" > \"$evidence_dir/controller-exit-code.txt\"\nfind \"$evidence_dir\" -type f -print0 | sort -z | xargs -0 sha256sum > \"$evidence_dir/runtime-files.sha256\"\nbackup\nexit \"$run_status\"\n"
+      }
+    ],
+    "kind": "compute#metadata"
+  },
+  "name": "ganesh-mini-g0b-20260822t115202z",
+  "networkInterfaces": [
+    {
+      "fingerprint": "NAfMaHAzdjc=",
+      "kind": "compute#networkInterface",
+      "name": "nic0",
+      "network": "https://www.googleapis.com/compute/v1/projects/executespecv1/global/networks/ganesh-mini-g0b-net-20260822t115202z",
+      "networkIP": "10.240.0.2",
+      "stackType": "IPV4_ONLY",
+      "subnetwork": "https://www.googleapis.com/compute/v1/projects/executespecv1/regions/us-east1/subnetworks/ganesh-mini-g0b-subnet-20260822t115202z"
+    }
+  ],
+  "reservationAffinity": {
+    "consumeReservationType": "NO_RESERVATION"
+  },
+  "resourceStatus": {
+    "effectiveInstanceMetadata": {
+      "enableOsloginMetadataValue": true,
+      "vmDnsSettingMetadataValue": "ZonalOnly"
+    }
+  },
+  "satisfiesPzi": true,
+  "scheduling": {
+    "automaticRestart": false,
+    "instanceTerminationAction": "STOP",
+    "onHostMaintenance": "TERMINATE",
+    "preemptible": true,
+    "provisioningModel": "SPOT"
+  },
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/instances/ganesh-mini-g0b-20260822t115202z",
+  "serviceAccounts": [
+    {
+      "email": "1061994342941-compute@developer.gserviceaccount.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/cloud-platform"
+      ]
+    }
+  ],
+  "shieldedInstanceConfig": {
+    "enableIntegrityMonitoring": true,
+    "enableSecureBoot": false,
+    "enableVtpm": true
+  },
+  "shieldedInstanceIntegrityPolicy": {
+    "updateAutoLearnPolicy": true
+  },
+  "startRestricted": false,
+  "status": "RUNNING",
+  "tags": {
+    "fingerprint": "42WmSpB8rSM="
+  },
+  "zone": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b"
+}

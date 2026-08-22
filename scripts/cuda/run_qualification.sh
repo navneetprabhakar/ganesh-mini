@@ -47,12 +47,20 @@ PY
 fi
 image="ganesh-mini-cuda-gate0:torch2.13.0-cu13.0.1"
 started_seconds="$SECONDS"
+controller_deadline_epoch="${GANESH_CONTROLLER_DEADLINE_EPOCH:-$(( $(date +%s) + 1800 ))}"
+seconds_until_deadline=$((controller_deadline_epoch - $(date +%s)))
+if (( seconds_until_deadline <= 0 )); then
+  echo "absolute qualification deadline already exhausted" >&2
+  exit 2
+fi
+build_seconds=1200
+if (( seconds_until_deadline < build_seconds )); then build_seconds="$seconds_until_deadline"; fi
 
-timeout --signal=TERM --kill-after=30s 1200 \
+timeout --signal=TERM --kill-after=30s "$build_seconds" \
   docker build --platform linux/amd64 --pull=false --network=default \
   --file "$repo_dir/containers/cuda/Dockerfile" --tag "$image" "$repo_dir"
 
-remaining_seconds=$((1800 - (SECONDS - started_seconds)))
+remaining_seconds=$((controller_deadline_epoch - $(date +%s)))
 if (( remaining_seconds <= 0 )); then
   echo "image build exhausted the 1,800-second total qualification bound" >&2
   exit 2

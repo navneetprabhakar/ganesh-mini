@@ -82,20 +82,31 @@ because the production CUDA matrix cannot be proven on Darwin.
   60 known-bad implementations fail, exact/normalized seed and cross-tranche
   overlap is zero, and timeouts are zero. The full local suite passes with one
   intentional integration skip.
-- A bounded GCloud A100 Gate 0B run is explicitly authorized and in preflight.
-  Its dedicated GCS prefix has passed a write/read/hash round trip. A composite
-  staging attempt produced an exact-size but hash-invalid checkpoint and was
-  rejected and preserved under the run failure prefix. A generation-guarded,
-  non-composite re-upload is active; no VM has been created. VM creation remains
-  gated on a full downloaded SHA-256 match. Verified GCS backup must precede VM
-  deletion, and VM-absence evidence is mandatory.
+- Completed the authorized bounded GCloud A100 Gate 0B execution without making
+  a qualification claim. Three terminally sealed attempts exposed, in order:
+  a missing Docker package in the pinned DLVM image, an optional BuildKit cache
+  directive incompatible with the pinned Docker CLI, and verified GCE Spot
+  preemption while compiling `causal-conv1d`. No attempt reached model loading
+  or training. Cumulative GPU upper cost was `$0.79037286`; the retained
+  conservative bound was `$4.92111752`, below the approved `$5` ceiling. Every
+  input/runtime/failure/teardown set is generation-pinned and hash-sealed in
+  GCS. The VM, NAT, router, subnet, and VPC are deleted and independently absent.
+- Authored the first 120/360 private decision tasks, 20 per lane and balanced
+  generation/repair. Native directionality passes 120/120 for each tranche.
+  Two independent Docker runs proved a 30-second aggregate limit flaky for
+  compiled lanes, so Go/Java/Rust were revised to 60 seconds while JS/TS/Python
+  remain at 30. The revised manifests are bound by cross-overlap seal
+  `2c9d3dd4c91b846f95adf437c79ae6d52543e030d5a35a6317b828ba42116cf3`
+  with zero exact/normalized overlap and duplicate IDs. Fresh Docker
+  directionality is in progress; superseded pass/failure evidence is preserved.
 
 ## Not started or incomplete
 
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
   memory or cost threshold
-- Decision authoring and sealing: 360 tasks, 60 per lane
+- Decision authoring and sealing: 120/360 tasks authored; revised Docker
+  directionality and the remaining 240 tasks are incomplete
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
 - Exact Qwen base baseline on the frozen development surface
@@ -105,10 +116,11 @@ because the production CUDA matrix cannot be proven on Darwin.
 
 ## Next action
 
-Finish the authorized GCloud staging integrity gate, then qualify the exact
-production Linux CUDA BF16 LoRA recipe while measuring peak VRAM and
-throughput. Qualify NF4 QLoRA only as the predeclared fallback. In parallel,
-author and seal the six-lane decision surface against the completed verifier.
+Prebuild and seal the pinned CUDA qualification image away from billable GPU
+runtime, then request fresh GCloud approval for a non-Spot (or otherwise
+preemption-resilient) Gate 0B execution that spends the bounded A100 window on
+model qualification rather than dependency compilation. In parallel, finish
+revised Docker directionality and author the remaining 240 decision tasks.
 Then execute the exact Qwen base baseline before opening the seed-pilot
 training gate.
 
@@ -119,8 +131,9 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The bounded Gate 0B
-A100 run recorded in `DECISIONS.md` is explicitly approved; any usage outside
-that exact scope requires a new explicit approval.
+A100 authorization recorded in `DECISIONS.md` is exhausted and terminally
+sealed; all resources are absent. Any further GCloud usage requires a new
+explicit approval.
 
 An active 30-minute Codex heartbeat independently audits goal alignment. A
 `DIVERGENCE` result pauses project mutations and compute until user direction.

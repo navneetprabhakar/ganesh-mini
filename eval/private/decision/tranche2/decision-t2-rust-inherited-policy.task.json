@@ -1,0 +1,47 @@
+{
+  "candidate_path": "solution.rs",
+  "family": "rust",
+  "files": [
+    {
+      "content": "mod solution;use solution::*;#[test]fn contract(){assert_eq!(resolve_policy(\"/a/b/c\",\"read\",&[(\"/a/b\".into(),\"read\".into(),\"ALLOW\".into())]),Some(\"ALLOW\".into()));assert_eq!(resolve_policy(\"/a/x\",\"read\",&[(\"/a/\".into(),\"read\".into(),\"ALLOW\".into())]),Some(\"ALLOW\".into()));assert!(resolve_policy(\"/x\",\"read\",&[(\"a\".into(),\"read\".into(),\"ALLOW\".into())]).is_none());assert!(resolve_policy(\"/a/x\",\"read\",&[(\"/a\".into(),\"read\".into(),\"ALLOW\".into()),(\"/a/\".into(),\"write\".into(),\"DENY\".into())]).is_none());assert_eq!(resolve_policy(\"/a/b/\",\"write\",&[(\"/a\".into(),\"*\".into(),\"DENY\".into())]),Some(\"DENY\".into()));assert_eq!(resolve_policy(\"/x\",\"read\",&[]),Some(\"DENY\".into()));assert!(resolve_policy(\"x\",\"read\",&[]).is_none());}\n",
+      "path": "solution_test.rs",
+      "role": "test",
+      "sha256": "883c7eab8eac24254dfc15b09bb051e7a54127d3554b0c693fe28f1f15d4d5e8"
+    }
+  ],
+  "language": "rust",
+  "limits": {
+    "cpus": 1,
+    "memory_mb": 512,
+    "output_bytes": 65536,
+    "pids": 64,
+    "timeout_seconds": 60
+  },
+  "prompt": {
+    "sha256": "092fe9a0c308ed2bd00cbe784de5524bc3c142652a82dd80e9d8768078308873",
+    "text": "Implement the following API.\n\nFile contract: Return solution.rs.\nRequired API: pub fn resolve_policy(path: &str, key: &str, rules: &[(String,String,String)]) -> Option<String>\nBehavior: The requested path and every rule-path key must be absolute. Normalize trailing slashes except root before lookup. Reject the entire input when two distinct raw rule paths normalize to the same path. The requested key must match ASCII [a-z][a-z0-9]*(?:-[a-z0-9]+)*. The nearest exact key wins; '*' is fallback only at the same path. Return DENY when no rule exists.\nVisible example: rules /a/b|read=ALLOW and /a|*=DENY make /a/b/c read ALLOW and write DENY.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "rendered_prompt": {
+    "sha256": "092fe9a0c308ed2bd00cbe784de5524bc3c142652a82dd80e9d8768078308873",
+    "text": "Implement the following API.\n\nFile contract: Return solution.rs.\nRequired API: pub fn resolve_policy(path: &str, key: &str, rules: &[(String,String,String)]) -> Option<String>\nBehavior: The requested path and every rule-path key must be absolute. Normalize trailing slashes except root before lookup. Reject the entire input when two distinct raw rule paths normalize to the same path. The requested key must match ASCII [a-z][a-z0-9]*(?:-[a-z0-9]+)*. The nearest exact key wins; '*' is fallback only at the same path. Return DENY when no rule exists.\nVisible example: rules /a/b|read=ALLOW and /a|*=DENY make /a/b/c read ALLOW and write DENY.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "runtime_id": "rust-1.85.0",
+  "schema_version": "1.0",
+  "surface": "decision",
+  "task_id": "decision-t2-rust-inherited-policy",
+  "task_type": "generation",
+  "validation": {
+    "known_bad": [
+      {
+        "code": "pub fn resolve_policy(_:&str,_:&str,_:&[(String,String,String)])->Option<String>{None}\n",
+        "label": "returns-default-instead-of-contract",
+        "sha256": "dd93893998f182a8b7c22f0415552b11bffae5adecafc29c504209b83db19d13"
+      }
+    ],
+    "reference": {
+      "code": "use std::collections::HashMap;\npub fn resolve_policy(path:&str,key:&str,r:&[(String,String,String)])->Option<String>{if !key.as_bytes().first().is_some_and(|x|x.is_ascii_lowercase())||!key.bytes().all(|x|x.is_ascii_lowercase()||x.is_ascii_digit()||x==b'-')||key.ends_with('-')||key.contains(\"--\")||!path.starts_with('/'){return None}let mut owners:HashMap<String,String>=HashMap::new();let mut clean:Vec<(String,&str,&str)>=Vec::new();for q in r{if !q.0.starts_with('/'){return None}let n={let x=q.0.trim_end_matches('/');if x.is_empty(){\"/\".to_string()}else{x.to_string()}};if let Some(raw)=owners.get(&n){if raw!=&q.0{return None}}else{owners.insert(n.clone(),q.0.clone());}clean.push((n,&q.1,&q.2));}let mut p=path.trim_end_matches('/').to_string();if p.is_empty(){p=\"/\".into()}loop{for q in &clean{if q.0==p&&q.1==key{return Some(q.2.to_string())}}for q in &clean{if q.0==p&&q.1==\"*\"{return Some(q.2.to_string())}}if p==\"/\"{return Some(\"DENY\".into())}p=p.rsplit_once('/').unwrap().0.to_string();if p.is_empty(){p=\"/\".into()}}}\n",
+      "label": "author-reference",
+      "sha256": "91e8850ec3ed920eb677fffe9d3453fd94cc9931e593554ecd70a1fb70aefabb"
+    }
+  }
+}

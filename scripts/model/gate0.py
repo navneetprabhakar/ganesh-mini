@@ -294,13 +294,23 @@ def evidence_check(name: str, path: Path | None, contract: dict[str, Any]) -> di
         value = load_json(path)
     except (OSError, json.JSONDecodeError) as exc:
         return check(name, False, f"Evidence is unreadable: {exc}", path=str(path))
+    stored_identity = value.get("evidence_sha256")
+    identity_payload = dict(value)
+    identity_payload.pop("evidence_sha256", None)
+    identity_ok = bool(SHA256.fullmatch(str(stored_identity or ""))) and stored_identity == canonical_digest(identity_payload)
     passed = (
         value.get("passed") is True
         and value.get("model_id") == contract["model_id"]
         and value.get("revision") == contract["revision"]
-        and bool(SHA256.fullmatch(str(value.get("evidence_sha256", ""))))
+        and identity_ok
     )
-    return check(name, passed, "Evidence must pass, match the pin, and carry a SHA-256 evidence identity.", path=str(path))
+    return check(
+        name,
+        passed,
+        "Evidence must pass, match the pin, and carry a valid canonical SHA-256 evidence identity.",
+        path=str(path),
+        identity_ok=identity_ok,
+    )
 
 
 def build_report(args: argparse.Namespace) -> dict[str, Any]:

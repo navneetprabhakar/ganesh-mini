@@ -17,8 +17,11 @@ laptop acceptance criterion.
 
 ## Current status
 
-Planning is complete. No model has been downloaded, no dataset has been
-admitted, no GPU has been provisioned, and no training has started.
+Planning and local qualification are complete. The exact Qwen checkpoint and
+authorized Ganesh v0.1 seed are downloaded/imported and hash-verified. Apple
+BF16 inference, LoRA round-trip, and F16/Q8 GGUF runtime smokes pass. Production
+CUDA/QLoRA qualification, frozen evaluation tasks, base baselines, and seed
+training have not started. No GCloud resource has been used.
 
 The canonical execution plan is
 [`docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md`](docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md).

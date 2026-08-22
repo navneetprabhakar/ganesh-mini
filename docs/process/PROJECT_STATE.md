@@ -4,7 +4,13 @@ Last updated: 2026-08-22
 
 ## Current gate
 
-Gate 0: upstream identity, architecture, toolchain, and serving qualification.
+Gate 0B and Gate 1 preparation in parallel:
+
+- production Linux CUDA/QLoRA dependency qualification;
+- frozen development and decision surfaces plus exact Qwen base baselines.
+
+Local Apple runtime qualification is complete. Gate 0 remains fail-closed only
+because the production CUDA matrix cannot be proven on Darwin.
 
 ## Completed
 
@@ -31,26 +37,40 @@ Gate 0: upstream identity, architecture, toolchain, and serving qualification.
   five-family macro weighting, and a network-disabled Docker verifier.
 - Proved reference-pass and known-bad-fail directionality on synthetic fixtures
   for all six lanes. Full unit suite passes; the Docker integration passes.
+- Downloaded and byte-verified the exact 4,571,274,023-byte Qwen checkpoint.
+- Locked the qualified Apple environment at Python 3.12.11, PyTorch 2.13.0,
+  Transformers 5.15.1, and PEFT 0.19.1.
+- Passed text-only non-thinking BF16 inference on MPS.
+- Inspected 186 language-model linear modules across 12 target suffixes and
+  verified adapter gradients while excluding 99 vision/head modules.
+- Passed a 16-record LoRA train/save/reload/safe-merge smoke.
+- Converted and ran both F16 and Q8_0 GGUF artifacts using pinned llama.cpp;
+  the tiny runtime smoke measured 25.5 and 41.6 decode tokens/second,
+  respectively. These are smoke measurements, not final laptop benchmarks.
+- Added a fail-closed seed-pilot controller binding model, data, prerequisite,
+  balancing, QLoRA, checkpoint, resume, budget, and stop-condition evidence.
+- Audited the pinned Multi-LiveCodeBench v6 slice. All 1,050 language
+  projections were excluded because none satisfies the strict task contract;
+  no benchmark prompts were redistributed or admitted.
+- The recurring 30-minute goal-alignment heartbeat is active.
 
-## Not started
+## Not started or incomplete
 
-- Exact upstream revision pin and file-inventory hash
-- Model download
-- Local or CUDA inference
-- Evaluation task authoring or freezing
+- Production Linux CUDA dependency and QLoRA runtime qualification
+- Evaluation task authoring and freezing
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
-- Training
-- Quantization
-- Benchmark execution
+- Exact Qwen base baseline on the frozen development surface
+- Seed-pilot training
+- Candidate quantization and final laptop certification
+- Ganesh v0.1 rerun on the Ganesh Mini decision surface
 
 ## Next action
 
-Complete Gate 0 runtime qualification: create the isolated Python 3.12
-environment, download and byte-verify the pinned Qwen inventory, inspect actual
-LoRA module/gradient coverage, and run inference, train/save/reload/merge, and
-GGUF export smokes. In parallel, begin authoring and freezing the six-lane
-development and decision task manifests against the completed evaluator.
+Qualify the exact production Linux CUDA/QLoRA matrix on non-GCloud compute. In
+parallel, author and freeze the six-lane development and decision task
+manifests against the completed verifier. Then execute the exact Qwen base
+baseline before opening the seed-pilot training gate.
 
 ## Authorization state
 

@@ -140,3 +140,16 @@ def test_evidence_rejects_pass_without_identity(tmp_path: Path, contract: dict) 
     evidence.write_text(json.dumps({"passed": True, "model_id": contract["model_id"], "revision": contract["revision"]}))
     result = gate0.evidence_check("inference", evidence, contract)
     assert not result["passed"]
+
+
+def test_evidence_rejects_forged_identity(tmp_path: Path, contract: dict) -> None:
+    evidence = tmp_path / "inference.json"
+    evidence.write_text(json.dumps({
+        "passed": True,
+        "model_id": contract["model_id"],
+        "revision": contract["revision"],
+        "evidence_sha256": "0" * 64,
+    }))
+    result = gate0.evidence_check("inference", evidence, contract)
+    assert not result["passed"]
+    assert result["evidence"]["identity_ok"] is False

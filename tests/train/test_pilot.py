@@ -1,0 +1,207 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+
+ROOT = Path(__file__).resolve().parents[2]
+MODULE_PATH = ROOT / "scripts/train/pilot.py"
+SPEC = importlib.util.spec_from_file_location("training_pilot", MODULE_PATH)
+assert SPEC and SPEC.loader
+pilot = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(pilot)
+
+
+def write_sealed(path: Path, value: dict, digest_field: str) -> dict:
+    sealed = dict(value)
+    sealed[digest_field] = pilot.canonical_sha256(sealed)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(sealed), encoding="utf-8")
+    return sealed
+
+
+@pytest.fixture
+def project(tmp_path: Path) -> tuple[Path, Path]:
+    for relative in (
+        "configs/train/seed_pilot.json",
+        "configs/model/qwen3_5_2b.contract.json",
+        "configs/data/ganesh_v01_seed.json",
+        "data/seed/ganesh_v01/train.jsonl",
+        "data/seed/ganesh_v01/validation.jsonl",
+    ):
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / relative, target)
+
+    config_path = tmp_path / "configs/train/seed_pilot.json"
+    config = json.loads(config_path.read_text())
+    model = config["model"]
+    template_sha = "b" * 64
+    gate0_checks = [
+        {"name": name, "passed": True, "evidence": ({"sha256": template_sha} if name == "chat_template" else {})}
+        for name in sorted(pilot.REQUIRED_GATE0_CHECKS)
+    ]
+    write_sealed(
+        tmp_path / config["prerequisites"]["gate0_report_path"],
+        {
+            "gate": 0,
+            "status": "ready",
+            "model_id": model["model_id"],
+            "revision": model["revision"],
+            "checks": gate0_checks,
+            "failed_checks": [],
+        },
+        "report_sha256",
+    )
+    write_sealed(
+        tmp_path / config["prerequisites"]["gate1_report_path"],
+        {"gate": 1, "status": "ready", "model_id": model["model_id"], "revision": model["revision"], "evaluation_contract_frozen": True, "base_baseline_complete": True, "decision_prompts_exposed": False},
+        "evidence_sha256",
+    )
+    write_sealed(
+        tmp_path / config["prerequisites"]["gate2_report_path"],
+        {"gate": 2, "status": "ready", "model_id": model["model_id"], "revision": model["revision"], "seed_manifest_sha256": config["data"]["source_manifest_sha256"], "train_sha256": config["data"]["train_sha256"], "validation_sha256": config["data"]["validation_sha256"], "compatibility_passed": True, "evaluation_overlap_passed": True},
+        "evidence_sha256",
+    )
+    prepared_path = tmp_path / "artifacts/train/seed-pilot/prepared-train.jsonl"
+    prepared_path.parent.mkdir(parents=True, exist_ok=True)
+    token_counts = {"go": 20, "java": 20, "javascript": 10, "typescript": 10, "python": 20, "rust": 20}
+    rows = []
+    for lane, response_count in token_counts.items():
+        input_ids = [1, 2] + list(range(10, 10 + response_count))
+        rows.append(json.dumps({"id": f"record-{lane}", "lane": lane, "input_ids": input_ids, "labels": [-100, -100] + input_ids[2:], "prompt_token_count": 2, "rendered_prompt_sha256": "c" * 64}))
+    prepared_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    write_sealed(
+        tmp_path / config["data"]["prepared_manifest_path"],
+        {
+            "passed": True,
+            "model_id": model["model_id"],
+            "revision": model["revision"],
+            "train_sha256": config["data"]["train_sha256"],
+            "validation_sha256": config["data"]["validation_sha256"],
+            "rendering": {
+                "chat_template_source": "chat_template.jinja",
+                "chat_template_sha256": template_sha,
+                "upstream_tokenizer_applied": True,
+                "add_generation_prompt": False,
+                "response_only_labels_verified": True,
+                "prompt_label_id": -100,
+                "vision_token_count": 0,
+            },
+            "prepared_train_path": "artifacts/train/seed-pilot/prepared-train.jsonl",
+            "prepared_train_sha256": pilot.file_sha256(prepared_path),
+            "prepared_train_records": 6,
+            "sampled_response_tokens_by_lane": token_counts,
+            "effective_epochs_by_lane": {lane: 2.5 for lane in pilot.LANES},
+        },
+        "manifest_sha256",
+    )
+    return tmp_path, config_path
+
+
+def test_repository_config_fails_closed_before_gate_evidence() -> None:
+    card = pilot.build_execution_card(ROOT / "configs/train/seed_pilot.json", ROOT, system="Linux")
+    assert card["status"] == "not_ready"
+    assert {"gate0_ready", "gate1_ready", "gate2_ready", "prepared_dataset"} <= set(card["failed_checks"])
+    assert len(card["card_sha256"]) == 64
+
+
+def test_ready_card_binds_model_seed_rendering_balance_and_budget(project: tuple[Path, Path]) -> None:
+    root, config_path = project
+    card = pilot.build_execution_card(config_path, root, system="Linux")
+    assert card["status"] == "ready", card["failed_checks"]
+    assert card["model"]["revision"] == "15852e8c16360a2fea060d615a32b45270f8a8fc"
+    assert card["recipe"]["quantization_type"] == "nf4"
+    assert card["recipe"]["compute_dtype"] == "bfloat16"
+    assert card["recipe"]["vision_frozen"] is True
+    assert card["recipe"]["maximum_effective_epochs"] == 3.0
+    unsigned = dict(card)
+    claimed = unsigned.pop("card_sha256")
+    assert pilot.canonical_sha256(unsigned) == claimed
+
+
+def test_wrong_host_and_mutated_seed_fail_closed(project: tuple[Path, Path]) -> None:
+    root, config_path = project
+    with (root / "data/seed/ganesh_v01/train.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write("{}\n")
+    with pytest.raises(pilot.PreflightError):
+        pilot.build_execution_card(config_path, root, system="Darwin")
+
+
+def test_response_only_and_half_family_proofs_are_required(project: tuple[Path, Path]) -> None:
+    root, config_path = project
+    config = json.loads(config_path.read_text())
+    path = root / config["data"]["prepared_manifest_path"]
+    manifest = json.loads(path.read_text())
+    manifest.pop("manifest_sha256")
+    manifest["rendering"]["response_only_labels_verified"] = False
+    manifest["sampled_response_tokens_by_lane"]["javascript"] = 200
+    write_sealed(path, manifest, "manifest_sha256")
+    card = pilot.build_execution_card(config_path, root, system="Linux")
+    assert card["status"] == "not_ready"
+    assert "prepared_dataset" in card["failed_checks"]
+
+
+def test_resume_is_hash_bound_and_epoch_capped(project: tuple[Path, Path]) -> None:
+    root, config_path = project
+    card = pilot.build_execution_card(config_path, root, system="Linux")
+    checkpoint = {
+        "schema_version": "ganesh-mini-training-checkpoint/v1",
+        "run_id": card["run_id"],
+        "step": 100,
+        "seen_tokens": 1000,
+        "effective_epochs_by_lane": {lane: 1.0 for lane in pilot.LANES},
+        "checkpoint_path": "checkpoint-100",
+        "checkpoint_sha256": "a" * 64,
+        "config_sha256": card["inputs"]["config_sha256"],
+        "dataset_manifest_sha256": card["inputs"]["prepared_manifest_sha256"],
+        "created_at": "2026-08-22T00:00:00+00:00",
+    }
+    checkpoint = pilot.sealed(checkpoint, "evidence_sha256")
+    pilot.validate_resume(checkpoint, card)
+    checkpoint["effective_epochs_by_lane"]["rust"] = 3.1
+    checkpoint = pilot.sealed({key: value for key, value in checkpoint.items() if key != "evidence_sha256"}, "evidence_sha256")
+    with pytest.raises(pilot.PreflightError, match="effective epochs"):
+        pilot.validate_resume(checkpoint, card)
+
+
+def test_config_rejects_sequential_or_unbalanced_language_recipe(project: tuple[Path, Path]) -> None:
+    root, config_path = project
+    config = json.loads(config_path.read_text())
+    config["data"]["family_token_targets"]["javascript"] = 0.2
+    config["data"]["family_token_targets"]["typescript"] = 0.0
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    card = pilot.build_execution_card(config_path, root, system="Linux")
+    assert card["status"] == "not_ready"
+    assert "five_family_balance" in card["failed_checks"]
+
+
+def test_qwen_template_mask_is_used_for_response_only_labels() -> None:
+    class Tokenizer:
+        def apply_chat_template(self, messages: list[dict], **kwargs: object) -> object:
+            if kwargs["tokenize"] is False:
+                return "<user>task<assistant>answer"
+            return {"input_ids": [10, 11, 12, 13], "assistant_masks": [0, 0, 1, 1]}
+
+    rendered = pilot.render_response_only(
+        Tokenizer(),
+        {"id": "x", "lane": "rust", "messages": [{"role": "user", "content": "task"}, {"role": "assistant", "content": "answer"}]},
+    )
+    assert rendered["labels"] == [-100, -100, 12, 13]
+    assert rendered["prompt_token_count"] == 2
+
+
+def test_qwen_template_without_assistant_mask_fails_closed() -> None:
+    class Tokenizer:
+        def apply_chat_template(self, messages: list[dict], **kwargs: object) -> object:
+            return {"input_ids": [1, 2]}
+
+    with pytest.raises(pilot.PreflightError, match="assistant token mask"):
+        pilot.render_response_only(
+            Tokenizer(),
+            {"id": "x", "lane": "go", "messages": [{"role": "user", "content": "task"}, {"role": "assistant", "content": "answer"}]},
+        )

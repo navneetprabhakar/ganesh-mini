@@ -71,13 +71,22 @@ because the production CUDA matrix cannot be proven on Darwin.
   LoRA primary on at least 24 GiB and guarded NF4 QLoRA fallback on at least 16
   GiB. Static validation passes, but no CUDA execution is claimed because no
   non-GCloud NVIDIA provider credential, CLI, or local GPU is available.
+- Authored and sealed development tranches 2–4: 90 additional tasks, bringing
+  the private development surface to 120/180 tasks, 20 per lane. Across the
+  three tranches, all 90 references pass, all 90 known-bad implementations
+  fail, exact/normalized seed and cross-tranche overlap is zero, and timeouts
+  are zero.
+- A bounded GCloud A100 Gate 0B run is explicitly authorized and in preflight.
+  Its dedicated GCS prefix has passed a write/read/hash round trip. VM creation
+  remains gated on exact staging verification; verified GCS backup must precede
+  VM deletion, and VM-absence evidence is mandatory.
 
 ## Not started or incomplete
 
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
   memory or cost threshold
-- Remaining development authoring: 150 tasks, 25 per lane
+- Remaining development authoring: 60 tasks, 10 per lane
 - Decision authoring and sealing: 360 tasks, 60 per lane
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles

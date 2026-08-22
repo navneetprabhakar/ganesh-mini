@@ -1,0 +1,47 @@
+{
+  "candidate_path": "solution.py",
+  "family": "python",
+  "files": [
+    {
+      "content": "from solution import decode_frames as f\nassert f(bytes([2,1,2,3,0,0,1,255,255]))==[bytes([1,2]),b'',bytes([255])]\nassert f(bytes([2,1])) is None and f(bytes([1,7,8])) is None and f(bytes([0])) is None and f(b'')==[]\n",
+      "path": "test_solution.py",
+      "role": "test",
+      "sha256": "fd34954f21c499a76fddf0fc0ec19e0c6d9fe1517361d1905d8d81a289d7473c"
+    }
+  ],
+  "language": "python",
+  "limits": {
+    "cpus": 1,
+    "memory_mb": 512,
+    "output_bytes": 65536,
+    "pids": 64,
+    "timeout_seconds": 30
+  },
+  "prompt": {
+    "sha256": "51216cb89cba27585865b1fc04951338c4ed0584eedc526c25c3960c724655b4",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.py with the function at module scope.\nRequired API: def decode_frames(data: bytes) -> list[bytes] | None\nBehavior: Decode concatenated frames encoded as one unsigned length byte, that many payload bytes, and one checksum byte equal to payload-byte sum modulo 256. Reject truncation, bad checksum, trailing partial data, and invalid byte values where applicable. Empty input succeeds with a non-null empty result.\nVisible example: bytes [2,1,2,3,0,0] decode to payloads [[1,2],[]], because 1+2=3 and the empty checksum is 0.\n\nBuggy source to repair:\n\ndef decode_frames(data: bytes) -> list[bytes] | None:\n    out=[];i=0\n    while i<len(data):\n        n=data[i];i+=1;out.append(data[i:i+n]);i+=n+1\n    return out\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "rendered_prompt": {
+    "sha256": "51216cb89cba27585865b1fc04951338c4ed0584eedc526c25c3960c724655b4",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.py with the function at module scope.\nRequired API: def decode_frames(data: bytes) -> list[bytes] | None\nBehavior: Decode concatenated frames encoded as one unsigned length byte, that many payload bytes, and one checksum byte equal to payload-byte sum modulo 256. Reject truncation, bad checksum, trailing partial data, and invalid byte values where applicable. Empty input succeeds with a non-null empty result.\nVisible example: bytes [2,1,2,3,0,0] decode to payloads [[1,2],[]], because 1+2=3 and the empty checksum is 0.\n\nBuggy source to repair:\n\ndef decode_frames(data: bytes) -> list[bytes] | None:\n    out=[];i=0\n    while i<len(data):\n        n=data[i];i+=1;out.append(data[i:i+n]);i+=n+1\n    return out\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "runtime_id": "python-3.11.15",
+  "schema_version": "1.0",
+  "surface": "development",
+  "task_id": "dev-t4-python-framed-checksum",
+  "task_type": "repair",
+  "validation": {
+    "known_bad": [
+      {
+        "code": "def decode_frames(data: bytes) -> list[bytes] | None:\n    out=[];i=0\n    while i<len(data):\n        n=data[i];i+=1;out.append(data[i:i+n]);i+=n+1\n    return out\n",
+        "label": "skips-checksum-and-bounds",
+        "sha256": "402e42f7bc0eca46fc7b343d08b1cf77277b822016d35c543b6148c0c51fe676"
+      }
+    ],
+    "reference": {
+      "code": "def decode_frames(data: bytes) -> list[bytes] | None:\n    out=[];i=0\n    while i<len(data):\n        n=data[i];i+=1\n        if len(data)-i<n+1:return None\n        payload=data[i:i+n];i+=n\n        if data[i]!=sum(payload)%256:return None\n        i+=1;out.append(payload)\n    return out\n",
+      "label": "author-reference",
+      "sha256": "827cf430b2ec2c8c9bbe349afb6946b92bb5f8ea452f38725e652ee62243d7fc"
+    }
+  }
+}

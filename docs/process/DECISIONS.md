@@ -85,3 +85,42 @@ Consequences:
   Q8 GGUF export.
 - Full-parameter fine-tuning remains unjustified for the 1,399-record seed
   corpus because its overfitting and forgetting risk is materially higher.
+
+## 2026-08-22 — Bounded GCloud Gate 0B qualification authorized
+
+Navneet Prabhakar explicitly authorized one bounded GCloud CUDA qualification
+for the `bf16-lora-primary-v1` recipe.
+
+Authorized scope:
+
+- inspect the active authenticated GCloud account/project configuration without
+  exposing credentials;
+- provision one isolated NVIDIA GPU with at least 24 GiB VRAM;
+- enforce a USD 5 absolute cost ceiling and the controller's 1,800-second wall
+  ceiling;
+- run the pinned 16-record BF16 LoRA qualification and preserve raw/sealed
+  evidence;
+- use the NF4 QLoRA fallback only if primary evidence records an allowed
+  fallback trigger;
+- back up all run data to GCS and verify object identities before teardown;
+- terminate the VM after the verified GCS backup and record proof that the VM
+  is absent.
+
+This authorization does not include modifying, starting, stopping, or
+inspecting unrelated existing GCloud resources. Every mutation must name the
+resolved project explicitly.
+
+Mandatory lifecycle order:
+
+1. Resolve the dedicated GCS destination and pass a write/read/hash round trip.
+2. Provision the isolated VM only after GCS preflight passes.
+3. Upload configs, locks, logs, environment inventories, raw outputs,
+   telemetry, adapters/checkpoints, merged artifacts, failures, and manifests
+   during and after execution so preemption does not erase evidence.
+4. Produce a GCS backup seal binding every object URI, generation, size, and
+   SHA-256 to the terminal run manifest.
+5. Delete the VM only after the backup seal exists.
+6. Verify VM absence and preserve a teardown seal.
+
+A missing backup seal or failed VM deletion is a terminal run failure and
+cannot support Gate 0B qualification.

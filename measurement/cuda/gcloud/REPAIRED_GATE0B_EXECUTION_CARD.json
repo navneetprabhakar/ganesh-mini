@@ -1,0 +1,87 @@
+{
+  "schema_version": "ganesh-mini-gate0b-repaired-execution-card/v1",
+  "status": "prepared-awaiting-explicit-gcloud-approval",
+  "objective": "Rebuild the repaired CUDA image on Linux x86, then qualify BF16 LoRA on one Standard A100 without training the model.",
+  "source": {
+    "repository": "navneetprabhakar/ganesh-mini",
+    "commit": "1e0eacf",
+    "cuda_repair_commit": "1d127df",
+    "model": "Qwen/Qwen3.5-2B",
+    "model_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "qualification_config": "configs/cuda/qwen3_5_2b_gate0.json"
+  },
+  "authorization_boundary": {
+    "gcloud_status": "not-approved-by-this-card",
+    "required_explicit_scope": [
+      "upload generation-pinned workspace/controller inputs to the existing GCS bucket",
+      "create one temporary VPC, subnet, router, and NAT for the CPU prebuild",
+      "create one Standard e2-standard-8 CPU prebuild VM with a 200 GB boot disk",
+      "create one Standard a2-highgpu-1g A100 40 GB qualification VM without external IP or NAT",
+      "read and write only run-scoped GCS evidence and artifacts",
+      "stop and delete every VM only after terminal evidence is backed up and independently verified",
+      "delete the temporary NAT, router, subnet, and VPC after verified terminal backup"
+    ]
+  },
+  "prebuild": {
+    "machine_type": "e2-standard-8",
+    "provisioning_model": "STANDARD",
+    "boot_disk_gb": 200,
+    "maximum_vm_lifetime_seconds": 3600,
+    "operation_deadline_seconds": 3300,
+    "backup_reserve_seconds": 300,
+    "hourly_compute_upper_usd": 0.268,
+    "network": "temporary NAT for package/image build only",
+    "required_output": "content-sealed repaired CUDA image archive plus offline dependency bundle in generation-pinned GCS"
+  },
+  "qualification": {
+    "machine_type": "a2-highgpu-1g",
+    "accelerator": "1x NVIDIA A100 40GB",
+    "provisioning_model": "STANDARD",
+    "maximum_vm_lifetime_seconds": 1200,
+    "operation_deadline_seconds": 900,
+    "backup_reserve_seconds": 300,
+    "hourly_compute_upper_usd": 3.673385,
+    "compute_upper_usd": 1.224461667,
+    "network": "no external IP, no NAT, network-disabled qualification container",
+    "recipe": "bf16-lora-primary-v1",
+    "scope": "package, CUDA/Triton/FLA identity; text-only model load; adapter target/gradient smoke; bounded peak-VRAM qualification",
+    "training_authorized_in_project": true,
+    "training_performed_by_this_card": false
+  },
+  "cost": {
+    "prior_cumulative_compute_upper_before_failed_a100_usd": 1.281706193,
+    "retained_full_upper_for_failed_a100_usd": 1.224461667,
+    "new_cpu_prebuild_upper_usd": 0.268,
+    "new_a100_upper_usd": 1.224461667,
+    "disk_network_transfer_support_reserve_usd": 0.25,
+    "cumulative_planned_upper_usd": 4.248629527,
+    "absolute_cumulative_ceiling_usd": 5.0
+  },
+  "mandatory_sequence": [
+    "freeze and hash local workspace/controller/model inputs",
+    "after explicit approval, upload inputs to generation-pinned GCS objects",
+    "create temporary CPU network and prebuild VM",
+    "build, export, hash, and back up the repaired image and offline bundle",
+    "independently verify the complete GCS prebuild inventory",
+    "stop and delete the CPU VM; remove NAT and router",
+    "create the no-NAT Standard A100 VM from generation-pinned inputs",
+    "run the bounded fail-closed qualification",
+    "back up terminal logs, raw outputs, identities, hashes, and result to GCS",
+    "independently verify the terminal GCS inventory",
+    "stop and delete the A100 VM, then delete subnet and VPC",
+    "prove all run-scoped compute and network resources absent"
+  ],
+  "hard_stops": [
+    "no explicit GCloud approval for this card",
+    "input, generation, size, or SHA-256 mismatch",
+    "cumulative planned cost reaches USD 5",
+    "CPU lifetime reaches 3600 seconds",
+    "A100 lifetime reaches 1200 seconds",
+    "more than one GPU is visible",
+    "CUDA, Triton, FLA, package, model, adapter, gradient, merge, or VRAM check fails",
+    "terminal backup or independent verification fails",
+    "goal-alignment audit reports DIVERGENCE"
+  ],
+  "success_boundary": "Gate 0B passes only if the repaired image and A100 qualification both pass with complete sealed evidence; otherwise preserve the failure and tear down.",
+  "card_sha256": "6853e7e07b39c00383ebb4f9c3ee34180ee032aa9b5f589fefb4b86698ddca21"
+}

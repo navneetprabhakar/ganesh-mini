@@ -179,7 +179,6 @@ image awaits rebuild and NVIDIA requalification.
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
   memory or cost threshold
-- Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
 - Exact Qwen base baseline on the frozen development surface
 - Seed-pilot training
@@ -188,14 +187,15 @@ image awaits rebuild and NVIDIA requalification.
 
 ## Next action
 
-Freeze the complete evaluation contract and prepare the exact Qwen base
-baseline inputs while keeping the repaired CUDA definition frozen. The local
-host is ARM64 and has only 7.2 GiB free, which is below the prior 8.17 GB
-compressed x86 CUDA image alone; no safe non-GCloud Linux x86 builder is
-currently available, and unrelated Docker data will not be deleted to
-manufacture space. A new GCloud CPU prebuild therefore requires fresh explicit
-approval. After the rebuilt image passes Gate 0B on NVIDIA, execute the exact
-Qwen base baseline before opening the seed-pilot training gate.
+The complete evaluation contract and global separation evidence are frozen.
+The repaired Gate 0B retry card is prepared and sealed by
+`6853e7e07b39c00383ebb4f9c3ee34180ee032aa9b5f589fefb4b86698ddca21`.
+The local host is ARM64 and has only 7.2 GiB free, which is below the prior
+8.17 GB compressed x86 CUDA image alone; no safe non-GCloud Linux x86 builder
+is currently available, and unrelated Docker data will not be deleted to
+manufacture space. Executing the card requires fresh explicit GCloud approval.
+After the rebuilt image passes Gate 0B on NVIDIA, execute the exact Qwen base
+baseline before opening the seed-pilot training gate.
 
 ## Authorization state
 

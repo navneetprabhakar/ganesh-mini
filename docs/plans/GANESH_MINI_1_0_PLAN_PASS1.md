@@ -39,3 +39,11 @@ The second review found that these defaults were not strong enough:
 - One monolithic training run gives poor failure localization.
 
 The canonical pass-2 plan corrects these issues.
+
+## Subsequent user decision
+
+On 2026-08-22, the user explicitly authorized the cleaned Ganesh v0.1 training
+data for Ganesh Mini. This overrides the first review's provenance concern for
+that corpus. The remaining second-pass corrections—separate JS/TS measurement,
+token balancing, private decision evidence, staged training, and explicit RAM
+contracts—still stand.

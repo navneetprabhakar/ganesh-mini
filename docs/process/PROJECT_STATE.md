@@ -16,6 +16,10 @@ Gate 0: upstream identity, architecture, toolchain, and serving qualification.
   Gated DeltaNet/full-attention architecture.
 - Produced an initial plan and a second-pass critical revision.
 - Defined separate Q8/8 GB and F16/16 GB laptop acceptance envelopes.
+- Recorded the user's 2026-08-22 authorization to reuse the cleaned Ganesh
+  v0.1 training data for the same purpose on the Qwen3.5 backbone.
+- Located a 1,399-row training and 50-row validation seed inventory in the
+  committed Ganesh source tree across all six compiler lanes.
 
 ## Not started
 
@@ -23,7 +27,7 @@ Gate 0: upstream identity, architecture, toolchain, and serving qualification.
 - Model download
 - Local or CUDA inference
 - Evaluation task authoring or freezing
-- Dataset download or admission
+- Seed-dataset conversion and compatibility verification
 - Training
 - Quantization
 - Benchmark execution
@@ -36,5 +40,6 @@ size. A download larger than 5 GB is an approval stop.
 
 ## Approval state
 
-No paid compute, long-running job, dataset admission, training run, decision
-set opening, model publication, or dataset publication is authorized.
+The Ganesh v0.1 seed corpus is authorized for use. No paid compute,
+long-running job, training run, decision-set opening, model publication, or
+dataset publication is authorized.

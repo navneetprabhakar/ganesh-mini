@@ -31,8 +31,9 @@ first pass is retained as design history.
 - Treat JavaScript and TypeScript as one product family but two evaluation
   lanes.
 - Train the languages jointly and balance by tokens, not row count.
-- Admit only records with acceptable rights, traceable provenance, disjoint
-  evaluation ancestry, and executable verification.
+- Use the user-authorized Ganesh v0.1 training corpus as the seed dataset.
+  Preserve its lineage and hashes, convert it for Qwen without changing its
+  semantics, and keep it disjoint from the new evaluation surfaces.
 - Keep public benchmarks diagnostic; use a frozen private decision suite for
   the promotion decision.
 - Compare `ganesh-mini-1.0` with both its Qwen base and Ganesh v0.1 on the same

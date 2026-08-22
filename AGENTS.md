@@ -9,9 +9,10 @@ Go, Java, JavaScript/TypeScript, Python, and Rust.
 ## Required reading before changes
 
 1. `docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md`
-2. `docs/process/PROJECT_STATE.md`
-3. `docs/research/PRIMARY_SOURCES.md`
-4. Current repository status and the relevant implementation paths
+2. `docs/process/DECISIONS.md`
+3. `docs/process/PROJECT_STATE.md`
+4. `docs/research/PRIMARY_SOURCES.md`
+5. Current repository status and the relevant implementation paths
 
 State the current gate, intended files, assumptions, and any hard stop before
 implementation.
@@ -29,9 +30,11 @@ implementation.
   approval.
 - Do not start an unattended job expected to exceed 30 minutes without
   explicit approval.
-- Never copy Ganesh v0.1 data into this project merely because it exists.
-  Reuse requires a fresh record-level rights, provenance, contamination, and
-  verification audit.
+- Ganesh v0.1 training data is explicitly authorized by the user for
+  `ganesh-mini-1.0` and is the approved seed corpus. Do not reopen its ownership
+  or provenance decision. Preserve source commit, file hashes, record IDs, and
+  lineage; perform only compatibility, integrity, evaluation-separation, and
+  current-toolchain execution checks.
 - Public benchmark tasks, private development tasks, and private decision
   tasks never enter training.
 - Preserve prompts, rendered prompt hashes, raw outputs, extracted code,
@@ -45,7 +48,7 @@ implementation.
 
 0. Upstream identity, architecture, toolchain, and text-only serving smoke.
 1. Frozen evaluation contract and base baselines.
-2. Dataset inventory and admission.
+2. Authorized seed import, compatibility, and expansion admission.
 3. Bounded multilingual pilot.
 4. Main joint verified SFT.
 5. Failure-targeted correction pass, if justified.

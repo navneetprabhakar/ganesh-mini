@@ -102,10 +102,34 @@ separate experiment with its own serving contract.
 Exit: frozen task manifests, fail-closed verifiers, base results, and zero
 decision-prompt exposure.
 
-### Gate 2 — data inventory and admission
+### Gate 2 — seed import, compatibility, and expansion
 
-Target 60,000–120,000 admitted records for the main run, after pilots. This is
-a quality ceiling, not a quota that permits weak rows.
+The user-authorized Ganesh v0.1 corpus is the starting dataset. At inspected
+source commit `9552867c7641a5f11acadb84d19bfb8d723ab0ae`, the selected seed
+inventory is 1,399 training rows and 50 validation rows:
+
+| Lane | Training | Validation | Source path |
+|---|---:|---:|---|
+| Python | 468 | 30 | `data/train/multisource_python_v2/` |
+| Go | 163 | 4 | `data/train/multiling_v1/go/` |
+| Java | 146 | 4 | `data/train/multiling_v1/java/` |
+| JavaScript | 222 | 4 | `data/train/multiling_v1/js/` |
+| TypeScript | 218 | 4 | `data/train/multiling_v1/ts/` |
+| Rust | 182 | 4 | `data/train/cuda_lora_v5/rust/` |
+| **Total** | **1,399** | **50** | |
+
+This corpus does not need a new ownership, license, or historical-teacher
+provenance decision. Import it with source commit, paths, byte hashes, record
+IDs, and original split lineage preserved. Normalize it to the Qwen chat
+schema, rerun it on current language toolchains, and check it against the new
+evaluation manifests. These are compatibility and integrity checks, not a
+fresh rights-admission process.
+
+Use the cleaned seed first. Do not inflate it to a predetermined scale before
+measuring the Qwen base and seed-trained pilot. If the seed produces a credible
+but capacity-limited gain, expand toward 20,000–60,000 verified records based
+on measured per-lane failure clusters. Larger 60,000–120,000 runs remain an
+option only if the smaller expansion has not saturated.
 
 Composition rules:
 
@@ -120,7 +144,7 @@ Composition rules:
 - keep most examples within the laptop product envelope; long repository
   trajectories do not dominate a single-file coding model.
 
-Every admitted row needs:
+Every newly added non-v0.1 row needs:
 
 - source URI, immutable source revision, record ID, and transformation lineage;
 - source and output rights fields with an allowlisted license/terms decision;
@@ -130,20 +154,24 @@ Every admitted row needs:
 - prompt, answer, tests, execution transcript, and content hashes;
 - quality labels and rejection reason when excluded.
 
-NVIDIA OpenCodeInstruct is a candidate, not pre-approved data. Its tests must
-be re-run and sampled with stronger independent tests. Open-SWE-Traces is
-optional for a later agentic/repository phase. Ganesh v0.1 rows enter only
-through the same fresh admission pipeline; unknown teacher provenance or
-non-allowlisted terms cause rejection.
+NVIDIA OpenCodeInstruct is a candidate expansion source, not pre-approved data.
+Its tests must be re-run and sampled with stronger independent tests.
+Open-SWE-Traces is optional for a later agentic/repository phase. These new
+sources follow the full rights and provenance gate; that requirement does not
+retroactively apply to the explicitly authorized v0.1 seed.
 
-Exit: an immutable admitted-dataset manifest with per-lane token counts,
-license counts, source counts, contamination report, and train/validation
-hashes.
+Exit: an immutable seed manifest with per-lane token counts, source-file
+hashes, compatibility results, evaluation-overlap report, and converted
+train/validation hashes. Any expansion gets a separate rights and provenance
+manifest.
 
 ### Gate 3 — bounded multilingual pilot
 
-Run a 6,000-record pilot, approximately 1,000 per compiler lane, using only
-admitted data.
+Run the first pilot on the full 1,399-row v0.1 seed corpus. Because its lane
+sizes differ, sample by a five-family token-weight policy and report both seen
+tokens and effective epochs per lane. Preserve the original 50 validation rows
+for loss diagnostics, but select the model only on the new private development
+surface.
 
 Starting recipe, subject to the Gate 0 smoke result:
 
@@ -153,7 +181,8 @@ Starting recipe, subject to the Gate 0 smoke result:
 - 4,096-token training sequence length with packing only after a packing
   equivalence test;
 - LoRA rank 32, alpha 64, dropout 0.05;
-- one epoch, cosine schedule, warmup ratio 0.03;
+- a fixed token budget capped at three balanced effective epochs, with
+  half-epoch checkpoints, cosine schedule, and warmup ratio 0.03;
 - learning rate selected by a tiny predeclared two-point pilot, not an open
   sweep;
 - checkpoint on a token interval and score only the private development set.
@@ -165,10 +194,13 @@ scaling.
 
 ### Gate 4 — Pass A joint verified SFT
 
-Run one approved main recipe on the frozen 60k–120k mix. Rank 64 is the initial
-main candidate if the pilot shows gradient coverage and no overfit; rank 32 is
-the predeclared lower-capacity fallback. Sequence length may move to 8,192 only
-if measured training cost and example-length coverage justify it.
+If the seed pilot qualifies, either promote it directly to Pass B or run one
+approved expansion recipe on a frozen 20k–60k mix. The decision is based on
+per-lane learning curves and failure coverage, not a row-count target. Rank 64
+is the initial expansion candidate if the pilot shows gradient coverage and no
+overfit; rank 32 is the predeclared lower-capacity fallback. Sequence length
+may move to 8,192 only if measured training cost and example-length coverage
+justify it.
 
 Select checkpoints on the development surface using:
 
@@ -271,16 +303,16 @@ architecture must be benchmarked before extrapolating Gemma v0.1 throughput.
 
 - Gemma-specific model loading, target modules, chat template, and serving
   flags
-- historical datasets without fresh admission
+- historical evaluation sets as new decision evidence
 - historical benchmark numerators as comparable evidence
 - Python-first sequential language expansion
 - public-benchmark-only release claims
 - the assumption that a successful adapter load means a successful model
 
-Reusable concepts are the fail-closed executable verifiers, immutable
-manifests, raw evidence retention, checkpoint resume discipline, and exact
-resource approval cards. Code implementing those concepts is still reviewed
-before it is ported.
+The authorized v0.1 training corpus is deliberately reused. Other reusable
+concepts are the fail-closed executable verifiers, immutable manifests, raw
+evidence retention, checkpoint resume discipline, and exact resource approval
+cards. Code implementing those concepts is still reviewed before it is ported.
 
 ## 6. Immediate implementation queue
 

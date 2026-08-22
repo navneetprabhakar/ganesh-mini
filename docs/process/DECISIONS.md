@@ -39,3 +39,28 @@ Seed inventory observed at that revision:
 The Rust source differs from the `multiling_v1` paths because that committed
 directory has no Rust lane. Its use is authorized, but its schema must be
 normalized into the same Ganesh Mini contract.
+
+## 2026-08-22 — Broad in-scope authorization; GCloud remains gated
+
+Navneet Prabhakar authorized all actions required to complete the Ganesh Mini
+objective without further approval requests, except GCloud usage.
+
+Consequences:
+
+- Local setup, downloads, dataset processing, long-running jobs, training,
+  non-GCloud compute, benchmarking, repository operations, decision-set use
+  under the frozen plan, and artifact publication are authorized.
+- GCloud inspection, mutation, execution, and billing remain prohibited until
+  explicitly authorized.
+- Technical gates still apply. Authorization does not turn missing evaluation,
+  invalid evidence, failed tests, or an unqualified model into a pass.
+
+## 2026-08-22 — Recurring independent goal-alignment audit
+
+A Codex heartbeat named `Audit Ganesh Mini goal alignment` runs every 30
+minutes. Each run must spawn an independent read-only review subagent to compare
+active work and repository changes with the original Ganesh Mini objective and
+canonical plan.
+
+If the reviewer reports `DIVERGENCE`, the primary task pauses further
+mutations, training, downloads, and compute and waits for Navneet Prabhakar.

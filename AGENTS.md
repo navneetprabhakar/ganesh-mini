@@ -22,14 +22,13 @@ implementation.
 - Measurement precedes training.
 - Pin the exact upstream model revision and serving contract before baseline
   generation.
-- Do not start training without explicit approval for the exact admitted
-  dataset, recipe, hardware, duration ceiling, and expected cost.
-- Do not provision or start paid compute without explicit approval for that
-  specific resource and cost ceiling.
-- Do not download a model or dataset larger than 5 GB without explicit
-  approval.
-- Do not start an unattended job expected to exceed 30 minutes without
-  explicit approval.
+- In-scope local work, downloads, datasets, model training, long-running jobs,
+  non-GCloud compute, benchmarking, artifact publication, and repository
+  operations are user-approved. Do not stop merely to request authorization
+  for these actions.
+- Any GCloud usage remains a hard approval boundary. Do not inspect, create,
+  start, stop, mutate, or bill GCloud resources without explicit user
+  authorization for that usage.
 - Ganesh v0.1 training data is explicitly authorized by the user for
   `ganesh-mini-1.0` and is the approved seed corpus. Do not reopen its ownership
   or provenance decision. Preserve source commit, file hashes, record IDs, and
@@ -42,7 +41,8 @@ implementation.
   for every result used in a decision.
 - Execute generated code only in resource-limited, network-disabled sandboxes.
 - Do not report fabricated or reconstructed metrics as executed evidence.
-- Do not publish model weights or datasets without explicit user approval.
+- Publish only artifacts that pass the frozen release gates; publication is
+  already authorized but failed or incomplete evidence still blocks release.
 
 ## Gate order
 
@@ -56,6 +56,11 @@ implementation.
 7. Merge, quantize, and laptop runtime certification.
 8. Release decision.
 
-Stop at every paid-compute, training, decision-set-opening, and publication
-boundary. Local, read-only, reversible preparation may continue within the
-active gate.
+Stop only at GCloud usage, a verified goal-divergence finding, a destructive
+action whose target is ambiguous, or a genuine technical blocker. Training,
+non-GCloud compute, decision-set opening under the frozen plan, and publication
+do not require another authorization request.
+
+The active 30-minute goal-alignment heartbeat performs an independent read-only
+audit. If it reports `DIVERGENCE`, pause further mutations, training, downloads,
+and compute, preserve current evidence, and wait for Navneet Prabhakar.

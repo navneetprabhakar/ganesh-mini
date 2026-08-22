@@ -195,7 +195,7 @@ scaling.
 ### Gate 4 — Pass A joint verified SFT
 
 If the seed pilot qualifies, either promote it directly to Pass B or run one
-approved expansion recipe on a frozen 20k–60k mix. The decision is based on
+technically validated expansion recipe on a frozen 20k–60k mix. The decision is based on
 per-lane learning curves and failure coverage, not a row-count target. Rank 64
 is the initial expansion candidate if the pilot shows gradient coverage and no
 overfit; rank 32 is the predeclared lower-capacity fallback. Sequence length
@@ -278,12 +278,13 @@ Release is eligible only if all of the following hold:
 - limitations are explicit, including whether Ganesh v0.1 remains stronger in
   absolute correctness.
 
-Publication to Hugging Face or another registry is a separate explicit
-approval. A failed candidate remains a documented experiment, not version 1.0.
+Publication to Hugging Face or another registry is authorized after every
+technical release gate passes. A failed candidate remains a documented
+experiment, not version 1.0.
 
 ## 4. Cost and execution controls
 
-Before each training run, present an execution card containing:
+Before each training run, create and retain an execution card containing:
 
 - exact dataset and manifest hashes;
 - model revision and expected download bytes;
@@ -296,8 +297,11 @@ Before each training run, present an execution card containing:
   plan;
 - explicit stop conditions.
 
-No cloud provider or instance type is selected in this plan. The Qwen3.5 hybrid
-architecture must be benchmarked before extrapolating Gemma v0.1 throughput.
+The card is an evidence and cost-control artifact, not an approval request.
+Local and non-GCloud execution are authorized. GCloud is the sole standing
+approval boundary and must not be used without explicit user authorization.
+The Qwen3.5 hybrid architecture must be benchmarked before extrapolating Gemma
+v0.1 throughput.
 
 ## 5. What is intentionally not copied from Ganesh v0.1
 
@@ -311,7 +315,7 @@ architecture must be benchmarked before extrapolating Gemma v0.1 throughput.
 
 The authorized v0.1 training corpus is deliberately reused. Other reusable
 concepts are the fail-closed executable verifiers, immutable manifests, raw
-evidence retention, checkpoint resume discipline, and exact resource approval
+evidence retention, checkpoint resume discipline, and exact resource execution
 cards. Code implementing those concepts is still reviewed before it is ported.
 
 ## 6. Immediate implementation queue
@@ -321,7 +325,8 @@ cards. Code implementing those concepts is still reviewed before it is ported.
 3. Define task and result JSON Schemas before authoring evaluation data.
 4. Build a base inference smoke harness that preserves rendered prompts and
    raw outputs.
-5. Prepare the exact model-download card and stop for approval if it exceeds
-   the standing 5 GB boundary.
+5. Download and verify the exact pinned model inventory after recording its
+   expected size and immutable identities.
 
-Training, paid compute, and dataset-scale downloads are not immediate work.
+Training starts only after its technical predecessor gates pass. This is a
+readiness dependency, not an authorization dependency.

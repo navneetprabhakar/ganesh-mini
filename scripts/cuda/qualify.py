@@ -24,7 +24,18 @@ def write_evidence(value: dict[str, Any], path: Path) -> None:
     unsigned = dict(value); unsigned.pop("evidence_sha256", None)
     value["evidence_sha256"] = canonical_sha256(unsigned)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with temporary.open("w", encoding="utf-8") as handle:
+        handle.write(json.dumps(value, indent=2, sort_keys=True) + "\n")
+        handle.flush(); os.fsync(handle.fileno())
+    temporary.replace(path)
+
+def append_journal(path: Path, event: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    row = {"recorded_at": datetime.now(timezone.utc).isoformat(), **event}
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+        handle.flush(); os.fsync(handle.fileno())
 
 def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
@@ -48,7 +59,9 @@ def package_identity(expected: dict[str,str]) -> dict[str,Any]:
     observed, imports = {}, {}
     for distribution, module in PACKAGE_IMPORTS.items():
         observed[distribution] = importlib.metadata.version(distribution); __import__(module); imports[module] = True
-    return {"expected":expected,"observed":observed,"imports":imports,"passed":observed == expected}
+    passed = observed == expected
+    if not passed: raise RuntimeError(f"pinned package identity mismatch: expected={expected}, observed={observed}")
+    return {"expected":expected,"observed":observed,"imports":imports,"passed":passed}
 
 def gpu_identity(config: dict[str,Any], recipe: dict[str,Any]) -> dict[str,Any]:
     import torch
@@ -108,7 +121,7 @@ def sequence_envelope_probe(model: Any, tokenizer: Any, length: int) -> dict[str
     output.loss.backward(); model.zero_grad(set_to_none=True)
     return {"kind":"synthetic-active-token-shape-probe","sequence_length":length,"active_tokens":length,"micro_batch_size":1,"optimizer_step":False,"quality_training_record":False,"loss_finite":True,"passed":True}
 
-def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path) -> dict[str,Any]:
+def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path, journal_path: Path | None = None) -> dict[str,Any]:
     import torch
     from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
     from transformers import AutoModelForImageTextToText, AutoTokenizer
@@ -133,20 +146,29 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     torch.cuda.reset_peak_memory_stats(0); envelope = sequence_envelope_probe(model,tokenizer,recipe["sequence_length"])
     losses, gradients, active_tokens, response_tokens = [], set(), 0, 0
     torch.cuda.synchronize(); training_started = time.monotonic(); model.train()
-    for item in records:
+    for index, item in enumerate(records):
+        if journal_path: append_journal(journal_path,{"phase":"training-record","state":"started","index":index,"record_id":item["row"]["id"]})
         batch = response_only_batch(tokenizer,item["row"]["messages"],recipe["sequence_length"],"cuda:0"); optimizer.zero_grad(set_to_none=True); output = model(**batch)
         if not torch.isfinite(output.loss): raise RuntimeError(f"non-finite loss for {item['row']['id']}")
         output.loss.backward(); gradients.update(name for name,parameter in model.named_parameters() if parameter.requires_grad and parameter.grad is not None and torch.count_nonzero(parameter.grad).item() > 0); optimizer.step()
         active_tokens += int(batch["attention_mask"].sum().item()); response_tokens += int((batch["labels"] != -100).sum().item()); losses.append(float(output.loss.detach().cpu()))
+        if journal_path: append_journal(journal_path,{"phase":"training-record","state":"completed","index":index,"record_id":item["row"]["id"],"loss":losses[-1]})
     torch.cuda.synchronize(); training_seconds = time.monotonic()-training_started; missing = sorted(trainable-gradients)
     if missing: raise RuntimeError(f"{len(missing)} trainable adapter parameters never received non-zero gradients")
     memory = {"peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"peak_reserved_bytes":torch.cuda.max_memory_reserved(0)}
-    adapter_dir.mkdir(parents=True,exist_ok=True); model.save_pretrained(adapter_dir,safe_serialization=True); tokenizer.save_pretrained(adapter_dir); hashes = {path.name:file_sha256(path) for path in sorted(adapter_dir.iterdir()) if path.is_file()}
+    if journal_path: append_journal(journal_path,{"phase":"adapter-save","state":"started"})
+    adapter_dir.mkdir(parents=True,exist_ok=False); model.save_pretrained(adapter_dir,safe_serialization=True); tokenizer.save_pretrained(adapter_dir); hashes = {path.name:file_sha256(path) for path in sorted(adapter_dir.iterdir()) if path.is_file()}
+    if journal_path: append_journal(journal_path,{"phase":"adapter-save","state":"completed","file_sha256":hashes})
     del optimizer, model; gc.collect(); torch.cuda.empty_cache()
+    if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"started"})
     base = AutoModelForImageTextToText.from_pretrained(model_dir,local_files_only=True,dtype=torch.bfloat16,device_map={"":0}); reloaded = PeftModel.from_pretrained(base,adapter_dir,is_trainable=False); merged = reloaded.merge_and_unload(safe_merge=True); merged.eval(); probe = tokenizer("def add(a, b):",return_tensors="pt").to("cuda:0")
     with torch.inference_mode(): merge_finite = bool(torch.isfinite(merged(**probe).logits).all().item())
     if not merge_finite: raise RuntimeError("merged checkpoint produced non-finite logits")
-    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"optimizer_steps":len(records),"losses":losses,"sequence_envelope":envelope,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":memory,"adapter_file_sha256":hashes,"adapter_reloaded":True,"merge_logits_finite":merge_finite,"passed":True}
+    merged_dir = adapter_dir.parent / f"merged-{recipe_id}"
+    merged_dir.mkdir(parents=False,exist_ok=False); merged.save_pretrained(merged_dir,safe_serialization=True); tokenizer.save_pretrained(merged_dir)
+    merged_hashes = {path.name:file_sha256(path) for path in sorted(merged_dir.iterdir()) if path.is_file()}
+    if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"completed","file_sha256":merged_hashes,"logits_finite":True})
+    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"optimizer_steps":len(records),"losses":losses,"sequence_envelope":envelope,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":memory,"adapter_file_sha256":hashes,"adapter_reloaded":True,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
 
 def inference_smoke(model_dir: Path, recipe_id: str) -> dict[str,Any]:
     import torch
@@ -160,12 +182,19 @@ def inference_smoke(model_dir: Path, recipe_id: str) -> dict[str,Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__); root = Path(__file__).resolve().parents[2]
-    parser.add_argument("--config",type=Path,default=root/"configs/cuda/qwen3_5_2b_gate0.json"); parser.add_argument("--recipe",choices=[PRIMARY_RECIPE,FALLBACK_RECIPE],default=PRIMARY_RECIPE); parser.add_argument("--model-dir",type=Path,required=True); parser.add_argument("--records",type=Path,default=root/"data/seed/ganesh_v01/train.jsonl"); parser.add_argument("--adapter-dir",type=Path,default=root/"outputs/cuda/gate0-adapter"); parser.add_argument("--output",type=Path,default=root/"measurement/cuda/qualification.json"); args = parser.parse_args()
-    os.environ.setdefault("TOKENIZERS_PARALLELISM","false"); os.environ.setdefault("HF_HUB_OFFLINE","1"); os.environ.setdefault("TRANSFORMERS_OFFLINE","1"); started = time.monotonic(); evidence: dict[str,Any] = {"schema_version":"ganesh-mini-cuda-qualification/v2","status":"failed","recipe_id":args.recipe,"recorded_at":datetime.now(timezone.utc).isoformat(),"host":{"platform":platform.platform(),"machine":platform.machine(),"python":platform.python_version()}}
+    parser.add_argument("--config",type=Path,default=root/"configs/cuda/qwen3_5_2b_gate0.json"); parser.add_argument("--recipe",choices=[PRIMARY_RECIPE,FALLBACK_RECIPE],default=PRIMARY_RECIPE); parser.add_argument("--model-dir",type=Path,required=True); parser.add_argument("--records",type=Path,default=root/"data/seed/ganesh_v01/train.jsonl"); parser.add_argument("--adapter-dir",type=Path,default=root/"outputs/cuda/gate0-adapter"); parser.add_argument("--output",type=Path,default=root/"measurement/cuda/qualification.json"); args = parser.parse_args(); journal_path = args.output.with_suffix(".journal.jsonl")
+    os.environ.setdefault("TOKENIZERS_PARALLELISM","false"); os.environ.setdefault("HF_HUB_OFFLINE","1"); os.environ.setdefault("TRANSFORMERS_OFFLINE","1"); started = time.monotonic(); evidence: dict[str,Any] = {"schema_version":"ganesh-mini-cuda-qualification/v2","status":"failed","recipe_id":args.recipe,"attempt_id":os.environ.get("GANESH_ATTEMPT_ID"),"resume_policy":"fresh-attempt-only","recorded_at":datetime.now(timezone.utc).isoformat(),"host":{"platform":platform.platform(),"machine":platform.machine(),"python":platform.python_version()}}
     try:
+        append_journal(journal_path,{"phase":"qualification","state":"started","recipe_id":args.recipe})
         config = load_and_validate_config(args.config,root); recipe = config["recipes"][args.recipe]
-        evidence.update({"model_id":config["model"]["model_id"],"revision":config["model"]["revision"],"config_sha256":file_sha256(args.config),"model_inventory":{path.name:file_sha256(path) for path in sorted(args.model_dir.iterdir()) if path.is_file()},"packages":package_identity(config["packages"]),"gpu":gpu_identity(config,recipe),"kernels":kernel_identity(),"ms_swift":swift_identity(args.model_dir),"inference":inference_smoke(args.model_dir,args.recipe),"training":run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir),"status":"passed"})
-    except Exception as exc: evidence.update({"error_type":type(exc).__name__,"error":str(exc)})
+        append_journal(journal_path,{"phase":"identity","state":"started"})
+        evidence.update({"model_id":config["model"]["model_id"],"revision":config["model"]["revision"],"config_sha256":file_sha256(args.config),"model_inventory":{path.name:file_sha256(path) for path in sorted(args.model_dir.iterdir()) if path.is_file()},"packages":package_identity(config["packages"]),"gpu":gpu_identity(config,recipe),"kernels":kernel_identity(),"ms_swift":swift_identity(args.model_dir)})
+        append_journal(journal_path,{"phase":"identity","state":"completed"})
+        append_journal(journal_path,{"phase":"inference","state":"started"}); evidence["inference"] = inference_smoke(args.model_dir,args.recipe); append_journal(journal_path,{"phase":"inference","state":"completed"})
+        append_journal(journal_path,{"phase":"training","state":"started"}); evidence["training"] = run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,journal_path); append_journal(journal_path,{"phase":"training","state":"completed"})
+        evidence["status"] = "passed"; append_journal(journal_path,{"phase":"qualification","state":"completed","status":"passed"})
+    except Exception as exc:
+        evidence.update({"error_type":type(exc).__name__,"error":str(exc)}); append_journal(journal_path,{"phase":"qualification","state":"completed","status":"failed","error_type":type(exc).__name__,"error":str(exc)})
     evidence["wall_seconds"] = time.monotonic()-started; evidence["peak_rss_bytes"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024; write_evidence(evidence,args.output)
     return 0 if evidence["status"] == "passed" else 2
 

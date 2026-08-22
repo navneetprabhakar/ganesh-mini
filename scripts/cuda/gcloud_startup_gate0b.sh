@@ -1,101 +1,99 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-project="executespecv1"
-bucket="ganesh-gate0-model-transfer-1061994342941"
-prefix="ganesh-mini-1.0/gate0b/20260822T155636Z"
+required=(GANESH_GCP_PROJECT GANESH_GCS_BUCKET GANESH_GCS_PREFIX GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_ARCHIVE_SHA256 GANESH_WORKSPACE_ARCHIVE_SIZE GANESH_MODEL_ARCHIVE_URI GANESH_MODEL_ARCHIVE_SHA256 GANESH_MODEL_ARCHIVE_SIZE GANESH_IMAGE_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_SHA256 GANESH_IMAGE_ARCHIVE_SIZE GANESH_DOCKER_BUNDLE_URI GANESH_DOCKER_BUNDLE_SHA256 GANESH_DOCKER_BUNDLE_SIZE GANESH_CUDA_IMAGE_ID GANESH_CUDA_IMAGE_REF GANESH_ATTEMPT_ID GANESH_GPU_HOURLY_USD GANESH_CUMULATIVE_COST_USD GANESH_SUPPORT_RESERVE_USD)
+for name in "${required[@]}"; do [[ -n "${!name:-}" ]] || { echo "missing $name" >&2; exit 2; }; done
+for name in GANESH_WORKSPACE_ARCHIVE_URI GANESH_MODEL_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_URI GANESH_DOCKER_BUNDLE_URI; do
+  case "${!name}" in *'#'[0-9]*) ;; *) echo "$name must include a GCS generation" >&2; exit 40;; esac
+done
+python3 - "$GANESH_CUMULATIVE_COST_USD" "$GANESH_GPU_HOURLY_USD" "$GANESH_SUPPORT_RESERVE_USD" <<'PY'
+from decimal import Decimal
+import sys
+total=Decimal(sys.argv[1])+Decimal(sys.argv[2])*(Decimal(1200)/Decimal(3600))+Decimal(sys.argv[3])
+if any(Decimal(value) < 0 for value in sys.argv[1:]) or Decimal(sys.argv[2]) <= 0:
+    raise SystemExit("cost inputs must be nonnegative and GPU hourly rate positive")
+if total >= Decimal("5"): raise SystemExit(f"cumulative qualification ceiling is not below USD 5: {total}")
+PY
+
 work_dir="/opt/ganesh-mini-gate0b"
 evidence_dir="/var/lib/ganesh-mini-gate0b"
-output_dir="$evidence_dir/output"
+output_dir="$evidence_dir/output/$GANESH_ATTEMPT_ID"
 mkdir -p "$work_dir" "$output_dir"
-exec > >(tee -a "$evidence_dir/startup.stdout.log") \
-  2> >(tee -a "$evidence_dir/startup.stderr.log" >&2)
-
-backup() {
-  stamp="$(date -u +%Y%m%dT%H%M%S%NZ)-$$-$RANDOM"
-  date -u +%Y-%m-%dT%H:%M:%SZ > "$evidence_dir/last-backup-at.txt"
-  gcloud storage rsync "$evidence_dir" "gs://$bucket/$prefix/runtime-checkpoints/$stamp" \
-    --recursive --project="$project" >> "$evidence_dir/gcs-backup.log" 2>&1 || true
-}
-finish() {
-  status="$?"
-  printf '%s\n' "$status" > "$evidence_dir/startup-exit-code.txt"
-  backup
-  exit "$status"
-}
-trap finish EXIT
-
-started_epoch="$(date +%s)"
-hard_deadline_epoch="$((started_epoch + 1700))"
-controller_deadline_epoch="$((started_epoch + 1400))"
-date -u +%Y-%m-%dT%H:%M:%SZ > "$evidence_dir/vm-run-started-at.txt"
-printf '%s\n' "$started_epoch" > "$evidence_dir/vm-started-epoch.txt"
+[[ -z "$(find "$output_dir" -mindepth 1 -print -quit)" ]] || { echo "attempt output is not fresh" >&2; exit 44; }
+exec > >(tee -a "$evidence_dir/startup.stdout.log") 2> >(tee -a "$evidence_dir/startup.stderr.log" >&2)
+started_epoch="$(date +%s)"; hard_deadline_epoch="$((started_epoch + 1200))"; controller_deadline_epoch="$((started_epoch + 900))"
 printf '%s\n' "$controller_deadline_epoch" > "$evidence_dir/controller-deadline-epoch.txt"
 printf '%s\n' "$hard_deadline_epoch" > "$evidence_dir/hard-stop-deadline-epoch.txt"
-
-# The pinned CUDA DLVM image carries the NVIDIA driver/tooling but not Docker.
-# Resolve no floating Docker version: install the exact Jammy update package
-# recorded in the run plan and capture both APT policy and installed packages.
-docker_package_version="29.1.3-0ubuntu3~22.04.2"
-printf '%s\n' "$docker_package_version" > "$evidence_dir/requested-docker-package-version.txt"
-apt-get update > "$evidence_dir/apt-update.log" 2>&1
-apt-cache policy docker.io > "$evidence_dir/docker-apt-policy.txt"
-if ! grep -Fq "$docker_package_version" "$evidence_dir/docker-apt-policy.txt"; then
-  echo "pinned docker.io package is unavailable: $docker_package_version" >&2
-  exit 41
-fi
-DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  "docker.io=$docker_package_version" > "$evidence_dir/docker-install.log" 2>&1
-dpkg-query -W -f='${Package}\t${Version}\n' docker.io containerd runc \
-  > "$evidence_dir/docker-package-versions.tsv"
-if ! command -v nvidia-ctk > "$evidence_dir/nvidia-ctk-path.txt"; then
-  echo "pinned DLVM image does not expose nvidia-ctk" >&2
-  exit 42
-fi
-nvidia-ctk runtime configure --runtime=docker \
-  > "$evidence_dir/nvidia-ctk-configure.log" 2>&1
-systemctl restart docker
-timeout 30s bash -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
-
-uname -a > "$evidence_dir/uname.txt"
+( sleep 1190; shutdown -h now ) & watchdog_pid="$!"
+remaining() { local value=$((controller_deadline_epoch - $(date +%s))); (( value > 0 )) || return 1; printf '%s\n' "$value"; }
+backup_remaining() { local value=$((hard_deadline_epoch - 20 - $(date +%s))); (( value > 0 )) || return 1; printf '%s\n' "$value"; }
+inventory_remaining() { local value=$((hard_deadline_epoch - 240 - $(date +%s))); (( value > 0 )) || return 1; printf '%s\n' "$value"; }
+phase_timeout() { local cap="$1" left; left="$(remaining)" || return 1; (( left < cap )) && printf '%s\n' "$left" || printf '%s\n' "$cap"; }
+checkpoint() {
+  local stamp; stamp="$(date -u +%Y%m%dT%H%M%S%NZ)-$$-$RANDOM"
+  timeout "$(phase_timeout 240)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/runtime-checkpoints/$stamp" --recursive --project="$GANESH_GCP_PROJECT" >> "$evidence_dir/gcs-backup.log" 2>&1 || true
+}
+final_backup() {
+  timeout "$(backup_remaining)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/runtime-terminal" --recursive --project="$GANESH_GCP_PROJECT" > /var/log/ganesh-runtime-final-backup.log 2>&1
+}
+inventory_attempted=0
+write_inventory() {
+  inventory_attempted=1
+  local budget; budget="$(inventory_remaining)" || return 1
+  timeout "$budget" bash -c 'set -o pipefail; cd "$1"; find . -type f ! -name runtime-files.sha256 ! -name .runtime-files.sha256.tmp -print0 | sort -z | xargs -0 sha256sum > .runtime-files.sha256.tmp && mv .runtime-files.sha256.tmp runtime-files.sha256' _ "$evidence_dir"
+}
+finish() { local status="$?"; trap - EXIT; printf '%s\n' "$status" > "$evidence_dir/startup-exit-code.txt"; if (( inventory_attempted == 0 )) && ! write_inventory; then rm -f "$evidence_dir/.runtime-files.sha256.tmp"; printf 'terminal inventory failed\n' > "$evidence_dir/terminal-inventory-failure.txt"; status=91; fi; final_backup || status=90; kill "$watchdog_pid" 2>/dev/null || true; exit "$status"; }
+trap finish EXIT
+download_verified() {
+  local uri="$1" expected_sha="$2" expected_size="$3" destination="$4"
+  timeout "$(remaining)" gcloud storage cp "$uri" "$destination" --project="$GANESH_GCP_PROJECT"
+  [[ "$(stat -c %s "$destination")" == "$expected_size" ]]
+  printf '%s  %s\n' "$expected_sha" "$destination" | sha256sum -c -
+}
+download_verified "$GANESH_WORKSPACE_ARCHIVE_URI" "$GANESH_WORKSPACE_ARCHIVE_SHA256" "$GANESH_WORKSPACE_ARCHIVE_SIZE" "$work_dir/workspace.tar.gz"
+download_verified "$GANESH_MODEL_ARCHIVE_URI" "$GANESH_MODEL_ARCHIVE_SHA256" "$GANESH_MODEL_ARCHIVE_SIZE" "$work_dir/model.tar.gz"
+download_verified "$GANESH_IMAGE_ARCHIVE_URI" "$GANESH_IMAGE_ARCHIVE_SHA256" "$GANESH_IMAGE_ARCHIVE_SIZE" "$work_dir/cuda-image.docker.tar.zst"
+download_verified "$GANESH_DOCKER_BUNDLE_URI" "$GANESH_DOCKER_BUNDLE_SHA256" "$GANESH_DOCKER_BUNDLE_SIZE" "$work_dir/docker-bundle.tar.gz"
+mkdir "$work_dir/workspace" "$work_dir/model" "$work_dir/docker-bundle"
+timeout "$(phase_timeout 180)" tar -xzf "$work_dir/workspace.tar.gz" -C "$work_dir/workspace"
+timeout "$(phase_timeout 300)" tar -xzf "$work_dir/model.tar.gz" -C "$work_dir/model"
+timeout "$(phase_timeout 120)" tar -xzf "$work_dir/docker-bundle.tar.gz" -C "$work_dir/docker-bundle" --strip-components=1
+(cd "$work_dir/docker-bundle" && sha256sum -c bundle-files.sha256)
+timeout "$(phase_timeout 30)" bash -c "set -o pipefail; dpkg-query -W -f='\${Package}\\t\${Version}\\n' | sort" > "$evidence_dir/base-dpkg-packages.tsv"
+cmp "$evidence_dir/base-dpkg-packages.tsv" "$work_dir/docker-bundle/base-dpkg-packages.tsv"
+timeout "$(phase_timeout 300)" dpkg -i "$work_dir"/docker-bundle/debs/*.deb > "$evidence_dir/docker-offline-install.log" 2>&1 || timeout "$(phase_timeout 300)" dpkg -i "$work_dir"/docker-bundle/debs/*.deb >> "$evidence_dir/docker-offline-install.log" 2>&1
+timeout "$(phase_timeout 30)" dpkg --audit > "$evidence_dir/dpkg-audit.txt"; [[ ! -s "$evidence_dir/dpkg-audit.txt" ]]
+command -v nvidia-ctk > "$evidence_dir/nvidia-ctk-path.txt"
+timeout "$(phase_timeout 30)" nvidia-ctk runtime configure --runtime=docker > "$evidence_dir/nvidia-ctk-configure.log" 2>&1
+timeout "$(phase_timeout 30)" systemctl restart docker; timeout "$(phase_timeout 30)" bash -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
+timeout "$(phase_timeout 300)" bash -c 'set -o pipefail; zstd -dc "$1" | docker load' _ "$work_dir/cuda-image.docker.tar.zst" > "$evidence_dir/docker-load.txt"
+observed_image_id="$(docker image inspect --format '{{.Id}}' "$GANESH_CUDA_IMAGE_REF")"
+printf '%s\n' "$observed_image_id" > "$evidence_dir/observed-image-id.txt"; [[ "$observed_image_id" == "$GANESH_CUDA_IMAGE_ID" ]]
+timeout "$(phase_timeout 10)" uname -a > "$evidence_dir/uname.txt"
 env | sed -E 's/(TOKEN|SECRET|PASSWORD|KEY)=.*/\1=REDACTED/' | sort > "$evidence_dir/environment-redacted.txt"
-nvidia-smi -q > "$evidence_dir/nvidia-smi-q.txt"
-nvidia-smi --query-gpu=timestamp,name,uuid,driver_version,memory.total --format=csv,noheader > "$evidence_dir/gpu-identity.csv"
-docker version > "$evidence_dir/docker-version.txt" 2>&1
-docker info > "$evidence_dir/docker-info.txt" 2>&1
-
-gcloud storage rsync "gs://$bucket/$prefix/input/workspace" "$work_dir/workspace" --recursive --project="$project"
-gcloud storage rsync "gs://$bucket/$prefix/input/model" "$work_dir/model" --recursive --project="$project"
-chmod +x "$work_dir/workspace/scripts/cuda/run_qualification.sh"
-find "$work_dir" -type f -print0 | sort -z | xargs -0 sha256sum > "$evidence_dir/downloaded-inputs.sha256"
-
+timeout "$(phase_timeout 30)" nvidia-smi -q > "$evidence_dir/nvidia-smi-q.txt"
+timeout "$(phase_timeout 30)" nvidia-smi --query-gpu=timestamp,name,uuid,driver_version,memory.total --format=csv,noheader > "$evidence_dir/gpu-identity.csv"
+timeout "$(phase_timeout 30)" docker version > "$evidence_dir/docker-version.txt" 2>&1; timeout "$(phase_timeout 30)" docker info > "$evidence_dir/docker-info.txt" 2>&1
+timeout "$(phase_timeout 30)" bash -c "set -o pipefail; dpkg-query -W -f='\${Package}\\t\${Version}\\n' | sort" > "$evidence_dir/runtime-dpkg-packages.tsv"
+timeout "$(phase_timeout 120)" bash -c 'set -o pipefail; find "$1" "$2" -type f -print0 | sort -z | xargs -0 sha256sum' _ "$work_dir/workspace" "$work_dir/model" > "$evidence_dir/extracted-inputs.sha256"
 (
-  while true; do
-    nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu --format=csv,noheader,nounits >> "$evidence_dir/nvml-samples.csv"
-    sleep 5
-  done
-) &
-nvml_pid="$!"
+  while true; do nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu --format=csv,noheader,nounits >> "$evidence_dir/nvml-samples.csv"; sleep 5; done
+) & nvml_pid="$!"
 (
-  while true; do backup; sleep 30; done
-) &
-backup_pid="$!"
-
+  while true; do checkpoint; sleep 30; done
+) & backup_pid="$!"
 set +e
-GANESH_GPU_HOURLY_USD=2.12081 \
-GANESH_CONTROLLER_DEADLINE_EPOCH="$controller_deadline_epoch" \
-  "$work_dir/workspace/scripts/cuda/run_qualification.sh" \
-  "$work_dir/model" \
-  "$work_dir/workspace/data/seed/ganesh_v01/train.jsonl" \
-  "$output_dir" \
-  bf16-lora-primary-v1 \
-  > >(tee "$evidence_dir/controller.stdout.log") \
-  2> >(tee "$evidence_dir/controller.stderr.log" >&2)
-run_status="$?"
-set -e
-kill "$nvml_pid" "$backup_pid" 2>/dev/null || true
-wait "$nvml_pid" "$backup_pid" 2>/dev/null || true
+GANESH_GPU_HOURLY_USD="$GANESH_GPU_HOURLY_USD" GANESH_CUMULATIVE_COST_USD="$GANESH_CUMULATIVE_COST_USD" GANESH_SUPPORT_RESERVE_USD="$GANESH_SUPPORT_RESERVE_USD" GANESH_CONTROLLER_DEADLINE_EPOCH="$controller_deadline_epoch" GANESH_CUDA_IMAGE_REF="$GANESH_CUDA_IMAGE_REF" GANESH_CUDA_IMAGE_ID="$GANESH_CUDA_IMAGE_ID" GANESH_ATTEMPT_ID="$GANESH_ATTEMPT_ID" \
+  "$work_dir/workspace/scripts/cuda/run_qualification.sh" "$work_dir/model" "$work_dir/workspace/data/seed/ganesh_v01/train.jsonl" "$output_dir" bf16-lora-primary-v1 > >(tee "$evidence_dir/controller.stdout.log") 2> >(tee "$evidence_dir/controller.stderr.log" >&2)
+run_status="$?"; set -e
+kill "$nvml_pid" "$backup_pid" 2>/dev/null || true; wait "$nvml_pid" "$backup_pid" 2>/dev/null || true
 printf '%s\n' "$run_status" > "$evidence_dir/controller-exit-code.txt"
-find "$evidence_dir" -type f -print0 | sort -z | xargs -0 sha256sum > "$evidence_dir/runtime-files.sha256"
-backup
+printf '%s\n' "$run_status" > "$evidence_dir/startup-exit-code.txt"
+if ! write_inventory; then
+  rm -f "$evidence_dir/.runtime-files.sha256.tmp"
+  printf 'terminal inventory failed\n' > "$evidence_dir/terminal-inventory-failure.txt"
+  exit 91
+fi
+final_backup
+trap - EXIT; kill "$watchdog_pid" 2>/dev/null || true
 exit "$run_status"

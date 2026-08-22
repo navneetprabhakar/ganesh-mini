@@ -29,6 +29,7 @@ def test_pinned_primary_and_fallback_validate() -> None:
     fallback = config["recipes"][FALLBACK_RECIPE]
     assert fallback["quantization"] == {"bits": 4, "type": "nf4", "double_quantization": True, "compute_dtype": "bfloat16"}
     assert config["packages"]["bitsandbytes"] == "0.49.2"
+    assert config["packages"]["torchvision"] == "0.28.0"
 
 
 def test_primary_recipe_mutation_fails_closed(tmp_path: Path) -> None:
@@ -46,6 +47,15 @@ def test_budget_increase_fails_closed(tmp_path: Path) -> None:
     path = tmp_path / "config.json"
     path.write_text(json.dumps(source))
     with pytest.raises(ValueError, match="authorized bound"):
+        load_and_validate_config(path, ROOT)
+
+
+def test_cuda_environment_lock_mismatch_fails_closed(tmp_path: Path) -> None:
+    source = json.loads(CONFIG.read_text())
+    source["container"]["uv_lock_sha256"] = "0" * 64
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps(source))
+    with pytest.raises(ValueError, match="environment lock hash mismatch"):
         load_and_validate_config(path, ROOT)
 
 
@@ -114,6 +124,9 @@ def test_runner_requires_exact_preloaded_image_and_disables_pull_and_network() -
     assert "docker build" not in runner
     assert "--pull=never" in runner
     assert "--network none" in runner
+    assert "--tmpfs /tmp:rw,noexec,nosuid,size=8g" in runner
+    assert "--tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g" in runner
+    assert "TRITON_CACHE_DIR=/var/cache/triton" in runner
 
 
 def test_cpu_prebuild_has_a_hard_deadline_and_seals_oci_archive() -> None:
@@ -131,6 +144,17 @@ def test_cuda_dockerfile_does_not_require_optional_buildx_component() -> None:
     dockerfile = (ROOT / "containers/cuda/Dockerfile").read_text()
     assert "--mount=type=cache" not in dockerfile
     assert "uv sync --frozen" in dockerfile
+    assert '"torchvision": "0.28.0"' in dockerfile
+    assert "import torchvision" in dockerfile
+    assert "import qwen_vl_utils" in dockerfile
+
+
+def test_gpu_identity_precedes_fla_import_and_kernel_check() -> None:
+    source = (ROOT / "scripts/cuda/qualify.py").read_text()
+    identity_loop = source[source.index('for component, check in'):source.index('append_journal(journal_path,{"phase":"identity","state":"completed"}')]
+    assert identity_loop.index('(\"gpu\"') < identity_loop.index('(\"triton\"') < identity_loop.index('(\"packages\"') < identity_loop.index('(\"kernels\"')
+    assert "Triton CUDA backend initialization failed" in source
+    assert 'backend != {"triton":"cuda","fla":"cuda","fla_is_nvidia":True}' in source
 
 
 def test_docker_context_excludes_models_and_measurement_archives() -> None:

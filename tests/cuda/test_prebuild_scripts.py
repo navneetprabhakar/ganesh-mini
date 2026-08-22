@@ -1,9 +1,14 @@
 import json
+import hashlib
 from decimal import Decimal
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def test_image_export_suppresses_unbounded_progress_output() -> None:
@@ -80,3 +85,42 @@ def test_prebuild_result_is_bound_to_backup_and_deletion_evidence() -> None:
         )
     )
     assert observed == Decimal(str(cost["cumulative_compute_upper_before_gpu_usd"]))
+
+
+def test_gpu_startup_preserves_terminal_backup_reserve_and_attempt_isolation() -> None:
+    source = (ROOT / "scripts/cuda/gcloud_startup_gate0b.sh").read_text()
+    assert 'terminal_prefix="runtime-terminal-$GANESH_ATTEMPT_ID"' in source
+    assert "runtime-checkpoints/$GANESH_ATTEMPT_ID/$stamp" in source
+    assert 'timeout "$(phase_timeout 180)" sha256sum -c -' in source
+    assert "sha256sum -c bundle-files.sha256" in source
+    assert 'timeout "$(phase_timeout 120)" bash -c' in source
+    assert "GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH" in source
+    assert 'backup_reserved_deadline_epoch="$((hard_deadline_epoch - 300))"' in source
+    assert "backup_reserved_deadline_epoch < relative_controller_deadline_epoch" in source
+
+
+def test_metadata_wrapper_generation_pins_and_hashes_controller() -> None:
+    source = (ROOT / "scripts/cuda/gcloud_startup_metadata_wrapper.sh").read_text()
+    assert "Metadata-Flavor: Google" in source
+    assert "controller URI must include a GCS generation" in source
+    assert "ganesh-controller-sha256" in source
+    assert "ganesh-absolute-hard-deadline-epoch" in source
+    assert "sha256sum -c -" in source
+    assert 'exec "$controller"' in source
+
+
+def test_standard_a100_execution_card_binds_exact_inputs_and_cost() -> None:
+    evidence_root = ROOT / "measurement/cuda/gcloud/20260822T165734Z"
+    plan = json.loads((evidence_root / "gpu_run_plan.json").read_text())
+    preflight = json.loads((evidence_root / "gpu-preflight-inputs-v2-backup-manifest.json").read_text())
+    result = json.loads((evidence_root / "prebuild_result.json").read_text())
+
+    assert plan["status"] == "ready-approved-not-launched"
+    assert plan["resource"]["provisioning_model"] == "STANDARD"
+    assert plan["resource"]["maximum_run_seconds"] == 1200
+    assert plan["network"]["external_ip"] is False and plan["network"]["nat"] is False
+    assert plan["inputs"]["controller"]["sha256"] == sha256(ROOT / "scripts/cuda/gcloud_startup_gate0b.sh")
+    assert plan["inputs"]["metadata_wrapper"]["sha256"] == sha256(ROOT / "scripts/cuda/gcloud_startup_metadata_wrapper.sh")
+    assert plan["inputs"]["preflight_backup_evidence_sha256"] == preflight["evidence_sha256"]
+    assert plan["inputs"]["cuda_image_archive"]["sha256"] == result["attempt_2"]["archive_sha256"]
+    assert plan["cost"]["prior_cumulative_compute_upper_usd"] == result["cost"]["cumulative_compute_upper_before_gpu_usd"]

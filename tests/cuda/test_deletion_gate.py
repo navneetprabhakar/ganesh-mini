@@ -44,3 +44,17 @@ def test_deletion_gate_rejects_running_vm(tmp_path: Path, monkeypatch: pytest.Mo
 def test_deletion_gate_rejects_omitted_local_artifact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     argv,_=write_inputs(tmp_path,"runtime"); inventory=Path(argv[argv.index("--inventory")+1]); inventory.write_text(inventory.read_text()+f"{'a'*64}  ./output/merged/model.safetensors\n"); monkeypatch.setattr("sys.argv",argv)
     with pytest.raises(SystemExit,match="inventory"): main()
+
+
+def test_deletion_gate_records_explicit_provider_serial_unavailable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    argv,output=write_inputs(tmp_path,"runtime")
+    manifest_path=Path(argv[argv.index("--backup-manifest")+1])
+    manifest=json.loads(manifest_path.read_text()); prefix=manifest["prefix"]
+    unavailable=tmp_path/"serial-unavailable.txt"; unavailable.write_text("provider returned resource not ready\n")
+    row=next(row for row in manifest["objects"] if row["object_uri"].endswith("/provider/serial-port.log"))
+    row["object_uri"]=f"{prefix}/provider/serial-port-unavailable.txt"; row["downloaded_sha256"]=sha(unavailable)
+    manifest.pop("evidence_sha256"); manifest["evidence_sha256"]=canonical_sha256(manifest); manifest_path.write_text(json.dumps(manifest))
+    index=argv.index("--serial-evidence"); argv[index:index+2]=["--serial-unavailable-evidence",str(unavailable)]
+    monkeypatch.setattr("sys.argv",argv)
+    assert main()==0
+    assert json.loads(output.read_text())["provider_serial_status"]=="provider-unavailable-recorded"

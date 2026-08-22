@@ -27,7 +27,9 @@ def main() -> int:
     parser.add_argument("--backup-manifest", type=Path, required=True)
     parser.add_argument("--resource-state", type=Path, required=True)
     parser.add_argument("--inventory", type=Path, required=True)
-    parser.add_argument("--serial-evidence", type=Path, required=True)
+    serial_group = parser.add_mutually_exclusive_group(required=True)
+    serial_group.add_argument("--serial-evidence", type=Path)
+    serial_group.add_argument("--serial-unavailable-evidence", type=Path)
     parser.add_argument("--operations-evidence", type=Path, required=True)
     parser.add_argument("--system-events-evidence", type=Path, required=True)
     parser.add_argument("--expected-resource-name", required=True)
@@ -56,7 +58,19 @@ def main() -> int:
         row = rows.get(relative)
         if row is None or row.get("downloaded_sha256") != digest:
             raise SystemExit(f"terminal backup is missing or mismatches local inventory: {relative}")
-    provider = {"provider/serial-port.log":args.serial_evidence,"provider/operations.json":args.operations_evidence,"provider/system-events.json":args.system_events_evidence}
+    if args.serial_evidence is not None:
+        serial_relative = "provider/serial-port.log"
+        serial_path = args.serial_evidence
+        serial_status = "captured"
+    else:
+        serial_relative = "provider/serial-port-unavailable.txt"
+        serial_path = args.serial_unavailable_evidence
+        serial_status = "provider-unavailable-recorded"
+    provider = {
+        serial_relative: serial_path,
+        "provider/operations.json": args.operations_evidence,
+        "provider/system-events.json": args.system_events_evidence,
+    }
     for relative, path in provider.items():
         if not path.is_file() or path.stat().st_size == 0:
             raise SystemExit(f"provider evidence is missing or empty: {path}")
@@ -79,6 +93,7 @@ def main() -> int:
         "resource_name": args.expected_resource_name,
         "resource_id": args.expected_resource_id,
         "resource_status": resource["status"],
+        "provider_serial_status": serial_status,
         "object_count": len(objects),
     }
     evidence["evidence_sha256"] = canonical_sha256(evidence)

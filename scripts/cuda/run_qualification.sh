@@ -67,7 +67,9 @@ fi
 timeout --signal=TERM --kill-after=30s "$seconds_until_deadline" \
   docker run --rm --pull=never --gpus device=0 --network none --cpus 8 --memory 32g \
     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=8g \
+    --tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g \
     -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
+    -e TRITON_CACHE_DIR=/var/cache/triton \
     -v "$repo_dir:/workspace:ro" \
     -v "$model_dir:/input/model:ro" \
     -v "$records_path:/input/train.jsonl:ro" \

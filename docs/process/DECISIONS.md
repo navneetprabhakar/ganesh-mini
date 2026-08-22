@@ -207,3 +207,34 @@ absence is sealed by
 The dedicated VPC and subnet remain intentionally for a no-NAT A100 run. No
 compute is running, and no Gate 0B CUDA qualification is claimed. A Standard
 `a2-highgpu-1g` execution remains a separate GCloud authorization boundary.
+
+## 2026-08-23 — Standard A100 attempt failed on environment; all resources deleted
+
+Navneet Prabhakar explicitly approved one Standard `a2-highgpu-1g` Gate 0B
+attempt with a 1,200-second maximum runtime, no NAT or external IP, and the
+mandatory verified-backup-before-delete lifecycle.
+
+The VM exposed one NVIDIA A100-SXM4-40GB and loaded the exact sealed image and
+generation-pinned workspace/model inputs. Qualification then failed during
+package identity with `ModuleNotFoundError: No module named 'torchvision'`.
+The failure occurred before model loading or training, so it is environment
+evidence only and cannot qualify Gate 0B. FLA also warned that Triton fell back
+to CPU; the failed attempt could not expose the swallowed underlying exception.
+
+The terminal prefix contains 31 independently verified objects under seal
+`9d1ed5d0e5407ef7f9397ba7e406952865f981eda61ee5d337990bfd298f114d`.
+The deletion gate is sealed by
+`a887e8201df39c7da120b075e61c443639091e451ae3e109dee2b8c0dedb99f4`.
+After those records were independently backed, the VM, subnet, and VPC were
+deleted; their absence is backed under seal
+`24b148309a89282f6ec6bf043a5bb7ff81baaca5ea783fa71ec1bfe138ec2284`.
+Provider serial output was unavailable after stop and was not reconstructed;
+the provider error, startup logs, structured result, and lifecycle evidence are
+preserved explicitly.
+
+The local repair pins Torchvision 0.28.0 for Torch 2.13.0, imports
+`qwen_vl_utils` during image build, initializes Torch CUDA and the Triton CUDA
+backend before importing FLA, requires FLA to report NVIDIA CUDA, and mounts a
+bounded executable Triton cache while retaining a read-only root, no-exec
+general `/tmp`, and network-disabled execution. This repair is not a Gate 0B
+pass; it requires a new image build and a separately approved NVIDIA run.

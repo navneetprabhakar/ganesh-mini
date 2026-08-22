@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-PACKAGE_IMPORTS = {"torch":"torch","transformers":"transformers","peft":"peft","ms-swift":"swift","bitsandbytes":"bitsandbytes","flash-linear-attention":"fla","causal-conv1d":"causal_conv1d","accelerate":"accelerate","qwen-vl-utils":"qwen_vl_utils","triton":"triton"}
+PACKAGE_IMPORTS = {"torch":"torch","torchvision":"torchvision","transformers":"transformers","peft":"peft","ms-swift":"swift","bitsandbytes":"bitsandbytes","flash-linear-attention":"fla","causal-conv1d":"causal_conv1d","accelerate":"accelerate","qwen-vl-utils":"qwen_vl_utils","triton":"triton"}
 PRIMARY_RECIPE = "bf16-lora-primary-v1"
 FALLBACK_RECIPE = "nf4-qlora-fallback-v1"
 
@@ -42,6 +42,7 @@ def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     if config.get("schema_version") != "ganesh-mini-cuda-gate0/v2": raise ValueError("unsupported CUDA qualification schema")
     contract_path = root / config["model"]["contract_path"]
     if file_sha256(contract_path) != config["model"]["contract_sha256"]: raise ValueError("model contract hash mismatch")
+    if file_sha256(root / "uv.lock") != config["container"]["uv_lock_sha256"]: raise ValueError("CUDA environment lock hash mismatch")
     contract = json.loads(contract_path.read_text(encoding="utf-8"))
     if (contract.get("model_id"), contract.get("revision")) != (config["model"]["model_id"], config["model"]["revision"]):
         raise ValueError("model identity does not match the pinned contract")
@@ -58,7 +59,15 @@ def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
 def package_identity(expected: dict[str,str]) -> dict[str,Any]:
     observed, imports = {}, {}
     for distribution, module in PACKAGE_IMPORTS.items():
-        observed[distribution] = importlib.metadata.version(distribution); __import__(module); imports[module] = True
+        try:
+            observed[distribution] = importlib.metadata.version(distribution)
+            __import__(module)
+            imports[module] = True
+        except Exception as exc:
+            raise RuntimeError(
+                f"required package import failed: distribution={distribution} module={module} "
+                f"error_type={type(exc).__name__} error={exc}"
+            ) from exc
     passed = observed == expected
     if not passed: raise RuntimeError(f"pinned package identity mismatch: expected={expected}, observed={observed}")
     return {"expected":expected,"observed":observed,"imports":imports,"passed":passed}
@@ -72,11 +81,33 @@ def gpu_identity(config: dict[str,Any], recipe: dict[str,Any]) -> dict[str,Any]:
     smi = subprocess.run(["nvidia-smi","--query-gpu=name,uuid,driver_version,memory.total","--format=csv,noheader,nounits"],check=True,capture_output=True,text=True,timeout=10).stdout.strip()
     return {"name":props.name,"compute_capability":capability,"total_memory_bytes":props.total_memory,"required_memory_bytes":recipe["minimum_vram_bytes"],"bfloat16_supported":torch.cuda.is_bf16_supported(),"torch_cuda":torch.version.cuda,"cudnn":torch.backends.cudnn.version(),"nvidia_smi_csv":smi,"passed":passed}
 
+def triton_identity() -> dict[str,Any]:
+    import triton
+    try:
+        target = triton.runtime.driver.active.get_current_target()
+    except Exception as exc:
+        raise RuntimeError(
+            f"Triton CUDA backend initialization failed: error_type={type(exc).__name__} error={exc}"
+        ) from exc
+    if target.backend != "cuda":
+        raise RuntimeError(f"Triton selected a non-CUDA backend: {target.backend}")
+    return {"version":triton.__version__,"backend":target.backend,"architecture":str(target.arch),"cache_dir":os.environ.get("TRITON_CACHE_DIR"),"passed":True}
+
 def kernel_identity() -> dict[str,Any]:
+    import triton
+    from fla.utils import _device as fla_device
     from transformers.models.qwen3_5 import modeling_qwen3_5
+    triton_backend = triton.runtime.driver.active.get_current_target().backend
+    backend = {
+        "triton": triton_backend,
+        "fla": fla_device.device_platform,
+        "fla_is_nvidia": bool(fla_device.IS_NVIDIA),
+    }
+    if backend != {"triton":"cuda","fla":"cuda","fla_is_nvidia":True}:
+        raise RuntimeError(f"CUDA kernel backend mismatch: {backend}")
     symbols = {"causal_conv1d_fn":modeling_qwen3_5.causal_conv1d_fn is not None,"causal_conv1d_update":modeling_qwen3_5.causal_conv1d_update is not None,"chunk_gated_delta_rule":modeling_qwen3_5.chunk_gated_delta_rule is not None,"fused_recurrent_gated_delta_rule":modeling_qwen3_5.fused_recurrent_gated_delta_rule is not None,"fast_path":bool(modeling_qwen3_5.is_fast_path_available)}
     if not all(symbols.values()): raise RuntimeError(f"Qwen3.5 CUDA fast path is incomplete: {symbols}")
-    return {"symbols":symbols,"passed":True}
+    return {"backend":backend,"symbols":symbols,"passed":True}
 
 def swift_identity(model_dir: Path) -> dict[str,Any]:
     from swift.model import get_model_info_meta
@@ -188,7 +219,11 @@ def main() -> int:
         append_journal(journal_path,{"phase":"qualification","state":"started","recipe_id":args.recipe})
         config = load_and_validate_config(args.config,root); recipe = config["recipes"][args.recipe]
         append_journal(journal_path,{"phase":"identity","state":"started"})
-        evidence.update({"model_id":config["model"]["model_id"],"revision":config["model"]["revision"],"config_sha256":file_sha256(args.config),"model_inventory":{path.name:file_sha256(path) for path in sorted(args.model_dir.iterdir()) if path.is_file()},"packages":package_identity(config["packages"]),"gpu":gpu_identity(config,recipe),"kernels":kernel_identity(),"ms_swift":swift_identity(args.model_dir)})
+        evidence.update({"model_id":config["model"]["model_id"],"revision":config["model"]["revision"],"config_sha256":file_sha256(args.config),"model_inventory":{path.name:file_sha256(path) for path in sorted(args.model_dir.iterdir()) if path.is_file()}})
+        for component, check in (("gpu",lambda:gpu_identity(config,recipe)),("triton",triton_identity),("packages",lambda:package_identity(config["packages"])),("kernels",kernel_identity),("ms_swift",lambda:swift_identity(args.model_dir))):
+            append_journal(journal_path,{"phase":"identity-component","component":component,"state":"started"})
+            evidence[component] = check()
+            append_journal(journal_path,{"phase":"identity-component","component":component,"state":"completed"})
         append_journal(journal_path,{"phase":"identity","state":"completed"})
         append_journal(journal_path,{"phase":"inference","state":"started"}); evidence["inference"] = inference_smoke(args.model_dir,args.recipe); append_journal(journal_path,{"phase":"inference","state":"completed"})
         append_journal(journal_path,{"phase":"training","state":"started"}); evidence["training"] = run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,journal_path); append_journal(journal_path,{"phase":"training","state":"completed"})

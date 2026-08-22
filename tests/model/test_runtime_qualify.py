@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -27,6 +28,18 @@ def test_write_evidence_adds_digest_over_preidentity_payload(tmp_path: Path) -> 
 def test_apple_matrix_lock_identity_matches_repository_lock() -> None:
     matrix = json.loads((ROOT / "configs/model/gate0_apple_matrix.json").read_text())
     lock_identity = hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest()
-    assert matrix["uv_lock_sha256"] == lock_identity
+    assert matrix["executed_uv_lock_sha256"] == "a4291094b0452aabe38a8fc26a76179d54bc7e516a92074d14eca07adbf32015"
+    assert matrix["current_uv_lock_sha256"] == lock_identity
+    assert matrix["current_lock_apple_projection_unchanged"] is True
+    exported = subprocess.run(
+        ["uv", "export", "--frozen", "--extra", "gate0-apple", "--no-dev", "--no-hashes", "--no-emit-project"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    ).stdout
+    resolved = dict(line.split("==", 1) for line in exported.splitlines() if "==" in line)
+    assert {name: resolved[name] for name in matrix["locked_packages"]} == matrix["locked_packages"]
     assert matrix["qualified"]["peft_bf16_lora_train_save_reload_merge_mps"] is True
     assert "nf4_qlora" in matrix["not_qualified"]

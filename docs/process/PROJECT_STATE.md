@@ -9,9 +9,11 @@ Gate 0B and Gate 1 preparation in parallel:
 - production Linux CUDA BF16 LoRA qualification, with NF4 QLoRA as fallback;
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
-Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
-complete. Gate 0 remains fail-closed because the production CUDA matrix has not
-yet executed on an NVIDIA GPU.
+Local Apple runtime qualification and the first pinned Linux CUDA image
+prebuild are complete. A Standard A100 attempt reached the qualification
+container but failed during package identity before model loading because the
+image omitted `torchvision`. Gate 0 remains fail-closed while the repaired
+image awaits rebuild and NVIDIA requalification.
 
 ## Completed
 
@@ -121,8 +123,26 @@ yet executed on an NVIDIA GPU.
 - Passed the deletion gate, backed its evidence, deleted the CPU VM, NAT, and
   router, and independently proved them absent. The post-delete backup seal is
   `ac2b9c9f21e0b6f91d72a0d90d80f3eb8a55ea56432fb66980bae76d86e28358`.
-  The dedicated VPC and subnet are intentionally retained for the later no-NAT
-  A100 qualification; no compute resource is running.
+  The dedicated VPC and subnet were retained at this point for the later
+  no-NAT A100 qualification.
+- Ran the explicitly approved Standard A100 qualification attempt from the
+  sealed image. The A100 identity, image load, offline inputs, and controller
+  startup succeeded, but package identity failed after 31.85 seconds with
+  `ModuleNotFoundError: No module named 'torchvision'`; neither the model nor
+  training started, and no CUDA qualification is claimed. The exact 31-object
+  runtime prefix is independently verified by seal
+  `9d1ed5d0e5407ef7f9397ba7e406952865f981eda61ee5d337990bfd298f114d`.
+  The deletion gate passed, the VM, retained subnet, and retained VPC were
+  deleted, and six-object post-delete evidence is verified by seal
+  `24b148309a89282f6ec6bf043a5bb7ff81baaca5ea783fa71ec1bfe138ec2284`.
+- Diagnosed the repair locally: Qwen VL utilities import `torchvision` without
+  declaring it; Torch 2.13.0 requires the matching Torchvision 0.28.0. FLA also
+  initialized Triton before CUDA while the read-only container provided no
+  writable executable Triton cache. The repaired definition pins Torchvision,
+  initializes Torch and Triton before FLA, requires CUDA backends explicitly,
+  and gives Triton a bounded executable tmpfs while keeping the network off and
+  the root filesystem read-only. The repaired image has not yet been built or
+  qualified.
 
 ## Not started or incomplete
 
@@ -140,12 +160,12 @@ yet executed on an NVIDIA GPU.
 
 ## Next action
 
-Request fresh explicit GCloud approval for one Standard `a2-highgpu-1g`, with
-no NAT and a 1,200-second execution bound, to run Gate 0B BF16 qualification
-from the exact sealed CUDA image, workspace, and model generations. In
+Validate and commit the dependency/runtime repair, then prebuild and
+content-seal a new Linux CUDA image without using GCloud. Request fresh explicit
+GCloud approval only after that artifact and its execution card are frozen. In
 parallel, finish decision Docker directionality and author the remaining 180
-tasks. Then execute the exact Qwen base baseline before opening the seed-pilot
-training gate.
+tasks. After Gate 0B passes, execute the exact Qwen base baseline before opening
+the seed-pilot training gate.
 
 ## Authorization state
 
@@ -154,10 +174,10 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The approved CPU
-prebuild and verification work is terminally sealed; its VM, NAT, and router
-are absent. The dedicated VPC and subnet remain, without running compute, for a
-future no-NAT qualification. Creating or starting an A100 VM requires a new
-explicit approval.
+prebuild and Standard A100 attempt are terminally sealed. Their VMs, NAT,
+router, subnet, and VPC are all verified absent; no project compute or temporary
+network resource remains. Any new GCloud inspection, creation, or execution
+requires explicit approval.
 
 An active 30-minute Codex heartbeat independently audits goal alignment. A
 `DIVERGENCE` result pauses project mutations and compute until user direction.

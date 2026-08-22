@@ -29,6 +29,7 @@ RUN uv sync --frozen --no-dev --no-install-project --extra train-candidate \
 from importlib.metadata import version
 expected = {
     "torch": "2.13.0",
+    "torchvision": "0.28.0",
     "transformers": "5.15.1",
     "peft": "0.19.1",
     "ms-swift": "4.5.2",
@@ -38,6 +39,13 @@ expected = {
 }
 observed = {name: version(name) for name in expected}
 assert observed == expected, (observed, expected)
+import torchvision
+import qwen_vl_utils
+from peft import LoraConfig
+from swift.model import get_model_info_meta
+from transformers import AutoModelForImageTextToText
+assert torchvision.__version__.split('+', 1)[0] == expected["torchvision"]
+assert qwen_vl_utils and LoraConfig and get_model_info_meta and AutoModelForImageTextToText
 PY
 
 WORKDIR /workspace

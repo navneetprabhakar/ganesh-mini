@@ -26,6 +26,19 @@ revisions and local evidence during execution.
   - supports SFT, LoRA, and QLoRA with the Transformers backend
   - exact Qwen3.5 dependency and recipe compatibility still has to be pinned
     and proven by the Gate 0 smoke test
+- PyTorch 2.13 release-candidate pairing:
+  <https://dev-discuss.pytorch.org/t/pytorch-2-13-rc1-produced-for-pytorch-torchvision/3401>
+  - binds Torch 2.13.0 to Torchvision 0.28.0, including CUDA 13.0 wheels
+- Transformers import utilities:
+  <https://huggingface.co/docs/transformers/v5.8.1/en/internal/import_utils>
+  - fast image-processing modules require the vision, Torch, and Torchvision
+    backends; the selected Qwen checkpoint retains an image-text architecture
+    even though the product contract is text-only
+- Flash Linear Attention installation contract:
+  <https://github.com/fla-org/flash-linear-attention/blob/main/INSTALL.md>
+  - version 0.5 splits `fla-core` from model/layer packaging and requires an
+    explicit backend extra; CUDA uses upstream Triton with a matching Torch
+    installation
 
 ## Candidate training data
 

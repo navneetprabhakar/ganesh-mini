@@ -115,10 +115,14 @@ def test_ready_card_binds_model_seed_rendering_balance_and_budget(project: tuple
     card = pilot.build_execution_card(config_path, root, system="Linux")
     assert card["status"] == "ready", card["failed_checks"]
     assert card["model"]["revision"] == "15852e8c16360a2fea060d615a32b45270f8a8fc"
-    assert card["recipe"]["quantization_type"] == "nf4"
-    assert card["recipe"]["compute_dtype"] == "bfloat16"
-    assert card["recipe"]["vision_frozen"] is True
-    assert card["recipe"]["maximum_effective_epochs"] == 3.0
+    assert card["strategy"]["selected_recipe_id"] == "bf16-lora-primary-v1"
+    assert card["selected_recipe"]["base_loading"] == "bfloat16"
+    assert "quantization_type" not in card["selected_recipe"]
+    assert card["selected_recipe"]["compute_dtype"] == "bfloat16"
+    assert card["selected_recipe"]["gradient_checkpointing"] is True
+    assert card["selected_recipe"]["micro_batch_size"] == 1
+    assert card["selected_recipe"]["vision_frozen"] is True
+    assert card["selected_recipe"]["maximum_effective_epochs"] == 3.0
     unsigned = dict(card)
     claimed = unsigned.pop("card_sha256")
     assert pilot.canonical_sha256(unsigned) == claimed
@@ -152,6 +156,8 @@ def test_resume_is_hash_bound_and_epoch_capped(project: tuple[Path, Path]) -> No
     checkpoint = {
         "schema_version": "ganesh-mini-training-checkpoint/v1",
         "run_id": card["run_id"],
+        "selected_recipe_id": card["selected_recipe"]["recipe_id"],
+        "selected_recipe_sha256": pilot.canonical_sha256(card["selected_recipe"]),
         "step": 100,
         "seen_tokens": 1000,
         "effective_epochs_by_lane": {lane: 1.0 for lane in pilot.LANES},
@@ -178,6 +184,72 @@ def test_config_rejects_sequential_or_unbalanced_language_recipe(project: tuple[
     card = pilot.build_execution_card(config_path, root, system="Linux")
     assert card["status"] == "not_ready"
     assert "five_family_balance" in card["failed_checks"]
+
+
+def test_nf4_fallback_without_primary_measurement_is_rejected(project: tuple[Path, Path]) -> None:
+    root, config_path = project
+    config = json.loads(config_path.read_text())
+    config["strategy"] = {
+        "selected_recipe_id": "nf4-qlora-fallback-v1",
+        "fallback_reason": "primary_cuda_oom",
+        "fallback_qualification_path": "artifacts/train/seed-pilot/fallback.json",
+    }
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    card = pilot.build_execution_card(config_path, root, system="Linux")
+    assert card["status"] == "not_ready"
+    assert "fallback_qualified" in card["failed_checks"]
+
+
+@pytest.mark.parametrize(
+    ("reason", "measurements"),
+    [
+        ("primary_cuda_oom", {"cuda_oom_observed": True}),
+        ("primary_peak_vram_exceeded", {"peak_vram_gb": 23.5}),
+        ("primary_cost_threshold_exceeded", {"primary_projected_cost_usd": 101.0, "fallback_projected_cost_usd": 75.0}),
+    ],
+)
+def test_nf4_fallback_requires_valid_sealed_primary_evidence(
+    project: tuple[Path, Path], reason: str, measurements: dict
+) -> None:
+    root, config_path = project
+    config = json.loads(config_path.read_text())
+    evidence_path = root / "artifacts/train/seed-pilot/fallback.json"
+    config["strategy"] = {
+        "selected_recipe_id": "nf4-qlora-fallback-v1",
+        "fallback_reason": reason,
+        "fallback_qualification_path": "artifacts/train/seed-pilot/fallback.json",
+    }
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+    primary, fallback = config["recipes"]["primary"], config["recipes"]["fallback"]
+    write_sealed(
+        evidence_path,
+        {
+            "schema_version": "ganesh-mini-fallback-qualification/v1",
+            "passed": True,
+            "model_id": config["model"]["model_id"],
+            "revision": config["model"]["revision"],
+            "primary_recipe_id": primary["recipe_id"],
+            "primary_recipe_sha256": pilot.canonical_sha256(primary),
+            "fallback_recipe_id": fallback["recipe_id"],
+            "fallback_recipe_sha256": pilot.canonical_sha256(fallback),
+            "reason": reason,
+            "primary_attempt": {
+                "attempt_id": "primary-attempt-1",
+                "observed_at": "2026-08-22T00:00:00+00:00",
+                "measurement_source": {
+                    "primary_cuda_oom": "cuda_runtime",
+                    "primary_peak_vram_exceeded": "gpu_telemetry",
+                    "primary_cost_threshold_exceeded": "cost_projection",
+                }[reason],
+                "measurement_sha256": "d" * 64,
+            },
+            "measurements": measurements,
+        },
+        "evidence_sha256",
+    )
+    card = pilot.build_execution_card(config_path, root, system="Linux")
+    assert card["status"] == "ready", card["failed_checks"]
+    assert card["selected_recipe"]["quantization_type"] == "nf4"
 
 
 def test_qwen_template_mask_is_used_for_response_only_labels() -> None:

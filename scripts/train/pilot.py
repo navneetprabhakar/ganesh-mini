@@ -44,6 +44,11 @@ REQUIRED_STOP_CONDITIONS = {
     "checkpoint_write_failure",
     "evidence_write_failure",
 }
+FALLBACK_REASONS = {
+    "primary_cuda_oom",
+    "primary_peak_vram_exceeded",
+    "primary_cost_threshold_exceeded",
+}
 
 
 class PreflightError(ValueError):
@@ -260,7 +265,7 @@ def verify_prepared_manifest(
     shares_ok = total > 0 and all(abs(token_counts[lane] / total - target) <= tolerance for lane, target in config["data"]["family_token_targets"].items())
     epochs = manifest.get("effective_epochs_by_lane", {})
     epochs_ok = set(epochs) == set(LANES) and all(
-        isinstance(epochs[lane], (int, float)) and 0 < epochs[lane] <= config["recipe"]["maximum_effective_epochs"]
+        isinstance(epochs[lane], (int, float)) and 0 < epochs[lane] <= config["recipes"]["primary"]["maximum_effective_epochs"]
         for lane in LANES
     )
     passed = digest_ok and bound and records_ok and shares_ok and epochs_ok
@@ -268,9 +273,97 @@ def verify_prepared_manifest(
     return manifest
 
 
+def common_recipe_ok(recipe: dict[str, Any], system: str) -> bool:
+    return (
+        system == "Linux" == recipe.get("host_os")
+        and recipe.get("accelerator") == "CUDA"
+        and recipe.get("backend") == "ms-swift-transformers"
+        and recipe.get("adapter") == "lora"
+        and recipe.get("compute_dtype") == "bfloat16"
+        and recipe.get("gradient_checkpointing") is True
+        and recipe.get("micro_batch_size") == 1
+        and recipe.get("vision_frozen") is True
+        and recipe.get("sequence_length") == 4096
+        and recipe.get("packing") is False
+        and (recipe.get("lora_rank"), recipe.get("lora_alpha"), recipe.get("lora_dropout")) == (32, 64, 0.05)
+        and recipe.get("learning_rate_candidates") == [0.0001, 0.0002]
+        and recipe.get("scheduler") == "cosine"
+        and recipe.get("warmup_ratio") == 0.03
+        and isinstance(recipe.get("maximum_effective_epochs"), (int, float))
+        and 0 < recipe["maximum_effective_epochs"] <= 3
+        and recipe.get("checkpoint_every_effective_epochs") == 0.5
+    )
+
+
+def validate_fallback_qualification(
+    checks: list[dict[str, Any]], config: dict[str, Any], root: Path
+) -> dict[str, Any] | None:
+    strategy = config["strategy"]
+    primary, fallback = config["recipes"]["primary"], config["recipes"]["fallback"]
+    if strategy["selected_recipe_id"] == primary["recipe_id"]:
+        clean = strategy["fallback_reason"] is None and strategy["fallback_qualification_path"] is None
+        add(checks, "primary_recipe_selected", clean, "The primary BF16 LoRA recipe needs no fallback claim or evidence.")
+        return None
+    path_value = strategy.get("fallback_qualification_path")
+    if strategy["selected_recipe_id"] != fallback["recipe_id"] or strategy.get("fallback_reason") not in FALLBACK_REASONS or not isinstance(path_value, str):
+        add(checks, "fallback_qualified", False, "Fallback selection requires an allowed reason and evidence path.")
+        return None
+    path = resolve(root, path_value)
+    if not path.is_file():
+        add(checks, "fallback_qualified", False, "Fallback qualification evidence is absent.", path=str(path))
+        return None
+    evidence = load_json(path)
+    claimed = evidence.get("evidence_sha256")
+    unsigned = dict(evidence)
+    unsigned.pop("evidence_sha256", None)
+    sealed_ok = bool(SHA256.fullmatch(str(claimed or ""))) and canonical_sha256(unsigned) == claimed
+    model = config["model"]
+    bound = (
+        evidence.get("schema_version") == "ganesh-mini-fallback-qualification/v1"
+        and evidence.get("passed") is True
+        and evidence.get("model_id") == model["model_id"]
+        and evidence.get("revision") == model["revision"]
+        and evidence.get("primary_recipe_id") == primary["recipe_id"]
+        and evidence.get("primary_recipe_sha256") == canonical_sha256(primary)
+        and evidence.get("fallback_recipe_id") == fallback["recipe_id"]
+        and evidence.get("fallback_recipe_sha256") == canonical_sha256(fallback)
+        and evidence.get("reason") == strategy["fallback_reason"]
+    )
+    measurements = evidence.get("measurements", {})
+    attempt = evidence.get("primary_attempt", {})
+    reason = strategy["fallback_reason"]
+    expected_source = {
+        "primary_cuda_oom": "cuda_runtime",
+        "primary_peak_vram_exceeded": "gpu_telemetry",
+        "primary_cost_threshold_exceeded": "cost_projection",
+    }[reason]
+    attempt_ok = (
+        isinstance(attempt.get("attempt_id"), str)
+        and bool(attempt["attempt_id"])
+        and isinstance(attempt.get("observed_at"), str)
+        and bool(attempt["observed_at"])
+        and attempt.get("measurement_source") == expected_source
+        and bool(SHA256.fullmatch(str(attempt.get("measurement_sha256", ""))))
+    )
+    measured = (
+        (reason == "primary_cuda_oom" and measurements.get("cuda_oom_observed") is True)
+        or (reason == "primary_peak_vram_exceeded" and isinstance(measurements.get("peak_vram_gb"), (int, float)) and measurements["peak_vram_gb"] > primary["maximum_peak_vram_gb"])
+        or (
+            reason == "primary_cost_threshold_exceeded"
+            and isinstance(measurements.get("primary_projected_cost_usd"), (int, float))
+            and measurements["primary_projected_cost_usd"] > config["control"]["maximum_cost_usd"]
+            and isinstance(measurements.get("fallback_projected_cost_usd"), (int, float))
+            and 0 <= measurements["fallback_projected_cost_usd"] <= config["control"]["maximum_cost_usd"]
+        )
+    )
+    passed = sealed_ok and bound and attempt_ok and measured
+    add(checks, "fallback_qualified", passed, "NF4 QLoRA requires sealed measured BF16 LoRA OOM, VRAM, or cost evidence.", path=str(path), reason=reason, measurements=measurements)
+    return evidence
+
+
 def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     checks: list[dict[str, Any]] = []
-    required_top = {"schema_version", "run_id", "output_model_name", "model", "data", "prerequisites", "rendering", "recipe", "control", "outputs"}
+    required_top = {"schema_version", "run_id", "output_model_name", "model", "data", "prerequisites", "rendering", "strategy", "recipes", "control", "outputs"}
     add(checks, "config_shape", set(config) == required_top and config.get("schema_version") == "ganesh-mini-train-config/v1", "Config must contain exactly the versioned controller sections.")
 
     model = config["model"]
@@ -296,27 +389,25 @@ def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[li
     render_ok = rendering == {"chat_template_source": contract["serving_contract"]["chat_template_source"], "use_upstream_tokenizer": True, "add_generation_prompt": False, "response_only_loss": True, "prompt_label_id": -100, "vision_tokens_allowed": False}
     add(checks, "rendering_contract", render_ok, "Training must use the upstream Qwen template with response-only labels and no vision tokens.")
 
-    recipe = config["recipe"]
-    recipe_ok = (
-        system == "Linux" == recipe["host_os"]
-        and recipe["accelerator"] == "CUDA"
-        and recipe["backend"] == "ms-swift-transformers"
-        and recipe["base_loading"] == "qlora"
-        and recipe["quantization_bits"] == 4
-        and recipe["quantization_type"] == "nf4"
-        and recipe["quantization_double"] is True
-        and recipe["compute_dtype"] == "bfloat16"
-        and recipe["vision_frozen"] is True
-        and recipe["sequence_length"] == 4096
-        and recipe["packing"] is False
-        and (recipe["lora_rank"], recipe["lora_alpha"], recipe["lora_dropout"]) == (32, 64, 0.05)
-        and recipe["learning_rate_candidates"] == [0.0001, 0.0002]
-        and recipe["scheduler"] == "cosine"
-        and recipe["warmup_ratio"] == 0.03
-        and 0 < recipe["maximum_effective_epochs"] <= 3
-        and recipe["checkpoint_every_effective_epochs"] == 0.5
+    primary, fallback = config["recipes"]["primary"], config["recipes"]["fallback"]
+    primary_ok = (
+        primary.get("recipe_id") == "bf16-lora-primary-v1"
+        and common_recipe_ok(primary, system)
+        and primary.get("minimum_gpu_vram_gb") == 24
+        and primary.get("maximum_peak_vram_gb") == 23
+        and primary.get("base_loading") == "bfloat16"
+        and not any(key in primary for key in ("quantization_bits", "quantization_type", "quantization_double"))
     )
-    add(checks, "bounded_cuda_recipe", recipe_ok, "Pilot recipe must remain the predeclared Linux CUDA NF4/BF16 QLoRA recipe.", observed_system=system)
+    add(checks, "primary_bf16_lora_recipe", primary_ok, "Primary pilot must be BF16 LoRA on Linux CUDA with at least 24 GB VRAM, microbatch 1, and gradient checkpointing.", observed_system=system)
+    fallback_ok = (
+        fallback.get("recipe_id") == "nf4-qlora-fallback-v1"
+        and common_recipe_ok(fallback, system)
+        and fallback.get("base_loading") == "qlora"
+        and fallback.get("quantization_bits") == 4
+        and fallback.get("quantization_type") == "nf4"
+        and fallback.get("quantization_double") is True
+    )
+    add(checks, "fallback_nf4_qlora_recipe", fallback_ok, "The only predeclared fallback is Linux CUDA NF4 QLoRA with the same bounded adapter recipe.", observed_system=system)
 
     control = config["control"]
     controls_ok = (
@@ -327,6 +418,7 @@ def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[li
         and REQUIRED_STOP_CONDITIONS <= set(control["stop_conditions"])
     )
     add(checks, "budgets_resume_and_stops", controls_ok, "Finite token/time/cost ceilings, hash-bound resume, checkpoints, and mandatory stop conditions are required.")
+    validate_fallback_qualification(checks, config, root)
     return checks, contract
 
 
@@ -342,6 +434,8 @@ def build_execution_card(config_path: Path, root: Path, system: str | None = Non
     }
     prepared = verify_prepared_manifest(checks, resolve(root, config["data"]["prepared_manifest_path"]), config, contract, reports["gate0"])
     ready = all(item["passed"] for item in checks)
+    recipes_by_id = {recipe.get("recipe_id"): recipe for recipe in config["recipes"].values()}
+    selected_recipe = recipes_by_id.get(config["strategy"].get("selected_recipe_id"), {})
     card = {
         "schema_version": "ganesh-mini-training-execution-card/v1",
         "status": "ready" if ready else "not_ready",
@@ -357,7 +451,9 @@ def build_execution_card(config_path: Path, root: Path, system: str | None = Non
             "validation_sha256": config["data"]["validation_sha256"],
             "prepared_manifest_sha256": prepared.get("manifest_sha256") if prepared else None,
         },
-        "recipe": config["recipe"],
+        "strategy": config["strategy"],
+        "selected_recipe": selected_recipe,
+        "recipe_identities": {name: {"recipe_id": recipe["recipe_id"], "recipe_sha256": canonical_sha256(recipe)} for name, recipe in config["recipes"].items()},
         "budgets": config["control"],
         "outputs": config["outputs"],
         "prerequisite_evidence": {
@@ -379,12 +475,14 @@ def validate_resume(checkpoint: dict[str, Any], card: dict[str, Any]) -> None:
         raise PreflightError("checkpoint evidence hash is invalid")
     if checkpoint.get("config_sha256") != card["inputs"]["config_sha256"] or checkpoint.get("dataset_manifest_sha256") != card["inputs"]["prepared_manifest_sha256"]:
         raise PreflightError("checkpoint inputs do not match the execution card")
+    if checkpoint.get("selected_recipe_id") != card["selected_recipe"].get("recipe_id") or checkpoint.get("selected_recipe_sha256") != canonical_sha256(card["selected_recipe"]):
+        raise PreflightError("checkpoint recipe does not match the execution card")
     if not isinstance(checkpoint.get("step"), int) or checkpoint["step"] <= 0 or not isinstance(checkpoint.get("seen_tokens"), int) or not 0 < checkpoint["seen_tokens"] <= card["budgets"]["maximum_seen_tokens"]:
         raise PreflightError("checkpoint step or token budget is invalid")
     if not SHA256.fullmatch(str(checkpoint.get("checkpoint_sha256", ""))):
         raise PreflightError("checkpoint artifact hash is invalid")
     epochs = checkpoint.get("effective_epochs_by_lane", {})
-    if set(epochs) != set(LANES) or any(not isinstance(value, (int, float)) or value < 0 or value > card["recipe"]["maximum_effective_epochs"] for value in epochs.values()):
+    if set(epochs) != set(LANES) or any(not isinstance(value, (int, float)) or value < 0 or value > card["selected_recipe"]["maximum_effective_epochs"] for value in epochs.values()):
         raise PreflightError("checkpoint effective epochs are invalid")
 
 

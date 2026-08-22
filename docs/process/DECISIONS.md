@@ -64,3 +64,24 @@ canonical plan.
 
 If the reviewer reports `DIVERGENCE`, the primary task pauses further
 mutations, training, downloads, and compute and waits for Navneet Prabhakar.
+
+## 2026-08-22 — BF16 LoRA primary; NF4 QLoRA fallback
+
+After reviewing the 2B backbone and the project's quality-first objective,
+Navneet Prabhakar selected ordinary BF16 LoRA as the primary pilot mechanism.
+
+Consequences:
+
+- The primary CUDA pilot loads the frozen Qwen backbone in BF16 and trains
+  rank-32 LoRA adapters with BF16 compute.
+- The starting resource envelope is a CUDA GPU with at least 24 GB VRAM,
+  sequence length 4,096, micro-batch 1, gradient checkpointing, and gradient
+  accumulation.
+- NF4 QLoRA is a predeclared fallback, not the default. It becomes eligible
+  only after the primary recipe records an OOM, exceeds the frozen peak-VRAM
+  ceiling, or breaches the execution card's cost threshold.
+- Training quantization remains independent of release quantization. The
+  selected adapter is merged into a BF16 reference checkpoint before F16 and
+  Q8 GGUF export.
+- Full-parameter fine-tuning remains unjustified for the 1,399-record seed
+  corpus because its overfitting and forgetting risk is materially higher.

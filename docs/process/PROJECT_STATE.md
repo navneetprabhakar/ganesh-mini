@@ -6,7 +6,7 @@ Last updated: 2026-08-22
 
 Gate 0B and Gate 1 preparation in parallel:
 
-- production Linux CUDA/QLoRA dependency qualification;
+- production Linux CUDA BF16 LoRA qualification, with NF4 QLoRA as fallback;
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
 Local Apple runtime qualification is complete. Gate 0 remains fail-closed only
@@ -48,16 +48,37 @@ because the production CUDA matrix cannot be proven on Darwin.
   the tiny runtime smoke measured 25.5 and 41.6 decode tokens/second,
   respectively. These are smoke measurements, not final laptop benchmarks.
 - Added a fail-closed seed-pilot controller binding model, data, prerequisite,
-  balancing, QLoRA, checkpoint, resume, budget, and stop-condition evidence.
+  balancing, LoRA/QLoRA recipe, checkpoint, resume, budget, and stop-condition
+  evidence.
 - Audited the pinned Multi-LiveCodeBench v6 slice. All 1,050 language
   projections were excluded because none satisfies the strict task contract;
   no benchmark prompts were redistributed or admitted.
 - The recurring 30-minute goal-alignment heartbeat is active.
+- Selected BF16 LoRA as the primary SFT mechanism and NF4 QLoRA as a
+  measurement-gated fallback. The controller enforces separate recipe hashes
+  and sealed fallback evidence.
+- Implemented the exact Qwen base-inference runner with official non-thinking
+  prompt rendering, bounded greedy generation, extraction, atomic evidence,
+  resume accounting, and verifier integration. Its synthetic harness proof
+  completed 6/6 executions but solved 0/6 underspecified synthetic tasks; this
+  is runner evidence, not a base benchmark.
+- Authored and sealed private development tranche 1: 30 tasks, five per lane,
+  balanced 15 generation/15 repair. All prompts expose exact API/file contracts
+  and examples; repair prompts include buggy source. Seed overlap is zero, all
+  30 references pass, all 30 known-bad implementations fail, and timeouts are
+  zero.
+- Implemented the production CUDA qualification image/controller with BF16
+  LoRA primary on at least 24 GiB and guarded NF4 QLoRA fallback on at least 16
+  GiB. Static validation passes, but no CUDA execution is claimed because no
+  non-GCloud NVIDIA provider credential, CLI, or local GPU is available.
 
 ## Not started or incomplete
 
-- Production Linux CUDA dependency and QLoRA runtime qualification
-- Evaluation task authoring and freezing
+- Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
+- NF4 QLoRA fallback qualification if the primary recipe crosses its measured
+  memory or cost threshold
+- Remaining development authoring: 150 tasks, 25 per lane
+- Decision authoring and sealing: 360 tasks, 60 per lane
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
 - Exact Qwen base baseline on the frozen development surface
@@ -67,10 +88,11 @@ because the production CUDA matrix cannot be proven on Darwin.
 
 ## Next action
 
-Qualify the exact production Linux CUDA/QLoRA matrix on non-GCloud compute. In
-parallel, author and freeze the six-lane development and decision task
-manifests against the completed verifier. Then execute the exact Qwen base
-baseline before opening the seed-pilot training gate.
+Qualify the exact production Linux CUDA BF16 LoRA recipe on non-GCloud compute,
+measuring peak VRAM and throughput. Qualify NF4 QLoRA only as the predeclared
+fallback. In parallel, complete and freeze the remaining six-lane development
+and decision task manifests against the completed verifier. Then execute the
+exact Qwen base baseline before opening the seed-pilot training gate.
 
 ## Authorization state
 

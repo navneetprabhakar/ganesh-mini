@@ -20,8 +20,9 @@ laptop acceptance criterion.
 Planning and local qualification are complete. The exact Qwen checkpoint and
 authorized Ganesh v0.1 seed are downloaded/imported and hash-verified. Apple
 BF16 inference, LoRA round-trip, and F16/Q8 GGUF runtime smokes pass. Production
-CUDA/QLoRA qualification, frozen evaluation tasks, base baselines, and seed
-training have not started. No GCloud resource has been used.
+CUDA LoRA qualification, frozen evaluation tasks, base baselines, and seed
+training have not started. BF16 LoRA is the primary training recipe; NF4 QLoRA
+is an evidence-gated memory/cost fallback. No GCloud resource has been used.
 
 The canonical execution plan is
 [`docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md`](docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md).

@@ -54,8 +54,10 @@ Why this is the default:
   optimizer wrapped around weak or leaky rewards.
 - Joint training reduces sequential-language forgetting.
 - A separate correction pass makes the improvement mechanism measurable.
-- QLoRA keeps training cost bounded; merging produces normal inference
-  artifacts and does not force laptop users to load quantized training state.
+- BF16 LoRA avoids quantizing the frozen 2B backbone during optimization and is
+  the primary quality-oriented recipe when it fits the selected GPU.
+- NF4 QLoRA is a predeclared fallback for measured LoRA OOM, peak-VRAM, or
+  material cost pressure. It does not define the final inference format.
 
 ## 3. Gates
 
@@ -66,6 +68,7 @@ Why this is the default:
 2. Record model and processor byte sizes before download.
 3. Pin a known-working Python 3.12, Transformers, PEFT, ms-swift,
    flash-linear-attention, causal-conv1d, PyTorch, CUDA, and llama.cpp matrix.
+   Qualify BF16 LoRA first and the bitsandbytes NF4 path separately as fallback.
 4. Prove text-only inference with the official chat template in non-thinking
    mode.
 5. Inspect actual module names and gradient coverage. Do not inherit Gemma LoRA
@@ -175,17 +178,25 @@ surface.
 
 Starting recipe, subject to the Gate 0 smoke result:
 
-- QLoRA/NF4 base loading with BF16 compute;
+- BF16 base loading with BF16 LoRA compute on a CUDA GPU with at least 24 GB;
 - freeze vision components;
 - response-only loss using the exact Qwen chat template;
 - 4,096-token training sequence length with packing only after a packing
   equivalence test;
 - LoRA rank 32, alpha 64, dropout 0.05;
+- micro-batch 1, gradient checkpointing, and gradient accumulation to reach the
+  frozen effective batch size;
 - a fixed token budget capped at three balanced effective epochs, with
   half-epoch checkpoints, cosine schedule, and warmup ratio 0.03;
 - learning rate selected by a tiny predeclared two-point pilot, not an open
   sweep;
 - checkpoint on a token interval and score only the private development set.
+
+The fallback recipe changes only base loading to bitsandbytes 4-bit NF4 with
+BF16 adapter compute. It is eligible only after the primary recipe records an
+OOM, exceeds the frozen peak-VRAM ceiling, or breaches the execution card's
+cost threshold. Record the trigger and keep all other comparable parameters
+fixed. A smaller memory footprint alone is not a quality result.
 
 Exit: proceed only if at least four of five product families improve, no lane
 shows a material regression, formatting/truncation failures do not increase,

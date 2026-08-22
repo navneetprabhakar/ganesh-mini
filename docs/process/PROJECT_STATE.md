@@ -102,11 +102,16 @@ image awaits rebuild and NVIDIA requalification.
   `dae97584f926381995f06232381425239fa35e1e0d83ce6b5404b93e0bba15d4`.
   Two independent Docker runs proved a 30-second aggregate limit flaky for
   compiled lanes, so Go/Java/Rust were revised to 60 seconds while JS/TS/Python
-  remain at 30. Fresh tranche-1 Docker directionality passes all 120 reference
-  and known-bad executions with evidence seal
-  `8cf851703f67c3c80a0cdafba5e4e68adade135af9aa4f443837b670468005cf`.
-  Tranche-2 and tranche-3 Docker directionality and the remaining 180 authored
-  tasks are incomplete; superseded pass/failure evidence remains preserved.
+  remain at 30. Fresh Docker directionality now passes all 360 executions for
+  tranches 1–3: 180/180 references pass, 180/180 known-bad implementations are
+  rejected, and no execution times out. The evidence seals are tranche 1
+  `8cf851703f67c3c80a0cdafba5e4e68adade135af9aa4f443837b670468005cf`,
+  tranche 2
+  `203965708f9a238a3e323ad4c7a8d9d7d3b5872764e83185ac5e578274a375a8`,
+  and tranche 3
+  `15d95ad2530d18410c1e1ebda0974bfc54b20208e29f1273aae5ae4a17a56289`.
+  The remaining 180 decision tasks are incomplete; superseded pass/failure
+  evidence remains preserved.
 - Prebuilt and content-sealed the pinned production CUDA image on the same
   stopped CPU disk after the first archive export failed with exit 141. The
   failure was caused by unbounded `zstd` progress output exceeding the GCE
@@ -149,8 +154,8 @@ image awaits rebuild and NVIDIA requalification.
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
   memory or cost threshold
-- Decision authoring and sealing: 180/360 tasks authored; Docker directionality
-  for tranches 2-3 and the remaining 180 tasks are incomplete
+- Decision authoring and sealing: 180/360 tasks authored and all 180 have
+  passed sealed Docker directionality; the remaining 180 tasks are incomplete
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
 - Exact Qwen base baseline on the frozen development surface
@@ -160,12 +165,14 @@ image awaits rebuild and NVIDIA requalification.
 
 ## Next action
 
-Validate and commit the dependency/runtime repair, then prebuild and
-content-seal a new Linux CUDA image without using GCloud. Request fresh explicit
-GCloud approval only after that artifact and its execution card are frozen. In
-parallel, finish decision Docker directionality and author the remaining 180
-tasks. After Gate 0B passes, execute the exact Qwen base baseline before opening
-the seed-pilot training gate.
+Author and seal the remaining 180 decision tasks while keeping the repaired
+CUDA definition frozen. The local host is ARM64 and has only 7.2 GiB free,
+which is below the prior 8.17 GB compressed x86 CUDA image alone; no safe
+non-GCloud Linux x86 builder is currently available, and unrelated Docker data
+will not be deleted to manufacture space. A new GCloud CPU prebuild therefore
+requires fresh explicit approval. After the rebuilt image passes Gate 0B on
+NVIDIA, execute the exact Qwen base baseline before opening the seed-pilot
+training gate.
 
 ## Authorization state
 

@@ -1,3 +1,5 @@
+import pytest
+
 from scripts.eval.authoring.build_decision_tranche3 import (
     DEVELOPMENT_MANIFESTS,
     PRIOR_DECISION_MANIFESTS,
@@ -7,6 +9,7 @@ from scripts.eval.authoring.build_decision_tranche3 import (
     build,
 )
 from scripts.eval.contracts import load_json, sha256_object, validate_task
+from scripts.verify.sandbox import SANDBOX_CONTRACT
 
 
 def test_decision_tranche3_contract_balance_hashes_and_separation() -> None:
@@ -37,3 +40,32 @@ def test_decision_tranche3_contract_balance_hashes_and_separation() -> None:
         if task["task_type"] == "repair":
             assert "Buggy source to repair:" in prompt
             assert task["validation"]["known_bad"][0]["code"] in prompt
+
+
+def test_executed_directionality_evidence_is_complete_and_bound() -> None:
+    evidence_path = ROOT / "manifests/evaluation/private/decision-tranche3-directionality.json"
+    if not evidence_path.exists():
+        pytest.skip("directionality has not been executed")
+    evidence = load_json(evidence_path)
+    claimed = evidence.pop("evidence_sha256")
+    assert sha256_object(evidence) == claimed
+    assert evidence["status"] == "passed"
+    assert evidence["execution_mode"] == "sequential"
+    assert evidence["evaluation_manifest_sha256"] == "26f982c437000012d2eae1f4a3d77260b9f3798931dc938941e29c91f2e3a3d9"
+    assert evidence["overlap_report"] == "manifests/evaluation/private/decision-tranche3-overlap.json"
+    assert evidence["overlap_report_sha256"] == "dae97584f926381995f06232381425239fa35e1e0d83ce6b5404b93e0bba15d4"
+    assert SANDBOX_CONTRACT["backend"] == "docker"
+    assert SANDBOX_CONTRACT["network"] == "none"
+    assert SANDBOX_CONTRACT["pull"] == "never"
+    assert evidence["sandbox_contract_sha256"] == sha256_object(SANDBOX_CONTRACT)
+    assert evidence["task_count"] == 60
+    assert evidence["execution_count"] == 120
+    assert evidence["reference_passes"] == 60
+    assert evidence["known_bad_rejections"] == 60
+    assert evidence["failures"] == []
+    assert all(
+        "@sha256:" in row["verifier"]["image"]
+        and row["verifier"]["sandbox_contract_sha256"] == evidence["sandbox_contract_sha256"]
+        and not row["verifier"]["timed_out"]
+        for row in evidence["executions"]
+    )

@@ -1,0 +1,108 @@
+{
+  "canIpForward": false,
+  "cpuPlatform": "Unknown CPU Platform",
+  "creationTimestamp": "2026-08-22T10:18:28.566-07:00",
+  "deletionProtection": false,
+  "disks": [
+    {
+      "autoDelete": true,
+      "boot": true,
+      "deviceName": "persistent-disk-0",
+      "diskSizeGb": "200",
+      "guestOsFeatures": [
+        {
+          "type": "VIRTIO_SCSI_MULTIQUEUE"
+        },
+        {
+          "type": "UEFI_COMPATIBLE"
+        },
+        {
+          "type": "GVNIC"
+        }
+      ],
+      "index": 0,
+      "interface": "SCSI",
+      "kind": "compute#attachedDisk",
+      "licenses": [
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-dlvm",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gvnic",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-py310",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gpu-common-cu129",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-ubuntu-2204"
+      ],
+      "mode": "READ_WRITE",
+      "source": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/disks/ganesh-mini-prebuild-20260822t165734z",
+      "type": "PERSISTENT"
+    }
+  ],
+  "fingerprint": "gYXOAL7jfFk=",
+  "id": "8798900559452333835",
+  "kind": "compute#instance",
+  "labelFingerprint": "42WmSpB8rSM=",
+  "lastStartTimestamp": "2026-08-22T13:17:43.656-07:00",
+  "lastStopTimestamp": "2026-08-22T13:22:01.425-07:00",
+  "machineType": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/machineTypes/e2-standard-8",
+  "metadata": {
+    "fingerprint": "7eC9eU_N9Aw=",
+    "items": [
+      {
+        "key": "startup-script",
+        "value": "#!/usr/bin/env bash\nset -Eeuo pipefail\n\nproject=executespecv1\nbucket=ganesh-gate0-model-transfer-1061994342941\nprefix=ganesh-mini-1.0/gate0b/20260822T165734Z\nresource_id=8798900559452333835\nsource_root=/var/lib/ganesh-mini-prebuild-attempt2\nevidence_dir=/var/lib/ganesh-mini-prebuild-verification-attempt2\ndownload_dir=/var/lib/ganesh-mini-prebuild-verification-attempt2-downloads\nmkdir -p \"$evidence_dir\" \"$download_dir\"\necho \"GANESH_PREBUILD_VERIFICATION_BEGIN 20260822T165734Z\"\nexec >\"$evidence_dir/startup.stdout.log\" 2>\"$evidence_dir/startup.stderr.log\"\n\nstarted_epoch=\"$(date +%s)\"\nhard_deadline_epoch=\"$((started_epoch + 750))\"\noperation_deadline_epoch=\"$((started_epoch + 500))\"\n( sleep 740; shutdown -h now ) & watchdog_pid=\"$!\"\nremaining() { local value=$((operation_deadline_epoch - $(date +%s))); (( value > 0 )) || return 1; printf '%s\\n' \"$value\"; }\nbackup_remaining() { local value=$((hard_deadline_epoch - 20 - $(date +%s))); (( value > 0 )) || return 1; printf '%s\\n' \"$value\"; }\nwrite_inventory() {\n  (cd \"$evidence_dir\" && find . -type f ! -name runtime-files.sha256 -print0 | sort -z | xargs -0 sha256sum > runtime-files.sha256)\n}\nfinal_backup() {\n  timeout \"$(backup_remaining)\" gcloud storage rsync \"$evidence_dir\" \"gs://$bucket/$prefix/prebuild-verification-terminal-attempt2\" --recursive --project=\"$project\" >/var/log/ganesh-prebuild-verification-attempt2-backup.log 2>&1\n}\nfinish() {\n  local status=\"$?\"\n  trap - EXIT\n  printf '%s\\n' \"$status\" >\"$evidence_dir/startup-exit-code.txt\"\n  write_inventory || status=91\n  final_backup || status=90\n  kill \"$watchdog_pid\" 2>/dev/null || true\n  exit \"$status\"\n}\ntrap finish EXIT\n\nobserved_id=\"$(curl -fsS -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/id)\"\n[[ \"$observed_id\" == \"$resource_id\" ]]\nfor suffix in prebuild-verification-attempt2 prebuild-verification-terminal-attempt2; do\n  if gcloud storage ls \"gs://$bucket/$prefix/$suffix/**\" --project=\"$project\" >/dev/null 2>&1; then\n    echo \"verification destination is not empty: $suffix\" >&2\n    exit 41\n  fi\ndone\n\nverifier=/opt/ganesh-gcloud-backup-manifest.py\ntimeout 120 gcloud storage cp 'gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/gate0b/20260822T165734Z/preflight/gcloud-backup-manifest-attempt2.py#1787429756830586' \"$verifier\" --project=\"$project\"\nprintf '%s  %s\\n' b1829776353b8bced319144cf9cac9930ae74e85a0a995616b10741cf5761ac0 \"$verifier\" | sha256sum -c -\n\ntimeout \"$(remaining)\" python3 \"$verifier\" \\\n  --project \"$project\" \\\n  --prefix \"gs://$bucket/$prefix/prebuild-terminal-attempt2\" \\\n  --output \"$evidence_dir/backup-manifest.json\" \\\n  --download-dir \"$download_dir\" \\\n  --map \"artifacts=$source_root/artifacts\" \\\n  --map \"builder-dpkg-packages.tsv=$source_root/builder-dpkg-packages.tsv\" \\\n  --map \"docker-version.txt=$source_root/docker-version.txt\" \\\n  --map \"gcs-artifact-upload.log=$source_root/gcs-artifact-upload.log\" \\\n  --map \"prebuild-deadline-epoch.txt=$source_root/prebuild-deadline-epoch.txt\" \\\n  --map \"prior-backup-download.log=$source_root/prior-backup-download.log\" \\\n  --map \"prior-backup-manifest.json=$source_root/prior-backup-manifest.json\" \\\n  --map \"runtime-files.sha256=$source_root/runtime-files.sha256\" \\\n  --map \"serial-recovery-download.log=$source_root/serial-recovery-download.log\" \\\n  --map \"serial-recovery-manifest.json=$source_root/serial-recovery-manifest.json\" \\\n  --map \"startup-exit-code.txt=$source_root/startup-exit-code.txt\" \\\n  --map \"startup.stderr.log=$source_root/startup.stderr.log\" \\\n  --map \"startup.stdout.log=$source_root/startup.stdout.log\"\n\nprintf '%s\\n' 0 >\"$evidence_dir/startup-exit-code.txt\"\nwrite_inventory\ntimeout \"$(remaining)\" gcloud storage rsync \"$evidence_dir\" \"gs://$bucket/$prefix/prebuild-verification-attempt2\" --recursive --project=\"$project\" >\"$evidence_dir/gcs-upload.log\" 2>&1\nwrite_inventory\nfinal_backup\ntrap - EXIT\nkill \"$watchdog_pid\" 2>/dev/null || true\n"
+      }
+    ],
+    "kind": "compute#metadata"
+  },
+  "name": "ganesh-mini-prebuild-20260822t165734z",
+  "networkInterfaces": [
+    {
+      "fingerprint": "UNNeU0pRPbw=",
+      "kind": "compute#networkInterface",
+      "name": "nic0",
+      "network": "https://www.googleapis.com/compute/v1/projects/executespecv1/global/networks/ganesh-mini-g0b-net-20260822t165734z",
+      "networkIP": "10.240.0.2",
+      "stackType": "IPV4_ONLY",
+      "subnetwork": "https://www.googleapis.com/compute/v1/projects/executespecv1/regions/us-east1/subnetworks/ganesh-mini-g0b-subnet-20260822t165734z"
+    }
+  ],
+  "resourceStatus": {
+    "effectiveInstanceMetadata": {
+      "enableOsloginMetadataValue": true,
+      "vmDnsSettingMetadataValue": "ZonalOnly"
+    }
+  },
+  "satisfiesPzi": true,
+  "scheduling": {
+    "automaticRestart": false,
+    "instanceTerminationAction": "STOP",
+    "maxRunDuration": {
+      "nanos": 0,
+      "seconds": "750"
+    },
+    "onHostMaintenance": "MIGRATE",
+    "preemptible": false,
+    "provisioningModel": "STANDARD"
+  },
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/instances/ganesh-mini-prebuild-20260822t165734z",
+  "serviceAccounts": [
+    {
+      "email": "1061994342941-compute@developer.gserviceaccount.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/cloud-platform"
+      ]
+    }
+  ],
+  "shieldedInstanceConfig": {
+    "enableIntegrityMonitoring": true,
+    "enableSecureBoot": false,
+    "enableVtpm": true
+  },
+  "shieldedInstanceIntegrityPolicy": {
+    "updateAutoLearnPolicy": true
+  },
+  "startRestricted": false,
+  "status": "TERMINATED",
+  "tags": {
+    "fingerprint": "42WmSpB8rSM="
+  },
+  "zone": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b"
+}

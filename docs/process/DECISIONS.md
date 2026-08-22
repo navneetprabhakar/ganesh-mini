@@ -167,3 +167,43 @@ JavaScript, TypeScript, and Python remain at 30 seconds. Tranche manifests,
 intra-set overlap reports, the cross-tranche seal, runner bindings, and tests
 were regenerated. Superseded evidence remains preserved and cannot satisfy the
 current release gate.
+
+## 2026-08-23 — CUDA prebuild retry succeeded; CPU resources torn down
+
+Navneet Prabhakar approved the bounded recovery, resume, verification, backup,
+and teardown starts needed to finish the already-created CPU prebuild resource.
+This approval did not extend to A100 creation or CUDA qualification.
+
+The first prebuild completed the Docker image but failed during archive export
+with exit 141. `zstd` progress output generated a carriage-return-delimited
+token too large for the GCE metadata logger's scanner, which closed the pipe.
+The export now uses quiet mode. Provider serial output from that original boot
+was no longer retrievable after stop/start; it was not reconstructed. The
+limitation is sealed under recovery evidence
+`cd6dbd1add64b6c8331ea1e06f1404ef2f59169a9a3f6223aa11866b17e06d6c`,
+and attempt 1 remains failed, non-decision evidence.
+
+Attempt 2 revalidated the same disk, VM identity, prior backup, recovery
+finding, image identity, build inputs, workspace, and cost ceiling before
+export. It produced image
+`sha256:37b7cbcb8280d469bad6213bf09bfa0ccb2dba96a912aaa105183069c2ce5351`
+(`ganesh-mini-cuda-gate0:torch2.13.0-cu13.0.1`) and an 8,167,013,739-byte
+archive with SHA-256
+`f2dafd6c0b82d46be441dfe2a5c2b23cd5f309e5061f20da3edf91e70eddb8f3`.
+The exact 35-object terminal set is independently verified by backup seal
+`f1a874deac5e5fadf19eeb29d2c4fb80376e62ed130f70439e2894ae6b4ec076`.
+
+The first verifier boot failed because `gsutil -u` required a permission not
+held by the VM service account. The verifier was changed to project-scoped
+`gcloud storage cp`; a retry inside the approved aggregate 15-minute budget
+verified all 35 objects. The deletion gate then passed with evidence seal
+`7aac011553e05d5a29f446d7796fd3b159a2c5a81c6d70a16d572a4d6f5139d1`.
+Its evidence was independently backed under seal
+`933eef4f0f4d5ae39a2b743c980655ccb858ac72cb841c8217ad81703bd244ee`.
+
+The CPU VM, NAT, and router were deleted only after verified backup. Their
+absence is sealed by
+`ac2b9c9f21e0b6f91d72a0d90d80f3eb8a55ea56432fb66980bae76d86e28358`.
+The dedicated VPC and subnet remain intentionally for a no-NAT A100 run. No
+compute is running, and no Gate 0B CUDA qualification is claimed. A Standard
+`a2-highgpu-1g` execution remains a separate GCloud authorization boundary.

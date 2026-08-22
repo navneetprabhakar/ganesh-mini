@@ -30,7 +30,7 @@ printf '%s\n' "$image_ref" > "$output_dir/image-ref.txt"
 printf '%s\n' "$image_id" > "$output_dir/image-id.txt"
 sha256sum "$repo_dir/containers/cuda/Dockerfile" "$repo_dir/pyproject.toml" "$repo_dir/uv.lock" > "$output_dir/build-inputs.sha256"
 remaining=$((deadline_epoch - $(date +%s)))
-timeout --signal=TERM --kill-after=30s "$remaining" bash -c 'set -o pipefail; docker save "$1" | zstd -T0 -10 -o "$2"' _ "$image_ref" "$output_dir/cuda-image.docker.tar.zst"
+timeout --signal=TERM --kill-after=30s "$remaining" bash -c 'set -o pipefail; docker save "$1" | zstd --quiet -T0 -10 -o "$2"' _ "$image_ref" "$output_dir/cuda-image.docker.tar.zst"
 remaining=$((deadline_epoch - $(date +%s)))
 timeout "$remaining" sha256sum "$output_dir/cuda-image.docker.tar.zst" > "$output_dir/cuda-image.docker.tar.zst.sha256"
 remaining=$((deadline_epoch - $(date +%s))); (( remaining > 0 )); (( remaining < 60 )) && cap="$remaining" || cap=60

@@ -81,7 +81,7 @@ value["evidence_sha256"]=hashlib.sha256(json.dumps(value,sort_keys=True,separato
 (root/"prebuild-manifest.json").write_text(json.dumps(value,indent=2,sort_keys=True)+"\n")
 PY
 printf '%s\n' 0 > "$evidence_dir/startup-exit-code.txt"
-timeout "$(remaining)" gcloud storage rsync "$artifact_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/prebuild" --recursive --project="$GANESH_GCP_PROJECT"
+timeout "$(remaining)" gcloud storage rsync "$artifact_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/prebuild" --recursive --project="$GANESH_GCP_PROJECT" > "$evidence_dir/gcs-artifact-upload.log" 2>&1
 if ! write_inventory; then
   rm -f "$evidence_dir/.runtime-files.sha256.tmp"
   printf 'terminal inventory failed\n' > "$evidence_dir/terminal-inventory-failure.txt"

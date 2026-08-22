@@ -27,7 +27,7 @@ def run(*args: str) -> str:
 
 
 def download(project: str, uri: str, destination: Path) -> None:
-    subprocess.run(["gsutil", "-u", project, "cp", uri, str(destination)], check=True)
+    subprocess.run(["gcloud", "storage", "cp", uri, str(destination), f"--project={project}"], check=True)
 
 
 def main() -> int:

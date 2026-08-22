@@ -1,0 +1,112 @@
+[
+  {
+    "canIpForward": false,
+    "cpuPlatform": "Intel Broadwell",
+    "creationTimestamp": "2026-08-22T10:18:28.566-07:00",
+    "deletionProtection": false,
+    "disks": [
+      {
+        "autoDelete": true,
+        "boot": true,
+        "deviceName": "persistent-disk-0",
+        "diskSizeGb": "200",
+        "guestOsFeatures": [
+          {
+            "type": "VIRTIO_SCSI_MULTIQUEUE"
+          },
+          {
+            "type": "UEFI_COMPATIBLE"
+          },
+          {
+            "type": "GVNIC"
+          }
+        ],
+        "index": 0,
+        "interface": "SCSI",
+        "kind": "compute#attachedDisk",
+        "licenses": [
+          "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-dlvm",
+          "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gvnic",
+          "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-py310",
+          "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gpu-common-cu129",
+          "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-ubuntu-2204"
+        ],
+        "mode": "READ_WRITE",
+        "source": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/disks/ganesh-mini-prebuild-20260822t165734z",
+        "type": "PERSISTENT"
+      }
+    ],
+    "fingerprint": "2li3dtEGG9Y=",
+    "id": "8798900559452333835",
+    "kind": "compute#instance",
+    "labelFingerprint": "42WmSpB8rSM=",
+    "lastStartTimestamp": "2026-08-22T10:18:57.206-07:00",
+    "machineType": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/machineTypes/e2-standard-8",
+    "metadata": {
+      "fingerprint": "3GTf4YyiFAk=",
+      "items": [
+        {
+          "key": "startup-script",
+          "value": "#!/usr/bin/env bash\nexport GANESH_GCP_PROJECT=executespecv1\nexport GANESH_GCS_BUCKET=ganesh-gate0-model-transfer-1061994342941\nexport GANESH_GCS_PREFIX=ganesh-mini-1.0/gate0b/20260822T165734Z\nexport GANESH_WORKSPACE_ARCHIVE_URI='gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/gate0b/20260822T165734Z/input/workspace.tar.gz#1787418239797386'\nexport GANESH_WORKSPACE_ARCHIVE_SHA256=b940bcea2dad4e0318a6f77ca8ec6b299985d783d56d0e614ff8925932a84a12\nexport GANESH_WORKSPACE_ARCHIVE_SIZE=2170119\nexport GANESH_CUMULATIVE_COST_USD=0.79037286\nexport GANESH_BUILDER_HOURLY_USD=0.268\nexport GANESH_SUPPORT_RESERVE_USD=0.25\nset -Eeuo pipefail\n\nfor name in GANESH_GCP_PROJECT GANESH_GCS_BUCKET GANESH_GCS_PREFIX GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_ARCHIVE_SHA256 GANESH_WORKSPACE_ARCHIVE_SIZE GANESH_CUMULATIVE_COST_USD GANESH_BUILDER_HOURLY_USD GANESH_SUPPORT_RESERVE_USD; do\n  [[ -n \"${!name:-}\" ]] || { echo \"missing $name\" >&2; exit 2; }\ndone\ncase \"$GANESH_WORKSPACE_ARCHIVE_URI\" in *'#'[0-9]*) ;; *) echo \"workspace URI must include a GCS generation\" >&2; exit 40;; esac\npython3 - \"$GANESH_CUMULATIVE_COST_USD\" \"$GANESH_BUILDER_HOURLY_USD\" \"$GANESH_SUPPORT_RESERVE_USD\" <<'PY'\nfrom decimal import Decimal\nimport sys\ntotal = Decimal(sys.argv[1]) + Decimal(sys.argv[2]) + Decimal(sys.argv[3])\nif any(Decimal(value) < 0 for value in sys.argv[1:]) or Decimal(sys.argv[2]) <= 0:\n    raise SystemExit(\"cost inputs must be nonnegative and builder hourly rate positive\")\nif total >= Decimal(\"5\"): raise SystemExit(f\"prebuild cost ceiling is not below USD 5: {total}\")\nPY\n\nwork_dir=\"/opt/ganesh-mini-prebuild\"\nevidence_dir=\"/var/lib/ganesh-mini-prebuild\"\nartifact_dir=\"$evidence_dir/artifacts\"\nbundle_dir=\"$artifact_dir/docker-bundle\"\nmkdir -p \"$work_dir\" \"$artifact_dir\" \"$bundle_dir/debs/partial\"\nexec > >(tee -a \"$evidence_dir/startup.stdout.log\") 2> >(tee -a \"$evidence_dir/startup.stderr.log\" >&2)\nstarted_epoch=\"$(date +%s)\"; hard_deadline_epoch=\"$((started_epoch + 3600))\"; operation_deadline_epoch=\"$((started_epoch + 3300))\"\ndeadline_epoch=\"$operation_deadline_epoch\"\nprintf '%s\\n' \"$deadline_epoch\" > \"$evidence_dir/prebuild-deadline-epoch.txt\"\n( sleep 3590; shutdown -h now ) & watchdog_pid=\"$!\"\nremaining() { local value=$((operation_deadline_epoch - $(date +%s))); (( value > 0 )) || return 1; printf '%s\\n' \"$value\"; }\nbackup_remaining() { local value=$((hard_deadline_epoch - 20 - $(date +%s))); (( value > 0 )) || return 1; printf '%s\\n' \"$value\"; }\ninventory_remaining() { local value=$((hard_deadline_epoch - 240 - $(date +%s))); (( value > 0 )) || return 1; printf '%s\\n' \"$value\"; }\nphase_timeout() { local cap=\"$1\" left; left=\"$(remaining)\" || return 1; (( left < cap )) && printf '%s\\n' \"$left\" || printf '%s\\n' \"$cap\"; }\ncheckpoint() {\n  local stamp; stamp=\"$(date -u +%Y%m%dT%H%M%S%NZ)-$$-$RANDOM\"\n  timeout 300s gcloud storage rsync \"$evidence_dir\" \"gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/prebuild-checkpoints/$stamp\" --recursive --project=\"$GANESH_GCP_PROJECT\" >> \"$evidence_dir/gcs-backup.log\" 2>&1 || true\n}\nfinal_backup() {\n  timeout \"$(backup_remaining)\" gcloud storage rsync \"$evidence_dir\" \"gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/prebuild-terminal\" --recursive --project=\"$GANESH_GCP_PROJECT\" > /var/log/ganesh-prebuild-final-backup.log 2>&1\n}\ninventory_attempted=0\nwrite_inventory() {\n  inventory_attempted=1\n  local budget; budget=\"$(inventory_remaining)\" || return 1\n  timeout \"$budget\" bash -c 'set -o pipefail; cd \"$1\"; find . -type f ! -name runtime-files.sha256 ! -name .runtime-files.sha256.tmp -print0 | sort -z | xargs -0 sha256sum > .runtime-files.sha256.tmp && mv .runtime-files.sha256.tmp runtime-files.sha256' _ \"$evidence_dir\"\n}\nfinish() { local status=\"$?\"; trap - EXIT; printf '%s\\n' \"$status\" > \"$evidence_dir/startup-exit-code.txt\"; if (( inventory_attempted == 0 )) && ! write_inventory; then rm -f \"$evidence_dir/.runtime-files.sha256.tmp\"; printf 'terminal inventory failed\\n' > \"$evidence_dir/terminal-inventory-failure.txt\"; status=91; fi; final_backup || status=90; kill \"$watchdog_pid\" 2>/dev/null || true; exit \"$status\"; }\ntrap finish EXIT\n\ntimeout \"$(phase_timeout 600)\" gcloud storage cp \"$GANESH_WORKSPACE_ARCHIVE_URI\" \"$work_dir/workspace.tar.gz\" --project=\"$GANESH_GCP_PROJECT\"\n[[ \"$(stat -c %s \"$work_dir/workspace.tar.gz\")\" == \"$GANESH_WORKSPACE_ARCHIVE_SIZE\" ]]\nprintf '%s  %s\\n' \"$GANESH_WORKSPACE_ARCHIVE_SHA256\" \"$work_dir/workspace.tar.gz\" | sha256sum -c -\nmkdir \"$work_dir/workspace\"\ntimeout \"$(phase_timeout 180)\" tar -xzf \"$work_dir/workspace.tar.gz\" -C \"$work_dir/workspace\"\ntimeout \"$(phase_timeout 30)\" bash -c \"set -o pipefail; dpkg-query -W -f='\\${Package}\\\\t\\${Version}\\\\n' | sort\" > \"$bundle_dir/base-dpkg-packages.tsv\"\ntimeout \"$(phase_timeout 10)\" uname -a > \"$evidence_dir/uname.txt\"\ndocker_package_version=\"29.1.3-0ubuntu3~22.04.2\"\ntimeout \"$(phase_timeout 300)\" apt-get update > \"$evidence_dir/apt-update.log\" 2>&1\napt-cache policy docker.io > \"$evidence_dir/docker-apt-policy.txt\"\ngrep -Fq \"$docker_package_version\" \"$evidence_dir/docker-apt-policy.txt\"\nDEBIAN_FRONTEND=noninteractive timeout \"$(phase_timeout 600)\" apt-get -o \"Dir::Cache::archives=$bundle_dir/debs\" install --download-only -y --no-install-recommends \"docker.io=$docker_package_version\" zstd > \"$evidence_dir/docker-download.log\" 2>&1\nfind \"$bundle_dir/debs\" -maxdepth 1 -name '*.deb' -print -quit | grep -q .\n(cd \"$bundle_dir\" && find . -type f ! -name bundle-files.sha256 -print0 | sort -z | xargs -0 sha256sum > bundle-files.sha256)\nDEBIAN_FRONTEND=noninteractive timeout \"$(phase_timeout 600)\" apt-get install -y --no-install-recommends \"docker.io=$docker_package_version\" zstd > \"$evidence_dir/docker-install.log\" 2>&1\ntimeout \"$(phase_timeout 30)\" bash -c \"set -o pipefail; dpkg-query -W -f='\\${Package}\\\\t\\${Version}\\\\n' | sort\" > \"$evidence_dir/builder-dpkg-packages.tsv\"\ntimeout \"$(phase_timeout 30)\" docker version > \"$evidence_dir/docker-version.txt\" 2>&1\nchmod +x \"$work_dir/workspace/scripts/cuda/prebuild_cuda_image.sh\"\nGANESH_PREBUILD_DEADLINE_EPOCH=\"$deadline_epoch\" \"$work_dir/workspace/scripts/cuda/prebuild_cuda_image.sh\" \"$work_dir/workspace\" \"$artifact_dir\"\ntimeout \"$(remaining)\" tar -czf \"$artifact_dir/docker-bundle.tar.gz\" -C \"$artifact_dir\" docker-bundle\ntimeout \"$(remaining)\" sha256sum \"$artifact_dir/docker-bundle.tar.gz\" > \"$artifact_dir/docker-bundle.tar.gz.sha256\"\ntimeout \"$(remaining)\" python3 - \"$artifact_dir\" \"$GANESH_WORKSPACE_ARCHIVE_URI\" \"$GANESH_WORKSPACE_ARCHIVE_SHA256\" <<'PY'\nimport hashlib, json, sys\nfrom pathlib import Path\nroot=Path(sys.argv[1]); files=[]\nfor path in sorted(root.rglob(\"*\")):\n    if path.is_file() and path.name != \"prebuild-manifest.json\":\n        digest=hashlib.sha256()\n        with path.open(\"rb\") as handle:\n            for chunk in iter(lambda:handle.read(1024*1024),b\"\"): digest.update(chunk)\n        h=digest.hexdigest()\n        files.append({\"path\":str(path.relative_to(root)),\"size\":path.stat().st_size,\"sha256\":h})\nvalue={\"schema_version\":\"ganesh-mini-cuda-prebuild/v2\",\"status\":\"built\",\"workspace_uri\":sys.argv[2],\"workspace_sha256\":sys.argv[3],\"image_ref\":(root/\"image-ref.txt\").read_text().strip(),\"image_id\":(root/\"image-id.txt\").read_text().strip(),\"files\":files}\nvalue[\"evidence_sha256\"]=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(\",\",\":\")).encode()).hexdigest()\n(root/\"prebuild-manifest.json\").write_text(json.dumps(value,indent=2,sort_keys=True)+\"\\n\")\nPY\nprintf '%s\\n' 0 > \"$evidence_dir/startup-exit-code.txt\"\ntimeout \"$(remaining)\" gcloud storage rsync \"$artifact_dir\" \"gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/prebuild\" --recursive --project=\"$GANESH_GCP_PROJECT\"\nif ! write_inventory; then\n  rm -f \"$evidence_dir/.runtime-files.sha256.tmp\"\n  printf 'terminal inventory failed\\n' > \"$evidence_dir/terminal-inventory-failure.txt\"\n  exit 91\nfi\nfinal_backup\ntrap - EXIT\nkill \"$watchdog_pid\" 2>/dev/null || true\nexit 0\n"
+        }
+      ],
+      "kind": "compute#metadata"
+    },
+    "name": "ganesh-mini-prebuild-20260822t165734z",
+    "networkInterfaces": [
+      {
+        "fingerprint": "UNNeU0pRPbw=",
+        "kind": "compute#networkInterface",
+        "name": "nic0",
+        "network": "https://www.googleapis.com/compute/v1/projects/executespecv1/global/networks/ganesh-mini-g0b-net-20260822t165734z",
+        "networkIP": "10.240.0.2",
+        "stackType": "IPV4_ONLY",
+        "subnetwork": "https://www.googleapis.com/compute/v1/projects/executespecv1/regions/us-east1/subnetworks/ganesh-mini-g0b-subnet-20260822t165734z"
+      }
+    ],
+    "resourceStatus": {
+      "effectiveInstanceMetadata": {
+        "enableOsloginMetadataValue": true,
+        "vmDnsSettingMetadataValue": "ZonalOnly"
+      },
+      "scheduling": {
+        "terminationTimestamp": "2026-08-22T18:18:30.168227Z"
+      }
+    },
+    "satisfiesPzi": true,
+    "scheduling": {
+      "automaticRestart": false,
+      "instanceTerminationAction": "STOP",
+      "maxRunDuration": {
+        "nanos": 0,
+        "seconds": "3600"
+      },
+      "onHostMaintenance": "MIGRATE",
+      "preemptible": false,
+      "provisioningModel": "STANDARD"
+    },
+    "selfLink": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b/instances/ganesh-mini-prebuild-20260822t165734z",
+    "serviceAccounts": [
+      {
+        "email": "1061994342941-compute@developer.gserviceaccount.com",
+        "scopes": [
+          "https://www.googleapis.com/auth/cloud-platform"
+        ]
+      }
+    ],
+    "shieldedInstanceConfig": {
+      "enableIntegrityMonitoring": true,
+      "enableSecureBoot": false,
+      "enableVtpm": true
+    },
+    "shieldedInstanceIntegrityPolicy": {
+      "updateAutoLearnPolicy": true
+    },
+    "startRestricted": false,
+    "status": "RUNNING",
+    "tags": {
+      "fingerprint": "42WmSpB8rSM="
+    },
+    "zone": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-b"
+  }
+]

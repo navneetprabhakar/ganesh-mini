@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-08-22
+Last updated: 2026-08-23
 
 ## Current gate
 
@@ -9,8 +9,9 @@ Gate 0B and Gate 1 preparation in parallel:
 - production Linux CUDA BF16 LoRA qualification, with NF4 QLoRA as fallback;
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
-Local Apple runtime qualification is complete. Gate 0 remains fail-closed only
-because the production CUDA matrix cannot be proven on Darwin.
+Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
+complete. Gate 0 remains fail-closed because the production CUDA matrix has not
+yet executed on an NVIDIA GPU.
 
 ## Completed
 
@@ -90,23 +91,46 @@ because the production CUDA matrix cannot be proven on Darwin.
   or training. Cumulative GPU upper cost was `$0.79037286`; the retained
   conservative bound was `$4.92111752`, below the approved `$5` ceiling. Every
   input/runtime/failure/teardown set is generation-pinned and hash-sealed in
-  GCS. The VM, NAT, router, subnet, and VPC are deleted and independently absent.
-- Authored the first 120/360 private decision tasks, 20 per lane and balanced
-  generation/repair. Native directionality passes 120/120 for each tranche.
+  GCS. That execution's VM, NAT, router, subnet, and VPC were deleted and
+  independently absent before the later CPU prebuild resources were created.
+- Authored the first 180/360 private decision tasks, 30 per lane and balanced
+  generation/repair. Decision tranche 3 is sealed by manifest
+  `26f982c437000012d2eae1f4a3d77260b9f3798931dc938941e29c91f2e3a3d9`
+  and zero-overlap report
+  `dae97584f926381995f06232381425239fa35e1e0d83ce6b5404b93e0bba15d4`.
   Two independent Docker runs proved a 30-second aggregate limit flaky for
   compiled lanes, so Go/Java/Rust were revised to 60 seconds while JS/TS/Python
-  remain at 30. The revised manifests are bound by cross-overlap seal
-  `2c9d3dd4c91b846f95adf437c79ae6d52543e030d5a35a6317b828ba42116cf3`
-  with zero exact/normalized overlap and duplicate IDs. Fresh Docker
-  directionality is in progress; superseded pass/failure evidence is preserved.
+  remain at 30. Fresh tranche-1 Docker directionality passes all 120 reference
+  and known-bad executions with evidence seal
+  `8cf851703f67c3c80a0cdafba5e4e68adade135af9aa4f443837b670468005cf`.
+  Tranche-2 and tranche-3 Docker directionality and the remaining 180 authored
+  tasks are incomplete; superseded pass/failure evidence remains preserved.
+- Prebuilt and content-sealed the pinned production CUDA image on the same
+  stopped CPU disk after the first archive export failed with exit 141. The
+  failure was caused by unbounded `zstd` progress output exceeding the GCE
+  metadata logger scanner limit; the retry uses quiet bounded export. The
+  original boot's provider serial is unavailable and was not reconstructed, so
+  attempt 1 remains failed, non-decision evidence.
+- Verified prebuild attempt 2 as 35/35 generation-pinned GCS objects. The image
+  is `ganesh-mini-cuda-gate0:torch2.13.0-cu13.0.1` with ID
+  `sha256:37b7cbcb8280d469bad6213bf09bfa0ccb2dba96a912aaa105183069c2ce5351`;
+  its compressed archive is 8,167,013,739 bytes with SHA-256
+  `f2dafd6c0b82d46be441dfe2a5c2b23cd5f309e5061f20da3edf91e70eddb8f3`.
+  The terminal backup seal is
+  `f1a874deac5e5fadf19eeb29d2c4fb80376e62ed130f70439e2894ae6b4ec076`.
+- Passed the deletion gate, backed its evidence, deleted the CPU VM, NAT, and
+  router, and independently proved them absent. The post-delete backup seal is
+  `ac2b9c9f21e0b6f91d72a0d90d80f3eb8a55ea56432fb66980bae76d86e28358`.
+  The dedicated VPC and subnet are intentionally retained for the later no-NAT
+  A100 qualification; no compute resource is running.
 
 ## Not started or incomplete
 
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
   memory or cost threshold
-- Decision authoring and sealing: 120/360 tasks authored; revised Docker
-  directionality and the remaining 240 tasks are incomplete
+- Decision authoring and sealing: 180/360 tasks authored; Docker directionality
+  for tranches 2-3 and the remaining 180 tasks are incomplete
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
 - Exact Qwen base baseline on the frozen development surface
@@ -116,12 +140,11 @@ because the production CUDA matrix cannot be proven on Darwin.
 
 ## Next action
 
-Prebuild and seal the pinned CUDA qualification image away from billable GPU
-runtime, then request fresh GCloud approval for a non-Spot (or otherwise
-preemption-resilient) Gate 0B execution that spends the bounded A100 window on
-model qualification rather than dependency compilation. In parallel, finish
-revised Docker directionality and author the remaining 240 decision tasks.
-Then execute the exact Qwen base baseline before opening the seed-pilot
+Request fresh explicit GCloud approval for one Standard `a2-highgpu-1g`, with
+no NAT and a 1,200-second execution bound, to run Gate 0B BF16 qualification
+from the exact sealed CUDA image, workspace, and model generations. In
+parallel, finish decision Docker directionality and author the remaining 180
+tasks. Then execute the exact Qwen base baseline before opening the seed-pilot
 training gate.
 
 ## Authorization state
@@ -130,9 +153,10 @@ All work within the Ganesh Mini objective is authorized, including the Ganesh
 v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
-GCloud usage is the only standing authorization boundary. The bounded Gate 0B
-A100 authorization recorded in `DECISIONS.md` is exhausted and terminally
-sealed; all resources are absent. Any further GCloud usage requires a new
+GCloud usage is the only standing authorization boundary. The approved CPU
+prebuild and verification work is terminally sealed; its VM, NAT, and router
+are absent. The dedicated VPC and subnet remain, without running compute, for a
+future no-NAT qualification. Creating or starting an A100 VM requires a new
 explicit approval.
 
 An active 30-minute Codex heartbeat independently audits goal alignment. A

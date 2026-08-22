@@ -76,17 +76,25 @@ because the production CUDA matrix cannot be proven on Darwin.
   three tranches, all 90 references pass, all 90 known-bad implementations
   fail, exact/normalized seed and cross-tranche overlap is zero, and timeouts
   are zero.
+- Authored and sealed development tranches 5–6: 60 additional tasks, completing
+  the private development surface at 180/180 tasks, 30 per lane and 90 each of
+  generation and repair. Across the two tranches, all 60 references pass, all
+  60 known-bad implementations fail, exact/normalized seed and cross-tranche
+  overlap is zero, and timeouts are zero. The full local suite passes with one
+  intentional integration skip.
 - A bounded GCloud A100 Gate 0B run is explicitly authorized and in preflight.
-  Its dedicated GCS prefix has passed a write/read/hash round trip. VM creation
-  remains gated on exact staging verification; verified GCS backup must precede
-  VM deletion, and VM-absence evidence is mandatory.
+  Its dedicated GCS prefix has passed a write/read/hash round trip. A composite
+  staging attempt produced an exact-size but hash-invalid checkpoint and was
+  rejected and preserved under the run failure prefix. A generation-guarded,
+  non-composite re-upload is active; no VM has been created. VM creation remains
+  gated on a full downloaded SHA-256 match. Verified GCS backup must precede VM
+  deletion, and VM-absence evidence is mandatory.
 
 ## Not started or incomplete
 
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
   memory or cost threshold
-- Remaining development authoring: 60 tasks, 10 per lane
 - Decision authoring and sealing: 360 tasks, 60 per lane
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
@@ -97,11 +105,12 @@ because the production CUDA matrix cannot be proven on Darwin.
 
 ## Next action
 
-Qualify the exact production Linux CUDA BF16 LoRA recipe on non-GCloud compute,
-measuring peak VRAM and throughput. Qualify NF4 QLoRA only as the predeclared
-fallback. In parallel, complete and freeze the remaining six-lane development
-and decision task manifests against the completed verifier. Then execute the
-exact Qwen base baseline before opening the seed-pilot training gate.
+Finish the authorized GCloud staging integrity gate, then qualify the exact
+production Linux CUDA BF16 LoRA recipe while measuring peak VRAM and
+throughput. Qualify NF4 QLoRA only as the predeclared fallback. In parallel,
+author and seal the six-lane decision surface against the completed verifier.
+Then execute the exact Qwen base baseline before opening the seed-pilot
+training gate.
 
 ## Authorization state
 
@@ -109,8 +118,9 @@ All work within the Ganesh Mini objective is authorized, including the Ganesh
 v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
-GCloud usage is the only standing authorization boundary and requires explicit
-user approval before any inspection, mutation, execution, or billing action.
+GCloud usage is the only standing authorization boundary. The bounded Gate 0B
+A100 run recorded in `DECISIONS.md` is explicitly approved; any usage outside
+that exact scope requires a new explicit approval.
 
 An active 30-minute Codex heartbeat independently audits goal alignment. A
 `DIVERGENCE` result pauses project mutations and compute until user direction.

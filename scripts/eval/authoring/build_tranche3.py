@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "eval/private/development/tranche3"
 MANIFEST = ROOT / "manifests/evaluation/private/development-tranche3.json"
 OVERLAP = ROOT / "manifests/evaluation/private/development-tranche3-overlap.json"
+COMPARISON_TRANCHES = ("tranche1", "tranche2", "tranche4")
 RUNTIME = {
     "go": "go-1.22.12", "java": "java-21.0.11",
     "javascript": "javascript-node-22.23.2", "typescript": "typescript-5.5.4-node-22",
@@ -234,10 +235,10 @@ def comparison_fingerprints() -> tuple[set[str],set[str],int,int,list[str]]:
         sources.append(relative)
         for line in (ROOT/relative).read_text(encoding="utf-8").splitlines():
             text=json.loads(line)["messages"][0]["content"]; exact.add(sha256_text(text));norm.add(sha256_text(normalized(text)));seed_count+=1
-    for path in sorted((ROOT/"eval/private/development").glob("tranche*/*.task.json")):
-        if path.parent==OUT: continue
-        text=json.loads(path.read_text(encoding="utf-8"))["prompt"]["text"]
-        exact.add(sha256_text(text));norm.add(sha256_text(normalized(text)));private_count+=1
+    for tranche in COMPARISON_TRANCHES:
+        for path in sorted((ROOT/"eval/private/development"/tranche).glob("*.task.json")):
+            text=json.loads(path.read_text(encoding="utf-8"))["prompt"]["text"]
+            exact.add(sha256_text(text));norm.add(sha256_text(normalized(text)));private_count+=1
     return exact,norm,seed_count,private_count,sources
 
 

@@ -8,6 +8,13 @@ def test_tranche2_contract_balance_hashes_and_overlap() -> None:
     assert sum(x["repair"] for x in manifest["counts_by_lane"].values())==15
     assert all(sum(x.values())==5 and set(x.values())=={2,3} for x in manifest["counts_by_lane"].values())
     assert overlap["seed_records_inspected"]==1449
+    assert overlap["records_and_prompts_inspected"]==1539
+    assert overlap["comparison_sources"]==[
+        "manifests/datasets/ganesh_v01_seed.json",
+        "manifests/evaluation/private/development-tranche1.json",
+        "manifests/evaluation/private/development-tranche3.json",
+        "manifests/evaluation/private/development-tranche4.json",
+    ]
     assert overlap["exact_prompt_overlaps"]==[] and overlap["normalized_prompt_overlaps"]==[]
     assert overlap["evaluation_manifest_sha256"]==manifest["manifest_sha256"]
     for entry in manifest["tasks"]:

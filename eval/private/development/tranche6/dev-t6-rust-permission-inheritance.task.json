@@ -1,0 +1,47 @@
+{
+  "candidate_path": "solution.rs",
+  "family": "rust",
+  "files": [
+    {
+      "content": "mod solution;use solution::resolve_permissions as f;#[test]fn check(){let p=[(\"editor\",\"viewer\"),(\"viewer\",\"\")];let e=[\"write\",\"read\"];let v=[\"read\",\"view\"];let g=[(\"editor\",e.as_slice()),(\"viewer\",v.as_slice())];assert_eq!(f(\"editor\",&p,&g),Some(vec![\"read\".into(),\"view\".into(),\"write\".into()]));assert_eq!(f(\"missing\",&p,&g),None);let q=[(\"a\",\"b\"),(\"b\",\"a\")];let empty:[&str;0]=[];let z=[(\"a\",empty.as_slice()),(\"b\",empty.as_slice())];assert_eq!(f(\"a\",&q,&z),None);}\n",
+      "path": "solution_test.rs",
+      "role": "test",
+      "sha256": "ebf53cd12e2f68dbc914a31f92a49047394e82ce3273d2165eefbd63518e5670"
+    }
+  ],
+  "language": "rust",
+  "limits": {
+    "cpus": 1,
+    "memory_mb": 512,
+    "output_bytes": 65536,
+    "pids": 64,
+    "timeout_seconds": 30
+  },
+  "prompt": {
+    "sha256": "b6ce1091ed6f54afeaf502ede7c7e569300f13405b319950e6a1ae25e1e7fe35",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.rs with the public function at module scope.\nRequired API: pub fn resolve_permissions(role: &str, parents: &[(&str,&str)], grants: &[(&str,&[&str])]) -> Option<Vec<String>>\nBehavior: Collect the named role's grants and every parent role's grants, deduplicate, and sort. Reject an unknown role, unknown parent reached in the chain, or inheritance cycle. Empty parent marks the root.\nVisible example: editor granting write and inheriting viewer granting read resolves to [read,write].\n\nBuggy source to repair:\n\npub fn resolve_permissions(role:&str,_parents:&[(&str,&str)],grants:&[(&str,&[&str])])->Option<Vec<String>>{let mut o=grants.iter().find(|x|x.0==role).map(|x|x.1.iter().map(|s|s.to_string()).collect::<Vec<_>>()).unwrap_or_default();o.sort();Some(o)}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "rendered_prompt": {
+    "sha256": "b6ce1091ed6f54afeaf502ede7c7e569300f13405b319950e6a1ae25e1e7fe35",
+    "text": "Repair the buggy source below without changing the required API.\n\nFile contract: Return solution.rs with the public function at module scope.\nRequired API: pub fn resolve_permissions(role: &str, parents: &[(&str,&str)], grants: &[(&str,&[&str])]) -> Option<Vec<String>>\nBehavior: Collect the named role's grants and every parent role's grants, deduplicate, and sort. Reject an unknown role, unknown parent reached in the chain, or inheritance cycle. Empty parent marks the root.\nVisible example: editor granting write and inheriting viewer granting read resolves to [read,write].\n\nBuggy source to repair:\n\npub fn resolve_permissions(role:&str,_parents:&[(&str,&str)],grants:&[(&str,&[&str])])->Option<Vec<String>>{let mut o=grants.iter().find(|x|x.0==role).map(|x|x.1.iter().map(|s|s.to_string()).collect::<Vec<_>>()).unwrap_or_default();o.sort();Some(o)}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+  },
+  "runtime_id": "rust-1.85.0",
+  "schema_version": "1.0",
+  "surface": "development",
+  "task_id": "dev-t6-rust-permission-inheritance",
+  "task_type": "repair",
+  "validation": {
+    "known_bad": [
+      {
+        "code": "pub fn resolve_permissions(role:&str,_parents:&[(&str,&str)],grants:&[(&str,&[&str])])->Option<Vec<String>>{let mut o=grants.iter().find(|x|x.0==role).map(|x|x.1.iter().map(|s|s.to_string()).collect::<Vec<_>>()).unwrap_or_default();o.sort();Some(o)}\n",
+        "label": "returns-direct-grants-only",
+        "sha256": "513ada3bf8c676263fcc46162dc54b4ed1889fb24c82e559a1bc395209f3620a"
+      }
+    ],
+    "reference": {
+      "code": "use std::collections::{BTreeSet,HashMap,HashSet};\npub fn resolve_permissions(role:&str,parents:&[(&str,&str)],grants:&[(&str,&[&str])])->Option<Vec<String>>{let p:HashMap<_,_>=parents.iter().copied().collect();let g:HashMap<_,_>=grants.iter().copied().collect();let mut r=role;let mut seen=HashSet::new();let mut out=BTreeSet::new();while !r.is_empty(){if (!p.contains_key(r)&&!g.contains_key(r))||!seen.insert(r){return None}for &x in g.get(r).copied().unwrap_or(&[]){out.insert(x.to_string());}r=p.get(r).copied().unwrap_or(\"\");}Some(out.into_iter().collect())}\n",
+      "label": "author-reference",
+      "sha256": "8f98d3979fbd348d3fbafee6d8fd7ad761bff1c337eea95eb7c2c63562be7d41"
+    }
+  }
+}

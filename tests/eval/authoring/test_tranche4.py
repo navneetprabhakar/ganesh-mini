@@ -7,6 +7,8 @@ def test_tranche4_contract_balance_hashes_and_separation()->None:
     assert sum(x["repair"]for x in manifest["counts_by_lane"].values())==15
     assert all(sum(x.values())==5 and set(x.values())=={2,3}for x in manifest["counts_by_lane"].values())
     assert overlap["seed_records_inspected"]==1449
+    assert overlap["other_private_development_prompts_inspected"]==90
+    assert overlap["comparison_prompts_inspected"]==1539
     assert overlap["exact_prompt_overlaps"]==overlap["normalized_prompt_overlaps"]==[]
     assert overlap["within_tranche_exact_overlaps"]==overlap["within_tranche_normalized_overlaps"]==[]
     assert overlap["evaluation_manifest_sha256"]==manifest["manifest_sha256"]

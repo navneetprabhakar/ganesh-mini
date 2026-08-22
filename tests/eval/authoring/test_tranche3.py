@@ -7,6 +7,7 @@ def test_tranche3_contract_balance_and_overlap():
     assert sum(v["generation"] for v in manifest["counts_by_lane"].values())==15
     assert sum(v["repair"] for v in manifest["counts_by_lane"].values())==15
     assert overlap["seed_records_inspected"]==1449
+    assert overlap["other_private_development_prompts_inspected"]==90
     assert overlap["exact_prompt_overlaps"]==[]
     assert overlap["normalized_prompt_overlaps"]==[]
     assert overlap["evaluation_manifest_sha256"]==manifest["manifest_sha256"]

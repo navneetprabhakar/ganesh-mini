@@ -15,6 +15,11 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "eval/private/development/tranche2"
 MANIFEST = ROOT / "manifests/evaluation/private/development-tranche2.json"
 OVERLAP = ROOT / "manifests/evaluation/private/development-tranche2-overlap.json"
+COMPARISON_MANIFESTS = (
+    "manifests/evaluation/private/development-tranche1.json",
+    "manifests/evaluation/private/development-tranche3.json",
+    "manifests/evaluation/private/development-tranche4.json",
+)
 RUNTIME = {"go":"go-1.22.12","java":"java-21.0.11","javascript":"javascript-node-22.23.2","typescript":"typescript-5.5.4-node-22","python":"python-3.11.15","rust":"rust-1.85.0"}
 SLUGS = ("decode-hex","encode-csv-field","parse-netstring","escape-log-fields","parse-quoted-list")
 KINDS = {
@@ -254,8 +259,8 @@ def all_evaluation_fingerprints() -> tuple[set[str],set[str],int,list[str]]:
         for line in (ROOT/relative).read_text(encoding="utf-8").splitlines():
             text=json.loads(line)["messages"][0]["content"];seed_exact.add(sha256_text(text));seed_norm.add(sha256_text(normalized(text)));seed_count+=1
     exact|=seed_exact;norm|=seed_norm;count+=seed_count;sources.append("manifests/datasets/ganesh_v01_seed.json")
-    for path in sorted((ROOT/"manifests/evaluation/private").glob("development-tranche*.json")):
-        if path==MANIFEST or path.name.endswith(("-overlap.json","-directionality.json")):continue
+    for relative in COMPARISON_MANIFESTS:
+        path=ROOT/relative
         manifest=load_json(path)
         for entry in manifest.get("tasks",[]):
             task=load_json(ROOT/entry["path"]);text=task["prompt"]["text"];exact.add(sha256_text(text));norm.add(sha256_text(normalized(text)));count+=1

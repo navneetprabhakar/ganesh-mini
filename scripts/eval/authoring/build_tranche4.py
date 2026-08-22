@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "eval/private/development/tranche4"
 MANIFEST = ROOT / "manifests/evaluation/private/development-tranche4.json"
 OVERLAP = ROOT / "manifests/evaluation/private/development-tranche4-overlap.json"
+COMPARISON_TRANCHES = ("tranche1", "tranche2", "tranche3")
 RUNTIME = {"go":"go-1.22.12","java":"java-21.0.11","javascript":"javascript-node-22.23.2","typescript":"typescript-5.5.4-node-22","python":"python-3.11.15","rust":"rust-1.85.0"}
 KINDS = {
     "go": ("generation","generation","generation","repair","repair"),
@@ -166,9 +167,9 @@ def comparison_fingerprints()->tuple[set[str],set[str],int,dict[str,int]]:
     for relative in ("data/seed/ganesh_v01/train.jsonl","data/seed/ganesh_v01/validation.jsonl"):
         for line in (ROOT/relative).read_text(encoding="utf-8").splitlines():
             text=json.loads(line)["messages"][0]["content"];exact.add(sha256_text(text));norm.add(sha256_text(normalized(text)));counts["seed"]+=1
-    for path in sorted((ROOT/"eval/private/development").glob("tranche*/**/*.task.json")):
-        if "tranche4" in path.parts:continue
-        text=json.loads(path.read_text(encoding="utf-8"))["prompt"]["text"];exact.add(sha256_text(text));norm.add(sha256_text(normalized(text)));counts["private_development"]+=1
+    for tranche in COMPARISON_TRANCHES:
+        for path in sorted((ROOT/"eval/private/development"/tranche).glob("*.task.json")):
+            text=json.loads(path.read_text(encoding="utf-8"))["prompt"]["text"];exact.add(sha256_text(text));norm.add(sha256_text(normalized(text)));counts["private_development"]+=1
     return exact,norm,sum(counts.values()),counts
 
 def build()->tuple[dict[str,Any],dict[str,Any]]:

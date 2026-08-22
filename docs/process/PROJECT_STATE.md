@@ -95,7 +95,7 @@ image awaits rebuild and NVIDIA requalification.
   input/runtime/failure/teardown set is generation-pinned and hash-sealed in
   GCS. That execution's VM, NAT, router, subnet, and VPC were deleted and
   independently absent before the later CPU prebuild resources were created.
-- Authored the first 180/360 private decision tasks, 30 per lane and balanced
+- Authored all 360/360 private decision tasks, 60 per lane and balanced
   generation/repair. Decision tranche 3 is sealed by manifest
   `26f982c437000012d2eae1f4a3d77260b9f3798931dc938941e29c91f2e3a3d9`
   and zero-overlap report
@@ -110,8 +110,33 @@ image awaits rebuild and NVIDIA requalification.
   `203965708f9a238a3e323ad4c7a8d9d7d3b5872764e83185ac5e578274a375a8`,
   and tranche 3
   `15d95ad2530d18410c1e1ebda0974bfc54b20208e29f1273aae5ae4a17a56289`.
-  The remaining 180 decision tasks are incomplete; superseded pass/failure
-  evidence remains preserved.
+  Tranches 4–6 add the final 180 tasks. Across the complete surface, all
+  360/360 references pass, all 360/360 known-bad implementations are rejected,
+  and no final execution times out. Their manifest/overlap/directionality seals
+  are tranche 4
+  `118dbb5086725bd36ceed09ba37d1f14c53a7f41d79e365c0a6260ac24fb2658` /
+  `e66ee7d1a8fa67b044c4e16a8b1e766d4bdc13283380abdc5281b8453d6d1715` /
+  `0119e33afb42cda47383d48e1b300b683732a0d30a8c5864ecd370675207857b`,
+  tranche 5
+  `ee52d232e2d44411a398ad680def61ffffd54722d8a8fc400ffdd2143d4240e3` /
+  `251cee5751463ffa76159823b3ec939a6edbd66e328336ca65e7169022186de5` /
+  `cd7cafdec42d97173e877fa74530c5daef3d4c1edded9df1b71de9dd453ecdb1`,
+  and tranche 6
+  `f97eb03d1206cb7135a520f2fb069a44375b9332a4e36ddc9f78cbb0ca6d7c89` /
+  `80f4d7f340fc4994f97e8c332e9eea9a339c7eb4837f9d00595775b0ef1ba0ff` /
+  `c9b3c9d888f5c438ca2a7666b620a599bd08da639ef24a42c9f78fa461706dfb`.
+  The sealed failed tranche-5 result is preserved as non-decision evidence.
+  The earlier failed tranche-4 file (seal
+  `874e2308f503a35b4cf74c4f9105f623816834526c51e9d50a36b4dd3d01f0dc`,
+  34/60 references, 60/60 known-bad rejections, 26 failures) was overwritten
+  before preservation and could not be recovered; it is an explicit audit-gap
+  incident and cannot support any decision claim.
+  A global separation report byte-binds both seed JSONL files, every
+  development and decision manifest/task, all overlap evidence, the shared
+  tranche-1/2 cross-overlap evidence, the runtime configuration, and all 720
+  final directionality executions. It proves zero exact or normalized overlap
+  and is sealed by
+  `96ea9669e194c567f304c5462b2be9cc171555bba56ea10801186480bb347a06`.
 - Prebuilt and content-sealed the pinned production CUDA image on the same
   stopped CPU disk after the first archive export failed with exit 141. The
   failure was caused by unbounded `zstd` progress output exceeding the GCE
@@ -154,8 +179,6 @@ image awaits rebuild and NVIDIA requalification.
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
   memory or cost threshold
-- Decision authoring and sealing: 180/360 tasks authored and all 180 have
-  passed sealed Docker directionality; the remaining 180 tasks are incomplete
 - Seed evaluation-overlap check, pending frozen evaluation manifests
 - Current-toolchain re-execution of seed records that have executable bundles
 - Exact Qwen base baseline on the frozen development surface
@@ -165,14 +188,14 @@ image awaits rebuild and NVIDIA requalification.
 
 ## Next action
 
-Author and seal the remaining 180 decision tasks while keeping the repaired
-CUDA definition frozen. The local host is ARM64 and has only 7.2 GiB free,
-which is below the prior 8.17 GB compressed x86 CUDA image alone; no safe
-non-GCloud Linux x86 builder is currently available, and unrelated Docker data
-will not be deleted to manufacture space. A new GCloud CPU prebuild therefore
-requires fresh explicit approval. After the rebuilt image passes Gate 0B on
-NVIDIA, execute the exact Qwen base baseline before opening the seed-pilot
-training gate.
+Freeze the complete evaluation contract and prepare the exact Qwen base
+baseline inputs while keeping the repaired CUDA definition frozen. The local
+host is ARM64 and has only 7.2 GiB free, which is below the prior 8.17 GB
+compressed x86 CUDA image alone; no safe non-GCloud Linux x86 builder is
+currently available, and unrelated Docker data will not be deleted to
+manufacture space. A new GCloud CPU prebuild therefore requires fresh explicit
+approval. After the rebuilt image passes Gate 0B on NVIDIA, execute the exact
+Qwen base baseline before opening the seed-pilot training gate.
 
 ## Authorization state
 

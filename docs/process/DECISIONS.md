@@ -238,3 +238,46 @@ backend before importing FLA, requires FLA to report NVIDIA CUDA, and mounts a
 bounded executable Triton cache while retaining a read-only root, no-exec
 general `/tmp`, and network-disabled execution. This repair is not a Gate 0B
 pass; it requires a new image build and a separately approved NVIDIA run.
+
+## 2026-08-23 — Decision references require admission before full directionality
+
+The first full runs for decision tranches 4 and 5 rejected every known-bad
+artifact but exposed mechanical defects in generated references: unused Go
+imports and identifier collisions, strict TypeScript typing/redeclarations,
+Python indentation, and JavaScript identifier collisions. Behavioral cases and
+verifier expectations were not weakened to obtain a pass.
+
+For future authoring or regeneration, the workflow requires two operational
+checks before the final 120-execution run:
+
+1. compile or type-check all 60 generated references across the six lanes; and
+2. execute a dedicated 60-reference admission sweep through the same pinned,
+   network-disabled, resource-limited Docker verifier.
+
+A 60/60 admission result is the prospective safeguard for proceeding to the
+full sequential reference and known-bad run. Any unretained admission sweep in
+this authoring cycle is treated only as an operational preflight; this record
+makes no historical sequencing claim from it. Final release evidence comes
+only from the independently sealed 120-execution controllers with exact
+manifest, overlap, runtime, sandbox, and artifact hashes. Failed or superseded
+results remain non-decision evidence.
+
+The first failed tranche-4 evidence file was overwritten during repair before
+it was copied to a superseded path. Its observed seal was
+`874e2308f503a35b4cf74c4f9105f623816834526c51e9d50a36b4dd3d01f0dc`
+with 34/60 reference passes, 60/60 known-bad rejections, and 26 failures. A
+read-only search of the workspace, temporary storage, Codex storage, caches,
+Trash, and application-support paths found no retained copy. The file was not
+reconstructed. This is a process incident and the missing artifact cannot be
+used as evidence; the admission requirement prevents the overwrite pattern for
+subsequent tranches. Tranche 5's failed evidence is preserved explicitly.
+
+The per-tranche overlap reports historically record comparison paths and
+counts, not every comparison input revision. A new global decision-surface
+audit closes that gap without changing executed results. It byte-binds the two
+seed JSONL files and runtime configuration; verifies every development and
+decision manifest/task seal; binds all six overlap and directionality reports
+plus the tranche-1/2 shared cross-overlap report; and rechecks all 720 execution
+rows against their exact artifact, runtime, image, output hashes, sandbox, and
+exit polarity. It proves zero exact or normalized prompt overlap and is sealed
+by `96ea9669e194c567f304c5462b2be9cc171555bba56ea10801186480bb347a06`.

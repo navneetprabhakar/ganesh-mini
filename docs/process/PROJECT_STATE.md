@@ -323,9 +323,10 @@ card.
 
 ## Next action
 
-Validate and push the explicit ms-swift model-type repair, then create a fresh
-deterministic workspace and approval-specific card. The next paid VM must first
-pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
+The explicit ms-swift model-type repair is validated and pushed at commit
+`2423f4e7e9c37590b77128318dc3b7416111cb00`. A reproducible v6 workspace and
+sealed preparation card bind that commit and await approval-specific GCloud
+upload. The next paid VM must first pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.

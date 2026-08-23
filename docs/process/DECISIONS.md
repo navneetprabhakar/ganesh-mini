@@ -525,3 +525,11 @@ The complete 153,688-byte local v6 run archive is stored at GCS generation
 `dfbc2c8136b03e046245ca6fe318374bd2f54c341ef8c7ae0990ccc644639777`.
 Its independent backup manifest is sealed by
 `7e14c80111eefd4f0564f1cf8a9c57081385ea008b55f33796c00e9dfe502f54`.
+
+The local v7 preparation card is sealed by
+`408ab2dc4ad60f55b72867611e499d65d9394cb7a0c696f22018a859132dbdb7`.
+It binds pushed source commit `2c509c77b07f6cc4b8dfe93ddd21d743ca51d93d`
+and a twice-reproduced workspace archive with SHA-256
+`9c8cca903eacb876ad9967a2bed23c16efdc7f1691c5c57f0ef2ecad434e20e1`.
+The card remains explicitly unapproved; no v7 GCloud action is permitted until
+Navneet Prabhakar approves its separate USD 2.40 incremental ceiling.

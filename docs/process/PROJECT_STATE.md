@@ -346,9 +346,11 @@ card.
 V6 exposed and locally repaired the remaining ms-swift identity assertion:
 model registration and template resolution are now checked explicitly as two
 separate pinned APIs. Gate 0B is still closed because v6 did not reach model
-load, inference, or training. A fresh, reproducible retry card must bind this
-repair before any further paid VM is proposed. The next paid VM must first
-pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
+load, inference, or training. The sealed v7 card binds pushed commit
+`2c509c77b07f6cc4b8dfe93ddd21d743ca51d93d` and a byte-reproducible workspace
+archive. It is explicitly unapproved and no v7 GCloud inspection, upload, or
+resource operation has occurred. The next paid VM must first pass Gate 0B.
+Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.

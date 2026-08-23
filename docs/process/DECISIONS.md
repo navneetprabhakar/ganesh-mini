@@ -575,3 +575,15 @@ qualification began, leaving only 1,367 seconds under v7 for model load,
 write. The replacement card must bind the repaired commit and archive and add
 controller and terminal-backup margin. No GCloud action occurred during this
 deep dive.
+
+The replacement v8 card binds pushed repair commit
+`4873d337e62a57ec20ac43ff625616850a108607` and a twice-reproduced 1,770,400-byte
+workspace archive with SHA-256
+`1e4eabbd78e9829897345e14e374da6554c8d63c7552aa63c33db5fd41ffd652`.
+It increases the total lifetime from 2,100 to 3,000 seconds, assigns 2,400
+seconds to setup plus qualification and 600 seconds to terminal inventory and
+backup, and requests an incremental ceiling of USD 3.32 using the last
+verified hourly upper bound. The card is sealed by
+`7cd638f18feff39e0cfe8301b627846a4f05d09ae281801f734189856693fd80`
+and remains explicitly unapproved. Price must be reverified after approval and
+before resource creation.

@@ -357,9 +357,12 @@ adapter/merge logit equivalence checks, corrected synthetic token accounting,
 and fixed the SFT validation macro. Evidence is sealed by
 `15330a2c847232d1acdf4c039a1bf34d5c9b7943fc5d12c0ff5e5e137ded5326`.
 The sealed v7 card is now stale and must not run. No v7 GCloud inspection,
-upload, or resource operation occurred. A replacement card must bind the
-repaired source and add time for qualification and terminal backup before the
-next paid VM attempts Gate 0B.
+upload, or resource operation occurred. The sealed v8 replacement binds pushed
+repair commit `4873d337e62a57ec20ac43ff625616850a108607`, a twice-reproduced
+workspace archive, 2,400 seconds for setup plus qualification, 600 seconds for
+terminal backup, and a USD 3.32 incremental ceiling. It is unapproved; no v8
+GCloud inspection, upload, or resource action has occurred. The next paid VM
+may attempt Gate 0B only after explicit v8 approval and price reverification.
 Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent

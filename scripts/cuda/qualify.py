@@ -171,13 +171,32 @@ def kernel_identity() -> dict[str,Any]:
 
 def swift_identity(model_dir: Path) -> dict[str,Any]:
     from swift.model import get_model_info_meta
+    from swift.template import get_template_meta
+
     requested_model_type = "qwen3_5"
+    requested_template = "qwen3_5"
     info, meta = get_model_info_meta(
         str(model_dir), model_type=requested_model_type, download_model=False
     )
-    model_type = getattr(info,"model_type",None); template = getattr(meta,"template",None); passed = model_type == requested_model_type and template == "qwen3_5"
-    if not passed: raise RuntimeError(f"ms-swift did not resolve pinned checkpoint as qwen3_5: {model_type=}, {template=}")
-    return {"requested_model_type":requested_model_type,"selection":"explicit","model_type":model_type,"template":template,"passed":passed}
+    template_meta = get_template_meta(info, meta, template_type=requested_template)
+    model_type = getattr(info,"model_type",None)
+    resolved_template = getattr(template_meta,"template_type",None)
+    passed = model_type == requested_model_type and resolved_template == requested_template
+    if not passed:
+        raise RuntimeError(
+            "ms-swift did not resolve the explicit Qwen3.5 identity: "
+            f"{model_type=}, {resolved_template=}"
+        )
+    return {
+        "requested_model_type":requested_model_type,
+        "requested_template":requested_template,
+        "selection":"explicit",
+        "model_type":model_type,
+        "model_meta_template":getattr(meta,"template",None),
+        "candidate_templates":list(getattr(meta,"candidate_templates",[])),
+        "resolved_template":resolved_template,
+        "passed":passed,
+    }
 
 def select_records(path: Path, tokenizer: Any, count: int, max_length: int) -> list[dict[str,Any]]:
     candidates = []

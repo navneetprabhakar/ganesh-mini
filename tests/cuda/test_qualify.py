@@ -218,28 +218,59 @@ def test_swift_identity_selects_qwen35_explicitly_without_download(monkeypatch, 
 
     def get_model_info_meta(path, **kwargs):
         observed.update({"path": path, **kwargs})
-        return types.SimpleNamespace(model_type="qwen3_5"), types.SimpleNamespace(template="qwen3_5")
+        return (
+            types.SimpleNamespace(model_type="qwen3_5"),
+            types.SimpleNamespace(template=None, candidate_templates=["qwen3_5"]),
+        )
+
+    def get_template_meta(info, meta, *, template_type):
+        observed.update({"template_info": info, "template_meta": meta, "template_type": template_type})
+        return types.SimpleNamespace(template_type="qwen3_5")
 
     swift = types.ModuleType("swift")
     swift_model = types.ModuleType("swift.model")
+    swift_template = types.ModuleType("swift.template")
     swift_model.get_model_info_meta = get_model_info_meta
+    swift_template.get_template_meta = get_template_meta
     monkeypatch.setitem(sys.modules, "swift", swift)
     monkeypatch.setitem(sys.modules, "swift.model", swift_model)
+    monkeypatch.setitem(sys.modules, "swift.template", swift_template)
 
     evidence = swift_identity(tmp_path)
 
-    assert observed == {
-        "path": str(tmp_path),
-        "model_type": "qwen3_5",
-        "download_model": False,
-    }
+    assert observed["path"] == str(tmp_path)
+    assert observed["model_type"] == "qwen3_5"
+    assert observed["download_model"] is False
+    assert observed["template_type"] == "qwen3_5"
+    assert observed["template_info"].model_type == "qwen3_5"
+    assert observed["template_meta"].candidate_templates == ["qwen3_5"]
     assert evidence == {
         "requested_model_type": "qwen3_5",
+        "requested_template": "qwen3_5",
         "selection": "explicit",
         "model_type": "qwen3_5",
-        "template": "qwen3_5",
+        "model_meta_template": None,
+        "candidate_templates": ["qwen3_5"],
+        "resolved_template": "qwen3_5",
         "passed": True,
     }
+
+
+def test_swift_identity_rejects_wrong_explicit_template(monkeypatch, tmp_path: Path) -> None:
+    swift = types.ModuleType("swift")
+    swift_model = types.ModuleType("swift.model")
+    swift_template = types.ModuleType("swift.template")
+    swift_model.get_model_info_meta = lambda *args, **kwargs: (
+        types.SimpleNamespace(model_type="qwen3_5"),
+        types.SimpleNamespace(template=None, candidate_templates=["qwen3_5"]),
+    )
+    swift_template.get_template_meta = lambda *args, **kwargs: types.SimpleNamespace(template_type="ovis_ocr2")
+    monkeypatch.setitem(sys.modules, "swift", swift)
+    monkeypatch.setitem(sys.modules, "swift.model", swift_model)
+    monkeypatch.setitem(sys.modules, "swift.template", swift_template)
+
+    with pytest.raises(RuntimeError, match="explicit Qwen3.5 identity"):
+        swift_identity(tmp_path)
 
 
 def test_resolved_kernel_implementation_reports_decorator_target() -> None:

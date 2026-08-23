@@ -281,6 +281,26 @@ card.
   verified, then deleted after a 33-object composite backup and deletion gate
   passed. VM, disk, subnet, and VPC absence and the six-object post-delete
   backup are independently sealed.
+- Ran the approved v6 qualification in `us-central1-b`. Explicit ms-swift
+  model selection correctly returned `model_type="qwen3_5"`; qualification
+  then failed before model load because the harness incorrectly treated the
+  type-level `ModelMeta.template=None` as a registry failure. The pinned
+  ms-swift 4.5.2 source shows that Qwen3.5's template belongs to its model group
+  and must be resolved separately. The qualifier now explicitly resolves both
+  `model_type="qwen3_5"` and `template_type="qwen3_5"`, recording the nullable
+  raw metadata field only as a diagnostic. The focused qualifier suite passes.
+- V6's terminal backup, stopped-resource composite backup, deletion gate,
+  exact absence proof, and post-delete backup are sealed by
+  `5e80ce5264f434b47102706e16a9fa2dd8a494f0a166cf83e01e45b2e944a0c2`,
+  `3f8e090c99829139a2cc7b4400f6e40a6e940eb05b8450ef5b2516e91d3b142a`,
+  `f1a27123f1362dcfe7c9d55049d4464cf39180d0339145a52c2a3a0a3faba83a`,
+  `05392d670d9617c3ffc46584db2531dec730e11c0055070da277696a5e902b0c`,
+  and `6db8cc64584a9895a00822273a01a142999e3020552df843f9c9c1dae72876bd`.
+  The VM, auto-deleted boot disk, subnet, and VPC are verified absent.
+  The complete local run archive has SHA-256
+  `dfbc2c8136b03e046245ca6fe318374bd2f54c341ef8c7ae0990ccc644639777`
+  and its independent GCS verification is sealed by
+  `7e14c80111eefd4f0564f1cf8a9c57081385ea008b55f33796c00e9dfe502f54`.
 
 ## Not started or incomplete
 
@@ -323,10 +343,12 @@ card.
 
 ## Next action
 
-The explicit ms-swift model-type repair is validated and pushed at commit
-`2423f4e7e9c37590b77128318dc3b7416111cb00`. A reproducible v6 workspace and
-sealed preparation card bind that commit and await approval-specific GCloud
-upload. The next paid VM must first pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
+V6 exposed and locally repaired the remaining ms-swift identity assertion:
+model registration and template resolution are now checked explicitly as two
+separate pinned APIs. Gate 0B is still closed because v6 did not reach model
+load, inference, or training. A fresh, reproducible retry card must bind this
+repair before any further paid VM is proposed. The next paid VM must first
+pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.
@@ -338,7 +360,7 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The latest approved
-Standard A100 attempt under run `20260823T063348Z` is terminally sealed. Its
+Standard A100 attempt under run `20260823T073110Z` is terminally sealed. Its
 VM, disk, subnet, and VPC are verified absent; no project compute or temporary
 network resource remains. Another paid launch requires a fresh card and
 explicit approval for its additional GCloud exposure.

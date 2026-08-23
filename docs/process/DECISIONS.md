@@ -485,3 +485,43 @@ resource-absence proof, and post-delete backup are sealed respectively by
 `e48a68d2ad21d629bb011eafe942735ddcef57d88c44351debc21ce07f2e5924`,
 `5b145138f0f8fa7a6bc65ad8cec9add718caf3d3879f69b45490f618d6244fd3`,
 and `b3f294f2608ce73ef059caf7126ebfe17a6a645548365d07c73b14baaa82479e`.
+
+## 2026-08-23 — Gate 0B v6 separates model registration from template resolution
+
+V6 proved that explicit ms-swift model selection resolves the pinned local
+checkpoint as `qwen3_5`, but the qualifier incorrectly required
+`ModelMeta.template` to equal `qwen3_5`. In ms-swift 4.5.2, the registered
+Qwen3.5 template is attached to its `ModelGroup`; selecting an explicit model
+type for a generically named local directory returns the type-level
+`ModelMeta`, whose direct `template` field is legitimately `None` and whose
+`candidate_templates` contains `qwen3_5`. Template selection is a separate
+registry operation performed by `get_template_meta`.
+
+The repaired identity check therefore remains fully explicit and fail-closed:
+it calls `get_model_info_meta(..., model_type="qwen3_5",
+download_model=False)`, requires the resulting model type to be `qwen3_5`,
+then calls `get_template_meta(..., template_type="qwen3_5")` and requires the
+resolved template type to be `qwen3_5`. It records the raw model-meta template
+and candidate list as diagnostic evidence. This follows the pinned ms-swift
+4.5.2 registry implementation; it does not infer success from a nullable
+field or weaken the serving contract.
+
+V6 stopped before model weights were loaded, inference ran, or an optimizer
+step occurred. Its structured failure is sealed by
+`3a1a81dd11b7f42cce2461988cc87dd77e15bd0d310e0a19548b3f236b5ff266`.
+The 29-object terminal backup, 33-object stopped-resource composite backup,
+deletion gate, exact resource-absence proof, and six-object post-delete backup
+are sealed respectively by
+`5e80ce5264f434b47102706e16a9fa2dd8a494f0a166cf83e01e45b2e944a0c2`,
+`3f8e090c99829139a2cc7b4400f6e40a6e940eb05b8450ef5b2516e91d3b142a`,
+`f1a27123f1362dcfe7c9d55049d4464cf39180d0339145a52c2a3a0a3faba83a`,
+`05392d670d9617c3ffc46584db2531dec730e11c0055070da277696a5e902b0c`,
+and `6db8cc64584a9895a00822273a01a142999e3020552df843f9c9c1dae72876bd`.
+The exact VM, boot disk, subnet, and VPC are absent. Another GCloud attempt
+requires a fresh execution card and explicit approval.
+
+The complete 153,688-byte local v6 run archive is stored at GCS generation
+`1787472611940869` with SHA-256
+`dfbc2c8136b03e046245ca6fe318374bd2f54c341ef8c7ae0990ccc644639777`.
+Its independent backup manifest is sealed by
+`7e14c80111eefd4f0564f1cf8a9c57081385ea008b55f33796c00e9dfe502f54`.

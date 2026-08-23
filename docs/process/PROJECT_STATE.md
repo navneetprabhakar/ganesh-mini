@@ -443,26 +443,31 @@ at the wrong object paths. It also removed the second backbone load, added
 adapter/merge logit equivalence checks, corrected synthetic token accounting,
 and fixed the SFT validation macro. Evidence is sealed by
 `15330a2c847232d1acdf4c039a1bf34d5c9b7943fc5d12c0ff5e5e137ded5326`.
-The sealed v7 card is now stale and must not run. No v7 GCloud inspection,
-upload, or resource operation occurred. The sealed v8 replacement binds pushed
-repair commit `4873d337e62a57ec20ac43ff625616850a108607`, a twice-reproduced
-workspace archive, 2,400 seconds for setup plus qualification, 600 seconds for
-terminal backup, and a USD 3.32 incremental ceiling. It is unapproved; no v8
-GCloud inspection, upload, or resource action has occurred. The next paid VM
-may attempt Gate 0B only after explicit v8 approval and price reverification.
+The sealed v7 card is stale and must not run. The v8 Standard A100 replacement
+was approved and prepared, but Navneet stopped it on cost before VM or disk
+creation. Generation-pinned inputs were uploaded and a temporary VPC/subnet
+were briefly created; both network resources were deleted. The exact planned
+VM, disk, VPC, and subnet are absent under post-abort proof seal
+`940fbca74ba6ba349c58ff558313f4ef9d3e94f2e97027a8172a57b668233d86`.
+No GPU compute cost was incurred. The v8 run plan is historical and must not be
+reused. The preferred cheaper replacement is a non-preemptible 48 GiB-class
+Ampere rental (A40 or RTX A6000) after provider/driver portability preflight.
 Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.
-The existing v8 card remains scoped only to Gate 0B and does not authorize a
-Gate 1 workload. Native verifier qualification and the baseline require their
-own subsequently sealed execution inputs and explicit GCloud approval if
-GCloud is selected.
+The primary BF16 LoRA recipe still requires at least 24 GiB. An L4's marketed
+24 GB leaves insufficient practical margin against that frozen floor, while a
+Spot A100 repeats the preemption mode already observed. Any replacement needs
+a new provider-specific sealed card and cost ceiling. Native verifier
+qualification and the baseline require their own subsequently sealed inputs;
+fresh explicit approval remains mandatory if GCloud is selected.
 
 The native verifier, repaired workspace, global separation, Gate 2 cascade,
-and baseline-runner pre-execution audit are complete. The next mutation of
-external state is the sealed Gate 0B v8 GCloud attempt, which still requires
-fresh explicit approval. No baseline or training may start before Gate 0B
+and baseline-runner pre-execution audit are complete. The next external
+mutation is a cheaper provider qualification attempt after its exact card,
+runtime portability checks, and provider access are ready. No baseline or
+training may start before Gate 0B
 passes. After that pass, run the exact 180-task Qwen development baseline and
 admit it through the fail-closed Gate 1 report.
 
@@ -472,10 +477,11 @@ All work within the Ganesh Mini objective is authorized, including the Ganesh
 v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
-GCloud usage is the only standing authorization boundary. The latest approved
-Standard A100 attempt under run `20260823T073110Z` is terminally sealed. Its
-VM, disk, subnet, and VPC are verified absent; no project compute or temporary
-network resource remains. Another paid launch requires a fresh card and
-explicit approval for its additional GCloud exposure.
+GCloud usage is the only standing authorization boundary. The approved
+Standard A100 v8 attempt under run `20260823T084000Z` was aborted before VM
+creation because its upper cost was too high. Its VM, disk, subnet, and VPC are
+verified absent; no project compute or temporary network resource remains.
+Non-GCloud compute remains standing-authorized. Another GCloud launch requires
+a fresh card and explicit approval for its additional exposure.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.

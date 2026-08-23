@@ -2,7 +2,7 @@
 """Fail-closed CUDA LoRA qualification for the pinned Qwen3.5 checkpoint."""
 from __future__ import annotations
 
-import argparse, gc, hashlib, importlib.metadata, inspect, json, os, platform, resource, subprocess, time
+import argparse, gc, hashlib, importlib, importlib.metadata, inspect, json, os, platform, resource, subprocess, sys, time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -93,6 +93,34 @@ def triton_identity() -> dict[str,Any]:
         raise RuntimeError(f"Triton selected a non-CUDA backend: {target.backend}")
     return {"version":triton.__version__,"backend":target.backend,"architecture":str(target.arch),"cache_dir":os.environ.get("TRITON_CACHE_DIR"),"passed":True}
 
+def install_fla_recurrent_compatibility() -> dict[str,Any]:
+    """Expose FLA 0.5's fused recurrent kernel under Transformers' expected name."""
+    model_module = "transformers.models.qwen3_5.modeling_qwen3_5"
+    if model_module in sys.modules:
+        raise RuntimeError("FLA recurrent compatibility must be installed before Qwen3.5 model import")
+    module = importlib.import_module("fla.ops.gated_delta_rule")
+    requested_name = "recurrent_gated_delta_rule"
+    source_name = "fused_recurrent_gated_delta_rule"
+    implementation = getattr(module, requested_name, None)
+    installed_alias = implementation is None
+    if installed_alias:
+        implementation = getattr(module, source_name, None)
+        if not callable(implementation):
+            raise RuntimeError(f"FLA exposes neither {requested_name} nor callable {source_name}")
+        setattr(module, requested_name, implementation)
+    if not callable(implementation):
+        raise RuntimeError(f"FLA {requested_name} is not callable")
+    implementation_module = implementation.__module__
+    passed = implementation_module == "fla" or implementation_module.startswith("fla.")
+    if not passed:
+        raise RuntimeError(f"FLA recurrent implementation resolved outside fla: {implementation_module}")
+    return {
+        "requested_symbol":"fla.ops.gated_delta_rule.recurrent_gated_delta_rule",
+        "resolved_symbol":f"{implementation_module}.{implementation.__name__}",
+        "installed_alias":installed_alias,
+        "passed":passed,
+    }
+
 def resolved_kernel_implementation(function: Any) -> dict[str,Any]:
     implementation = inspect.getclosurevars(function).nonlocals.get("implementation")
     if not callable(implementation):
@@ -176,11 +204,11 @@ def sequence_envelope_probe(model: Any, tokenizer: Any, length: int) -> dict[str
     output.loss.backward(); model.zero_grad(set_to_none=True)
     return {"kind":"synthetic-active-token-shape-probe","sequence_length":length,"active_tokens":length,"micro_batch_size":1,"optimizer_step":False,"quality_training_record":False,"loss_finite":True,"passed":True}
 
-def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path, journal_path: Path | None = None) -> dict[str,Any]:
+def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path, model: Any, tokenizer: Any, journal_path: Path | None = None) -> dict[str,Any]:
     import torch
     from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
-    from transformers import AutoModelForImageTextToText, AutoTokenizer
-    recipe = config["recipes"][recipe_id]; tokenizer = AutoTokenizer.from_pretrained(model_dir,local_files_only=True); model = load_model(model_dir,recipe_id)
+    from transformers import AutoModelForImageTextToText
+    recipe = config["recipes"][recipe_id]
     if hasattr(model,"visual"):
         for parameter in model.visual.parameters(): parameter.requires_grad = False
     quantized = [name for name,value in model.named_parameters() if value.__class__.__name__ == "Params4bit"]
@@ -223,17 +251,15 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     merged_dir.mkdir(parents=False,exist_ok=False); merged.save_pretrained(merged_dir,safe_serialization=True); tokenizer.save_pretrained(merged_dir)
     merged_hashes = {path.name:file_sha256(path) for path in sorted(merged_dir.iterdir()) if path.is_file()}
     if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"completed","file_sha256":merged_hashes,"logits_finite":True})
-    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"optimizer_steps":len(records),"losses":losses,"sequence_envelope":envelope,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":memory,"adapter_file_sha256":hashes,"adapter_reloaded":True,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
+    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"model_load_reused_after_inference":True,"optimizer_steps":len(records),"losses":losses,"sequence_envelope":envelope,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":memory,"adapter_file_sha256":hashes,"adapter_reloaded":True,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
 
-def inference_smoke(model_dir: Path, recipe_id: str) -> dict[str,Any]:
+def inference_smoke(model: Any, tokenizer: Any) -> dict[str,Any]:
     import torch
-    from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_dir,local_files_only=True); model = load_model(model_dir,recipe_id); model.eval(); messages = [{"role":"user","content":"Return only a Python function add(a, b) that returns the sum."}]; rendered = tokenizer.apply_chat_template(messages,tokenize=False,add_generation_prompt=True,enable_thinking=False); inputs = tokenizer(rendered,return_tensors="pt").to("cuda:0")
+    model.eval(); messages = [{"role":"user","content":"Return only a Python function add(a, b) that returns the sum."}]; rendered = tokenizer.apply_chat_template(messages,tokenize=False,add_generation_prompt=True,enable_thinking=False); inputs = tokenizer(rendered,return_tensors="pt").to("cuda:0")
     with torch.inference_mode(): generated = model.generate(**inputs,do_sample=False,max_new_tokens=32,pad_token_id=tokenizer.eos_token_id)
     new_ids = generated[0,inputs.input_ids.shape[1]:]; raw = tokenizer.decode(new_ids,skip_special_tokens=False); clean = tokenizer.decode(new_ids,skip_special_tokens=True); passed = bool(clean.strip()) and rendered.endswith("<think>\n\n</think>\n\n")
     if not passed: raise RuntimeError("text-only non-thinking inference contract failed")
-    del model; gc.collect(); torch.cuda.empty_cache()
-    return {"messages":messages,"rendered_prompt":rendered,"rendered_prompt_sha256":hashlib.sha256(rendered.encode()).hexdigest(),"raw_output":raw,"extracted_output":clean,"input_tokens":int(inputs.input_ids.shape[1]),"output_tokens":int(new_ids.shape[0]),"passed":passed}
+    return {"messages":messages,"rendered_prompt":rendered,"rendered_prompt_sha256":hashlib.sha256(rendered.encode()).hexdigest(),"raw_output":raw,"extracted_output":clean,"input_tokens":int(inputs.input_ids.shape[1]),"output_tokens":int(new_ids.shape[0]),"model_load_shared_with_training":True,"passed":passed}
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__); root = Path(__file__).resolve().parents[2]
@@ -244,13 +270,16 @@ def main() -> int:
         config = load_and_validate_config(args.config,root); recipe = config["recipes"][args.recipe]
         append_journal(journal_path,{"phase":"identity","state":"started"})
         evidence.update({"model_id":config["model"]["model_id"],"revision":config["model"]["revision"],"config_sha256":file_sha256(args.config),"model_inventory":{path.name:file_sha256(path) for path in sorted(args.model_dir.iterdir()) if path.is_file()}})
-        for component, check in (("gpu",lambda:gpu_identity(config,recipe)),("triton",triton_identity),("packages",lambda:package_identity(config["packages"])),("kernels",kernel_identity),("ms_swift",lambda:swift_identity(args.model_dir))):
+        for component, check in (("gpu",lambda:gpu_identity(config,recipe)),("triton",triton_identity),("fla_recurrent_compatibility",install_fla_recurrent_compatibility),("packages",lambda:package_identity(config["packages"])),("kernels",kernel_identity),("ms_swift",lambda:swift_identity(args.model_dir))):
             append_journal(journal_path,{"phase":"identity-component","component":component,"state":"started"})
             evidence[component] = check()
             append_journal(journal_path,{"phase":"identity-component","component":component,"state":"completed"})
         append_journal(journal_path,{"phase":"identity","state":"completed"})
-        append_journal(journal_path,{"phase":"inference","state":"started"}); evidence["inference"] = inference_smoke(args.model_dir,args.recipe); append_journal(journal_path,{"phase":"inference","state":"completed"})
-        append_journal(journal_path,{"phase":"training","state":"started"}); evidence["training"] = run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,journal_path); append_journal(journal_path,{"phase":"training","state":"completed"})
+        from transformers import AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(args.model_dir,local_files_only=True)
+        model = load_model(args.model_dir,args.recipe)
+        append_journal(journal_path,{"phase":"inference","state":"started"}); evidence["inference"] = inference_smoke(model,tokenizer); append_journal(journal_path,{"phase":"inference","state":"completed"})
+        append_journal(journal_path,{"phase":"training","state":"started"}); evidence["training"] = run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,model,tokenizer,journal_path); append_journal(journal_path,{"phase":"training","state":"completed"})
         evidence["status"] = "passed"; append_journal(journal_path,{"phase":"qualification","state":"completed","status":"passed"})
     except Exception as exc:
         evidence.update({"error_type":type(exc).__name__,"error":str(exc)}); append_journal(journal_path,{"phase":"qualification","state":"completed","status":"failed","error_type":type(exc).__name__,"error":str(exc)})

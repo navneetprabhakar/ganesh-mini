@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,7 @@ from scripts.cuda.qualify import (
     PRIMARY_RECIPE,
     canonical_sha256,
     append_journal,
+    install_fla_recurrent_compatibility,
     load_and_validate_config,
     resolved_kernel_implementation,
     select_records,
@@ -128,9 +130,18 @@ def test_runner_requires_exact_preloaded_image_and_disables_pull_and_network() -
     assert "docker build" not in runner
     assert "--pull=never" in runner
     assert "--network none" in runner
+    assert "--cpus 12 --memory 72g" in runner
     assert "--tmpfs /tmp:rw,noexec,nosuid,size=8g" in runner
     assert "--tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g" in runner
     assert "TRITON_CACHE_DIR=/var/cache/triton" in runner
+
+
+def test_inference_and_training_share_one_model_load() -> None:
+    source = (ROOT / "scripts/cuda/qualify.py").read_text()
+    main = source[source.index("def main()") :]
+    assert main.count("model = load_model(args.model_dir,args.recipe)") == 1
+    assert "inference_smoke(model,tokenizer)" in main
+    assert "run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,model,tokenizer,journal_path)" in main
 
 
 def test_cpu_prebuild_has_a_hard_deadline_and_seals_oci_archive() -> None:
@@ -156,7 +167,7 @@ def test_cuda_dockerfile_does_not_require_optional_buildx_component() -> None:
 def test_gpu_identity_precedes_fla_import_and_kernel_check() -> None:
     source = (ROOT / "scripts/cuda/qualify.py").read_text()
     identity_loop = source[source.index('for component, check in'):source.index('append_journal(journal_path,{"phase":"identity","state":"completed"}')]
-    assert identity_loop.index('(\"gpu\"') < identity_loop.index('(\"triton\"') < identity_loop.index('(\"packages\"') < identity_loop.index('(\"kernels\"')
+    assert identity_loop.index('(\"gpu\"') < identity_loop.index('(\"triton\"') < identity_loop.index('(\"fla_recurrent_compatibility\"') < identity_loop.index('(\"packages\"') < identity_loop.index('(\"kernels\"')
     assert "Triton CUDA backend initialization failed" in source
     assert 'backend != {"triton":"cuda","fla":"cuda","fla_is_nvidia":True}' in source
     assert "modeling_qwen3_5.torch_chunk_gated_delta_rule" in source
@@ -165,6 +176,37 @@ def test_gpu_identity_precedes_fla_import_and_kernel_check() -> None:
     assert "is_fast_path_available" not in source
     runner = (ROOT / "scripts/cuda/run_qualification.sh").read_text()
     assert '-e GANESH_ATTEMPT_ID="${GANESH_ATTEMPT_ID:?GANESH_ATTEMPT_ID is required}"' in runner
+
+
+def test_fla_recurrent_compatibility_installs_fused_alias(monkeypatch) -> None:
+    class FakeModule:
+        pass
+
+    module = FakeModule()
+
+    def fused_recurrent_gated_delta_rule():
+        return None
+
+    fused_recurrent_gated_delta_rule.__module__ = "fla.ops.gated_delta_rule.fused_recurrent"
+    module.fused_recurrent_gated_delta_rule = fused_recurrent_gated_delta_rule
+    monkeypatch.delitem(sys.modules, "transformers.models.qwen3_5.modeling_qwen3_5", raising=False)
+    monkeypatch.setattr("scripts.cuda.qualify.importlib.import_module", lambda name: module)
+
+    evidence = install_fla_recurrent_compatibility()
+
+    assert module.recurrent_gated_delta_rule is fused_recurrent_gated_delta_rule
+    assert evidence == {
+        "requested_symbol": "fla.ops.gated_delta_rule.recurrent_gated_delta_rule",
+        "resolved_symbol": "fla.ops.gated_delta_rule.fused_recurrent.fused_recurrent_gated_delta_rule",
+        "installed_alias": True,
+        "passed": True,
+    }
+
+
+def test_fla_recurrent_compatibility_fails_after_model_import(monkeypatch) -> None:
+    monkeypatch.setitem(sys.modules, "transformers.models.qwen3_5.modeling_qwen3_5", object())
+    with pytest.raises(RuntimeError, match="before Qwen3.5 model import"):
+        install_fla_recurrent_compatibility()
 
 
 def test_resolved_kernel_implementation_reports_decorator_target() -> None:

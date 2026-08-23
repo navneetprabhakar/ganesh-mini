@@ -65,6 +65,10 @@ canonical plan.
 If the reviewer reports `DIVERGENCE`, the primary task pauses further
 mutations, training, downloads, and compute and waits for Navneet Prabhakar.
 
+This decision was superseded on 2026-08-23 when Navneet Prabhakar explicitly
+disabled further deviation checks. No recurring goal-alignment automation or
+review subagent remains active.
+
 ## 2026-08-22 — BF16 LoRA primary; NF4 QLoRA fallback
 
 After reviewing the 2B backbone and the project's quality-first objective,
@@ -338,3 +342,50 @@ plus the tranche-1/2 shared cross-overlap report; and rechecks all 720 execution
 rows against their exact artifact, runtime, image, output hashes, sandbox, and
 exit polarity. It proves zero exact or normalized prompt overlap and is sealed
 by `96ea9669e194c567f304c5462b2be9cc171555bba56ea10801186480bb347a06`.
+
+## 2026-08-23 — Attribute-repair A100 retry exposed an FLA symbol mismatch
+
+Navneet Prabhakar approved continuation of all project steps, requested that
+VM/GPU utilization be maximized, disabled further deviation checks, and asked
+the work to continue unless an anomaly occurred.
+
+The A100-only retry ran under prefix
+`ganesh-mini-1.0/gate0b/20260823T030116Z`. It proved the exact pinned package
+set, one NVIDIA A100-SXM4-40GB, BF16, CUDA 13.0, cuDNN 92000, Triton CUDA
+architecture 80, both causal-conv1d kernels, and the external FLA chunk kernel.
+It then failed after 33.86 seconds because Transformers 5.15.1 requested
+`fla.ops.gated_delta_rule.recurrent_gated_delta_rule`, while FLA 0.5.2 exports
+the equivalent CUDA decode implementation as
+`fused_recurrent_gated_delta_rule`. Transformers silently selected its Torch
+fallback. Model loading and training did not begin, so Gate 0B remains closed.
+The failed result is sealed by
+`d7fdb89ce744524ec87ad4b10caf2cb189ef7fb61f61fb6e2e7c152a6f538e50`;
+the 28-object terminal backup is sealed by
+`39ed40945ded583ebbc47ebbbcf3e4d9faf899dcbbe418a741aef87a4ea86065`.
+
+The stopped VM was deleted only after the 31-object composite deletion backup
+passed under seal
+`a5e5c0779fe298ee0d915481e435fa22cccc017b2c17bde2d4947264c7d16204`
+and deletion-gate seal
+`7e1d4f9c3eb3dbbe558c4e972083dcc272e3dd1b95bb7f64bdb23d891d3bab88`.
+The VM, disk, subnet, and VPC are absent. The nine-object post-delete backup is
+sealed by
+`8d353de09d2e61f165f7eff0d2b6edcfcbcc43650bc202dbf6c7e5b4c1b3af07`.
+The complete local run archive is independently verified in GCS with SHA-256
+`29d0d8e7b7266a85d05f909fed36d2bde01cad21450c0605c6f3c2a8883d31b3`
+and manifest seal
+`f0e930840aebc876ea49f92e5ce4deabf59a3922a8ae4e72fcd2c5cd89a8316c`.
+
+The repair does not weaken qualification to accept the slower Torch fallback.
+It installs a process-local alias from FLA's requested recurrent symbol to its
+fused recurrent CUDA implementation before Qwen3.5 is imported, then retains
+the closure-origin check requiring the resolved implementation to come from
+`fla`. This preserves the external chunk kernel for training and the fused
+recurrent kernel for single-token cached decode. Any late installation,
+missing fused implementation, non-callable symbol, or non-FLA implementation
+fails closed. A further paid run is not started until this anomaly repair is
+fully validated and bound into a fresh execution card. The next qualifier also
+shares one base-model load between inference and the 16-record training smoke
+and raises the A100 container envelope from 8 vCPUs/32 GiB to the host's 12
+vCPUs with a 72 GiB ceiling, reducing idle setup time without changing the
+frozen recipe.

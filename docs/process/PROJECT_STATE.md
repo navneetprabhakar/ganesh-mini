@@ -10,10 +10,11 @@ Gate 0B and Gate 1 preparation in parallel:
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
 Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
-complete. The rebuilt image passed package, A100/BF16, CUDA, and Triton identity
-on a Standard A100, but the qualifier referenced Transformers 5.15.1 symbols
-that no longer exist and stopped before model loading. Gate 0 remains
-fail-closed while the corrected qualifier awaits NVIDIA requalification.
+complete. The latest Standard A100 retry passed package, A100/BF16, CUDA,
+Triton, causal-conv1d, and the external FLA chunk-training kernel, but exposed
+an exact Transformers 5.15.1 / FLA 0.5.2 recurrent-symbol mismatch before
+model loading. Gate 0 remains fail-closed while the pre-import fused-kernel
+compatibility repair is validated and rebound into a fresh execution card.
 
 ## Completed
 
@@ -56,7 +57,8 @@ fail-closed while the corrected qualifier awaits NVIDIA requalification.
 - Audited the pinned Multi-LiveCodeBench v6 slice. All 1,050 language
   projections were excluded because none satisfies the strict task contract;
   no benchmark prompts were redistributed or admitted.
-- The recurring 30-minute goal-alignment heartbeat is active.
+- The recurring 30-minute goal-alignment heartbeat was disabled at Navneet
+  Prabhakar's explicit request; no replacement deviation check is active.
 - Selected BF16 LoRA as the primary SFT mechanism and NF4 QLoRA as a
   measurement-gated fallback. The controller enforces separate recipe hashes
   and sealed fallback evidence.
@@ -212,6 +214,33 @@ fail-closed while the corrected qualifier awaits NVIDIA requalification.
   verification reads are generation-pinned. The full local suite passes with
   one intentional integration skip, and the independent second pass reports
   aligned.
+- Ran the attribute-repair retry under GCS prefix
+  `ganesh-mini-1.0/gate0b/20260823T030116Z`. The exact environment and three
+  external CUDA kernel resolutions passed; the recurrent wrapper alone fell
+  back to Transformers Torch because FLA 0.5.2 names the available fused
+  implementation `fused_recurrent_gated_delta_rule`. The structured failure
+  seal is
+  `d7fdb89ce744524ec87ad4b10caf2cb189ef7fb61f61fb6e2e7c152a6f538e50`.
+  The terminal backup seal is
+  `39ed40945ded583ebbc47ebbbcf3e4d9faf899dcbbe418a741aef87a4ea86065`.
+  No model load, optimizer step, or training occurred.
+- Passed the retry's deletion gate, backed all run evidence to GCS, deleted
+  the VM, disk, subnet, and VPC, and proved them absent. The composite deletion
+  backup, deletion gate, and post-delete seals are respectively
+  `a5e5c0779fe298ee0d915481e435fa22cccc017b2c17bde2d4947264c7d16204`,
+  `7e1d4f9c3eb3dbbe558c4e972083dcc272e3dd1b95bb7f64bdb23d891d3bab88`,
+  and `8d353de09d2e61f165f7eff0d2b6edcfcbcc43650bc202dbf6c7e5b4c1b3af07`.
+  A final complete local-evidence archive is independently verified in GCS by
+  manifest seal
+  `f0e930840aebc876ea49f92e5ce4deabf59a3922a8ae4e72fcd2c5cd89a8316c`.
+- Implemented a fail-closed pre-import compatibility alias that exposes FLA's
+  fused recurrent CUDA implementation under the exact symbol Transformers
+  5.15.1 requests. The existing closure inspection still requires the
+  recurrent implementation to originate in `fla`; the Torch fallback remains
+  disallowed. The retry path now shares one model load across inference and
+  training qualification and assigns 12 vCPUs/72 GiB to the container.
+  The full local suite passes: 114 tests passed and one intentional integration
+  test was skipped.
 
 ## Not started or incomplete
 
@@ -226,16 +255,12 @@ fail-closed while the corrected qualifier awaits NVIDIA requalification.
 
 ## Next action
 
-The complete evaluation contract and global separation evidence are frozen,
-and the corrected qualifier has passed the local and independent review passes.
-The A100-only retry card reuses the generation-pinned image, model, and offline
-bundle and is sealed by
-`03fe1469d74f89d6494be22df9b57815733a7873652977d7f180ef514ea7e3c3`.
-It has a `$1.474461667` incremental upper bound, a `$5.723091194`
-conservative cumulative upper bound, and a `$5.75` absolute ceiling. It requires
-fresh explicit GCloud approval before any inspection or execution. After Gate
-0B passes on NVIDIA, execute the exact Qwen base baseline before opening the
-seed-pilot training gate.
+Seal the failed run and validated repair in Git, then create a fresh execution
+card. The next paid VM must first pass Gate 0B. Only after that pass may the
+exact Qwen base baseline run; seed-pilot training remains blocked until the
+base baseline exists. The next execution design must minimize image/model setup
+overhead and keep generation or training work GPU-bound while CPU verification
+and GCS uploads run concurrently where the evidence contract permits.
 
 ## Authorization state
 
@@ -243,12 +268,11 @@ All work within the Ganesh Mini objective is authorized, including the Ganesh
 v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
-GCloud usage is the only standing authorization boundary. The approved CPU
-prebuild and Standard A100 attempt under run `20260823T000950Z` are terminally
-sealed. Their VMs, disks, NAT, router, subnet, and VPC are all verified absent;
-no project compute or temporary network resource remains. That approval is
-exhausted. Any new GCloud inspection, creation, or execution requires explicit
-approval of a new sealed card.
+GCloud usage is the only standing authorization boundary. The latest approved
+Standard A100 attempt under run `20260823T030116Z` is terminally sealed. Its
+VM, disk, subnet, and VPC are verified absent; no project compute or temporary
+network resource remains. Navneet Prabhakar has broadly approved subsequent
+steps, but the newly observed anomaly prevents another paid launch until the
+repair is validated and a fresh exact card binds the changed source.
 
-An active 30-minute Codex heartbeat independently audits goal alignment. A
-`DIVERGENCE` result pauses project mutations and compute until user direction.
+No recurring goal-alignment heartbeat or deviation-review subagent is active.

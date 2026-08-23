@@ -65,6 +65,8 @@ def implementation_identity() -> dict[str, str]:
         "extractor_sha256": "scripts/inference/extract.py",
         "result_builder_sha256": "scripts/eval/run_task.py",
         "verifier_sha256": "scripts/verify/sandbox.py",
+        "runtimes_config_sha256": "configs/eval/runtimes.json",
+        "qwen_cuda_compatibility_sha256": "scripts/cuda/qualify.py",
     }.items()}
 
 
@@ -84,6 +86,8 @@ class BatchBackend(Protocol):
 
 class TransformersBatchBackend:
     def __init__(self, model_dir: Path, auto_model_class: str, adapter_dir: Path | None = None) -> None:
+        from scripts.cuda.qualify import install_fla_recurrent_compatibility, kernel_identity
+        recurrent_compatibility=install_fla_recurrent_compatibility()
         import torch
         from transformers import AutoModelForCausalLM, AutoModelForImageTextToText, AutoTokenizer
         started = time.perf_counter(); self.torch = torch
@@ -98,8 +102,10 @@ class TransformersBatchBackend:
             from peft import PeftModel
             self.model=PeftModel.from_pretrained(self.model,adapter_dir,is_trainable=False)
         self.model.eval()
+        kernels=kernel_identity() if self.device=="cuda" else None
         self.eos_token_id = int(self.tokenizer.eos_token_id); self.load_ms = round((time.perf_counter()-started)*1000)
-        self.identity = {"backend":"transformers-peft-batched" if adapter_dir else "transformers-batched","python":platform.python_version(),"torch":torch.__version__,"device":self.device,"dtype":str(next(self.model.parameters()).dtype),"adapter_dir":str(adapter_dir) if adapter_dir else None}
+        adapter_identity=str(adapter_dir.relative_to(ROOT)) if adapter_dir is not None and adapter_dir.is_relative_to(ROOT) else str(adapter_dir) if adapter_dir is not None else None
+        self.identity = {"backend":"transformers-peft-batched" if adapter_dir else "transformers-batched","python":platform.python_version(),"torch":torch.__version__,"device":self.device,"dtype":str(next(self.model.parameters()).dtype),"adapter_dir":adapter_identity,"fla_recurrent_compatibility":recurrent_compatibility,"cuda_kernel_identity":kernels}
 
     def render(self, prompt: str) -> tuple[str, list[int]]:
         rendered = self.tokenizer.apply_chat_template([{"role":"user","content":prompt}],tokenize=False,add_generation_prompt=True,enable_thinking=False)
@@ -128,9 +134,15 @@ def validate_config(config: dict[str, Any]) -> None:
     generation=config.get("generation",{}); execution=config.get("execution",{})
     if generation.get("do_sample") is not False or not 1 <= generation.get("max_new_tokens",0) <= 4096: raise ValueError("generation must be bounded greedy decoding")
     if not 1 <= execution.get("batch_size",0) <= 64 or not 1 <= execution.get("verifier_workers",0) <= 64: raise ValueError("invalid execution concurrency")
+    if not isinstance(execution.get("length_bucket_width"),int) or not 1 <= execution["length_bucket_width"] <= 8192: raise ValueError("invalid length bucket width")
+    if execution.get("required_device") not in {"cuda","mps","cpu"}: raise ValueError("invalid required execution device")
     if config.get("extractor_id") != EXTRACTOR_ID: raise ValueError("unknown extractor")
     if config.get("classification")=="private_candidate_development" and not isinstance(config.get("adapter"),dict): raise ValueError("candidate development requires a sealed adapter binding")
     if config.get("classification")=="private_development_baseline" and config.get("adapter") is not None: raise ValueError("base baseline cannot load an adapter")
+
+
+def validate_batch_outputs(outputs: list[tuple[list[int],str,int]], batch_size: int) -> None:
+    if len(outputs)!=batch_size: raise RuntimeError(f"generation backend returned {len(outputs)} outputs for batch size {batch_size}")
 
 
 def model_identity(config: dict[str, Any]) -> tuple[dict[str, Any], int]:
@@ -155,17 +167,22 @@ def load_sealed(path: Path, field: str) -> dict[str, Any] | None:
     value[field]=claimed; return value
 
 
-def validate_resumed_task(evidence: dict[str,Any], task: dict[str,Any], config: dict[str,Any], config_sha: str, model: dict[str,Any]) -> None:
+def validate_resumed_task(evidence: dict[str,Any], task: dict[str,Any], config: dict[str,Any], config_sha: str, model: dict[str,Any], backend: BatchBackend, implementation: dict[str,str]) -> None:
     if evidence.get("classification")!=config["classification"] or evidence.get("run_id")!=config["run_id"]: raise ValueError("resumed task classification/run mismatch")
     bound=evidence.get("task",{})
     if bound.get("task_id")!=task["task_id"] or bound.get("task_sha256")!=sha256_object(task) or bound.get("config_sha256")!=config_sha: raise ValueError("resumed task identity mismatch")
     if evidence.get("model")!=model: raise ValueError("resumed task model mismatch")
+    runtime=evidence.get("runtime",{}); observed_implementation=runtime.get("implementation")
+    if observed_implementation!=implementation: raise ValueError("resumed task implementation mismatch")
+    if {key:value for key,value in runtime.items() if key!="implementation"}!=backend.identity: raise ValueError("resumed task runtime mismatch")
     validate_result(evidence["verification"]["result"])
 
 
-def validate_resumed_generation(generated: dict[str,Any], task: dict[str,Any], config_sha: str, model: dict[str,Any]) -> None:
+def validate_resumed_generation(generated: dict[str,Any], task: dict[str,Any], config_sha: str, model: dict[str,Any], backend: BatchBackend, implementation: dict[str,str]) -> None:
     if generated.get("task_id")!=task["task_id"] or generated.get("task_sha256")!=sha256_object(task) or generated.get("config_sha256")!=config_sha: raise ValueError("resumed generation identity mismatch")
     if generated.get("model")!=model: raise ValueError("resumed generation model mismatch")
+    if generated.get("runtime")!=backend.identity: raise ValueError("resumed generation runtime mismatch")
+    if generated.get("implementation")!=implementation: raise ValueError("resumed generation implementation mismatch")
 
 
 def run_manifest(config: dict[str,Any], config_sha: str, model: dict[str,Any], backend: BatchBackend, tasks: list[tuple[Path,dict[str,Any]]], completed: dict[str,dict[str,Any]], final_dir: Path) -> dict[str,Any]:
@@ -173,12 +190,12 @@ def run_manifest(config: dict[str,Any], config_sha: str, model: dict[str,Any], b
     for _,task in tasks:
         evidence=completed.get(task["task_id"]); path=final_dir/f"{task['task_id']}.json"
         rows.append({"task_id":task["task_id"],"status":"complete" if evidence else "pending","passed":evidence["verification"]["result"]["passed"] if evidence else None,"evidence_path":str(path.relative_to(ROOT)) if evidence else None,"evidence_sha256":evidence.get("evidence_sha256") if evidence else None})
-    return sealed({"schema_version":"ganesh-mini-inference-run/v2","run_id":config["run_id"],"classification":config["classification"],"config_sha256":config_sha,"model":model,"runtime":backend.identity,"task_accounting":{"expected":len(rows),"completed":len(completed),"passed":sum(row["passed"] is True for row in rows),"failed":sum(row["passed"] is False for row in rows),"pending":len(rows)-len(completed)},"tasks":rows,"updated_at":utc_now()},"run_sha256")
+    return sealed({"schema_version":"ganesh-mini-inference-run/v2","run_id":config["run_id"],"classification":config["classification"],"config_sha256":config_sha,"model":model,"runtime":{**backend.identity,"implementation":implementation_identity()},"task_accounting":{"expected":len(rows),"completed":len(completed),"passed":sum(row["passed"] is True for row in rows),"failed":sum(row["passed"] is False for row in rows),"pending":len(rows)-len(completed)},"tasks":rows,"updated_at":utc_now()},"run_sha256")
 
 
 def generation_evidence(task_path: Path, task: dict[str,Any], config: dict[str,Any], config_sha: str, model: dict[str,Any], artifact_size: int, backend: BatchBackend, rendered: str, ids: list[int], output: tuple[list[int],str,int]) -> dict[str,Any]:
     output_ids,raw,generation_ms=output; completed=datetime.now(timezone.utc); started=completed.timestamp()-generation_ms/1000; stopped=bool(output_ids and output_ids[-1]==backend.eos_token_id)
-    value={"schema_version":"ganesh-mini-generation-evidence/v1","task_id":task["task_id"],"task_path":str(task_path.relative_to(ROOT)),"task_sha256":sha256_object(task),"config_sha256":config_sha,"model":model,"prompt":{"rendered":rendered,"rendered_sha256":sha256_text(rendered),"input_token_ids":ids,"input_token_ids_sha256":sha256_bytes(canonical_bytes(ids))},"generation":{"raw_output":raw,"raw_output_sha256":sha256_text(raw),"output_token_ids":output_ids,"output_token_ids_sha256":sha256_bytes(canonical_bytes(output_ids)),"stopped_at_eos":stopped,"generation_ms":generation_ms,"started_at":datetime.fromtimestamp(started,timezone.utc).isoformat(),"completed_at":completed.isoformat()},"parameters":{**config["serving"],**config["generation"],"input_tokens":len(ids),"output_tokens":len(output_ids),"stopped_at_eos":stopped,"artifact_size_bytes":artifact_size},"recorded_at":completed.isoformat(),"implementation":implementation_identity()}
+    value={"schema_version":"ganesh-mini-generation-evidence/v1","task_id":task["task_id"],"task_path":str(task_path.relative_to(ROOT)),"task_sha256":sha256_object(task),"config_sha256":config_sha,"model":model,"runtime":backend.identity,"prompt":{"rendered":rendered,"rendered_sha256":sha256_text(rendered),"input_token_ids":ids,"input_token_ids_sha256":sha256_bytes(canonical_bytes(ids))},"generation":{"raw_output":raw,"raw_output_sha256":sha256_text(raw),"output_token_ids":output_ids,"output_token_ids_sha256":sha256_bytes(canonical_bytes(output_ids)),"stopped_at_eos":stopped,"generation_ms":generation_ms,"started_at":datetime.fromtimestamp(started,timezone.utc).isoformat(),"completed_at":completed.isoformat()},"parameters":{**config["serving"],**config["generation"],"input_tokens":len(ids),"output_tokens":len(output_ids),"stopped_at_eos":stopped,"artifact_size_bytes":artifact_size},"recorded_at":completed.isoformat(),"implementation":implementation_identity()}
     return sealed(value,"generation_sha256")
 
 
@@ -202,23 +219,32 @@ def execute(config_path: Path, backend: BatchBackend | None = None, model_overri
     if len(paths)!=config["expected_task_count"]: raise ValueError(f"expected {config['expected_task_count']} tasks, found {len(paths)}")
     tasks=[(path,validate_task(load_json(path))) for path in paths]
     if any(task["surface"]!=config["allowed_surface"] for _,task in tasks): raise ValueError("task surface escaped config")
+    task_ids=[task["task_id"] for _,task in tasks]
+    if len(task_ids)!=len(set(task_ids)): raise ValueError("duplicate task IDs in selected evaluation surface")
     backend=backend or TransformersBatchBackend(ROOT/config["model_dir"],config["auto_model_class"],ROOT/config["adapter"]["dir"] if config.get("adapter") else None); output=ROOT/config["output_dir"]; generated_dir=output/"generated"; final_dir=output/"tasks"
+    if backend.identity.get("device")!=config["execution"]["required_device"]: raise RuntimeError(f"evaluation requires {config['execution']['required_device']}, observed {backend.identity.get('device')}")
+    implementation=implementation_identity()
     completed: dict[str,dict[str,Any]]={}; pending=[]
     for path,task in tasks:
         final=load_sealed(final_dir/f"{task['task_id']}.json","evidence_sha256")
         if final is not None:
-            validate_resumed_task(final,task,config,config_sha,model); completed[task["task_id"]]=final
+            validate_resumed_task(final,task,config,config_sha,model,backend,implementation); completed[task["task_id"]]=final
         else: pending.append((path,task))
     generated_pending=[]; rendered=[]
     for path,task in pending:
         prior=load_sealed(generated_dir/f"{task['task_id']}.json","generation_sha256")
         if prior is not None:
-            validate_resumed_generation(prior,task,config_sha,model); generated_pending.append((path,task,prior))
+            validate_resumed_generation(prior,task,config_sha,model,backend,implementation); generated_pending.append((path,task,prior))
         else:
             rendered.append((path,task,*backend.render(task["prompt"]["text"])))
     rendered.sort(key=lambda row:(row[1]["language"],len(row[3])//config["execution"]["length_bucket_width"],len(row[3]),row[1]["task_id"]))
     futures: dict[Future[dict[str,Any]],tuple[Path,dict[str,Any]]] = {}
     with ThreadPoolExecutor(max_workers=config["execution"]["verifier_workers"]) as pool:
+        def persist_ready(ready: list[Future[dict[str,Any]]]) -> None:
+            if not ready: return
+            for future in ready:
+                _,task=futures.pop(future); evidence=future.result(); atomic_json(final_dir/f"{task['task_id']}.json",evidence); completed[task["task_id"]]=evidence
+            atomic_json(output/"run.json",run_manifest(config,config_sha,model,backend,tasks,completed,final_dir))
         for path,task,generation in generated_pending:
             futures[pool.submit(verify_generated,generation,task,config,model,backend,ROOT/config["runtimes"])]=(path,task)
         size=config["execution"]["batch_size"]
@@ -229,12 +255,13 @@ def execute(config_path: Path, backend: BatchBackend | None = None, model_overri
                 batch=lane_rows[offset:offset+size]
                 if any(len(row[3])+config["generation"]["max_new_tokens"]>8192 for row in batch): raise ValueError("prompt plus generation exceeds context")
                 outputs=backend.generate_batch([row[3] for row in batch],config["generation"]["max_new_tokens"],config["generation"]["use_cache"])
+                validate_batch_outputs(outputs,len(batch))
                 for (path,task,text,ids),generated_output in zip(batch,outputs):
                     generation=generation_evidence(path,task,config,config_sha,model,artifact_size,backend,text,ids,generated_output); atomic_json(generated_dir/f"{task['task_id']}.json",generation)
                     futures[pool.submit(verify_generated,generation,task,config,model,backend,ROOT/config["runtimes"])]=(path,task)
-        for future in as_completed(futures):
-            _,task=futures[future]; evidence=future.result(); atomic_json(final_dir/f"{task['task_id']}.json",evidence); completed[task["task_id"]]=evidence
-            atomic_json(output/"run.json",run_manifest(config,config_sha,model,backend,tasks,completed,final_dir))
+                persist_ready([future for future in tuple(futures) if future.done()])
+        while futures:
+            persist_ready([next(as_completed(tuple(futures)))])
     manifest=run_manifest(config,config_sha,model,backend,tasks,completed,final_dir); atomic_json(output/"run.json",manifest); return manifest
 
 

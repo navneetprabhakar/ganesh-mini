@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import copy
+import json
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
 from scripts.eval.contracts import ContractError, load_json, sha256_object, sha256_text, validate_task
 from scripts.eval.run_task import build_result
-from scripts.eval.score import compare
+from scripts.eval.score import compare, load_results
 from scripts.verify.sandbox import SANDBOX_CONTRACT
 
 
@@ -59,6 +60,16 @@ def result_for(language: str, passed: bool, model_id: str) -> dict:
 
 
 class ScoreTests(unittest.TestCase):
+    def test_v2_task_evidence_preserves_frozen_source_task_identity(self) -> None:
+        source=load_json(Path("measurement/inference/synthetic/qwen3.5-2b-base-v1/tasks/synthetic-python-add.json"))
+        source["schema_version"]="ganesh-mini-task-evidence/v2"; source.pop("evidence_sha256")
+        source["evidence_sha256"]=sha256_object(source)
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            path=Path(directory)/"task.json"; path.write_text(json.dumps(source))
+            result=load_results(path)[0]
+        self.assertEqual(source["task"]["task_sha256"],result["_source_task_sha256"])
+
     def test_javascript_and_typescript_are_half_weighted_in_five_family_macro(self) -> None:
         base = [result_for(language, False, "base") for language in ("go", "java", "javascript", "typescript", "python", "rust")]
         candidate = [result_for(language, language == "javascript", "candidate") for language in ("go", "java", "javascript", "typescript", "python", "rust")]
@@ -77,6 +88,18 @@ class ScoreTests(unittest.TestCase):
         candidate[0]["result_sha256"] = sha256_object({key: value for key, value in candidate[0].items() if key != "result_sha256"})
         with self.assertRaisesRegex(ContractError, "evidence mismatch"):
             compare(base, candidate)
+
+    def test_cross_template_pairing_uses_frozen_source_task_identity(self) -> None:
+        languages = ("go", "java", "javascript", "typescript", "python", "rust")
+        base = [result_for(language, False, "base") for language in languages]
+        candidate = [result_for(language, True, "candidate") for language in languages]
+        for base_result,candidate_result in zip(base,candidate):
+            source_sha=base_result["task_sha256"]
+            base_result["_source_task_sha256"]=source_sha
+            candidate_result["_source_task_sha256"]=source_sha
+            candidate_result["task_sha256"]="f"*64
+        report=compare(base,candidate)
+        self.assertEqual({"wins":6,"losses":0,"ties":0,"denominator":6},report["paired"]["aggregate"])
 
 
 if __name__ == "__main__":

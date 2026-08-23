@@ -33,11 +33,16 @@ def load_results(path: Path) -> list[dict[str, Any]]:
     results=[]
     for file in files:
         value=load_json(file)
+        source_task_sha256=None
         if value.get("schema_version")=="ganesh-mini-task-evidence/v2":
             unsigned=dict(value); claimed=unsigned.pop("evidence_sha256",None)
             if claimed!=sha256_object(unsigned): raise ContractError(f"invalid task evidence seal: {file}")
+            source_task_sha256=value.get("task",{}).get("task_sha256")
+            if not isinstance(source_task_sha256,str) or len(source_task_sha256)!=64: raise ContractError(f"invalid frozen source-task binding: {file}")
             value=value.get("verification",{}).get("result")
-        results.append(validate_result(value))
+        result=validate_result(value)
+        result["_source_task_sha256"]=source_task_sha256 or result["task_sha256"]
+        results.append(result)
     ids = [result["task_id"] for result in results]
     if len(ids) != len(set(ids)):
         raise ContractError(f"duplicate task IDs in {path}")
@@ -164,10 +169,9 @@ def compare(base_results: list[dict[str, Any]], candidate_results: list[dict[str
     for task_id in sorted(base_by_id):
         base = base_by_id[task_id]
         candidate = candidate_by_id[task_id]
-        evidence_fields = (
-            "surface", "language", "family", "task_sha256", "prompt_sha256"
-        )
-        if any(base[field] != candidate[field] for field in evidence_fields):
+        evidence_fields = ("surface", "language", "family", "prompt_sha256")
+        source_task_matches=base.get("_source_task_sha256",base["task_sha256"])==candidate.get("_source_task_sha256",candidate["task_sha256"])
+        if not source_task_matches or any(base[field] != candidate[field] for field in evidence_fields):
             raise ContractError(f"task {task_id}: base/candidate evidence mismatch")
         bucket = paired[base["language"]]
         if candidate["passed"] and not base["passed"]:

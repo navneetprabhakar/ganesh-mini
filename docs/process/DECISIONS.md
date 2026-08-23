@@ -587,3 +587,33 @@ verified hourly upper bound. The card is sealed by
 `7cd638f18feff39e0cfe8301b627846a4f05d09ae281801f734189856693fd80`
 and remains explicitly unapproved. Price must be reverified after approval and
 before resource creation.
+
+## 2026-08-23 — Gate 1 baseline evidence is runtime- and task-bound
+
+The production baseline path was audited before any private development model
+output existed. Four fail-open conditions were repaired: resumed files did not
+bind the current implementation or backend runtime, duplicate task IDs and
+backend output-count mismatches were not rejected, completed verifier futures
+were not persisted until all generation ended, and Gate 1 trusted the
+aggregate run file without reopening its 180 task evidence files.
+
+The exact-Qwen development configuration now requires CUDA. The backend
+installs and records the same pinned FLA recurrent compatibility alias used by
+Gate 0 and, on CUDA, requires the external causal-convolution and FLA kernel
+identities. Resume admission binds the runner, extractor, result builder,
+sandbox verifier, runtime configuration, Qwen CUDA compatibility source,
+backend identity, model, config, and task.
+
+Gate 1 now validates exact coverage of all 180 frozen development tasks and
+reopens every sealed task evidence file. It independently checks the original
+task hash, model-rendered task hash, prompt hashes, model/runtime/config
+identity, executable result seal, pass accounting, and run-row seal. An
+aggregate file without those artifacts cannot open the gate.
+
+Cross-template comparisons use the outer frozen source-task binding for
+pairing. Each candidate still retains its independently hashed rendered prompt
+and rendered-task identity. This is necessary for the later Ganesh v0.1
+comparison because its Gemma chat template must not be forced to equal Qwen's.
+No model output or decision prompt was opened during this repair. The local
+baseline-runner readiness evidence is sealed by
+`4afb29fcfbc1bda3252bd7bb4e96158ef92efb1fc1cda82b1308701b0e6cb848`.

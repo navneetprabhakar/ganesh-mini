@@ -321,10 +321,18 @@ card.
   input count is now the hard main-pilot ceiling.
 - The production evaluation runner now batches by length and language,
   verifies concurrently in network-disabled sandboxes, resumes only sealed
-  model/config/task-bound evidence, and emits result-compatible evidence for
-  the paired scorer. Gate 1 is closed only on the unexecuted exact Qwen
-  development baseline. The zero-task public diagnostic is retained as a
-  complete exclusion result instead of weakening admission rules.
+  model/config/task/runtime/implementation-bound evidence, persists completed
+  verification between generation batches, rejects cardinality and duplicate
+  task defects, and emits result-compatible evidence for the paired scorer.
+  The Qwen baseline is CUDA-bound to the same external kernel contract as Gate
+  0. Gate 1 reopens all 180 task seals instead of trusting aggregate
+  accounting. Cross-template comparison pairs on frozen source-task identity
+  while preserving model-specific rendered-prompt hashes. Gate 1 is closed
+  only on the unexecuted exact Qwen development baseline; the runner-readiness
+  audit is sealed by
+  `4afb29fcfbc1bda3252bd7bb4e96158ef92efb1fc1cda82b1308701b0e6cb848`.
+  The zero-task public diagnostic is retained as a complete exclusion result
+  instead of weakening admission rules.
 - The SFT engine is hash-bound, response-only, cost/time/VRAM bounded,
   checkpoint-resumable, validates held-out loss diagnostically, and requires
   save/reload logit reproduction. Its Qwen-specific structural guard freezes

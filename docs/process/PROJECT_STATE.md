@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ## Current gate
 
@@ -10,15 +10,15 @@ Gate 0B and Gate 1 preparation in parallel:
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
 Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
-complete. Two approved Standard L4 executions passed the exact package, CUDA,
-Triton, external-kernel, model-load, and text-only inference contracts. The
-second run proved that frozen-vision CPU offload works, releasing 662,833,664
-BF16 bytes and 190,087,680 NF4 bytes, but BF16 LoRA and NF4 QLoRA still OOMed
-in the 4,096-token synthetic backward envelope before the first training
-record. Gate 0 therefore remains fail-closed. Corpus measurement shows the
-longest prepared training record is 2,938 tokens, so the next versioned
-contract uses a 3,072-token envelope with zero prepared-token truncation.
-Rank, optimizer, learning rates, data, and serving context remain unchanged.
+complete. The latest approved Standard L4 retry passed the exact package,
+CUDA, Triton, external-kernel, model-load, and text-only inference contracts
+at the complete-corpus 2,944-token envelope. BF16 LoRA still OOMed; NF4 QLoRA
+reached backward but OOMed with a 63,832,064-byte allocation shortfall before
+the first training record. Gate 0 therefore remains fail-closed. That NF4
+failure reported approximately 95,934,218 bytes reserved but unallocated, so
+the next versioned contract enables expandable CUDA allocator segments for
+both qualification and production SFT. Rank, optimizer, learning rates, data,
+sequence length, and serving context remain unchanged.
 
 Native AMD64 verifier qualification is complete. GitHub Actions run
 `32639381229` loaded the exact pinned image archive and passed all 12
@@ -484,23 +484,48 @@ the exact serving stack.
   `$0.2023585195776689`. The VM, auto-delete disk, subnet, and VPC are absent
   under proof `00fe3d479e2db5f84c950ad1a19372ad252d8bc7b855f1c342bd3fde88bcdd8e`.
 
+- Executed the approved bounded L4 v5 retry under prefix
+  `20260823T180807Z` with the measured 2,944-token envelope. The initial
+  `us-central1-a` create failed for provider capacity before any VM or disk
+  existed; the same approved run was generation-pinned and reallocated to
+  `us-central1-c`. Exact identity and text inference passed for both recipes.
+  BF16 LoRA OOMed while requesting 2,925,527,040 bytes with 301,072,384 bytes
+  free. NF4 QLoRA reached backward but OOMed while requesting 73,400,320 bytes
+  with 9,568,256 bytes free, a 63,832,064-byte terminal shortfall. PyTorch
+  simultaneously reported about 95,934,218 bytes reserved but unallocated,
+  which exceeds that shortfall and makes allocator-segment tuning a measured
+  next hypothesis rather than speculation. No training record or optimizer
+  step ran. The fail-closed run result is sealed by
+  `0519d41c66f5f410e9d6a4a01ff4f7c3af8650d0a86b7b40f9a25a666dd849c9`.
+  All 32 terminal objects were independently downloaded and verified twice;
+  the identical manifest seal is
+  `bfed538722d9d23776e6bf75c51b6d024f86f0fe2e64f9f2571e9c30ea04d2cf`
+  and the local verification record is sealed by
+  `7fa2fca07cdb48936a1933cb1a2dbbb63fe0e5329ac572e9261b70d8d01ac480`.
+  Billing stopped after 864.951 seconds, for a compute upper estimate of
+  `$0.20509533396908667`. The VM, auto-delete disk, subnet, VPC, and matching
+  routers are absent under proof
+  `5af5685dd4f8b42118bfd2ad4148f5296ae61948d9dce31b28d46a363620be5c`.
+
 ## Next action
 
-Gate 0B remains closed on measured L4 memory capacity at 3,072 tokens. NF4 is
-close but did not pass: the terminal shortfall was 21,894,267 bytes. The
-prepared corpus maximum remains 2,938 tokens, so the next local change may
-reduce only the unused synthetic/training ceiling to 2,944 while preserving
-all 636,093 prepared tokens and 2,155 records. It must be versioned, tested,
-and treated as unqualified until fresh CUDA evidence passes; allocator tuning
-alone is not justified because only 24.19 MiB was reserved but unallocated.
+Gate 0B remains closed on measured L4 memory capacity at 2,944 tokens. NF4 did
+not pass: its terminal shortfall was 63,832,064 bytes, despite preserving the
+entire 2,938-token-maximum prepared corpus without truncation. Unlike the
+3,072-token run, PyTorch reported approximately 95,934,218 bytes reserved but
+unallocated, more than the failing allocation shortfall. The next local change
+is therefore a versioned `expandable_segments:True` CUDA allocator contract,
+not another sequence reduction. It must be applied consistently to
+qualification and production SFT, tested, sealed in a deterministic workspace,
+and treated as unqualified until fresh CUDA evidence passes.
 
-Before another paid run, seal the 2,944-token source, deterministic workspace,
-tests, exact input generations, current price, and resource-absence proof in a
-fresh card. A new GCloud launch requires explicit approval. If it qualifies,
-execute the exact 180-task Qwen development baseline and admit it through the
-fail-closed Gate 1 report; seed-pilot training remains blocked until Gate 1 is
-ready. The native verifier, global separation, Gate 2 seed cascade, and
-baseline host audit are already complete.
+Before another paid run, seal the allocator contract, tests, exact input
+generations, current price, and resource-absence proof in a fresh card. A new
+GCloud launch requires explicit approval. If it qualifies, execute the exact
+180-task Qwen development baseline and admit it through the fail-closed Gate 1
+report; seed-pilot training remains blocked until Gate 1 is ready. The native
+verifier, global separation, Gate 2 seed cascade, and baseline host audit are
+already complete.
 
 ## Authorization state
 

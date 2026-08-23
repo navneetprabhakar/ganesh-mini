@@ -205,6 +205,13 @@ truncation concession: the frozen prepared corpus contains 2,155 sampled
 training records, the longest is 2,938 tokens, and no train or validation
 record exceeds 2,944. The model's serving context contract is unchanged.
 
+The sealed 2,944-token L4 retry still failed NF4 backward with a 63,832,064
+byte allocation shortfall, but PyTorch reported about 95,934,218 bytes
+reserved but unallocated at that failure. The next qualification therefore
+uses the versioned `expandable_segments:True` CUDA allocator contract in both
+the qualification container and production SFT. This does not qualify the
+recipe by itself; Gate 0B still requires a fresh executed CUDA pass.
+
 The fallback recipe changes only base loading to bitsandbytes 4-bit NF4 with
 BF16 adapter compute. It is eligible only after the primary recipe records an
 OOM or exceeds the frozen peak-VRAM ceiling. Record the trigger and keep all

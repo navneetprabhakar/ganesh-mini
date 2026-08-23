@@ -1,8 +1,38 @@
 """Fail-closed Qwen3.5 structure and PEFT lifecycle helpers."""
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 from typing import Any
+
+
+CUDA_ALLOCATOR_CONFIG = "expandable_segments:True"
+
+
+def configure_cuda_allocator(expected: str) -> dict[str,Any]:
+    if expected != CUDA_ALLOCATOR_CONFIG:
+        raise RuntimeError(f"unsupported CUDA allocator contract: {expected!r}")
+    observed = os.environ.get("PYTORCH_CUDA_ALLOC_CONF")
+    torch_module = sys.modules.get("torch")
+    cuda_initialized = bool(
+        torch_module is not None
+        and hasattr(torch_module,"cuda")
+        and torch_module.cuda.is_initialized()
+    )
+    if cuda_initialized and observed != expected:
+        raise RuntimeError("CUDA allocator was initialized before the frozen allocator contract")
+    if observed is None:
+        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = expected
+        observed = expected
+    if observed != expected:
+        raise RuntimeError(f"CUDA allocator contract mismatch: expected={expected!r} observed={observed!r}")
+    return {
+        "environment_variable":"PYTORCH_CUDA_ALLOC_CONF",
+        "value":observed,
+        "cuda_initialized_before_validation":cuda_initialized,
+        "passed":True,
+    }
 
 
 def configure_qwen_training_structure(model: Any) -> dict[str,Any]:

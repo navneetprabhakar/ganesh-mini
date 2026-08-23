@@ -21,6 +21,7 @@ from scripts.cuda.qualify import (
     write_evidence,
 )
 from scripts.train.qwen_runtime import reload_and_merge_saved_adapter
+from scripts.train.qwen_runtime import configure_cuda_allocator
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "configs/cuda/qwen3_5_2b_gate0.json"
@@ -36,9 +37,11 @@ def test_pinned_primary_and_fallback_validate() -> None:
     assert primary["sequence_length"] == 2944
     assert (primary["micro_batch_size"], primary["rank"], primary["alpha"], primary["dropout"]) == (1, 32, 64, 0.05)
     assert primary["gradient_checkpointing"] and primary["response_only"]
+    assert primary["cuda_allocator_config"] == "expandable_segments:True"
     fallback = config["recipes"][FALLBACK_RECIPE]
     assert fallback["sequence_length"] == 2944
     assert fallback["quantization"] == {"bits": 4, "type": "nf4", "double_quantization": True, "compute_dtype": "bfloat16"}
+    assert fallback["cuda_allocator_config"] == "expandable_segments:True"
     assert config["packages"]["bitsandbytes"] == "0.49.2"
     assert config["packages"]["torchvision"] == "0.28.0"
 
@@ -143,7 +146,18 @@ def test_runner_requires_exact_preloaded_image_and_disables_pull_and_network() -
     assert "--tmpfs /tmp:rw,noexec,nosuid,size=8g" in runner
     assert "--tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g" in runner
     assert "TRITON_CACHE_DIR=/var/cache/triton" in runner
+    assert "-e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True" in runner
     assert "-e PYTHONPATH=/workspace" in runner
+
+
+def test_cuda_allocator_contract_sets_early_and_rejects_mutation(monkeypatch) -> None:
+    monkeypatch.delenv("PYTORCH_CUDA_ALLOC_CONF", raising=False)
+    evidence = configure_cuda_allocator("expandable_segments:True")
+    assert evidence["passed"] is True
+    assert evidence["value"] == "expandable_segments:True"
+    monkeypatch.setenv("PYTORCH_CUDA_ALLOC_CONF", "max_split_size_mb:64")
+    with pytest.raises(RuntimeError, match="allocator contract mismatch"):
+        configure_cuda_allocator("expandable_segments:True")
 
 
 def test_l4_startup_admits_bounded_host_and_fallback_only_on_sealed_memory_failure() -> None:

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from scripts.train.qwen_runtime import (
+    configure_cuda_allocator,
     configure_qwen_training_structure,
     unload_and_reload_saved_adapter,
     restore_qwen_serving_cache,
@@ -52,7 +53,7 @@ def append_journal(path: Path, event: dict[str, Any]) -> None:
 
 def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
-    if config.get("schema_version") != "ganesh-mini-cuda-gate0/v5": raise ValueError("unsupported CUDA qualification schema")
+    if config.get("schema_version") != "ganesh-mini-cuda-gate0/v6": raise ValueError("unsupported CUDA qualification schema")
     contract_path = root / config["model"]["contract_path"]
     if file_sha256(contract_path) != config["model"]["contract_sha256"]: raise ValueError("model contract hash mismatch")
     if file_sha256(root / "uv.lock") != config["container"]["uv_lock_sha256"]: raise ValueError("CUDA environment lock hash mismatch")
@@ -60,7 +61,7 @@ def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     if (contract.get("model_id"), contract.get("revision")) != (config["model"]["model_id"], config["model"]["revision"]):
         raise ValueError("model identity does not match the pinned contract")
     if config.get("qualification_order") != [PRIMARY_RECIPE, FALLBACK_RECIPE]: raise ValueError("BF16 primary and NF4 fallback order changed")
-    common = {"sequence_length":2944,"micro_batch_size":1,"gradient_checkpointing":True,"record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False,"maximum_peak_vram_bytes":21*1024**3}
+    common = {"sequence_length":2944,"micro_batch_size":1,"gradient_checkpointing":True,"cuda_allocator_config":"expandable_segments:True","record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False,"maximum_peak_vram_bytes":21*1024**3}
     primary = {"role":"primary","minimum_vram_bytes":22*1024**3,"base_dtype":"bfloat16","quantization":None,**common}
     fallback = {"role":"fallback","minimum_vram_bytes":17179869184,"base_dtype":"bfloat16","quantization":{"bits":4,"type":"nf4","double_quantization":True,"compute_dtype":"bfloat16"},**common}
     if config["recipes"].get(PRIMARY_RECIPE) != primary: raise ValueError("BF16 LoRA primary recipe changed without a schema revision")
@@ -343,6 +344,7 @@ def main() -> int:
     try:
         append_journal(journal_path,{"phase":"qualification","state":"started","recipe_id":args.recipe})
         config = load_and_validate_config(args.config,root); recipe = config["recipes"][args.recipe]
+        evidence["cuda_allocator"] = configure_cuda_allocator(recipe["cuda_allocator_config"])
         append_journal(journal_path,{"phase":"identity","state":"started"})
         evidence.update({"model_id":config["model"]["model_id"],"revision":config["model"]["revision"],"config_sha256":file_sha256(args.config),"model_inventory":{path.name:file_sha256(path) for path in sorted(args.model_dir.iterdir()) if path.is_file()}})
         for component, check in (("gpu",lambda:gpu_identity(config,recipe)),("triton",triton_identity),("fla_recurrent_compatibility",install_fla_recurrent_compatibility),("packages",lambda:package_identity(config["packages"])),("kernels",kernel_identity),("ms_swift",lambda:swift_identity(args.model_dir))):

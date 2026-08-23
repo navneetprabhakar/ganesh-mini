@@ -79,6 +79,7 @@ timeout --signal=TERM --kill-after=30s "$seconds_until_deadline" \
     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=8g \
     --tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g \
     -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
+    -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
     -e PYTHONPATH=/workspace \
     -e TRITON_CACHE_DIR=/var/cache/triton \
     -e GANESH_ATTEMPT_ID="${GANESH_ATTEMPT_ID:?GANESH_ATTEMPT_ID is required}" \

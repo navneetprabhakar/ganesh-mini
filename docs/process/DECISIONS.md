@@ -905,3 +905,38 @@ tokens. Rank, alpha, response-only masks, optimizer, effective batch, learning
 rates, data bytes, model revision, serving contract, and fallback order remain
 unchanged. This is a prepared hypothesis, not qualification evidence, and any
 new GCloud run still needs fresh explicit approval.
+
+## 2026-08-23 — 2,944 tokens exposes allocator segmentation as the next measured lever
+
+The approved Standard L4 v5 retry executed the complete-corpus 2,944-token
+envelope from source commit `1511d041a0fe343739fdbc9e00c76ad84334c23f`.
+The initial `us-central1-a` create failed for provider capacity before a VM or
+disk existed. The same approved single run was generation-pinned and moved to
+`us-central1-c`, where exact model, tokenizer, template, package, kernel, GPU,
+and text-inference identity passed for BF16 and NF4.
+
+BF16 LoRA OOMed in the backward envelope while requesting 2,925,527,040 bytes
+with 301,072,384 bytes free. NF4 QLoRA reached its backward envelope and OOMed
+while requesting 73,400,320 bytes with 9,568,256 bytes free. The terminal
+shortfall was 63,832,064 bytes. No training record or optimizer step ran, so
+Gate 0B remains closed. The result is sealed by
+`0519d41c66f5f410e9d6a4a01ff4f7c3af8650d0a86b7b40f9a25a666dd849c9`.
+
+All 32 terminal GCS objects were downloaded twice by immutable generation;
+the manifests are identical under
+`bfed538722d9d23776e6bf75c51b6d024f86f0fe2e64f9f2571e9c30ea04d2cf`,
+and both runtime inventories passed. GPU billing stopped after 864.951
+seconds, with a compute upper estimate of `$0.20509533396908667`. The exact VM,
+auto-delete disk, subnet, VPC, and matching router scope are absent under
+`5af5685dd4f8b42118bfd2ad4148f5296ae61948d9dce31b28d46a363620be5c`.
+
+This run changes the next lever. PyTorch reported approximately 91.49 MiB
+reserved but unallocated at the NF4 failure, exceeding the roughly 60.88 MiB
+allocation shortfall. Therefore `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
+is now an evidence-backed capacity hypothesis. It must be a versioned runtime
+contract shared by qualification and production SFT, rather than an ad hoc VM
+environment change. Sequence length stays at 2,944 because it already
+preserves all prepared records; rank, alpha, response-only masks, optimizer,
+effective batch, learning rates, data bytes, model revision, serving contract,
+and fallback order remain unchanged. Fresh GCloud execution still requires
+explicit approval.

@@ -1,5 +1,6 @@
 import pytest
 
+from scripts.train.qwen_runtime import configure_cuda_allocator
 from scripts.train.run_sft import bounded_training_wall, five_family_validation, planned_end
 
 
@@ -40,3 +41,10 @@ def test_training_wall_reserves_finalization_from_both_bounds() -> None:
 def test_training_wall_rejects_an_envelope_too_small_to_finalize() -> None:
     with pytest.raises(RuntimeError,match="insufficient training and finalization"):
         bounded_training_wall(650,10000)
+
+
+def test_production_sft_allocator_contract_is_process_wide(monkeypatch) -> None:
+    monkeypatch.delenv("PYTORCH_CUDA_ALLOC_CONF", raising=False)
+    evidence=configure_cuda_allocator("expandable_segments:True")
+    assert evidence["environment_variable"]=="PYTORCH_CUDA_ALLOC_CONF"
+    assert evidence["value"]=="expandable_segments:True"

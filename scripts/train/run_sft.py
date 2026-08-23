@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from scripts.train.qwen_runtime import configure_qwen_training_structure, unload_and_reload_saved_adapter
+from scripts.train.qwen_runtime import configure_cuda_allocator, configure_qwen_training_structure, unload_and_reload_saved_adapter
 
 
 def canonical_sha256(value: Any) -> str:
@@ -96,17 +96,19 @@ def save_checkpoint(output: Path, model: Any, optimizer: Any, scheduler: Any, st
 
 
 def run(args: argparse.Namespace) -> dict[str,Any]:
-    import torch
-    from peft import LoraConfig,PeftModel,get_peft_model,prepare_model_for_kbit_training
-    from transformers import AutoModelForImageTextToText,BitsAndBytesConfig,get_cosine_schedule_with_warmup
-    if not torch.cuda.is_available() or torch.cuda.device_count()!=1: raise RuntimeError("SFT requires exactly one CUDA GPU")
     card=load_sealed(args.card,"card_sha256")
     if card.get("status")!="ready" or card.get("failed_checks"): raise RuntimeError("training execution card is not ready")
     config=json.loads(args.config.read_text()); config_sha=file_sha256(args.config)
+    if config.get("schema_version")!="ganesh-mini-train-config/v4": raise RuntimeError("unsupported training config schema")
     if card["inputs"]["config_sha256"]!=config_sha: raise RuntimeError("card/config identity mismatch")
     prepared_manifest=load_sealed(args.prepared_manifest,"manifest_sha256")
     if card["inputs"]["prepared_manifest_sha256"]!=prepared_manifest["manifest_sha256"]: raise RuntimeError("card/prepared manifest mismatch")
     rows=load_rows(args.prepared_data); validation_rows=load_rows(args.validation_data); recipe=card["selected_recipe"]; lr=args.learning_rate
+    allocator=configure_cuda_allocator(recipe.get("cuda_allocator_config"))
+    import torch
+    from peft import LoraConfig,PeftModel,get_peft_model,prepare_model_for_kbit_training
+    from transformers import AutoModelForImageTextToText,BitsAndBytesConfig,get_cosine_schedule_with_warmup
+    if not torch.cuda.is_available() or torch.cuda.device_count()!=1: raise RuntimeError("SFT requires exactly one CUDA GPU")
     if lr not in recipe["learning_rate_candidates"]: raise RuntimeError("learning rate escaped predeclared candidates")
     if args.phase=="lr-candidate" and args.maximum_seen_tokens!=recipe["lr_selection_budget_seen_tokens_per_candidate"]: raise RuntimeError("LR candidate budget changed")
     if args.phase=="main":
@@ -185,7 +187,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     peak=max(torch.cuda.max_memory_allocated(0),torch.cuda.max_memory_reserved(0))
     if peak>maximum: raise RuntimeError(f"peak VRAM {peak} exceeds {maximum}")
     state["completed_at"]=datetime.now(timezone.utc).isoformat(); state["wall_seconds"]=time.monotonic()-started
-    evidence={"schema_version":"ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"training_structure":training_structure,"trainable_parameter_names":trainable_names,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
+    evidence={"schema_version":"ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"trainable_parameter_names":trainable_names,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
 
 
 def main() -> int:

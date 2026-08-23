@@ -684,3 +684,36 @@ sealed controller-failure record and packages whatever diagnostics exist, so a
 future early failure cannot again leave only an incomplete tar. The invalid
 161,802-byte partial artifact from the failed run was deleted; the GitHub run
 logs remain available. This run contributes no directionality or gate result.
+
+## 2026-08-23 — Native AMD64 evidence aligns development compiled timeouts
+
+GitHub Actions run `32636958446` loaded and verified the exact portable image
+archive, passed native runtime readiness, and completed all 12 development and
+decision directionality tranches. Ten tranches passed. Development tranches 1
+and 2 failed solely because six Go references crossed the development
+surface's 30-second aggregate limit. Five produced no output before timeout;
+`dev-t2-go-encode-csv-field` printed a successful `go test` result before
+container teardown crossed 30 seconds. All 540 known-bad executions were
+rejected as expected. This is infrastructure-timing evidence, not a behavioral
+test failure.
+
+All 15 nested and top-level JSON seals were independently recomputed. The
+downloaded archive has SHA-256
+`fadd5ab16d2ecf8d53ef6a19b4eded9d093bcf3b922b664db147a23fefb0e098`;
+the GitHub artifact server digest is
+`sha256:305d90cc547d372f685dcb37d53cf410e5552f6f699afe6c4bb953b523116926`.
+The complete archive and a sealed receipt are preserved in the repository.
+
+The development surface still used the obsolete 30-second aggregate limit
+for every language, while the decision surface already used 60 seconds for
+Go, Java, and Rust after prior native compilation flakiness. Because no Qwen
+baseline output has been generated, the defect is repaired before measurement
+by applying that existing compiled-lane rule consistently to development.
+Prompts, references, known-bad implementations, tests, images, non-timeout
+resource limits, and pass thresholds are unchanged.
+
+This repair intentionally invalidates all prior development task and manifest
+seals, development directionality evidence, the global separation report, the
+development-only execution workspace, and the baseline-runner readiness seal.
+They remain historical evidence and cannot support Gate 1. Fresh native AMD64
+directionality and global separation must pass before baseline generation.

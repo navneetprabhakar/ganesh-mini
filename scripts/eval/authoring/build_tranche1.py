@@ -553,7 +553,7 @@ def make_task(language: str, slug: str, kind: str) -> dict[str, Any]:
         "candidate_path":CANDIDATE_PATH[language],
         "files":files,
         "runtime_id":RUNTIME[language],
-        "limits":{"timeout_seconds":30,"memory_mb":512,"cpus":1,"pids":64,"output_bytes":65536},
+        "limits":{"timeout_seconds":60 if language in {"go","java","rust"} else 30,"memory_mb":512,"cpus":1,"pids":64,"output_bytes":65536},
         "validation":{
             "reference":{"label":"author-reference","code":item["reference"],"sha256":sha256_text(item["reference"])},
             "known_bad":[{"label":item["bad_label"],"code":item["bad"],"sha256":sha256_text(item["bad"])}],

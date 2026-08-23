@@ -27,6 +27,18 @@ def test_normalization_is_nfkc_casefold_and_whitespace_collapsed() -> None:
     assert normalized("  Ａ\tStraße\n") == "a strasse"
 
 
+def test_development_compiled_lane_timeouts_match_decision_contract() -> None:
+    for tranche in range(1, 7):
+        manifest = load_json(
+            ROOT / f"manifests/evaluation/private/development-tranche{tranche}.json"
+        )
+        for entry in manifest["tasks"]:
+            task = load_json(ROOT / entry["path"])
+            assert task["limits"]["timeout_seconds"] == (
+                60 if task["language"] in {"go", "java", "rust"} else 30
+            )
+
+
 def test_manifest_seal_tamper_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     original = audit.load_json
 

@@ -140,11 +140,19 @@ Gate 1 native amd64 verifier validation is the active work item. A portable,
 exact verifier archive is published in the private prerelease
 `verifier-images-amd64-v1` and is pinned by SHA-256. GitHub Actions run
 `32636958446` completed all scheduled work but ended in failure while preserving
-an uploaded evidence artifact. Diagnose that evidence before any baseline or
-training claim. Verify its top-level and nested seals independently, identify
-the exact failing jobs, distinguish infrastructure defects from genuine task
-directionality failures, fix demonstrated defects without weakening the frozen
-contract, document the invalidation, and rerun the native workflow.
+an uploaded evidence artifact. All 15 seals independently verify. Ten of 12
+tranches passed; six Go development references crossed the obsolete 30-second
+aggregate timeout, including one that printed a passing `go test` result before
+Docker teardown crossed the deadline. No behavioral artifact failed.
+
+The repair applies the already frozen 60-second compiled-language rule to Go,
+Java, and Rust development tasks. Prompts, references, known-bad artifacts,
+tests, runtime images, non-timeout resource limits, and pass thresholds remain
+unchanged. The six development manifests and overlap reports were regenerated.
+Their prior directionality evidence, the prior global separation report,
+development execution workspace, and baseline-runner readiness seal are stale.
+Push the repair and rerun the native workflow before any baseline or training
+claim, then independently verify and adopt the replacement evidence.
 
 Do not claim Gate 1 passed until all native reference solutions pass, all known
 bad solutions are rejected, global decision-set separation passes, and every

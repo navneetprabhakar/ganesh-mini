@@ -18,6 +18,14 @@ all-zero tokenizer assistant-mask repair are locally validated. Gate 0 remains
 fail-closed until the repaired qualification executes on CUDA under a fresh
 card.
 
+The second native AMD64 verifier run completed all 12 tranches but failed six
+Go development references at the obsolete 30-second aggregate limit; one had
+already printed a passing `go test` result before Docker teardown crossed the
+deadline. All evidence seals verify and 10/12 tranches passed. Development now
+uses the same 60-second Go/Java/Rust limit already frozen for the decision
+surface. The resulting task-seal invalidation requires one fresh native run
+and global separation audit before any baseline output.
+
 ## Completed
 
 - Inspected the committed Ganesh v0.1 plan, training, data-rights, and
@@ -328,9 +336,11 @@ card.
   0. Gate 1 reopens all 180 task seals instead of trusting aggregate
   accounting. Cross-template comparison pairs on frozen source-task identity
   while preserving model-specific rendered-prompt hashes. Gate 1 is closed
-  only on the unexecuted exact Qwen development baseline; the runner-readiness
-  audit is sealed by
-  `4afb29fcfbc1bda3252bd7bb4e96158ef92efb1fc1cda82b1308701b0e6cb848`.
+  only on the unexecuted exact Qwen development baseline. The prior
+  runner-readiness seal
+  `4afb29fcfbc1bda3252bd7bb4e96158ef92efb1fc1cda82b1308701b0e6cb848`
+  is historical and invalidated by the development timeout repair; it must be
+  regenerated after native directionality passes.
   The zero-task public diagnostic is retained as a complete exclusion result
   instead of weakening admission rules.
 - The SFT engine is hash-bound, response-only, cost/time/VRAM bounded,
@@ -364,10 +374,12 @@ card.
   The 918,639,104-byte portable image archive is internally verified against
   its OCI tag/manifest/config/layer graph and sealed by manifest
   `aba48afc9f1a75d6911204fd1e49193a9908655ad7d0540ec9cd53c82396bac8`.
-  A deterministic development-only execution workspace contains exactly 180
+  A deterministic development-only execution workspace contained exactly 180
   tasks and excludes decision tasks, seed/training data, model outputs, and
-  authoring code; it is sealed by
+  authoring code; it was sealed by
   `846cf0b64e3d1804cbbdaa44cb57a07da989e298c9ed7f3cd8f2c400dda625f5`.
+  That workspace is now historical and invalidated by the development timeout
+  repair; a replacement must bind the new task seals before baseline use.
   Historical ARM64 directionality results remain immutable but are explicitly
   non-current. Gate 1 requires a fresh full directionality run on native
   Linux/AMD64 before the exact Qwen baseline can be admitted.
@@ -385,6 +397,15 @@ card.
   Docker JSON and seals early failures; packaging now succeeds on partial
   diagnostics. The incomplete 161,802-byte artifact from that failed run was
   deleted, while GitHub's immutable run logs remain the failure evidence.
+  The retry, run `32636958446`, executed every tranche. Ten passed; development
+  tranches 1 and 2 failed six Go references at the obsolete 30-second limit.
+  All 15 evidence seals verify. The full 170,686-byte evidence tar is preserved
+  with SHA-256
+  `fadd5ab16d2ecf8d53ef6a19b4eded9d093bcf3b922b664db147a23fefb0e098`.
+  Development compiled lanes now use the already established 60-second rule;
+  the six development manifests and overlap reports were regenerated without
+  changing prompts or behavioral artifacts. Fresh native directionality is
+  required for all six development tranches and the global separation report.
 
 ## Next action
 
@@ -410,6 +431,14 @@ The existing v8 card remains scoped only to Gate 0B and does not authorize a
 Gate 1 workload. Native verifier qualification and the baseline require their
 own subsequently sealed execution inputs and explicit GCloud approval if
 GCloud is selected.
+
+In parallel with the unapproved Gate 0B card, push the repaired development
+manifests and dispatch the non-GCloud native AMD64 workflow. Adopt its results
+only after independently checking the archive digest, every tranche seal,
+global separation, exact task coverage, reference/known-bad polarity, runtime
+identity, and timeout count. Then regenerate the development execution
+workspace and baseline-runner readiness evidence. No baseline or training may
+start before those prerequisites and Gate 0B pass.
 
 ## Authorization state
 

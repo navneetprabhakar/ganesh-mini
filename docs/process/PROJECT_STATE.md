@@ -378,6 +378,13 @@ card.
   concurrent tranches, rerun global decision separation, and return one sealed
   evidence archive. This is non-GCloud compute and does not expose a task to a
   model.
+  The first dispatch, GitHub Actions run `32636800789`, independently loaded
+  the exact archive but stopped before task execution because the host-audit
+  code used a Docker Go-template helper (`dict`) unavailable on the runner.
+  No directionality result was claimed. The controller now reads portable full
+  Docker JSON and seals early failures; packaging now succeeds on partial
+  diagnostics. The incomplete 161,802-byte artifact from that failed run was
+  deleted, while GitHub's immutable run logs remain the failure evidence.
 
 ## Next action
 

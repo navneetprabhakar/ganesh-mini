@@ -38,13 +38,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar -czf native-amd64-directionality-evidence.tar.gz \
-            measurement/gate1/native_amd64_directionality.json \
-            measurement/gate1/native_amd64_runtime_readiness.json \
-            measurement/gate1/native-directionality-logs \
-            manifests/evaluation/private/development-tranche*-directionality.json \
-            manifests/evaluation/private/decision-tranche*-directionality.json \
-            manifests/evaluation/private/decision-global-separation.json
+          find measurement/gate1 manifests/evaluation/private \
+            \( -path 'measurement/gate1/native_amd64_directionality.json' \
+               -o -path 'measurement/gate1/native_amd64_runtime_readiness.json' \
+               -o -path 'measurement/gate1/native-directionality-logs/*' \
+               -o -name 'development-tranche*-directionality.json' \
+               -o -name 'decision-tranche*-directionality.json' \
+               -o -name 'decision-global-separation.json' \) \
+            -type f -print0 | sort -z > /tmp/native-evidence-files
+          tar --null -T /tmp/native-evidence-files -czf native-amd64-directionality-evidence.tar.gz
           sha256sum native-amd64-directionality-evidence.tar.gz > native-amd64-directionality-evidence.tar.gz.sha256
 
       - name: Upload sealed evidence

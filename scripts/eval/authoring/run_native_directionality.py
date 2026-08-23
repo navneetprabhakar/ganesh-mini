@@ -60,10 +60,11 @@ def native_host() -> dict[str, Any]:
     if platform.system() != "Linux" or platform.machine() not in {"x86_64", "amd64"}:
         raise RuntimeError("directionality qualification requires native Linux/AMD64")
     server = json.loads(checked(["docker", "version", "--format", "{{json .Server}}"], 30).stdout)
-    info = json.loads(checked([
-        "docker", "info", "--format",
-        "{{json (dict \"OSType\" .OSType \"Architecture\" .Architecture \"Driver\" .Driver \"DockerRootDir\" .DockerRootDir)}}",
-    ], 30).stdout)
+    raw_info = json.loads(checked(["docker", "info", "--format", "{{json .}}"], 30).stdout)
+    info = {
+        field: raw_info.get(field)
+        for field in ("OSType", "Architecture", "Driver", "DockerRootDir")
+    }
     if server.get("Os") != "linux" or server.get("Arch") != "amd64":
         raise RuntimeError("Docker server is not native Linux/AMD64")
     return {
@@ -171,7 +172,17 @@ def main() -> int:
     args = parser.parse_args()
     if args.workers < 1 or args.workers > 4:
         raise ValueError("workers must be between 1 and 4")
-    evidence = run(args.output.resolve(), args.workers)
+    try:
+        evidence = run(args.output.resolve(), args.workers)
+    except Exception as error:  # Preserve an independently sealed early-failure record.
+        evidence = {
+            "schema_version": "ganesh-mini-native-amd64-directionality/v1",
+            "status": "failed", "phase": "controller",
+            "error_type": type(error).__name__, "error": str(error),
+            "source_commit": checked(["git", "rev-parse", "HEAD"], 30).stdout.strip(),
+        }
+        evidence["evidence_sha256"] = sha256_object(evidence)
+        write_json(args.output.resolve(), evidence)
     print(json.dumps({"status": evidence["status"], "evidence_sha256": evidence["evidence_sha256"]}, sort_keys=True))
     return 0 if evidence["status"] == "passed" else 1
 

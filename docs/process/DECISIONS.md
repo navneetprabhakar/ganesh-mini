@@ -674,3 +674,13 @@ Linux/AMD64 directionality pass is mandatory before Gate 1 may close; local
 Apple-Silicon emulation is diagnostic only because Go startup consumed roughly
 64 seconds against a 60-second production task budget even though the inner
 test itself completed in milliseconds.
+
+The first native dispatch, GitHub Actions run `32636800789`, proved the private
+release asset could be downloaded, hash-verified, and loaded on Ubuntu AMD64.
+It stopped before image readiness or task execution because the host inventory
+used Docker's non-portable `dict` Go-template helper, which the runner rejected.
+The repair requests `{{json .}}` and selects fields in Python. It also writes a
+sealed controller-failure record and packages whatever diagnostics exist, so a
+future early failure cannot again leave only an incomplete tar. The invalid
+161,802-byte partial artifact from the failed run was deleted; the GitHub run
+logs remain available. This run contributes no directionality or gate result.

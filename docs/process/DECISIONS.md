@@ -617,3 +617,41 @@ comparison because its Gemma chat template must not be forced to equal Qwen's.
 No model output or decision prompt was opened during this repair. The local
 baseline-runner readiness evidence is sealed by
 `4afb29fcfbc1bda3252bd7bb4e96158ef92efb1fc1cda82b1308701b0e6cb848`.
+
+## 2026-08-23 — Evaluation verifiers target the production Linux/AMD64 host
+
+The frozen runtime configuration previously named six images that existed
+only in the deleted local Docker store. The five reconstructed language images
+were built for Linux/ARM64, while the Rust image came from an unrelated local
+toolchain and had no recoverable public registry source. Loading those images
+on an A100 Linux/AMD64 host would either fail with `exec format error` or make
+the verifier environment unrecoverable. This is a measurement defect, not a
+training defect, and it was found before any Qwen baseline output existed.
+
+The runtime contract is therefore migrated to schema 2 and explicitly pins
+`linux/amd64`, one locally resolvable project tag, and its exact inspected OCI
+image ID for Go 1.22.12, Java 21.0.11, Node 22.23.2, TypeScript 5.5.4, Python
+3.11.15, and Rust 1.85.0. Each project Dockerfile pins its base manifest.
+TypeScript is installed from a versioned tarball only after its registry
+SHA-512 integrity value passes; Python has no unnecessary package install.
+Sandbox admission inspects the tag, ID, OS, and architecture before executing
+with `--pull never`, `--platform linux/amd64`, and no network.
+
+The portable Docker archive is not trusted merely because `docker save`
+succeeded. Its audit binds every tag through the OCI index to the exact image
+manifest and confirms that the referenced manifest, config, and layers are all
+present. The adopted runtime config SHA-256 is
+`6e18d4907322163ab2a84816aa20bb15089bde25652b2938570232c7388f4eec`;
+local readiness is sealed by
+`3afa722f07417279511f21fda763fc1b88f98bba8ce67783eceea71295364f39`,
+and the image-bundle manifest is sealed by
+`e6583956b5f1c763f73d888db1855af80b5aea3a50894e9d7bce55ff61f9022c`.
+
+This migration intentionally invalidates the earlier ARM64-bound
+directionality evidence for current gate decisions. Those records remain
+unaltered as historical evidence. The global decision-separation audit now
+accepts only schema 2 and fails on an old image identity. A fresh native
+Linux/AMD64 directionality pass is mandatory before Gate 1 may close; local
+Apple-Silicon emulation is diagnostic only because Go startup consumed roughly
+64 seconds against a 60-second production task budget even though the inner
+test itself completed in milliseconds.

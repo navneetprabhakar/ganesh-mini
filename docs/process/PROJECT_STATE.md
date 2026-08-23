@@ -354,6 +354,23 @@ card.
 - Merge, GGUF F16/Q8 construction, constrained laptop certification, clustered
   statistical adjudication, Q8 retention, and final fail-closed release
   decision tooling are present but have not been executed on a trained model.
+- The evaluation verifier contract has been migrated before baseline generation
+  from unavailable Apple/ARM64-local images to six project-owned Linux/AMD64
+  images. Every base manifest and toolchain version is pinned; TypeScript's
+  package tarball is verified against its registry SHA-512 integrity value.
+  The exact tag, image ID, and platform are checked before every sandbox run.
+  Local readiness is 6/6 and sealed by
+  `3afa722f07417279511f21fda763fc1b88f98bba8ce67783eceea71295364f39`.
+  The 924,921,344-byte portable image archive is internally verified against
+  its OCI tag/manifest/config/layer graph and sealed by manifest
+  `e6583956b5f1c763f73d888db1855af80b5aea3a50894e9d7bce55ff61f9022c`.
+  A deterministic development-only execution workspace contains exactly 180
+  tasks and excludes decision tasks, seed/training data, model outputs, and
+  authoring code; it is sealed by
+  `6c0a692f29885cb70d6b1864387a9eb990db7ef2636faacd88da70fcef221f5f`.
+  Historical ARM64 directionality results remain immutable but are explicitly
+  non-current. Gate 1 requires a fresh full directionality run on native
+  Linux/AMD64 before the exact Qwen baseline can be admitted.
 
 ## Next action
 
@@ -375,6 +392,10 @@ Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.
+The existing v8 card remains scoped only to Gate 0B and does not authorize a
+Gate 1 workload. Native verifier qualification and the baseline require their
+own subsequently sealed execution inputs and explicit GCloud approval if
+GCloud is selected.
 
 ## Authorization state
 

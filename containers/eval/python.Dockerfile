@@ -1,0 +1,3 @@
+FROM python:3.11.15-slim-bookworm@sha256:77923445c077d8eb971b14b2b114a1d9cd4a87edb4c75654820ca4832ee8cb15
+LABEL org.ganesh.verifier.base-manifest="sha256:77923445c077d8eb971b14b2b114a1d9cd4a87edb4c75654820ca4832ee8cb15"
+WORKDIR /work

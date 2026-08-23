@@ -1,0 +1,3 @@
+FROM rust:1.85.0-slim-bookworm@sha256:c842cc0357b91bb15ad2bb89934513d0d226f711fac7f7fedb176d3311714d47
+LABEL org.ganesh.verifier.base-manifest="sha256:c842cc0357b91bb15ad2bb89934513d0d226f711fac7f7fedb176d3311714d47"
+WORKDIR /work

@@ -15,6 +15,14 @@ from scripts.eval.contracts import load_json, sha256_bytes, sha256_object
 EXPECTED_REPORT_SHA256 = "96ea9669e194c567f304c5462b2be9cc171555bba56ea10801186480bb347a06"
 
 
+def current_directionality_available() -> bool:
+    evidence = load_json(ROOT / "manifests/evaluation/private/decision-tranche1-directionality.json")
+    runtime = load_json(ROOT / "configs/eval/runtimes.json")["runtimes"]
+    first = evidence["executions"][0]
+    expected = runtime[first["verifier"]["runtime_id"]]
+    return first["verifier"]["image_id"] == expected["image_id"]
+
+
 def test_normalization_is_nfkc_casefold_and_whitespace_collapsed() -> None:
     assert normalized("  Ａ\tStraße\n") == "a strasse"
 
@@ -37,6 +45,8 @@ def test_manifest_seal_tamper_fails_closed(monkeypatch: pytest.MonkeyPatch) -> N
 def test_resealed_directionality_artifact_tamper_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if not current_directionality_available():
+        pytest.skip("archived ARM64 directionality is intentionally non-current")
     original = audit.load_json
 
     def tampered(path):
@@ -57,6 +67,8 @@ def test_resealed_directionality_artifact_tamper_fails_closed(
 def test_resealed_directionality_output_hash_tamper_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if not current_directionality_available():
+        pytest.skip("archived ARM64 directionality is intentionally non-current")
     original = audit.load_json
 
     def tampered(path):
@@ -75,6 +87,10 @@ def test_resealed_directionality_output_hash_tamper_fails_closed(
 
 
 def test_global_decision_separation_is_complete_and_sealed() -> None:
+    if not current_directionality_available():
+        with pytest.raises(RuntimeError, match="verifier image mismatch"):
+            build()
+        return
     report = build()
     assert report["status"] == "passed"
     assert report["counts"] == {

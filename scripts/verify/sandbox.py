@@ -18,6 +18,7 @@ SANDBOX_CONTRACT = {
     "cap_drop": "ALL",
     "no_new_privileges": True,
     "pull": "never",
+    "platform": "linux/amd64",
     "shell": False,
     "tmpfs": [
         "/tmp:rw,noexec,nosuid,nodev,size=64m",
@@ -30,21 +31,28 @@ SANDBOX_CONTRACT = {
 def load_runtime(path: Path, runtime_id: str, language: str, candidate_path: str) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         config = json.load(handle)
-    if set(config) != {"schema_version", "runtimes"} or config["schema_version"] != "1.0":
+    if set(config) != {"schema_version", "platform", "runtimes"} or config["schema_version"] != "2.0":
         raise ContractError("runtime config: unsupported or unexpected keys")
+    if config["platform"] != "linux/amd64":
+        raise ContractError("runtime config: verifier platform must be linux/amd64")
     runtime = config["runtimes"].get(runtime_id)
     if not isinstance(runtime, dict):
         raise ContractError(f"runtime config: missing {runtime_id!r}")
-    if set(runtime) != {"language", "image", "candidate_path", "commands"}:
+    if set(runtime) != {"language", "image", "image_id", "platform", "candidate_path", "commands"}:
         raise ContractError("runtime config: unexpected runtime keys")
     if runtime["language"] != language or runtime["candidate_path"] != candidate_path:
         raise ContractError("runtime config: language or candidate path mismatch")
+    if runtime["platform"] != config["platform"]:
+        raise ContractError("runtime config: runtime platform mismatch")
     image = runtime["image"]
-    if not isinstance(image, str) or "@sha256:" not in image:
-        raise ContractError("runtime config: image is not digest-pinned")
-    digest = image.rsplit("@sha256:", 1)[1]
+    if not isinstance(image, str) or not image or "@" in image:
+        raise ContractError("runtime config: image must be one locally resolvable tag")
+    image_id = runtime["image_id"]
+    if not isinstance(image_id, str) or not image_id.startswith("sha256:"):
+        raise ContractError("runtime config: missing exact image ID")
+    digest = image_id.removeprefix("sha256:")
     if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
-        raise ContractError("runtime config: malformed image digest")
+        raise ContractError("runtime config: malformed image ID")
     commands = runtime["commands"]
     if not isinstance(commands, list) or not commands or not all(
         isinstance(command, list) and command and all(isinstance(part, str) and part for part in command)
@@ -54,26 +62,32 @@ def load_runtime(path: Path, runtime_id: str, language: str, candidate_path: str
     return runtime
 
 
-def _inspect_image(image: str) -> str:
+def _inspect_image(image: str, expected_image_id: str, expected_platform: str) -> str:
     try:
         process = subprocess.run(
-            ["docker", "image", "inspect", image, "--format", "{{.Id}}"],
+            ["docker", "image", "inspect", image, "--format", "{{json .}}"],
             check=False, capture_output=True, text=True, timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired) as error:
         raise ContractError(f"docker image inspection failed: {error}") from error
-    image_id = process.stdout.strip()
-    if process.returncode != 0 or not image_id.startswith("sha256:") or len(image_id) != 71:
+    try:
+        inspected = json.loads(process.stdout) if process.returncode == 0 else {}
+    except json.JSONDecodeError as error:
+        raise ContractError(f"docker image inspection returned malformed JSON: {error}") from error
+    image_id = inspected.get("Id")
+    if not isinstance(image_id, str) or not image_id.startswith("sha256:") or len(image_id) != 71:
         raise ContractError(f"docker image unavailable or invalid: {process.stderr.strip()}")
-    requested_digest = image.rsplit("@", 1)[1]
-    if image_id != requested_digest:
-        raise ContractError(f"docker image ID {image_id} differs from requested digest {requested_digest}")
+    if image_id != expected_image_id:
+        raise ContractError(f"docker image ID {image_id} differs from required ID {expected_image_id}")
+    observed_platform = f"{inspected.get('Os')}/{inspected.get('Architecture')}"
+    if observed_platform != expected_platform:
+        raise ContractError(f"docker image platform {observed_platform} differs from required {expected_platform}")
     return image_id
 
 
-def _docker_argv(image: str, command: list[str], root: Path, limits: dict[str, Any]) -> list[str]:
+def _docker_argv(image: str, platform_name: str, command: list[str], root: Path, limits: dict[str, Any]) -> list[str]:
     return [
-        "docker", "run", "--rm", "--pull", "never", "--init",
+        "docker", "run", "--rm", "--pull", "never", "--platform", platform_name, "--init",
         "--network", "none", "--read-only", "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges", "--pids-limit", str(limits["pids"]),
         "--cpus", str(limits["cpus"]), "--memory", f"{limits['memory_mb']}m",
@@ -100,7 +114,7 @@ def _captured_text(value: str | bytes | None) -> str:
 def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, Any]:
     validate_task(task)
     runtime = load_runtime(runtime_config, task["runtime_id"], task["language"], task["candidate_path"])
-    image_id = _inspect_image(runtime["image"])
+    image_id = _inspect_image(runtime["image"], runtime["image_id"], runtime["platform"])
     limits = task["limits"]
     stdout_parts: list[str] = []
     stderr_parts: list[str] = []
@@ -128,7 +142,7 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
                 break
             try:
                 process = subprocess.run(
-                    _docker_argv(runtime["image"], command, root, limits),
+                    _docker_argv(runtime["image"], runtime["platform"], command, root, limits),
                     check=False, capture_output=True, text=True, timeout=remaining,
                     env={"PATH": os.environ.get("PATH", "")},
                 )

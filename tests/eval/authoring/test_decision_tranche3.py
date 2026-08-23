@@ -47,6 +47,8 @@ def test_executed_directionality_evidence_is_complete_and_bound() -> None:
     if not evidence_path.exists():
         pytest.skip("directionality has not been executed")
     evidence = load_json(evidence_path)
+    if evidence["executions"][0]["verifier"]["sandbox_contract_sha256"] != sha256_object(SANDBOX_CONTRACT):
+        pytest.skip("archived ARM64 directionality is intentionally non-current")
     claimed = evidence.pop("evidence_sha256")
     assert sha256_object(evidence) == claimed
     assert evidence["status"] == "passed"

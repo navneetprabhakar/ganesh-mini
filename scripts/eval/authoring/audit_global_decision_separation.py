@@ -202,9 +202,18 @@ def _load_runtime_config() -> tuple[dict[str, Any], dict[str, Any]]:
     path = ROOT / RUNTIME_CONFIG
     raw = path.read_bytes()
     config = json.loads(raw)
-    _require(config.get("schema_version") == "1.0", "unsupported runtime config schema")
+    _require(config.get("schema_version") == "2.0", "unsupported runtime config schema")
+    _require(config.get("platform") == "linux/amd64", "unsupported verifier platform")
     runtimes = config.get("runtimes")
     _require(isinstance(runtimes, dict) and bool(runtimes), "invalid runtime config")
+    for runtime_id, runtime in runtimes.items():
+        _require(isinstance(runtime, dict), f"invalid runtime: {runtime_id}")
+        _require(runtime.get("platform") == config["platform"], f"runtime platform mismatch: {runtime_id}")
+        image_id = runtime.get("image_id")
+        _require(
+            isinstance(image_id, str) and image_id.startswith("sha256:") and len(image_id) == 71,
+            f"invalid runtime image ID: {runtime_id}",
+        )
     binding = {"path": RUNTIME_CONFIG, "sha256": sha256_bytes(raw), "bytes": len(raw)}
     return runtimes, binding
 
@@ -315,14 +324,8 @@ def _bind_decision_evidence(
                     )
                     image = verifier.get("image")
                     _require(image == runtime.get("image"), f"verifier image mismatch: {task_id}")
-                    _require(isinstance(image, str) and "@sha256:" in image, f"unpinned verifier image: {task_id}")
-                    image_digest = image.rsplit("@sha256:", 1)[1]
                     _require(
-                        len(image_digest) == 64 and all(char in "0123456789abcdef" for char in image_digest),
-                        f"invalid verifier image digest: {task_id}",
-                    )
-                    _require(
-                        verifier.get("image_id") == f"sha256:{image_digest}",
+                        verifier.get("image_id") == runtime.get("image_id"),
                         f"verifier image identity mismatch: {task_id}",
                     )
                     for output_field in ("stdout", "stderr"):

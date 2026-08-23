@@ -1,0 +1,3 @@
+FROM eclipse-temurin:21.0.11_10-jdk@sha256:ed2fd2dd5cb13029c99610294ddd4e3b8f3a912d94dde0cb30629ce83d51ea33
+LABEL org.ganesh.verifier.base-manifest="sha256:ed2fd2dd5cb13029c99610294ddd4e3b8f3a912d94dde0cb30629ce83d51ea33"
+WORKDIR /work

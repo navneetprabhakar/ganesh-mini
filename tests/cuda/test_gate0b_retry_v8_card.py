@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from decimal import Decimal
 from pathlib import Path
 
@@ -18,6 +19,10 @@ def file_sha(path: str) -> str:
     return hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
 
 
+def commit_file_sha(commit: str, path: str) -> str:
+    return hashlib.sha256(subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)).hexdigest()
+
+
 def test_retry_v8_card_is_sealed_unapproved_and_binds_deep_dive_repairs() -> None:
     card=json.loads(CARD.read_text()); claimed=card.pop("card_sha256")
     assert digest(card)==claimed
@@ -25,9 +30,9 @@ def test_retry_v8_card_is_sealed_unapproved_and_binds_deep_dive_repairs() -> Non
     assert card["authorization"]["status"]=="not-approved-for-v8"
     assert card["predecessor"]["status"]=="superseded-before-gcloud-use"
     assert card["source"]["commit"]=="4873d337e62a57ec20ac43ff625616850a108607"
-    assert card["source"]["qualifier_sha256"]==file_sha("scripts/cuda/qualify.py")
-    assert card["source"]["qwen_runtime_sha256"]==file_sha("scripts/train/qwen_runtime.py")
-    assert card["source"]["workspace_packager_sha256"]==file_sha("scripts/train/package_workspace.py")
+    assert card["source"]["qualifier_sha256"]==commit_file_sha(card["source"]["commit"],"scripts/cuda/qualify.py")
+    assert card["source"]["qwen_runtime_sha256"]==commit_file_sha(card["source"]["commit"],"scripts/train/qwen_runtime.py")
+    assert card["source"]["workspace_packager_sha256"]==commit_file_sha(card["source"]["commit"],"scripts/train/package_workspace.py")
     assert card["repair"]["deep_dive_evidence_file_sha256"]==file_sha("measurement/cuda/local_deep_dive_20260823.json")
     assert card["runtime"]["controller_budget_seconds"]+card["runtime"]["backup_reserve_seconds"]==card["resource"]["max_run_duration_seconds"]
     assert Decimal(str(card["cost"]["incremental_upper_usd"]))<Decimal(str(card["cost"]["requested_incremental_ceiling_usd"]))

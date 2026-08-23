@@ -1,5 +1,6 @@
 import hashlib
 import json
+import subprocess
 from decimal import Decimal
 from pathlib import Path
 
@@ -16,6 +17,10 @@ def file_sha(path: str) -> str:
     return hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
 
 
+def commit_file_sha(commit: str, path: str) -> str:
+    return hashlib.sha256(subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)).hexdigest()
+
+
 def test_retry_v3_card_is_sealed_and_preserves_historical_runtime() -> None:
     card=json.loads(CARD.read_text()); claimed=card.pop("card_sha256")
     assert digest(card)==claimed
@@ -29,5 +34,5 @@ def test_retry_v3_card_is_sealed_and_preserves_historical_runtime() -> None:
     assert source["qualifier_sha256"]!=file_sha("scripts/cuda/qualify.py")
     assert source["qualification_runner_sha256"]=="043bcaeb2a88f03ca64da8c1d6ae7b6226087a776ec49f838992ddcc6da39b1a"
     assert source["qualification_runner_sha256"]!=file_sha("scripts/cuda/run_qualification.sh")
-    assert source["startup_controller_sha256"]==file_sha("scripts/cuda/gcloud_startup_gate0b.sh")
-    assert source["metadata_wrapper_sha256"]==file_sha("scripts/cuda/gcloud_startup_metadata_wrapper.sh")
+    assert source["startup_controller_sha256"]==commit_file_sha(source["commit"],"scripts/cuda/gcloud_startup_gate0b.sh")
+    assert source["metadata_wrapper_sha256"]==commit_file_sha(source["commit"],"scripts/cuda/gcloud_startup_metadata_wrapper.sh")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from decimal import Decimal
 from pathlib import Path
 
@@ -19,6 +20,10 @@ def file_sha(path: str) -> str:
     return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
 
 
+def commit_file_sha(commit: str, path: str) -> str:
+    return hashlib.sha256(subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)).hexdigest()
+
+
 def test_retry_v5_card_is_sealed_and_preserves_historical_qualifier() -> None:
     card = json.loads(CARD.read_text())
     claimed = card.pop("card_sha256")
@@ -32,8 +37,8 @@ def test_retry_v5_card_is_sealed_and_preserves_historical_qualifier() -> None:
     assert source["commit"] == "d318f595c1319e32db37ea24f9a9c94515d79fa8"
     assert source["qualifier_sha256"] == "d5680550fd041c514755cbdb0f857e4df611aebdc3b9de714322b982d90264f0"
     assert source["qualifier_sha256"] != file_sha("scripts/cuda/qualify.py")
-    assert source["qualification_runner_sha256"] == file_sha("scripts/cuda/run_qualification.sh")
-    assert source["startup_controller_sha256"] == file_sha("scripts/cuda/gcloud_startup_gate0b.sh")
-    assert source["metadata_wrapper_sha256"] == file_sha("scripts/cuda/gcloud_startup_metadata_wrapper.sh")
+    assert source["qualification_runner_sha256"] == commit_file_sha(source["commit"],"scripts/cuda/run_qualification.sh")
+    assert source["startup_controller_sha256"] == commit_file_sha(source["commit"],"scripts/cuda/gcloud_startup_gate0b.sh")
+    assert source["metadata_wrapper_sha256"] == commit_file_sha(source["commit"],"scripts/cuda/gcloud_startup_metadata_wrapper.sh")
     assert card["repair"]["dependency_lock_sha256"] == file_sha("uv.lock")
     assert card["model"]["revision"] == "15852e8c16360a2fea060d615a32b45270f8a8fc"

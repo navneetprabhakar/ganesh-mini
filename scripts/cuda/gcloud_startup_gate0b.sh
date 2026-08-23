@@ -23,9 +23,9 @@ PY
 metadata_header='Metadata-Flavor: Google'
 observed_machine_type="$(basename "$(curl -fsS -H "$metadata_header" http://metadata.google.internal/computeMetadata/v1/instance/machine-type)")"
 [[ "$observed_machine_type" == "$GANESH_EXPECTED_MACHINE_TYPE" ]] || { echo "machine type mismatch: $observed_machine_type" >&2; exit 43; }
-(( $(nproc) >= 12 )) || { echo "qualification host exposes fewer than 12 CPUs" >&2; exit 43; }
+(( $(nproc) >= 8 )) || { echo "qualification host exposes fewer than 8 CPUs" >&2; exit 43; }
 host_memory_bytes="$(awk '/MemTotal:/ {print $2*1024}' /proc/meminfo | cut -d. -f1)"
-(( host_memory_bytes >= 76*1024*1024*1024 )) || { echo "qualification host exposes less than 76 GiB RAM" >&2; exit 43; }
+(( host_memory_bytes >= 30*1024*1024*1024 )) || { echo "qualification host exposes less than 30 GiB RAM" >&2; exit 43; }
 
 work_dir="/opt/ganesh-mini-gate0b"
 evidence_dir="/var/lib/ganesh-mini-gate0b"
@@ -126,6 +126,30 @@ set +e
 GANESH_GPU_HOURLY_USD="$GANESH_GPU_HOURLY_USD" GANESH_CUMULATIVE_COST_USD="$GANESH_CUMULATIVE_COST_USD" GANESH_SUPPORT_RESERVE_USD="$GANESH_SUPPORT_RESERVE_USD" GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD="$GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" GANESH_MAX_VM_LIFETIME_SECONDS="$GANESH_MAX_VM_LIFETIME_SECONDS" GANESH_CONTROLLER_DEADLINE_EPOCH="$controller_deadline_epoch" GANESH_CUDA_IMAGE_REF="$GANESH_CUDA_IMAGE_REF" GANESH_CUDA_IMAGE_ID="$GANESH_CUDA_IMAGE_ID" GANESH_ATTEMPT_ID="$GANESH_ATTEMPT_ID" \
   "$work_dir/workspace/scripts/cuda/run_qualification.sh" "$work_dir/model" "$work_dir/workspace/data/seed/ganesh_v01/train.jsonl" "$output_dir" bf16-lora-primary-v1 > >(tee "$evidence_dir/controller.stdout.log") 2> >(tee "$evidence_dir/controller.stderr.log" >&2)
 run_status="$?"; set -e
+if (( run_status != 0 )); then
+  primary_evidence="$output_dir/qualification-bf16-lora-primary-v1.json"
+  fallback_trigger="$(python3 - "$primary_evidence" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+path=Path(sys.argv[1])
+if not path.is_file(): raise SystemExit(0)
+value=json.loads(path.read_text()); claimed=value.pop("evidence_sha256",None)
+actual=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(",", ":")).encode()).hexdigest()
+if claimed != actual or value.get("status") != "failed": raise SystemExit(0)
+error_type=value.get("error_type",""); error=value.get("error","").lower()
+if error_type in {"OutOfMemoryError","CUDAOutOfMemoryError"} or "out of memory" in error: print("primary_cuda_oom")
+elif error_type == "PeakVramExceeded" and isinstance(value.get("peak_vram_failure"),dict): print("primary_peak_vram_exceeded")
+PY
+)"
+  if [[ -n "$fallback_trigger" ]]; then
+    set +e
+    GANESH_PRIMARY_QUALIFICATION_EVIDENCE="$primary_evidence" GANESH_FALLBACK_TRIGGER="$fallback_trigger" \
+      GANESH_GPU_HOURLY_USD="$GANESH_GPU_HOURLY_USD" GANESH_CUMULATIVE_COST_USD="$GANESH_CUMULATIVE_COST_USD" GANESH_SUPPORT_RESERVE_USD="$GANESH_SUPPORT_RESERVE_USD" GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD="$GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" GANESH_MAX_VM_LIFETIME_SECONDS="$GANESH_MAX_VM_LIFETIME_SECONDS" GANESH_CONTROLLER_DEADLINE_EPOCH="$controller_deadline_epoch" GANESH_CUDA_IMAGE_REF="$GANESH_CUDA_IMAGE_REF" GANESH_CUDA_IMAGE_ID="$GANESH_CUDA_IMAGE_ID" GANESH_ATTEMPT_ID="$GANESH_ATTEMPT_ID" \
+      "$work_dir/workspace/scripts/cuda/run_qualification.sh" "$work_dir/model" "$work_dir/workspace/data/seed/ganesh_v01/train.jsonl" "$output_dir" nf4-qlora-fallback-v1 >> "$evidence_dir/controller.stdout.log" 2>> "$evidence_dir/controller.stderr.log"
+    run_status="$?"; set -e
+    printf '%s\n' "$fallback_trigger" > "$evidence_dir/fallback-trigger.txt"
+  fi
+fi
 kill "$nvml_pid" "$backup_pid" 2>/dev/null || true; wait "$nvml_pid" "$backup_pid" 2>/dev/null || true
 printf '%s\n' "$run_status" > "$evidence_dir/controller-exit-code.txt"
 printf '%s\n' "$run_status" > "$evidence_dir/startup-exit-code.txt"

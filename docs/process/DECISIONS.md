@@ -14,13 +14,15 @@ by `940fbca74ba6ba349c58ff558313f4ef9d3e94f2e97027a8172a57b668233d86`.
 No GPU compute charge was incurred. Negligible GCS storage/operation charges
 are not asserted as zero.
 
-The v8 plan is historical and cannot be resumed. Gate 0B remains closed. The
-preferred replacement is a non-preemptible 48 GiB-class Ampere rental such as
-an A40 or RTX A6000, provided its driver and container runtime pass the exact
-pinned CUDA preflight. This preserves BF16 LoRA and avoids both the 24 GiB L4
-margin risk and Spot-A100 interruption risk. A replacement must use a new
-provider-specific sealed execution card and cost ceiling. Any GCloud option
-still requires fresh explicit approval.
+The v8 plan is historical and cannot be resumed. Gate 0B remains closed.
+
+Navneet clarified that the requested alternative must remain within GCP and
+approved one non-Spot Standard `g2-standard-8` L4 attempt for at most 3,600
+seconds and `$1.00` incremental cost, including temporary networking, GCS
+backup verification, and teardown. BF16 LoRA remains primary. The existing NF4
+QLoRA fallback may run only after sealed evidence records primary CUDA OOM or a
+peak-VRAM ceiling breach. This replacement requires a new sealed execution
+card; the earlier non-GCloud A40 proposal is withdrawn.
 
 ## 2026-08-22 — Ganesh v0.1 training data authorized as seed corpus
 

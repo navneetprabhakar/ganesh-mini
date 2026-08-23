@@ -450,23 +450,26 @@ were briefly created; both network resources were deleted. The exact planned
 VM, disk, VPC, and subnet are absent under post-abort proof seal
 `940fbca74ba6ba349c58ff558313f4ef9d3e94f2e97027a8172a57b668233d86`.
 No GPU compute cost was incurred. The v8 run plan is historical and must not be
-reused. The preferred cheaper replacement is a non-preemptible 48 GiB-class
-Ampere rental (A40 or RTX A6000) after provider/driver portability preflight.
+reused. Navneet clarified that the replacement must remain in GCP and approved
+one Standard `g2-standard-8` L4 attempt for at most 3,600 seconds and `$1.00`
+incremental cost, including temporary networking, verified GCS backup, and
+complete teardown.
 Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.
-The primary BF16 LoRA recipe still requires at least 24 GiB. An L4's marketed
-24 GB leaves insufficient practical margin against that frozen floor, while a
-Spot A100 repeats the preemption mode already observed. Any replacement needs
-a new provider-specific sealed card and cost ceiling. Native verifier
+The L4 hardware profile admits at least 22 GiB exposed CUDA memory and caps
+measured peak VRAM at 21 GiB. BF16 LoRA remains primary; NF4 QLoRA can run only
+after a sealed CUDA OOM or peak-ceiling failure. Model, data, sequence length,
+rank, optimizer, and evidence parameters are unchanged. The replacement needs
+a new sealed GCloud card. Native verifier
 qualification and the baseline require their own subsequently sealed inputs;
 fresh explicit approval remains mandatory if GCloud is selected.
 
 The native verifier, repaired workspace, global separation, Gate 2 cascade,
 and baseline-runner pre-execution audit are complete. The next external
-mutation is a cheaper provider qualification attempt after its exact card,
-runtime portability checks, and provider access are ready. No baseline or
+mutation is the approved Standard L4 qualification after its exact card,
+deterministic workspace, tests, price check, and absence proof are ready. No baseline or
 training may start before Gate 0B
 passes. After that pass, run the exact 180-task Qwen development baseline and
 admit it through the fail-closed Gate 1 report.

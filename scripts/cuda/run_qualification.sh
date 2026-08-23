@@ -75,7 +75,7 @@ fi
 # The sealed image is loaded before this controller starts. Execution is
 # offline, pull-disabled, bounded to one GPU, and cannot build or download.
 timeout --signal=TERM --kill-after=30s "$seconds_until_deadline" \
-  docker run --rm --pull=never --gpus device=0 --network none --cpus 12 --memory 72g \
+  docker run --rm --pull=never --gpus device=0 --network none --cpus 8 --memory 28g \
     --read-only --tmpfs /tmp:rw,noexec,nosuid,size=8g \
     --tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g \
     -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \

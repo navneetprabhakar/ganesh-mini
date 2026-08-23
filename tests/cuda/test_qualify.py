@@ -29,7 +29,8 @@ def test_pinned_primary_and_fallback_validate() -> None:
     config = load_and_validate_config(CONFIG, ROOT)
     assert config["qualification_order"] == [PRIMARY_RECIPE, FALLBACK_RECIPE]
     primary = config["recipes"][PRIMARY_RECIPE]
-    assert primary["minimum_vram_bytes"] == 24 * 1024**3
+    assert primary["minimum_vram_bytes"] == 22 * 1024**3
+    assert primary["maximum_peak_vram_bytes"] == 21 * 1024**3
     assert primary["quantization"] is None
     assert primary["sequence_length"] == 4096
     assert (primary["micro_batch_size"], primary["rank"], primary["alpha"], primary["dropout"]) == (1, 32, 64, 0.05)
@@ -136,11 +137,20 @@ def test_runner_requires_exact_preloaded_image_and_disables_pull_and_network() -
     assert "docker build" not in runner
     assert "--pull=never" in runner
     assert "--network none" in runner
-    assert "--cpus 12 --memory 72g" in runner
+    assert "--cpus 8 --memory 28g" in runner
     assert "--tmpfs /tmp:rw,noexec,nosuid,size=8g" in runner
     assert "--tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g" in runner
     assert "TRITON_CACHE_DIR=/var/cache/triton" in runner
     assert "-e PYTHONPATH=/workspace" in runner
+
+
+def test_l4_startup_admits_bounded_host_and_fallback_only_on_sealed_memory_failure() -> None:
+    startup = (ROOT / "scripts/cuda/gcloud_startup_gate0b.sh").read_text()
+    assert "fewer than 8 CPUs" in startup and "less than 30 GiB RAM" in startup
+    assert 'error_type in {"OutOfMemoryError","CUDAOutOfMemoryError"}' in startup
+    assert 'error_type == "PeakVramExceeded"' in startup
+    assert "GANESH_PRIMARY_QUALIFICATION_EVIDENCE" in startup
+    assert "nf4-qlora-fallback-v1" in startup
 
 
 def test_inference_and_training_share_one_model_load() -> None:
@@ -277,7 +287,7 @@ def test_swift_identity_rejects_wrong_explicit_template(monkeypatch, tmp_path: P
 
 
 def test_qwen_training_structure_freezes_nested_vision_and_disables_language_cache() -> None:
-    import torch
+    torch = pytest.importorskip("torch")
 
     language_model = torch.nn.Linear(2, 2)
     language_model.config = types.SimpleNamespace(use_cache=True)
@@ -303,6 +313,8 @@ def test_qwen_training_structure_rejects_wrong_component_layout() -> None:
 
 
 def test_saved_adapter_reloads_and_merges_without_second_base_load(tmp_path: Path) -> None:
+    pytest.importorskip("peft")
+    pytest.importorskip("transformers")
     from peft import LoraConfig, get_peft_model
     from transformers import GPT2Config, GPT2LMHeadModel
 

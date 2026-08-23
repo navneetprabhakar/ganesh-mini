@@ -23,8 +23,8 @@ def test_retry_v5_card_is_sealed_and_binds_import_path_repair() -> None:
     card = json.loads(CARD.read_text())
     claimed = card.pop("card_sha256")
     assert digest(card) == claimed
-    assert card["status"] == "prepared-awaiting-explicit-gcloud-approval"
-    assert card["authorization"]["status"] == "not-yet-approved-for-v5"
+    assert card["status"] == "approved-awaiting-generation-pinned-upload"
+    assert card["authorization"]["status"] == "approved-for-v5"
     assert Decimal(str(card["cost"]["incremental_upper_usd"])) < Decimal(
         str(card["cost"]["requested_incremental_ceiling_usd"])
     )

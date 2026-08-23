@@ -250,7 +250,7 @@ card.
   and non-prefix, empty, batched, or overlength records fail closed. The shared
   implementation is used by both CUDA qualification and seed-pilot
   preparation. After the broader controller repair, the full local suite has
-  133 collected tests: 129 pass and four environment-dependent integration
+  135 collected tests: 131 pass and four environment-dependent integration
   tests are intentionally skipped.
 
 ## Not started or incomplete

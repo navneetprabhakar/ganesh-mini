@@ -533,3 +533,45 @@ and a twice-reproduced workspace archive with SHA-256
 `9c8cca903eacb876ad9967a2bed23c16efdc7f1691c5c57f0ef2ecad434e20e1`.
 The card remains explicitly unapproved; no v7 GCloud action is permitted until
 Navneet Prabhakar approves its separate USD 2.40 incremental ceiling.
+
+## 2026-08-23 — Exact Qwen structure deep dive supersedes Gate 0B v7
+
+The exact pinned checkpoint was instantiated with empty weights under the
+pinned Transformers and ms-swift contracts before another paid run. This
+proved that Qwen3.5 exposes its vision tower at `model.model.visual`, its
+language model at `model.model.language_model`, and its active cache setting at
+`model.model.language_model.config.use_cache`. The earlier qualification and
+production SFT paths attempted `model.visual` and wrote only the outer config,
+so the explicit vision-freeze evidence was wrong and the real language cache
+remained enabled during long-sequence backward.
+
+A shared fail-closed structure guard now freezes all 297 vision tensors
+(331,416,576 parameters), disables the actual language cache for training, and
+restores it for serving. The exact empty-weight graph exposes 186 eligible
+language linear modules. Adapter serialization now unloads the in-memory PEFT
+adapter and reloads its saved bytes into the same frozen base, eliminating a
+second backbone load. Qualification compares trained and saved/reloaded logits
+at absolute tolerance 0.01, then requires the BF16 safe-merged logits to be
+finite and close at absolute tolerance 0.25 and relative tolerance 0.02.
+
+The production SFT engine uses the same structural guard and serialized
+adapter lifecycle. Its held-out loss diagnostic now combines JavaScript and
+TypeScript into one family before calculating the frozen five-family macro.
+The 4,096-token synthetic probe reports 4,096 input tokens, 64 masked prompt
+tokens, and 4,032 supervised tokens, and all qualification losses must be
+finite and positive. Production SFT now reserves 600 seconds inside both its
+wall and cost bounds for finalization and writes a resumable checkpoint at the
+latest optimizer boundary whenever training stops bounded.
+
+The full local suite passes 147 tests with one intentional integration skip.
+The exact local reproduction and repair record is sealed by
+`15330a2c847232d1acdf4c039a1bf34d5c9b7943fc5d12c0ff5e5e137ded5326`.
+The temporary 287 MB diagnostic dependency directory was deleted afterward.
+
+V7 is immutable but stale and cannot authorize execution of these changed
+sources. V6 timing evidence also shows 433 seconds elapsed before container
+qualification began, leaving only 1,367 seconds under v7 for model load,
+11,318 backward tokens, serialization, safe merge, and merged checkpoint
+write. The replacement card must bind the repaired commit and archive and add
+controller and terminal-backup margin. No GCloud action occurred during this
+deep dive.

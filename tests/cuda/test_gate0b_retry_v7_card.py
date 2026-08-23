@@ -19,7 +19,7 @@ def file_sha(path: str) -> str:
     return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
 
 
-def test_retry_v7_card_is_sealed_unapproved_and_binds_template_repair() -> None:
+def test_retry_v7_card_is_sealed_unapproved_and_superseded_by_deep_dive_repairs() -> None:
     card = json.loads(CARD.read_text())
     claimed = card.pop("card_sha256")
     assert digest(card) == claimed
@@ -30,7 +30,7 @@ def test_retry_v7_card_is_sealed_unapproved_and_binds_template_repair() -> None:
     )
     source = card["source"]
     assert source["commit"] == "2c509c77b07f6cc4b8dfe93ddd21d743ca51d93d"
-    assert source["qualifier_sha256"] == file_sha("scripts/cuda/qualify.py")
+    assert source["qualifier_sha256"] != file_sha("scripts/cuda/qualify.py")
     assert source["qualification_runner_sha256"] == file_sha("scripts/cuda/run_qualification.sh")
     assert source["startup_controller_sha256"] == file_sha("scripts/cuda/gcloud_startup_gate0b.sh")
     assert source["metadata_wrapper_sha256"] == file_sha("scripts/cuda/gcloud_startup_metadata_wrapper.sh")

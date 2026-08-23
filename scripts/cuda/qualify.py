@@ -7,6 +7,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from scripts.train.qwen_runtime import (
+    configure_qwen_training_structure,
+    unload_and_reload_saved_adapter,
+    restore_qwen_serving_cache,
+)
 from scripts.train.response_only import ResponseOnlyError, build_response_only_encoding
 
 PACKAGE_IMPORTS = {"torch":"torch","torchvision":"torchvision","transformers":"transformers","peft":"peft","ms-swift":"swift","bitsandbytes":"bitsandbytes","flash-linear-attention":"fla","causal-conv1d":"causal_conv1d","accelerate":"accelerate","qwen-vl-utils":"qwen_vl_utils","triton":"triton"}
@@ -231,17 +236,15 @@ def sequence_envelope_probe(model: Any, tokenizer: Any, length: int) -> dict[str
     if tokenizer.eos_token_id is None: raise RuntimeError("tokenizer has no EOS token for deterministic envelope probe")
     input_ids = torch.full((1,length),tokenizer.eos_token_id,dtype=torch.long,device="cuda:0"); labels = input_ids.clone(); labels[:,:64] = -100; attention_mask = torch.ones_like(input_ids)
     model.zero_grad(set_to_none=True); output = model(input_ids=input_ids,attention_mask=attention_mask,labels=labels)
-    if not torch.isfinite(output.loss): raise RuntimeError("non-finite loss in 4,096-token synthetic envelope probe")
+    if not torch.isfinite(output.loss) or output.loss.detach().item() <= 0: raise RuntimeError("non-finite or non-positive loss in 4,096-token synthetic envelope probe")
     output.loss.backward(); model.zero_grad(set_to_none=True)
-    return {"kind":"synthetic-active-token-shape-probe","sequence_length":length,"active_tokens":length,"micro_batch_size":1,"optimizer_step":False,"quality_training_record":False,"loss_finite":True,"passed":True}
+    return {"kind":"synthetic-active-token-shape-probe","sequence_length":length,"input_tokens":length,"supervised_tokens":length-64,"masked_prompt_tokens":64,"micro_batch_size":1,"optimizer_step":False,"quality_training_record":False,"loss_finite":True,"loss_positive":bool(output.loss.detach().item()>0),"passed":True}
 
 def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path, model: Any, tokenizer: Any, model_load_peak: dict[str,int], journal_path: Path | None = None) -> dict[str,Any]:
     import torch
-    from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
-    from transformers import AutoModelForImageTextToText
+    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
     recipe = config["recipes"][recipe_id]
-    if hasattr(model,"visual"):
-        for parameter in model.visual.parameters(): parameter.requires_grad = False
+    training_structure = configure_qwen_training_structure(model)
     quantized = [name for name,value in model.named_parameters() if value.__class__.__name__ == "Params4bit"]
     if recipe_id == FALLBACK_RECIPE:
         import bitsandbytes as bnb
@@ -250,7 +253,8 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     else:
         if quantized: raise RuntimeError("BF16 primary unexpectedly contains quantized parameters")
         linear_type = torch.nn.Linear; model.gradient_checkpointing_enable(); model.enable_input_require_grads()
-    model.config.use_cache = False
+    if not model.is_gradient_checkpointing:
+        raise RuntimeError("gradient checkpointing did not activate on the Qwen3.5 language model")
     targets = [name for name,module in model.named_modules() if isinstance(module,linear_type) and name.startswith("model.language_model.") and not name.endswith("lm_head")]
     if not targets: raise RuntimeError("no eligible language-model linear modules found")
     model = get_peft_model(model,LoraConfig(r=recipe["rank"],lora_alpha=recipe["alpha"],lora_dropout=recipe["dropout"],target_modules=targets,bias="none",task_type="CAUSAL_LM"))
@@ -263,21 +267,32 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     for index, item in enumerate(records):
         if journal_path: append_journal(journal_path,{"phase":"training-record","state":"started","index":index,"record_id":item["row"]["id"]})
         batch = response_only_batch(tokenizer,item["row"]["messages"],recipe["sequence_length"],"cuda:0"); optimizer.zero_grad(set_to_none=True); output = model(**batch)
-        if not torch.isfinite(output.loss): raise RuntimeError(f"non-finite loss for {item['row']['id']}")
+        if not torch.isfinite(output.loss) or output.loss.detach().item() <= 0: raise RuntimeError(f"non-finite or non-positive loss for {item['row']['id']}")
         output.loss.backward(); gradients.update(name for name,parameter in model.named_parameters() if parameter.requires_grad and parameter.grad is not None and torch.count_nonzero(parameter.grad).item() > 0); optimizer.step()
         active_tokens += int(batch["attention_mask"].sum().item()); response_tokens += int((batch["labels"] != -100).sum().item()); losses.append(float(output.loss.detach().cpu()))
         if journal_path: append_journal(journal_path,{"phase":"training-record","state":"completed","index":index,"record_id":item["row"]["id"],"loss":losses[-1]})
     torch.cuda.synchronize(); training_seconds = time.monotonic()-training_started; missing = sorted(trainable-gradients)
     if missing: raise RuntimeError(f"{len(missing)} trainable adapter parameters never received non-zero gradients")
     memory = {"training_peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"training_peak_reserved_bytes":torch.cuda.max_memory_reserved(0)}
+    model.eval(); probe = tokenizer("def add(a, b):",return_tensors="pt").to("cuda:0")
+    with torch.inference_mode(): trained_logits = model(**probe).logits[:,-1,:].float().cpu()
     if journal_path: append_journal(journal_path,{"phase":"adapter-save","state":"started"})
     adapter_dir.mkdir(parents=True,exist_ok=False); model.save_pretrained(adapter_dir,safe_serialization=True); tokenizer.save_pretrained(adapter_dir); hashes = {path.name:file_sha256(path) for path in sorted(adapter_dir.iterdir()) if path.is_file()}
     if journal_path: append_journal(journal_path,{"phase":"adapter-save","state":"completed","file_sha256":hashes})
-    del optimizer, model; gc.collect(); torch.cuda.empty_cache()
+    del optimizer; model.zero_grad(set_to_none=True); gc.collect(); torch.cuda.empty_cache()
     if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"started"})
-    base = AutoModelForImageTextToText.from_pretrained(model_dir,local_files_only=True,dtype=torch.bfloat16,device_map={"":0}); reloaded = PeftModel.from_pretrained(base,adapter_dir,is_trainable=False); merged = reloaded.merge_and_unload(safe_merge=True); merged.eval(); probe = tokenizer("def add(a, b):",return_tensors="pt").to("cuda:0")
-    with torch.inference_mode(): merge_finite = bool(torch.isfinite(merged(**probe).logits).all().item())
-    if not merge_finite: raise RuntimeError("merged checkpoint produced non-finite logits")
+    reloaded, reload_merge = unload_and_reload_saved_adapter(model,adapter_dir); reloaded.eval()
+    with torch.inference_mode(): reloaded_logits = reloaded(**probe).logits[:,-1,:].float().cpu()
+    reload_max_abs = float((trained_logits-reloaded_logits).abs().max())
+    if reload_max_abs > 0.01: raise RuntimeError("saved/reloaded adapter logits do not reproduce the trained adapter")
+    merged = reloaded.merge_and_unload(safe_merge=True)
+    if any("lora_" in name for name,_ in merged.named_modules()): raise RuntimeError("LoRA modules remained after safe merge")
+    reload_merge["safe_merge"] = True
+    serving_structure = restore_qwen_serving_cache(merged); merged.eval()
+    with torch.inference_mode(): merged_logits = merged(**probe).logits[:,-1,:].float().cpu()
+    merge_finite = bool(torch.isfinite(merged_logits).all().item()); merge_max_abs = float((trained_logits-merged_logits).abs().max())
+    merge_close = bool(torch.allclose(trained_logits,merged_logits,atol=0.25,rtol=0.02))
+    if not merge_finite or not merge_close: raise RuntimeError("merged checkpoint logits are non-finite or outside the frozen BF16 equivalence tolerance")
     merged_dir = adapter_dir.parent / f"merged-{recipe_id}"
     merged_dir.mkdir(parents=False,exist_ok=False); merged.save_pretrained(merged_dir,safe_serialization=True); tokenizer.save_pretrained(merged_dir)
     merged_hashes = {path.name:file_sha256(path) for path in sorted(merged_dir.iterdir()) if path.is_file()}
@@ -285,8 +300,9 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     observed_peak = max((*model_load_peak.values(),*memory.values()))
     if observed_peak > recipe["maximum_peak_vram_bytes"]:
         raise PeakVramExceeded(observed_peak,recipe["maximum_peak_vram_bytes"])
-    if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"completed","file_sha256":merged_hashes,"logits_finite":True})
-    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"model_load_reused_after_inference":True,"optimizer_steps":len(records),"losses":losses,"sequence_envelope":envelope,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":{"model_load":model_load_peak,"training":memory,"observed_peak_bytes":observed_peak,"maximum_peak_vram_bytes":recipe["maximum_peak_vram_bytes"],"passed":True},"adapter_file_sha256":hashes,"adapter_reloaded":True,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
+    if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"completed","file_sha256":merged_hashes,"reload_max_abs_logit_difference":reload_max_abs,"merge_max_abs_logit_difference":merge_max_abs,"logits_finite":True})
+    equivalence = {"probe":"def add(a, b):","reload_atol":0.01,"reload_max_abs_logit_difference":reload_max_abs,"merge_atol":0.25,"merge_rtol":0.02,"merge_max_abs_logit_difference":merge_max_abs,"passed":True}
+    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"model_load_reused_after_inference":True,"optimizer_steps":len(records),"losses":losses,"losses_finite_and_positive":True,"sequence_envelope":envelope,"training_structure":training_structure,"serving_structure":serving_structure,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":{"model_load":model_load_peak,"training":memory,"observed_peak_bytes":observed_peak,"maximum_peak_vram_bytes":recipe["maximum_peak_vram_bytes"],"passed":True},"adapter_file_sha256":hashes,"reload_merge":reload_merge,"serialization_equivalence":equivalence,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
 
 def inference_smoke(model: Any, tokenizer: Any) -> dict[str,Any]:
     import torch

@@ -1,0 +1,93 @@
+{
+  "schema_version": "ganesh-mini-local-cuda-deep-dive/v1",
+  "status": "passed",
+  "recorded_at": "2026-08-23T08:30:51Z",
+  "scope": "Read-only exact-checkpoint structural reproduction plus local source repair and tests; no GCloud usage",
+  "model": {
+    "model_id": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "local_path": "models/qwen3.5-2b-15852e8",
+    "class": "Qwen3_5ForConditionalGeneration"
+  },
+  "exact_ms_swift_4_5_2_reproduction": {
+    "requested_model_type": "qwen3_5",
+    "resolved_model_type": "qwen3_5",
+    "model_meta_template": null,
+    "candidate_templates": ["qwen3_5", "qwen3_8"],
+    "requested_template": "qwen3_5",
+    "resolved_template": "qwen3_5",
+    "passed": true
+  },
+  "exact_empty_weight_structure": {
+    "vision_path": "model.model.visual",
+    "language_model_path": "model.model.language_model",
+    "vision_parameter_tensors": 297,
+    "vision_parameters": 331416576,
+    "eligible_language_linear_modules": 186,
+    "outer_text_config_shared_with_language_config": true,
+    "training_language_model_use_cache": false,
+    "serving_language_model_use_cache": true,
+    "passed": true
+  },
+  "defects_repaired": [
+    {
+      "name": "wrong_qwen_vision_component_path",
+      "impact": "The intended explicit vision freeze inspected model.visual, while Qwen3.5 exposes the tower at model.model.visual.",
+      "repair": "Use a shared fail-closed Qwen structure guard in qualification and production SFT."
+    },
+    {
+      "name": "wrong_qwen_cache_config_path",
+      "impact": "Training wrote model.config.use_cache while the active language cache is model.model.language_model.config.use_cache, leaving cache enabled during long-sequence backward.",
+      "repair": "Disable the actual language-model cache during training and restore it before serving artifact save."
+    },
+    {
+      "name": "second_backbone_load_for_adapter_reload",
+      "impact": "Qualification unnecessarily loaded the full backbone twice, increasing VRAM and wall-time risk.",
+      "repair": "Unload the in-memory adapter, reload the serialized adapter into the same frozen base, and safe-merge without a second base load."
+    },
+    {
+      "name": "qualification_serialization_not_compared",
+      "impact": "The prior smoke checked only finite merged logits and did not prove saved adapter reproduction.",
+      "repair": "Compare trained, serialized/reloaded, and BF16-merged probe logits under frozen tolerances."
+    },
+    {
+      "name": "six_lane_validation_macro",
+      "impact": "Production SFT diagnostic gave JavaScript and TypeScript one full vote each instead of one combined product family.",
+      "repair": "Average JavaScript and TypeScript within their family, then compute the frozen five-family macro."
+    },
+    {
+      "name": "synthetic_token_accounting_and_loss_plausibility",
+      "impact": "The 4096-token probe reported all tokens as active despite 64 masked labels and accepted merely finite loss.",
+      "repair": "Report input, masked, and supervised tokens separately and require finite positive losses."
+    },
+    {
+      "name": "insufficient_sft_finalization_and_resume_reserve",
+      "impact": "Production SFT reserved only 60 seconds for validation, serialization, and reload checks, and a bounded stop could lack a checkpoint at its latest optimizer boundary.",
+      "repair": "Reserve 600 seconds inside both wall and cost bounds and force a resumable terminal checkpoint for a bounded stop."
+    }
+  ],
+  "timing_risk": {
+    "v6_startup_started_at": "2026-08-23T07:38:38Z",
+    "v6_gpu_sampling_started_at": "2026-08-23T07:45:51Z",
+    "observed_setup_seconds_before_container": 433,
+    "stale_v7_controller_deadline": "2026-08-23T08:08:38Z",
+    "stale_v7_hard_stop_deadline": "2026-08-23T08:13:38Z",
+    "remaining_controller_seconds_after_observed_setup": 1367,
+    "assessment": "The stale v7 envelope leaves about 22.8 minutes for model load, 11318 backward tokens including the 4096-token envelope, adapter serialization, safe merge, and merged checkpoint write. A replacement card should add controller and backup margin to avoid another avoidable paid retry."
+  },
+  "tests": {
+    "command": ".venv/bin/pytest -q",
+    "passed": 147,
+    "skipped": 1,
+    "failed": 0,
+    "warnings": 2
+  },
+  "source_sha256": {
+    "scripts/cuda/qualify.py": "8c97e1df3d8f091c70f00311c932f82cdf4231a0589739d39f4429df278b451e",
+    "scripts/train/qwen_runtime.py": "f97002c055a604757e72ac5935a24bd8bef70509a15183a2f223e5c16a716104",
+    "scripts/train/run_sft.py": "e835dc8ab517c8d33374f27bafa61a598bc00acb5a38ed423e4a361314ae096c",
+    "uv.lock": "ef71c0477c214d01c5fade799c1832a05014f89f643ee92fea8f0399988f85ba"
+  },
+  "gcloud_used": false,
+  "evidence_sha256": "15330a2c847232d1acdf4c039a1bf34d5c9b7943fc5d12c0ff5e5e137ded5326"
+}

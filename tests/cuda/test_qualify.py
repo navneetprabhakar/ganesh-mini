@@ -10,13 +10,16 @@ from scripts.cuda.qualify import (
     PRIMARY_RECIPE,
     canonical_sha256,
     append_journal,
+    configure_qwen_training_structure,
     install_fla_recurrent_compatibility,
     load_and_validate_config,
+    restore_qwen_serving_cache,
     resolved_kernel_implementation,
     select_records,
     swift_identity,
     write_evidence,
 )
+from scripts.train.qwen_runtime import reload_and_merge_saved_adapter
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "configs/cuda/qwen3_5_2b_gate0.json"
@@ -271,6 +274,66 @@ def test_swift_identity_rejects_wrong_explicit_template(monkeypatch, tmp_path: P
 
     with pytest.raises(RuntimeError, match="explicit Qwen3.5 identity"):
         swift_identity(tmp_path)
+
+
+def test_qwen_training_structure_freezes_nested_vision_and_disables_language_cache() -> None:
+    import torch
+
+    language_model = torch.nn.Linear(2, 2)
+    language_model.config = types.SimpleNamespace(use_cache=True)
+    vision = torch.nn.Linear(2, 2)
+    model = types.SimpleNamespace(model=types.SimpleNamespace(visual=vision, language_model=language_model))
+
+    evidence = configure_qwen_training_structure(model)
+
+    assert not any(parameter.requires_grad for parameter in vision.parameters())
+    assert language_model.config.use_cache is False
+    assert evidence == {
+        "vision_parameter_tensors": 2,
+        "vision_parameters": 6,
+        "vision_frozen": True,
+        "language_model_use_cache": False,
+        "passed": True,
+    }
+
+
+def test_qwen_training_structure_rejects_wrong_component_layout() -> None:
+    with pytest.raises(RuntimeError, match="component was not found"):
+        configure_qwen_training_structure(types.SimpleNamespace(model=types.SimpleNamespace()))
+
+
+def test_saved_adapter_reloads_and_merges_without_second_base_load(tmp_path: Path) -> None:
+    from peft import LoraConfig, get_peft_model
+    from transformers import GPT2Config, GPT2LMHeadModel
+
+    base = GPT2LMHeadModel(GPT2Config(n_layer=1,n_head=1,n_embd=8,vocab_size=32))
+    trained = get_peft_model(
+        base,
+        LoraConfig(r=2,lora_alpha=4,target_modules=["c_attn"],bias="none",task_type="CAUSAL_LM"),
+    )
+    adapter_dir = tmp_path / "adapter"
+    trained.save_pretrained(adapter_dir,safe_serialization=True)
+
+    merged,evidence = reload_and_merge_saved_adapter(trained,adapter_dir)
+
+    assert not any("lora_" in name for name,_ in merged.named_modules())
+    assert evidence == {
+        "adapter_unloaded_before_reload": True,
+        "adapter_reloaded": True,
+        "safe_merge": True,
+        "second_base_model_load": False,
+        "passed": True,
+    }
+
+
+def test_qwen_serving_cache_is_restored_after_training() -> None:
+    language_model = types.SimpleNamespace(config=types.SimpleNamespace(use_cache=False))
+    model = types.SimpleNamespace(model=types.SimpleNamespace(language_model=language_model))
+
+    evidence = restore_qwen_serving_cache(model)
+
+    assert language_model.config.use_cache is True
+    assert evidence == {"language_model_use_cache": True, "passed": True}
 
 
 def test_resolved_kernel_implementation_reports_decorator_target() -> None:

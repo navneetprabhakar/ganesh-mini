@@ -327,8 +327,14 @@ card.
   complete exclusion result instead of weakening admission rules.
 - The SFT engine is hash-bound, response-only, cost/time/VRAM bounded,
   checkpoint-resumable, validates held-out loss diagnostically, and requires
-  save/reload logit reproduction. LR selection binds both complete 400k-token
-  candidate runs and their exact 180-task development result collections.
+  save/reload logit reproduction. Its Qwen-specific structural guard freezes
+  the nested vision tower, disables the actual language-model cache during
+  training, restores serving cache, and computes the diagnostic macro across
+  five product families rather than six compiler lanes. It reserves 600
+  seconds for finalization and forces a resumable terminal checkpoint at a
+  bounded stop. LR selection binds
+  both complete 400k-token candidate runs and their exact 180-task development
+  result collections.
 - Training packaging is deterministic and excludes every evaluation surface
   while including the exact prepared train and validation inputs.
 - Ganesh v0.1's five released adapters are provisioned from immutable Git
@@ -343,13 +349,17 @@ card.
 
 ## Next action
 
-V6 exposed and locally repaired the remaining ms-swift identity assertion:
-model registration and template resolution are now checked explicitly as two
-separate pinned APIs. Gate 0B is still closed because v6 did not reach model
-load, inference, or training. The sealed v7 card binds pushed commit
-`2c509c77b07f6cc4b8dfe93ddd21d743ca51d93d` and a byte-reproducible workspace
-archive. It is explicitly unapproved and no v7 GCloud inspection, upload, or
-resource operation has occurred. The next paid VM must first pass Gate 0B.
+Gate 0B remains closed because v6 did not reach model load, inference, or
+training. An exact local Qwen graph deep dive found and repaired two latent
+structural defects: the vision tower and active language cache were addressed
+at the wrong object paths. It also removed the second backbone load, added
+adapter/merge logit equivalence checks, corrected synthetic token accounting,
+and fixed the SFT validation macro. Evidence is sealed by
+`15330a2c847232d1acdf4c039a1bf34d5c9b7943fc5d12c0ff5e5e137ded5326`.
+The sealed v7 card is now stale and must not run. No v7 GCloud inspection,
+upload, or resource operation occurred. A replacement card must bind the
+repaired source and add time for qualification and terminal backup before the
+next paid VM attempts Gate 0B.
 Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent

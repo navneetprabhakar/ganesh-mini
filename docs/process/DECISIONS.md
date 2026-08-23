@@ -628,9 +628,10 @@ on an A100 Linux/AMD64 host would either fail with `exec format error` or make
 the verifier environment unrecoverable. This is a measurement defect, not a
 training defect, and it was found before any Qwen baseline output existed.
 
-The runtime contract is therefore migrated to schema 2 and explicitly pins
-`linux/amd64`, one locally resolvable project tag, and its exact inspected OCI
-image ID for Go 1.22.12, Java 21.0.11, Node 22.23.2, TypeScript 5.5.4, Python
+The runtime contract is therefore migrated to schema 3 and explicitly pins
+`linux/amd64`, one locally resolvable project tag, its OCI manifest digest,
+image-config digest, and complete RootFS DiffID chain for Go 1.22.12, Java
+21.0.11, Node 22.23.2, TypeScript 5.5.4, Python
 3.11.15, and Rust 1.85.0. Each project Dockerfile pins its base manifest.
 TypeScript is installed from a versioned tarball only after its registry
 SHA-512 integrity value passes; Python has no unnecessary package install.
@@ -641,16 +642,34 @@ The portable Docker archive is not trusted merely because `docker save`
 succeeded. Its audit binds every tag through the OCI index to the exact image
 manifest and confirms that the referenced manifest, config, and layers are all
 present. The adopted runtime config SHA-256 is
-`6e18d4907322163ab2a84816aa20bb15089bde25652b2938570232c7388f4eec`;
+`3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77`;
 local readiness is sealed by
-`3afa722f07417279511f21fda763fc1b88f98bba8ce67783eceea71295364f39`,
+`36c070d9d8554c7f2999b5e4d5bbacbc67664eb64ac2dc34196534de155737a1`,
 and the image-bundle manifest is sealed by
-`e6583956b5f1c763f73d888db1855af80b5aea3a50894e9d7bce55ff61f9022c`.
+`aba48afc9f1a75d6911204fd1e49193a9908655ad7d0540ec9cd53c82396bac8`.
+
+Docker Desktop's containerd image store reports the OCI manifest digest as
+`.Id`, while classic Docker commonly reports the config digest. Treating that
+field alone as portable identity would reject the same archive on one host or
+admit an under-specified image on another. Schema 3 handles both stores: a
+containerd descriptor must match both frozen digests, a classic store must
+match the frozen config digest, and both must match the full RootFS chain and
+platform. Result evidence uses the immutable repository-plus-manifest
+reference and records the stable config digest as `image_id`.
+
+Two forced uncached builds proved that BuildKit does not reproduce the exact
+TypeScript layer metadata across builds even with `SOURCE_DATE_EPOCH=0`.
+Therefore fresh builds are provenance diagnostics, not the execution
+identity. The executable verifier set is the one internally checked portable
+archive with SHA-256
+`1c5c8196cdcc595d755ea506f774dee8a5699e495fe67d7c4441e7a06c21b972`.
+Native hosts must download that exact private asset, verify its archive hash,
+load it, and then prove schema-3 identity before any task runs.
 
 This migration intentionally invalidates the earlier ARM64-bound
 directionality evidence for current gate decisions. Those records remain
 unaltered as historical evidence. The global decision-separation audit now
-accepts only schema 2 and fails on an old image identity. A fresh native
+accepts only schema 3 and fails on an old image identity. A fresh native
 Linux/AMD64 directionality pass is mandatory before Gate 1 may close; local
 Apple-Silicon emulation is diagnostic only because Go startup consumed roughly
 64 seconds against a 60-second production task budget even though the inner

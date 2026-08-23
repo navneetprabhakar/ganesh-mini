@@ -2,14 +2,38 @@ from __future__ import annotations
 
 import subprocess
 import unittest
+import json
 from pathlib import Path
 from unittest.mock import patch
 
 from scripts.eval.contracts import load_json
-from scripts.verify.sandbox import verify
+from scripts.eval.contracts import ContractError
+from scripts.verify.sandbox import _inspect_image, verify
 
 
 class SandboxTests(unittest.TestCase):
+    @patch("scripts.verify.sandbox.subprocess.run")
+    def test_image_identity_accepts_containerd_and_classic_stores(self, run) -> None:
+        config = "sha256:" + "a" * 64
+        manifest = "sha256:" + "b" * 64
+        layers = ["sha256:" + "c" * 64]
+        base = {"Os": "linux", "Architecture": "amd64", "RootFS": {"Layers": layers}}
+        containerd = dict(base, Id=manifest, Descriptor={"digest": manifest, "annotations": {"config.digest": config}})
+        run.return_value = subprocess.CompletedProcess([], 0, json.dumps(containerd), "")
+        self.assertEqual(config, _inspect_image("tag", config, manifest, layers, "linux/amd64"))
+        classic = dict(base, Id=config)
+        run.return_value = subprocess.CompletedProcess([], 0, json.dumps(classic), "")
+        self.assertEqual(config, _inspect_image("tag", config, manifest, layers, "linux/amd64"))
+
+    @patch("scripts.verify.sandbox.subprocess.run")
+    def test_image_identity_rejects_layer_drift(self, run) -> None:
+        config = "sha256:" + "a" * 64
+        manifest = "sha256:" + "b" * 64
+        inspected = {"Id": config, "Os": "linux", "Architecture": "amd64", "RootFS": {"Layers": []}}
+        run.return_value = subprocess.CompletedProcess([], 0, json.dumps(inspected), "")
+        with self.assertRaisesRegex(ContractError, "rootfs layers"):
+            _inspect_image("tag", config, manifest, ["sha256:" + "c" * 64], "linux/amd64")
+
     @patch("scripts.verify.sandbox._inspect_image", return_value="sha256:" + "1" * 64)
     @patch("scripts.verify.sandbox.subprocess.run")
     def test_docker_contract_is_networkless_limited_and_shell_free(self, run, _inspect) -> None:

@@ -202,7 +202,7 @@ def _load_runtime_config() -> tuple[dict[str, Any], dict[str, Any]]:
     path = ROOT / RUNTIME_CONFIG
     raw = path.read_bytes()
     config = json.loads(raw)
-    _require(config.get("schema_version") == "2.0", "unsupported runtime config schema")
+    _require(config.get("schema_version") == "3.0", "unsupported runtime config schema")
     _require(config.get("platform") == "linux/amd64", "unsupported verifier platform")
     runtimes = config.get("runtimes")
     _require(isinstance(runtimes, dict) and bool(runtimes), "invalid runtime config")
@@ -213,6 +213,12 @@ def _load_runtime_config() -> tuple[dict[str, Any], dict[str, Any]]:
         _require(
             isinstance(image_id, str) and image_id.startswith("sha256:") and len(image_id) == 71,
             f"invalid runtime image ID: {runtime_id}",
+        )
+        manifest_digest = runtime.get("manifest_digest")
+        _require(
+            isinstance(manifest_digest, str) and manifest_digest.startswith("sha256:")
+            and len(manifest_digest) == 71,
+            f"invalid runtime manifest digest: {runtime_id}",
         )
     binding = {"path": RUNTIME_CONFIG, "sha256": sha256_bytes(raw), "bytes": len(raw)}
     return runtimes, binding
@@ -323,7 +329,8 @@ def _bind_decision_evidence(
                         f"timed-out directionality execution: {task_id}",
                     )
                     image = verifier.get("image")
-                    _require(image == runtime.get("image"), f"verifier image mismatch: {task_id}")
+                    expected_image = f"{runtime['image'].rsplit(':', 1)[0]}@{runtime['manifest_digest']}"
+                    _require(image == expected_image, f"verifier image mismatch: {task_id}")
                     _require(
                         verifier.get("image_id") == runtime.get("image_id"),
                         f"verifier image identity mismatch: {task_id}",

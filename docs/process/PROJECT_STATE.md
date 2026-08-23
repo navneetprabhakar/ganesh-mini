@@ -360,17 +360,24 @@ card.
   package tarball is verified against its registry SHA-512 integrity value.
   The exact tag, image ID, and platform are checked before every sandbox run.
   Local readiness is 6/6 and sealed by
-  `3afa722f07417279511f21fda763fc1b88f98bba8ce67783eceea71295364f39`.
-  The 924,921,344-byte portable image archive is internally verified against
+  `36c070d9d8554c7f2999b5e4d5bbacbc67664eb64ac2dc34196534de155737a1`.
+  The 918,639,104-byte portable image archive is internally verified against
   its OCI tag/manifest/config/layer graph and sealed by manifest
-  `e6583956b5f1c763f73d888db1855af80b5aea3a50894e9d7bce55ff61f9022c`.
+  `aba48afc9f1a75d6911204fd1e49193a9908655ad7d0540ec9cd53c82396bac8`.
   A deterministic development-only execution workspace contains exactly 180
   tasks and excludes decision tasks, seed/training data, model outputs, and
   authoring code; it is sealed by
-  `6c0a692f29885cb70d6b1864387a9eb990db7ef2636faacd88da70fcef221f5f`.
+  `846cf0b64e3d1804cbbdaa44cb57a07da989e298c9ed7f3cd8f2c400dda625f5`.
   Historical ARM64 directionality results remain immutable but are explicitly
   non-current. Gate 1 requires a fresh full directionality run on native
   Linux/AMD64 before the exact Qwen baseline can be admitted.
+  A manually dispatched, read-only GitHub Actions workflow is prepared to
+  load the exact private content-addressed image archive on native AMD64,
+  execute all 1,080 reference and
+  known-bad checks across development and decision surfaces with at most two
+  concurrent tranches, rerun global decision separation, and return one sealed
+  evidence archive. This is non-GCloud compute and does not expose a task to a
+  model.
 
 ## Next action
 

@@ -31,14 +31,17 @@ SANDBOX_CONTRACT = {
 def load_runtime(path: Path, runtime_id: str, language: str, candidate_path: str) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         config = json.load(handle)
-    if set(config) != {"schema_version", "platform", "runtimes"} or config["schema_version"] != "2.0":
+    if set(config) != {"schema_version", "platform", "runtimes"} or config["schema_version"] != "3.0":
         raise ContractError("runtime config: unsupported or unexpected keys")
     if config["platform"] != "linux/amd64":
         raise ContractError("runtime config: verifier platform must be linux/amd64")
     runtime = config["runtimes"].get(runtime_id)
     if not isinstance(runtime, dict):
         raise ContractError(f"runtime config: missing {runtime_id!r}")
-    if set(runtime) != {"language", "image", "image_id", "platform", "candidate_path", "commands"}:
+    if set(runtime) != {
+        "language", "image", "image_id", "manifest_digest", "rootfs_layers",
+        "platform", "candidate_path", "commands",
+    }:
         raise ContractError("runtime config: unexpected runtime keys")
     if runtime["language"] != language or runtime["candidate_path"] != candidate_path:
         raise ContractError("runtime config: language or candidate path mismatch")
@@ -53,6 +56,17 @@ def load_runtime(path: Path, runtime_id: str, language: str, candidate_path: str
     digest = image_id.removeprefix("sha256:")
     if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
         raise ContractError("runtime config: malformed image ID")
+    manifest_digest = runtime["manifest_digest"]
+    if not isinstance(manifest_digest, str) or not manifest_digest.startswith("sha256:"):
+        raise ContractError("runtime config: missing manifest digest")
+    digest = manifest_digest.removeprefix("sha256:")
+    if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+        raise ContractError("runtime config: malformed manifest digest")
+    layers = runtime["rootfs_layers"]
+    if not isinstance(layers, list) or not layers or any(
+        not isinstance(layer, str) or not layer.startswith("sha256:") or len(layer) != 71 for layer in layers
+    ):
+        raise ContractError("runtime config: invalid rootfs layers")
     commands = runtime["commands"]
     if not isinstance(commands, list) or not commands or not all(
         isinstance(command, list) and command and all(isinstance(part, str) and part for part in command)
@@ -62,7 +76,10 @@ def load_runtime(path: Path, runtime_id: str, language: str, candidate_path: str
     return runtime
 
 
-def _inspect_image(image: str, expected_image_id: str, expected_platform: str) -> str:
+def _inspect_image(
+    image: str, expected_image_id: str, expected_manifest_digest: str,
+    expected_rootfs_layers: list[str], expected_platform: str,
+) -> str:
     try:
         process = subprocess.run(
             ["docker", "image", "inspect", image, "--format", "{{json .}}"],
@@ -77,12 +94,22 @@ def _inspect_image(image: str, expected_image_id: str, expected_platform: str) -
     image_id = inspected.get("Id")
     if not isinstance(image_id, str) or not image_id.startswith("sha256:") or len(image_id) != 71:
         raise ContractError(f"docker image unavailable or invalid: {process.stderr.strip()}")
-    if image_id != expected_image_id:
-        raise ContractError(f"docker image ID {image_id} differs from required ID {expected_image_id}")
+    descriptor = inspected.get("Descriptor") or {}
+    if descriptor:
+        if descriptor.get("digest") != expected_manifest_digest:
+            raise ContractError("docker image manifest digest differs from required digest")
+        if (descriptor.get("annotations") or {}).get("config.digest") != expected_image_id:
+            raise ContractError("docker image config digest differs from required digest")
+        if image_id not in {expected_manifest_digest, expected_image_id}:
+            raise ContractError("docker store ID is inconsistent with the frozen image")
+    elif image_id != expected_image_id:
+        raise ContractError("classic Docker image ID differs from required config digest")
+    if inspected.get("RootFS", {}).get("Layers") != expected_rootfs_layers:
+        raise ContractError("docker image rootfs layers differ from required layers")
     observed_platform = f"{inspected.get('Os')}/{inspected.get('Architecture')}"
     if observed_platform != expected_platform:
         raise ContractError(f"docker image platform {observed_platform} differs from required {expected_platform}")
-    return image_id
+    return expected_image_id
 
 
 def _docker_argv(image: str, platform_name: str, command: list[str], root: Path, limits: dict[str, Any]) -> list[str]:
@@ -114,7 +141,10 @@ def _captured_text(value: str | bytes | None) -> str:
 def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, Any]:
     validate_task(task)
     runtime = load_runtime(runtime_config, task["runtime_id"], task["language"], task["candidate_path"])
-    image_id = _inspect_image(runtime["image"], runtime["image_id"], runtime["platform"])
+    image_id = _inspect_image(
+        runtime["image"], runtime["image_id"], runtime["manifest_digest"],
+        runtime["rootfs_layers"], runtime["platform"],
+    )
     limits = task["limits"]
     stdout_parts: list[str] = []
     stderr_parts: list[str] = []
@@ -167,7 +197,7 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
     duration_ms = max(0, round((time.monotonic() - start) * 1000))
     return {
         "runtime_id": task["runtime_id"],
-        "image": runtime["image"],
+        "image": f"{runtime['image'].rsplit(':', 1)[0]}@{runtime['manifest_digest']}",
         "image_id": image_id,
         "commands": runtime["commands"],
         "exit_codes": exit_codes,

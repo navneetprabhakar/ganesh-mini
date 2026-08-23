@@ -1,0 +1,59 @@
+name: Native AMD64 verifier directionality
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Load the exact sealed Linux AMD64 verifier archive
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download verifier-images-amd64-v1 \
+            --repo "${{ github.repository }}" \
+            --pattern verifier-images-amd64-v1.tar \
+            --dir /tmp/ganesh-verifiers
+          echo "1c5c8196cdcc595d755ea506f774dee8a5699e495fe67d7c4441e7a06c21b972  /tmp/ganesh-verifiers/verifier-images-amd64-v1.tar" | sha256sum --check --strict
+          docker image load --input /tmp/ganesh-verifiers/verifier-images-amd64-v1.tar
+
+      - name: Execute frozen reference and known-bad directionality
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python3 -m scripts.eval.authoring.run_native_directionality --workers 2
+
+      - name: Package native evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf native-amd64-directionality-evidence.tar.gz \
+            measurement/gate1/native_amd64_directionality.json \
+            measurement/gate1/native_amd64_runtime_readiness.json \
+            measurement/gate1/native-directionality-logs \
+            manifests/evaluation/private/development-tranche*-directionality.json \
+            manifests/evaluation/private/decision-tranche*-directionality.json \
+            manifests/evaluation/private/decision-global-separation.json
+          sha256sum native-amd64-directionality-evidence.tar.gz > native-amd64-directionality-evidence.tar.gz.sha256
+
+      - name: Upload sealed evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-amd64-directionality-evidence
+          path: |
+            native-amd64-directionality-evidence.tar.gz
+            native-amd64-directionality-evidence.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14

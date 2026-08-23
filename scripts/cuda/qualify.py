@@ -13,6 +13,12 @@ PACKAGE_IMPORTS = {"torch":"torch","torchvision":"torchvision","transformers":"t
 PRIMARY_RECIPE = "bf16-lora-primary-v1"
 FALLBACK_RECIPE = "nf4-qlora-fallback-v1"
 
+class PeakVramExceeded(RuntimeError):
+    def __init__(self, observed: int, maximum: int) -> None:
+        self.observed = observed
+        self.maximum = maximum
+        super().__init__(f"peak CUDA VRAM {observed} exceeds frozen ceiling {maximum}")
+
 def canonical_sha256(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
@@ -49,7 +55,7 @@ def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     if (contract.get("model_id"), contract.get("revision")) != (config["model"]["model_id"], config["model"]["revision"]):
         raise ValueError("model identity does not match the pinned contract")
     if config.get("qualification_order") != [PRIMARY_RECIPE, FALLBACK_RECIPE]: raise ValueError("BF16 primary and NF4 fallback order changed")
-    common = {"sequence_length":4096,"micro_batch_size":1,"gradient_checkpointing":True,"record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False}
+    common = {"sequence_length":4096,"micro_batch_size":1,"gradient_checkpointing":True,"record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False,"maximum_peak_vram_bytes":23*1024**3}
     primary = {"role":"primary","minimum_vram_bytes":25769803776,"base_dtype":"bfloat16","quantization":None,**common}
     fallback = {"role":"fallback","minimum_vram_bytes":17179869184,"base_dtype":"bfloat16","quantization":{"bits":4,"type":"nf4","double_quantization":True,"compute_dtype":"bfloat16"},**common}
     if config["recipes"].get(PRIMARY_RECIPE) != primary: raise ValueError("BF16 LoRA primary recipe changed without a schema revision")
@@ -206,7 +212,7 @@ def sequence_envelope_probe(model: Any, tokenizer: Any, length: int) -> dict[str
     output.loss.backward(); model.zero_grad(set_to_none=True)
     return {"kind":"synthetic-active-token-shape-probe","sequence_length":length,"active_tokens":length,"micro_batch_size":1,"optimizer_step":False,"quality_training_record":False,"loss_finite":True,"passed":True}
 
-def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path, model: Any, tokenizer: Any, journal_path: Path | None = None) -> dict[str,Any]:
+def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path, model: Any, tokenizer: Any, model_load_peak: dict[str,int], journal_path: Path | None = None) -> dict[str,Any]:
     import torch
     from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
     from transformers import AutoModelForImageTextToText
@@ -240,7 +246,7 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
         if journal_path: append_journal(journal_path,{"phase":"training-record","state":"completed","index":index,"record_id":item["row"]["id"],"loss":losses[-1]})
     torch.cuda.synchronize(); training_seconds = time.monotonic()-training_started; missing = sorted(trainable-gradients)
     if missing: raise RuntimeError(f"{len(missing)} trainable adapter parameters never received non-zero gradients")
-    memory = {"peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"peak_reserved_bytes":torch.cuda.max_memory_reserved(0)}
+    memory = {"training_peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"training_peak_reserved_bytes":torch.cuda.max_memory_reserved(0)}
     if journal_path: append_journal(journal_path,{"phase":"adapter-save","state":"started"})
     adapter_dir.mkdir(parents=True,exist_ok=False); model.save_pretrained(adapter_dir,safe_serialization=True); tokenizer.save_pretrained(adapter_dir); hashes = {path.name:file_sha256(path) for path in sorted(adapter_dir.iterdir()) if path.is_file()}
     if journal_path: append_journal(journal_path,{"phase":"adapter-save","state":"completed","file_sha256":hashes})
@@ -252,8 +258,12 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     merged_dir = adapter_dir.parent / f"merged-{recipe_id}"
     merged_dir.mkdir(parents=False,exist_ok=False); merged.save_pretrained(merged_dir,safe_serialization=True); tokenizer.save_pretrained(merged_dir)
     merged_hashes = {path.name:file_sha256(path) for path in sorted(merged_dir.iterdir()) if path.is_file()}
+    memory.update({"full_smoke_peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"full_smoke_peak_reserved_bytes":torch.cuda.max_memory_reserved(0)})
+    observed_peak = max((*model_load_peak.values(),*memory.values()))
+    if observed_peak > recipe["maximum_peak_vram_bytes"]:
+        raise PeakVramExceeded(observed_peak,recipe["maximum_peak_vram_bytes"])
     if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"completed","file_sha256":merged_hashes,"logits_finite":True})
-    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"model_load_reused_after_inference":True,"optimizer_steps":len(records),"losses":losses,"sequence_envelope":envelope,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":memory,"adapter_file_sha256":hashes,"adapter_reloaded":True,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
+    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"model_load_reused_after_inference":True,"optimizer_steps":len(records),"losses":losses,"sequence_envelope":envelope,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":{"model_load":model_load_peak,"training":memory,"observed_peak_bytes":observed_peak,"maximum_peak_vram_bytes":recipe["maximum_peak_vram_bytes"],"passed":True},"adapter_file_sha256":hashes,"adapter_reloaded":True,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
 
 def inference_smoke(model: Any, tokenizer: Any) -> dict[str,Any]:
     import torch
@@ -278,13 +288,17 @@ def main() -> int:
             append_journal(journal_path,{"phase":"identity-component","component":component,"state":"completed"})
         append_journal(journal_path,{"phase":"identity","state":"completed"})
         from transformers import AutoTokenizer
+        import torch
         tokenizer = AutoTokenizer.from_pretrained(args.model_dir,local_files_only=True)
+        torch.cuda.reset_peak_memory_stats(0)
         model = load_model(args.model_dir,args.recipe)
+        model_load_peak = {"peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"peak_reserved_bytes":torch.cuda.max_memory_reserved(0)}
         append_journal(journal_path,{"phase":"inference","state":"started"}); evidence["inference"] = inference_smoke(model,tokenizer); append_journal(journal_path,{"phase":"inference","state":"completed"})
-        append_journal(journal_path,{"phase":"training","state":"started"}); evidence["training"] = run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,model,tokenizer,journal_path); append_journal(journal_path,{"phase":"training","state":"completed"})
+        append_journal(journal_path,{"phase":"training","state":"started"}); evidence["training"] = run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,model,tokenizer,model_load_peak,journal_path); append_journal(journal_path,{"phase":"training","state":"completed"})
         evidence["status"] = "passed"; append_journal(journal_path,{"phase":"qualification","state":"completed","status":"passed"})
     except Exception as exc:
         evidence.update({"error_type":type(exc).__name__,"error":str(exc)}); append_journal(journal_path,{"phase":"qualification","state":"completed","status":"failed","error_type":type(exc).__name__,"error":str(exc)})
+        if isinstance(exc,PeakVramExceeded): evidence["peak_vram_failure"] = {"observed_peak_bytes":exc.observed,"maximum_peak_vram_bytes":exc.maximum}
     evidence["wall_seconds"] = time.monotonic()-started; evidence["peak_rss_bytes"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024; write_evidence(evidence,args.output)
     return 0 if evidence["status"] == "passed" else 2
 

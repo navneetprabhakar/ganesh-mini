@@ -83,7 +83,8 @@ Consequences:
   accumulation.
 - NF4 QLoRA is a predeclared fallback, not the default. It becomes eligible
   only after the primary recipe records an OOM, exceeds the frozen peak-VRAM
-  ceiling, or breaches the execution card's cost threshold.
+  ceiling. Cost alone is not a fallback trigger unless a cheaper host is
+  separately qualified; quantizing on the same GPU is not presumed cheaper.
 - Training quantization remains independent of release quantization. The
   selected adapter is merged into a BF16 reference checkpoint before F16 and
   Q8 GGUF export.
@@ -410,3 +411,23 @@ any completed turn over the frozen maximum length fail closed. Silent response
 truncation is prohibited. The exact pinned Transformers 5.15.1 tokenizer proves
 the boundary for all 1,449 imported train and validation records across the six
 lanes. This is local preparation evidence, not a CUDA or Gate 0B pass.
+
+## 2026-08-23 — Zero-task public diagnostic is admitted without weakening the contract
+
+The frozen Multi-LiveCodeBench v6 importer admitted zero of 1,050 language
+projections. Its complete, hash-bound exclusion report records ambiguous source
+licensing and the absence of independently runnable reference and known-bad
+artifacts. Gate 1 accepts `no_compatible_tasks` as the diagnostic outcome while
+still requiring the exact 180-task private development baseline. No public
+score is reported, and admission rules are not relaxed to manufacture one.
+
+The seed-pilot token ceiling is the exact input-token count of its prepared,
+balanced schedule. The prior 24-million-token placeholder contradicted the
+three-effective-epoch cap and is retired. Validation loss is retained only as
+a diagnostic; executable development results select checkpoints and promotion.
+
+For the final decision, “statistically supported” is frozen as both a strictly
+positive lower bound from the semantic-family cluster bootstrap and a
+two-sided cluster sign-permutation p-value at or below 0.05. Row-level exact
+McNemar is reported but does not override clustered dependence. This rule is
+declared before any decision candidate is opened.

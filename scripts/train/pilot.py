@@ -49,7 +49,6 @@ REQUIRED_STOP_CONDITIONS = {
 FALLBACK_REASONS = {
     "primary_cuda_oom",
     "primary_peak_vram_exceeded",
-    "primary_cost_threshold_exceeded",
 }
 
 
@@ -166,8 +165,9 @@ def verify_gate_report(
     return report
 
 
-def audit_prepared_records(path: Path) -> tuple[int, Counter[str]]:
+def audit_prepared_records(path: Path) -> tuple[int, Counter[str], int]:
     records = 0
+    input_tokens = 0
     response_tokens: Counter[str] = Counter()
     with path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, 1):
@@ -189,8 +189,9 @@ def audit_prepared_records(path: Path) -> tuple[int, Counter[str]]:
             if not valid:
                 raise PreflightError(f"invalid response-only prepared row at {path}:{line_number}")
             records += 1
+            input_tokens += len(input_ids)
             response_tokens[lane] += len(labels) - prompt_tokens
-    return records, response_tokens
+    return records, response_tokens, input_tokens
 
 
 def verify_prepared_manifest(
@@ -219,9 +220,15 @@ def verify_prepared_manifest(
     prepared_path = resolve(root, manifest.get("prepared_train_path", ""))
     prepared_hash_ok = prepared_path.is_file() and file_sha256(prepared_path) == manifest.get("prepared_train_sha256")
     try:
-        prepared_records, audited_tokens = audit_prepared_records(prepared_path) if prepared_hash_ok else (0, Counter())
+        prepared_records, audited_tokens, audited_input_tokens = audit_prepared_records(prepared_path) if prepared_hash_ok else (0, Counter(), 0)
     except (OSError, json.JSONDecodeError, PreflightError):
-        prepared_records, audited_tokens = 0, Counter()
+        prepared_records, audited_tokens, audited_input_tokens = 0, Counter(), 0
+    validation_path = resolve(root, manifest.get("prepared_validation_path", ""))
+    validation_hash_ok = validation_path.is_file() and file_sha256(validation_path) == manifest.get("prepared_validation_sha256")
+    try:
+        validation_records, _, _ = audit_prepared_records(validation_path) if validation_hash_ok else (0, Counter(), 0)
+    except (OSError, json.JSONDecodeError, PreflightError):
+        validation_records = 0
     bound = (
         manifest.get("passed") is True
         and manifest.get("model_id") == config["model"]["model_id"]
@@ -238,7 +245,14 @@ def verify_prepared_manifest(
         and rendering.get("vision_token_count") == 0
     )
     token_counts = manifest.get("sampled_response_tokens_by_lane", {})
-    records_ok = prepared_hash_ok and prepared_records == manifest.get("prepared_train_records") and dict(audited_tokens) == token_counts
+    records_ok = (
+        prepared_hash_ok
+        and prepared_records == manifest.get("prepared_train_records")
+        and audited_input_tokens == manifest.get("prepared_train_input_tokens")
+        and validation_hash_ok
+        and validation_records == manifest.get("prepared_validation_records") == config["data"]["validation_records"]
+        and dict(audited_tokens) == token_counts
+    )
     total = sum(token_counts.get(lane, 0) for lane in LANES) if all(isinstance(token_counts.get(lane), int) and token_counts[lane] > 0 for lane in LANES) else 0
     tolerance = config["data"]["maximum_absolute_share_error"]
     shares_ok = total > 0 and all(abs(token_counts[lane] / total - target) <= tolerance for lane, target in config["data"]["family_token_targets"].items())
@@ -256,7 +270,7 @@ def common_recipe_ok(recipe: dict[str, Any], system: str) -> bool:
     return (
         system == "Linux" == recipe.get("host_os")
         and recipe.get("accelerator") == "CUDA"
-        and recipe.get("backend") == "ms-swift-transformers"
+        and recipe.get("backend") == "transformers-peft"
         and recipe.get("adapter") == "lora"
         and recipe.get("compute_dtype") == "bfloat16"
         and recipe.get("gradient_checkpointing") is True
@@ -266,6 +280,20 @@ def common_recipe_ok(recipe: dict[str, Any], system: str) -> bool:
         and recipe.get("packing") is False
         and (recipe.get("lora_rank"), recipe.get("lora_alpha"), recipe.get("lora_dropout")) == (32, 64, 0.05)
         and recipe.get("learning_rate_candidates") == [0.0001, 0.0002]
+        and recipe.get("random_seed") == 3502
+        and recipe.get("gradient_accumulation_steps") == 8
+        and recipe.get("effective_batch_size") == recipe.get("micro_batch_size") * recipe.get("gradient_accumulation_steps")
+        and recipe.get("optimizer") == "adamw_torch"
+        and recipe.get("optimizer_betas") == [0.9, 0.95]
+        and recipe.get("optimizer_epsilon") == 1e-8
+        and recipe.get("weight_decay") == 0.01
+        and recipe.get("max_gradient_norm") == 1.0
+        and recipe.get("dataloader_workers") == 8
+        and recipe.get("dataloader_pin_memory") is True
+        and recipe.get("dataloader_prefetch_factor") == 4
+        and recipe.get("precision") == "bf16"
+        and recipe.get("lr_selection_budget_seen_tokens_per_candidate") == 400000
+        and recipe.get("lr_selection_rule") == "select_0.0002_only_if_development_macro_improves_by_at_least_one_task_equivalent_with_no_lane_regression_else_0.0001"
         and recipe.get("scheduler") == "cosine"
         and recipe.get("warmup_ratio") == 0.03
         and isinstance(recipe.get("maximum_effective_epochs"), (int, float))
@@ -314,7 +342,6 @@ def validate_fallback_qualification(
     expected_source = {
         "primary_cuda_oom": "cuda_runtime",
         "primary_peak_vram_exceeded": "gpu_telemetry",
-        "primary_cost_threshold_exceeded": "cost_projection",
     }[reason]
     attempt_ok = (
         isinstance(attempt.get("attempt_id"), str)
@@ -327,13 +354,6 @@ def validate_fallback_qualification(
     measured = (
         (reason == "primary_cuda_oom" and measurements.get("cuda_oom_observed") is True)
         or (reason == "primary_peak_vram_exceeded" and isinstance(measurements.get("peak_vram_gb"), (int, float)) and measurements["peak_vram_gb"] > primary["maximum_peak_vram_gb"])
-        or (
-            reason == "primary_cost_threshold_exceeded"
-            and isinstance(measurements.get("primary_projected_cost_usd"), (int, float))
-            and measurements["primary_projected_cost_usd"] > config["control"]["maximum_cost_usd"]
-            and isinstance(measurements.get("fallback_projected_cost_usd"), (int, float))
-            and 0 <= measurements["fallback_projected_cost_usd"] <= config["control"]["maximum_cost_usd"]
-        )
     )
     passed = sealed_ok and bound and attempt_ok and measured
     add(checks, "fallback_qualified", passed, "NF4 QLoRA requires sealed measured BF16 LoRA OOM, VRAM, or cost evidence.", path=str(path), reason=reason, measurements=measurements)
@@ -389,8 +409,11 @@ def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[li
     add(checks, "fallback_nf4_qlora_recipe", fallback_ok, "The only predeclared fallback is Linux CUDA NF4 QLoRA with the same bounded adapter recipe.", observed_system=system)
 
     control = config["control"]
+    prepared_manifest_path = resolve(root, data["prepared_manifest_path"])
+    prepared_budget = load_json(prepared_manifest_path).get("prepared_train_input_tokens") if prepared_manifest_path.is_file() else None
     controls_ok = (
         all(isinstance(control[key], int) and control[key] > 0 for key in ("maximum_seen_tokens", "maximum_wall_seconds", "checkpoint_every_tokens"))
+        and control["maximum_seen_tokens"] == prepared_budget
         and isinstance(control["maximum_cost_usd"], (int, float)) and control["maximum_cost_usd"] > 0
         and control["resume_requires_checkpoint_manifest"] is True
         and control["resume_requires_hash_match"] is True

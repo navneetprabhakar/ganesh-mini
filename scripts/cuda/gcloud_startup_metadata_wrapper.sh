@@ -30,6 +30,10 @@ declare -A bindings=(
   [GANESH_SUPPORT_RESERVE_USD]=ganesh-support-reserve-usd
   [GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD]=ganesh-absolute-cumulative-ceiling-usd
   [GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH]=ganesh-absolute-hard-deadline-epoch
+  [GANESH_MAX_VM_LIFETIME_SECONDS]=ganesh-max-vm-lifetime-seconds
+  [GANESH_CONTROLLER_BUDGET_SECONDS]=ganesh-controller-budget-seconds
+  [GANESH_BACKUP_RESERVE_SECONDS]=ganesh-backup-reserve-seconds
+  [GANESH_EXPECTED_MACHINE_TYPE]=ganesh-expected-machine-type
 )
 for variable in "${!bindings[@]}"; do
   printf -v "$variable" '%s' "$(read_metadata "${bindings[$variable]}")"

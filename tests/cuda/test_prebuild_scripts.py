@@ -137,14 +137,15 @@ def test_prebuild_result_is_bound_to_backup_and_deletion_evidence() -> None:
 def test_gpu_startup_preserves_terminal_backup_reserve_and_attempt_isolation() -> None:
     source = (ROOT / "scripts/cuda/gcloud_startup_gate0b.sh").read_text()
     assert 'terminal_prefix="runtime-terminal-$GANESH_ATTEMPT_ID"' in source
-    assert "runtime-checkpoints/$GANESH_ATTEMPT_ID/$stamp" in source
+    assert 'checkpoint_prefix="runtime-checkpoints/$GANESH_ATTEMPT_ID"' in source
+    assert '$checkpoint_prefix/$stamp.tar.gz' in source
     assert 'timeout "$(phase_timeout 180)" sha256sum -c -' in source
     assert "sha256sum -c bundle-files.sha256" in source
     assert 'timeout "$(phase_timeout 120)" bash -c' in source
     assert "GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH" in source
     assert "GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" in source
     assert 'if total >= ceiling' in source
-    assert 'backup_reserved_deadline_epoch="$((hard_deadline_epoch - 300))"' in source
+    assert 'backup_reserved_deadline_epoch="$((hard_deadline_epoch - GANESH_BACKUP_RESERVE_SECONDS))"' in source
     assert "backup_reserved_deadline_epoch < relative_controller_deadline_epoch" in source
 
 

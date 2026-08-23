@@ -56,8 +56,10 @@ Why this is the default:
 - A separate correction pass makes the improvement mechanism measurable.
 - BF16 LoRA avoids quantizing the frozen 2B backbone during optimization and is
   the primary quality-oriented recipe when it fits the selected GPU.
-- NF4 QLoRA is a predeclared fallback for measured LoRA OOM, peak-VRAM, or
-  material cost pressure. It does not define the final inference format.
+- NF4 QLoRA is a predeclared fallback for measured LoRA OOM or peak-VRAM
+  failure. A cost-only switch requires a separately qualified cheaper host;
+  QLoRA on the same GPU is not assumed to reduce cost. It does not define the
+  final inference format.
 
 ## 3. Gates
 
@@ -87,7 +89,10 @@ Freeze three disjoint surfaces before selecting training records:
 
 - **Diagnostic:** public Multi-LiveCodeBench plus compatible portions of
   EvalPlus and DevBench. Public scores are useful but never the sole promotion
-  evidence.
+  evidence. If the frozen admission policy yields zero compatible public
+  tasks, retain the complete exclusion report and proceed on the private
+  development surface; do not weaken licensing, reference, or known-bad
+  requirements merely to manufacture a diagnostic score.
 - **Development:** 30 private tasks per lane, 180 total, equally split between
   code generation and bug repair.
 - **Decision:** 60 private tasks per lane, 360 total, equally split between
@@ -194,9 +199,9 @@ Starting recipe, subject to the Gate 0 smoke result:
 
 The fallback recipe changes only base loading to bitsandbytes 4-bit NF4 with
 BF16 adapter compute. It is eligible only after the primary recipe records an
-OOM, exceeds the frozen peak-VRAM ceiling, or breaches the execution card's
-cost threshold. Record the trigger and keep all other comparable parameters
-fixed. A smaller memory footprint alone is not a quality result.
+OOM or exceeds the frozen peak-VRAM ceiling. Record the trigger and keep all
+other comparable parameters fixed. A smaller memory footprint alone is not a
+quality or cost result.
 
 Exit: proceed only if at least four of five product families improve, no lane
 shows a material regression, formatting/truncation failures do not increase,

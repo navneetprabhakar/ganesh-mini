@@ -106,7 +106,8 @@ def test_runner_defaults_primary_and_guards_fallback_order() -> None:
     assert "GANESH_PRIMARY_QUALIFICATION_EVIDENCE" in runner
     assert '--recipe "$recipe"' in runner
     assert "GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" in runner
-    assert "hourly * Decimal(1200)" in runner
+    assert 'GANESH_MAX_VM_LIFETIME_SECONDS' in runner
+    assert "hourly * lifetime / Decimal(3600)" in runner
     assert "projected >= ceiling" in runner
 
 
@@ -141,7 +142,7 @@ def test_inference_and_training_share_one_model_load() -> None:
     main = source[source.index("def main()") :]
     assert main.count("model = load_model(args.model_dir,args.recipe)") == 1
     assert "inference_smoke(model,tokenizer)" in main
-    assert "run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,model,tokenizer,journal_path)" in main
+    assert "run_training_smoke(config,args.recipe,args.model_dir,args.records,args.adapter_dir,model,tokenizer,model_load_peak,journal_path)" in main
 
 
 def test_cpu_prebuild_has_a_hard_deadline_and_seals_oci_archive() -> None:

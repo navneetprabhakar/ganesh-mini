@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import unittest
+import jsonschema
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -38,6 +39,7 @@ class ScoreTests(unittest.TestCase):
         base = [result_for(language, False, "base") for language in ("go", "java", "javascript", "typescript", "python", "rust")]
         candidate = [result_for(language, language == "javascript", "candidate") for language in ("go", "java", "javascript", "typescript", "python", "rust")]
         report = compare(base, candidate)
+        jsonschema.validate(report, load_json(Path("schemas/eval/comparison.schema.json")))
         self.assertEqual("1/2", report["candidate"]["families"]["javascript_typescript"]["fraction"])
         self.assertEqual("1/10", report["candidate"]["five_family_macro"]["fraction"])
         self.assertEqual({"wins": 1, "losses": 0, "ties": 5, "denominator": 6}, report["paired"]["aggregate"])

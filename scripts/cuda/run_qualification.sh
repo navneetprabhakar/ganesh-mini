@@ -13,15 +13,16 @@ fi
 : "${GANESH_CUMULATIVE_COST_USD:?set GANESH_CUMULATIVE_COST_USD to all prior and prebuild cost}"
 : "${GANESH_SUPPORT_RESERVE_USD:?set GANESH_SUPPORT_RESERVE_USD}"
 : "${GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD:?set the card-bound absolute cumulative ceiling}"
-python3 - "$GANESH_GPU_HOURLY_USD" "$GANESH_CUMULATIVE_COST_USD" "$GANESH_SUPPORT_RESERVE_USD" "$GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" <<'PY'
+: "${GANESH_MAX_VM_LIFETIME_SECONDS:?set the card-bound VM lifetime}"
+python3 - "$GANESH_GPU_HOURLY_USD" "$GANESH_CUMULATIVE_COST_USD" "$GANESH_SUPPORT_RESERVE_USD" "$GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" "$GANESH_MAX_VM_LIFETIME_SECONDS" <<'PY'
 from decimal import Decimal, InvalidOperation
 import sys
 try:
-    hourly, cumulative, reserve, ceiling = map(Decimal, sys.argv[1:])
+    hourly, cumulative, reserve, ceiling, lifetime = map(Decimal, sys.argv[1:])
 except InvalidOperation as exc:
     raise SystemExit(f"invalid cost input: {exc}")
-projected = cumulative + hourly * Decimal(1200) / Decimal(3600) + reserve
-if hourly <= 0 or cumulative < 0 or reserve < 0 or ceiling <= 0 or projected >= ceiling:
+projected = cumulative + hourly * lifetime / Decimal(3600) + reserve
+if hourly <= 0 or cumulative < 0 or reserve < 0 or ceiling <= 0 or lifetime <= 0 or projected >= ceiling:
     raise SystemExit(f"qualification would reach or exceed the card-bound cumulative ceiling {ceiling}: {projected}")
 PY
 
@@ -36,17 +37,25 @@ if [[ "$recipe" != "bf16-lora-primary-v1" && "$recipe" != "nf4-qlora-fallback-v1
 fi
 if [[ "$recipe" == "nf4-qlora-fallback-v1" ]]; then
   : "${GANESH_PRIMARY_QUALIFICATION_EVIDENCE:?fallback requires the prior BF16 primary evidence path}"
-  python3 - "$GANESH_PRIMARY_QUALIFICATION_EVIDENCE" <<'PY'
+  : "${GANESH_FALLBACK_TRIGGER:?fallback requires a declared measured trigger}"
+  python3 - "$GANESH_PRIMARY_QUALIFICATION_EVIDENCE" "$GANESH_FALLBACK_TRIGGER" <<'PY'
 import json, sys
 import hashlib
 from pathlib import Path
 value = json.loads(Path(sys.argv[1]).read_text())
+trigger = sys.argv[2]
 claimed = value.pop("evidence_sha256", None)
 actual = hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 if claimed != actual:
     raise SystemExit("primary qualification evidence seal is invalid")
-if value.get("recipe_id") != "bf16-lora-primary-v1" or value.get("status") not in {"passed", "failed"}:
-    raise SystemExit("fallback requires evidence of an attempted BF16 primary qualification")
+if value.get("recipe_id") != "bf16-lora-primary-v1" or value.get("status") != "failed":
+    raise SystemExit("fallback requires a failed BF16 primary qualification")
+allowed = {
+    "primary_cuda_oom": value.get("error_type") in {"OutOfMemoryError", "CUDAOutOfMemoryError"} or "out of memory" in value.get("error", "").lower(),
+    "primary_peak_vram_exceeded": value.get("error_type") == "PeakVramExceeded" and isinstance(value.get("peak_vram_failure"), dict),
+}
+if trigger not in allowed or not allowed[trigger]:
+    raise SystemExit(f"fallback trigger is not supported by sealed BF16 evidence: {trigger}")
 PY
 fi
 : "${GANESH_CUDA_IMAGE_REF:?set GANESH_CUDA_IMAGE_REF to the preloaded immutable qualification image tag}"

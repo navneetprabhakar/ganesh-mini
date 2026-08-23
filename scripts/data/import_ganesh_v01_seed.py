@@ -171,6 +171,8 @@ def evaluation_fingerprints(paths: Iterable[Path]) -> tuple[set[str], list[str]]
             if not isinstance(value, dict):
                 continue
             prompt = value.get("prompt")
+            if isinstance(prompt, dict):
+                prompt = prompt.get("text")
             if prompt is None and isinstance(value.get("messages"), list):
                 prompt = next((m.get("content") for m in value["messages"] if m.get("role") == "user"), None)
             if isinstance(prompt, str):
@@ -178,7 +180,7 @@ def evaluation_fingerprints(paths: Iterable[Path]) -> tuple[set[str], list[str]]
     return fingerprints, inspected
 
 
-def run_import(config_path: Path, output_root: Path, manifest_path: Path, evaluation_paths: Iterable[Path] = ()) -> dict[str, Any]:
+def run_import(config_path: Path, output_root: Path, manifest_path: Path, evaluation_paths: Iterable[Path] = (), separation_report: Path | None = None, compatibility_report: Path | None = None) -> dict[str, Any]:
     config = json.loads(config_path.read_text(encoding="utf-8"))
     repo = Path(config["source"]["repository"])
     if not repo.is_absolute():
@@ -246,6 +248,22 @@ def run_import(config_path: Path, output_root: Path, manifest_path: Path, evalua
         split: dict(sorted(Counter(record["lane"] for record in split_records).items()))
         for split, split_records in sorted(records_by_split.items())
     }
+    separation = None
+    if separation_report is not None:
+        report = json.loads(separation_report.read_text(encoding="utf-8"))
+        claimed = report.get("report_sha256") or report.get("evidence_sha256") or report.get("manifest_sha256")
+        unsigned = dict(report); unsigned.pop("report_sha256",None); unsigned.pop("evidence_sha256",None); unsigned.pop("manifest_sha256",None)
+        if claimed != sha256(json.dumps(unsigned,sort_keys=True,separators=(",", ":")).encode()):
+            raise ImportFailure("global evaluation separation report seal is invalid")
+        if report.get("counts",{}).get("seed_records") != len(all_records):
+            raise ImportFailure("global evaluation separation report seed count mismatch")
+        separation = {"path":str(separation_report),"sha256":sha256(separation_report.read_bytes()),"seal":claimed}
+    compatibility = None
+    if compatibility_report is not None:
+        report = json.loads(compatibility_report.read_text(encoding="utf-8")); claimed=report.get("evidence_sha256"); unsigned=dict(report); unsigned.pop("evidence_sha256",None)
+        if claimed != sha256(json.dumps(unsigned,sort_keys=True,separators=(",", ":")).encode()) or report.get("status") != "passed" or len(report.get("records",[])) != len(all_records):
+            raise ImportFailure("current-toolchain compatibility evidence is invalid or incomplete")
+        compatibility={"status":"passed","scope":report["scope"],"path":str(compatibility_report),"sha256":sha256(compatibility_report.read_bytes()),"seal":claimed,"records":len(report["records"])}
     manifest = {
         "schema_version": "ganesh-mini-seed-manifest/v1",
         "source_repository": "ganesh",
@@ -267,12 +285,14 @@ def run_import(config_path: Path, output_root: Path, manifest_path: Path, evalua
             "status": "passed" if eval_inputs else "not_run_no_evaluation_manifests",
             "inputs": eval_inputs,
             "normalized_prompt_overlaps": overlaps,
+            "global_separation": separation,
         },
         "compatibility": {
             "qwen_messages_schema": "passed",
-            "current_language_toolchain_execution": "not_run_no_executable_harness_in_seed_records"
+            "current_language_toolchain_execution": compatibility or "not_run_no_compatibility_report"
         },
     }
+    manifest["manifest_sha256"] = sha256(json.dumps(manifest,ensure_ascii=False,sort_keys=True,separators=(",", ":")).encode())
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_bytes(canonical_json(manifest))
     return manifest
@@ -284,13 +304,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--output-root", type=Path, default=Path("data/seed/ganesh_v01"))
     parser.add_argument("--manifest", type=Path, default=Path("manifests/datasets/ganesh_v01_seed.json"))
     parser.add_argument("--evaluation-manifest", action="append", type=Path, default=[])
+    parser.add_argument("--separation-report", type=Path)
+    parser.add_argument("--compatibility-report", type=Path)
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     try:
-        manifest = run_import(args.config, args.output_root, args.manifest, args.evaluation_manifest)
+        manifest = run_import(args.config, args.output_root, args.manifest, args.evaluation_manifest, args.separation_report, args.compatibility_report)
     except (ImportFailure, OSError, KeyError, TypeError, ValueError) as exc:
         print(f"seed import failed: {exc}", file=sys.stderr)
         return 1

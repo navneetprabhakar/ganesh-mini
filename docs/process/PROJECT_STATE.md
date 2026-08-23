@@ -249,28 +249,57 @@ card.
   prompt/scaffolding tokens are masked, terminal completion tokens are active,
   and non-prefix, empty, batched, or overlength records fail closed. The shared
   implementation is used by both CUDA qualification and seed-pilot
-  preparation. The full local suite now has 118 collected tests: 117 pass and
-  one Docker integration test is intentionally skipped.
+  preparation. After the broader controller repair, the full local suite has
+  133 collected tests: 129 pass and four environment-dependent integration
+  tests are intentionally skipped.
 
 ## Not started or incomplete
 
 - Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
 - NF4 QLoRA fallback qualification if the primary recipe crosses its measured
-  memory or cost threshold
-- Current-toolchain re-execution of seed records that have executable bundles
+  memory threshold
 - Exact Qwen base baseline on the frozen development surface
 - Seed-pilot training
 - Candidate quantization and final laptop certification
 - Ganesh v0.1 rerun on the Ganesh Mini decision surface
 
+## Prepared after the latest audit repair
+
+- Gate 2 is ready. All 1,449 authorized seed rows pass current-toolchain
+  syntax/compile compatibility and have zero overlap with the 540 frozen
+  development and decision tasks. The balanced pilot schedule contains 2,155
+  sampled rows, 345,832 response tokens, and 636,093 input tokens; that exact
+  input count is now the hard main-pilot ceiling.
+- The production evaluation runner now batches by length and language,
+  verifies concurrently in network-disabled sandboxes, resumes only sealed
+  model/config/task-bound evidence, and emits result-compatible evidence for
+  the paired scorer. Gate 1 is closed only on the unexecuted exact Qwen
+  development baseline. The zero-task public diagnostic is retained as a
+  complete exclusion result instead of weakening admission rules.
+- The SFT engine is hash-bound, response-only, cost/time/VRAM bounded,
+  checkpoint-resumable, validates held-out loss diagnostically, and requires
+  save/reload logit reproduction. LR selection binds both complete 400k-token
+  candidate runs and their exact 180-task development result collections.
+- Training packaging is deterministic and excludes every evaluation surface
+  while including the exact prepared train and validation inputs.
+- Ganesh v0.1's five released adapters are provisioned from immutable Git
+  objects and match the release hashes. Its full Gemma base inventory is
+  pinned. Rust is explicitly routed to the base because v0.1 did not release a
+  Rust adapter. The 23.9 GB base cannot safely be staged on the current laptop,
+  which has roughly 6.6 GB free; it must be provisioned on the eventual
+  comparison host.
+- Merge, GGUF F16/Q8 construction, constrained laptop certification, clustered
+  statistical adjudication, Q8 retention, and final fail-closed release
+  decision tooling are present but have not been executed on a trained model.
+
 ## Next action
 
-Seal the response-boundary repair in Git. Before creating a fresh execution
-card, resolve the remaining audited retry-contract issues: runtime budget,
-cost ceiling, peak-VRAM enforcement, immutable attempt prefixes, and durable
-pre-delete resource identity. The next paid VM must first pass Gate 0B. Only
-after that pass may the exact Qwen base baseline run; seed-pilot training
-remains blocked until the base baseline exists.
+Commit and push the repaired controllers, then generate a fresh execution card
+bound to that commit and immutable workspace archive. The next paid VM must
+first pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
+seed-pilot training remains blocked until the base baseline exists. The VM
+must preserve checkpoints and terminal evidence in GCS, pass independent
+backup verification, stop, and then be deleted with an absence proof.
 
 ## Authorization state
 

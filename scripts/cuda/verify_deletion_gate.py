@@ -70,6 +70,7 @@ def main() -> int:
         serial_relative: serial_path,
         "provider/operations.json": args.operations_evidence,
         "provider/system-events.json": args.system_events_evidence,
+        "provider/resource-terminated.json": args.resource_state,
     }
     for relative, path in provider.items():
         if not path.is_file() or path.stat().st_size == 0:
@@ -93,6 +94,7 @@ def main() -> int:
         "resource_name": args.expected_resource_name,
         "resource_id": args.expected_resource_id,
         "resource_status": resource["status"],
+        "resource_state_sha256": file_sha256(args.resource_state),
         "provider_serial_status": serial_status,
         "object_count": len(objects),
     }

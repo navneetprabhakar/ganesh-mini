@@ -30,6 +30,7 @@ def project(tmp_path: Path) -> tuple[Path, Path]:
         "configs/train/seed_pilot.json",
         "configs/model/qwen3_5_2b.contract.json",
         "configs/data/ganesh_v01_seed.json",
+        "manifests/datasets/ganesh_v01_seed.json",
         "data/seed/ganesh_v01/train.jsonl",
         "data/seed/ganesh_v01/validation.jsonl",
     ):
@@ -39,6 +40,8 @@ def project(tmp_path: Path) -> tuple[Path, Path]:
 
     config_path = tmp_path / "configs/train/seed_pilot.json"
     config = json.loads(config_path.read_text())
+    config["control"]["maximum_seen_tokens"] = 112
+    config_path.write_text(json.dumps(config), encoding="utf-8")
     model = config["model"]
     template_sha = "b" * 64
     gate0_checks = [
@@ -75,6 +78,12 @@ def project(tmp_path: Path) -> tuple[Path, Path]:
         input_ids = [1, 2] + list(range(10, 10 + response_count))
         rows.append(json.dumps({"id": f"record-{lane}", "lane": lane, "input_ids": input_ids, "labels": [-100, -100] + input_ids[2:], "prompt_token_count": 2, "rendered_prompt_sha256": "c" * 64}))
     prepared_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    validation_path = tmp_path / "artifacts/train/seed-pilot/prepared-validation.jsonl"
+    validation_rows = []
+    for index in range(50):
+        lane = pilot.LANES[index % len(pilot.LANES)]
+        validation_rows.append(json.dumps({"id":f"validation-{index}","lane":lane,"input_ids":[1,2,3],"attention_mask":[1,1,1],"labels":[-100,-100,3],"prompt_token_count":2,"rendered_prompt_sha256":"d"*64}))
+    validation_path.write_text("\n".join(validation_rows) + "\n", encoding="utf-8")
     write_sealed(
         tmp_path / config["data"]["prepared_manifest_path"],
         {
@@ -95,6 +104,10 @@ def project(tmp_path: Path) -> tuple[Path, Path]:
             "prepared_train_path": "artifacts/train/seed-pilot/prepared-train.jsonl",
             "prepared_train_sha256": pilot.file_sha256(prepared_path),
             "prepared_train_records": 6,
+            "prepared_train_input_tokens": 112,
+            "prepared_validation_path": "artifacts/train/seed-pilot/prepared-validation.jsonl",
+            "prepared_validation_sha256": pilot.file_sha256(validation_path),
+            "prepared_validation_records": 50,
             "sampled_response_tokens_by_lane": token_counts,
             "effective_epochs_by_lane": {lane: 2.5 for lane in pilot.LANES},
         },
@@ -106,7 +119,9 @@ def project(tmp_path: Path) -> tuple[Path, Path]:
 def test_repository_config_fails_closed_before_gate_evidence() -> None:
     card = pilot.build_execution_card(ROOT / "configs/train/seed_pilot.json", ROOT, system="Linux")
     assert card["status"] == "not_ready"
-    assert {"gate0_ready", "gate1_ready", "gate2_ready", "prepared_dataset"} <= set(card["failed_checks"])
+    assert {"gate0_ready", "gate1_ready"} <= set(card["failed_checks"])
+    assert "gate2_ready" not in card["failed_checks"]
+    assert "prepared_dataset" not in card["failed_checks"]
     assert len(card["card_sha256"]) == 64
 
 
@@ -159,7 +174,7 @@ def test_resume_is_hash_bound_and_epoch_capped(project: tuple[Path, Path]) -> No
         "selected_recipe_id": card["selected_recipe"]["recipe_id"],
         "selected_recipe_sha256": pilot.canonical_sha256(card["selected_recipe"]),
         "step": 100,
-        "seen_tokens": 1000,
+        "seen_tokens": 100,
         "effective_epochs_by_lane": {lane: 1.0 for lane in pilot.LANES},
         "checkpoint_path": "checkpoint-100",
         "checkpoint_sha256": "a" * 64,
@@ -205,7 +220,6 @@ def test_nf4_fallback_without_primary_measurement_is_rejected(project: tuple[Pat
     [
         ("primary_cuda_oom", {"cuda_oom_observed": True}),
         ("primary_peak_vram_exceeded", {"peak_vram_gb": 23.5}),
-        ("primary_cost_threshold_exceeded", {"primary_projected_cost_usd": 101.0, "fallback_projected_cost_usd": 75.0}),
     ],
 )
 def test_nf4_fallback_requires_valid_sealed_primary_evidence(
@@ -239,7 +253,6 @@ def test_nf4_fallback_requires_valid_sealed_primary_evidence(
                 "measurement_source": {
                     "primary_cuda_oom": "cuda_runtime",
                     "primary_peak_vram_exceeded": "gpu_telemetry",
-                    "primary_cost_threshold_exceeded": "cost_projection",
                 }[reason],
                 "measurement_sha256": "d" * 64,
             },

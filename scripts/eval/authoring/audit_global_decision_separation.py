@@ -435,9 +435,9 @@ def build() -> dict[str, Any]:
         not duplicate_comparison_normalized,
         "duplicate normalized prompts in seed/development comparison surface",
     )
-    comparison_exact = dict(zip(comparison_exact_hashes, (row["id"] for row in comparison), strict=True))
+    comparison_exact = dict(zip(comparison_exact_hashes, (row["id"] for row in comparison)))
     comparison_normalized = dict(
-        zip(comparison_normalized_hashes, (row["id"] for row in comparison), strict=True)
+        zip(comparison_normalized_hashes, (row["id"] for row in comparison))
     )
     decision_exact: dict[str, str] = {}
     decision_normalized: dict[str, str] = {}

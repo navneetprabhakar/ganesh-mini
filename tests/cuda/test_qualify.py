@@ -1,5 +1,6 @@
 import json
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from scripts.cuda.qualify import (
     load_and_validate_config,
     resolved_kernel_implementation,
     select_records,
+    swift_identity,
     write_evidence,
 )
 
@@ -209,6 +211,35 @@ def test_fla_recurrent_compatibility_fails_after_model_import(monkeypatch) -> No
     monkeypatch.setitem(sys.modules, "transformers.models.qwen3_5.modeling_qwen3_5", object())
     with pytest.raises(RuntimeError, match="before Qwen3.5 model import"):
         install_fla_recurrent_compatibility()
+
+
+def test_swift_identity_selects_qwen35_explicitly_without_download(monkeypatch, tmp_path: Path) -> None:
+    observed = {}
+
+    def get_model_info_meta(path, **kwargs):
+        observed.update({"path": path, **kwargs})
+        return types.SimpleNamespace(model_type="qwen3_5"), types.SimpleNamespace(template="qwen3_5")
+
+    swift = types.ModuleType("swift")
+    swift_model = types.ModuleType("swift.model")
+    swift_model.get_model_info_meta = get_model_info_meta
+    monkeypatch.setitem(sys.modules, "swift", swift)
+    monkeypatch.setitem(sys.modules, "swift.model", swift_model)
+
+    evidence = swift_identity(tmp_path)
+
+    assert observed == {
+        "path": str(tmp_path),
+        "model_type": "qwen3_5",
+        "download_model": False,
+    }
+    assert evidence == {
+        "requested_model_type": "qwen3_5",
+        "selection": "explicit",
+        "model_type": "qwen3_5",
+        "template": "qwen3_5",
+        "passed": True,
+    }
 
 
 def test_resolved_kernel_implementation_reports_decorator_target() -> None:

@@ -25,7 +25,8 @@ def test_retry_v3_card_is_sealed_and_preserves_historical_runtime() -> None:
     assert card["runtime"]["controller_budget_seconds"]+card["runtime"]["backup_reserve_seconds"]==card["resource"]["max_run_duration_seconds"]
     assert Decimal(str(card["cost"]["cumulative_planned_upper_usd"]))<Decimal(str(card["cost"]["absolute_cumulative_ceiling_usd"]))
     source=card["source"]
-    assert source["qualifier_sha256"]==file_sha("scripts/cuda/qualify.py")
+    assert source["qualifier_sha256"]=="d5680550fd041c514755cbdb0f857e4df611aebdc3b9de714322b982d90264f0"
+    assert source["qualifier_sha256"]!=file_sha("scripts/cuda/qualify.py")
     assert source["qualification_runner_sha256"]=="043bcaeb2a88f03ca64da8c1d6ae7b6226087a776ec49f838992ddcc6da39b1a"
     assert source["qualification_runner_sha256"]!=file_sha("scripts/cuda/run_qualification.sh")
     assert source["startup_controller_sha256"]==file_sha("scripts/cuda/gcloud_startup_gate0b.sh")

@@ -171,9 +171,13 @@ def kernel_identity() -> dict[str,Any]:
 
 def swift_identity(model_dir: Path) -> dict[str,Any]:
     from swift.model import get_model_info_meta
-    info, meta = get_model_info_meta(str(model_dir)); model_type = getattr(info,"model_type",None); template = getattr(meta,"template",None); passed = model_type == "qwen3_5" and template == "qwen3_5"
+    requested_model_type = "qwen3_5"
+    info, meta = get_model_info_meta(
+        str(model_dir), model_type=requested_model_type, download_model=False
+    )
+    model_type = getattr(info,"model_type",None); template = getattr(meta,"template",None); passed = model_type == requested_model_type and template == "qwen3_5"
     if not passed: raise RuntimeError(f"ms-swift did not resolve pinned checkpoint as qwen3_5: {model_type=}, {template=}")
-    return {"model_type":model_type,"template":template,"passed":passed}
+    return {"requested_model_type":requested_model_type,"selection":"explicit","model_type":model_type,"template":template,"passed":passed}
 
 def select_records(path: Path, tokenizer: Any, count: int, max_length: int) -> list[dict[str,Any]]:
     candidates = []

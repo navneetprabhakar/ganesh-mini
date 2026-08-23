@@ -271,6 +271,16 @@ card.
   with a regression assertion and direct qualifier import smoke. Historical
   v3/v4 cards and hashes remain immutable; the next card must bind this changed
   runner and a new deterministic workspace archive.
+- Ran the approved v5 qualification in `us-central1-b`. The repaired import
+  path worked and the exact A100, BF16, CUDA/Triton/FLA kernels, package set,
+  sealed image, and pinned model inventory passed. ms-swift 4.5.2 then stopped
+  before model loading because automatic registry matching returned both
+  `qwen3_5` and `ovis_ocr2`. The qualifier now explicitly requests
+  `model_type="qwen3_5"` with downloads disabled and verifies the returned type
+  and template. The VM was stopped after its 29-object terminal backup was
+  verified, then deleted after a 33-object composite backup and deletion gate
+  passed. VM, disk, subnet, and VPC absence and the six-object post-delete
+  backup are independently sealed.
 
 ## Not started or incomplete
 
@@ -313,10 +323,9 @@ card.
 
 ## Next action
 
-The import-path repair is pushed at commit `d318f595c1319e32db37ea24f9a9c94515d79fa8`.
-The deterministic v5 workspace archive and sealed preparation card bind that
-commit and are ready for a new approval-specific GCloud upload/run plan. The
-next paid VM must first pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
+Validate and push the explicit ms-swift model-type repair, then create a fresh
+deterministic workspace and approval-specific card. The next paid VM must first
+pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.
@@ -328,13 +337,9 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The latest approved
-Standard A100 attempt under run `20260823T055724Z` is terminally sealed. Its
+Standard A100 attempt under run `20260823T063348Z` is terminally sealed. Its
 VM, disk, subnet, and VPC are verified absent; no project compute or temporary
-network resource remains. Navneet Prabhakar has broadly approved subsequent
-steps, but the newly observed anomaly prevents another paid launch until the
-repair is validated and a fresh exact card binds the changed source. Both are
-now complete; v5 remains explicitly unapproved because its additional A100
-exposure is outside the prior frozen ceiling (requested incremental ceiling:
-USD 2.40).
+network resource remains. Another paid launch requires a fresh card and
+explicit approval for its additional GCloud exposure.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.

@@ -464,3 +464,24 @@ The repaired workspace was reproduced byte-for-byte at SHA-256
 and bound to pushed commit `d318f595c1319e32db37ea24f9a9c94515d79fa8` in the
 v5 preparation card. V5 is not authorized by the prior card because it adds a
 new maximum GCloud exposure; its requested incremental ceiling is USD 2.40.
+
+## 2026-08-23 — Gate 0B v5 requires explicit ms-swift model selection
+
+V5 verified the exact A100, BF16 support, CUDA/Triton/FLA backends and kernels,
+all pinned packages, the sealed image, and the pinned Qwen model inventory. It
+then failed before model loading because ms-swift 4.5.2 found two registered
+types for the checkpoint architecture: `qwen3_5` and `ovis_ocr2`.
+
+This is deterministic registry ambiguity, not permission to change the model
+or packages. The repair calls ms-swift with `model_type="qwen3_5"` and
+`download_model=False`, then still requires the resolved type and template to
+both equal `qwen3_5`. A unit test proves both explicit arguments and the
+fail-closed identity result. Historical evidence remains immutable.
+
+V5's terminal backup, stopped-resource composite backup, deletion gate,
+resource-absence proof, and post-delete backup are sealed respectively by
+`49ea1bb8f3b14a806ae6deb301a0b54524078f19ebd1ad0eb07088ec49d78603`,
+`98d623b6b7d6f3a9c064ddcfe2d5166800cd5ff0098ef55b0ec6193014126ba0`,
+`e48a68d2ad21d629bb011eafe942735ddcef57d88c44351debc21ce07f2e5924`,
+`5b145138f0f8fa7a6bc65ad8cec9add718caf3d3879f69b45490f618d6244fd3`,
+and `b3f294f2608ce73ef059caf7126ebfe17a6a645548365d07c73b14baaa82479e`.

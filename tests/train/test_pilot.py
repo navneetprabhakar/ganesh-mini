@@ -252,12 +252,16 @@ def test_nf4_fallback_requires_valid_sealed_primary_evidence(
     assert card["selected_recipe"]["quantization_type"] == "nf4"
 
 
-def test_qwen_template_mask_is_used_for_response_only_labels() -> None:
+def test_qwen_template_prefix_is_used_for_response_only_labels() -> None:
     class Tokenizer:
         def apply_chat_template(self, messages: list[dict], **kwargs: object) -> object:
             if kwargs["tokenize"] is False:
-                return "<user>task<assistant>answer"
-            return {"input_ids": [10, 11, 12, 13], "assistant_masks": [0, 0, 1, 1]}
+                return "prompt" if kwargs["add_generation_prompt"] else "promptanswer"
+            return {
+                "input_ids": [10, 11]
+                if kwargs["add_generation_prompt"]
+                else [10, 11, 12, 13]
+            }
 
     rendered = pilot.render_response_only(
         Tokenizer(),
@@ -265,14 +269,17 @@ def test_qwen_template_mask_is_used_for_response_only_labels() -> None:
     )
     assert rendered["labels"] == [-100, -100, 12, 13]
     assert rendered["prompt_token_count"] == 2
+    assert rendered["response_token_count"] == 2
 
 
-def test_qwen_template_without_assistant_mask_fails_closed() -> None:
+def test_non_prefix_generation_prompt_fails_closed() -> None:
     class Tokenizer:
         def apply_chat_template(self, messages: list[dict], **kwargs: object) -> object:
-            return {"input_ids": [1, 2]}
+            if kwargs["tokenize"] is False:
+                return "prompt" if kwargs["add_generation_prompt"] else "otheranswer"
+            return {"input_ids": [1, 2] if kwargs["add_generation_prompt"] else [1, 3, 4]}
 
-    with pytest.raises(pilot.PreflightError, match="assistant token mask"):
+    with pytest.raises(pilot.PreflightError, match="not a token prefix"):
         pilot.render_response_only(
             Tokenizer(),
             {"id": "x", "lane": "go", "messages": [{"role": "user", "content": "task"}, {"role": "assistant", "content": "answer"}]},

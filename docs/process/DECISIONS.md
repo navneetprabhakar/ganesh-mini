@@ -389,3 +389,24 @@ shares one base-model load between inference and the 16-record training smoke
 and raises the A100 container envelope from 8 vCPUs/32 GiB to the host's 12
 vCPUs with a 72 GiB ceiling, reducing idle setup time without changing the
 frozen recipe.
+
+## 2026-08-23 — Response-only labels use tokenizer prefix differencing
+
+The pinned Qwen3.5 tokenizer warns that its chat template has no Jinja
+`generation` block and returns an all-zero assistant mask. Relying on
+`return_assistant_tokens_mask=True` would therefore fail the CUDA qualifier on
+its first real training record and would also block seed-pilot preparation.
+
+Response-only boundaries are now derived exclusively through two renderings by
+the exact tokenizer with thinking disabled: the conversation before its final
+assistant message with `add_generation_prompt=True`, and the complete
+conversation with `add_generation_prompt=False`. The former must be an exact
+text and token prefix of the latter. Prompt and tokenizer-owned generation
+scaffolding receive label `-100`; the terminal answer and tokenizer-owned
+end-of-turn suffix remain active. No Qwen token ID or delimiter is hard-coded.
+
+Empty responses, non-prefix renderings, batched records, non-text messages, and
+any completed turn over the frozen maximum length fail closed. Silent response
+truncation is prohibited. The exact pinned Transformers 5.15.1 tokenizer proves
+the boundary for all 1,449 imported train and validation records across the six
+lanes. This is local preparation evidence, not a CUDA or Gate 0B pass.

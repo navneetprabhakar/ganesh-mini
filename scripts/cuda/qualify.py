@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from scripts.train.response_only import ResponseOnlyError, build_response_only_encoding
+
 PACKAGE_IMPORTS = {"torch":"torch","torchvision":"torchvision","transformers":"transformers","peft":"peft","ms-swift":"swift","bitsandbytes":"bitsandbytes","flash-linear-attention":"fla","causal-conv1d":"causal_conv1d","accelerate":"accelerate","qwen-vl-utils":"qwen_vl_utils","triton":"triton"}
 PRIMARY_RECIPE = "bf16-lora-primary-v1"
 FALLBACK_RECIPE = "nf4-qlora-fallback-v1"
@@ -179,13 +181,13 @@ def select_records(path: Path, tokenizer: Any, count: int, max_length: int) -> l
     return [{"tokens":candidates[index][0],"row":candidates[index][2],"rendered":candidates[index][3]} for index in indices]
 
 def response_only_batch(tokenizer: Any, messages: list[dict[str,str]], max_length: int, device: str) -> dict[str,Any]:
-    encoded = tokenizer.apply_chat_template(messages,tokenize=True,add_generation_prompt=False,return_dict=True,return_tensors="pt",return_assistant_tokens_mask=True,truncation=True,max_length=max_length)
-    mask = encoded.pop("assistant_masks",encoded.pop("assistant_tokens_mask",None))
-    if mask is None: raise RuntimeError("upstream tokenizer did not produce assistant response masks")
-    labels = encoded["input_ids"].clone(); labels[mask.to(dtype=labels.dtype) == 0] = -100
-    if not (labels != -100).any(): raise RuntimeError("assistant response mask selected zero tokens")
-    encoded["labels"] = labels
-    return {key:value.to(device) for key,value in encoded.items()}
+    try:
+        response = build_response_only_encoding(
+            tokenizer, messages, max_length=max_length, return_tensors="pt"
+        )
+    except ResponseOnlyError as exc:
+        raise RuntimeError(str(exc)) from exc
+    return {key:value.to(device) for key,value in response.encoding.items()}
 
 def load_model(model_dir: Path, recipe_id: str):
     import torch

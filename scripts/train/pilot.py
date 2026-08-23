@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from scripts.train.response_only import ResponseOnlyError, build_response_only_encoding
+
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 LANES = ("go", "java", "javascript", "typescript", "python", "rust")
@@ -115,11 +117,7 @@ def count_jsonl(path: Path) -> tuple[int, Counter[str]]:
 
 
 def render_response_only(tokenizer: Any, record: dict[str, Any]) -> dict[str, Any]:
-    """Render one row with the tokenizer-owned chat template and assistant mask.
-
-    Qwen's template is the authority. We deliberately do not infer response
-    boundaries from token IDs or hard-coded delimiters.
-    """
+    """Render one row with a tokenizer-proven terminal response boundary."""
     messages = record.get("messages")
     if not isinstance(messages, list) or not messages:
         raise PreflightError("non-empty text-only messages are required")
@@ -127,37 +125,18 @@ def render_response_only(tokenizer: Any, record: dict[str, Any]) -> dict[str, An
         raise PreflightError("text-only role/content messages are required")
     if messages[-1].get("role") != "assistant":
         raise PreflightError("record must end with one assistant response")
-    encoded = tokenizer.apply_chat_template(
-        messages,
-        tokenize=True,
-        add_generation_prompt=False,
-        return_dict=True,
-        return_assistant_tokens_mask=True,
-    )
-    input_ids = encoded.get("input_ids")
-    mask = encoded.get("assistant_masks", encoded.get("assistant_tokens_mask"))
-    if input_ids and isinstance(input_ids[0], list):
-        if len(input_ids) != 1:
-            raise PreflightError("batched chat rendering is not accepted")
-        input_ids = input_ids[0]
-    if mask and isinstance(mask[0], list):
-        mask = mask[0]
-    if not isinstance(input_ids, list) or not isinstance(mask, list) or len(input_ids) != len(mask):
-        raise PreflightError("tokenizer did not return a valid assistant token mask")
-    response_positions = [index for index, active in enumerate(mask) if active == 1]
-    if not response_positions or response_positions != list(range(response_positions[0], len(input_ids))):
-        raise PreflightError("assistant mask must identify one terminal response")
-    labels = [token if active == 1 else -100 for token, active in zip(input_ids, mask)]
-    rendered = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
-    if not isinstance(rendered, str) or not rendered:
-        raise PreflightError("tokenizer did not render a non-empty chat string")
+    try:
+        response = build_response_only_encoding(tokenizer, messages)
+    except ResponseOnlyError as exc:
+        raise PreflightError(str(exc)) from exc
     return {
         "id": record.get("id"),
         "lane": record.get("lane"),
-        "input_ids": input_ids,
-        "labels": labels,
-        "prompt_token_count": response_positions[0],
-        "rendered_prompt_sha256": hashlib.sha256(rendered.encode()).hexdigest(),
+        "input_ids": response.encoding["input_ids"],
+        "labels": response.encoding["labels"],
+        "prompt_token_count": response.prompt_token_count,
+        "response_token_count": response.response_token_count,
+        "rendered_prompt_sha256": hashlib.sha256(response.rendered.encode()).hexdigest(),
     }
 
 

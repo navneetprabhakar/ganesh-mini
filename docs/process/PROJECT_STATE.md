@@ -13,8 +13,10 @@ Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
 complete. The latest Standard A100 retry passed package, A100/BF16, CUDA,
 Triton, causal-conv1d, and the external FLA chunk-training kernel, but exposed
 an exact Transformers 5.15.1 / FLA 0.5.2 recurrent-symbol mismatch before
-model loading. Gate 0 remains fail-closed while the pre-import fused-kernel
-compatibility repair is validated and rebound into a fresh execution card.
+model loading. The pre-import fused-kernel repair and the subsequently found
+all-zero tokenizer assistant-mask repair are locally validated. Gate 0 remains
+fail-closed until the repaired qualification executes on CUDA under a fresh
+card.
 
 ## Completed
 
@@ -239,8 +241,16 @@ compatibility repair is validated and rebound into a fresh execution card.
   recurrent implementation to originate in `fla`; the Torch fallback remains
   disallowed. The retry path now shares one model load across inference and
   training qualification and assigns 12 vCPUs/72 GiB to the container.
-  The full local suite passes: 114 tests passed and one intentional integration
-  test was skipped.
+  The full local suite passed at that point: 114 tests passed and one
+  intentional integration test was skipped.
+- Replaced the unusable all-zero Qwen assistant mask with tokenizer-owned
+  prefix differencing. The exact pinned tokenizer proves response-only
+  boundaries for all 1,449 seed and validation rows across the six lanes;
+  prompt/scaffolding tokens are masked, terminal completion tokens are active,
+  and non-prefix, empty, batched, or overlength records fail closed. The shared
+  implementation is used by both CUDA qualification and seed-pilot
+  preparation. The full local suite now has 118 collected tests: 117 pass and
+  one Docker integration test is intentionally skipped.
 
 ## Not started or incomplete
 
@@ -255,12 +265,12 @@ compatibility repair is validated and rebound into a fresh execution card.
 
 ## Next action
 
-Seal the failed run and validated repair in Git, then create a fresh execution
-card. The next paid VM must first pass Gate 0B. Only after that pass may the
-exact Qwen base baseline run; seed-pilot training remains blocked until the
-base baseline exists. The next execution design must minimize image/model setup
-overhead and keep generation or training work GPU-bound while CPU verification
-and GCS uploads run concurrently where the evidence contract permits.
+Seal the response-boundary repair in Git. Before creating a fresh execution
+card, resolve the remaining audited retry-contract issues: runtime budget,
+cost ceiling, peak-VRAM enforcement, immutable attempt prefixes, and durable
+pre-delete resource identity. The next paid VM must first pass Gate 0B. Only
+after that pass may the exact Qwen base baseline run; seed-pilot training
+remains blocked until the base baseline exists.
 
 ## Authorization state
 

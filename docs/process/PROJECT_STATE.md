@@ -467,20 +467,36 @@ the exact serving stack.
   `$0.20580668756242`. The VM, disk, subnet, and VPC are absent under proof
   `cda4d4b4a44f52b25dddac1e2f6939390499352da57336fc49e868baef52c8af`.
 
+- Executed the approved bounded L4 v4 retry under prefix
+  `20260823T165923Z` with the measured 3,072-token envelope. Both recipes
+  again passed exact identity and text inference. BF16 LoRA OOMed while
+  requesting 2.84 GiB with 2.65 GiB free. The correctly triggered NF4 QLoRA
+  fallback reached backward but OOMed while requesting 48 MiB with 27.12 MiB
+  free, a measured shortfall of 21,894,267 bytes. Neither recipe began a
+  training record or optimizer step. The fail-closed run result is sealed by
+  `67a691b9de7ed34a906b174a7bc4b0d80d23c42d93bee476c0987e687258d5c9`.
+  All 32 terminal objects were independently downloaded and verified twice;
+  the identical manifest seal is
+  `b3d643fae56aa109c0ddd0d0f86e83e5f7fdca98fb899e03b977f2ade7e430e4`
+  and the local verification record is sealed by
+  `19529bb46c4fb587dece6c3ebe1364e34fca6c38aba14cf5a88b1ad4a5c6ca8b`.
+  Billing stopped after 853.409 seconds, for a compute upper estimate of
+  `$0.2023585195776689`. The VM, auto-delete disk, subnet, and VPC are absent
+  under proof `00fe3d479e2db5f84c950ad1a19372ad252d8bc7b855f1c342bd3fde88bcdd8e`.
+
 ## Next action
 
-Gate 0B remains closed on measured L4 memory capacity at 4,096 tokens. The
-versioned local contract now uses a 3,072-token envelope. This retains all
-636,093 prepared training tokens across 2,155 sampled records: maximum record
-length is 2,938, so zero records or tokens are truncated. The qualifier keeps
-vision offload, gradient checkpointing, and the 21 GiB ceiling at the envelope
-and every optimizer step; production SFT keeps the same offload and
-per-micro-step enforcement.
+Gate 0B remains closed on measured L4 memory capacity at 3,072 tokens. NF4 is
+close but did not pass: the terminal shortfall was 21,894,267 bytes. The
+prepared corpus maximum remains 2,938 tokens, so the next local change may
+reduce only the unused synthetic/training ceiling to 2,944 while preserving
+all 636,093 prepared tokens and 2,155 records. It must be versioned, tested,
+and treated as unqualified until fresh CUDA evidence passes; allocator tuning
+alone is not justified because only 24.19 MiB was reserved but unallocated.
 
-Before another paid run, seal the versioned 3,072-token source,
-deterministic workspace, tests, exact input generations, price, and
-resource-absence proof in a fresh card. A new GCloud launch requires explicit
-approval. If that run qualifies,
+Before another paid run, seal the 2,944-token source, deterministic workspace,
+tests, exact input generations, current price, and resource-absence proof in a
+fresh card. A new GCloud launch requires explicit approval. If it qualifies,
 execute the exact 180-task Qwen development baseline and admit it through the
 fail-closed Gate 1 report; seed-pilot training remains blocked until Gate 1 is
 ready. The native verifier, global separation, Gate 2 seed cascade, and

@@ -186,7 +186,7 @@ Starting recipe, subject to the Gate 0 smoke result:
 - BF16 base loading with BF16 LoRA compute on a CUDA GPU with at least 24 GB;
 - freeze vision components;
 - response-only loss using the exact Qwen chat template;
-- 3,072-token training sequence length with packing only after a packing
+- 2,944-token training sequence length with packing only after a packing
   equivalence test;
 - LoRA rank 32, alpha 64, dropout 0.05;
 - micro-batch 1, gradient checkpointing, and gradient accumulation to reach the
@@ -199,10 +199,11 @@ Starting recipe, subject to the Gate 0 smoke result:
 
 The original 4,096-token envelope was reduced to 3,072 only after two sealed
 L4 executions showed that both LoRA and QLoRA OOM before the first training
-record. This is not a data truncation concession: the frozen prepared corpus
-contains 2,155 sampled training records, the longest is 2,938 tokens, and no
-train or validation record exceeds 3,072. The model's serving context contract
-is unchanged.
+record. The 3,072-token NF4 fallback then reached backward but missed capacity
+by 21,894,267 bytes. The current 2,944-token envelope is still not a data
+truncation concession: the frozen prepared corpus contains 2,155 sampled
+training records, the longest is 2,938 tokens, and no train or validation
+record exceeds 2,944. The model's serving context contract is unchanged.
 
 The fallback recipe changes only base loading to bitsandbytes 4-bit NF4 with
 BF16 adapter compute. It is eligible only after the primary recipe records an

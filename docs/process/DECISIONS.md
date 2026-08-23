@@ -877,3 +877,31 @@ The CUDA qualification schema advances to v4 and the training config to v2 so
 historical 4,096-token evidence cannot be confused with the new contract. The
 3,072-token contract is local preparation only until fresh CUDA evidence
 passes; any new GCloud execution still requires explicit approval.
+
+## 2026-08-23 — 3,072 tokens nearly fits NF4 on L4 but remains unqualified
+
+The approved Standard L4 v4 retry executed the versioned 3,072-token envelope
+from source commit `b24124c71b8e6b60ca3619b2213482f7d9991267`. Exact model,
+tokenizer, template, packages, kernels, GPU identity, and text inference passed
+for BF16 and NF4. BF16 LoRA OOMed while requesting 2.84 GiB with 2.65 GiB free.
+NF4 QLoRA then reached its backward envelope and OOMed while requesting 48 MiB
+with 27.12 MiB free. The 21,894,267-byte shortfall is small but is still a hard
+Gate 0B failure. No training record or optimizer step ran.
+
+The result is sealed by
+`67a691b9de7ed34a906b174a7bc4b0d80d23c42d93bee476c0987e687258d5c9`.
+The 32-object terminal backup was independently downloaded twice, both
+manifests equal
+`b3d643fae56aa109c0ddd0d0f86e83e5f7fdca98fb899e03b977f2ade7e430e4`,
+and both runtime inventories passed. Billing stopped after 853.409 seconds;
+the exact VM, disk, subnet, and VPC were deleted and are absent.
+
+Allocator fragmentation is not the primary next lever: PyTorch reported only
+24.19 MiB reserved but unallocated. The measured prepared-data maximum is
+2,938 tokens. Therefore the next admissible local capacity change is a
+versioned 2,944-token training and qualification envelope, which preserves all
+prepared records and tokens while removing another 128 unused synthetic
+tokens. Rank, alpha, response-only masks, optimizer, effective batch, learning
+rates, data bytes, model revision, serving contract, and fallback order remain
+unchanged. This is a prepared hypothesis, not qualification evidence, and any
+new GCloud run still needs fresh explicit approval.

@@ -52,7 +52,7 @@ def append_journal(path: Path, event: dict[str, Any]) -> None:
 
 def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
-    if config.get("schema_version") != "ganesh-mini-cuda-gate0/v4": raise ValueError("unsupported CUDA qualification schema")
+    if config.get("schema_version") != "ganesh-mini-cuda-gate0/v5": raise ValueError("unsupported CUDA qualification schema")
     contract_path = root / config["model"]["contract_path"]
     if file_sha256(contract_path) != config["model"]["contract_sha256"]: raise ValueError("model contract hash mismatch")
     if file_sha256(root / "uv.lock") != config["container"]["uv_lock_sha256"]: raise ValueError("CUDA environment lock hash mismatch")
@@ -60,7 +60,7 @@ def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     if (contract.get("model_id"), contract.get("revision")) != (config["model"]["model_id"], config["model"]["revision"]):
         raise ValueError("model identity does not match the pinned contract")
     if config.get("qualification_order") != [PRIMARY_RECIPE, FALLBACK_RECIPE]: raise ValueError("BF16 primary and NF4 fallback order changed")
-    common = {"sequence_length":3072,"micro_batch_size":1,"gradient_checkpointing":True,"record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False,"maximum_peak_vram_bytes":21*1024**3}
+    common = {"sequence_length":2944,"micro_batch_size":1,"gradient_checkpointing":True,"record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False,"maximum_peak_vram_bytes":21*1024**3}
     primary = {"role":"primary","minimum_vram_bytes":22*1024**3,"base_dtype":"bfloat16","quantization":None,**common}
     fallback = {"role":"fallback","minimum_vram_bytes":17179869184,"base_dtype":"bfloat16","quantization":{"bits":4,"type":"nf4","double_quantization":True,"compute_dtype":"bfloat16"},**common}
     if config["recipes"].get(PRIMARY_RECIPE) != primary: raise ValueError("BF16 LoRA primary recipe changed without a schema revision")

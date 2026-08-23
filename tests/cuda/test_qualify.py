@@ -33,10 +33,11 @@ def test_pinned_primary_and_fallback_validate() -> None:
     assert primary["minimum_vram_bytes"] == 22 * 1024**3
     assert primary["maximum_peak_vram_bytes"] == 21 * 1024**3
     assert primary["quantization"] is None
-    assert primary["sequence_length"] == 3072
+    assert primary["sequence_length"] == 2944
     assert (primary["micro_batch_size"], primary["rank"], primary["alpha"], primary["dropout"]) == (1, 32, 64, 0.05)
     assert primary["gradient_checkpointing"] and primary["response_only"]
     fallback = config["recipes"][FALLBACK_RECIPE]
+    assert fallback["sequence_length"] == 2944
     assert fallback["quantization"] == {"bits": 4, "type": "nf4", "double_quantization": True, "compute_dtype": "bfloat16"}
     assert config["packages"]["bitsandbytes"] == "0.49.2"
     assert config["packages"]["torchvision"] == "0.28.0"

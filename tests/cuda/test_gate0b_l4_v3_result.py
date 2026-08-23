@@ -47,7 +47,7 @@ def test_l4_v3_terminal_backup_and_absence_proofs_are_sealed() -> None:
     assert [row["result_count"] for row in absence["queries"]] == [0, 0, 0, 0]
 
 
-def test_3072_envelope_covers_every_prepared_record_without_truncation() -> None:
+def test_2944_envelope_covers_every_prepared_record_without_truncation() -> None:
     observed_lanes = set()
     maximum = 0
     record_count = 0
@@ -57,7 +57,7 @@ def test_3072_envelope_covers_every_prepared_record_without_truncation() -> None
         for line in path.read_text().splitlines():
             row = json.loads(line)
             length = len(row["input_ids"])
-            assert length <= 3072
+            assert length <= 2944
             maximum = max(maximum, length)
             observed_lanes.add(row["lane"])
             if name == "prepared-train.jsonl":

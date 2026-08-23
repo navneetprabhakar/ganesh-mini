@@ -276,7 +276,7 @@ def common_recipe_ok(recipe: dict[str, Any], system: str) -> bool:
         and recipe.get("gradient_checkpointing") is True
         and recipe.get("micro_batch_size") == 1
         and recipe.get("vision_frozen") is True
-        and recipe.get("sequence_length") == 4096
+        and recipe.get("sequence_length") == 3072
         and recipe.get("packing") is False
         and (recipe.get("lora_rank"), recipe.get("lora_alpha"), recipe.get("lora_dropout")) == (32, 64, 0.05)
         and recipe.get("learning_rate_candidates") == [0.0001, 0.0002]
@@ -363,7 +363,7 @@ def validate_fallback_qualification(
 def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     checks: list[dict[str, Any]] = []
     required_top = {"schema_version", "run_id", "output_model_name", "model", "data", "prerequisites", "rendering", "strategy", "recipes", "control", "outputs"}
-    add(checks, "config_shape", set(config) == required_top and config.get("schema_version") == "ganesh-mini-train-config/v1", "Config must contain exactly the versioned controller sections.")
+    add(checks, "config_shape", set(config) == required_top and config.get("schema_version") == "ganesh-mini-train-config/v2", "Config must contain exactly the versioned controller sections.")
 
     model = config["model"]
     contract_ok, contract_evidence = verify_file(root, model["contract_path"], model["contract_file_sha256"])

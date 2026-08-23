@@ -35,7 +35,7 @@ def test_exact_qwen_template_proves_response_boundaries_for_every_seed_row() -> 
             assert labels[: result.prompt_token_count] == [-100] * result.prompt_token_count
             assert labels[result.prompt_token_count :] == result.encoding["input_ids"][result.prompt_token_count :]
             assert result.response_token_count > 0
-            assert result.prompt_token_count + result.response_token_count <= 4096
+            assert result.prompt_token_count + result.response_token_count <= 3072
             checked += 1
             lanes.add(row["lane"])
     assert checked == 1449
@@ -46,7 +46,7 @@ def test_exact_qwen_tensor_labels_mask_prompt_and_keep_completion() -> None:
     tokenizer = _pinned_tokenizer()
     row = json.loads(SEED_PATHS[0].read_text(encoding="utf-8").splitlines()[0])
     result = build_response_only_encoding(
-        tokenizer, row["messages"], max_length=4096, return_tensors="pt"
+        tokenizer, row["messages"], max_length=3072, return_tensors="pt"
     )
     labels = result.encoding["labels"]
     assert labels.shape == result.encoding["input_ids"].shape

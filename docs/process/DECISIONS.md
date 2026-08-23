@@ -838,3 +838,42 @@ optimizer, learning-rate candidates, and fallback order are unchanged.
 
 This is a plausible capacity repair, not CUDA evidence. Another GCloud run
 requires a new sealed card and fresh explicit approval.
+
+## 2026-08-23 — Frozen-vision offload passes, but 4,096 tokens remain infeasible on L4
+
+The approved bounded Standard L4 v3 retry executed source commit
+`0791087e98da1073ed8ea641ff42e2f9f944c04f`. Exact package, CUDA, Triton,
+external-kernel, model, tokenizer, template, and text-only inference identity
+passed for both recipes. The repair then moved the frozen vision tower to CPU
+and measured real allocator release: 662,833,664 bytes for BF16 and
+190,087,680 bytes for NF4. This proves the repair worked as implemented.
+
+It was not enough. BF16 LoRA OOMed in the 4,096-token synthetic backward
+envelope while requesting 96 MiB with 73.12 MiB free and 21.96 GiB reported in
+use. The correctly triggered NF4 QLoRA fallback OOMed in the same envelope
+while requesting 512 MiB with 111.12 MiB free and 21.92 GiB reported in use.
+Gradient checkpointing was active. Neither recipe started a training record or
+optimizer step, so Gate 0B remains closed. The run-result seal is
+`78a1af009066bc2403ad1e4d9ed6e3f865bb2666288bc4f27d95a61ca6d48ee7`.
+
+All 32 terminal GCS objects were downloaded twice by immutable generation and
+matched the VM-generated runtime inventory. The independent manifest seal is
+`ed92e5f42f4a076a347685ab829fa07a6644cce7e7c19f0cb9c6985d37d97c8a`.
+GPU billing stopped after 867.951 seconds. The VM, disk, subnet, and VPC were
+deleted and are absent under proof
+`cda4d4b4a44f52b25dddac1e2f6939390499352da57336fc49e868baef52c8af`.
+
+The next change is measurement-driven rather than a blind memory tweak. The
+frozen prepared training set contains 2,155 sampled records and 636,093 input
+tokens. Its longest record is 2,938 tokens; all 50 validation records are at
+most 919 tokens. Therefore a versioned 3,072-token training envelope preserves
+every prepared record and token across all six compiler lanes. It removes
+1,024 synthetic envelope tokens that no actual training record uses. The
+model's serving context capability, revision, data bytes, response-only labels,
+rank 32, alpha 64, optimizer, effective batch size, learning-rate candidates,
+and fallback order do not change.
+
+The CUDA qualification schema advances to v4 and the training config to v2 so
+historical 4,096-token evidence cannot be confused with the new contract. The
+3,072-token contract is local preparation only until fresh CUDA evidence
+passes; any new GCloud execution still requires explicit approval.

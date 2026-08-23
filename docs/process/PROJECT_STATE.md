@@ -10,15 +10,15 @@ Gate 0B and Gate 1 preparation in parallel:
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
 Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
-complete. The approved Standard L4 run passed the exact package, CUDA, Triton,
-external-kernel, model-load, and text-only inference contracts. BF16 LoRA then
-OOMed in the 4,096-token synthetic backward envelope; the sealed NF4 QLoRA
-fallback also OOMed in that envelope before the first training record. Gate 0
-therefore remains fail-closed. A local-only repair now moves the already-frozen
-331,416,576-parameter vision tower to CPU, requires measured CUDA-memory
-release, and enforces the peak ceiling at the envelope and each optimizer
-step. Model, data, sequence length, rank, optimizer, and learning rates are
-unchanged. The full local suite passes; this repair has not run on CUDA.
+complete. Two approved Standard L4 executions passed the exact package, CUDA,
+Triton, external-kernel, model-load, and text-only inference contracts. The
+second run proved that frozen-vision CPU offload works, releasing 662,833,664
+BF16 bytes and 190,087,680 NF4 bytes, but BF16 LoRA and NF4 QLoRA still OOMed
+in the 4,096-token synthetic backward envelope before the first training
+record. Gate 0 therefore remains fail-closed. Corpus measurement shows the
+longest prepared training record is 2,938 tokens, so the next versioned
+contract uses a 3,072-token envelope with zero prepared-token truncation.
+Rank, optimizer, learning rates, data, and serving context remain unchanged.
 
 Native AMD64 verifier qualification is complete. GitHub Actions run
 `32639381229` loaded the exact pinned image archive and passed all 12
@@ -453,22 +453,34 @@ the exact serving stack.
   proof seal
   `eb8171a24a2c893a7fad2a7806fb4f187af7dbb4b86b2d630aee7882c359071d`.
 
+- Executed the approved bounded L4 v3 retry under prefix
+  `20260823T152838Z`. Vision offload passed and released 662,833,664 BF16 CUDA
+  bytes and 190,087,680 NF4 CUDA bytes. BF16 LoRA still OOMed while requesting
+  96 MiB with 73.12 MiB free; QLoRA still OOMed while requesting 512 MiB with
+  111.12 MiB free. Both failures remained inside the 4,096-token synthetic
+  backward envelope, with zero training records and optimizer steps. The run
+  result is sealed by
+  `78a1af009066bc2403ad1e4d9ed6e3f865bb2666288bc4f27d95a61ca6d48ee7`.
+  All 32 terminal objects and the VM inventory are independently verified by
+  `ed92e5f42f4a076a347685ab829fa07a6644cce7e7c19f0cb9c6985d37d97c8a`.
+  GPU billing stopped after 867.951 seconds, giving a compute upper estimate of
+  `$0.20580668756242`. The VM, disk, subnet, and VPC are absent under proof
+  `cda4d4b4a44f52b25dddac1e2f6939390499352da57336fc49e868baef52c8af`.
+
 ## Next action
 
-Gate 0B remains closed on measured L4 memory capacity. The current local
-repair offloads the frozen, text-inactive vision tower after the shared
-inference smoke and before LoRA/QLoRA construction. It records the actual CUDA
-bytes released and fails if no release occurs. The qualifier now checks the
-21 GiB ceiling immediately after the 4,096-token envelope and after every
-optimizer step, allowing the predeclared QLoRA fallback to start without
-wasting the remaining budget when BF16 exceeds the cap. Production SFT uses
-the same offload and per-micro-step ceiling enforcement. The official
-bitsandbytes 0.49.2 `Params4bit.to` implementation supports moving packed
-weights and their quantization state to CPU.
+Gate 0B remains closed on measured L4 memory capacity at 4,096 tokens. The
+versioned local contract now uses a 3,072-token envelope. This retains all
+636,093 prepared training tokens across 2,155 sampled records: maximum record
+length is 2,938, so zero records or tokens are truncated. The qualifier keeps
+vision offload, gradient checkpointing, and the 21 GiB ceiling at the envelope
+and every optimizer step; production SFT keeps the same offload and
+per-micro-step enforcement.
 
-Before another paid run, seal the repaired source, deterministic workspace,
-tests, exact input generations, price, and resource-absence proof in a fresh
-card. A new GCloud launch requires explicit approval. If that run qualifies,
+Before another paid run, seal the versioned 3,072-token source,
+deterministic workspace, tests, exact input generations, price, and
+resource-absence proof in a fresh card. A new GCloud launch requires explicit
+approval. If that run qualifies,
 execute the exact 180-task Qwen development baseline and admit it through the
 fail-closed Gate 1 report; seed-pilot training remains blocked until Gate 1 is
 ready. The native verifier, global separation, Gate 2 seed cascade, and

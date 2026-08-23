@@ -1,6 +1,6 @@
 # Gate 0B GCP Standard L4 plan
 
-Status: executed; memory-capacity failure; resources deleted
+Status: two executions complete; memory-capacity failure; resources deleted
 
 Date: 2026-08-23
 
@@ -58,3 +58,19 @@ backup is independently verified under seal
 `087d7c89b1806ddbe61772ba44ba8ce5ccbe17c8dd18fb122aa29189784d8f85`;
 the VM, disk, subnet, and VPC are absent under seal
 `eb8171a24a2c893a7fad2a7806fb4f187af7dbb4b86b2d630aee7882c359071d`.
+
+The approved v3 retry moved the frozen vision tower to CPU and measured the
+expected CUDA release: 662,833,664 bytes for BF16 and 190,087,680 bytes for
+NF4. Both recipes nevertheless OOMed in the same 4,096-token synthetic
+backward envelope before the first training record. Its 32-object terminal
+backup is independently verified under seal
+`ed92e5f42f4a076a347685ab829fa07a6644cce7e7c19f0cb9c6985d37d97c8a`;
+all four resources are absent under seal
+`cda4d4b4a44f52b25dddac1e2f6939390499352da57336fc49e868baef52c8af`.
+
+Corpus measurement changes the next contract: the longest of 2,155 prepared
+training records is 2,938 tokens and every validation record is shorter than
+1,024. A 3,072-token envelope therefore preserves every prepared token while
+removing 1,024 synthetic tokens that no training example uses. Rank, alpha,
+optimizer, effective batch, learning-rate candidates, response-only labels,
+model revision, and serving context remain unchanged.

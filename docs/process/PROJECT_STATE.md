@@ -228,12 +228,14 @@ fail-closed while the corrected qualifier awaits NVIDIA requalification.
 
 The complete evaluation contract and global separation evidence are frozen,
 and the corrected qualifier has passed the local and independent review passes.
-Seal a new A100-only retry card that reuses the generation-pinned image, model,
-and offline bundle. The prior card's conservative `$5` aggregate ceiling cannot
-absorb another full Standard A100 upper bound, so the new card must state its
-own exact incremental and cumulative ceiling and receive fresh explicit GCloud
-approval. After Gate 0B passes on NVIDIA, execute the exact Qwen base baseline
-before opening the seed-pilot training gate.
+The A100-only retry card reuses the generation-pinned image, model, and offline
+bundle and is sealed by
+`03fe1469d74f89d6494be22df9b57815733a7873652977d7f180ef514ea7e3c3`.
+It has a `$1.474461667` incremental upper bound, a `$5.723091194`
+conservative cumulative upper bound, and a `$5.75` absolute ceiling. It requires
+fresh explicit GCloud approval before any inspection or execution. After Gate
+0B passes on NVIDIA, execute the exact Qwen base baseline before opening the
+seed-pilot training gate.
 
 ## Authorization state
 

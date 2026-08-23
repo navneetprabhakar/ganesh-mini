@@ -287,6 +287,15 @@ failed run used an immutable run prefix and two matching full-object reads, so
 its failure evidence remains valid even though its structured `attempt_id` was
 null.
 
+The previous card's conservative `$5` cumulative ceiling is exhausted for a
+second full Standard A100 upper bound. The A100-only retry therefore binds its
+own exact `$5.75` absolute ceiling through instance metadata, startup
+controller, and qualification runner; missing, nonpositive, or reached ceiling
+values fail closed. The card records a `$1.474461667` incremental upper bound
+and `$5.723091194` conservative cumulative upper bound. Gate 0B truthfully
+includes a bounded 16-record optimizer/save/reload/merge training smoke, but it
+does not authorize or perform seed-pilot or main training.
+
 ## 2026-08-23 — Decision references require admission before full directionality
 
 The first full runs for decision tranches 4 and 5 rejected every known-bad

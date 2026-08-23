@@ -156,8 +156,18 @@ def test_metadata_wrapper_generation_pins_and_hashes_controller() -> None:
     assert "ganesh-controller-sha256" in source
     assert "ganesh-absolute-hard-deadline-epoch" in source
     assert "ganesh-absolute-cumulative-ceiling-usd" in source
+    assert "ganesh-execution-card-uri" in source
+    assert "ganesh-execution-card-sha256" in source
+    assert "ganesh-execution-card-size" in source
     assert "sha256sum -c -" in source
     assert 'exec "$controller"' in source
+
+
+def test_gpu_startup_downloads_and_verifies_bound_execution_card() -> None:
+    source = (ROOT / "scripts/cuda/gcloud_startup_gate0b.sh").read_text()
+    assert "GANESH_EXECUTION_CARD_URI" in source
+    assert '"$evidence_dir/execution-card.json"' in source
+    assert "GANESH_EXECUTION_CARD_SHA256" in source
 
 
 def test_standard_a100_execution_card_binds_exact_inputs_and_cost() -> None:

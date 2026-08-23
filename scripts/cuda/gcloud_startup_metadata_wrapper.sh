@@ -34,6 +34,9 @@ declare -A bindings=(
   [GANESH_CONTROLLER_BUDGET_SECONDS]=ganesh-controller-budget-seconds
   [GANESH_BACKUP_RESERVE_SECONDS]=ganesh-backup-reserve-seconds
   [GANESH_EXPECTED_MACHINE_TYPE]=ganesh-expected-machine-type
+  [GANESH_EXECUTION_CARD_URI]=ganesh-execution-card-uri
+  [GANESH_EXECUTION_CARD_SHA256]=ganesh-execution-card-sha256
+  [GANESH_EXECUTION_CARD_SIZE]=ganesh-execution-card-size
 )
 for variable in "${!bindings[@]}"; do
   printf -v "$variable" '%s' "$(read_metadata "${bindings[$variable]}")"

@@ -103,6 +103,9 @@ def test_runner_defaults_primary_and_guards_fallback_order() -> None:
     assert 'recipe="${4:-bf16-lora-primary-v1}"' in runner
     assert "GANESH_PRIMARY_QUALIFICATION_EVIDENCE" in runner
     assert '--recipe "$recipe"' in runner
+    assert "GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" in runner
+    assert "hourly * Decimal(1200)" in runner
+    assert "projected >= ceiling" in runner
 
 
 def test_gpu_startup_is_prebuilt_generation_pinned_and_offline() -> None:

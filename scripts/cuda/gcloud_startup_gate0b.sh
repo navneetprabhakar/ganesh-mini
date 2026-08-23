@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-required=(GANESH_GCP_PROJECT GANESH_GCS_BUCKET GANESH_GCS_PREFIX GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_ARCHIVE_SHA256 GANESH_WORKSPACE_ARCHIVE_SIZE GANESH_MODEL_ARCHIVE_URI GANESH_MODEL_ARCHIVE_SHA256 GANESH_MODEL_ARCHIVE_SIZE GANESH_IMAGE_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_SHA256 GANESH_IMAGE_ARCHIVE_SIZE GANESH_DOCKER_BUNDLE_URI GANESH_DOCKER_BUNDLE_SHA256 GANESH_DOCKER_BUNDLE_SIZE GANESH_CUDA_IMAGE_ID GANESH_CUDA_IMAGE_REF GANESH_ATTEMPT_ID GANESH_GPU_HOURLY_USD GANESH_CUMULATIVE_COST_USD GANESH_SUPPORT_RESERVE_USD GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH)
+required=(GANESH_GCP_PROJECT GANESH_GCS_BUCKET GANESH_GCS_PREFIX GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_ARCHIVE_SHA256 GANESH_WORKSPACE_ARCHIVE_SIZE GANESH_MODEL_ARCHIVE_URI GANESH_MODEL_ARCHIVE_SHA256 GANESH_MODEL_ARCHIVE_SIZE GANESH_IMAGE_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_SHA256 GANESH_IMAGE_ARCHIVE_SIZE GANESH_DOCKER_BUNDLE_URI GANESH_DOCKER_BUNDLE_SHA256 GANESH_DOCKER_BUNDLE_SIZE GANESH_CUDA_IMAGE_ID GANESH_CUDA_IMAGE_REF GANESH_ATTEMPT_ID GANESH_GPU_HOURLY_USD GANESH_CUMULATIVE_COST_USD GANESH_SUPPORT_RESERVE_USD GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH)
 for name in "${required[@]}"; do [[ -n "${!name:-}" ]] || { echo "missing $name" >&2; exit 2; }; done
 for name in GANESH_WORKSPACE_ARCHIVE_URI GANESH_MODEL_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_URI GANESH_DOCKER_BUNDLE_URI; do
   case "${!name}" in *'#'[0-9]*) ;; *) echo "$name must include a GCS generation" >&2; exit 40;; esac
 done
-python3 - "$GANESH_CUMULATIVE_COST_USD" "$GANESH_GPU_HOURLY_USD" "$GANESH_SUPPORT_RESERVE_USD" <<'PY'
+python3 - "$GANESH_CUMULATIVE_COST_USD" "$GANESH_GPU_HOURLY_USD" "$GANESH_SUPPORT_RESERVE_USD" "$GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" <<'PY'
 from decimal import Decimal
 import sys
 total=Decimal(sys.argv[1])+Decimal(sys.argv[2])*(Decimal(1200)/Decimal(3600))+Decimal(sys.argv[3])
-if any(Decimal(value) < 0 for value in sys.argv[1:]) or Decimal(sys.argv[2]) <= 0:
-    raise SystemExit("cost inputs must be nonnegative and GPU hourly rate positive")
-if total >= Decimal("5"): raise SystemExit(f"cumulative qualification ceiling is not below USD 5: {total}")
+ceiling=Decimal(sys.argv[4])
+if any(Decimal(value) < 0 for value in sys.argv[1:4]) or Decimal(sys.argv[2]) <= 0 or ceiling <= 0:
+    raise SystemExit("cost inputs must be nonnegative and GPU hourly rate and ceiling positive")
+if total >= ceiling: raise SystemExit(f"cumulative qualification cost {total} is not below bound ceiling {ceiling}")
 PY
 
 work_dir="/opt/ganesh-mini-gate0b"

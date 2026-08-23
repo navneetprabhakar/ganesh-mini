@@ -142,6 +142,8 @@ def test_gpu_startup_preserves_terminal_backup_reserve_and_attempt_isolation() -
     assert "sha256sum -c bundle-files.sha256" in source
     assert 'timeout "$(phase_timeout 120)" bash -c' in source
     assert "GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH" in source
+    assert "GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" in source
+    assert 'if total >= ceiling' in source
     assert 'backup_reserved_deadline_epoch="$((hard_deadline_epoch - 300))"' in source
     assert "backup_reserved_deadline_epoch < relative_controller_deadline_epoch" in source
 
@@ -152,6 +154,7 @@ def test_metadata_wrapper_generation_pins_and_hashes_controller() -> None:
     assert "controller URI must include a GCS generation" in source
     assert "ganesh-controller-sha256" in source
     assert "ganesh-absolute-hard-deadline-epoch" in source
+    assert "ganesh-absolute-cumulative-ceiling-usd" in source
     assert "sha256sum -c -" in source
     assert 'exec "$controller"' in source
 
@@ -166,8 +169,9 @@ def test_standard_a100_execution_card_binds_exact_inputs_and_cost() -> None:
     assert plan["resource"]["provisioning_model"] == "STANDARD"
     assert plan["resource"]["maximum_run_seconds"] == 1200
     assert plan["network"]["external_ip"] is False and plan["network"]["nat"] is False
-    assert plan["inputs"]["controller"]["sha256"] == sha256(ROOT / "scripts/cuda/gcloud_startup_gate0b.sh")
-    assert plan["inputs"]["metadata_wrapper"]["sha256"] == sha256(ROOT / "scripts/cuda/gcloud_startup_metadata_wrapper.sh")
+    archived = {row["object_uri"].rsplit("/", 1)[-1]: row for row in preflight["objects"]}
+    assert plan["inputs"]["controller"]["sha256"] == archived["controller.sh"]["downloaded_sha256"]
+    assert plan["inputs"]["metadata_wrapper"]["sha256"] == archived["metadata-wrapper.sh"]["downloaded_sha256"]
     assert plan["inputs"]["preflight_backup_evidence_sha256"] == preflight["evidence_sha256"]
     assert plan["inputs"]["cuda_image_archive"]["sha256"] == result["attempt_2"]["archive_sha256"]
     assert plan["cost"]["prior_cumulative_compute_upper_usd"] == result["cost"]["cumulative_compute_upper_before_gpu_usd"]

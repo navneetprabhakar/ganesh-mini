@@ -28,6 +28,7 @@ declare -A bindings=(
   [GANESH_GPU_HOURLY_USD]=ganesh-gpu-hourly-usd
   [GANESH_CUMULATIVE_COST_USD]=ganesh-cumulative-cost-usd
   [GANESH_SUPPORT_RESERVE_USD]=ganesh-support-reserve-usd
+  [GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD]=ganesh-absolute-cumulative-ceiling-usd
   [GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH]=ganesh-absolute-hard-deadline-epoch
 )
 for variable in "${!bindings[@]}"; do

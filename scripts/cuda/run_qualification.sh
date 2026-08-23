@@ -12,16 +12,17 @@ fi
 : "${GANESH_GPU_HOURLY_USD:?set GANESH_GPU_HOURLY_USD to the effective hourly GPU-host price}"
 : "${GANESH_CUMULATIVE_COST_USD:?set GANESH_CUMULATIVE_COST_USD to all prior and prebuild cost}"
 : "${GANESH_SUPPORT_RESERVE_USD:?set GANESH_SUPPORT_RESERVE_USD}"
-python3 - "$GANESH_GPU_HOURLY_USD" "$GANESH_CUMULATIVE_COST_USD" "$GANESH_SUPPORT_RESERVE_USD" <<'PY'
+: "${GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD:?set the card-bound absolute cumulative ceiling}"
+python3 - "$GANESH_GPU_HOURLY_USD" "$GANESH_CUMULATIVE_COST_USD" "$GANESH_SUPPORT_RESERVE_USD" "$GANESH_ABSOLUTE_CUMULATIVE_CEILING_USD" <<'PY'
 from decimal import Decimal, InvalidOperation
 import sys
 try:
-    hourly, cumulative, reserve = map(Decimal, sys.argv[1:])
+    hourly, cumulative, reserve, ceiling = map(Decimal, sys.argv[1:])
 except InvalidOperation as exc:
     raise SystemExit(f"invalid cost input: {exc}")
-projected = cumulative + hourly * Decimal(1800) / Decimal(3600) + reserve
-if hourly <= 0 or cumulative < 0 or reserve < 0 or projected >= Decimal("5"):
-    raise SystemExit(f"qualification would reach or exceed the cumulative USD 5 ceiling: {projected}")
+projected = cumulative + hourly * Decimal(1200) / Decimal(3600) + reserve
+if hourly <= 0 or cumulative < 0 or reserve < 0 or ceiling <= 0 or projected >= ceiling:
+    raise SystemExit(f"qualification would reach or exceed the card-bound cumulative ceiling {ceiling}: {projected}")
 PY
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

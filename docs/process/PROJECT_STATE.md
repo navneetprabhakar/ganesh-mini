@@ -507,6 +507,21 @@ the exact serving stack.
   routers are absent under proof
   `5af5685dd4f8b42118bfd2ad4148f5296ae61948d9dce31b28d46a363620be5c`.
 
+- Attempted the approved bounded L4 v6 allocator retry under prefix
+  `20260823T223044Z`. Standard `g2-standard-8` capacity was unavailable in
+  `us-central1-c`; GCP explicitly directed the request to `us-central1-a`,
+  where the one allowed capacity reallocation also returned
+  `ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS` with no further available zone.
+  Neither create produced a VM or disk, qualification did not start, and
+  compute cost is `$0`. All six generation-pinned inputs were independently
+  downloaded and verified twice under identical manifest
+  `606e36225d7901041e103f1729178d4147b73cb68b61456393bc89eb78ba7712`.
+  The temporary subnet and VPC were deleted; VM, disk, subnet, and VPC absence
+  is sealed by
+  `6f4c5509085c6e01489cd69552e273b9acdffb8871bb92a2ebff4f16d94ec9a0`.
+  This is a provider-capacity abort, not qualification evidence; the allocator
+  hypothesis remains untested.
+
 ## Next action
 
 Gate 0B remains closed on measured L4 memory capacity at 2,944 tokens. NF4 did
@@ -519,13 +534,16 @@ not another sequence reduction. It must be applied consistently to
 qualification and production SFT, tested, sealed in a deterministic workspace,
 and treated as unqualified until fresh CUDA evidence passes.
 
-Before another paid run, seal the allocator contract, tests, exact input
-generations, current price, and resource-absence proof in a fresh card. A new
-GCloud launch requires explicit approval. If it qualifies, execute the exact
-180-task Qwen development baseline and admit it through the fail-closed Gate 1
-report; seed-pilot training remains blocked until Gate 1 is ready. The native
-verifier, global separation, Gate 2 seed cascade, and baseline host audit are
-already complete.
+The allocator contract, tests, and deterministic workspace are sealed, but the
+approved v6 launch never allocated. The next GCloud card must either expand
+the Standard L4 capacity search beyond `us-central1` or wait for that region's
+capacity to recover; it must retain one GPU, the 2,944-token envelope, the
+`$0.50`-class bound, generation-pinned inputs, verified backup, and teardown.
+A new GCloud launch or capacity inspection requires explicit approval. If it
+qualifies, execute the exact 180-task Qwen development baseline and admit it
+through the fail-closed Gate 1 report; seed-pilot training remains blocked
+until Gate 1 is ready. The native verifier, global separation, Gate 2 seed
+cascade, and baseline host audit are already complete.
 
 ## Authorization state
 

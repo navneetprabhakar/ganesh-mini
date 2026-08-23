@@ -940,3 +940,29 @@ preserves all prepared records; rank, alpha, response-only masks, optimizer,
 effective batch, learning rates, data bytes, model revision, serving contract,
 and fallback order remain unchanged. Fresh GCloud execution still requires
 explicit approval.
+
+## 2026-08-24 — Allocator retry aborted before allocation on regional L4 stockout
+
+Navneet Prabhakar approved one Standard L4 Gate 0B v6 retry for at most 30
+minutes and `$0.50` incremental cost. The generation-pinned request first
+targeted `us-central1-c`. GCP returned
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS` before creating a VM or disk and
+explicitly identified `us-central1-a` as the available replacement. The one
+card-authorized capacity reallocation then returned the same stockout in
+`us-central1-a`, with no further available zone. No VM, disk, GPU allocation,
+qualification process, or compute billing existed in either attempt.
+
+All six uploaded input objects were independently downloaded twice by
+immutable generation. Both manifests equal
+`606e36225d7901041e103f1729178d4147b73cb68b61456393bc89eb78ba7712`
+and carry internal evidence
+`e41edf8f752e3d0d9fbf81cfdae9d611c76ea2646670621396af49109731669c`.
+The temporary subnet and VPC were deleted, and all exact run-scoped resource
+names are absent under proof
+`6f4c5509085c6e01489cd69552e273b9acdffb8871bb92a2ebff4f16d94ec9a0`.
+
+This attempt supplies no evidence for or against expandable allocator
+segments. Gate 0B remains closed. Repeating `us-central1` immediately is not
+justified; the next bounded card should inspect and select Standard L4
+capacity in another GCP region, or wait for regional stock to recover. Any
+such GCloud inspection or launch requires fresh explicit approval.

@@ -21,6 +21,7 @@ ALLOWLIST = (
     "scripts/__init__.py",
     "scripts/cuda/__init__.py", "scripts/cuda/qualify.py",
     "scripts/eval/__init__.py", "scripts/eval/contracts.py", "scripts/eval/run_task.py",
+    "scripts/eval/verify_runtime_images.py",
     "scripts/inference", "scripts/verify",
     "eval/private/development",
     "manifests/evaluation/private/development-tranche1.json",

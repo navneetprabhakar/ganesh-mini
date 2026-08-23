@@ -345,8 +345,9 @@ the exact serving stack.
   `4afb29fcfbc1bda3252bd7bb4e96158ef92efb1fc1cda82b1308701b0e6cb848`
   is historical. Its replacement binds the passed native run, global
   separation, repaired workspace, retention slice, Gate 1/2 reports, and the
-  167-test suite; it is sealed by
-  `95d3473ddeb67772c6888697ecf476bb0db40a11c1b7e793a237b1b1630c314d`.
+  full test suite. A subsequent host-orchestration hardening superseded that
+  replacement; the current 171-test evidence is sealed by
+  `04c3beba85fab9dcef8f5931335029a375e788040b95b6a591bef3eeacf630f0`.
   The zero-task public diagnostic is retained as a complete exclusion result
   instead of weakening admission rules.
 - The SFT engine is hash-bound, response-only, cost/time/VRAM bounded,
@@ -385,10 +386,16 @@ the exact serving stack.
   outputs, and authoring code; it was sealed by
   `846cf0b64e3d1804cbbdaa44cb57a07da989e298c9ed7f3cd8f2c400dda625f5`.
   That workspace is historical. Its byte-reproducible replacement binds the
-  repaired task seals: archive SHA-256
-  `d528f958778cecb0ddcceb273c09b4e934605811d68172bcf97255f353156d80`
+  repaired task seals. The baseline host audit then identified that an outer
+  CUDA container using the host Docker socket could produce verifier bind
+  paths invisible to the host daemon. The execution package now forces
+  verifier temporary directories onto an identical host/container mount,
+  keeps the model container offline, re-audits all six image identities after
+  loading, preserves resumable outputs, and accepts only a complete exact-base
+  180-task run. The twice-reproduced current archive has SHA-256
+  `e64e3e78d3e5d1e0d97479c7e92de25babc89ce761002271e4206733bddbb209`
   and manifest seal
-  `c66b964fac10bb34863996b6b1dcbe94eccfa345c4d6471fc0cb46da6d0efb85`.
+  `4d8e66ce89eabbcc08e6bf7520dd9b0baad5edc426ff27add07e4ab5aae5a8e9`.
   Historical ARM64 directionality results remain immutable but are explicitly
   non-current.
   A manually dispatched, read-only GitHub Actions workflow is prepared to

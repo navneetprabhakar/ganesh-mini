@@ -747,3 +747,30 @@ the replacement global-separation report; the train and validation JSONL
 hashes remained unchanged. Gate 2 remains ready. Gate 1 now fails only on the
 not-yet-executed exact Qwen base development baseline, which remains downstream
 of a successful Gate 0B serving qualification.
+
+## 2026-08-23 — Baseline execution requires a host-visible shared verifier path
+
+The frozen model runner executes inside the qualified CUDA image but invokes
+the six verifier images through the host Docker socket. A normal container
+temporary directory exists only in the outer container namespace; passing it
+as a child Docker bind source would make the host daemon resolve a nonexistent
+path. This would fail after expensive model setup despite the runner and
+verifiers being individually correct.
+
+The baseline host controller now allocates verifier temporary directories on
+one absolute path mounted identically into the model container. It also keeps
+the outer container network-disabled and read-only, binds the exact model and
+output paths over the sealed workspace, loads and re-audits the six pinned
+verifier images, enforces a bounded named-container lifetime with forced
+cleanup, preserves resumable generation/task evidence, and accepts completion
+only for the exact Qwen revision with all 180 development tasks present.
+
+The development workspace includes the controller and runtime-image auditor.
+It was rebuilt twice with identical archive SHA-256
+`e64e3e78d3e5d1e0d97479c7e92de25babc89ce761002271e4206733bddbb209`;
+its canonical manifest is sealed by
+`4d8e66ce89eabbcc08e6bf7520dd9b0baad5edc426ff27add07e4ab5aae5a8e9`.
+This supersedes the preceding workspace only; it does not change or invalidate
+the frozen tasks, native directionality evidence, global separation, serving
+parameters, or Gate 2 seed bytes. The full suite now collects 171 tests: 170
+pass, one integration test is intentionally skipped, and none fail.

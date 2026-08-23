@@ -132,16 +132,20 @@ gates in parallel only when it cannot contaminate or prejudge the open gate.
 
 ## Current execution state — 2026-08-23
 
-The repository is private at `navneetprabhakar/ganesh-mini`. The current branch
-is `main`; the last known pushed commit is
-`bbdc7b3c43f3ee98e6bb9a81c4c2c304f1b8a86b`.
+The repository is private at `navneetprabhakar/ganesh-mini` on `main`. Native
+AMD64 evidence adoption is anchored at commit
+`38bb345a9d750d38a2d13a1c21b8a6b0a53128fb`; later commits may add only
+downstream execution hardening without changing the frozen task contract.
 
 Native Linux/AMD64 verifier qualification is complete. GitHub Actions run
 `32639381229` passed all 12 tranches and all 1,080 executions: 540 references
 passed, 540 known-bad implementations were rejected, and no execution timed
 out. Every JSON seal, runtime identity, output hash, archive digest, and the
 zero-overlap global separation report was independently verified. The repaired
-180-task development workspace is byte-reproducible and sealed. Gate 2 was
+180-task development workspace is byte-reproducible and sealed. Its host
+controller keeps the CUDA model container offline, exposes verifier temporary
+paths identically to the host Docker daemon, re-audits all six verifier images,
+and preserves resumable output under a bounded cleanup contract. Gate 2 was
 regenerated through the pinned seed importer and remains ready; the 1,399 train
 and 50 validation records remained byte-identical. The full pinned test suite
 passes with one expected integration skip.

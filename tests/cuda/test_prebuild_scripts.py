@@ -1,7 +1,13 @@
 import json
 import hashlib
+import io
+import subprocess
 from decimal import Decimal
 from pathlib import Path
+
+import pytest
+
+from scripts.cuda.gcloud_backup_manifest import generation_uri, stream_sha256
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -52,6 +58,47 @@ def test_backup_verifier_uses_vm_service_account_compatible_storage_cli() -> Non
     source = (ROOT / "scripts/cuda/gcloud_backup_manifest.py").read_text()
     assert '["gcloud", "storage", "cp"' in source
     assert '["gsutil", "-u"' not in source
+
+
+def test_backup_verifier_stream_hashes_and_counts_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = b"ganesh-mini-stream-evidence"
+
+    class Process:
+        args = ["gcloud", "storage", "cat"]
+        returncode = 0
+        stdout = io.BytesIO(payload)
+        stderr = io.BytesIO()
+
+        def wait(self) -> int:
+            return self.returncode
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: Process())
+    digest, size = stream_sha256("project", "gs://bucket/object#1")
+    assert digest == hashlib.sha256(payload).hexdigest()
+    assert size == len(payload)
+
+
+def test_backup_verifier_generation_pins_object_reads() -> None:
+    metadata = {"bucket": "evidence", "name": "run/result.json", "generation": "12345"}
+    assert generation_uri(metadata) == "gs://evidence/run/result.json#12345"
+    source = (ROOT / "scripts/cuda/gcloud_backup_manifest.py").read_text()
+    assert "stream_sha256(args.project, immutable_uri)" in source
+    assert "download(args.project, immutable_uri" in source
+
+
+def test_backup_verifier_stream_fails_closed_on_storage_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Process:
+        args = ["gcloud", "storage", "cat"]
+        returncode = 1
+        stdout = io.BytesIO(b"partial")
+        stderr = io.BytesIO(b"denied")
+
+        def wait(self) -> int:
+            return self.returncode
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: Process())
+    with pytest.raises(subprocess.CalledProcessError):
+        stream_sha256("project", "gs://bucket/object#1")
 
 
 def test_prebuild_result_is_bound_to_backup_and_deletion_evidence() -> None:

@@ -70,6 +70,7 @@ timeout --signal=TERM --kill-after=30s "$seconds_until_deadline" \
     --tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g \
     -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
     -e TRITON_CACHE_DIR=/var/cache/triton \
+    -e GANESH_ATTEMPT_ID="${GANESH_ATTEMPT_ID:?GANESH_ATTEMPT_ID is required}" \
     -v "$repo_dir:/workspace:ro" \
     -v "$model_dir:/input/model:ro" \
     -v "$records_path:/input/train.jsonl:ro" \

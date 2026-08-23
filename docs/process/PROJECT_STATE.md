@@ -9,11 +9,11 @@ Gate 0B and Gate 1 preparation in parallel:
 - production Linux CUDA BF16 LoRA qualification, with NF4 QLoRA as fallback;
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
-Local Apple runtime qualification and the first pinned Linux CUDA image
-prebuild are complete. A Standard A100 attempt reached the qualification
-container but failed during package identity before model loading because the
-image omitted `torchvision`. Gate 0 remains fail-closed while the repaired
-image awaits rebuild and NVIDIA requalification.
+Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
+complete. The rebuilt image passed package, A100/BF16, CUDA, and Triton identity
+on a Standard A100, but the qualifier referenced Transformers 5.15.1 symbols
+that no longer exist and stopped before model loading. Gate 0 remains
+fail-closed while the corrected qualifier awaits NVIDIA requalification.
 
 ## Completed
 
@@ -171,8 +171,47 @@ image awaits rebuild and NVIDIA requalification.
   writable executable Triton cache. The repaired definition pins Torchvision,
   initializes Torch and Triton before FLA, requires CUDA backends explicitly,
   and gives Triton a bounded executable tmpfs while keeping the network off and
-  the root filesystem read-only. The repaired image has not yet been built or
-  qualified.
+  the root filesystem read-only.
+- Rebuilt that repaired CUDA image on a temporary Standard `e2-standard-8` CPU
+  VM. The image is
+  `ganesh-mini-cuda-gate0:torch2.13.0-cu13.0.1`, ID
+  `sha256:b2f9335c64b208e2d692dc45c56df0790573951df835d34604f80e93d0b0f2a6`;
+  its 8,174,282,938-byte compressed archive has SHA-256
+  `229325473993a1d5b58baec3ed01fe9d3a49b253be92b39b93d9a52e307e3f9f`
+  and GCS generation `1787447318500114`. The 36-object terminal backup is
+  independently verified by seal
+  `8ab74078de47a0055ff8a46285b01148fa33d9a994e2cbc702afb18be876815a`.
+- Passed the CPU deletion gate, deleted the VM, NAT, and router, and proved
+  their absence. The 12-object deletion evidence is sealed by
+  `112d95f7ce787c1c404d51d7b67ba3427b00ea1eebef35e8cc4319dbf63f57cd`.
+- Ran the rebuilt image on one Standard A100. The exact pinned package set,
+  NVIDIA A100-SXM4-40GB identity, BF16 support, CUDA 13.0, cuDNN 92000, and
+  Triton CUDA architecture 80 passed. Qualification then failed after 32.74
+  seconds because the harness requested removed Transformers attributes
+  `chunk_gated_delta_rule` and `fused_recurrent_gated_delta_rule`. Model load
+  and training did not begin, so Gate 0B remains unqualified. The structured
+  failure is sealed by
+  `8ddeff566da4a32abfb3586f90f0ca5196cacbaed299dcb52d9fec3b733b3df6`;
+  the 31-object runtime backup is independently verified by seal
+  `d407c689528356d007b29f08725f29f5dc7caae3334b13cbe11e9dfc7c0d83aa`.
+- Passed the A100 deletion gate, deleted the GPU VM, subnet, and VPC, and
+  independently proved all run-scoped instances, disks, networks, subnets, and
+  routers absent. The deletion evidence is sealed by
+  `f5adbff101728eaa3e559f9d047f35c7fd8535f9041d2df8d65cbd94f2a02d2b`;
+  the post-delete absence backup is sealed by
+  `9862d12c9a48d96253bfe06a0d39daf4bfb6ddd55b3d7224689b795fc86a1068`.
+  The complete local run evidence is also archived to GCS generation
+  `1787451344731424` with SHA-256
+  `c761399cef0729841d9eba74b1f12ee9b95f5b8f8ce0369b24c02f957218da98`.
+- Corrected the qualifier to inspect the decorated Transformers 5.15.1 kernel
+  closures and require their resolved implementations to come from
+  `causal_conv1d` and `fla`. This remains fail-closed and does not infer a CUDA
+  pass from symbol presence. The runtime mounts the run-scoped workspace at
+  `/workspace`, so the sealed image can be reused without rebuilding. The
+  controller now forwards the attempt ID into the container, and both backup
+  verification reads are generation-pinned. The full local suite passes with
+  one intentional integration skip, and the independent second pass reports
+  aligned.
 
 ## Not started or incomplete
 
@@ -187,15 +226,14 @@ image awaits rebuild and NVIDIA requalification.
 
 ## Next action
 
-The complete evaluation contract and global separation evidence are frozen.
-The repaired Gate 0B retry card is prepared and sealed by
-`6853e7e07b39c00383ebb4f9c3ee34180ee032aa9b5f589fefb4b86698ddca21`.
-The local host is ARM64 and has only 7.2 GiB free, which is below the prior
-8.17 GB compressed x86 CUDA image alone; no safe non-GCloud Linux x86 builder
-is currently available, and unrelated Docker data will not be deleted to
-manufacture space. Executing the card requires fresh explicit GCloud approval.
-After the rebuilt image passes Gate 0B on NVIDIA, execute the exact Qwen base
-baseline before opening the seed-pilot training gate.
+The complete evaluation contract and global separation evidence are frozen,
+and the corrected qualifier has passed the local and independent review passes.
+Seal a new A100-only retry card that reuses the generation-pinned image, model,
+and offline bundle. The prior card's conservative `$5` aggregate ceiling cannot
+absorb another full Standard A100 upper bound, so the new card must state its
+own exact incremental and cumulative ceiling and receive fresh explicit GCloud
+approval. After Gate 0B passes on NVIDIA, execute the exact Qwen base baseline
+before opening the seed-pilot training gate.
 
 ## Authorization state
 
@@ -204,10 +242,11 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The approved CPU
-prebuild and Standard A100 attempt are terminally sealed. Their VMs, NAT,
-router, subnet, and VPC are all verified absent; no project compute or temporary
-network resource remains. Any new GCloud inspection, creation, or execution
-requires explicit approval.
+prebuild and Standard A100 attempt under run `20260823T000950Z` are terminally
+sealed. Their VMs, disks, NAT, router, subnet, and VPC are all verified absent;
+no project compute or temporary network resource remains. That approval is
+exhausted. Any new GCloud inspection, creation, or execution requires explicit
+approval of a new sealed card.
 
 An active 30-minute Codex heartbeat independently audits goal alignment. A
 `DIVERGENCE` result pauses project mutations and compute until user direction.

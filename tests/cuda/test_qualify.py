@@ -9,6 +9,7 @@ from scripts.cuda.qualify import (
     canonical_sha256,
     append_journal,
     load_and_validate_config,
+    resolved_kernel_implementation,
     select_records,
     write_evidence,
 )
@@ -155,6 +156,38 @@ def test_gpu_identity_precedes_fla_import_and_kernel_check() -> None:
     assert identity_loop.index('(\"gpu\"') < identity_loop.index('(\"triton\"') < identity_loop.index('(\"packages\"') < identity_loop.index('(\"kernels\"')
     assert "Triton CUDA backend initialization failed" in source
     assert 'backend != {"triton":"cuda","fla":"cuda","fla_is_nvidia":True}' in source
+    assert "modeling_qwen3_5.torch_chunk_gated_delta_rule" in source
+    assert "modeling_qwen3_5.torch_recurrent_gated_delta_rule" in source
+    assert "modeling_qwen3_5.chunk_gated_delta_rule" not in source
+    assert "is_fast_path_available" not in source
+    runner = (ROOT / "scripts/cuda/run_qualification.sh").read_text()
+    assert '-e GANESH_ATTEMPT_ID="${GANESH_ATTEMPT_ID:?GANESH_ATTEMPT_ID is required}"' in runner
+
+
+def test_resolved_kernel_implementation_reports_decorator_target() -> None:
+    def external_kernel():
+        return None
+
+    def decorate(implementation):
+        def wrapper():
+            return implementation()
+        return wrapper
+
+    identity = resolved_kernel_implementation(decorate(external_kernel))
+    assert identity == {
+        "wrapper_module": __name__,
+        "wrapper_name": "wrapper",
+        "implementation_module": __name__,
+        "implementation_name": "external_kernel",
+    }
+
+
+def test_resolved_kernel_implementation_fails_without_dispatch_closure() -> None:
+    def plain_function():
+        return None
+
+    with pytest.raises(RuntimeError, match="no resolved implementation"):
+        resolved_kernel_implementation(plain_function)
 
 
 def test_docker_context_excludes_models_and_measurement_archives() -> None:

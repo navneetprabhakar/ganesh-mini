@@ -239,6 +239,54 @@ bounded executable Triton cache while retaining a read-only root, no-exec
 general `/tmp`, and network-disabled execution. This repair is not a Gate 0B
 pass; it requires a new image build and a separately approved NVIDIA run.
 
+## 2026-08-23 — Rebuilt CUDA environment passed; qualifier contract drift failed
+
+The explicitly approved repaired Gate 0B card ran under prefix
+`ganesh-mini-1.0/gate0b/20260823T000950Z`. A temporary Standard
+`e2-standard-8` VM built image
+`sha256:b2f9335c64b208e2d692dc45c56df0790573951df835d34604f80e93d0b0f2a6`.
+Its 8,174,282,938-byte archive has SHA-256
+`229325473993a1d5b58baec3ed01fe9d3a49b253be92b39b93d9a52e307e3f9f`
+and GCS generation `1787447318500114`. The prebuild terminal backup is sealed
+by `8ab74078de47a0055ff8a46285b01148fa33d9a994e2cbc702afb18be876815a`.
+
+One Standard `a2-highgpu-1g` VM then loaded the exact sealed image and pinned
+offline inputs. Package imports and versions passed, including Torch 2.13.0,
+Torchvision 0.28.0, Transformers 5.15.1, FLA 0.5.2, and causal-conv1d 1.7.0.
+The VM proved one NVIDIA A100-SXM4-40GB, BF16 support, CUDA 13.0, cuDNN 92000,
+and Triton CUDA architecture 80. The qualifier then failed before model loading
+because it referenced the removed module attributes `chunk_gated_delta_rule`
+and `fused_recurrent_gated_delta_rule`. This is harness contract drift, not a
+model or CUDA qualification result. The failed result is sealed by
+`8ddeff566da4a32abfb3586f90f0ca5196cacbaed299dcb52d9fec3b733b3df6`,
+and the 31-object runtime backup by
+`d407c689528356d007b29f08725f29f5dc7caae3334b13cbe11e9dfc7c0d83aa`.
+
+Transformers 5.15.1 exposes decorated wrappers named
+`torch_chunk_gated_delta_rule` and `torch_recurrent_gated_delta_rule`. Merely
+checking that those wrappers exist would be insufficient because their
+decorator may select a Torch fallback. The corrected decision rule inspects
+each wrapper closure and requires the resolved causal-convolution
+implementations to originate in `causal_conv1d` and both delta-rule
+implementations to originate in `fla`, in addition to the existing CUDA backend
+checks. An absent closure or non-external implementation fails qualification.
+
+The CPU VM, GPU VM, disks, NAT, router, subnet, and VPC were deleted only after
+independent GCS verification; post-delete evidence proves them absent. The
+complete local evidence archive is generation `1787451344731424` with SHA-256
+`c761399cef0729841d9eba74b1f12ee9b95f5b8f8ce0369b24c02f957218da98`.
+Because the runtime bind-mounts the run-scoped workspace at `/workspace`, the
+corrected qualifier can reuse the sealed image and offline bundle. A new
+A100-only execution still requires a new sealed cost/authorization card; the
+prior approval is exhausted and no GCloud resource remains.
+
+The retry controller must also propagate `GANESH_ATTEMPT_ID` into the
+qualification container, and every post-list GCS verification read must use the
+listed object generation. These are prospective audit hardenings: the sealed
+failed run used an immutable run prefix and two matching full-object reads, so
+its failure evidence remains valid even though its structured `attempt_id` was
+null.
+
 ## 2026-08-23 — Decision references require admission before full directionality
 
 The first full runs for decision tranches 4 and 5 rejected every known-bad

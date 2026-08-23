@@ -30,12 +30,39 @@ def download(project: str, uri: str, destination: Path) -> None:
     subprocess.run(["gcloud", "storage", "cp", uri, str(destination), f"--project={project}"], check=True)
 
 
+def generation_uri(metadata: dict[str, object]) -> str:
+    return f"gs://{metadata['bucket']}/{metadata['name']}#{metadata['generation']}"
+
+
+def stream_sha256(project: str, uri: str) -> tuple[str, int]:
+    digest = hashlib.sha256()
+    size = 0
+    process = subprocess.Popen(
+        ["gcloud", "storage", "cat", uri, f"--project={project}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    assert process.stdout is not None
+    for chunk in iter(lambda: process.stdout.read(1024 * 1024), b""):
+        digest.update(chunk)
+        size += len(chunk)
+    stderr = process.stderr.read().decode(errors="replace") if process.stderr is not None else ""
+    if process.wait() != 0:
+        raise subprocess.CalledProcessError(process.returncode, process.args, stderr=stderr)
+    return digest.hexdigest(), size
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", required=True)
     parser.add_argument("--prefix", required=True, help="gs:// bucket prefix without wildcard")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--download-dir", type=Path, required=True)
+    parser.add_argument(
+        "--stream",
+        action="store_true",
+        help="hash each object through two independent streams instead of storing downloads",
+    )
     parser.add_argument("--map", action="append", default=[], metavar="REMOTE_SUBPREFIX=LOCAL_ROOT")
     args = parser.parse_args()
     mappings = []
@@ -45,16 +72,47 @@ def main() -> int:
     listing = json.loads(run("gcloud", "storage", "ls", "--json", f"{args.prefix}/**", f"--project={args.project}"))
     if not listing:
         raise SystemExit("refusing to seal an empty GCS prefix")
-    args.download_dir.mkdir(parents=True, exist_ok=True)
+    if not args.stream:
+        args.download_dir.mkdir(parents=True, exist_ok=True)
     entries = []
     prefix_path = args.prefix.split("/", 3)[3].rstrip("/")
     with tempfile.TemporaryDirectory(prefix="ganesh-gcs-verify-") as second_root:
         for item in sorted(listing, key=lambda value: value["metadata"]["name"]):
             metadata = item["metadata"]
             relative = metadata["name"].removeprefix(prefix_path + "/")
+            immutable_uri = generation_uri(metadata)
+            if args.stream:
+                downloaded_hash, downloaded_size = stream_sha256(args.project, immutable_uri)
+                verified_hash, verified_size = stream_sha256(args.project, immutable_uri)
+                local_path = None
+                for remote, root in mappings:
+                    if relative == remote or relative.startswith(remote + "/"):
+                        local_path = root if relative == remote and root.is_file() else root / relative.removeprefix(remote).lstrip("/")
+                        break
+                if local_path is not None:
+                    if not local_path.is_file():
+                        raise SystemExit(f"mapped local source missing: {local_path}")
+                    local_hash = sha256(local_path)
+                else:
+                    local_hash = downloaded_hash
+                size = int(metadata["size"])
+                local_size = local_path.stat().st_size if local_path is not None else size
+                passed = (
+                    local_hash == downloaded_hash == verified_hash
+                    and local_size == downloaded_size == verified_size == size
+                )
+                if not passed:
+                    raise SystemExit(f"backup verification failed for {immutable_uri}")
+                entries.append({
+                    "object_uri": "gs://" + metadata["bucket"] + "/" + metadata["name"],
+                    "generation": metadata["generation"], "size": size,
+                    "local_sha256": local_hash, "downloaded_sha256": downloaded_hash,
+                    "verified_download_sha256": verified_hash, "verified": True,
+                })
+                continue
             first = args.download_dir / relative
             first.parent.mkdir(parents=True, exist_ok=True)
-            download(args.project, item["url"], first)
+            download(args.project, immutable_uri, first)
             downloaded_hash = sha256(first)
             local_path = None
             for remote, root in mappings:
@@ -69,13 +127,13 @@ def main() -> int:
             else:
                 second = Path(second_root) / relative
                 second.parent.mkdir(parents=True, exist_ok=True)
-                download(args.project, item["url"], second)
+                download(args.project, immutable_uri, second)
                 local_hash = downloaded_hash
                 verified_hash = sha256(second)
             size = first.stat().st_size
             passed = local_hash == downloaded_hash == verified_hash and size == int(metadata["size"])
             if not passed:
-                raise SystemExit(f"backup verification failed for {item['url']}")
+                raise SystemExit(f"backup verification failed for {immutable_uri}")
             entries.append({
                 "object_uri": "gs://" + metadata["bucket"] + "/" + metadata["name"],
                 "generation": metadata["generation"], "size": size,

@@ -2,7 +2,7 @@
 """Fail-closed CUDA LoRA qualification for the pinned Qwen3.5 checkpoint."""
 from __future__ import annotations
 
-import argparse, gc, hashlib, importlib.metadata, json, os, platform, resource, subprocess, time
+import argparse, gc, hashlib, importlib.metadata, inspect, json, os, platform, resource, subprocess, time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -93,6 +93,17 @@ def triton_identity() -> dict[str,Any]:
         raise RuntimeError(f"Triton selected a non-CUDA backend: {target.backend}")
     return {"version":triton.__version__,"backend":target.backend,"architecture":str(target.arch),"cache_dir":os.environ.get("TRITON_CACHE_DIR"),"passed":True}
 
+def resolved_kernel_implementation(function: Any) -> dict[str,Any]:
+    implementation = inspect.getclosurevars(function).nonlocals.get("implementation")
+    if not callable(implementation):
+        raise RuntimeError(f"kernel wrapper has no resolved implementation: {function.__module__}.{function.__name__}")
+    return {
+        "wrapper_module": function.__module__,
+        "wrapper_name": function.__name__,
+        "implementation_module": implementation.__module__,
+        "implementation_name": implementation.__name__,
+    }
+
 def kernel_identity() -> dict[str,Any]:
     import triton
     from fla.utils import _device as fla_device
@@ -105,9 +116,22 @@ def kernel_identity() -> dict[str,Any]:
     }
     if backend != {"triton":"cuda","fla":"cuda","fla_is_nvidia":True}:
         raise RuntimeError(f"CUDA kernel backend mismatch: {backend}")
-    symbols = {"causal_conv1d_fn":modeling_qwen3_5.causal_conv1d_fn is not None,"causal_conv1d_update":modeling_qwen3_5.causal_conv1d_update is not None,"chunk_gated_delta_rule":modeling_qwen3_5.chunk_gated_delta_rule is not None,"fused_recurrent_gated_delta_rule":modeling_qwen3_5.fused_recurrent_gated_delta_rule is not None,"fast_path":bool(modeling_qwen3_5.is_fast_path_available)}
-    if not all(symbols.values()): raise RuntimeError(f"Qwen3.5 CUDA fast path is incomplete: {symbols}")
-    return {"backend":backend,"symbols":symbols,"passed":True}
+    expected = {
+        "causal_conv1d_fn": (modeling_qwen3_5.causal_conv1d_fn, "causal_conv1d"),
+        "causal_conv1d_update": (modeling_qwen3_5.causal_conv1d_update, "causal_conv1d"),
+        "chunk_gated_delta_rule": (modeling_qwen3_5.torch_chunk_gated_delta_rule, "fla"),
+        "recurrent_gated_delta_rule": (modeling_qwen3_5.torch_recurrent_gated_delta_rule, "fla"),
+    }
+    implementations = {}
+    for name, (function, package) in expected.items():
+        identity = resolved_kernel_implementation(function)
+        module = identity["implementation_module"]
+        identity["expected_package"] = package
+        identity["passed"] = module == package or module.startswith(package + ".")
+        implementations[name] = identity
+    if not all(identity["passed"] for identity in implementations.values()):
+        raise RuntimeError(f"Qwen3.5 CUDA fast path did not resolve external kernels: {implementations}")
+    return {"backend":backend,"implementations":implementations,"passed":True}
 
 def swift_identity(model_dir: Path) -> dict[str,Any]:
     from swift.model import get_model_info_meta

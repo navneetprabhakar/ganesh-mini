@@ -29,6 +29,11 @@ revisions and local evidence during execution.
 - PyTorch 2.13 release-candidate pairing:
   <https://dev-discuss.pytorch.org/t/pytorch-2-13-rc1-produced-for-pytorch-torchvision/3401>
   - binds Torch 2.13.0 to Torchvision 0.28.0, including CUDA 13.0 wheels
+- bitsandbytes 0.49.2 `Params4bit` implementation:
+  <https://github.com/bitsandbytes-foundation/bitsandbytes/blob/0.49.2/bitsandbytes/nn/modules.py>
+  - moves packed 4-bit data and its quantization state through
+    `Params4bit.to`, including CUDA-to-CPU movement for the frozen,
+    text-inactive vision tower
 - Transformers import utilities:
   <https://huggingface.co/docs/transformers/v5.8.1/en/internal/import_utils>
   - fast image-processing modules require the vision, Torch, and Torchvision

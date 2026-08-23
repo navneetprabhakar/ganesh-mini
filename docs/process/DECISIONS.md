@@ -798,3 +798,43 @@ This supersedes the preceding workspace only; it does not change or invalidate
 the frozen tasks, native directionality evidence, global separation, serving
 parameters, or Gate 2 seed bytes. The full suite now collects 171 tests: 170
 pass, one integration test is intentionally skipped, and none fail.
+
+## 2026-08-23 — Standard L4 proves the remaining Gate 0B blocker is memory
+
+The approved Standard `g2-standard-8` launch first encountered provider
+capacity exhaustion in `us-central1-b` before a VM or disk existed. The same
+sealed infrastructure was retried in the provider-suggested `us-central1-a`
+zone. The resulting L4 exposed 23,659,151,360 CUDA bytes and passed the exact
+package, CUDA 13.0, cuDNN, Triton, external causal-convolution/FLA kernel,
+Qwen revision, tokenizer/template, and non-thinking text-inference checks.
+
+BF16 LoRA OOMed in the synthetic 4,096-token backward envelope after 91.20
+seconds while requesting 96 MiB with 41.12 MiB free. This produced the sealed
+`primary_cuda_oom` fallback trigger. NF4 QLoRA then repeated all identity and
+inference checks and OOMed in the same envelope after 148.42 seconds while
+requesting 512 MiB with 445.12 MiB free. Neither recipe started a training
+record or optimizer step. Gate 0B therefore remains closed; the result must not
+be described as training or qualification success. The run-result seal is
+`1fffbc66e2bda232b7a5b866fcfaf3094fac1ea4c54c5d76d4e03902d7063f91`.
+
+The 32-object terminal prefix was independently read twice by immutable GCS
+generation and is verified under seal
+`087d7c89b1806ddbe61772ba44ba8ce5ccbe17c8dd18fb122aa29189784d8f85`.
+The VM, auto-delete disk, subnet, and VPC were deleted; all four exact names
+are absent under seal
+`eb8171a24a2c893a7fad2a7806fb4f187af7dbb4b86b2d630aee7882c359071d`.
+
+The failed graph retained the frozen 331,416,576-parameter vision tower on the
+GPU even though the product and dataset are text-only. BF16 storage for that
+tower alone is 662,833,152 bytes. The next local repair therefore moves only
+that already-frozen, text-inactive tower to CPU, empties the CUDA allocator,
+and requires measured before/after release. The official bitsandbytes 0.49.2
+`Params4bit.to` path moves packed data and quantization state across devices,
+so the same fail-closed mechanism applies to QLoRA. The qualifier now enforces
+the peak ceiling immediately after the envelope and every optimizer step;
+production SFT enforces it after every backward micro-step. Model revision,
+training data, response-only masks, 4,096-token length, rank 32, alpha 64,
+optimizer, learning-rate candidates, and fallback order are unchanged.
+
+This is a plausible capacity repair, not CUDA evidence. Another GCloud run
+requires a new sealed card and fresh explicit approval.

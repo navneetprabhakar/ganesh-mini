@@ -240,11 +240,33 @@ def sequence_envelope_probe(model: Any, tokenizer: Any, length: int) -> dict[str
     output.loss.backward(); model.zero_grad(set_to_none=True)
     return {"kind":"synthetic-active-token-shape-probe","sequence_length":length,"input_tokens":length,"supervised_tokens":length-64,"masked_prompt_tokens":64,"micro_batch_size":1,"optimizer_step":False,"quality_training_record":False,"loss_finite":True,"loss_positive":bool(output.loss.detach().item()>0),"passed":True}
 
+def enforce_cuda_peak(maximum: int, journal_path: Path | None, phase: str, **fields: Any) -> dict[str,int]:
+    import torch
+    memory = {
+        "peak_allocated_bytes":torch.cuda.max_memory_allocated(0),
+        "peak_reserved_bytes":torch.cuda.max_memory_reserved(0),
+    }
+    observed = max(memory.values())
+    if journal_path:
+        append_journal(journal_path,{"phase":"cuda-peak","checkpoint":phase,"observed_peak_bytes":observed,"maximum_peak_vram_bytes":maximum,**memory,**fields})
+    if observed > maximum:
+        raise PeakVramExceeded(observed,maximum)
+    return memory
+
 def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, records_path: Path, adapter_dir: Path, model: Any, tokenizer: Any, model_load_peak: dict[str,int], journal_path: Path | None = None) -> dict[str,Any]:
     import torch
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
     recipe = config["recipes"][recipe_id]
+    vision_offload_before = torch.cuda.memory_allocated(0)
     training_structure = configure_qwen_training_structure(model)
+    gc.collect(); torch.cuda.empty_cache()
+    vision_offload_after = torch.cuda.memory_allocated(0)
+    training_structure["cuda_allocated_before_vision_offload_bytes"] = vision_offload_before
+    training_structure["cuda_allocated_after_vision_offload_bytes"] = vision_offload_after
+    training_structure["cuda_allocated_released_by_vision_offload_bytes"] = vision_offload_before - vision_offload_after
+    if not training_structure["vision_moved_to_cpu"] or vision_offload_after >= vision_offload_before:
+        raise RuntimeError("frozen vision offload did not release CUDA memory")
+    if journal_path: append_journal(journal_path,{"phase":"training-structure","state":"completed",**training_structure})
     quantized = [name for name,value in model.named_parameters() if value.__class__.__name__ == "Params4bit"]
     if recipe_id == FALLBACK_RECIPE:
         import bitsandbytes as bnb
@@ -262,6 +284,7 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     if not trainable or any("visual" in name or "lm_head" in name for name in trainable): raise RuntimeError("adapter targeting escaped the language model or produced no trainable parameters")
     records = select_records(records_path,tokenizer,recipe["record_count"],recipe["sequence_length"]); optimizer = torch.optim.AdamW((value for value in model.parameters() if value.requires_grad),lr=recipe["learning_rate"])
     torch.cuda.reset_peak_memory_stats(0); envelope = sequence_envelope_probe(model,tokenizer,recipe["sequence_length"])
+    envelope["cuda_memory"] = enforce_cuda_peak(recipe["maximum_peak_vram_bytes"],journal_path,"sequence-envelope")
     losses, gradients, active_tokens, response_tokens = [], set(), 0, 0
     torch.cuda.synchronize(); training_started = time.monotonic(); model.train()
     for index, item in enumerate(records):
@@ -269,6 +292,7 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
         batch = response_only_batch(tokenizer,item["row"]["messages"],recipe["sequence_length"],"cuda:0"); optimizer.zero_grad(set_to_none=True); output = model(**batch)
         if not torch.isfinite(output.loss) or output.loss.detach().item() <= 0: raise RuntimeError(f"non-finite or non-positive loss for {item['row']['id']}")
         output.loss.backward(); gradients.update(name for name,parameter in model.named_parameters() if parameter.requires_grad and parameter.grad is not None and torch.count_nonzero(parameter.grad).item() > 0); optimizer.step()
+        enforce_cuda_peak(recipe["maximum_peak_vram_bytes"],journal_path,"optimizer-step",index=index,record_id=item["row"]["id"])
         active_tokens += int(batch["attention_mask"].sum().item()); response_tokens += int((batch["labels"] != -100).sum().item()); losses.append(float(output.loss.detach().cpu()))
         if journal_path: append_journal(journal_path,{"phase":"training-record","state":"completed","index":index,"record_id":item["row"]["id"],"loss":losses[-1]})
     torch.cuda.synchronize(); training_seconds = time.monotonic()-training_started; missing = sorted(trainable-gradients)

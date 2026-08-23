@@ -123,7 +123,10 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     seed_everything(recipe["random_seed"]); kwargs={"local_files_only":True,"dtype":torch.bfloat16,"device_map":{"":0}}
     if recipe["base_loading"]=="qlora": kwargs["quantization_config"]=BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_quant_type="nf4",bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.bfloat16)
     torch.cuda.reset_peak_memory_stats(0); model=AutoModelForImageTextToText.from_pretrained(args.model_dir,**kwargs)
-    training_structure=configure_qwen_training_structure(model)
+    vision_offload_before=torch.cuda.memory_allocated(0); training_structure=configure_qwen_training_structure(model)
+    gc.collect(); torch.cuda.empty_cache()
+    vision_offload_after=torch.cuda.memory_allocated(0); training_structure.update({"cuda_allocated_before_vision_offload_bytes":vision_offload_before,"cuda_allocated_after_vision_offload_bytes":vision_offload_after,"cuda_allocated_released_by_vision_offload_bytes":vision_offload_before-vision_offload_after})
+    if not training_structure["vision_moved_to_cpu"] or vision_offload_after>=vision_offload_before: raise RuntimeError("frozen vision offload did not release CUDA memory")
     if recipe["base_loading"]=="qlora": model=prepare_model_for_kbit_training(model,use_gradient_checkpointing=True); linear_type=__import__("bitsandbytes").nn.Linear4bit
     else: model.gradient_checkpointing_enable(); model.enable_input_require_grads(); linear_type=torch.nn.Linear
     if not model.is_gradient_checkpointing: raise RuntimeError("gradient checkpointing did not activate on the Qwen3.5 language model")
@@ -149,12 +152,15 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
         saved=torch.load(args.resume_checkpoint/"trainer-state.pt",map_location="cpu",weights_only=False); state=saved["state"]
         if state!=resume_manifest["state"]: raise RuntimeError("resume state disagrees with manifest")
         optimizer.load_state_dict(saved["optimizer"]); scheduler.load_state_dict(saved["scheduler"]); torch.set_rng_state(saved["torch_rng"]); torch.cuda.set_rng_state_all(saved["cuda_rng"])
+    maximum=int(recipe.get("maximum_peak_vram_gb",23)*1024**3)
     checkpoint_interval=min(config["control"]["checkpoint_every_tokens"],max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); spikes=0; last_loss=None
     for index,row in enumerate(rows[state["next_row"]:end_row],state["next_row"]):
         if time.monotonic()-started>=wall_limit and state["last_optimizer_micro_step"]==state["micro_steps"]: break
         batch=collate(row,"cuda:0"); result=model(**batch); loss=result.loss/recipe["gradient_accumulation_steps"]
         if not torch.isfinite(loss): raise RuntimeError("non-finite loss")
         loss.backward(); raw_loss=float(result.loss.detach().cpu()); spikes=spikes+1 if last_loss is not None and raw_loss>last_loss*3 else 0; last_loss=raw_loss
+        current_peak=max(torch.cuda.max_memory_allocated(0),torch.cuda.max_memory_reserved(0))
+        if current_peak>maximum: raise RuntimeError(f"peak VRAM {current_peak} exceeds {maximum}")
         if spikes>=3: raise RuntimeError("three consecutive loss spikes")
         state.update({"next_row":index+1,"seen_tokens":state["seen_tokens"]+int(batch["attention_mask"].sum()),"response_tokens":state["response_tokens"]+int((batch["labels"]!=-100).sum()),"micro_steps":state["micro_steps"]+1}); state["losses"]=(state["losses"]+[raw_loss])[-100:]
         if state["micro_steps"]%recipe["gradient_accumulation_steps"]==0 or index==len(rows)-1:
@@ -164,7 +170,6 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     if not completed_training:
         terminal_checkpoint=output/"checkpoints"/f"tokens-{state['seen_tokens']:012d}"
         if not terminal_checkpoint.exists(): save_checkpoint(output,model,optimizer,scheduler,state,identities)
-    maximum=int(recipe.get("maximum_peak_vram_gb",23)*1024**3)
     model.eval(); validation_loss_by_lane={lane:[] for lane in ("go","java","javascript","typescript","python","rust")}
     with torch.inference_mode():
         for row in validation_rows:

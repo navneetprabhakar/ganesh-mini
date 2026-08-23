@@ -11,6 +11,7 @@ from scripts.cuda.qualify import (
     canonical_sha256,
     append_journal,
     configure_qwen_training_structure,
+    enforce_cuda_peak,
     install_fla_recurrent_compatibility,
     load_and_validate_config,
     restore_qwen_serving_cache,
@@ -302,6 +303,11 @@ def test_qwen_training_structure_freezes_nested_vision_and_disables_language_cac
         "vision_parameter_tensors": 2,
         "vision_parameters": 6,
         "vision_frozen": True,
+        "vision_source_devices": ["cpu"],
+        "vision_training_devices": ["cpu"],
+        "vision_storage_bytes": 24,
+        "vision_cpu_resident": True,
+        "vision_moved_to_cpu": False,
         "language_model_use_cache": False,
         "passed": True,
     }
@@ -310,6 +316,32 @@ def test_qwen_training_structure_freezes_nested_vision_and_disables_language_cac
 def test_qwen_training_structure_rejects_wrong_component_layout() -> None:
     with pytest.raises(RuntimeError, match="component was not found"):
         configure_qwen_training_structure(types.SimpleNamespace(model=types.SimpleNamespace()))
+
+
+def test_cuda_qualification_requires_measured_vision_offload_savings() -> None:
+    qualifier = (ROOT / "scripts/cuda/qualify.py").read_text()
+    production = (ROOT / "scripts/train/run_sft.py").read_text()
+    runtime = (ROOT / "scripts/train/qwen_runtime.py").read_text()
+    assert 'vision.to("cpu")' in runtime
+    for source in (qualifier, production):
+        assert "cuda_allocated_released_by_vision_offload_bytes" in source
+        assert 'RuntimeError("frozen vision offload did not release CUDA memory")' in source
+    assert 'enforce_cuda_peak(recipe["maximum_peak_vram_bytes"],journal_path,"sequence-envelope")' in qualifier
+    assert 'enforce_cuda_peak(recipe["maximum_peak_vram_bytes"],journal_path,"optimizer-step"' in qualifier
+    assert 'if current_peak>maximum: raise RuntimeError(f"peak VRAM {current_peak} exceeds {maximum}")' in production
+
+
+def test_cuda_peak_is_enforced_at_intermediate_checkpoints(monkeypatch, tmp_path: Path) -> None:
+    torch = pytest.importorskip("torch")
+    monkeypatch.setattr(torch.cuda, "max_memory_allocated", lambda _device: 100)
+    monkeypatch.setattr(torch.cuda, "max_memory_reserved", lambda _device: 120)
+    journal = tmp_path / "journal.jsonl"
+    assert enforce_cuda_peak(120, journal, "sequence-envelope") == {
+        "peak_allocated_bytes": 100,
+        "peak_reserved_bytes": 120,
+    }
+    with pytest.raises(RuntimeError, match="peak CUDA VRAM 120 exceeds frozen ceiling 119"):
+        enforce_cuda_peak(119, journal, "optimizer-step", index=0)
 
 
 def test_saved_adapter_reloads_and_merges_without_second_base_load(tmp_path: Path) -> None:

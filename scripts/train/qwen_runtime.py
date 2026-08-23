@@ -16,16 +16,29 @@ def configure_qwen_training_structure(model: Any) -> dict[str,Any]:
         raise RuntimeError("Qwen3.5 vision tower exposes no parameters to freeze")
     for parameter in vision_parameters:
         parameter.requires_grad = False
+    vision_source_devices = sorted({parameter.device.type for parameter in vision_parameters})
+    vision_storage_bytes = sum(parameter.numel() * parameter.element_size() for parameter in vision_parameters)
+    vision.to("cpu")
+    vision_training_devices = sorted({parameter.device.type for parameter in vision_parameters})
     language_config = getattr(language_model,"config",None)
     if language_config is None or not hasattr(language_config,"use_cache"):
         raise RuntimeError("Qwen3.5 language-model cache configuration is unavailable")
     language_config.use_cache = False
-    if any(parameter.requires_grad for parameter in vision_parameters) or language_config.use_cache is not False:
-        raise RuntimeError("Qwen3.5 training structure did not freeze vision and disable language cache")
+    if (
+        any(parameter.requires_grad for parameter in vision_parameters)
+        or vision_training_devices != ["cpu"]
+        or language_config.use_cache is not False
+    ):
+        raise RuntimeError("Qwen3.5 training structure did not freeze/offload vision and disable language cache")
     return {
         "vision_parameter_tensors":len(vision_parameters),
         "vision_parameters":sum(parameter.numel() for parameter in vision_parameters),
         "vision_frozen":True,
+        "vision_source_devices":vision_source_devices,
+        "vision_training_devices":vision_training_devices,
+        "vision_storage_bytes":vision_storage_bytes,
+        "vision_cpu_resident":True,
+        "vision_moved_to_cpu":vision_source_devices != ["cpu"],
         "language_model_use_cache":False,
         "passed":True,
     }

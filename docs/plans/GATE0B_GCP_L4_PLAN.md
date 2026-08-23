@@ -1,6 +1,6 @@
 # Gate 0B GCP Standard L4 plan
 
-Status: approved infrastructure; implementation preflight
+Status: executed; memory-capacity failure; resources deleted
 
 Date: 2026-08-23
 
@@ -46,3 +46,15 @@ data, optimization, or evaluation parameters.
 8. Delete VM, disk, subnet, and VPC and independently prove all absent.
 
 No Gate 1 baseline or seed-pilot training is included in this one-VM approval.
+
+## Executed outcome
+
+The first `us-central1-b` create failed on provider capacity before VM/disk
+creation. The zone-only retry in `us-central1-a` passed identity, external
+kernels, model load, and text inference. BF16 LoRA and its correctly triggered
+NF4 QLoRA fallback both OOMed in the 4,096-token backward envelope before the
+first training record. Gate 0B remains closed. The 32-object terminal GCS
+backup is independently verified under seal
+`087d7c89b1806ddbe61772ba44ba8ce5ccbe17c8dd18fb122aa29189784d8f85`;
+the VM, disk, subnet, and VPC are absent under seal
+`eb8171a24a2c893a7fad2a7806fb4f187af7dbb4b86b2d630aee7882c359071d`.

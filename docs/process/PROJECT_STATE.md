@@ -10,13 +10,15 @@ Gate 0B and Gate 1 preparation in parallel:
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
 Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
-complete. The latest Standard A100 retry passed package, A100/BF16, CUDA,
-Triton, causal-conv1d, and the external FLA chunk-training kernel, but exposed
-an exact Transformers 5.15.1 / FLA 0.5.2 recurrent-symbol mismatch before
-model loading. The pre-import fused-kernel repair and the subsequently found
-all-zero tokenizer assistant-mask repair are locally validated. Gate 0 remains
-fail-closed until the repaired qualification executes on CUDA under a fresh
-card.
+complete. The approved Standard L4 run passed the exact package, CUDA, Triton,
+external-kernel, model-load, and text-only inference contracts. BF16 LoRA then
+OOMed in the 4,096-token synthetic backward envelope; the sealed NF4 QLoRA
+fallback also OOMed in that envelope before the first training record. Gate 0
+therefore remains fail-closed. A local-only repair now moves the already-frozen
+331,416,576-parameter vision tower to CPU, requires measured CUDA-memory
+release, and enforces the peak ceiling at the envelope and each optimizer
+step. Model, data, sequence length, rank, optimizer, and learning rates are
+unchanged. The full local suite passes; this repair has not run on CUDA.
 
 Native AMD64 verifier qualification is complete. GitHub Actions run
 `32639381229` loaded the exact pinned image archive and passed all 12
@@ -434,45 +436,43 @@ the exact serving stack.
   train and 50 validation records remained byte-identical. Gate 2 remains
   ready.
 
+- Executed the approved Standard `g2-standard-8` L4 Gate 0B run under prefix
+  `20260823T145734Z`. The provider exposed 23,659,151,360 CUDA bytes. Both
+  recipes passed immutable identity, dependency, external-kernel, and
+  non-thinking text-inference checks. BF16 LoRA failed after 91.20 seconds
+  while requesting 96 MiB with 41.12 MiB free; the correctly triggered NF4
+  QLoRA fallback failed after 148.42 seconds while requesting 512 MiB with
+  445.12 MiB free. Both failures occurred in the 4,096-token synthetic
+  backward envelope before any training record or optimizer step. The sealed
+  run-result is
+  `1fffbc66e2bda232b7a5b866fcfaf3094fac1ea4c54c5d76d4e03902d7063f91`.
+  All 32 terminal objects were independently double-read from their pinned GCS
+  generations under backup-manifest seal
+  `087d7c89b1806ddbe61772ba44ba8ce5ccbe17c8dd18fb122aa29189784d8f85`.
+  The VM, auto-delete disk, subnet, and VPC were deleted and are absent under
+  proof seal
+  `eb8171a24a2c893a7fad2a7806fb4f187af7dbb4b86b2d630aee7882c359071d`.
+
 ## Next action
 
-Gate 0B remains closed because v6 did not reach model load, inference, or
-training. An exact local Qwen graph deep dive found and repaired two latent
-structural defects: the vision tower and active language cache were addressed
-at the wrong object paths. It also removed the second backbone load, added
-adapter/merge logit equivalence checks, corrected synthetic token accounting,
-and fixed the SFT validation macro. Evidence is sealed by
-`15330a2c847232d1acdf4c039a1bf34d5c9b7943fc5d12c0ff5e5e137ded5326`.
-The sealed v7 card is stale and must not run. The v8 Standard A100 replacement
-was approved and prepared, but Navneet stopped it on cost before VM or disk
-creation. Generation-pinned inputs were uploaded and a temporary VPC/subnet
-were briefly created; both network resources were deleted. The exact planned
-VM, disk, VPC, and subnet are absent under post-abort proof seal
-`940fbca74ba6ba349c58ff558313f4ef9d3e94f2e97027a8172a57b668233d86`.
-No GPU compute cost was incurred. The v8 run plan is historical and must not be
-reused. Navneet clarified that the replacement must remain in GCP and approved
-one Standard `g2-standard-8` L4 attempt for at most 3,600 seconds and `$1.00`
-incremental cost, including temporary networking, verified GCS backup, and
-complete teardown.
-Only after that pass may the exact Qwen base baseline run;
-seed-pilot training remains blocked until the base baseline exists. The VM
-must preserve checkpoints and terminal evidence in GCS, pass independent
-backup verification, stop, and then be deleted with an absence proof.
-The L4 hardware profile admits at least 22 GiB exposed CUDA memory and caps
-measured peak VRAM at 21 GiB. BF16 LoRA remains primary; NF4 QLoRA can run only
-after a sealed CUDA OOM or peak-ceiling failure. Model, data, sequence length,
-rank, optimizer, and evidence parameters are unchanged. The replacement needs
-a new sealed GCloud card. Native verifier
-qualification and the baseline require their own subsequently sealed inputs;
-fresh explicit approval remains mandatory if GCloud is selected.
+Gate 0B remains closed on measured L4 memory capacity. The current local
+repair offloads the frozen, text-inactive vision tower after the shared
+inference smoke and before LoRA/QLoRA construction. It records the actual CUDA
+bytes released and fails if no release occurs. The qualifier now checks the
+21 GiB ceiling immediately after the 4,096-token envelope and after every
+optimizer step, allowing the predeclared QLoRA fallback to start without
+wasting the remaining budget when BF16 exceeds the cap. Production SFT uses
+the same offload and per-micro-step ceiling enforcement. The official
+bitsandbytes 0.49.2 `Params4bit.to` implementation supports moving packed
+weights and their quantization state to CPU.
 
-The native verifier, repaired workspace, global separation, Gate 2 cascade,
-and baseline-runner pre-execution audit are complete. The next external
-mutation is the approved Standard L4 qualification after its exact card,
-deterministic workspace, tests, price check, and absence proof are ready. No baseline or
-training may start before Gate 0B
-passes. After that pass, run the exact 180-task Qwen development baseline and
-admit it through the fail-closed Gate 1 report.
+Before another paid run, seal the repaired source, deterministic workspace,
+tests, exact input generations, price, and resource-absence proof in a fresh
+card. A new GCloud launch requires explicit approval. If that run qualifies,
+execute the exact 180-task Qwen development baseline and admit it through the
+fail-closed Gate 1 report; seed-pilot training remains blocked until Gate 1 is
+ready. The native verifier, global separation, Gate 2 seed cascade, and
+baseline host audit are already complete.
 
 ## Authorization state
 
@@ -481,10 +481,9 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The approved
-Standard A100 v8 attempt under run `20260823T084000Z` was aborted before VM
-creation because its upper cost was too high. Its VM, disk, subnet, and VPC are
-verified absent; no project compute or temporary network resource remains.
-Non-GCloud compute remains standing-authorized. Another GCloud launch requires
-a fresh card and explicit approval for its additional exposure.
+Standard L4 execution is complete, backed up, and fully torn down; no
+run-scoped compute or network resource remains. Non-GCloud compute remains
+standing-authorized. Another GCloud launch requires a fresh card and explicit
+approval for its additional exposure.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.

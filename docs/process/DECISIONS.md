@@ -458,3 +458,9 @@ post-delete backup are sealed respectively by
 `df4f793d8607364ee86e1f8ba04cf162491ed8f3209f2e50d3ef44a9c7abb64d`,
 `8ac2896c7a397fc23649eb4ed02eaa53d5d4df112851cf0db14c4e335de79d9f`,
 and `632b86742d1191f82dad8aec3f8c68eae2c754579e61f783387ff00a3d56a78a`.
+
+The repaired workspace was reproduced byte-for-byte at SHA-256
+`5435e154d27d6f96b5de2174c46651e2fc0b060d634344e38dea338ae38aa647`
+and bound to pushed commit `d318f595c1319e32db37ea24f9a9c94515d79fa8` in the
+v5 preparation card. V5 is not authorized by the prior card because it adds a
+new maximum GCloud exposure; its requested incremental ceiling is USD 2.40.

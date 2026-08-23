@@ -313,9 +313,10 @@ card.
 
 ## Next action
 
-Commit and push the import-path repair, then generate a fresh execution card
-bound to that commit and immutable workspace archive. The next paid VM must
-first pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
+The import-path repair is pushed at commit `d318f595c1319e32db37ea24f9a9c94515d79fa8`.
+The deterministic v5 workspace archive and sealed preparation card bind that
+commit and are ready for a new approval-specific GCloud upload/run plan. The
+next paid VM must first pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
 must preserve checkpoints and terminal evidence in GCS, pass independent
 backup verification, stop, and then be deleted with an absence proof.
@@ -331,6 +332,9 @@ Standard A100 attempt under run `20260823T055724Z` is terminally sealed. Its
 VM, disk, subnet, and VPC are verified absent; no project compute or temporary
 network resource remains. Navneet Prabhakar has broadly approved subsequent
 steps, but the newly observed anomaly prevents another paid launch until the
-repair is validated and a fresh exact card binds the changed source.
+repair is validated and a fresh exact card binds the changed source. Both are
+now complete; v5 remains explicitly unapproved because its additional A100
+exposure is outside the prior frozen ceiling (requested incremental ceiling:
+USD 2.40).
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.

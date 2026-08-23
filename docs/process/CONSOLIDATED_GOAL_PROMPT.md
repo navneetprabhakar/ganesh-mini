@@ -134,34 +134,28 @@ gates in parallel only when it cannot contaminate or prejudge the open gate.
 
 The repository is private at `navneetprabhakar/ganesh-mini`. The current branch
 is `main`; the last known pushed commit is
-`dd9590f3fa715123e0437dc56c6805a332b0f225`.
+`bbdc7b3c43f3ee98e6bb9a81c4c2c304f1b8a86b`.
 
-Gate 1 native amd64 verifier validation is the active work item. A portable,
-exact verifier archive is published in the private prerelease
-`verifier-images-amd64-v1` and is pinned by SHA-256. GitHub Actions run
-`32636958446` completed all scheduled work but ended in failure while preserving
-an uploaded evidence artifact. All 15 seals independently verify. Ten of 12
-tranches passed; six Go development references crossed the obsolete 30-second
-aggregate timeout, including one that printed a passing `go test` result before
-Docker teardown crossed the deadline. No behavioral artifact failed.
+Native Linux/AMD64 verifier qualification is complete. GitHub Actions run
+`32639381229` passed all 12 tranches and all 1,080 executions: 540 references
+passed, 540 known-bad implementations were rejected, and no execution timed
+out. Every JSON seal, runtime identity, output hash, archive digest, and the
+zero-overlap global separation report was independently verified. The repaired
+180-task development workspace is byte-reproducible and sealed. Gate 2 was
+regenerated through the pinned seed importer and remains ready; the 1,399 train
+and 50 validation records remained byte-identical. The full pinned test suite
+passes with one expected integration skip.
 
-The repair applies the already frozen 60-second compiled-language rule to Go,
-Java, and Rust development tasks. Prompts, references, known-bad artifacts,
-tests, runtime images, non-timeout resource limits, and pass thresholds remain
-unchanged. The six development manifests and overlap reports were regenerated.
-Their prior directionality evidence, the prior global separation report,
-development execution workspace, and baseline-runner readiness seal are stale.
-Push the repair and rerun the native workflow before any baseline or training
-claim, then independently verify and adopt the replacement evidence.
+Gate 1 is intentionally `not_ready` only because the exact Qwen 180-task
+development baseline has not run. Historical ARM64 and failed native evidence
+remain immutable but cannot support release decisions. Do not generate the
+baseline until Gate 0B qualifies the exact serving stack.
 
-Do not claim Gate 1 passed until all native reference solutions pass, all known
-bad solutions are rejected, global decision-set separation passes, and every
-required evidence seal verifies. Historical ARM64 directionality evidence is
-stale and is not release evidence.
-
-After Gate 1 passes, continue through the gate order. Gate 0B v8 GCloud work is
-still pending and requires a fresh explicit GCloud approval before any cloud
-inspection or execution.
+The active hard blocker is Gate 0B v8. Its sealed GCloud execution card is
+prepared, but GCloud inspection or execution requires fresh explicit approval.
+After Gate 0B passes and terminal evidence is independently backed up to GCS,
+run the exact Qwen baseline, close Gate 1, and continue through the frozen gate
+order without requesting additional approval for non-GCloud work.
 
 ## Completion criteria
 

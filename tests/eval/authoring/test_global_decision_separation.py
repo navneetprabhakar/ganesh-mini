@@ -12,7 +12,7 @@ from scripts.eval.authoring.audit_global_decision_separation import (
 )
 from scripts.eval.contracts import load_json, sha256_bytes, sha256_object
 
-EXPECTED_REPORT_SHA256 = "96ea9669e194c567f304c5462b2be9cc171555bba56ea10801186480bb347a06"
+EXPECTED_REPORT_SHA256 = "a47d733caaf6d9db735a020dd182ab01cf1ffeb140f7984a846d5ac0d89cf53f"
 
 
 def current_directionality_available() -> bool:

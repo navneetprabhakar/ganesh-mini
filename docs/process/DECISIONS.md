@@ -717,3 +717,33 @@ seals, development directionality evidence, the global separation report, the
 development-only execution workspace, and the baseline-runner readiness seal.
 They remain historical evidence and cannot support Gate 1. Fresh native AMD64
 directionality and global separation must pass before baseline generation.
+
+## 2026-08-23 — Native AMD64 verifier qualification passes after timeout alignment
+
+GitHub Actions run `32639381229` executed the repaired contract at source
+commit `bbdc7b3c43f3ee98e6bb9a81c4c2c304f1b8a86b`. All 12 development and
+decision tranches passed: 540/540 reference solutions passed, 540/540
+known-bad implementations were rejected, and no execution timed out. The run
+used the exact schema-3 identities for all six pinned Linux/AMD64 verifier
+images. All 15 JSON seals and every captured stdout/stderr hash were
+independently recomputed.
+
+The full inner evidence archive is preserved at SHA-256
+`dc44846887b2570885c7d082a5bb812bac56e6144523461c73bb29e7612849e2`.
+The passed-run receipt is sealed by
+`1877bb99a1cab96d962c14301cb6b453785c9487af8692d4c3c130c08afec73f`;
+the adopted top-level evidence by
+`aed01c430f33c4580438b824993a9302e72726e4295c82b6e867745e81130cfb`;
+and the replacement global separation report by
+`a47d733caaf6d9db735a020dd182ab01cf1ffeb140f7984a846d5ac0d89cf53f`.
+
+The development-only baseline workspace was rebuilt twice and reproduced the
+same archive bytes, SHA-256
+`d528f958778cecb0ddcceb273c09b4e934605811d68172bcf97255f353156d80`.
+Its canonical manifest is sealed by
+`c66b964fac10bb34863996b6b1dcbe94eccfa345c4d6471fc0cb46da6d0efb85`.
+The seed manifest was regenerated through the pinned importer solely to bind
+the replacement global-separation report; the train and validation JSONL
+hashes remained unchanged. Gate 2 remains ready. Gate 1 now fails only on the
+not-yet-executed exact Qwen base development baseline, which remains downstream
+of a successful Gate 0B serving qualification.

@@ -63,7 +63,7 @@ def test_executed_directionality_evidence_is_complete_and_bound() -> None:
     if evidence["executions"][0]["verifier"]["sandbox_contract_sha256"] != sha256_object(SANDBOX_CONTRACT):
         pytest.skip("archived ARM64 directionality is intentionally non-current")
     claimed = evidence.pop("evidence_sha256")
-    assert claimed == "cd7cafdec42d97173e877fa74530c5daef3d4c1edded9df1b71de9dd453ecdb1"
+    assert claimed == "41306bb67bbed5f286994b86602c616698fa63fd72257201d313461a4ae556cc"
     assert sha256_object(evidence) == claimed
     assert evidence["status"] == "passed"
     assert evidence["execution_mode"] == "sequential"

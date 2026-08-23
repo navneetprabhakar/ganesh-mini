@@ -18,13 +18,15 @@ all-zero tokenizer assistant-mask repair are locally validated. Gate 0 remains
 fail-closed until the repaired qualification executes on CUDA under a fresh
 card.
 
-The second native AMD64 verifier run completed all 12 tranches but failed six
-Go development references at the obsolete 30-second aggregate limit; one had
-already printed a passing `go test` result before Docker teardown crossed the
-deadline. All evidence seals verify and 10/12 tranches passed. Development now
-uses the same 60-second Go/Java/Rust limit already frozen for the decision
-surface. The resulting task-seal invalidation requires one fresh native run
-and global separation audit before any baseline output.
+Native AMD64 verifier qualification is complete. GitHub Actions run
+`32639381229` loaded the exact pinned image archive and passed all 12
+development/decision tranches: 540 reference passes, 540 known-bad rejections,
+and zero timeouts. All 15 JSON seals, runtime identities, output hashes, and
+the global separation report were independently verified. The repaired
+development-only workspace and baseline-runner readiness evidence are sealed.
+Gate 1 now fails closed only because the exact Qwen development baseline does
+not yet exist; that baseline cannot run until Gate 0B successfully qualifies
+the exact serving stack.
 
 ## Completed
 
@@ -147,8 +149,10 @@ and global separation audit before any baseline output.
   development and decision manifest/task, all overlap evidence, the shared
   tranche-1/2 cross-overlap evidence, the runtime configuration, and all 720
   final directionality executions. It proves zero exact or normalized overlap
-  and is sealed by
+  and was sealed by
   `96ea9669e194c567f304c5462b2be9cc171555bba56ea10801186480bb347a06`.
+  That historical seal is superseded by the native AMD64 result described
+  below.
 - Prebuilt and content-sealed the pinned production CUDA image on the same
   stopped CPU disk after the first archive export failed with exit 141. The
   failure was caused by unbounded `zstd` progress output exceeding the GCE
@@ -339,8 +343,10 @@ and global separation audit before any baseline output.
   only on the unexecuted exact Qwen development baseline. The prior
   runner-readiness seal
   `4afb29fcfbc1bda3252bd7bb4e96158ef92efb1fc1cda82b1308701b0e6cb848`
-  is historical and invalidated by the development timeout repair; it must be
-  regenerated after native directionality passes.
+  is historical. Its replacement binds the passed native run, global
+  separation, repaired workspace, retention slice, Gate 1/2 reports, and the
+  167-test suite; it is sealed by
+  `95d3473ddeb67772c6888697ecf476bb0db40a11c1b7e793a237b1b1630c314d`.
   The zero-task public diagnostic is retained as a complete exclusion result
   instead of weakening admission rules.
 - The SFT engine is hash-bound, response-only, cost/time/VRAM bounded,
@@ -374,15 +380,17 @@ and global separation audit before any baseline output.
   The 918,639,104-byte portable image archive is internally verified against
   its OCI tag/manifest/config/layer graph and sealed by manifest
   `aba48afc9f1a75d6911204fd1e49193a9908655ad7d0540ec9cd53c82396bac8`.
-  A deterministic development-only execution workspace contained exactly 180
-  tasks and excludes decision tasks, seed/training data, model outputs, and
-  authoring code; it was sealed by
+  The original deterministic development-only execution workspace contained
+  exactly 180 tasks and excluded decision tasks, seed/training data, model
+  outputs, and authoring code; it was sealed by
   `846cf0b64e3d1804cbbdaa44cb57a07da989e298c9ed7f3cd8f2c400dda625f5`.
-  That workspace is now historical and invalidated by the development timeout
-  repair; a replacement must bind the new task seals before baseline use.
+  That workspace is historical. Its byte-reproducible replacement binds the
+  repaired task seals: archive SHA-256
+  `d528f958778cecb0ddcceb273c09b4e934605811d68172bcf97255f353156d80`
+  and manifest seal
+  `c66b964fac10bb34863996b6b1dcbe94eccfa345c4d6471fc0cb46da6d0efb85`.
   Historical ARM64 directionality results remain immutable but are explicitly
-  non-current. Gate 1 requires a fresh full directionality run on native
-  Linux/AMD64 before the exact Qwen baseline can be admitted.
+  non-current.
   A manually dispatched, read-only GitHub Actions workflow is prepared to
   load the exact private content-addressed image archive on native AMD64,
   execute all 1,080 reference and
@@ -404,8 +412,20 @@ and global separation audit before any baseline output.
   `fadd5ab16d2ecf8d53ef6a19b4eded9d093bcf3b922b664db147a23fefb0e098`.
   Development compiled lanes now use the already established 60-second rule;
   the six development manifests and overlap reports were regenerated without
-  changing prompts or behavioral artifacts. Fresh native directionality is
-  required for all six development tranches and the global separation report.
+  changing prompts or behavioral artifacts.
+  The final retry, run `32639381229`, passed all 12 tranches and all 1,080
+  executions with zero timeouts. The preserved 171,088-byte inner archive has
+  SHA-256
+  `dc44846887b2570885c7d082a5bb812bac56e6144523461c73bb29e7612849e2`;
+  the passed-run receipt is sealed by
+  `1877bb99a1cab96d962c14301cb6b453785c9487af8692d4c3c130c08afec73f`.
+  The adopted top-level native evidence is sealed by
+  `aed01c430f33c4580438b824993a9302e72726e4295c82b6e867745e81130cfb`,
+  and the replacement zero-overlap global report is sealed by
+  `a47d733caaf6d9db735a020dd182ab01cf1ffeb140f7984a846d5ac0d89cf53f`.
+  The seed manifest was regenerated through the approved importer; its 1,399
+  train and 50 validation records remained byte-identical. Gate 2 remains
+  ready.
 
 ## Next action
 
@@ -432,13 +452,12 @@ Gate 1 workload. Native verifier qualification and the baseline require their
 own subsequently sealed execution inputs and explicit GCloud approval if
 GCloud is selected.
 
-In parallel with the unapproved Gate 0B card, push the repaired development
-manifests and dispatch the non-GCloud native AMD64 workflow. Adopt its results
-only after independently checking the archive digest, every tranche seal,
-global separation, exact task coverage, reference/known-bad polarity, runtime
-identity, and timeout count. Then regenerate the development execution
-workspace and baseline-runner readiness evidence. No baseline or training may
-start before those prerequisites and Gate 0B pass.
+The native verifier, repaired workspace, global separation, Gate 2 cascade,
+and baseline-runner pre-execution audit are complete. The next mutation of
+external state is the sealed Gate 0B v8 GCloud attempt, which still requires
+fresh explicit approval. No baseline or training may start before Gate 0B
+passes. After that pass, run the exact 180-task Qwen development baseline and
+admit it through the fail-closed Gate 1 report.
 
 ## Authorization state
 

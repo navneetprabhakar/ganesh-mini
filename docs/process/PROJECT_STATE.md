@@ -252,6 +252,25 @@ card.
   preparation. After the broader controller repair, the full local suite has
   135 collected tests: 131 pass and four environment-dependent integration
   tests are intentionally skipped.
+- Attempted the approved v3 card in `us-central1-a`; the provider returned
+  `ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS` before creating a VM. The unused
+  subnet and VPC were deleted and the exact v3 resources were proved absent.
+- Ran the zone-only v4 retry in provider-suggested `us-central1-b`. All pinned
+  inputs and the sealed CUDA image passed generation, size, and hash checks,
+  but qualification exited before model load because the container entrypoint
+  could not import `scripts.train.response_only`: `/workspace` was mounted but
+  absent from `PYTHONPATH`. The 31-object composite backup is sealed by
+  `5fb8e2dae08ff7924a55f72cc5a1bad10eb37e508a5b11560ec112d6b0d02e40`;
+  the stopped-provider deletion gate is sealed by
+  `df4f793d8607364ee86e1f8ba04cf162491ed8f3209f2e50d3ef44a9c7abb64d`.
+  The VM, disk, subnet, and VPC were deleted and their absence is sealed by
+  `8ac2896c7a397fc23649eb4ed02eaa53d5d4df112851cf0db14c4e335de79d9f`;
+  the independently verified six-object post-delete backup is sealed by
+  `632b86742d1191f82dad8aec3f8c68eae2c754579e61f783387ff00a3d56a78a`.
+- The runner now exports `PYTHONPATH=/workspace` into the offline container,
+  with a regression assertion and direct qualifier import smoke. Historical
+  v3/v4 cards and hashes remain immutable; the next card must bind this changed
+  runner and a new deterministic workspace archive.
 
 ## Not started or incomplete
 
@@ -285,16 +304,16 @@ card.
 - Ganesh v0.1's five released adapters are provisioned from immutable Git
   objects and match the release hashes. Its full Gemma base inventory is
   pinned. Rust is explicitly routed to the base because v0.1 did not release a
-  Rust adapter. The 23.9 GB base cannot safely be staged on the current laptop,
-  which has roughly 6.6 GB free; it must be provisioned on the eventual
-  comparison host.
+  Rust adapter. Disk cleanup increased local free space to roughly 232 GiB, so
+  the 23.9 GB base is no longer blocked on local storage; provisioning remains
+  deferred until the comparison gate to avoid an unnecessary early download.
 - Merge, GGUF F16/Q8 construction, constrained laptop certification, clustered
   statistical adjudication, Q8 retention, and final fail-closed release
   decision tooling are present but have not been executed on a trained model.
 
 ## Next action
 
-Commit and push the repaired controllers, then generate a fresh execution card
+Commit and push the import-path repair, then generate a fresh execution card
 bound to that commit and immutable workspace archive. The next paid VM must
 first pass Gate 0B. Only after that pass may the exact Qwen base baseline run;
 seed-pilot training remains blocked until the base baseline exists. The VM
@@ -308,7 +327,7 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The latest approved
-Standard A100 attempt under run `20260823T030116Z` is terminally sealed. Its
+Standard A100 attempt under run `20260823T055724Z` is terminally sealed. Its
 VM, disk, subnet, and VPC are verified absent; no project compute or temporary
 network resource remains. Navneet Prabhakar has broadly approved subsequent
 steps, but the newly observed anomaly prevents another paid launch until the

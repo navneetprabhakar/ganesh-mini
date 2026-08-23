@@ -135,6 +135,7 @@ def test_runner_requires_exact_preloaded_image_and_disables_pull_and_network() -
     assert "--tmpfs /tmp:rw,noexec,nosuid,size=8g" in runner
     assert "--tmpfs /var/cache/triton:rw,exec,nosuid,nodev,size=1g" in runner
     assert "TRITON_CACHE_DIR=/var/cache/triton" in runner
+    assert "-e PYTHONPATH=/workspace" in runner
 
 
 def test_inference_and_training_share_one_model_load() -> None:

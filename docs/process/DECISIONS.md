@@ -431,3 +431,30 @@ positive lower bound from the semantic-family cluster bootstrap and a
 two-sided cluster sign-permutation p-value at or below 0.05. Row-level exact
 McNemar is reported but does not override clustered dependence. This rule is
 declared before any decision candidate is opened.
+
+## 2026-08-23 — Gate 0B v4 exposed a container import-path omission
+
+The v3 create request in `us-central1-a` failed before VM creation with
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS`. Its empty temporary network was
+deleted. A zone-only v4 card retained the exact model, image, package set,
+machine type, runtime recipe, and cost bound while moving to provider-suggested
+`us-central1-b`.
+
+The v4 VM verified every generation-pinned input and loaded the sealed CUDA
+image. The qualification container then failed before model load with
+`ModuleNotFoundError: No module named 'scripts'`. The image entrypoint executes
+`/workspace/scripts/cuda/qualify.py`; Python therefore places
+`/workspace/scripts/cuda`, not the repository root, on `sys.path`. Mounting the
+repository at `/workspace` was insufficient for imports from `scripts.train`.
+
+The repair exports `PYTHONPATH=/workspace` only inside the already
+network-disabled, read-only qualification container. It does not change the
+model, dependencies, kernel checks, training recipe, GPU allocation, or
+response-only semantics. Historical cards remain immutable. A subsequent paid
+retry requires a fresh card and workspace archive binding the changed runner.
+The v4 composite backup, deletion gate, resource-absence proof, and
+post-delete backup are sealed respectively by
+`5fb8e2dae08ff7924a55f72cc5a1bad10eb37e508a5b11560ec112d6b0d02e40`,
+`df4f793d8607364ee86e1f8ba04cf162491ed8f3209f2e50d3ef44a9c7abb64d`,
+`8ac2896c7a397fc23649eb4ed02eaa53d5d4df112851cf0db14c4e335de79d9f`,
+and `632b86742d1191f82dad8aec3f8c68eae2c754579e61f783387ff00a3d56a78a`.

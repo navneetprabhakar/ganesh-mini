@@ -992,3 +992,28 @@ either region is not evidence-driven. A fresh GCloud authorization should
 first freeze a capacity-oriented path: a new documented G2 region with a
 bounded zone set, or non-Spot queued/flex-start Compute Engine after its
 scheduling, cancellation, and cost controls are verified.
+
+## 2026-08-24 — Flex-start was accepted as pending but rejected immediately
+
+Navneet Prabhakar approved one `g2-standard-8` L4 Flex-start request with a
+two-hour provisioning window, 30-minute runtime, and `$1.00` incremental
+ceiling. The `us-east4` preflight passed: 16 preemptible L4 GPUs and 5,000
+preemptible vCPUs were unused, storage was co-located, exact resources were
+absent, and the conservative cost guard was `$0.95`.
+
+Compute Engine accepted the object with provisioning model `FLEX_START`, state
+`PENDING`, request validity `7200` seconds, maximum runtime `1800` seconds, and
+termination action `DELETE`. Nevertheless, operation
+`operation-1787587773532-659cd363f0b3c-ec25845a-d2e2bda7` failed after 23.649
+seconds with `ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS`. The VM never entered
+`RUNNING`, so compute cost, qualification work, training records, and optimizer
+steps were zero. A creating boot disk was automatically removed with the failed
+request. Six GCS inputs passed two immutable-generation downloads under
+manifest
+`472df5930660c5e37cbdfd79115b9538ca04394921d3875cbad1e9b71ac6b2f1`;
+the request, VM, disk, subnet, VPC, and router scope are absent under proof
+`91953aa7e563fdb423e0508e4e06319fcb8aa3be703572b4b5f24e275d91080d`.
+
+This is provider-capacity behavior, not evidence against the allocator or
+training recipe. The next attempt must change capacity scope—another region or
+a managed GCP job surface—not retry `us-east4` under the same mechanism.

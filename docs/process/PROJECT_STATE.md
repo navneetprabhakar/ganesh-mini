@@ -537,6 +537,24 @@ the exact serving stack.
   `fae70b66d8043df4c08c049e1cd064e7c81db4d260c4fa9304b75e1c391c23f9`.
   This is another provider-capacity abort and supplies no allocator evidence.
 
+- Submitted the approved G2 Standard L4 Flex-start request under prefix
+  `20260824T160620Z`, with a two-hour request-valid duration, 30-minute maximum
+  runtime, automatic VM deletion, and `$1.00` incremental ceiling. Preflight
+  passed with 16 unused preemptible L4 quota, 5,000 unused preemptible vCPUs,
+  co-located `US-EAST4` storage, and a conservative `$0.95` upper bound. GCP
+  accepted the instance as `FLEX_START` and exposed it as `PENDING`, but the
+  insert operation returned `ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS` after
+  23.649 seconds instead of retaining the request for its declared two-hour
+  validity. The VM never entered `RUNNING`; qualification, training records,
+  optimizer steps, GPU runtime, and compute cost are all zero. Six
+  generation-pinned inputs were independently downloaded twice under identical
+  manifest
+  `472df5930660c5e37cbdfd79115b9538ca04394921d3875cbad1e9b71ac6b2f1`.
+  The terminal request, VM, disk, subnet, VPC, and router scope are absent under
+  proof
+  `91953aa7e563fdb423e0508e4e06319fcb8aa3be703572b4b5f24e275d91080d`.
+  The allocator hypothesis remains untested.
+
 ## Next action
 
 Gate 0B remains closed on measured L4 memory capacity at 2,944 tokens. NF4 did
@@ -550,18 +568,17 @@ qualification and production SFT, tested, sealed in a deterministic workspace,
 and treated as unqualified until fresh CUDA evidence passes.
 
 The allocator contract, tests, and deterministic workspace are sealed, but
-neither the `us-central1` nor `us-east4` Standard L4 attempts allocated. Blindly
-retrying either region is now unjustified. The next GCloud card should use a
-capacity-oriented mechanism: either one bounded Standard L4 create across the
-documented G2 zones of a fresh region, or a non-Spot queued/flex-start Compute
-Engine request if its scheduling and cost semantics can be frozen first. It
-must retain one GPU, the 2,944-token envelope, generation-pinned inputs,
-verified backup, teardown, and an explicit cost ceiling. A new GCloud
-inspection or launch requires explicit approval. If qualification passes,
-execute the exact 180-task Qwen development baseline and admit it through the
-fail-closed Gate 1 report; seed-pilot training remains blocked until Gate 1 is
-ready. The native verifier, global separation, Gate 2 seed cascade, and
-baseline host audit are already complete.
+neither Standard nor Flex-start Compute Engine supplied an L4 in the tested
+regions. Another `us-east4` request is unjustified. The next GCloud card should
+change the capacity boundary rather than the training recipe: preflight a
+fresh G2 region for Flex-start, or qualify a managed GCP job surface with a
+separate capacity pool while preserving the exact container, model, data,
+runtime, cost, backup, and teardown contracts. A new GCloud inspection or
+launch requires explicit approval. If qualification passes, execute the exact
+180-task Qwen development baseline and admit it through the fail-closed Gate 1
+report; seed-pilot training remains blocked until Gate 1 is ready. The native
+verifier, global separation, Gate 2 seed cascade, and baseline host audit are
+already complete.
 
 ## Authorization state
 

@@ -352,6 +352,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
             evidence_check("text_only_inference_smoke", args.inference_evidence, contract),
             evidence_check("train_save_reload_merge_smoke", args.training_evidence, contract),
             evidence_check("base_gguf_f16_q8_smoke", args.gguf_evidence, contract),
+            evidence_check("cuda_fused_loss_qualification", args.cuda_qualification_evidence, contract),
         ]
     )
     ready = all(item["passed"] for item in checks)
@@ -448,6 +449,7 @@ def parser() -> argparse.ArgumentParser:
     report.add_argument("--inference-evidence", type=Path)
     report.add_argument("--training-evidence", type=Path)
     report.add_argument("--gguf-evidence", type=Path)
+    report.add_argument("--cuda-qualification-evidence", type=Path)
     report.add_argument("--output", type=Path)
     report.set_defaults(func=command_report)
     return cli

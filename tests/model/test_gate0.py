@@ -124,6 +124,7 @@ def test_gate_report_fails_closed_without_local_runtime_evidence(tmp_path: Path)
         inference_evidence=None,
         training_evidence=None,
         gguf_evidence=None,
+        cuda_qualification_evidence=None,
         output=tmp_path / "report.json",
     )
     report = gate0.build_report(args)
@@ -132,6 +133,7 @@ def test_gate_report_fails_closed_without_local_runtime_evidence(tmp_path: Path)
     assert "text_only_inference_smoke" in report["failed_checks"]
     assert "train_save_reload_merge_smoke" in report["failed_checks"]
     assert "base_gguf_f16_q8_smoke" in report["failed_checks"]
+    assert "cuda_fused_loss_qualification" in report["failed_checks"]
     assert len(report["report_sha256"]) == 64
 
 
@@ -153,3 +155,15 @@ def test_evidence_rejects_forged_identity(tmp_path: Path, contract: dict) -> Non
     result = gate0.evidence_check("inference", evidence, contract)
     assert not result["passed"]
     assert result["evidence"]["identity_ok"] is False
+
+
+def test_canonical_gate0_report_is_ready_and_binds_cuda_qualification() -> None:
+    report = json.loads((ROOT / "measurement/gate0/readiness.json").read_text())
+    unsigned = dict(report)
+    claimed = unsigned.pop("report_sha256")
+    assert gate0.canonical_digest(unsigned) == claimed
+    assert report["status"] == "ready"
+    assert report["failed_checks"] == []
+    checks = {row["name"]: row for row in report["checks"]}
+    assert checks["dependency_matrix"]["passed"] is True
+    assert checks["cuda_fused_loss_qualification"]["passed"] is True

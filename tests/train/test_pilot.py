@@ -119,10 +119,18 @@ def project(tmp_path: Path) -> tuple[Path, Path]:
 def test_repository_config_fails_closed_before_gate_evidence() -> None:
     card = pilot.build_execution_card(ROOT / "configs/train/seed_pilot.json", ROOT, system="Linux")
     assert card["status"] == "not_ready"
-    assert {"gate0_ready", "gate1_ready"} <= set(card["failed_checks"])
+    assert "gate1_ready" in card["failed_checks"]
     assert "gate2_ready" not in card["failed_checks"]
     assert "prepared_dataset" not in card["failed_checks"]
     assert len(card["card_sha256"]) == 64
+
+
+def test_repository_linux_pilot_is_blocked_only_by_gate1() -> None:
+    card = pilot.build_execution_card(ROOT / "configs/train/seed_pilot.json", ROOT, system="Linux")
+    assert card["status"] == "not_ready"
+    assert card["failed_checks"] == ["gate1_ready"]
+    assert card["prerequisite_evidence"]["gate0"] == json.loads((ROOT / "measurement/gate0/readiness.json").read_text())["report_sha256"]
+    assert card["prerequisite_evidence"]["gate2"] == json.loads((ROOT / "measurement/gate2/readiness.json").read_text())["report_sha256"]
 
 
 def test_ready_card_binds_model_seed_rendering_balance_and_budget(project: tuple[Path, Path]) -> None:

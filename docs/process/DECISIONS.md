@@ -1231,3 +1231,27 @@ Google Cloud HTTPS source, finite decimal values, and a four-hour conservative
 bound strictly below the `$4.40` ceiling. This removes hand-authored evidence
 hashes while retaining the requirement to re-observe official pricing after
 approval and immediately before execution.
+
+## 2026-08-25 — Executed Gate 0B evidence replaces the stale local dependency failure
+
+The historical Gate 0 report was generated on macOS and remained `not_ready`
+because Linux-only training dependencies were intentionally absent there. That
+report was never updated after the fused-loss L4 qualification passed, so the
+seed-pilot controller still rejected `gate0_ready` despite the project state
+correctly recording Gate 0B success.
+
+The canonical repair does not reinterpret the old local result. A dedicated
+admission verifier now cross-binds the sealed local fused-loss prequalification,
+approved v14 card, immutable execution plan, exact CUDA image ID, passed
+16-record/16-step qualification, fused-loss and serialization checks, double-
+read terminal backup, runtime inventory, cost ceiling, infrastructure absence,
+and independently backed post-run receipts. Its evidence seal is
+`6047b522f697be73b7d781b4e5021c8e29d23441767d660db6f9badc50422fd4`.
+
+The Gate 0 reporter was executed offline inside that exact local Linux/AMD64
+image, where the full pinned dependency matrix passed. The resulting canonical
+readiness seal is
+`adde675ce4db676c635ba864af0dd356c292e352443d4ed88607079059b346cc`.
+The seed-pilot prerequisite set now fails on exactly the unexecuted Gate 1
+baseline. No GCloud operation or new model qualification occurred in this
+promotion step.

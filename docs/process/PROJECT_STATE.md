@@ -16,6 +16,16 @@ VRAM was 18,975,031,296 bytes against the frozen 22,548,578,304-byte ceiling.
 Rank, optimizer, learning rates, data, sequence length, and serving context
 remain unchanged.
 
+The canonical Gate 0 report is now also `ready`. Its fused-loss CUDA admission
+receipt cross-binds the approved card, immutable run plan, exact qualified
+Linux/AMD64 image, 16-record/16-step qualification, adapter reload and safe
+merge equivalence, double-read terminal backup, runtime inventory, cost bound,
+post-run backup, and exact infrastructure absence. The canonical seals are
+`6047b522f697be73b7d781b4e5021c8e29d23441767d660db6f9badc50422fd4`
+for CUDA admission and
+`adde675ce4db676c635ba864af0dd356c292e352443d4ed88607079059b346cc`
+for Gate 0 readiness.
+
 Native AMD64 verifier qualification is complete. GitHub Actions run
 `32639381229` loaded the exact pinned image archive and passed all 12
 development/decision tranches: 540 reference passes, 540 known-bad rejections,
@@ -42,8 +52,9 @@ not yet exist. Gate 0B no longer blocks that execution.
 - Pinned Qwen revision
   `15852e8c16360a2fea060d615a32b45270f8a8fc` and verified its immutable
   13-file, 4,571,274,023-byte upstream inventory without downloading weights.
-- Implemented a fail-closed Gate 0 readiness reporter. Gate 0 remains
-  `not_ready` until the runtime and smoke evidence exists.
+- Implemented a fail-closed Gate 0 readiness reporter. Its initial local
+  macOS report was correctly `not_ready`; the canonical report is now ready
+  only through the sealed qualified Linux CUDA evidence chain.
 - Deterministically imported all 1,399 training and 50 validation rows from the
   pinned Ganesh commit. No duplicate IDs or conversation groups were found.
 - Implemented strict six-lane task/result/comparison schemas, paired scoring,
@@ -325,6 +336,10 @@ not yet exist. Gate 0B no longer blocks that execution.
   development and decision tasks. The balanced pilot schedule contains 2,155
   sampled rows, 345,832 response tokens, and 636,093 input tokens; that exact
   input count is now the hard main-pilot ceiling.
+- A Linux seed-pilot preflight now fails on exactly `gate1_ready`. Gate 0,
+  Gate 2, response-only rendering, token balance, recipe identity, and the
+  exact 636,093-token prepared dataset all pass. This proves a successful
+  baseline admission will remove the last non-compute pilot prerequisite.
 - The production evaluation runner now batches by length and language,
   verifies concurrently in network-disabled sandboxes, resumes only sealed
   model/config/task/runtime/implementation-bound evidence, persists completed

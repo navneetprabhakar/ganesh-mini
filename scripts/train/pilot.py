@@ -36,6 +36,7 @@ REQUIRED_GATE0_CHECKS = {
     "text_only_inference_smoke",
     "train_save_reload_merge_smoke",
     "base_gguf_f16_q8_smoke",
+    "cuda_fused_loss_qualification",
 }
 REQUIRED_STOP_CONDITIONS = {
     "non_finite_loss",

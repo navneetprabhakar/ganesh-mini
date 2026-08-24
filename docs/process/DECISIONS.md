@@ -1069,3 +1069,38 @@ package versions and Liger Qwen3.5 `lce_forward_for_multimodal` contract with
 The complete local prequalification is sealed by
 `32db10f29dcf15969ccf89db18e55586c1941a758e31c3754bafada529063c0f`.
 This is build evidence, not a CUDA or Gate 0B pass.
+
+## 2026-08-25 — Fused linear cross-entropy passes Gate 0B on one L4
+
+The approved `us-east1-b` `g2-standard-8` Flex-start execution ran under GCS
+prefix `20260824T180957Z`. Liger Kernel 0.8.2 replaced only Qwen3.5 training
+loss with `lce_forward_for_multimodal` and `skip_logits=True`; RoPE, RMSNorm,
+SwiGLU, rank 32, alpha 64, optimizer, data, the complete-corpus 2,944-token
+envelope, and serving behavior were unchanged.
+
+Exact environment, GPU, Triton, FLA recurrent compatibility, package, kernel,
+ms-swift, model-load, tokenizer/template, and text-only inference checks
+passed. The frozen vision tower moved to CPU and released 662,833,664 CUDA
+bytes. Fused loss did not materialize training logits. The full synthetic
+backward envelope and all 16 real optimizer steps passed. Peak reserved VRAM
+was 18,975,031,296 bytes against the frozen 22,548,578,304-byte maximum.
+Adapter reload matched exactly; safe merge returned finite logits with a
+maximum absolute difference of `0.125`. Qualification evidence is sealed by
+`d5c8df044c0b49b1473a2a13e163bcd7acfc06da09b1ea9a0bea75aa1d493a6a`.
+
+All 41 terminal objects, including the 4,426,558,864-byte merged checkpoint,
+passed two independent immutable-generation reads under backup seal
+`d4cd0d2f31f43e081183eef4ff191c2b3aa53eeb2e11763dd4dd723ad1f25cdf`.
+The guest's 40-entry runtime inventory matched with zero missing objects or
+hash mismatches. Provider auto-delete removed the VM and disk at the bounded
+runtime; the subnet and VPC were deleted afterward. Run-result and teardown
+seals are
+`b29db7d69b7a9653b6be7b4f79390d00a62f2176228f7a995a5ff0b48f85c84d`
+and
+`95e4ed973cdc746795f0ee1b59045adbce1ceda8bb7af4a8902be86308bcf2f0`.
+Even charging through deletion completion plus the frozen support reserve,
+the conservative incremental upper bound is `$0.9686175`, below `$1.00`.
+
+Gate 0B is passed. The next dependency is the exact 180-task upstream Qwen
+development baseline and fail-closed Gate 1 report. This result establishes
+technical trainability only; it makes no coding-quality improvement claim.

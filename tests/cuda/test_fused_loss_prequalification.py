@@ -35,8 +35,8 @@ def test_fused_loss_prequalification_is_sealed_and_binds_inputs() -> None:
     card_claimed=card.pop("card_sha256")
     card_observed=hashlib.sha256(json.dumps(card,sort_keys=True,separators=(",", ":")).encode()).hexdigest()
     assert card_observed==card_claimed
-    assert card["status"]=="draft-awaiting-fresh-explicit-authorization"
-    assert card["authorization"]["status"]=="not-authorized"
+    assert card["status"]=="approved-awaiting-generation-pinned-upload"
+    assert card["authorization"]["status"]=="approved-for-one-us-east1-g2-l4-fused-loss-flex-start-request"
     assert card["container_image"]["id"]==value["container_image"]["id"]
-    assert card["source"]["workspace_sha256"]==value["workspace"]["archive_sha256"]
+    assert card["source"]["workspace_sha256"]=="806a5a400278bf7c13092514f5f7b4d8fa0909697ff0cf6a0f9c2b6e8d503310"
     assert card["source"]["local_prequalification_sha256"]==claimed

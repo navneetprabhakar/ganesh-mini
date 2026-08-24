@@ -1,26 +1,20 @@
 # Project state
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
 
 ## Current gate
 
-Gate 0B and Gate 1 preparation in parallel:
+Gate 1: execute the exact Qwen development baseline on the already frozen
+180-task surface.
 
-- production Linux CUDA BF16 LoRA qualification, with NF4 QLoRA as fallback;
-- frozen development and decision surfaces plus exact Qwen base baselines.
-
-Local Apple runtime qualification and the prior pinned Linux CUDA image
-prebuild are complete. The latest approved Flex-start L4 run passed the exact
-package, CUDA, Triton, external-kernel, model-load, and text-only inference
-contracts at the complete-corpus 2,944-token envelope. BF16 LoRA and NF4 QLoRA
-still OOMed before the first training record; the NF4 run proved expandable
-allocator segments insufficient by themselves. Gate 0 therefore remains
-fail-closed. The measured 2.72 GiB BF16 request matches FP32 materialization of
-the full 2,944-by-248,320 vocabulary logits tensor. The next versioned contract
-uses only Liger 0.8.2 fused linear cross-entropy to avoid that tensor while
-keeping rank, optimizer, learning rates, data, sequence length, and serving
-context unchanged. The rebuilt Linux AMD64 image and offline patch smoke now
-pass locally; fresh CUDA execution remains mandatory.
+Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
+Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
+training logits. Exact package, CUDA, Triton, external-kernel, model-load,
+text-only inference, frozen-vision, 2,944-token synthetic envelope, 16 real
+optimizer steps, adapter save/reload, and safe merge all passed. Peak reserved
+VRAM was 18,975,031,296 bytes against the frozen 22,548,578,304-byte ceiling.
+Rank, optimizer, learning rates, data, sequence length, and serving context
+remain unchanged.
 
 Native AMD64 verifier qualification is complete. GitHub Actions run
 `32639381229` loaded the exact pinned image archive and passed all 12
@@ -29,8 +23,7 @@ and zero timeouts. All 15 JSON seals, runtime identities, output hashes, and
 the global separation report were independently verified. The repaired
 development-only workspace and baseline-runner readiness evidence are sealed.
 Gate 1 now fails closed only because the exact Qwen development baseline does
-not yet exist; that baseline cannot run until Gate 0B successfully qualifies
-the exact serving stack.
+not yet exist. Gate 0B no longer blocks that execution.
 
 ## Completed
 
@@ -595,33 +588,38 @@ the exact serving stack.
   and size 8,372,032,086 bytes. A network-disabled AMD64 smoke verified the
   exact Torch, Transformers, FLA, causal-conv1d, and Liger versions plus
   Liger's Qwen3.5 multimodal fused-loss forward and `skip_logits` contract.
-  Two workspace builds produced the identical 1,772,960-byte archive SHA-256
-  `de4cb24c5c78c501c02e1d31d532ba8ddad9d05e3fc83c822548c1253e2e0a94`.
+  Two final workspace builds produced the identical 1,773,034-byte archive
+  SHA-256
+  `806a5a400278bf7c13092514f5f7b4d8fa0909697ff0cf6a0f9c2b6e8d503310`.
   The local prequalification is sealed by
   `32db10f29dcf15969ccf89db18e55586c1941a758e31c3754bafada529063c0f`.
-  The next-run draft card is sealed by
-  `7f4cd29f0ac8fbc543f54fe0a932f633105b80e0e6518b00777cf23cda849455`
-  and remains explicitly unauthorized.
+  The approved execution card is sealed by
+  `de09844691ea1ede2d9ef22e152b4289699b656fbf119523795a361207f96efa`.
+
+- Passed Gate 0B under GCS prefix `20260824T180957Z`. BF16 LoRA completed all
+  16 real records and optimizer steps after the full 2,944-token envelope.
+  The qualification evidence seal is
+  `d5c8df044c0b49b1473a2a13e163bcd7acfc06da09b1ea9a0bea75aa1d493a6a`.
+  Adapter reload had zero maximum logit difference; safe merge produced finite
+  logits with `0.125` maximum absolute difference. The merged 4,426,558,864-byte
+  checkpoint and all other 40 terminal objects passed two independent
+  generation-pinned reads. The backup, run-result, and teardown seals are
+  `d4cd0d2f31f43e081183eef4ff191c2b3aa53eeb2e11763dd4dd723ad1f25cdf`,
+  `b29db7d69b7a9653b6be7b4f79390d00a62f2176228f7a995a5ff0b48f85c84d`,
+  and
+  `95e4ed973cdc746795f0ee1b59045adbce1ceda8bb7af4a8902be86308bcf2f0`.
+  Provider auto-delete removed the VM and disk; the subnet and VPC were also
+  deleted. The conservative incremental upper bound is `$0.9686175`, below
+  the approved `$1.00` ceiling.
 
 ## Next action
 
-Gate 0B remains closed, but the allocator hypothesis is no longer pending. The
-`us-east1` L4 run proved `expandable_segments:True` insufficient and exposed
-full-vocabulary FP32 loss materialization as the dominant measured allocation.
-The narrow fused-linear-cross-entropy repair is implemented and locally tested
-without reducing the complete-corpus 2,944-token envelope or changing rank,
-data, optimizer, or serving behavior.
-
-The rebuilt pinned CUDA image, offline package/patch smoke, deterministic
-workspace, and local prequalification seal are complete. A fresh CUDA
-qualification must prove the fused-loss path, synthetic envelope, real-record
-optimizer steps, save/reload, merge, and peak-VRAM contract. That next GCloud
-launch and image upload require fresh explicit approval. If qualification
-passes, execute the exact
-180-task Qwen development baseline and admit it through the fail-closed Gate 1
-report; seed-pilot training remains blocked until Gate 1 is ready. The native
-verifier, global separation, Gate 2 seed cascade, and baseline host audit are
-already complete.
+Gate 0B is complete. Execute the exact 180-task Qwen development baseline and
+admit it through the fail-closed Gate 1 report. Then run the bounded
+multilingual seed pilot under the qualified BF16 LoRA fused-loss contract.
+Seed-pilot training remains blocked until Gate 1 is ready. The native verifier,
+global separation, Gate 2 seed cascade, and baseline host audit are already
+complete.
 
 ## Authorization state
 
@@ -630,9 +628,9 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The approved
-`us-east1` Flex-start L4 execution is complete, backed up, and fully torn down;
-no run-scoped compute or network resource remains. Non-GCloud compute remains
-standing-authorized. Another GCloud launch requires a fresh card and explicit
-approval for its additional exposure.
+`us-east1` fused-loss Flex-start L4 execution is complete, double-verified in
+GCS, and fully torn down; no run-scoped compute or network resource remains.
+Non-GCloud compute remains standing-authorized. Another GCloud launch requires
+a fresh card and explicit approval for its additional exposure.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.

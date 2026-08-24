@@ -213,15 +213,16 @@ NF4 still failed the synthetic backward envelope, with only 59.12 MiB free and
 a 46 MiB request followed by a 20 MiB allocator mapping failure. The allocator
 is therefore insufficient by itself.
 
-The measured dominant allocation is vocabulary loss materialization. At 2,944
+The measured dominant allocation was vocabulary loss materialization. At 2,944
 tokens, Qwen's 248,320-token vocabulary creates 1,462,108,160 BF16 logit bytes;
 the Transformers causal-LM loss upcasts that tensor to 2,924,216,320 FP32 bytes,
-matching the observed BF16 2.72 GiB allocation request. The next versioned
+matching the observed BF16 2.72 GiB allocation request. The executed versioned
 qualification uses Liger Kernel 0.8.2 only for fused linear cross-entropy, so
 training loss is computed without materializing full-vocabulary logits. RoPE,
 RMSNorm, SwiGLU, sequence length, rank, optimizer, data, and serving behavior
-remain unchanged. This repair is local preparation, not a Gate 0B pass; it
-requires fresh executed CUDA evidence.
+remain unchanged. Gate 0B passed this contract on one L4: the full envelope,
+16 real optimizer steps, adapter save/reload, safe merge, and peak-VRAM ceiling
+all passed. This qualifies the mechanism; it is not a model-quality result.
 
 The fallback recipe changes only base loading to bitsandbytes 4-bit NF4 with
 BF16 adapter compute. It is eligible only after the primary recipe records an

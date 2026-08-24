@@ -1104,3 +1104,36 @@ the conservative incremental upper bound is `$0.9686175`, below `$1.00`.
 Gate 0B is passed. The next dependency is the exact 180-task upstream Qwen
 development baseline and fail-closed Gate 1 report. This result establishes
 technical trainability only; it makes no coding-quality improvement claim.
+
+## 2026-08-25 — Gate 1 uses one 12-vCPU L4 with resumable evidence
+
+Gate 1 has no admissible model output yet. Its local execution preparation now
+binds the exact 180-task development workspace, native Linux/AMD64 verifier
+archive, qualified fused-loss CUDA image, pinned Qwen archive, offline Docker
+bundle, host controller, and metadata wrapper. The record is sealed but
+explicitly non-executable until a fresh GCloud approval, account-specific
+price/quota preflight, immutable GCS generations for the local inputs, and a
+final execution card exist.
+
+The proposed host is `g2-standard-12` rather than the previously qualified
+8-vCPU shape. It still has one 24 GB L4, while its 12 vCPUs and 48 GB host RAM
+match the frozen four-row generation batches and 12 concurrent verifier
+workers. Generation, extraction, and network-disabled compilation overlap;
+NVML is sampled every five seconds and resumable evidence is checkpointed to
+GCS every two minutes. This is utilization alignment, not a model or
+evaluation-contract change.
+
+The proposed Flex-start request waits at most two hours and runs at most four
+hours. The controller reserves 900 seconds for terminal inventory and backup,
+requests guest shutdown only after the terminal backup succeeds, uses provider
+`DELETE` at the maximum runtime as a backstop, and requires control-plane
+VM/disk deletion and absence proof plus two immutable-generation reads of
+every terminal object before Gate 1 admission. Public `us-east1` pricing
+checked on 2026-08-25 lists `g2-standard-12` at `$0.790328877`/hour for DWS
+Flex-start and `$1.000416348`/hour on demand. The conservative four-hour
+compute bound plus a `$0.35` support reserve is `$4.351665392`; the proposed
+absolute approval ceiling is `$4.40`. Current account pricing and quota must
+still be checked after approval and before any upload or resource creation.
+
+No GCloud API, CLI, upload, inspection, or resource action occurred during
+this preparation. Gate 1 remains closed, and pilot training remains blocked.

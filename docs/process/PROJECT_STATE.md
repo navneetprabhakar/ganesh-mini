@@ -313,9 +313,6 @@ not yet exist. Gate 0B no longer blocks that execution.
 
 ## Not started or incomplete
 
-- Production Linux CUDA BF16 LoRA runtime and peak-VRAM qualification
-- NF4 QLoRA fallback qualification if the primary recipe crosses its measured
-  memory threshold
 - Exact Qwen base baseline on the frozen development surface
 - Seed-pilot training
 - Candidate quantization and final laptop certification
@@ -621,6 +618,30 @@ Seed-pilot training remains blocked until Gate 1 is ready. The native verifier,
 global separation, Gate 2 seed cascade, and baseline host audit are already
 complete.
 
+The local Gate 1 cloud layer is now prepared. It proposes one
+`g2-standard-12` L4 Flex-start VM in `us-east1-b`, a two-hour provisioning
+window, a four-hour maximum runtime, 12 host vCPUs aligned with the frozen 12
+verifier workers, two-minute resumable GCS checkpoints, a 15-minute terminal
+backup reserve, guest shutdown only after terminal backup, control-plane
+VM/disk deletion with provider max-run deletion as a backstop,
+exact-resource teardown proof, and double immutable-generation verification.
+The sealed preparation record is
+`measurement/gate1/gcloud/preparation.json`. It is intentionally
+`prepared-not-executable`: fresh GCloud approval, current account price/quota
+preflight, generation-pinned uploads of the development workspace and verifier
+assets, and the final executable card are still missing. The public-price
+conservative upper is `$4.351665392`; the proposed absolute ceiling is `$4.40`.
+No GCloud action occurred while preparing it.
+
+The dependency-complete `.venv` suite passes with only the intentionally
+disabled Docker integration test skipped. Forcing that optional test on the
+Apple-Silicon Docker host is not a current native verifier result: the
+Linux/AMD64 Go compiler exhausts the emulated container's 32-process sandbox
+limit. The production Linux/AMD64 archive already passed all 1,080 executions
+on GitHub Actions with zero timeouts, so the emulation failure does not alter
+Gate 1. It remains a local portability diagnostic and must not be reported as
+fresh native directionality evidence.
+
 ## Authorization state
 
 All work within the Ganesh Mini objective is authorized, including the Ganesh
@@ -631,6 +652,7 @@ GCloud usage is the only standing authorization boundary. The approved
 `us-east1` fused-loss Flex-start L4 execution is complete, double-verified in
 GCS, and fully torn down; no run-scoped compute or network resource remains.
 Non-GCloud compute remains standing-authorized. Another GCloud launch requires
-a fresh card and explicit approval for its additional exposure.
+a fresh card and explicit approval for its additional exposure. The prepared
+Gate 1 proposal is not that approval and cannot be executed as-is.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.

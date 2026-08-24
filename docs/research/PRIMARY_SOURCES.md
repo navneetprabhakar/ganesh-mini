@@ -42,8 +42,16 @@ revisions and local evidence during execution.
 - Flash Linear Attention installation contract:
   <https://github.com/fla-org/flash-linear-attention/blob/main/INSTALL.md>
   - version 0.5 splits `fla-core` from model/layer packaging and requires an
-    explicit backend extra; CUDA uses upstream Triton with a matching Torch
-    installation
+  explicit backend extra; CUDA uses upstream Triton with a matching Torch
+  installation
+- Liger Kernel repository and v0.8.2 release:
+  <https://github.com/linkedin/Liger-Kernel> and
+  <https://github.com/linkedin/Liger-Kernel/releases/tag/v0.8.2>
+  - v0.8.2 exposes Qwen3.5 dense and multimodal patch functions
+  - its fused linear cross-entropy path computes training loss without
+    materializing the complete vocabulary logits tensor
+  - Ganesh Mini enables only that loss path; other Liger kernel replacements
+    remain disabled until separately justified and qualified
 
 ## Candidate training data
 

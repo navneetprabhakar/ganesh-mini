@@ -9,13 +9,14 @@ from typing import Any
 
 from scripts.train.qwen_runtime import (
     configure_cuda_allocator,
+    configure_fused_training_loss,
     configure_qwen_training_structure,
     unload_and_reload_saved_adapter,
     restore_qwen_serving_cache,
 )
 from scripts.train.response_only import ResponseOnlyError, build_response_only_encoding
 
-PACKAGE_IMPORTS = {"torch":"torch","torchvision":"torchvision","transformers":"transformers","peft":"peft","ms-swift":"swift","bitsandbytes":"bitsandbytes","flash-linear-attention":"fla","causal-conv1d":"causal_conv1d","accelerate":"accelerate","qwen-vl-utils":"qwen_vl_utils","triton":"triton"}
+PACKAGE_IMPORTS = {"torch":"torch","torchvision":"torchvision","transformers":"transformers","peft":"peft","ms-swift":"swift","bitsandbytes":"bitsandbytes","flash-linear-attention":"fla","causal-conv1d":"causal_conv1d","accelerate":"accelerate","qwen-vl-utils":"qwen_vl_utils","triton":"triton","liger-kernel":"liger_kernel"}
 PRIMARY_RECIPE = "bf16-lora-primary-v1"
 FALLBACK_RECIPE = "nf4-qlora-fallback-v1"
 
@@ -53,7 +54,7 @@ def append_journal(path: Path, event: dict[str, Any]) -> None:
 
 def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
-    if config.get("schema_version") != "ganesh-mini-cuda-gate0/v6": raise ValueError("unsupported CUDA qualification schema")
+    if config.get("schema_version") != "ganesh-mini-cuda-gate0/v7": raise ValueError("unsupported CUDA qualification schema")
     contract_path = root / config["model"]["contract_path"]
     if file_sha256(contract_path) != config["model"]["contract_sha256"]: raise ValueError("model contract hash mismatch")
     if file_sha256(root / "uv.lock") != config["container"]["uv_lock_sha256"]: raise ValueError("CUDA environment lock hash mismatch")
@@ -61,7 +62,7 @@ def load_and_validate_config(path: Path, root: Path) -> dict[str, Any]:
     if (contract.get("model_id"), contract.get("revision")) != (config["model"]["model_id"], config["model"]["revision"]):
         raise ValueError("model identity does not match the pinned contract")
     if config.get("qualification_order") != [PRIMARY_RECIPE, FALLBACK_RECIPE]: raise ValueError("BF16 primary and NF4 fallback order changed")
-    common = {"sequence_length":2944,"micro_batch_size":1,"gradient_checkpointing":True,"cuda_allocator_config":"expandable_segments:True","record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False,"maximum_peak_vram_bytes":21*1024**3}
+    common = {"sequence_length":2944,"micro_batch_size":1,"gradient_checkpointing":True,"cuda_allocator_config":"expandable_segments:True","fused_linear_cross_entropy":{"provider":"liger-kernel","version":"0.8.2","materialize_training_logits":False},"record_count":16,"rank":32,"alpha":64,"dropout":0.05,"learning_rate":0.00001,"response_only":True,"network_during_execution":False,"maximum_peak_vram_bytes":21*1024**3}
     primary = {"role":"primary","minimum_vram_bytes":22*1024**3,"base_dtype":"bfloat16","quantization":None,**common}
     fallback = {"role":"fallback","minimum_vram_bytes":17179869184,"base_dtype":"bfloat16","quantization":{"bits":4,"type":"nf4","double_quantization":True,"compute_dtype":"bfloat16"},**common}
     if config["recipes"].get(PRIMARY_RECIPE) != primary: raise ValueError("BF16 LoRA primary recipe changed without a schema revision")
@@ -236,7 +237,8 @@ def sequence_envelope_probe(model: Any, tokenizer: Any, length: int) -> dict[str
     import torch
     if tokenizer.eos_token_id is None: raise RuntimeError("tokenizer has no EOS token for deterministic envelope probe")
     input_ids = torch.full((1,length),tokenizer.eos_token_id,dtype=torch.long,device="cuda:0"); labels = input_ids.clone(); labels[:,:64] = -100; attention_mask = torch.ones_like(input_ids)
-    model.zero_grad(set_to_none=True); output = model(input_ids=input_ids,attention_mask=attention_mask,labels=labels)
+    model.zero_grad(set_to_none=True); output = model(input_ids=input_ids,attention_mask=attention_mask,labels=labels,skip_logits=True)
+    if output.logits is not None: raise RuntimeError("fused training loss materialized sequence-envelope logits")
     if not torch.isfinite(output.loss) or output.loss.detach().item() <= 0: raise RuntimeError(f"non-finite or non-positive loss in {length:,}-token synthetic envelope probe")
     output.loss.backward(); model.zero_grad(set_to_none=True)
     return {"kind":"synthetic-active-token-shape-probe","sequence_length":length,"input_tokens":length,"supervised_tokens":length-64,"masked_prompt_tokens":64,"micro_batch_size":1,"optimizer_step":False,"quality_training_record":False,"loss_finite":True,"loss_positive":bool(output.loss.detach().item()>0),"passed":True}
@@ -278,6 +280,9 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
         linear_type = torch.nn.Linear; model.gradient_checkpointing_enable(); model.enable_input_require_grads()
     if not model.is_gradient_checkpointing:
         raise RuntimeError("gradient checkpointing did not activate on the Qwen3.5 language model")
+    fused_training_loss = configure_fused_training_loss(
+        model,recipe["fused_linear_cross_entropy"]["version"]
+    )
     targets = [name for name,module in model.named_modules() if isinstance(module,linear_type) and name.startswith("model.language_model.") and not name.endswith("lm_head")]
     if not targets: raise RuntimeError("no eligible language-model linear modules found")
     model = get_peft_model(model,LoraConfig(r=recipe["rank"],lora_alpha=recipe["alpha"],lora_dropout=recipe["dropout"],target_modules=targets,bias="none",task_type="CAUSAL_LM"))
@@ -290,7 +295,8 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
     torch.cuda.synchronize(); training_started = time.monotonic(); model.train()
     for index, item in enumerate(records):
         if journal_path: append_journal(journal_path,{"phase":"training-record","state":"started","index":index,"record_id":item["row"]["id"]})
-        batch = response_only_batch(tokenizer,item["row"]["messages"],recipe["sequence_length"],"cuda:0"); optimizer.zero_grad(set_to_none=True); output = model(**batch)
+        batch = response_only_batch(tokenizer,item["row"]["messages"],recipe["sequence_length"],"cuda:0"); optimizer.zero_grad(set_to_none=True); output = model(**batch,skip_logits=True)
+        if output.logits is not None: raise RuntimeError("fused training loss materialized record logits")
         if not torch.isfinite(output.loss) or output.loss.detach().item() <= 0: raise RuntimeError(f"non-finite or non-positive loss for {item['row']['id']}")
         output.loss.backward(); gradients.update(name for name,parameter in model.named_parameters() if parameter.requires_grad and parameter.grad is not None and torch.count_nonzero(parameter.grad).item() > 0); optimizer.step()
         enforce_cuda_peak(recipe["maximum_peak_vram_bytes"],journal_path,"optimizer-step",index=index,record_id=item["row"]["id"])
@@ -327,7 +333,7 @@ def run_training_smoke(config: dict[str,Any], recipe_id: str, model_dir: Path, r
         raise PeakVramExceeded(observed_peak,recipe["maximum_peak_vram_bytes"])
     if journal_path: append_journal(journal_path,{"phase":"adapter-reload-merge","state":"completed","file_sha256":merged_hashes,"reload_max_abs_logit_difference":reload_max_abs,"merge_max_abs_logit_difference":merge_max_abs,"logits_finite":True})
     equivalence = {"probe":"def add(a, b):","reload_atol":0.01,"reload_max_abs_logit_difference":reload_max_abs,"merge_atol":0.25,"merge_rtol":0.02,"merge_max_abs_logit_difference":merge_max_abs,"passed":True}
-    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"model_load_reused_after_inference":True,"optimizer_steps":len(records),"losses":losses,"losses_finite_and_positive":True,"sequence_envelope":envelope,"training_structure":training_structure,"serving_structure":serving_structure,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":{"model_load":model_load_peak,"training":memory,"observed_peak_bytes":observed_peak,"maximum_peak_vram_bytes":recipe["maximum_peak_vram_bytes"],"passed":True},"adapter_file_sha256":hashes,"reload_merge":reload_merge,"serialization_equivalence":equivalence,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
+    return {"recipe_id":recipe_id,"records":[{"id":item["row"]["id"],"tokens":item["tokens"],"rendered_prompt_sha256":hashlib.sha256(item["rendered"].encode()).hexdigest()} for item in records],"response_only":True,"model_load_reused_after_inference":True,"optimizer_steps":len(records),"losses":losses,"losses_finite_and_positive":True,"sequence_envelope":envelope,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"serving_structure":serving_structure,"gradient_checkpointing":True,"quantized_parameter_count":len(quantized),"target_module_count":len(targets),"target_modules":targets,"trainable_parameter_names":sorted(trainable),"gradient_parameter_names":sorted(gradients),"training_seconds":training_seconds,"active_tokens":active_tokens,"response_tokens":response_tokens,"active_tokens_per_second":active_tokens/training_seconds,"response_tokens_per_second":response_tokens/training_seconds,"cuda_memory":{"model_load":model_load_peak,"training":memory,"observed_peak_bytes":observed_peak,"maximum_peak_vram_bytes":recipe["maximum_peak_vram_bytes"],"passed":True},"adapter_file_sha256":hashes,"reload_merge":reload_merge,"serialization_equivalence":equivalence,"merged_checkpoint_file_sha256":merged_hashes,"merge_logits_finite":merge_finite,"passed":True}
 
 def inference_smoke(model: Any, tokenizer: Any) -> dict[str,Any]:
     import torch

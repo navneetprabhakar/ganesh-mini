@@ -275,6 +275,11 @@ def common_recipe_ok(recipe: dict[str, Any], system: str) -> bool:
         and recipe.get("compute_dtype") == "bfloat16"
         and recipe.get("gradient_checkpointing") is True
         and recipe.get("cuda_allocator_config") == "expandable_segments:True"
+        and recipe.get("fused_linear_cross_entropy") == {
+            "provider":"liger-kernel",
+            "version":"0.8.2",
+            "materialize_training_logits":False,
+        }
         and recipe.get("micro_batch_size") == 1
         and recipe.get("vision_frozen") is True
         and recipe.get("sequence_length") == 2944

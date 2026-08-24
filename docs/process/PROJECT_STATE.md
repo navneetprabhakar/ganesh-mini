@@ -9,16 +9,18 @@ Gate 0B and Gate 1 preparation in parallel:
 - production Linux CUDA BF16 LoRA qualification, with NF4 QLoRA as fallback;
 - frozen development and decision surfaces plus exact Qwen base baselines.
 
-Local Apple runtime qualification and the pinned Linux CUDA image prebuild are
-complete. The latest approved Standard L4 retry passed the exact package,
-CUDA, Triton, external-kernel, model-load, and text-only inference contracts
-at the complete-corpus 2,944-token envelope. BF16 LoRA still OOMed; NF4 QLoRA
-reached backward but OOMed with a 63,832,064-byte allocation shortfall before
-the first training record. Gate 0 therefore remains fail-closed. That NF4
-failure reported approximately 95,934,218 bytes reserved but unallocated, so
-the next versioned contract enables expandable CUDA allocator segments for
-both qualification and production SFT. Rank, optimizer, learning rates, data,
-sequence length, and serving context remain unchanged.
+Local Apple runtime qualification and the prior pinned Linux CUDA image
+prebuild are complete. The latest approved Flex-start L4 run passed the exact
+package, CUDA, Triton, external-kernel, model-load, and text-only inference
+contracts at the complete-corpus 2,944-token envelope. BF16 LoRA and NF4 QLoRA
+still OOMed before the first training record; the NF4 run proved expandable
+allocator segments insufficient by themselves. Gate 0 therefore remains
+fail-closed. The measured 2.72 GiB BF16 request matches FP32 materialization of
+the full 2,944-by-248,320 vocabulary logits tensor. The next versioned contract
+uses only Liger 0.8.2 fused linear cross-entropy to avoid that tensor while
+keeping rank, optimizer, learning rates, data, sequence length, and serving
+context unchanged. The rebuilt Linux AMD64 image and offline patch smoke now
+pass locally; fresh CUDA execution remains mandatory.
 
 Native AMD64 verifier qualification is complete. GitHub Actions run
 `32639381229` loaded the exact pinned image archive and passed all 12
@@ -555,26 +557,67 @@ the exact serving stack.
   `91953aa7e563fdb423e0508e4e06319fcb8aa3be703572b4b5f24e275d91080d`.
   The allocator hypothesis remains untested.
 
+- Executed the approved `us-east1-b` G2 L4 Flex-start run under prefix
+  `20260824T161956Z`. The 23,659,151,360-byte L4 passed exact environment,
+  external-kernel, model, tokenizer/template, and text-inference checks. BF16
+  LoRA OOMed on a 2.72 GiB loss allocation. NF4 with
+  `expandable_segments:True` passed training structure but still OOMed during
+  the 2,944-token synthetic backward envelope; no real record or optimizer
+  step ran. The BF16/NF4 evidence seals are
+  `ee7a07c910d059393b1ba15cc516c4bf78a02921fb85f6003140880802c82669`
+  and
+  `f1d43f17c03b1833635d563d83be9e0a81d1a3370dbd90aaa6743f71dc057c50`.
+  All 32 terminal objects passed two immutable-generation downloads under
+  inventory hash
+  `04eb8aa2204555a33a1c8117c017c678c9f3448060ee968bf15c7461e7743585`.
+  The run-result, backup, and teardown seals are
+  `c59d09d513a7e28f882d957e6ba22fbe2899edaf68cafea1a3ad4c0a17dba036`,
+  `3c289a929bde8b673b3e7a411989f6ec3ace0808052f347b4dd29c9946408843`,
+  and
+  `11d6011b335c5771c1adcf50a0a30825bd8ae50c7556e189df5bbf27bb53c034`.
+  VM, disk, subnet, VPC, and router scope are absent. The conservative
+  incremental upper bound is `$0.5686070833333333`, below `$1.00`.
+
+- Diagnosed the dominant 2,944-token allocation as full-vocabulary training
+  loss materialization: 1,462,108,160 BF16 logit bytes become
+  2,924,216,320 FP32 bytes in Transformers causal cross-entropy, matching the
+  observed 2.72 GiB request. The local candidate now pins Liger Kernel 0.8.2
+  and enables only Qwen3.5 fused linear cross-entropy with
+  `skip_logits=True`. It fails closed if training returns logits. Sequence
+  length, rank, alpha, data, optimizer, and serving behavior are unchanged.
+  The full local suite passes: 197 passed, one intentional integration skip.
+
+- Rebuilt the pinned Linux AMD64 CUDA image locally after increasing Docker
+  Desktop from its inadequate 4 GiB/5-vCPU allocation to 12 GiB/8 vCPUs. The
+  image is
+  `ganesh-mini-cuda-gate0:torch2.13.0-cu13.0.1-liger082`, ID
+  `sha256:cdaf068ffcb933120181168ebf6ae1546ddf81e01b2ad006a1a18dd2e43d9860`,
+  and size 8,372,032,086 bytes. A network-disabled AMD64 smoke verified the
+  exact Torch, Transformers, FLA, causal-conv1d, and Liger versions plus
+  Liger's Qwen3.5 multimodal fused-loss forward and `skip_logits` contract.
+  Two workspace builds produced the identical 1,772,960-byte archive SHA-256
+  `de4cb24c5c78c501c02e1d31d532ba8ddad9d05e3fc83c822548c1253e2e0a94`.
+  The local prequalification is sealed by
+  `32db10f29dcf15969ccf89db18e55586c1941a758e31c3754bafada529063c0f`.
+  The next-run draft card is sealed by
+  `7f4cd29f0ac8fbc543f54fe0a932f633105b80e0e6518b00777cf23cda849455`
+  and remains explicitly unauthorized.
+
 ## Next action
 
-Gate 0B remains closed on measured L4 memory capacity at 2,944 tokens. NF4 did
-not pass: its terminal shortfall was 63,832,064 bytes, despite preserving the
-entire 2,938-token-maximum prepared corpus without truncation. Unlike the
-3,072-token run, PyTorch reported approximately 95,934,218 bytes reserved but
-unallocated, more than the failing allocation shortfall. The next local change
-is therefore a versioned `expandable_segments:True` CUDA allocator contract,
-not another sequence reduction. It must be applied consistently to
-qualification and production SFT, tested, sealed in a deterministic workspace,
-and treated as unqualified until fresh CUDA evidence passes.
+Gate 0B remains closed, but the allocator hypothesis is no longer pending. The
+`us-east1` L4 run proved `expandable_segments:True` insufficient and exposed
+full-vocabulary FP32 loss materialization as the dominant measured allocation.
+The narrow fused-linear-cross-entropy repair is implemented and locally tested
+without reducing the complete-corpus 2,944-token envelope or changing rank,
+data, optimizer, or serving behavior.
 
-The allocator contract, tests, and deterministic workspace are sealed, but
-neither Standard nor Flex-start Compute Engine supplied an L4 in the tested
-regions. Another `us-east4` request is unjustified. The next GCloud card should
-change the capacity boundary rather than the training recipe: preflight a
-fresh G2 region for Flex-start, or qualify a managed GCP job surface with a
-separate capacity pool while preserving the exact container, model, data,
-runtime, cost, backup, and teardown contracts. A new GCloud inspection or
-launch requires explicit approval. If qualification passes, execute the exact
+The rebuilt pinned CUDA image, offline package/patch smoke, deterministic
+workspace, and local prequalification seal are complete. A fresh CUDA
+qualification must prove the fused-loss path, synthetic envelope, real-record
+optimizer steps, save/reload, merge, and peak-VRAM contract. That next GCloud
+launch and image upload require fresh explicit approval. If qualification
+passes, execute the exact
 180-task Qwen development baseline and admit it through the fail-closed Gate 1
 report; seed-pilot training remains blocked until Gate 1 is ready. The native
 verifier, global separation, Gate 2 seed cascade, and baseline host audit are
@@ -587,8 +630,8 @@ v0.1 seed corpus, local and non-GCloud compute, downloads, long-running jobs,
 training, evaluation, repository operations, and artifact publication.
 
 GCloud usage is the only standing authorization boundary. The approved
-Standard L4 execution is complete, backed up, and fully torn down; no
-run-scoped compute or network resource remains. Non-GCloud compute remains
+`us-east1` Flex-start L4 execution is complete, backed up, and fully torn down;
+no run-scoped compute or network resource remains. Non-GCloud compute remains
 standing-authorized. Another GCloud launch requires a fresh card and explicit
 approval for its additional exposure.
 

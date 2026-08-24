@@ -205,12 +205,23 @@ truncation concession: the frozen prepared corpus contains 2,155 sampled
 training records, the longest is 2,938 tokens, and no train or validation
 record exceeds 2,944. The model's serving context contract is unchanged.
 
-The sealed 2,944-token L4 retry still failed NF4 backward with a 63,832,064
-byte allocation shortfall, but PyTorch reported about 95,934,218 bytes
-reserved but unallocated at that failure. The next qualification therefore
-uses the versioned `expandable_segments:True` CUDA allocator contract in both
-the qualification container and production SFT. This does not qualify the
-recipe by itself; Gate 0B still requires a fresh executed CUDA pass.
+The sealed 2,944-token L4 retry failed NF4 backward with a 63,832,064-byte
+allocation shortfall while PyTorch reported about 95,934,218 bytes reserved
+but unallocated. A later `us-east1` Flex-start execution tested the versioned
+`expandable_segments:True` allocator contract. It reduced fragmentation but
+NF4 still failed the synthetic backward envelope, with only 59.12 MiB free and
+a 46 MiB request followed by a 20 MiB allocator mapping failure. The allocator
+is therefore insufficient by itself.
+
+The measured dominant allocation is vocabulary loss materialization. At 2,944
+tokens, Qwen's 248,320-token vocabulary creates 1,462,108,160 BF16 logit bytes;
+the Transformers causal-LM loss upcasts that tensor to 2,924,216,320 FP32 bytes,
+matching the observed BF16 2.72 GiB allocation request. The next versioned
+qualification uses Liger Kernel 0.8.2 only for fused linear cross-entropy, so
+training loss is computed without materializing full-vocabulary logits. RoPE,
+RMSNorm, SwiGLU, sequence length, rank, optimizer, data, and serving behavior
+remain unchanged. This repair is local preparation, not a Gate 0B pass; it
+requires fresh executed CUDA evidence.
 
 The fallback recipe changes only base loading to bitsandbytes 4-bit NF4 with
 BF16 adapter compute. It is eligible only after the primary recipe records an

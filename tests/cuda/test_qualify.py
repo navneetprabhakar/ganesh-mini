@@ -22,6 +22,7 @@ from scripts.cuda.qualify import (
 )
 from scripts.train.qwen_runtime import reload_and_merge_saved_adapter
 from scripts.train.qwen_runtime import configure_cuda_allocator
+from scripts.train.qwen_runtime import configure_fused_training_loss
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "configs/cuda/qwen3_5_2b_gate0.json"
@@ -38,12 +39,18 @@ def test_pinned_primary_and_fallback_validate() -> None:
     assert (primary["micro_batch_size"], primary["rank"], primary["alpha"], primary["dropout"]) == (1, 32, 64, 0.05)
     assert primary["gradient_checkpointing"] and primary["response_only"]
     assert primary["cuda_allocator_config"] == "expandable_segments:True"
+    assert primary["fused_linear_cross_entropy"] == {
+        "provider": "liger-kernel",
+        "version": "0.8.2",
+        "materialize_training_logits": False,
+    }
     fallback = config["recipes"][FALLBACK_RECIPE]
     assert fallback["sequence_length"] == 2944
     assert fallback["quantization"] == {"bits": 4, "type": "nf4", "double_quantization": True, "compute_dtype": "bfloat16"}
     assert fallback["cuda_allocator_config"] == "expandable_segments:True"
     assert config["packages"]["bitsandbytes"] == "0.49.2"
     assert config["packages"]["torchvision"] == "0.28.0"
+    assert config["packages"]["liger-kernel"] == "0.8.2"
 
 
 def test_primary_recipe_mutation_fails_closed(tmp_path: Path) -> None:
@@ -160,6 +167,41 @@ def test_cuda_allocator_contract_sets_early_and_rejects_mutation(monkeypatch) ->
         configure_cuda_allocator("expandable_segments:True")
 
 
+def test_fused_training_loss_binds_only_multimodal_linear_ce(monkeypatch) -> None:
+    observed = {}
+
+    def lce_forward_for_multimodal(self, **kwargs):
+        return None
+
+    lce_forward_for_multimodal.__module__ = "liger_kernel.transformers.model.qwen3_5"
+
+    def apply_liger_kernel_to_qwen3_5(**kwargs):
+        observed.update(kwargs)
+        kwargs["model"].forward = types.MethodType(lce_forward_for_multimodal,kwargs["model"])
+
+    liger = types.ModuleType("liger_kernel")
+    transformers = types.ModuleType("liger_kernel.transformers")
+    transformers.apply_liger_kernel_to_qwen3_5 = apply_liger_kernel_to_qwen3_5
+    monkeypatch.setitem(sys.modules,"liger_kernel",liger)
+    monkeypatch.setitem(sys.modules,"liger_kernel.transformers",transformers)
+    monkeypatch.setattr("importlib.metadata.version",lambda name: "0.8.2")
+    model = types.SimpleNamespace(forward=lambda **kwargs: None)
+
+    evidence = configure_fused_training_loss(model,"0.8.2")
+
+    assert observed == {
+        "rope":False,
+        "cross_entropy":False,
+        "fused_linear_cross_entropy":True,
+        "rms_norm":False,
+        "swiglu":False,
+        "model":model,
+    }
+    assert evidence["passed"] is True
+    assert evidence["materialize_training_logits"] is False
+    assert evidence["other_liger_kernels_enabled"] is False
+
+
 def test_l4_startup_admits_bounded_host_and_fallback_only_on_sealed_memory_failure() -> None:
     startup = (ROOT / "scripts/cuda/gcloud_startup_gate0b.sh").read_text()
     assert "fewer than 8 CPUs" in startup and "less than 30 GiB RAM" in startup
@@ -193,8 +235,10 @@ def test_cuda_dockerfile_does_not_require_optional_buildx_component() -> None:
     assert "--mount=type=cache" not in dockerfile
     assert "uv sync --frozen" in dockerfile
     assert '"torchvision": "0.28.0"' in dockerfile
+    assert '"liger-kernel": "0.8.2"' in dockerfile
     assert "import torchvision" in dockerfile
     assert "import qwen_vl_utils" in dockerfile
+    assert "apply_liger_kernel_to_qwen3_5" in dockerfile
 
 
 def test_gpu_identity_precedes_fla_import_and_kernel_check() -> None:
@@ -343,6 +387,10 @@ def test_cuda_qualification_requires_measured_vision_offload_savings() -> None:
         assert 'RuntimeError("frozen vision offload did not release CUDA memory")' in source
     assert 'enforce_cuda_peak(recipe["maximum_peak_vram_bytes"],journal_path,"sequence-envelope")' in qualifier
     assert 'enforce_cuda_peak(recipe["maximum_peak_vram_bytes"],journal_path,"optimizer-step"' in qualifier
+    assert "labels=labels,skip_logits=True" in qualifier
+    assert "model(**batch,skip_logits=True)" in qualifier
+    assert "result=model(**batch,skip_logits=True)" in production
+    assert 'validation_result=model(**collate(row,"cuda:0"),skip_logits=True)' in production
     assert 'if current_peak>maximum: raise RuntimeError(f"peak VRAM {current_peak} exceeds {maximum}")' in production
 
 

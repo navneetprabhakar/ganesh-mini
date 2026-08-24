@@ -40,5 +40,6 @@ def test_retry_v5_card_is_sealed_and_preserves_historical_qualifier() -> None:
     assert source["qualification_runner_sha256"] == commit_file_sha(source["commit"],"scripts/cuda/run_qualification.sh")
     assert source["startup_controller_sha256"] == commit_file_sha(source["commit"],"scripts/cuda/gcloud_startup_gate0b.sh")
     assert source["metadata_wrapper_sha256"] == commit_file_sha(source["commit"],"scripts/cuda/gcloud_startup_metadata_wrapper.sh")
-    assert card["repair"]["dependency_lock_sha256"] == file_sha("uv.lock")
+    assert card["repair"]["dependency_lock_sha256"] == "ef71c0477c214d01c5fade799c1832a05014f89f643ee92fea8f0399988f85ba"
+    assert card["repair"]["dependency_lock_sha256"] != file_sha("uv.lock")
     assert card["model"]["revision"] == "15852e8c16360a2fea060d615a32b45270f8a8fc"

@@ -1017,3 +1017,55 @@ the request, VM, disk, subnet, VPC, and router scope are absent under proof
 This is provider-capacity behavior, not evidence against the allocator or
 training recipe. The next attempt must change capacity scope—another region or
 a managed GCP job surface—not retry `us-east4` under the same mechanism.
+
+## 2026-08-24 — Allocator alone is insufficient; fuse Qwen3.5 training loss
+
+The approved `us-east1-b` `g2-standard-8` Flex-start run executed under prefix
+`20260824T161956Z` on one 23,659,151,360-byte NVIDIA L4. Exact package, CUDA,
+kernel, model, tokenizer, template, and non-thinking text-inference checks
+passed. The frozen vision tower was offloaded and measured for both recipes.
+
+BF16 LoRA then OOMed while the causal-LM loss requested 2.72 GiB. The correctly
+triggered NF4 fallback, with `expandable_segments:True`, passed model structure
+checks but OOMed during the 2,944-token synthetic backward envelope. It had
+59.12 MiB free at a 46 MiB request and then failed a 20 MiB allocator mapping
+with about 19.1 MiB free. No real training record or optimizer step ran. The
+allocator hypothesis is executed and rejected as a sufficient repair. The BF16
+and NF4 result seals are respectively
+`ee7a07c910d059393b1ba15cc516c4bf78a02921fb85f6003140880802c82669`
+and
+`f1d43f17c03b1833635d563d83be9e0a81d1a3370dbd90aaa6743f71dc057c50`.
+
+The failure size identifies the dominant allocation. At 2,944 tokens and a
+248,320-token vocabulary, BF16 logits occupy 1,462,108,160 bytes. Transformers
+upcasts them to FP32 for causal cross-entropy, requiring 2,924,216,320 bytes,
+the observed 2.72 GiB request. The selected repair pins Liger Kernel 0.8.2 and
+enables only its Qwen3.5 fused linear cross-entropy path. Training calls must
+use `skip_logits=True` and fail closed unless the returned logits are absent.
+Liger RoPE, RMSNorm, SwiGLU, and standalone cross-entropy replacements remain
+disabled. Sequence length 2,944, rank 32, alpha 64, data, response-only masks,
+optimizer, effective batch, learning-rate candidates, and serving contract do
+not change.
+
+All 32 terminal GCS objects passed two immutable-generation downloads. Both
+inventories hash to
+`04eb8aa2204555a33a1c8117c017c678c9f3448060ee968bf15c7461e7743585`.
+The run-result, backup-verification, and teardown-proof seals are respectively
+`c59d09d513a7e28f882d957e6ba22fbe2899edaf68cafea1a3ad4c0a17dba036`,
+`3c289a929bde8b673b3e7a411989f6ec3ace0808052f347b4dd29c9946408843`,
+and
+`11d6011b335c5771c1adcf50a0a30825bd8ae50c7556e189df5bbf27bb53c034`.
+The VM, auto-delete disk, subnet, VPC, and router scope are absent. The
+conservative incremental upper bound is `$0.5686070833333333`, below `$1.00`.
+Gate 0B remains closed until the fused-loss image passes fresh CUDA evidence.
+
+Local prequalification subsequently passed. The rebuilt Linux AMD64 image is
+`ganesh-mini-cuda-gate0:torch2.13.0-cu13.0.1-liger082`, ID
+`sha256:cdaf068ffcb933120181168ebf6ae1546ddf81e01b2ad006a1a18dd2e43d9860`,
+and size 8,372,032,086 bytes. A network-disabled smoke verified the exact
+package versions and Liger Qwen3.5 `lce_forward_for_multimodal` contract with
+`skip_logits`. Two independent workspace builds produced archive SHA-256
+`de4cb24c5c78c501c02e1d31d532ba8ddad9d05e3fc83c822548c1253e2e0a94`.
+The complete local prequalification is sealed by
+`32db10f29dcf15969ccf89db18e55586c1941a758e31c3754bafada529063c0f`.
+This is build evidence, not a CUDA or Gate 0B pass.

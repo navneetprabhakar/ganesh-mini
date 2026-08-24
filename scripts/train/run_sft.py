@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from scripts.train.qwen_runtime import configure_cuda_allocator, configure_qwen_training_structure, unload_and_reload_saved_adapter
+from scripts.train.qwen_runtime import configure_cuda_allocator, configure_fused_training_loss, configure_qwen_training_structure, unload_and_reload_saved_adapter
 
 
 def canonical_sha256(value: Any) -> str:
@@ -132,6 +132,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     if recipe["base_loading"]=="qlora": model=prepare_model_for_kbit_training(model,use_gradient_checkpointing=True); linear_type=__import__("bitsandbytes").nn.Linear4bit
     else: model.gradient_checkpointing_enable(); model.enable_input_require_grads(); linear_type=torch.nn.Linear
     if not model.is_gradient_checkpointing: raise RuntimeError("gradient checkpointing did not activate on the Qwen3.5 language model")
+    fused_training_loss=configure_fused_training_loss(model,recipe["fused_linear_cross_entropy"]["version"])
     targets=[name for name,module in model.named_modules() if isinstance(module,linear_type) and name.startswith("model.language_model.") and not name.endswith("lm_head")]
     if not targets: raise RuntimeError("no eligible Qwen3.5 language-model LoRA targets found")
     resume_manifest=None
@@ -158,7 +159,9 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     checkpoint_interval=min(config["control"]["checkpoint_every_tokens"],max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); spikes=0; last_loss=None
     for index,row in enumerate(rows[state["next_row"]:end_row],state["next_row"]):
         if time.monotonic()-started>=wall_limit and state["last_optimizer_micro_step"]==state["micro_steps"]: break
-        batch=collate(row,"cuda:0"); result=model(**batch); loss=result.loss/recipe["gradient_accumulation_steps"]
+        batch=collate(row,"cuda:0"); result=model(**batch,skip_logits=True)
+        if result.logits is not None: raise RuntimeError("fused training loss materialized record logits")
+        loss=result.loss/recipe["gradient_accumulation_steps"]
         if not torch.isfinite(loss): raise RuntimeError("non-finite loss")
         loss.backward(); raw_loss=float(result.loss.detach().cpu()); spikes=spikes+1 if last_loss is not None and raw_loss>last_loss*3 else 0; last_loss=raw_loss
         current_peak=max(torch.cuda.max_memory_allocated(0),torch.cuda.max_memory_reserved(0))
@@ -175,7 +178,9 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     model.eval(); validation_loss_by_lane={lane:[] for lane in ("go","java","javascript","typescript","python","rust")}
     with torch.inference_mode():
         for row in validation_rows:
-            validation_loss_by_lane[row["lane"]].append(float(model(**collate(row,"cuda:0")).loss.detach().cpu()))
+            validation_result=model(**collate(row,"cuda:0"),skip_logits=True)
+            if validation_result.logits is not None: raise RuntimeError("fused training loss materialized validation logits")
+            validation_loss_by_lane[row["lane"]].append(float(validation_result.loss.detach().cpu()))
     validation=five_family_validation(validation_loss_by_lane)
     probe=collate(validation_rows[0],"cuda:0")
     with torch.inference_mode(): original_logits=model(**probe).logits[:,-1,:].float().cpu()
@@ -187,7 +192,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     peak=max(torch.cuda.max_memory_allocated(0),torch.cuda.max_memory_reserved(0))
     if peak>maximum: raise RuntimeError(f"peak VRAM {peak} exceeds {maximum}")
     state["completed_at"]=datetime.now(timezone.utc).isoformat(); state["wall_seconds"]=time.monotonic()-started
-    evidence={"schema_version":"ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"trainable_parameter_names":trainable_names,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
+    evidence={"schema_version":"ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"trainable_parameter_names":trainable_names,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
 
 
 def main() -> int:

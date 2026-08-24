@@ -36,16 +36,18 @@ expected = {
     "bitsandbytes": "0.49.2",
     "flash-linear-attention": "0.5.2",
     "causal-conv1d": "1.7.0",
+    "liger-kernel": "0.8.2",
 }
 observed = {name: version(name) for name in expected}
 assert observed == expected, (observed, expected)
 import torchvision
 import qwen_vl_utils
+from liger_kernel.transformers import apply_liger_kernel_to_qwen3_5
 from peft import LoraConfig
 from swift.model import get_model_info_meta
 from transformers import AutoModelForImageTextToText
 assert torchvision.__version__.split('+', 1)[0] == expected["torchvision"]
-assert qwen_vl_utils and LoraConfig and get_model_info_meta and AutoModelForImageTextToText
+assert qwen_vl_utils and apply_liger_kernel_to_qwen3_5 and LoraConfig and get_model_info_meta and AutoModelForImageTextToText
 PY
 
 WORKDIR /workspace

@@ -8,6 +8,7 @@ from typing import Any
 
 
 CUDA_ALLOCATOR_CONFIG = "expandable_segments:True"
+LIGER_KERNEL_VERSION = "0.8.2"
 
 
 def configure_cuda_allocator(expected: str) -> dict[str,Any]:
@@ -31,6 +32,51 @@ def configure_cuda_allocator(expected: str) -> dict[str,Any]:
         "environment_variable":"PYTORCH_CUDA_ALLOC_CONF",
         "value":observed,
         "cuda_initialized_before_validation":cuda_initialized,
+        "passed":True,
+    }
+
+
+def configure_fused_training_loss(model: Any, expected_version: str) -> dict[str,Any]:
+    """Patch only Qwen3.5 fused linear CE; keep all other kernels unchanged."""
+    from importlib.metadata import version
+
+    if expected_version != LIGER_KERNEL_VERSION:
+        raise RuntimeError(f"unsupported Liger Kernel contract: {expected_version!r}")
+    observed_version = version("liger-kernel")
+    if observed_version != expected_version:
+        raise RuntimeError(
+            f"Liger Kernel version mismatch: expected={expected_version!r} observed={observed_version!r}"
+        )
+    from liger_kernel.transformers import apply_liger_kernel_to_qwen3_5
+
+    apply_liger_kernel_to_qwen3_5(
+        rope=False,
+        cross_entropy=False,
+        fused_linear_cross_entropy=True,
+        rms_norm=False,
+        swiglu=False,
+        model=model,
+    )
+    forward = getattr(model.forward,"__func__",model.forward)
+    forward_module = getattr(forward,"__module__",None)
+    forward_name = getattr(forward,"__name__",None)
+    passed = (
+        forward_module == "liger_kernel.transformers.model.qwen3_5"
+        and forward_name == "lce_forward_for_multimodal"
+    )
+    if not passed:
+        raise RuntimeError(
+            "Qwen3.5 fused linear cross entropy did not bind the expected multimodal forward: "
+            f"{forward_module=}, {forward_name=}"
+        )
+    return {
+        "provider":"liger-kernel",
+        "version":observed_version,
+        "forward_module":forward_module,
+        "forward_name":forward_name,
+        "fused_linear_cross_entropy":True,
+        "materialize_training_logits":False,
+        "other_liger_kernels_enabled":False,
         "passed":True,
     }
 

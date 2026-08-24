@@ -16,7 +16,7 @@ def make(**overrides):
         "source": SOURCE,
         "conservative_hourly_usd": "1.000416348",
         "support_reserve_usd": "0.35",
-        "absolute_cost_ceiling_usd": "4.40",
+        "absolute_cost_ceiling_usd": "19.00",
         "now": NOW,
     }
     values.update(overrides)
@@ -39,8 +39,8 @@ def test_builds_canonical_fresh_price_evidence() -> None:
         ("checked_at", (NOW + timedelta(minutes=6)).isoformat(), "future"),
         ("source", "https://example.com/pricing", "official Google Cloud"),
         ("conservative_hourly_usd", "nan", "finite"),
-        ("conservative_hourly_usd", "1.02", "exceeds"),
-        ("absolute_cost_ceiling_usd", "4.41", "exceeds"),
+        ("conservative_hourly_usd", "1.04", "exceeds"),
+        ("absolute_cost_ceiling_usd", "19.01", "exceeds"),
     ],
 )
 def test_rejects_untrusted_stale_or_over_budget_observations(field, value, message) -> None:

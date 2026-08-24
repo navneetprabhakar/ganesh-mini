@@ -23,7 +23,7 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     for token in (
         "--provisioning-model=FLEX_START",
         "--request-valid-for-duration=2h",
-        "--max-run-duration=4h",
+        "--max-run-duration=18h",
         "--instance-termination-action=DELETE",
         "--no-address",
         "--enable-private-ip-google-access",

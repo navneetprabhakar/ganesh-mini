@@ -11,7 +11,6 @@ from typing import Any
 
 from scripts.eval.contracts import load_json, sha256_object, validate_result, validate_task
 from scripts.inference.run_evaluation import implementation_identity
-from scripts.train.package_workspace import collect
 
 
 MODEL_ID="Qwen/Qwen3.5-2B"
@@ -79,7 +78,24 @@ def validate_baseline_tasks(root: Path, baseline: dict[str,Any] | None) -> tuple
         return False,{"reason":str(exc)}
 
 
-def build(root: Path, baseline_path: Path) -> dict[str,Any]:
+def training_isolation(root: Path, manifest_path: Path | None) -> tuple[bool, dict[str, Any]]:
+    if manifest_path is not None:
+        try:
+            manifest=sealed(manifest_path,"manifest_sha256")
+            files=manifest.get("files",[])
+            passed=(manifest.get("schema_version")=="ganesh-mini-training-workspace/v1" and manifest.get("status")=="sealed" and "eval" in manifest.get("forbidden_roots",[]) and bool(files) and all("eval" not in Path(row["path"]).parts for row in files))
+            return passed,{"training_workspace_manifest":str(manifest_path),"training_workspace_manifest_sha256":manifest.get("manifest_sha256"),"training_file_count":len(files)}
+        except (OSError,ValueError,KeyError,TypeError,json.JSONDecodeError) as exc:
+            return False,{"reason":str(exc)}
+    try:
+        from scripts.train.package_workspace import collect
+        files=collect(root)
+        return bool(files) and all("eval" not in path.relative_to(root).parts for path in files),{"packager_sha256":file_sha256(root/"scripts/train/package_workspace.py"),"training_file_count":len(files)}
+    except (OSError,ValueError,ImportError) as exc:
+        return False,{"reason":str(exc)}
+
+
+def build(root: Path, baseline_path: Path, training_manifest_path: Path | None = None) -> dict[str,Any]:
     global_path=root/"manifests/evaluation/private/decision-global-separation.json"
     public_path=root/"manifests/evaluation/public/multi_livecodebench_v6.json"
     global_report=sealed(global_path,"report_sha256")
@@ -94,12 +110,12 @@ def build(root: Path, baseline_path: Path) -> dict[str,Any]:
     accounting=(baseline or {}).get("task_accounting",{})
     task_evidence_ok,task_evidence=validate_baseline_tasks(root,baseline)
     baseline_ok=(baseline is not None and baseline.get("classification")=="private_development_baseline" and baseline.get("model",{}).get("model_id")==MODEL_ID and baseline.get("model",{}).get("revision")==REVISION and accounting.get("expected")==accounting.get("completed")==180 and accounting.get("pending")==0 and len(baseline.get("tasks",[]))==180 and all(row.get("status")=="complete" and isinstance(row.get("passed"),bool) and isinstance(row.get("evidence_sha256"),str) for row in baseline.get("tasks",[])) and task_evidence_ok)
-    training_files=collect(root); isolation_ok=bool(training_files) and all("eval" not in path.relative_to(root).parts for path in training_files)
+    isolation_ok,isolation_evidence=training_isolation(root,training_manifest_path)
     checks=[
         check("private_evaluation_contract",private_ok,path=str(global_path.relative_to(root)),sha256=file_sha256(global_path),seal=global_report.get("report_sha256")),
         check("public_diagnostic_admission",public_ok,path=str(public_path.relative_to(root)),sha256=file_sha256(public_path),status=public.get("status"),imported_tasks=public.get("counts",{}).get("imported_tasks")),
         check("exact_base_development_baseline",baseline_ok,path=str(baseline_path.relative_to(root)) if baseline_path.is_relative_to(root) else str(baseline_path),sha256=file_sha256(baseline_path) if baseline_path.is_file() else None,run_sha256=(baseline or {}).get("run_sha256"),task_evidence=task_evidence),
-        check("decision_prompts_not_opened_for_model_selection",isolation_ok,proof="training workspace allowlist excludes eval/; final decision config requires a sealed opened-once declaration",packager_sha256=file_sha256(root/"scripts/train/package_workspace.py"),training_file_count=len(training_files)),
+        check("decision_prompts_not_opened_for_model_selection",isolation_ok,proof="training workspace allowlist excludes eval/; final decision config requires a sealed opened-once declaration",**isolation_evidence),
     ]
     ready=all(row["passed"] for row in checks)
     report={"schema_version":"ganesh-mini-readiness/v1","gate":1,"status":"ready" if ready else "not_ready","model_id":MODEL_ID,"revision":REVISION,"evaluation_contract_frozen":private_ok and public_ok,"base_baseline_complete":baseline_ok,"decision_prompts_exposed":False,"checks":checks,"failed_checks":[row["name"] for row in checks if not row["passed"]]}
@@ -107,7 +123,7 @@ def build(root: Path, baseline_path: Path) -> dict[str,Any]:
 
 
 def main() -> int:
-    parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--root",type=Path,default=Path(__file__).resolve().parents[2]); parser.add_argument("--baseline",type=Path,default=Path("measurement/inference/development/qwen3.5-2b-base-v1/run.json")); parser.add_argument("--output",type=Path,default=Path("measurement/gate1/readiness.json")); args=parser.parse_args(); root=args.root.resolve(); resolve=lambda path:path if path.is_absolute() else root/path; report=build(root,resolve(args.baseline)); output=resolve(args.output); output.parent.mkdir(parents=True,exist_ok=True); output.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n"); return 0 if report["status"]=="ready" else 2
+    parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--root",type=Path,default=Path(__file__).resolve().parents[2]); parser.add_argument("--baseline",type=Path,default=Path("measurement/inference/development/qwen3.5-2b-base-v1/run.json")); parser.add_argument("--training-workspace-manifest",type=Path); parser.add_argument("--output",type=Path,default=Path("measurement/gate1/readiness.json")); args=parser.parse_args(); root=args.root.resolve(); resolve=lambda path:path if path.is_absolute() else root/path; report=build(root,resolve(args.baseline),resolve(args.training_workspace_manifest) if args.training_workspace_manifest else None); output=resolve(args.output); output.parent.mkdir(parents=True,exist_ok=True); output.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n"); return 0 if report["status"]=="ready" else 2
 
 
 if __name__=="__main__": raise SystemExit(main())

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-required=(GANESH_GCP_PROJECT GANESH_GCS_BUCKET GANESH_GCS_PREFIX GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_ARCHIVE_SHA256 GANESH_WORKSPACE_ARCHIVE_SIZE GANESH_WORKSPACE_MANIFEST_URI GANESH_WORKSPACE_MANIFEST_SHA256 GANESH_WORKSPACE_MANIFEST_SIZE GANESH_MODEL_ARCHIVE_URI GANESH_MODEL_ARCHIVE_SHA256 GANESH_MODEL_ARCHIVE_SIZE GANESH_IMAGE_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_SHA256 GANESH_IMAGE_ARCHIVE_SIZE GANESH_DOCKER_BUNDLE_URI GANESH_DOCKER_BUNDLE_SHA256 GANESH_DOCKER_BUNDLE_SIZE GANESH_VERIFIER_ARCHIVE_URI GANESH_VERIFIER_ARCHIVE_SHA256 GANESH_VERIFIER_ARCHIVE_SIZE GANESH_VERIFIER_MANIFEST_URI GANESH_VERIFIER_MANIFEST_SHA256 GANESH_VERIFIER_MANIFEST_SIZE GANESH_CUDA_IMAGE_ID GANESH_CUDA_IMAGE_REF GANESH_ATTEMPT_ID GANESH_GPU_HOURLY_USD GANESH_SUPPORT_RESERVE_USD GANESH_ABSOLUTE_COST_CEILING_USD GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH GANESH_MAX_VM_LIFETIME_SECONDS GANESH_CONTROLLER_BUDGET_SECONDS GANESH_BACKUP_RESERVE_SECONDS GANESH_EXPECTED_MACHINE_TYPE GANESH_EXECUTION_CARD_URI GANESH_EXECUTION_CARD_SHA256 GANESH_EXECUTION_CARD_SIZE GANESH_EXECUTION_CARD_INTERNAL_SHA256 GANESH_CONTROLLER_URI GANESH_CONTROLLER_SHA256 GANESH_CONTROLLER_SIZE GANESH_METADATA_WRAPPER_URI GANESH_METADATA_WRAPPER_SHA256 GANESH_METADATA_WRAPPER_SIZE)
+required=(GANESH_GCP_PROJECT GANESH_GCS_BUCKET GANESH_GCS_PREFIX GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_ARCHIVE_SHA256 GANESH_WORKSPACE_ARCHIVE_SIZE GANESH_WORKSPACE_MANIFEST_URI GANESH_WORKSPACE_MANIFEST_SHA256 GANESH_WORKSPACE_MANIFEST_SIZE GANESH_TRAIN_WORKSPACE_ARCHIVE_URI GANESH_TRAIN_WORKSPACE_ARCHIVE_SHA256 GANESH_TRAIN_WORKSPACE_ARCHIVE_SIZE GANESH_TRAIN_WORKSPACE_MANIFEST_URI GANESH_TRAIN_WORKSPACE_MANIFEST_SHA256 GANESH_TRAIN_WORKSPACE_MANIFEST_SIZE GANESH_GATE0_REPORT_URI GANESH_GATE0_REPORT_SHA256 GANESH_GATE0_REPORT_SIZE GANESH_GATE2_REPORT_URI GANESH_GATE2_REPORT_SHA256 GANESH_GATE2_REPORT_SIZE GANESH_MODEL_ARCHIVE_URI GANESH_MODEL_ARCHIVE_SHA256 GANESH_MODEL_ARCHIVE_SIZE GANESH_IMAGE_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_SHA256 GANESH_IMAGE_ARCHIVE_SIZE GANESH_DOCKER_BUNDLE_URI GANESH_DOCKER_BUNDLE_SHA256 GANESH_DOCKER_BUNDLE_SIZE GANESH_VERIFIER_ARCHIVE_URI GANESH_VERIFIER_ARCHIVE_SHA256 GANESH_VERIFIER_ARCHIVE_SIZE GANESH_VERIFIER_MANIFEST_URI GANESH_VERIFIER_MANIFEST_SHA256 GANESH_VERIFIER_MANIFEST_SIZE GANESH_CUDA_IMAGE_ID GANESH_CUDA_IMAGE_REF GANESH_ATTEMPT_ID GANESH_GPU_HOURLY_USD GANESH_SUPPORT_RESERVE_USD GANESH_ABSOLUTE_COST_CEILING_USD GANESH_ABSOLUTE_HARD_DEADLINE_EPOCH GANESH_MAX_VM_LIFETIME_SECONDS GANESH_CONTROLLER_BUDGET_SECONDS GANESH_BACKUP_RESERVE_SECONDS GANESH_EXPECTED_MACHINE_TYPE GANESH_EXECUTION_CARD_URI GANESH_EXECUTION_CARD_SHA256 GANESH_EXECUTION_CARD_SIZE GANESH_EXECUTION_CARD_INTERNAL_SHA256 GANESH_CONTROLLER_URI GANESH_CONTROLLER_SHA256 GANESH_CONTROLLER_SIZE GANESH_METADATA_WRAPPER_URI GANESH_METADATA_WRAPPER_SHA256 GANESH_METADATA_WRAPPER_SIZE)
 for name in "${required[@]}"; do [[ -n "${!name:-}" ]] || { echo "missing $name" >&2; exit 2; }; done
-for name in GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_MANIFEST_URI GANESH_MODEL_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_URI GANESH_DOCKER_BUNDLE_URI GANESH_VERIFIER_ARCHIVE_URI GANESH_VERIFIER_MANIFEST_URI GANESH_EXECUTION_CARD_URI; do
+for name in GANESH_WORKSPACE_ARCHIVE_URI GANESH_WORKSPACE_MANIFEST_URI GANESH_TRAIN_WORKSPACE_ARCHIVE_URI GANESH_TRAIN_WORKSPACE_MANIFEST_URI GANESH_GATE0_REPORT_URI GANESH_GATE2_REPORT_URI GANESH_MODEL_ARCHIVE_URI GANESH_IMAGE_ARCHIVE_URI GANESH_DOCKER_BUNDLE_URI GANESH_VERIFIER_ARCHIVE_URI GANESH_VERIFIER_MANIFEST_URI GANESH_EXECUTION_CARD_URI; do
   case "${!name}" in *'#'[0-9]*) ;; *) echo "$name must include a GCS generation" >&2; exit 40;; esac
 done
 python3 - "$GANESH_GPU_HOURLY_USD" "$GANESH_SUPPORT_RESERVE_USD" "$GANESH_ABSOLUTE_COST_CEILING_USD" "$GANESH_MAX_VM_LIFETIME_SECONDS" "$GANESH_CONTROLLER_BUDGET_SECONDS" "$GANESH_BACKUP_RESERVE_SECONDS" <<'PY'
@@ -58,12 +58,7 @@ remaining() { local value=$((controller_deadline_epoch - $(date +%s))); (( value
 backup_remaining() { local value=$((hard_deadline_epoch - 20 - $(date +%s))); (( value > 0 )) || return 1; printf '%s\n' "$value"; }
 phase_timeout() { local cap="$1" left; left="$(remaining)" || return 1; (( left < cap )) && printf '%s\n' "$left" || printf '%s\n' "$cap"; }
 checkpoint() {
-  local stamp archive
-  stamp="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
-  archive="/run/ganesh-gate1-checkpoint-$GANESH_ATTEMPT_ID.tar.gz"
-  timeout "$(phase_timeout 120)" tar -C "$evidence_dir" --exclude='shared-tmp' -czf "$archive" . || return 0
-  timeout "$(phase_timeout 300)" gcloud storage cp "$archive" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/$checkpoint_prefix/$stamp.tar.gz" --project="$GANESH_GCP_PROJECT" >> "$evidence_dir/gcs-backup.log" 2>&1 || true
-  rm -f "$archive"
+  timeout "$(phase_timeout 300)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/$checkpoint_prefix" --recursive --exclude='shared-tmp/.*' --project="$GANESH_GCP_PROJECT" >> "$evidence_dir/gcs-backup.log" 2>&1 || true
 }
 checkpoint_loop() { while true; do checkpoint || true; sleep 120; done; }
 final_backup() { timeout "$(backup_remaining)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/$terminal_prefix" --recursive --exclude='shared-tmp/.*' --project="$GANESH_GCP_PROJECT" > /var/log/ganesh-gate1-final-backup.log 2>&1; }
@@ -99,7 +94,7 @@ claimed = card.pop("execution_sha256", None)
 actual = hashlib.sha256(json.dumps(card, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 if claimed != actual or claimed != os.environ["GANESH_EXECUTION_CARD_INTERNAL_SHA256"]:
     raise SystemExit("execution card seal mismatch")
-if card.get("schema_version") != "ganesh-mini-gate1-gcloud-execution/v1" or card.get("status") != "authorized-executable" or card.get("gate") != 1:
+if card.get("schema_version") != "ganesh-mini-staged-gcloud-execution/v1" or card.get("status") != "authorized-executable" or card.get("gate_range") != [1,3]:
     raise SystemExit("execution card contract mismatch")
 
 expected = {
@@ -123,6 +118,10 @@ for key, value in expected.items():
 bindings = {
     "workspace_archive": "WORKSPACE_ARCHIVE",
     "workspace_manifest": "WORKSPACE_MANIFEST",
+    "training_workspace_archive": "TRAIN_WORKSPACE_ARCHIVE",
+    "training_workspace_manifest": "TRAIN_WORKSPACE_MANIFEST",
+    "gate0_report": "GATE0_REPORT",
+    "gate2_report": "GATE2_REPORT",
     "model_archive": "MODEL_ARCHIVE",
     "cuda_image_archive": "IMAGE_ARCHIVE",
     "docker_bundle": "DOCKER_BUNDLE",
@@ -160,13 +159,18 @@ if launch != expected_launch:
 PY
 download_verified "$GANESH_WORKSPACE_ARCHIVE_URI" "$GANESH_WORKSPACE_ARCHIVE_SHA256" "$GANESH_WORKSPACE_ARCHIVE_SIZE" "$work_dir/workspace.tar.gz"
 download_verified "$GANESH_WORKSPACE_MANIFEST_URI" "$GANESH_WORKSPACE_MANIFEST_SHA256" "$GANESH_WORKSPACE_MANIFEST_SIZE" "$work_dir/workspace-manifest.json"
+download_verified "$GANESH_TRAIN_WORKSPACE_ARCHIVE_URI" "$GANESH_TRAIN_WORKSPACE_ARCHIVE_SHA256" "$GANESH_TRAIN_WORKSPACE_ARCHIVE_SIZE" "$work_dir/training-workspace.tar.gz"
+download_verified "$GANESH_TRAIN_WORKSPACE_MANIFEST_URI" "$GANESH_TRAIN_WORKSPACE_MANIFEST_SHA256" "$GANESH_TRAIN_WORKSPACE_MANIFEST_SIZE" "$work_dir/training-workspace-manifest.json"
+download_verified "$GANESH_GATE0_REPORT_URI" "$GANESH_GATE0_REPORT_SHA256" "$GANESH_GATE0_REPORT_SIZE" "$work_dir/gate0-readiness.json"
+download_verified "$GANESH_GATE2_REPORT_URI" "$GANESH_GATE2_REPORT_SHA256" "$GANESH_GATE2_REPORT_SIZE" "$work_dir/gate2-readiness.json"
 download_verified "$GANESH_MODEL_ARCHIVE_URI" "$GANESH_MODEL_ARCHIVE_SHA256" "$GANESH_MODEL_ARCHIVE_SIZE" "$work_dir/model.tar.gz"
 download_verified "$GANESH_IMAGE_ARCHIVE_URI" "$GANESH_IMAGE_ARCHIVE_SHA256" "$GANESH_IMAGE_ARCHIVE_SIZE" "$work_dir/cuda-image.docker.tar.zst"
 download_verified "$GANESH_DOCKER_BUNDLE_URI" "$GANESH_DOCKER_BUNDLE_SHA256" "$GANESH_DOCKER_BUNDLE_SIZE" "$work_dir/docker-bundle.tar.gz"
 download_verified "$GANESH_VERIFIER_ARCHIVE_URI" "$GANESH_VERIFIER_ARCHIVE_SHA256" "$GANESH_VERIFIER_ARCHIVE_SIZE" "$work_dir/verifier-images.tar"
 download_verified "$GANESH_VERIFIER_MANIFEST_URI" "$GANESH_VERIFIER_MANIFEST_SHA256" "$GANESH_VERIFIER_MANIFEST_SIZE" "$work_dir/verifier-manifest.json"
-mkdir "$work_dir/workspace" "$work_dir/model" "$work_dir/docker-bundle"
+mkdir "$work_dir/workspace" "$work_dir/training-workspace" "$work_dir/model" "$work_dir/docker-bundle"
 timeout "$(phase_timeout 180)" tar -xzf "$work_dir/workspace.tar.gz" -C "$work_dir/workspace"
+timeout "$(phase_timeout 180)" tar -xzf "$work_dir/training-workspace.tar.gz" -C "$work_dir/training-workspace"
 timeout "$(phase_timeout 300)" tar -xzf "$work_dir/model.tar.gz" -C "$work_dir/model"
 timeout "$(phase_timeout 120)" tar -xzf "$work_dir/docker-bundle.tar.gz" -C "$work_dir/docker-bundle" --strip-components=1
 timeout "$(phase_timeout 120)" bash -c 'cd "$1" && sha256sum -c bundle-files.sha256' _ "$work_dir/docker-bundle"
@@ -189,19 +193,27 @@ env | sed -E 's/(TOKEN|SECRET|PASSWORD|KEY)=.*/\1=REDACTED/' | sort > "$evidence
 checkpoint_loop & checkpoint_pid="$!"
 
 set +e
-python3 "$work_dir/workspace/scripts/inference/run_development_baseline_host.py" \
-  --workspace "$work_dir/workspace" \
-  --workspace-manifest "$work_dir/workspace-manifest.json" \
-  --workspace-archive "$work_dir/workspace.tar.gz" \
+python3 "$work_dir/workspace/scripts/campaign/run_host.py" \
+  --eval-workspace "$work_dir/workspace" \
+  --eval-manifest "$work_dir/workspace-manifest.json" \
+  --eval-archive "$work_dir/workspace.tar.gz" \
+  --train-workspace "$work_dir/training-workspace" \
+  --train-manifest "$work_dir/training-workspace-manifest.json" \
+  --train-archive "$work_dir/training-workspace.tar.gz" \
   --model "$work_dir/model" \
-  --verifier-bundle "$work_dir/verifier-manifest.json" \
+  --verifier-manifest "$work_dir/verifier-manifest.json" \
   --verifier-archive "$work_dir/verifier-images.tar" \
-  --output "$output_dir" \
+  --gate0-report "$work_dir/gate0-readiness.json" \
+  --gate2-report "$work_dir/gate2-readiness.json" \
+  --output "$output_dir/campaign" \
   --shared-tmp "$shared_tmp" \
   --cuda-image "$GANESH_CUDA_IMAGE_REF" \
   --cuda-image-id "$GANESH_CUDA_IMAGE_ID" \
   --attempt-id "$GANESH_ATTEMPT_ID" \
-  --max-seconds "$(remaining)" > "$evidence_dir/controller.stdout.log" 2> "$evidence_dir/controller.stderr.log"
+  --max-seconds "$(remaining)" \
+  --finalization-reserve-seconds 1800 \
+  --hourly-cost-usd "$GANESH_GPU_HOURLY_USD" \
+  --training-cost-ceiling-usd "18.65" > "$evidence_dir/controller.stdout.log" 2> "$evidence_dir/controller.stderr.log"
 run_status="$?"
 set -e
 printf '%s\n' "$run_status" > "$evidence_dir/controller-exit-code.txt"

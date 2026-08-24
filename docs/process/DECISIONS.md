@@ -1255,3 +1255,31 @@ readiness seal is
 The seed-pilot prerequisite set now fails on exactly the unexecuted Gate 1
 baseline. No GCloud operation or new model qualification occurred in this
 promotion step.
+
+## 2026-08-25 — One staged L4 campaign supersedes the Gate-1-only VM
+
+Navneet Prabhakar approved replacing the four-hour Gate-1-only proposal with
+one `us-east1-b` `g2-standard-12` Flex-start campaign: at most two hours of
+provisioning wait, 18 hours of runtime, and USD 19.00 incremental cost. Early
+shutdown and deletion remain mandatory. The public on-demand rate used for the
+conservative ceiling is `$1.000416348`/hour; 18 hours plus the `$0.35` support
+reserve is `$18.357494264`, below the approved ceiling. Current account price
+and quota still must pass immediately before creation.
+
+The VM runs the exact Qwen development baseline first. Training cannot start
+unless the complete 180-task evidence opens Gate 1. It then runs the two frozen
+400,000-token learning-rate candidates sequentially, evaluates each on the
+same development surface, seals the predeclared LR selection, runs the exact
+636,093-token main seed SFT, evaluates it, and applies the frozen Gate 3
+promotion rule. This is one capacity allocation, not one ungated job.
+
+The development and seed corpora remain in separate content-sealed workspaces.
+Evaluation containers cannot see training data; training containers receive
+only seed data and sealed Gate 0/1/2 reports and cannot see evaluation tasks.
+All model containers remain network-disabled. Changed runtime evidence is
+incrementally synchronized to GCS every two minutes, the terminal inventory is
+independently downloaded twice by immutable generation, and the VM and all
+temporary networking are deleted only after verified backup. Any failed phase,
+OOM, non-finite loss, evidence mismatch, cost/time breach, or backup anomaly
+stops subsequent phases. A valid base baseline is still admitted after
+teardown if a later training phase fails, preventing needless remeasurement.

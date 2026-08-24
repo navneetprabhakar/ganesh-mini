@@ -224,6 +224,18 @@ remain unchanged. Gate 0B passed this contract on one L4: the full envelope,
 16 real optimizer steps, adapter save/reload, safe merge, and peak-VRAM ceiling
 all passed. This qualifies the mechanism; it is not a model-quality result.
 
+To avoid repeated L4 provisioning and repeated loading of the same qualified
+assets, Gate 1 and the bounded Gate 3 loop may execute as one staged campaign
+on a single VM. This does not collapse the gates: the exact base baseline must
+open Gate 1 before the training workspace is mounted; each LR candidate must
+finish its frozen 400,000-token budget and complete development evaluation;
+the sealed LR rule must select the main-run rate; and the main 636,093-token
+seed run must complete development evaluation and promotion adjudication.
+Evaluation and training use separate content-sealed workspaces and separate
+offline containers. A failed phase stops later phases. Runtime evidence is
+backed to GCS throughout, and teardown still requires independently verified
+terminal backup and exact resource-absence proof.
+
 The fallback recipe changes only base loading to bitsandbytes 4-bit NF4 with
 BF16 adapter compute. It is eligible only after the primary recipe records an
 OOM or exceeds the frozen peak-VRAM ceiling. Record the trigger and keep all

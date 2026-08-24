@@ -27,7 +27,7 @@ def sha(path: Path) -> str:
 
 def fixture(tmp_path: Path, controller_code: int | None = 0, startup_code: int | None = None) -> tuple[Path, Path, Path]:
     root = tmp_path / "download"
-    output = root / "output"
+    output = root / "output" / "campaign" / "baseline"
     output.mkdir(parents=True)
     run = write_sealed(output / "run.json", {
         "schema_version": "ganesh-mini-inference-run/v2",
@@ -42,6 +42,9 @@ def fixture(tmp_path: Path, controller_code: int | None = 0, startup_code: int |
         "attempt_id": "attempt",
         "run": {"run_sha256": run["run_sha256"], "task_accounting": run["task_accounting"]},
     }, "evidence_sha256")
+    write_sealed(root / "output" / "campaign" / "campaign-result.json", {
+        "schema_version": "ganesh-mini-staged-campaign-result/v1", "status": "passed", "attempt_id": "attempt"
+    }, "evidence_sha256")
     (root / "startup-exit-code.txt").write_text(f"{controller_code if startup_code is None else startup_code}\n")
     if controller_code is not None:
         (root / "controller-exit-code.txt").write_text(f"{controller_code}\n")
@@ -54,7 +57,7 @@ def fixture(tmp_path: Path, controller_code: int | None = 0, startup_code: int |
     manifest = {"schema_version": "ganesh-mini-gcs-backup-manifest/v1", "status": "verified", "project": "p", "prefix": PREFIX, "object_count": len(rows), "objects": rows}
     manifest["evidence_sha256"] = canonical_sha256(manifest)
     manifest_path = tmp_path / "manifest.json"; manifest_path.write_text(json.dumps(manifest))
-    card = {"schema_version": "ganesh-mini-gate1-gcloud-execution/v1", "status": "authorized-executable", "gate": 1, "execution": {"attempt_id": "attempt"}}
+    card = {"schema_version": "ganesh-mini-staged-gcloud-execution/v1", "status": "authorized-executable", "gate": 1, "gate_range": [1,3], "execution": {"attempt_id": "attempt"}}
     card["execution_sha256"] = canonical_sha256(card)
     card_path = tmp_path / "card.json"; card_path.write_text(json.dumps(card))
     return root, manifest_path, card_path
@@ -72,7 +75,8 @@ def test_accepts_sealed_failure_for_deletion_but_not_as_gate1_pass(tmp_path: Pat
     root, manifest, card = fixture(tmp_path, controller_code=7)
     evidence = verify(manifest, root, card, PREFIX)
     assert evidence["status"] == "sealed-failure"
-    assert evidence["run"] is None and evidence["deletion_eligible"] is True
+    assert evidence["run"]["task_accounting"]["completed"] == 180
+    assert evidence["deletion_eligible"] is True
 
 
 def test_accepts_sealed_failure_before_controller_start(tmp_path: Path) -> None:

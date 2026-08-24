@@ -52,7 +52,7 @@ def verify(
     card = load_sealed(execution_card_path, "execution_sha256")
     if manifest.get("status") != "verified" or manifest.get("prefix") != expected_prefix:
         raise ValueError("terminal backup manifest status or prefix mismatch")
-    if card.get("schema_version") != "ganesh-mini-gate1-gcloud-execution/v1" or card.get("status") != "authorized-executable":
+    if card.get("schema_version") != "ganesh-mini-staged-gcloud-execution/v1" or card.get("status") != "authorized-executable":
         raise ValueError("execution card contract mismatch")
     objects = manifest.get("objects", [])
     if not objects or not all(row.get("verified") is True for row in objects):
@@ -82,9 +82,10 @@ def verify(
     controller_code = int(controller_code_path.read_text().strip()) if controller_code_path.is_file() else None
     successful = startup_code == controller_code == 0
     run_summary: dict[str, Any] | None = None
-    if successful:
-        run = validate_completed_run(download_root / "output/run.json")
-        host = load_sealed(download_root / "output/host-execution.json", "evidence_sha256")
+    campaign_root=download_root / "output/campaign"
+    if (campaign_root / "baseline/run.json").is_file():
+        run = validate_completed_run(campaign_root / "baseline/run.json")
+        host = load_sealed(campaign_root / "baseline/host-execution.json", "evidence_sha256")
         execution = card["execution"]
         if (
             host.get("status") != "passed"
@@ -98,6 +99,13 @@ def verify(
             "host_execution_sha256": host["evidence_sha256"],
             "task_accounting": run["task_accounting"],
         }
+    if successful:
+        if run_summary is None:
+            raise ValueError("successful campaign is missing the completed baseline")
+        campaign = load_sealed(campaign_root / "campaign-result.json", "evidence_sha256")
+        if campaign.get("status") != "passed" or campaign.get("attempt_id") != card["execution"]["attempt_id"]:
+            raise ValueError("staged campaign result is incomplete")
+        run_summary["campaign_result_sha256"] = campaign["evidence_sha256"]
     else:
         diagnostics = [download_root / "controller.stderr.log", download_root / "startup.stderr.log"]
         if startup_code == 0 and controller_code is None:

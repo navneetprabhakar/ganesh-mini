@@ -16,7 +16,7 @@ import hashlib, json, shlex, sys
 card=json.load(open(sys.argv[1],encoding='utf-8'))
 claimed=card.pop('execution_sha256',None)
 actual=hashlib.sha256(json.dumps(card,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
-if claimed != actual or card.get('schema_version') != 'ganesh-mini-gate1-gcloud-execution/v1' or card.get('status') != 'authorized-executable':
+if claimed != actual or card.get('schema_version') != 'ganesh-mini-staged-gcloud-execution/v1' or card.get('status') != 'authorized-executable':
     raise SystemExit('invalid executable card')
 execution=card['execution']; resources=execution['resources']
 values={
@@ -154,9 +154,10 @@ gcloud storage cp "$run_dir/finalization.json" "$postdelete_prefix/finalization.
 python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
   --project "$project" --prefix "$postdelete_prefix" \
   --output "$run_dir/post-delete-final-backup-manifest.json" --download-dir "$run_dir/post-delete-final-download"
-if [[ "$terminal_status" == 0 ]]; then
+baseline_admissible="$(python3 -c 'import json,sys; print("yes" if json.load(open(sys.argv[1])).get("run") else "no")' "$run_dir/terminal-validation.json")"
+if [[ "$baseline_admissible" == yes ]]; then
   python3 "$repo_root/scripts/inference/admit_gate1_baseline.py" --finalization-dir "$run_dir"
 else
-  printf 'Gate 1 produced a sealed failure; canonical baseline admission was correctly skipped.\n'
+  printf 'Campaign produced no validated Gate 1 baseline; canonical baseline admission was correctly skipped.\n'
 fi
 printf 'Gate 1 finalization complete: %s (final backup: %s)\n' "$run_dir/finalization.json" "$run_dir/post-delete-final-backup-manifest.json"

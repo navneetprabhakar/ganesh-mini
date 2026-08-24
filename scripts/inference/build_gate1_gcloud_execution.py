@@ -22,6 +22,10 @@ from scripts.inference.build_gate1_gcloud_preparation import ROOT, canonical_sha
 INPUT_KEYS = {
     "workspace_archive",
     "workspace_manifest",
+    "training_workspace_archive",
+    "training_workspace_manifest",
+    "gate0_report",
+    "gate2_report",
     "model_archive",
     "cuda_image_archive",
     "docker_bundle",
@@ -33,6 +37,10 @@ LOCAL_INPUT_MAPPING = {
     "workspace_manifest": "workspace_manifest",
     "verifier_archive": "verifier_archive",
     "verifier_manifest": "verifier_manifest",
+    "training_workspace_archive": "training_workspace_archive",
+    "training_workspace_manifest": "training_workspace_manifest",
+    "gate0_report": "gate0_report",
+    "gate2_report": "gate2_report",
 }
 REUSED_INPUT_MAPPING = {
     "model_archive": "model",
@@ -89,7 +97,7 @@ def tracked_worktree_clean(root: Path) -> bool:
 
 def validate_approval(text: str) -> None:
     normalized = " ".join(text.lower().split())
-    required = ("approved", "gate 1", "g2-standard-12", "us-east1-b", "4 hours", "usd 4.40")
+    required = ("approved", "staged", "g2-standard-12", "us-east1-b", "18 hours", "usd 19")
     missing = [token for token in required if token not in normalized]
     if missing:
         raise ValueError(f"approval text does not bind the prepared execution: {missing}")
@@ -142,7 +150,7 @@ def build(
     hourly = Decimal(str(cost.get("conservative_hourly_usd")))
     reserve = Decimal(str(cost.get("support_reserve_usd")))
     ceiling = Decimal(str(cost.get("absolute_cost_ceiling_usd")))
-    approved_ceiling = Decimal("4.40")
+    approved_ceiling = Decimal("19.00")
     upper = hourly * Decimal(proposal["maximum_run_seconds"]) / Decimal(3600) + reserve
     if hourly <= 0 or reserve < 0 or ceiling <= upper or ceiling > approved_ceiling:
         raise ValueError("cost preflight exceeds the approved bound")
@@ -199,18 +207,27 @@ def build(
         "resources": resources,
     }
     card: dict[str, Any] = {
-        "schema_version": "ganesh-mini-gate1-gcloud-execution/v1",
+        "schema_version": "ganesh-mini-staged-gcloud-execution/v1",
         "status": "authorized-executable",
         "gate": 1,
+        "gate_range": [1, 3],
         "source_commit": source_commit,
         "preparation_sha256": preparation["preparation_sha256"],
         "bindings_sha256": bindings["bindings_sha256"],
-        "approval": {"verbatim": approval_text, "maximum_incremental_cost_usd": "4.40"},
+        "approval": {"verbatim": approval_text, "maximum_incremental_cost_usd": "19.00"},
         "model": preparation["model"],
         "evaluation": {
             "classification": "private_development_baseline",
             "surface": "development",
             "expected_task_count": 180,
+            "decision_prompts_exposed": False,
+        },
+        "training": {
+            "mechanism": "bf16-lora-fused-linear-cross-entropy",
+            "lr_candidates": [0.0001, 0.0002],
+            "lr_candidate_seen_tokens_each": 400000,
+            "main_seen_tokens": 636093,
+            "evaluation_training_mount_isolation": True,
             "decision_prompts_exposed": False,
         },
         "execution": execution,

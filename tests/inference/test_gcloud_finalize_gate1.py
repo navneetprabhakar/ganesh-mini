@@ -19,7 +19,7 @@ def test_finalizer_orders_verified_backup_before_deletion_and_backs_teardown() -
     assert "cmp \"$card\" \"$terminal_dir/execution-card.json\"" in script
     assert "post-delete-final-backup-manifest.json" in script
     assert "wrapper-failure-backup-manifest.json" in script
-    assert 'if [[ "$terminal_status" == 0 ]]' in script
+    assert 'if [[ "$baseline_admissible" == yes ]]' in script
     assert "canonical baseline admission was correctly skipped" in script
 
 

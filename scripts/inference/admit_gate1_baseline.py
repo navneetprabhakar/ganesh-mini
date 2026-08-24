@@ -75,13 +75,13 @@ def admit(finalization_dir: Path, root: Path = ROOT_HINT) -> dict[str, Any]:
     finalization_path = finalization_dir / "finalization.json"
     validation_path = finalization_dir / "terminal-validation.json"
     final_backup_path = finalization_dir / "post-delete-final-backup-manifest.json"
-    source = finalization_dir / "terminal-download" / "output"
+    source = finalization_dir / "terminal-download" / "output" / "campaign" / "baseline"
     finalization = load_sealed(finalization_path, "evidence_sha256")
     validation = load_sealed(validation_path, "evidence_sha256")
     if finalization.get("schema_version") != "ganesh-mini-gate1-gcloud-finalization/v1" or finalization.get("status") != "complete":
         raise ValueError("Gate 1 teardown finalization is incomplete")
-    if validation.get("schema_version") != "ganesh-mini-gate1-terminal-validation/v1" or validation.get("status") != "passed":
-        raise ValueError("only a successful Gate 1 terminal result can be admitted")
+    if validation.get("schema_version") != "ganesh-mini-gate1-terminal-validation/v1" or validation.get("status") not in {"passed", "sealed-failure"} or not validation.get("run"):
+        raise ValueError("only a terminal result with a validated Gate 1 baseline can be admitted")
     if finalization.get("execution_sha256") != validation.get("execution_sha256"):
         raise ValueError("finalization and terminal validation execution seals differ")
     if finalization.get("terminal_validation_sha256") != validation.get("evidence_sha256"):

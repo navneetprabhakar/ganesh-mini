@@ -20,10 +20,14 @@ ALLOWLIST = (
     "configs/model/qwen3_5_2b.inventory.json",
     "scripts/__init__.py",
     "scripts/cuda/__init__.py", "scripts/cuda/qualify.py",
-    "scripts/eval/__init__.py", "scripts/eval/contracts.py", "scripts/eval/run_task.py",
-    "scripts/eval/verify_runtime_images.py",
+    "scripts/eval/__init__.py", "scripts/eval/contracts.py", "scripts/eval/run_task.py", "scripts/eval/score.py",
+    "scripts/eval/verify_runtime_images.py", "scripts/eval/build_gate1_readiness.py",
+    "scripts/campaign",
     "scripts/inference", "scripts/verify",
     "eval/private/development",
+    "manifests/evaluation/private/decision-global-separation.json",
+    "manifests/evaluation/private/retention-slice.json",
+    "manifests/evaluation/public/multi_livecodebench_v6.json",
     "manifests/evaluation/private/development-tranche1.json",
     "manifests/evaluation/private/development-tranche2.json",
     "manifests/evaluation/private/development-tranche3.json",
@@ -33,7 +37,7 @@ ALLOWLIST = (
 )
 FORBIDDEN_PARTS = {
     ".git", ".gcloud-staging", "__pycache__", "artifacts", "checkpoints",
-    "decision", "measurement", "outputs", "retention", "seed", "train",
+    "decision", "measurement", "outputs", "seed",
 }
 
 

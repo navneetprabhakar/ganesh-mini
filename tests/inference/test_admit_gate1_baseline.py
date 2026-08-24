@@ -23,7 +23,7 @@ def write_sealed(path: Path, value: dict, field: str) -> dict:
 
 def finalization_fixture(tmp_path: Path, *, terminal_status: str = "passed") -> tuple[Path, dict, dict]:
     run_dir = tmp_path / "finalization"
-    output = run_dir / "terminal-download" / "output"
+    output = run_dir / "terminal-download" / "output" / "campaign" / "baseline"
     output.mkdir(parents=True)
     (output / "run.json").write_text("{}\n", encoding="utf-8")
     (output / "tasks").mkdir()
@@ -96,7 +96,7 @@ def test_admits_successful_finalized_baseline_atomically(
 def test_rejects_sealed_failure_before_copy(tmp_path: Path) -> None:
     run_dir, _, _ = finalization_fixture(tmp_path, terminal_status="sealed-failure")
     root = tmp_path / "repo"
-    with pytest.raises(ValueError, match="only a successful"):
+    with pytest.raises(ValueError, match="validated Gate 1 baseline"):
         admit(run_dir, root)
     assert not (root / "measurement/inference/development/qwen3.5-2b-base-v1").exists()
 

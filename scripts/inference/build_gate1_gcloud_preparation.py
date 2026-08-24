@@ -36,6 +36,7 @@ def load_sealed(relative: str, field: str) -> dict[str, Any]:
 
 def build() -> dict[str, Any]:
     workspace = load_sealed("measurement/gate1/development_workspace_20260823.json", "manifest_sha256")
+    training_workspace = load_sealed("measurement/gate1/training_workspace_20260825.json", "manifest_sha256")
     verifier = load_sealed("measurement/gate1/verifier_image_bundle_amd64_v1.json", "manifest_sha256")
     gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
     gate0_result = load_sealed("measurement/cuda/gcloud/20260824T180957Z/run-result.json", "evidence_sha256")
@@ -46,6 +47,10 @@ def build() -> dict[str, Any]:
         "workspace_manifest": file_identity("measurement/gate1/development_workspace_20260823.json"),
         "verifier_archive": file_identity("artifacts/eval/verifier-images/amd64-v1/verifier-images-amd64-v1.tar"),
         "verifier_manifest": file_identity("measurement/gate1/verifier_image_bundle_amd64_v1.json"),
+        "training_workspace_archive": file_identity("artifacts/train/workspaces/seed-pilot-v1.tar.gz"),
+        "training_workspace_manifest": file_identity("measurement/gate1/training_workspace_20260825.json"),
+        "gate0_report": file_identity("measurement/gate0/readiness.json"),
+        "gate2_report": file_identity("measurement/gate2/readiness.json"),
         "controller": file_identity("scripts/inference/gcloud_startup_development_baseline.sh"),
         "metadata_wrapper": file_identity("scripts/inference/gcloud_baseline_metadata_wrapper.sh"),
         "execution_card_builder": file_identity("scripts/inference/build_gate1_gcloud_execution.py"),
@@ -61,13 +66,15 @@ def build() -> dict[str, Any]:
     }
     if local_inputs["workspace_archive"]["sha256"] != workspace["archive"]["sha256"]:
         raise ValueError("workspace archive no longer matches its sealed manifest")
+    if local_inputs["training_workspace_archive"]["sha256"] != training_workspace["archive_sha256"]:
+        raise ValueError("training workspace archive no longer matches its sealed manifest")
     if local_inputs["verifier_archive"]["sha256"] != verifier["archive"]["sha256"]:
         raise ValueError("verifier archive no longer matches its sealed manifest")
     record: dict[str, Any] = {
         "schema_version": "ganesh-mini-gate1-gcloud-preparation/v1",
         "status": "prepared-not-executable",
         "gate": 1,
-        "purpose": "exact Qwen/Qwen3.5-2B baseline on the frozen 180-task development surface",
+        "purpose": "staged exact-base baseline, two-point LR pilot, main seed SFT, and development adjudication on one L4",
         "model": {"model_id": "Qwen/Qwen3.5-2B", "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"},
         "resource_proposal": {
             "region": "us-east1",
@@ -76,9 +83,9 @@ def build() -> dict[str, Any]:
             "accelerator": "1x nvidia-l4",
             "provisioning_model": "FLEX_START",
             "request_valid_for_seconds": 7200,
-            "maximum_run_seconds": 14400,
-            "controller_budget_seconds": 13500,
-            "backup_reserve_seconds": 900,
+            "maximum_run_seconds": 64800,
+            "controller_budget_seconds": 63000,
+            "backup_reserve_seconds": 1800,
             "instance_termination_action": "DELETE",
             "external_ip": False,
             "temporary_private_network": True,
@@ -91,8 +98,8 @@ def build() -> dict[str, Any]:
             "published_dws_flex_start_hourly_usd": 0.790328877,
             "controller_conservative_hourly_usd": 1.000416348,
             "support_reserve_usd": 0.35,
-            "four_hour_conservative_upper_usd": 4.351665392,
-            "proposed_absolute_ceiling_usd": 4.40,
+            "eighteen_hour_conservative_upper_usd": 18.357494264,
+            "proposed_absolute_ceiling_usd": 19.00,
             "source": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
             "fresh_account_preflight_still_required": True,
         },
@@ -101,6 +108,8 @@ def build() -> dict[str, Any]:
             "verifier_workers": 12,
             "length_bucketing": True,
             "generation_and_verification_overlap": True,
+            "sequential_gpu_phases": ["base-baseline", "lr-1e-4-train", "lr-1e-4-eval", "lr-2e-4-train", "lr-2e-4-eval", "main-train", "main-eval"],
+            "evaluation_training_mount_isolation": True,
             "nvml_interval_seconds": 5,
             "checkpoint_interval_seconds": 120,
         },
@@ -120,7 +129,10 @@ def build() -> dict[str, Any]:
             "double-verify preflight evidence in GCS before any resource creation",
             "create temporary private network and Flex-start VM",
             "on launch failure, double-verify failure evidence, delete exact temporary resources, then prove absence and double-verify teardown evidence",
-            "run offline baseline with periodic resumable GCS checkpoints",
+            "run offline baseline and require Gate 1 admission before training",
+            "run both frozen LR candidates sequentially and evaluate each on development",
+            "seal LR selection, run the exact main seed-token budget, evaluate, and adjudicate Gate 3",
+            "checkpoint the complete campaign evidence to GCS every two minutes",
             "write terminal inventory and verified terminal GCS backup",
             "request guest shutdown only after terminal backup succeeds",
             "delete the stopped VM and disk, with provider max-run deletion as a backstop",
@@ -133,11 +145,11 @@ def build() -> dict[str, Any]:
             "no create until current price and quota preflight fit the approved ceiling",
             "no Gate 1 pass without all 180 task evidence seals",
             "no pilot training before Gate 1 passes",
+            "no next phase after any anomaly or failed frozen gate",
         ],
         "failed_checks": [
-            "fresh_gcloud_execution_approval",
             "current_g2_standard_12_price_and_quota_preflight",
-            "generation_pinned_uploads_for_gate1_local_inputs",
+            "generation_pinned_uploads_for_staged_campaign_inputs",
             "final_executable_card_and_metadata_bindings",
         ],
     }

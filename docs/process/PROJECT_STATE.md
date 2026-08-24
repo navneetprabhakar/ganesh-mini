@@ -5,7 +5,7 @@ Last updated: 2026-08-25
 ## Current gate
 
 Gate 1: execute the exact Qwen development baseline on the already frozen
-180-task surface.
+180-task surface as the first phase of the approved staged L4 campaign.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
@@ -633,19 +633,25 @@ Seed-pilot training remains blocked until Gate 1 is ready. The native verifier,
 global separation, Gate 2 seed cascade, and baseline host audit are already
 complete.
 
-The local Gate 1 cloud layer is now prepared. It proposes one
-`g2-standard-12` L4 Flex-start VM in `us-east1-b`, a two-hour provisioning
-window, a four-hour maximum runtime, 12 host vCPUs aligned with the frozen 12
-verifier workers, two-minute resumable GCS checkpoints, a 15-minute terminal
-backup reserve, guest shutdown only after terminal backup, control-plane
+The local cloud layer now prepares one `g2-standard-12` L4 Flex-start VM in
+`us-east1-b`, a two-hour provisioning window, an approved 18-hour maximum
+runtime and USD 19.00 ceiling, 12 host vCPUs aligned with the frozen 12
+verifier workers, two-minute incremental GCS synchronization, a 30-minute
+terminal backup reserve, guest shutdown only after terminal backup, control-plane
 VM/disk deletion with provider max-run deletion as a backstop,
 exact-resource teardown proof, and double immutable-generation verification.
+After the exact base result opens Gate 1, the same allocation runs both frozen
+400k-token LR candidates and their development evaluations, seals LR
+selection, runs the 636,093-token main seed SFT and its development evaluation,
+and applies Gate 3 promotion. Evaluation and training are isolated in separate
+sealed workspaces and offline containers; any failed phase stops the campaign.
 The sealed preparation record is
 `measurement/gate1/gcloud/preparation.json`. It is intentionally
-`prepared-not-executable`: fresh GCloud approval, current account price/quota
-preflight, generation-pinned uploads of the development workspace and verifier
-assets, and the final executable card are still missing. The public-price
-conservative upper is `$4.351665392`; the proposed absolute ceiling is `$4.40`.
+`prepared-not-executable`: current account price/quota preflight,
+generation-pinned uploads of both isolated workspaces and runtime assets, and
+the final executable card are still missing. GCloud execution is explicitly
+approved. The public-price conservative upper is `$18.357494264`; the absolute
+ceiling is `$19.00`.
 No GCloud action occurred while preparing it.
 
 The executable-card and teardown tooling are now locally complete. The
@@ -659,7 +665,7 @@ deletion on the exact runtime and provider inventory, captures all four
 provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
 post-delete evidence. The current replacement
 preparation seal is
-`cda29e15803889910bb61a14f0ef6494a58a9a8d2f4b25afe7726f128da3371c`.
+`5f26c1d53b7bee4d3ee7e10d7c863bd7a4c33d2df1948618cc03dd3b009066d2`.
 The tools have not been executed against GCloud and do not constitute a card
 or approval.
 
@@ -670,9 +676,9 @@ before creating the temporary VPC. A launch anomaly triggers verified GCS
 failure backup followed by exact run-scoped VM/disk/subnet/network cleanup; an
 exact absence proof and a second verified backup close that failure path. An
 unverifiable backup fails closed. Large artifact hashing is streaming, and the
-guest wrapper authenticates its own startup-script bytes. This preparation does
-not create executable evidence: the exact Gate 1 approval, account preflight,
-uploads, execution card, and 180-task baseline are still outstanding.
+guest wrapper authenticates its own startup-script bytes. This preparation
+does not create executable evidence: account preflight, uploads, the execution
+card, and the 180-task baseline are still outstanding.
 
 Successful execution now has a fail-closed admission bridge. After teardown
 and the final double-verified post-delete backup, the finalizer reopens all
@@ -684,8 +690,7 @@ the frozen evaluation contract.
 
 Fresh price evidence now has a canonical builder as well. It rejects stale or
 future timestamps, non-Google sources, non-finite values, and any conservative
-four-hour bound that reaches the approved ceiling. The actual current price
-observation is intentionally deferred until an execution approval exists.
+18-hour bound that reaches the approved ceiling.
 
 The dependency-complete `.venv` suite passes with only the intentionally
 disabled Docker integration test skipped. Forcing that optional test on the
@@ -705,8 +710,9 @@ training, evaluation, repository operations, and artifact publication.
 GCloud usage is the only standing authorization boundary. The approved
 `us-east1` fused-loss Flex-start L4 execution is complete, double-verified in
 GCS, and fully torn down; no run-scoped compute or network resource remains.
-Non-GCloud compute remains standing-authorized. Another GCloud launch requires
-a fresh card and explicit approval for its additional exposure. The prepared
-Gate 1 proposal is not that approval and cannot be executed as-is.
+Non-GCloud compute remains standing-authorized. The staged Gate 1-through-3
+campaign is explicitly approved for an 18-hour maximum and USD 19.00 ceiling,
+but creation remains blocked until current price/quota, immutable uploads, and
+the final executable card pass.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.

@@ -96,7 +96,7 @@ approval_text="$(cat "$approval_file")"
 python3 - "$approval_text" <<'PY'
 import sys
 text=' '.join(sys.argv[1].lower().split())
-required=('approved','gate 1','g2-standard-12','us-east1-b','4 hours','usd 4.40')
+required=('approved','staged','g2-standard-12','us-east1-b','18 hours','usd 19')
 missing=[token for token in required if token not in text]
 if missing: raise SystemExit('approval does not bind this Gate 1 launch: '+repr(missing))
 PY
@@ -117,8 +117,8 @@ python3 - "$conservative_hourly_usd" "$support_reserve_usd" "$absolute_cost_ceil
 from decimal import Decimal
 import sys
 hourly,reserve,ceiling=map(Decimal,sys.argv[1:])
-upper=hourly*Decimal(4)+reserve
-if hourly<=0 or reserve<0 or ceiling>Decimal('4.40') or upper>=ceiling: raise SystemExit('price evidence exceeds approval')
+upper=hourly*Decimal(18)+reserve
+if hourly<=0 or reserve<0 or ceiling>Decimal('19.00') or upper>=ceiling: raise SystemExit('price evidence exceeds approval')
 PY
 
 account="$(gcloud config get-value account 2>/dev/null)"
@@ -183,6 +183,10 @@ PY
 
 upload_bind workspace_archive "$repo_root/artifacts/eval/workspaces/development-v1.tar.gz" development-v1.tar.gz > "$work_dir/input-metadata/workspace_archive.binding.json"
 upload_bind workspace_manifest "$repo_root/measurement/gate1/development_workspace_20260823.json" development-workspace.json > "$work_dir/input-metadata/workspace_manifest.binding.json"
+upload_bind training_workspace_archive "$repo_root/artifacts/train/workspaces/seed-pilot-v1.tar.gz" training-workspace.tar.gz > "$work_dir/input-metadata/training_workspace_archive.binding.json"
+upload_bind training_workspace_manifest "$repo_root/measurement/gate1/training_workspace_20260825.json" training-workspace-manifest.json > "$work_dir/input-metadata/training_workspace_manifest.binding.json"
+upload_bind gate0_report "$repo_root/measurement/gate0/readiness.json" gate0-readiness.json > "$work_dir/input-metadata/gate0_report.binding.json"
+upload_bind gate2_report "$repo_root/measurement/gate2/readiness.json" gate2-readiness.json > "$work_dir/input-metadata/gate2_report.binding.json"
 upload_bind verifier_archive "$repo_root/artifacts/eval/verifier-images/amd64-v1/verifier-images-amd64-v1.tar" verifier-images-amd64-v1.tar > "$work_dir/input-metadata/verifier_archive.binding.json"
 upload_bind verifier_manifest "$repo_root/measurement/gate1/verifier_image_bundle_amd64_v1.json" verifier-image-bundle.json > "$work_dir/input-metadata/verifier_manifest.binding.json"
 upload_bind controller "$repo_root/scripts/inference/gcloud_startup_development_baseline.sh" gcloud-startup-development-baseline.sh > "$work_dir/input-metadata/controller.binding.json"
@@ -198,7 +202,7 @@ value={'schema_version':'ganesh-mini-gate1-gcloud-bindings/v1','status':'verifie
 'preflight':{'project':project,'region':region,'zone':zone,'machine_type':machine,'gcs_bucket':bucket,'gcs_prefix':prefix,'boot_image':boot,'price_passed':True,'quota_passed':True,'machine_type_available':True,'exact_resources_absent':True,'bucket_round_trip_passed':True},
 'cost':{'conservative_hourly_usd':hourly,'support_reserve_usd':reserve,'absolute_cost_ceiling_usd':ceiling},
 'resources':{'instance':instance,'disk':disk,'network':network,'subnet':subnet},
-'inputs':{'workspace_archive':binding('workspace_archive'),'workspace_manifest':binding('workspace_manifest'),'verifier_archive':binding('verifier_archive'),'verifier_manifest':binding('verifier_manifest'),
+'inputs':{'workspace_archive':binding('workspace_archive'),'workspace_manifest':binding('workspace_manifest'),'training_workspace_archive':binding('training_workspace_archive'),'training_workspace_manifest':binding('training_workspace_manifest'),'gate0_report':binding('gate0_report'),'gate2_report':binding('gate2_report'),'verifier_archive':binding('verifier_archive'),'verifier_manifest':binding('verifier_manifest'),
 'model_archive':{'uri':gate0['input']['model_uri'],'sha256':gate0['input']['model_sha256'],'size_bytes':gate0['input']['model_bytes']},'cuda_image_archive':{'uri':gate0['input']['image_uri'],'sha256':gate0['input']['image_sha256'],'size_bytes':gate0['input']['image_bytes']},'docker_bundle':{'uri':gate0['input']['docker_bundle_uri'],'sha256':gate0['input']['docker_bundle_sha256'],'size_bytes':gate0['input']['docker_bundle_bytes']}},
 'launch':{'controller':binding('controller'),'metadata_wrapper':binding('metadata_wrapper')}}
 value['bindings_sha256']=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
@@ -246,12 +250,12 @@ b=json.load(open(bindings_path)); i=b['inputs']
 rows={
 'ganesh-gcp-project':project,'ganesh-gcs-bucket':bucket,'ganesh-gcs-prefix':prefix,'ganesh-attempt-id':run_id,'ganesh-expected-machine-type':machine,
 'ganesh-gpu-hourly-usd':hourly,'ganesh-support-reserve-usd':reserve,'ganesh-absolute-cost-ceiling-usd':ceiling,
-'ganesh-absolute-hard-deadline-epoch':str(int(time.time())+7200+14400+600),'ganesh-max-vm-lifetime-seconds':'14400','ganesh-controller-budget-seconds':'13500','ganesh-backup-reserve-seconds':'900',
+'ganesh-absolute-hard-deadline-epoch':str(int(time.time())+7200+64800+600),'ganesh-max-vm-lifetime-seconds':'64800','ganesh-controller-budget-seconds':'63000','ganesh-backup-reserve-seconds':'1800',
 'ganesh-execution-card-uri':card_uri,'ganesh-execution-card-sha256':card_sha,'ganesh-execution-card-size':card_size,'ganesh-execution-card-internal-sha256':card_internal,
 'ganesh-controller-uri':controller_uri,'ganesh-controller-sha256':controller_sha,'ganesh-controller-size':controller_size,
 'ganesh-metadata-wrapper-uri':wrapper_uri,'ganesh-metadata-wrapper-sha256':wrapper_sha,'ganesh-metadata-wrapper-size':wrapper_size,
 'ganesh-cuda-image-id':'sha256:cdaf068ffcb933120181168ebf6ae1546ddf81e01b2ad006a1a18dd2e43d9860','ganesh-cuda-image-ref':'ganesh-mini-cuda-gate0:torch2.13.0-cu13.0.1-liger082'}
-for key,prefix_name in [('workspace_archive','workspace-archive'),('workspace_manifest','workspace-manifest'),('model_archive','model-archive'),('cuda_image_archive','image-archive'),('docker_bundle','docker-bundle'),('verifier_archive','verifier-archive'),('verifier_manifest','verifier-manifest')]:
+for key,prefix_name in [('workspace_archive','workspace-archive'),('workspace_manifest','workspace-manifest'),('training_workspace_archive','training-workspace-archive'),('training_workspace_manifest','training-workspace-manifest'),('gate0_report','gate0-report'),('gate2_report','gate2-report'),('model_archive','model-archive'),('cuda_image_archive','image-archive'),('docker_bundle','docker-bundle'),('verifier_archive','verifier-archive'),('verifier_manifest','verifier-manifest')]:
  row=i[key]; rows['ganesh-'+prefix_name+'-uri']=row['uri']; rows['ganesh-'+prefix_name+'-sha256']=row['sha256']; rows['ganesh-'+prefix_name+'-size']=str(row['size_bytes'])
 open(out,'w').write(','.join(k+'='+str(v) for k,v in rows.items()))
 PY
@@ -263,7 +267,7 @@ project_number="$(gcloud projects describe "$project" --format='value(projectNum
 gcloud compute instances create "$instance" --project="$project" --zone="$zone" --machine-type="$machine_type" \
   --image-project="$boot_image_project" --image="$boot_image_name" --boot-disk-size=200GB --boot-disk-type=pd-balanced --no-address \
   --network-interface="network=$network,subnet=$subnet,no-address" --service-account="$project_number-compute@developer.gserviceaccount.com" --scopes=cloud-platform \
-  --provisioning-model=FLEX_START --request-valid-for-duration=2h --max-run-duration=4h --instance-termination-action=DELETE --maintenance-policy=TERMINATE --reservation-affinity=none \
+  --provisioning-model=FLEX_START --request-valid-for-duration=2h --max-run-duration=18h --instance-termination-action=DELETE --maintenance-policy=TERMINATE --reservation-affinity=none \
   --metadata="$(cat "$work_dir/metadata.txt")" --metadata-from-file="startup-script=$repo_root/scripts/inference/gcloud_baseline_metadata_wrapper.sh" \
   --format=json > "$work_dir/provider-instance-create.json"
 

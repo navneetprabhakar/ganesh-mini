@@ -35,6 +35,8 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert "price evidence is older than 24 hours" in script
     assert "price evidence is dated in the future" in script
     assert "standard-fallback" in script
+    assert "${run_id,,}" not in script
+    assert "tr '[:upper:]' '[:lower:]'" in script
 
 
 def test_launcher_cleans_failed_create_only_after_verified_backup() -> None:

@@ -46,17 +46,50 @@ declare -A bindings=(
   [GANESH_EXECUTION_CARD_SHA256]=ganesh-execution-card-sha256
   [GANESH_EXECUTION_CARD_SIZE]=ganesh-execution-card-size
   [GANESH_EXECUTION_CARD_INTERNAL_SHA256]=ganesh-execution-card-internal-sha256
+  [GANESH_CONTROLLER_URI]=ganesh-controller-uri
+  [GANESH_CONTROLLER_SHA256]=ganesh-controller-sha256
+  [GANESH_CONTROLLER_SIZE]=ganesh-controller-size
+  [GANESH_METADATA_WRAPPER_URI]=ganesh-metadata-wrapper-uri
+  [GANESH_METADATA_WRAPPER_SHA256]=ganesh-metadata-wrapper-sha256
+  [GANESH_METADATA_WRAPPER_SIZE]=ganesh-metadata-wrapper-size
 )
 for variable in "${!bindings[@]}"; do
   printf -v "$variable" '%s' "$(read_metadata "${bindings[$variable]}")"
   export "$variable"
 done
 
-controller_uri="$(read_metadata ganesh-controller-uri)"
-controller_sha256="$(read_metadata ganesh-controller-sha256)"
-case "$controller_uri" in *'#'[0-9]*) ;; *) echo "controller URI must include a GCS generation" >&2; exit 40;; esac
+case "$GANESH_CONTROLLER_URI" in *'#'[0-9]*) ;; *) echo "controller URI must include a GCS generation" >&2; exit 40;; esac
+case "$GANESH_METADATA_WRAPPER_URI" in *'#'[0-9]*) ;; *) echo "metadata wrapper URI must include a GCS generation" >&2; exit 40;; esac
 controller=/opt/ganesh-gcloud-development-baseline.sh
-timeout 120 gcloud storage cp "$controller_uri" "$controller" --project="$GANESH_GCP_PROJECT"
-printf '%s  %s\n' "$controller_sha256" "$controller" | sha256sum -c -
+timeout 120 gcloud storage cp "$GANESH_CONTROLLER_URI" "$controller" --project="$GANESH_GCP_PROJECT"
+[[ "$(stat -c %s "$controller")" == "$GANESH_CONTROLLER_SIZE" ]]
+printf '%s  %s\n' "$GANESH_CONTROLLER_SHA256" "$controller" | sha256sum -c -
 chmod 700 "$controller"
-exec "$controller"
+wrapper_dir=/var/lib/ganesh-mini-gate1-wrapper
+mkdir -p "$wrapper_dir"
+set +e
+"$controller" > >(tee "$wrapper_dir/controller.stdout.log") 2> >(tee "$wrapper_dir/controller.stderr.log" >&2)
+controller_status="$?"
+set -e
+if (( controller_status != 0 )); then
+  printf '%s\n' "$controller_status" > "$wrapper_dir/controller-exit-code.txt"
+  sha256sum "$0" "$controller" > "$wrapper_dir/bootstrap-files.sha256"
+  terminal_prefix="gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/runtime-terminal-$GANESH_ATTEMPT_ID"
+  if [[ -d /var/lib/ganesh-mini-gate1 ]]; then
+    for attempt in 1 2 3; do
+      gcloud storage rsync /var/lib/ganesh-mini-gate1 "$terminal_prefix" --recursive --project="$GANESH_GCP_PROJECT" && break
+      if (( attempt < 3 )); then sleep 10; fi
+    done
+  fi
+  wrapper_prefix="gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/wrapper-failure-$GANESH_ATTEMPT_ID"
+  wrapper_backed=0
+  for attempt in 1 2 3; do
+    if gcloud storage rsync "$wrapper_dir" "$wrapper_prefix" --recursive --project="$GANESH_GCP_PROJECT"; then wrapper_backed=1; break; fi
+    if (( attempt < 3 )); then sleep 10; fi
+  done
+  (( wrapper_backed == 1 )) || exit 92
+else
+  rm -rf "$wrapper_dir"
+fi
+( sleep 2; shutdown -h now ) >/dev/null 2>&1 &
+exit "$controller_status"

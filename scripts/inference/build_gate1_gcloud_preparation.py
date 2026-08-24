@@ -48,6 +48,11 @@ def build() -> dict[str, Any]:
         "verifier_manifest": file_identity("measurement/gate1/verifier_image_bundle_amd64_v1.json"),
         "controller": file_identity("scripts/inference/gcloud_startup_development_baseline.sh"),
         "metadata_wrapper": file_identity("scripts/inference/gcloud_baseline_metadata_wrapper.sh"),
+        "execution_card_builder": file_identity("scripts/inference/build_gate1_gcloud_execution.py"),
+        "terminal_validator": file_identity("scripts/inference/verify_gate1_terminal.py"),
+        "finalizer": file_identity("scripts/inference/gcloud_finalize_gate1.sh"),
+        "execution_schema": file_identity("schemas/eval/gate1-gcloud-execution.schema.json"),
+        "terminal_validation_schema": file_identity("schemas/eval/gate1-terminal-validation.schema.json"),
     }
     if local_inputs["workspace_archive"]["sha256"] != workspace["archive"]["sha256"]:
         raise ValueError("workspace archive no longer matches its sealed manifest")

@@ -20,6 +20,7 @@ def test_gate1_gcloud_preparation_is_sealed_but_not_executable() -> None:
     assert record["public_price_bound"]["four_hour_conservative_upper_usd"] < record["public_price_bound"]["proposed_absolute_ceiling_usd"]
     assert record["utilization"]["generation_batch_size"] == 4
     assert record["utilization"]["verifier_workers"] == 12
+    assert {"execution_card_builder", "terminal_validator", "finalizer"} <= set(record["local_inputs"])
     assert "fresh_gcloud_execution_approval" in record["failed_checks"]
 
 
@@ -37,8 +38,9 @@ def test_gate1_startup_scripts_are_fail_closed() -> None:
     assert "--network" not in controller or "run_development_baseline_host.py" in controller
     assert "runtime-files.sha256" in controller
     assert "gcloud storage rsync" in controller
-    assert "shutdown -h now" in controller
-    assert controller.index("final_backup\ntrap - EXIT") < controller.rindex("shutdown -h now")
+    assert controller.count("shutdown -h now") == 1  # hard-deadline watchdog only
+    assert "shutdown -h now" in wrapper
+    assert wrapper.index("wrapper_backed == 1") < wrapper.rindex("shutdown -h now")
     assert "GANESH_VERIFIER_ARCHIVE_URI" in wrapper
     assert "GANESH_EXECUTION_CARD_INTERNAL_SHA256" in wrapper
     assert "execution card metadata mismatch" in controller

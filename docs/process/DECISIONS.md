@@ -1137,3 +1137,41 @@ still be checked after approval and before any upload or resource creation.
 
 No GCloud API, CLI, upload, inspection, or resource action occurred during
 this preparation. Gate 1 remains closed, and pilot training remains blocked.
+
+## 2026-08-25 — Gate 1 execution and teardown are card-bound end to end
+
+The Gate 1 preparation now includes the executable-card builder, execution
+schema, terminal validator, finalizer, and terminal-validation schema. Its
+replacement seal is
+`53383b112d033b3e0a4bcbb60c1206f5adbabad70d6959702239a5acfc79078b`.
+This supersedes only the earlier local Gate 1 preparation record; no frozen
+evaluation task, serving parameter, or executed evidence changed.
+
+An executable card can be produced only after the exact Gate 1 approval text,
+a clean tracked source commit, current price/quota/machine preflight, exact
+resource-absence and bucket round-trip checks, and generation-pinned uploads
+all exist. It rejects a cost upper bound above `$4.40`, unpinned GCS URIs,
+drifted local assets, substituted Gate 0B model/image/Docker objects, a mutable
+boot-image family, or incomplete controller/wrapper bindings. The guest
+controller independently compares every execution, cost, input, CUDA image,
+controller, and wrapper metadata value to the sealed card before model or
+verifier input download continues. The metadata wrapper supervises the
+controller: success is shut down only after the terminal backup returns, while
+a nonzero bootstrap/controller exit gets three bounded backup attempts for
+both runtime state and wrapper diagnostics before shutdown.
+
+The post-run finalizer requires the exact card source commit and stopped VM
+identity. It captures provider evidence, appends it to the terminal prefix,
+downloads every terminal object twice by immutable generation, reopens the
+runtime inventory, and validates either the exact 180-task baseline or a
+sealed failure. The common deletion gate now admits a `gate1-baseline` phase
+but retains its exact inventory/provider-object equality requirement. Only
+after that gate passes may the exact VM, disk, subnet, and network be deleted.
+Their provider IDs are captured before deletion. The finalizer then proves all
+four exact identities absent, uploads the teardown evidence and final receipt,
+and double-verifies the completed post-delete prefix.
+
+A sealed failure is deletion-eligible after durable backup but cannot pass
+Gate 1. This distinction prevents an anomaly from retaining paid resources
+without misrepresenting it as a quality result. No GCloud action occurred
+while implementing or testing this local lifecycle.

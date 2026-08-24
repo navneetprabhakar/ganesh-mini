@@ -633,6 +633,21 @@ assets, and the final executable card are still missing. The public-price
 conservative upper is `$4.351665392`; the proposed absolute ceiling is `$4.40`.
 No GCloud action occurred while preparing it.
 
+The executable-card and teardown tooling are now locally complete. The
+executable-card builder requires the exact approval wording, a clean tracked
+source commit, passed account preflight, exact temporary resource names, and
+generation-pinned GCS identities. The guest rechecks those bindings before
+downloading inputs. A wrapper supervisor retries durable backup before early
+shutdown on controller failure. After execution, the finalizer double-verifies
+the terminal prefix, validates the 180-task result or sealed failure, gates
+deletion on the exact runtime and provider inventory, captures all four
+provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
+post-delete evidence. The current replacement
+preparation seal is
+`53383b112d033b3e0a4bcbb60c1206f5adbabad70d6959702239a5acfc79078b`.
+The tools have not been executed against GCloud and do not constitute a card
+or approval.
+
 The dependency-complete `.venv` suite passes with only the intentionally
 disabled Docker integration test skipped. Forcing that optional test on the
 Apple-Silicon Docker host is not a current native verifier result: the

@@ -58,3 +58,10 @@ def test_deletion_gate_records_explicit_provider_serial_unavailable(tmp_path: Pa
     monkeypatch.setattr("sys.argv",argv)
     assert main()==0
     assert json.loads(output.read_text())["provider_serial_status"]=="provider-unavailable-recorded"
+
+
+def test_deletion_gate_accepts_gate1_phase_with_the_same_exact_backup_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    argv, output = write_inputs(tmp_path, "gate1-baseline")
+    monkeypatch.setattr("sys.argv", argv)
+    assert main() == 0
+    assert json.loads(output.read_text())["phase"] == "gate1-baseline"

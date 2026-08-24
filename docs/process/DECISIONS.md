@@ -1193,12 +1193,41 @@ The startup wrapper also verifies its own byte size and SHA-256 before invoking
 the downloaded controller. If any command fails after resource creation starts,
 the launcher backs and double-verifies its failure evidence first, then deletes
 only the exact run-scoped VM, disk, subnet, and network that exist. It then
-proves all four identities absent and double-verifies the teardown evidence. If backup
-cannot be verified, deletion fails closed for operator recovery instead of
+proves all four identities absent and double-verifies the teardown evidence.
+If backup cannot be verified, deletion fails closed for operator recovery instead of
 discarding the only diagnostic copy. Normal terminal execution still uses the
 separate deletion-gated finalizer.
 
 The replacement preparation seal is
-`0716b0336b7e86e4366ce8b93c37dd9cd1a14f28d3258a09ddc5b0e1b855c3ea`.
+`cda29e15803889910bb61a14f0ef6494a58a9a8d2f4b25afe7726f128da3371c`.
 No GCloud command or account inspection occurred while adding or testing this
 launcher. Gate 1 still has no model outputs and remains closed.
+
+## 2026-08-25 — Successful Gate 1 evidence is admitted atomically after teardown
+
+The finalizer now distinguishes resource deletion from model-result admission.
+Both successful and failed executions remain deletion-eligible after verified
+backup, but only a terminal result with `status=passed` can enter the canonical
+baseline path. Admission occurs after the final teardown receipt has itself
+been uploaded and independently double-verified.
+
+The admission tool reopens the terminal-validation, finalization, and final
+post-delete backup seals; requires the backed finalization receipt to match the
+local receipt; validates the exact completed Qwen run; stages and rehashes every
+downloaded output file; and atomically installs the directory at
+`measurement/inference/development/qwen3.5-2b-base-v1`. It then rebuilds the
+fail-closed Gate 1 report and requires `status=ready` before writing a sealed
+admission receipt. Existing canonical output is never overwritten, and a
+sealed failure is explicitly skipped.
+
+The replacement preparation seal is
+`cda29e15803889910bb61a14f0ef6494a58a9a8d2f4b25afe7726f128da3371c`.
+No GCloud operation or model evaluation occurred while closing this local
+post-run gap.
+
+The preparation also includes a canonical price-evidence builder. It accepts
+only a timezone-aware observation no more than 24 hours old, an official
+Google Cloud HTTPS source, finite decimal values, and a four-hour conservative
+bound strictly below the `$4.40` ceiling. This removes hand-authored evidence
+hashes while retaining the requirement to re-observe official pricing after
+approval and immediately before execution.

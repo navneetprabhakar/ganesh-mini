@@ -154,4 +154,9 @@ gcloud storage cp "$run_dir/finalization.json" "$postdelete_prefix/finalization.
 python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
   --project "$project" --prefix "$postdelete_prefix" \
   --output "$run_dir/post-delete-final-backup-manifest.json" --download-dir "$run_dir/post-delete-final-download"
+if [[ "$terminal_status" == 0 ]]; then
+  python3 "$repo_root/scripts/inference/admit_gate1_baseline.py" --finalization-dir "$run_dir"
+else
+  printf 'Gate 1 produced a sealed failure; canonical baseline admission was correctly skipped.\n'
+fi
 printf 'Gate 1 finalization complete: %s (final backup: %s)\n' "$run_dir/finalization.json" "$run_dir/post-delete-final-backup-manifest.json"

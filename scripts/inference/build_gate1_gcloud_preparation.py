@@ -51,7 +51,10 @@ def build() -> dict[str, Any]:
         "execution_card_builder": file_identity("scripts/inference/build_gate1_gcloud_execution.py"),
         "terminal_validator": file_identity("scripts/inference/verify_gate1_terminal.py"),
         "finalizer": file_identity("scripts/inference/gcloud_finalize_gate1.sh"),
+        "baseline_admitter": file_identity("scripts/inference/admit_gate1_baseline.py"),
+        "price_evidence_builder": file_identity("scripts/inference/build_gate1_price_evidence.py"),
         "launcher": file_identity("scripts/inference/gcloud_launch_gate1.sh"),
+        "baseline_admission_schema": file_identity("schemas/eval/gate1-baseline-admission.schema.json"),
         "execution_schema": file_identity("schemas/eval/gate1-gcloud-execution.schema.json"),
         "price_evidence_schema": file_identity("schemas/eval/gate1-price-evidence.schema.json"),
         "terminal_validation_schema": file_identity("schemas/eval/gate1-terminal-validation.schema.json"),
@@ -123,6 +126,7 @@ def build() -> dict[str, Any]:
             "delete the stopped VM and disk, with provider max-run deletion as a backstop",
             "prove instance and disk absent, delete network, and prove all exact resources absent",
             "download every terminal object twice by immutable generation before Gate 1 admission",
+            "atomically admit only a successful finalized baseline and rebuild the fail-closed Gate 1 readiness report",
         ],
         "hard_stops": [
             "no GCloud action without a fresh explicit execution approval",

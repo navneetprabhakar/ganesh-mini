@@ -644,7 +644,7 @@ deletion on the exact runtime and provider inventory, captures all four
 provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
 post-delete evidence. The current replacement
 preparation seal is
-`0716b0336b7e86e4366ce8b93c37dd9cd1a14f28d3258a09ddc5b0e1b855c3ea`.
+`cda29e15803889910bb61a14f0ef6494a58a9a8d2f4b25afe7726f128da3371c`.
 The tools have not been executed against GCloud and do not constitute a card
 or approval.
 
@@ -658,6 +658,19 @@ unverifiable backup fails closed. Large artifact hashing is streaming, and the
 guest wrapper authenticates its own startup-script bytes. This preparation does
 not create executable evidence: the exact Gate 1 approval, account preflight,
 uploads, execution card, and 180-task baseline are still outstanding.
+
+Successful execution now has a fail-closed admission bridge. After teardown
+and the final double-verified post-delete backup, the finalizer reopens all
+receipts, stages and rehashes every baseline output, atomically installs the
+canonical Qwen baseline directory, and rebuilds Gate 1 readiness. Admission
+requires `status=ready`; sealed failures remain preserved and torn down but are
+never promoted. This removes the previous manual-copy step without changing
+the frozen evaluation contract.
+
+Fresh price evidence now has a canonical builder as well. It rejects stale or
+future timestamps, non-Google sources, non-finite values, and any conservative
+four-hour bound that reaches the approved ceiling. The actual current price
+observation is intentionally deferred until an execution approval exists.
 
 The dependency-complete `.venv` suite passes with only the intentionally
 disabled Docker integration test skipped. Forcing that optional test on the

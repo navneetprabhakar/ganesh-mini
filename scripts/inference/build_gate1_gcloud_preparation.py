@@ -51,7 +51,9 @@ def build() -> dict[str, Any]:
         "execution_card_builder": file_identity("scripts/inference/build_gate1_gcloud_execution.py"),
         "terminal_validator": file_identity("scripts/inference/verify_gate1_terminal.py"),
         "finalizer": file_identity("scripts/inference/gcloud_finalize_gate1.sh"),
+        "launcher": file_identity("scripts/inference/gcloud_launch_gate1.sh"),
         "execution_schema": file_identity("schemas/eval/gate1-gcloud-execution.schema.json"),
+        "price_evidence_schema": file_identity("schemas/eval/gate1-price-evidence.schema.json"),
         "terminal_validation_schema": file_identity("schemas/eval/gate1-terminal-validation.schema.json"),
     }
     if local_inputs["workspace_archive"]["sha256"] != workspace["archive"]["sha256"]:
@@ -112,7 +114,9 @@ def build() -> dict[str, Any]:
         "lifecycle": [
             "price, quota, exact-resource-absence, and bucket round-trip preflight",
             "upload local inputs and bind immutable GCS generations",
+            "double-verify preflight evidence in GCS before any resource creation",
             "create temporary private network and Flex-start VM",
+            "on launch failure, double-verify failure evidence, delete exact temporary resources, then prove absence and double-verify teardown evidence",
             "run offline baseline with periodic resumable GCS checkpoints",
             "write terminal inventory and verified terminal GCS backup",
             "request guest shutdown only after terminal backup succeeds",

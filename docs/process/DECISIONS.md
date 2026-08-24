@@ -1175,3 +1175,30 @@ A sealed failure is deletion-eligible after durable backup but cannot pass
 Gate 1. This distinction prevents an anomaly from retaining paid resources
 without misrepresenting it as a quality result. No GCloud action occurred
 while implementing or testing this local lifecycle.
+
+## 2026-08-25 — Gate 1 launch is preflight-backed and failure-atomic
+
+The prepared Gate 1 lifecycle now includes a single card-bound launcher and a
+strict current-price evidence schema. The launcher checks the exact approval,
+clean source commit, price ceiling and freshness, machine and boot-image
+identity, applicable Flex-start quota, exact resource absence, and a GCS
+round trip before uploading immutable inputs. It supports Google's documented
+quota behavior: an established preemptible quota pool is mandatory once
+present; otherwise the standard quota pool is checked as the permitted
+fallback. Preflight evidence is uploaded and double-read before the first
+temporary network mutation.
+
+Large local inputs are hashed incrementally rather than loaded into memory.
+The startup wrapper also verifies its own byte size and SHA-256 before invoking
+the downloaded controller. If any command fails after resource creation starts,
+the launcher backs and double-verifies its failure evidence first, then deletes
+only the exact run-scoped VM, disk, subnet, and network that exist. It then
+proves all four identities absent and double-verifies the teardown evidence. If backup
+cannot be verified, deletion fails closed for operator recovery instead of
+discarding the only diagnostic copy. Normal terminal execution still uses the
+separate deletion-gated finalizer.
+
+The replacement preparation seal is
+`0716b0336b7e86e4366ce8b93c37dd9cd1a14f28d3258a09ddc5b0e1b855c3ea`.
+No GCloud command or account inspection occurred while adding or testing this
+launcher. Gate 1 still has no model outputs and remains closed.

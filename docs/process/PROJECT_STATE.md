@@ -644,9 +644,20 @@ deletion on the exact runtime and provider inventory, captures all four
 provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
 post-delete evidence. The current replacement
 preparation seal is
-`53383b112d033b3e0a4bcbb60c1206f5adbabad70d6959702239a5acfc79078b`.
+`0716b0336b7e86e4366ce8b93c37dd9cd1a14f28d3258a09ddc5b0e1b855c3ea`.
 The tools have not been executed against GCloud and do not constitute a card
 or approval.
+
+The launch path is also locally complete. It verifies fresh sealed price
+evidence and the applicable preemptible-or-standard quota pool, uploads all
+local inputs by immutable generation, and double-verifies the preflight prefix
+before creating the temporary VPC. A launch anomaly triggers verified GCS
+failure backup followed by exact run-scoped VM/disk/subnet/network cleanup; an
+exact absence proof and a second verified backup close that failure path. An
+unverifiable backup fails closed. Large artifact hashing is streaming, and the
+guest wrapper authenticates its own startup-script bytes. This preparation does
+not create executable evidence: the exact Gate 1 approval, account preflight,
+uploads, execution card, and 180-task baseline are still outstanding.
 
 The dependency-complete `.venv` suite passes with only the intentionally
 disabled Docker integration test skipped. Forcing that optional test on the

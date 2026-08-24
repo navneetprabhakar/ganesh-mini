@@ -57,6 +57,8 @@ for variable in "${!bindings[@]}"; do
   printf -v "$variable" '%s' "$(read_metadata "${bindings[$variable]}")"
   export "$variable"
 done
+[[ "$(stat -c %s "$0")" == "$GANESH_METADATA_WRAPPER_SIZE" ]]
+printf '%s  %s\n' "$GANESH_METADATA_WRAPPER_SHA256" "$0" | sha256sum -c -
 
 case "$GANESH_CONTROLLER_URI" in *'#'[0-9]*) ;; *) echo "controller URI must include a GCS generation" >&2; exit 40;; esac
 case "$GANESH_METADATA_WRAPPER_URI" in *'#'[0-9]*) ;; *) echo "metadata wrapper URI must include a GCS generation" >&2; exit 40;; esac

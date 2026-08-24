@@ -665,7 +665,7 @@ deletion on the exact runtime and provider inventory, captures all four
 provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
 post-delete evidence. The current replacement
 preparation seal is
-`5494db442cdf526737b14367b5a89bf5d775e3818d05338732d0100f52ddbed4`.
+`f6afdafa97f5721411cc6218873c89f3b0b81a7017efab6e3fb4a8172b9519d0`.
 The tools have not been executed against GCloud and do not constitute a card
 or approval.
 

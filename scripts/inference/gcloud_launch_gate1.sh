@@ -168,7 +168,9 @@ PY
 
 input_prefix="gs://$bucket/$prefix/input"
 upload_bind() {
-  local key="$1" source="$2" object="$3" destination="$input_prefix/$object" metadata="$work_dir/input-metadata/$key.json"
+  local key="$1" source="$2" object="$3"
+  local destination="$input_prefix/$object"
+  local metadata="$work_dir/input-metadata/$key.json"
   gcloud storage cp "$source" "$destination" --project="$project"
   gcloud storage objects describe "$destination" --project="$project" --format=json > "$metadata"
   python3 - "$source" "$metadata" "$destination" <<'PY'

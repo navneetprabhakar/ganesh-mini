@@ -37,6 +37,7 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert "standard-fallback" in script
     assert "${run_id,,}" not in script
     assert "tr '[:upper:]' '[:lower:]'" in script
+    assert 'local key="$1" source="$2" object="$3" destination=' not in script
 
 
 def test_launcher_cleans_failed_create_only_after_verified_backup() -> None:

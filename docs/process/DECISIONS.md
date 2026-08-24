@@ -966,3 +966,29 @@ segments. Gate 0B remains closed. Repeating `us-central1` immediately is not
 justified; the next bounded card should inspect and select Standard L4
 capacity in another GCP region, or wait for regional stock to recover. Any
 such GCloud inspection or launch requires fresh explicit approval.
+
+## 2026-08-24 — A second Standard L4 region also stocked out before allocation
+
+Navneet Prabhakar raised the approved regional Gate 0B ceiling to `$1.00` for
+one 30-minute Standard L4 attempt. Read-only preflight chose `us-east4`: the
+project had 16 unused Standard L4 quota, `us-east4-a` and `us-east4-c` both
+officially supported G2, and the durable input bucket was already located in
+`US-EAST4`. A conservative `$1.50` hourly guard plus `$0.20` reserve bounded
+the attempt at `$0.95` before resource creation.
+
+Both authorized zones returned
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS`. Neither create produced a VM or
+disk, so GPU allocation, qualification, training, and compute billing were all
+zero. All seven input objects were independently downloaded twice by immutable
+generation; both manifests equal
+`7e6347207863fa6ce1cfab8994031ead2a9d5bcc3e4a29d3ecb37c062566a3e3`.
+The subnet and VPC were deleted, and all exact resource names plus the matching
+router scope are absent under proof
+`fae70b66d8043df4c08c049e1cd064e7c81db4d260c4fa9304b75e1c391c23f9`.
+
+Gate 0B remains closed and the expandable-segment allocator remains untested.
+After stockouts in both `us-central1` and `us-east4`, another blind retry in
+either region is not evidence-driven. A fresh GCloud authorization should
+first freeze a capacity-oriented path: a new documented G2 region with a
+bounded zone set, or non-Spot queued/flex-start Compute Engine after its
+scheduling, cancellation, and cost controls are verified.

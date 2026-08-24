@@ -16,6 +16,7 @@ def test_gate1_gcloud_preparation_is_sealed_but_not_executable() -> None:
     assert record["status"] == "prepared-not-executable"
     assert record["gate"] == 1
     assert record["resource_proposal"]["maximum_run_seconds"] == 64800
+    assert record["resource_proposal"]["allowed_zones"] == ["us-east1-b", "us-east1-c", "us-east1-d"]
     assert record["resource_proposal"]["controller_budget_seconds"] + record["resource_proposal"]["backup_reserve_seconds"] == 64800
     assert record["public_price_bound"]["eighteen_hour_conservative_upper_usd"] < record["public_price_bound"]["proposed_absolute_ceiling_usd"]
     assert record["utilization"]["generation_batch_size"] == 4

@@ -95,9 +95,9 @@ def tracked_worktree_clean(root: Path) -> bool:
     ).stdout.strip()
 
 
-def validate_approval(text: str) -> None:
+def validate_approval(text: str, zone: str) -> None:
     normalized = " ".join(text.lower().split())
-    required = ("approved", "staged", "g2-standard-12", "us-east1-b", "18 hours", "usd 19")
+    required = ("approved", "staged", "g2-standard-12", zone.lower(), "18 hours", "usd 19")
     missing = [token for token in required if token not in normalized]
     if missing:
         raise ValueError(f"approval text does not bind the prepared execution: {missing}")
@@ -117,7 +117,6 @@ def build(
         raise ValueError("input bindings seal mismatch")
     preparation = load_sealed("measurement/gate1/gcloud/preparation.json", "preparation_sha256")
     gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
-    validate_approval(approval_text)
     if source_commit != current_head(root):
         raise ValueError("source commit is not the current repository HEAD")
     if require_clean and not tracked_worktree_clean(root):
@@ -129,9 +128,13 @@ def build(
 
     proposal = preparation["resource_proposal"]
     preflight = bindings.get("preflight", {})
+    zone = preflight.get("zone")
+    if zone not in proposal["allowed_zones"]:
+        raise ValueError("preflight zone is not an allowed G2/L4 zone")
+    validate_approval(approval_text, zone)
     expected_preflight = {
         "region": proposal["region"],
-        "zone": proposal["zone"],
+        "zone": zone,
         "machine_type": proposal["machine_type"],
     }
     for key, expected in expected_preflight.items():
@@ -195,7 +198,7 @@ def build(
         "gcs_bucket": preflight["gcs_bucket"],
         "gcs_prefix": preflight["gcs_prefix"],
         "region": proposal["region"],
-        "zone": proposal["zone"],
+        "zone": zone,
         "machine_type": proposal["machine_type"],
         "provisioning_model": proposal["provisioning_model"],
         "request_valid_for_seconds": proposal["request_valid_for_seconds"],

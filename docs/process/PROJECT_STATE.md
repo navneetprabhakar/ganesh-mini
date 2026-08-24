@@ -716,3 +716,39 @@ but creation remains blocked until current price/quota, immutable uploads, and
 the final executable card pass.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.
+
+## 2026-08-25 — Staged campaign launch reached provider stockout and was fully torn down
+
+Approved run `20260824T204540Z` passed account, project, current price, quota,
+machine/image, exact-resource-absence, and GCS round-trip preflight. All sealed
+evaluation, training, model, image, verifier, controller, and execution-card
+inputs were uploaded with immutable generations and the preflight prefix passed
+independent double reads before infrastructure creation.
+
+The `g2-standard-12` Flex-start create in `us-east1-b` exited before a VM or
+disk was provisioned. Its interactive provider stderr reported
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS`, but the launcher did not redirect
+that stderr into the run directory; therefore the exact provider message is
+not decision-grade sealed evidence and must not be reconstructed as such. The
+sealed record proves create exit code `1`, an empty create JSON, and complete
+absence of the exact VM, disk, subnet, and network identities. The temporary
+subnet and VPC were deleted after the first verified failure backup. Cleanup
+seal `63b8e20e9a1caeb2659d66f5bae4c170bd2d241a897dd868567b073c25e0efbd`
+and final 68-object backup seal
+`c7222bd9917be67b5fb458f704d363821704d53b234b1d94061209c7dc17ff92`
+close the attempt. No VM or GPU runtime occurred; only storage/API operations
+and short-lived free network objects were used.
+
+Before another request, the launcher now captures provider-create stderr,
+binds the execution card to the selected approved zone, and permits only the
+official G2/L4 zones `us-east1-b`, `us-east1-c`, and `us-east1-d`. Immutable
+GCS verification still performs two independent generation-pinned reads per
+object, now with a bounded default of eight concurrent objects to remove the
+serial cleanup bottleneck. The replacement preparation seal is
+`682b9466b306dffe9c3155a5828cc46e075138edc9f7aa338472bd01b1e0c34c`.
+
+Gate 1 remains closed and no training has started. The next GCloud action is
+blocked on a fresh explicit approval. The recommended bounded fallback is one
+aggregate campaign attempt sequence in `us-east1-c`, then `us-east1-d` only if
+`c` fails before provisioning, with at most one running VM and the existing
+18-hour runtime and USD 19 aggregate incremental ceiling.

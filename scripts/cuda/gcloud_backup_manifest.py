@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import subprocess
@@ -63,8 +64,16 @@ def main() -> int:
         action="store_true",
         help="hash each object through two independent streams instead of storing downloads",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=8,
+        help="maximum concurrent immutable-object verifications (default: 8)",
+    )
     parser.add_argument("--map", action="append", default=[], metavar="REMOTE_SUBPREFIX=LOCAL_ROOT")
     args = parser.parse_args()
+    if args.workers < 1 or args.workers > 32:
+        parser.error("--workers must be between 1 and 32")
     mappings = []
     for value in args.map:
         remote, local = value.split("=", 1)
@@ -74,10 +83,10 @@ def main() -> int:
         raise SystemExit("refusing to seal an empty GCS prefix")
     if not args.stream:
         args.download_dir.mkdir(parents=True, exist_ok=True)
-    entries = []
+    items = sorted(listing, key=lambda value: value["metadata"]["name"])
     prefix_path = args.prefix.split("/", 3)[3].rstrip("/")
     with tempfile.TemporaryDirectory(prefix="ganesh-gcs-verify-") as second_root:
-        for item in sorted(listing, key=lambda value: value["metadata"]["name"]):
+        def verify(item: dict[str, object]) -> dict[str, object]:
             metadata = item["metadata"]
             relative = metadata["name"].removeprefix(prefix_path + "/")
             immutable_uri = generation_uri(metadata)
@@ -103,13 +112,12 @@ def main() -> int:
                 )
                 if not passed:
                     raise SystemExit(f"backup verification failed for {immutable_uri}")
-                entries.append({
+                return {
                     "object_uri": "gs://" + metadata["bucket"] + "/" + metadata["name"],
                     "generation": metadata["generation"], "size": size,
                     "local_sha256": local_hash, "downloaded_sha256": downloaded_hash,
                     "verified_download_sha256": verified_hash, "verified": True,
-                })
-                continue
+                }
             first = args.download_dir / relative
             first.parent.mkdir(parents=True, exist_ok=True)
             download(args.project, immutable_uri, first)
@@ -134,12 +142,15 @@ def main() -> int:
             passed = local_hash == downloaded_hash == verified_hash and size == int(metadata["size"])
             if not passed:
                 raise SystemExit(f"backup verification failed for {immutable_uri}")
-            entries.append({
+            return {
                 "object_uri": "gs://" + metadata["bucket"] + "/" + metadata["name"],
                 "generation": metadata["generation"], "size": size,
                 "local_sha256": local_hash, "downloaded_sha256": downloaded_hash,
                 "verified_download_sha256": verified_hash, "verified": True,
-            })
+            }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
+            entries = list(executor.map(verify, items))
     evidence = {
         "schema_version": "ganesh-mini-gcs-backup-manifest/v1", "status": "verified",
         "project": args.project, "prefix": args.prefix, "object_count": len(entries), "objects": entries,

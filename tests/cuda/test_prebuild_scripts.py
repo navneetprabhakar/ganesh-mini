@@ -86,6 +86,13 @@ def test_backup_verifier_generation_pins_object_reads() -> None:
     assert "download(args.project, immutable_uri" in source
 
 
+def test_backup_verifier_uses_bounded_concurrency() -> None:
+    source = (ROOT / "scripts/cuda/gcloud_backup_manifest.py").read_text()
+    assert "ThreadPoolExecutor(max_workers=args.workers)" in source
+    assert 'default=8' in source
+    assert 'args.workers > 32' in source
+
+
 def test_backup_verifier_stream_fails_closed_on_storage_error(monkeypatch: pytest.MonkeyPatch) -> None:
     class Process:
         args = ["gcloud", "storage", "cat"]

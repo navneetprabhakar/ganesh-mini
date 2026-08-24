@@ -38,6 +38,8 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert "${run_id,,}" not in script
     assert "tr '[:upper:]' '[:lower:]'" in script
     assert 'local key="$1" source="$2" object="$3" destination=' not in script
+    assert 'us-east1-b|us-east1-c|us-east1-d' in script
+    assert 'required=(\'approved\',\'staged\',\'g2-standard-12\',zone' in script
 
 
 def test_launcher_cleans_failed_create_only_after_verified_backup() -> None:
@@ -52,6 +54,7 @@ def test_launcher_cleans_failed_create_only_after_verified_backup() -> None:
     absence = script.index("launch-failure-cleanup.json")
     final_backup = script.index("launch-failure-final-backup-manifest.json")
     assert network < absence < final_backup
+    assert 'provider-instance-create.stderr.txt' in script
 
 
 def test_launcher_backs_preflight_before_resource_creation() -> None:

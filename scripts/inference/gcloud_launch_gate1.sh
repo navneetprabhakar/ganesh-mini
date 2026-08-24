@@ -2,21 +2,25 @@
 set -Eeuo pipefail
 
 usage() {
-  echo "usage: $0 APPROVAL_TEXT_FILE PRICE_EVIDENCE_JSON RUN_ID" >&2
+  echo "usage: $0 APPROVAL_TEXT_FILE PRICE_EVIDENCE_JSON RUN_ID ZONE" >&2
   exit 2
 }
-[[ $# -eq 3 ]] || usage
+[[ $# -eq 4 ]] || usage
 approval_file="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 price_file="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
 run_id="$3"
+zone="$4"
 [[ "$run_id" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "run ID must be an exact UTC timestamp" >&2; exit 2; }
+case "$zone" in
+  us-east1-b|us-east1-c|us-east1-d) ;;
+  *) echo "zone must be an approved G2/L4 zone in us-east1" >&2; exit 2 ;;
+esac
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 [[ -z "$(git -C "$repo_root" status --porcelain --untracked-files=no)" ]] || { echo "tracked worktree must be clean" >&2; exit 3; }
 source_commit="$(git -C "$repo_root" rev-parse HEAD)"
 
 project=executespecv1
 region=us-east1
-zone=us-east1-b
 machine_type=g2-standard-12
 bucket=ganesh-gate0-model-transfer-1061994342941
 prefix="ganesh-mini-1.0/gate1/$run_id"
@@ -94,10 +98,10 @@ PY
 trap cleanup_failed_launch EXIT
 
 approval_text="$(cat "$approval_file")"
-python3 - "$approval_text" <<'PY'
+python3 - "$approval_text" "$zone" <<'PY'
 import sys
-text=' '.join(sys.argv[1].lower().split())
-required=('approved','staged','g2-standard-12','us-east1-b','18 hours','usd 19')
+text=' '.join(sys.argv[1].lower().split()); zone=sys.argv[2].lower()
+required=('approved','staged','g2-standard-12',zone,'18 hours','usd 19')
 missing=[token for token in required if token not in text]
 if missing: raise SystemExit('approval does not bind this Gate 1 launch: '+repr(missing))
 PY
@@ -272,7 +276,7 @@ gcloud compute instances create "$instance" --project="$project" --zone="$zone" 
   --network-interface="network=$network,subnet=$subnet,no-address" --service-account="$project_number-compute@developer.gserviceaccount.com" --scopes=cloud-platform \
   --provisioning-model=FLEX_START --request-valid-for-duration=2h --max-run-duration=18h --instance-termination-action=DELETE --maintenance-policy=TERMINATE --reservation-affinity=none \
   --metadata="$(cat "$work_dir/metadata.txt")" --metadata-from-file="startup-script=$repo_root/scripts/inference/gcloud_baseline_metadata_wrapper.sh" \
-  --format=json > "$work_dir/provider-instance-create.json"
+  --format=json > "$work_dir/provider-instance-create.json" 2> "$work_dir/provider-instance-create.stderr.txt"
 
 python3 - "$work_dir" "$source_commit" "$approval_text" <<'PY'
 import hashlib,json,sys

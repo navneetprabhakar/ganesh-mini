@@ -1225,6 +1225,33 @@ The replacement preparation seal is
 No GCloud operation or model evaluation occurred while closing this local
 post-run gap.
 
+## 2026-08-25 — Zone stockout does not weaken gates; fallback stays within us-east1
+
+The approved `us-east1-b` staged request failed before provisioning. The
+provider's exact stockout stderr was visible interactively but was not captured
+in the sealed run directory, so the project records only what the artifacts
+prove: create exit code `1`, no provider create JSON, and verified absence of
+the exact run-scoped VM, disk, subnet, and network after teardown. Future
+launches capture create stderr before the failure trap backs evidence.
+
+Capacity failure does not justify bypassing measurement or starting training.
+Gate 1 remains the first VM phase. The same campaign may be retried only in an
+explicitly approved G2/L4 zone. The launcher and executable-card builder now
+accept `us-east1-b`, `us-east1-c`, or `us-east1-d`, bind the selected zone into
+preflight, approval, and execution evidence, and reject every other zone.
+
+The preferred next approval covers a sequential `us-east1-c` then
+`us-east1-d` fallback, where the second request occurs only if the first fails
+before provisioning. At most one VM may exist, and the existing 18-hour
+runtime and USD 19 incremental ceiling are aggregate across the sequence. This
+preserves region and pricing while avoiding a new approval cycle for another
+zero-runtime stockout.
+
+Failure cleanup still requires two independent immutable-generation reads
+before deletion and again after absence proof. Those reads now execute with
+bounded eight-object concurrency; verification semantics and deterministic
+manifest ordering are unchanged.
+
 The preparation also includes a canonical price-evidence builder. It accepts
 only a timezone-aware observation no more than 24 hours old, an official
 Google Cloud HTTPS source, finite decimal values, and a four-hour conservative

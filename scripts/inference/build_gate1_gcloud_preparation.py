@@ -78,7 +78,7 @@ def build() -> dict[str, Any]:
         "model": {"model_id": "Qwen/Qwen3.5-2B", "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"},
         "resource_proposal": {
             "region": "us-east1",
-            "zone": "us-east1-b",
+            "allowed_zones": ["us-east1-b", "us-east1-c", "us-east1-d"],
             "machine_type": "g2-standard-12",
             "accelerator": "1x nvidia-l4",
             "provisioning_model": "FLEX_START",

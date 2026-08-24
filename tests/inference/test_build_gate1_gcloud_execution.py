@@ -88,6 +88,15 @@ def test_builds_exact_authorized_generation_pinned_card() -> None:
     assert all(row["uri"].rsplit("#", 1)[-1].isdigit() for row in card["inputs"].values())
 
 
+def test_builds_card_for_an_explicitly_approved_fallback_zone() -> None:
+    value = bindings()
+    value["preflight"]["zone"] = "us-east1-c"
+    value["bindings_sha256"] = canonical_sha256({k: v for k, v in value.items() if k != "bindings_sha256"})
+    approval = APPROVAL.replace("us-east1-b", "us-east1-c")
+    card = build(value, approval, head(), require_clean=False)
+    assert card["execution"]["zone"] == "us-east1-c"
+
+
 def test_rejects_approval_that_does_not_bind_the_exact_card() -> None:
     with pytest.raises(ValueError, match="approval text"):
         build(bindings(), "approved", head(), require_clean=False)

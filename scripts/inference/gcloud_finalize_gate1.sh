@@ -35,6 +35,7 @@ terminal_dir="$run_dir/terminal-download"
 postdelete_dir="$run_dir/post-delete"
 mkdir -p "$provider_dir" "$terminal_dir" "$postdelete_dir"
 terminal_prefix="gs://$bucket/$prefix/runtime-terminal-$attempt"
+wrapper_prefix="gs://$bucket/$prefix/wrapper-failure-$attempt"
 postdelete_prefix="gs://$bucket/$prefix/post-delete"
 
 gcloud compute instances describe "$instance" --zone="$zone" --project="$project" --format=json > "$provider_dir/resource-terminated.json"
@@ -71,6 +72,29 @@ gcloud logging read "resource.type=\"gce_instance\" AND resource.labels.instance
 for path in "$provider_dir"/resource-terminated.json "$provider_dir"/operations.json "$provider_dir"/system-events.json; do
   [[ -s "$path" ]] || { echo "provider evidence is empty: $path" >&2; exit 3; }
 done
+
+# The metadata wrapper can fail before the controller creates its runtime
+# directory. Recover only when the terminal prefix is completely empty and the
+# independently verified wrapper prefix is the exact bounded failure envelope.
+if ! gcloud storage ls "$terminal_prefix/runtime-files.sha256" --project="$project" >/dev/null 2>&1; then
+  terminal_listing="$run_dir/terminal-prefix-before-recovery.json"
+  gcloud storage ls --json "$terminal_prefix/**" --project="$project" > "$terminal_listing" 2>/dev/null || printf '[]\n' > "$terminal_listing"
+  python3 - "$terminal_listing" <<'PY'
+import json,sys
+if json.load(open(sys.argv[1])):
+    raise SystemExit('refusing to synthesize over a non-empty partial terminal prefix')
+PY
+  python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
+    --project "$project" --prefix "$wrapper_prefix" \
+    --output "$run_dir/wrapper-failure-backup-manifest.json" --download-dir "$run_dir/wrapper-failure-download"
+  early_terminal="$run_dir/early-wrapper-terminal"
+  python3 "$repo_root/scripts/inference/synthesize_gate1_wrapper_terminal.py" \
+    --backup-manifest "$run_dir/wrapper-failure-backup-manifest.json" \
+    --download-root "$run_dir/wrapper-failure-download" --execution-card "$card" \
+    --output-dir "$early_terminal"
+  gcloud storage rsync "$early_terminal" "$terminal_prefix" --recursive --project="$project"
+fi
+
 if [[ -f "$provider_dir/serial-port.log" ]]; then serial_source="$provider_dir/serial-port.log"; else serial_source="$provider_dir/serial-port-unavailable.txt"; fi
 for path in "$provider_dir"/resource-terminated.json "$provider_dir"/operations.json "$provider_dir"/system-events.json "$serial_source"; do
   gcloud storage cp "$path" "$terminal_prefix/provider/$(basename "$path")" --project="$project"
@@ -87,10 +111,11 @@ python3 "$repo_root/scripts/inference/verify_gate1_terminal.py" \
 terminal_status="${terminal_status:-0}"
 [[ "$terminal_status" == 0 || "$terminal_status" == 2 ]] || exit "$terminal_status"
 if [[ "$terminal_status" == 2 ]]; then
-  wrapper_prefix="gs://$bucket/$prefix/wrapper-failure-$attempt"
-  python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
-    --project "$project" --prefix "$wrapper_prefix" \
-    --output "$run_dir/wrapper-failure-backup-manifest.json" --download-dir "$run_dir/wrapper-failure-download"
+  if [[ ! -f "$run_dir/wrapper-failure-backup-manifest.json" ]]; then
+    python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
+      --project "$project" --prefix "$wrapper_prefix" \
+      --output "$run_dir/wrapper-failure-backup-manifest.json" --download-dir "$run_dir/wrapper-failure-download"
+  fi
 fi
 
 python3 "$repo_root/scripts/cuda/verify_deletion_gate.py" \

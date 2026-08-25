@@ -633,10 +633,11 @@ Seed-pilot training remains blocked until Gate 1 is ready. The native verifier,
 global separation, Gate 2 seed cascade, and baseline host audit are already
 complete.
 
-The local cloud layer now prepares one `g2-standard-12` L4 Flex-start VM in
-`us-east1-b`, a two-hour provisioning window, an approved 18-hour maximum
-runtime and USD 19.00 ceiling, 12 host vCPUs aligned with the frozen 12
-verifier workers, two-minute incremental GCS synchronization, a 30-minute
+The local cloud layer prepares one `g2-standard-12` L4 Flex-start VM in an
+explicitly selected approved `us-east1` G2 zone, a two-hour provisioning
+window, an 18-hour maximum runtime and USD 19.00 ceiling, 12 host vCPUs aligned
+with the frozen 12 verifier workers, two-minute incremental GCS synchronization,
+a 30-minute
 terminal backup reserve, guest shutdown only after terminal backup, control-plane
 VM/disk deletion with provider max-run deletion as a backstop,
 exact-resource teardown proof, and double immutable-generation verification.
@@ -649,9 +650,11 @@ The sealed preparation record is
 `measurement/gate1/gcloud/preparation.json`. It is intentionally
 `prepared-not-executable`: current account price/quota preflight,
 generation-pinned uploads of both isolated workspaces and runtime assets, and
-the final executable card are still missing. GCloud execution is explicitly
-approved. The public-price conservative upper is `$18.357494264`; the absolute
-ceiling is `$19.00`.
+the final executable card are still missing. The public-price conservative
+upper is `$18.357494264`; the absolute ceiling used by the completed attempt
+was `$19.00`. A new execution now requires fresh explicit GCloud approval
+because the approved `us-east1-c` request provisioned; its `us-east1-d`
+fallback applied only to failure before provisioning.
 No GCloud action occurred while preparing it.
 
 The executable-card and teardown tooling are now locally complete. The
@@ -665,7 +668,7 @@ deletion on the exact runtime and provider inventory, captures all four
 provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
 post-delete evidence. The current replacement
 preparation seal is
-`f6afdafa97f5721411cc6218873c89f3b0b81a7017efab6e3fb4a8172b9519d0`.
+`4f6cda6e3a1b3003d59385ecd80685048df9c09f2a074ef0af1bd2b89b7e4a7c`.
 The tools have not been executed against GCloud and do not constitute a card
 or approval.
 
@@ -711,11 +714,53 @@ GCloud usage is the only standing authorization boundary. The approved
 `us-east1` fused-loss Flex-start L4 execution is complete, double-verified in
 GCS, and fully torn down; no run-scoped compute or network resource remains.
 Non-GCloud compute remains standing-authorized. The staged Gate 1-through-3
-campaign is explicitly approved for an 18-hour maximum and USD 19.00 ceiling,
-but creation remains blocked until current price/quota, immutable uploads, and
-the final executable card pass.
+attempt in `us-east1-c` is complete, sealed, and fully torn down. Its
+conditional `us-east1-d` fallback was not activated because `c` provisioned.
+Any replacement GCloud execution requires fresh explicit approval plus current
+price/quota preflight and a new executable card.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.
+
+## 2026-08-25 — Provisioned Gate 1 attempt failed before baseline and was fully torn down
+
+Approved run `20260825T052909Z` passed fresh preflight, immutable input upload,
+and executable-card binding, then provisioned one `g2-standard-12` Flex-start
+VM in `us-east1-c`. The metadata wrapper authenticated and downloaded the exact
+controller, but the controller rejected the launcher-generated UTC attempt ID:
+the launcher emitted `20260825T052909Z` while the controller allowed only
+lowercase slug characters. It exited `40` before creating the runtime evidence
+directory. No model or verifier image download, baseline task, training step,
+or decision-set access occurred.
+
+The wrapper backed its exact four-object failure envelope to GCS. Because the
+failure preceded runtime inventory creation, the finalizer was hardened to
+recover only from an empty terminal prefix plus that independently double-read
+exact wrapper envelope. Recovery binds both bootstrap hashes to the execution
+card, requires a nonzero integer exit and nonempty diagnostics, then creates a
+sealed terminal inventory without promoting any model result. Terminal
+validation seal
+`56b3d0f6d3215dfd1f8d1ef4b473f195ce0e29eb5c7c6450c3a2c12e6221e87a`
+correctly records `sealed-failure`; deletion-gate seal
+`9dc479102c03a838a8e2b7d248b0ea114bbfed30d817550dc61d0f168747144f`
+records `passed`.
+
+The VM, auto-delete disk, subnet, and VPC were deleted. Provider queries and
+absence-proof seal
+`349071ab20135cbb8e506863de0468b1118e0805e8483278ab2e52107aab154d`
+prove all four exact identities absent. The finalization seal is
+`35bedced6370830b8ce1406efa8ca9b712f6c4b487cabb6f0807420c2a471f32`;
+the final 14-object post-delete backup seal is
+`6d64a411d904c8ce540c1e84e6773ff7b4e2c28385459c207225cea01cf3139c`.
+The provider timestamps bound creation-to-stop to about 132 seconds, far below
+the approved runtime and cost ceilings; this is a conservative time bound, not
+an asserted invoice amount.
+
+The permanent controller contract now accepts only the launcher's exact
+`YYYYMMDDTHHMMSSZ` attempt format, and focused recovery/validation tests pass.
+The rebuilt non-executable preparation seal is
+`4f6cda6e3a1b3003d59385ecd80685048df9c09f2a074ef0af1bd2b89b7e4a7c`.
+Gate 1 remains closed, no training has started, and the conditional
+`us-east1-d` fallback is no longer authorized because `us-east1-c` provisioned.
 
 ## 2026-08-25 — Staged campaign launch reached provider stockout and was fully torn down
 

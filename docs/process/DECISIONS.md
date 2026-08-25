@@ -1,5 +1,26 @@
 # Decisions
 
+## 2026-08-25 — Provisioning consumes the zone fallback; early wrapper failures remain deletion-safe
+
+The approved staged fallback allowed `us-east1-d` only if `us-east1-c` failed
+before provisioning. Run `20260825T052909Z` provisioned in `us-east1-c`, so the
+conditional fallback is consumed and cannot be used as an automatic retry.
+A new GCloud execution requires fresh explicit approval and a new card.
+
+The run failed before baseline generation because the controller's attempt-ID
+regex contradicted the launcher's canonical UTC timestamp. The contract is now
+one exact format, `YYYYMMDDTHHMMSSZ`. This failure is not evidence against the
+model, evaluation surface, fused-loss recipe, or L4 capacity; it occurred
+before those assets were downloaded or executed.
+
+An authenticated metadata-wrapper failure may occur before a controller can
+create `runtime-files.sha256`. The finalizer may synthesize a deletion-only
+terminal envelope only when the terminal prefix is empty, the wrapper prefix
+independently verifies as the exact four expected objects, its two bootstrap
+hashes match the card-bound wrapper and controller, its exit is nonzero, and a
+diagnostic is nonempty. Such an envelope can unlock evidence-safe teardown but
+can never pass Gate 1 or be admitted as a baseline.
+
 ## 2026-08-23 — Standard A100 v8 stopped before VM creation on cost
 
 Navneet Prabhakar stopped the approved Standard `a2-highgpu-1g` Gate 0B v8

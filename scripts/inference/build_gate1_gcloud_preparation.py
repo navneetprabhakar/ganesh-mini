@@ -55,6 +55,7 @@ def build() -> dict[str, Any]:
         "metadata_wrapper": file_identity("scripts/inference/gcloud_baseline_metadata_wrapper.sh"),
         "execution_card_builder": file_identity("scripts/inference/build_gate1_gcloud_execution.py"),
         "terminal_validator": file_identity("scripts/inference/verify_gate1_terminal.py"),
+        "wrapper_terminal_synthesizer": file_identity("scripts/inference/synthesize_gate1_wrapper_terminal.py"),
         "finalizer": file_identity("scripts/inference/gcloud_finalize_gate1.sh"),
         "baseline_admitter": file_identity("scripts/inference/admit_gate1_baseline.py"),
         "price_evidence_builder": file_identity("scripts/inference/build_gate1_price_evidence.py"),

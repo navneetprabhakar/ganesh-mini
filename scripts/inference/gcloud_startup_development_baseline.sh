@@ -34,7 +34,7 @@ output_dir="$evidence_dir/output"
 shared_tmp="$evidence_dir/shared-tmp"
 terminal_prefix="runtime-terminal-$GANESH_ATTEMPT_ID"
 checkpoint_prefix="runtime-checkpoints/$GANESH_ATTEMPT_ID"
-[[ "$GANESH_ATTEMPT_ID" =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] || { echo "invalid attempt id" >&2; exit 40; }
+[[ "$GANESH_ATTEMPT_ID" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo "invalid attempt id" >&2; exit 40; }
 mkdir -p "$work_dir" "$output_dir" "$shared_tmp"
 [[ -z "$(find "$output_dir" -mindepth 1 -print -quit)" ]] || { echo "attempt output is not fresh" >&2; exit 44; }
 for remote in "$terminal_prefix" "$checkpoint_prefix"; do

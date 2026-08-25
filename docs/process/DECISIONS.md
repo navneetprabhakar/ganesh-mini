@@ -1394,6 +1394,12 @@ rebuilds both workspaces before running the full suite and this rehearsal. The
 preparation builder requires the rehearsal seal to bind the current evaluation
 manifest and archive, so launch preparation cannot bypass it.
 
+The three sealed prepared seed artifacts (manifest plus train and validation
+JSONL, about 7.4 MB) are versioned in the private repository. They are required
+source inputs for deterministic training-workspace reconstruction; leaving
+them only in an ignored local directory made fresh-checkout validation
+illusory. Large model, image, checkpoint, and output artifacts remain excluded.
+
 Terminal integrity and resource lifecycle are also separate decisions. Strict
 inventory validation remains mandatory for result admission. If it fails after
 all GCS objects have been downloaded and generation-verified and the exact VM

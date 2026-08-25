@@ -65,3 +65,22 @@ def test_deletion_gate_accepts_gate1_phase_with_the_same_exact_backup_contract(t
     monkeypatch.setattr("sys.argv", argv)
     assert main() == 0
     assert json.loads(output.read_text())["phase"] == "gate1-baseline"
+
+
+def test_quarantine_deletion_gate_allows_teardown_but_forbids_admission_on_bad_inventory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    argv, output = write_inputs(tmp_path, "gate1-baseline")
+    inventory = Path(argv[argv.index("--inventory") + 1])
+    inventory.write_text(inventory.read_text().replace("startup.stdout.log", "wrong-name.log"))
+    manifest_path = Path(argv[argv.index("--backup-manifest") + 1])
+    manifest = json.loads(manifest_path.read_text())
+    inventory_row = next(row for row in manifest["objects"] if row["object_uri"].endswith("/runtime-files.sha256"))
+    inventory_row["downloaded_sha256"] = sha(inventory)
+    manifest.pop("evidence_sha256")
+    manifest["evidence_sha256"] = canonical_sha256(manifest)
+    manifest_path.write_text(json.dumps(manifest))
+    argv.extend(["--integrity-mode", "quarantine"])
+    monkeypatch.setattr("sys.argv", argv)
+    assert main() == 0
+    evidence = json.loads(output.read_text())
+    assert evidence["integrity_mode"] == "quarantine"
+    assert evidence["admission_eligible"] is False

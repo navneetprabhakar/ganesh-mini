@@ -1369,3 +1369,36 @@ that fail-closed check prevents automated cleanup after the VM is already
 stopped, exact resources may be deleted under the existing teardown approval
 only after the failure envelope is durable, followed by exact-name absence
 proof and independently verified GCS backup.
+
+## 2026-08-25 — VM archives must equal current source, not merely old manifests
+
+The recurring Gate 1 failures had two independent classes: provider capacity
+before provisioning and preventable integration defects after provisioning.
+The last three provisioned failures all stopped before the first baseline
+task. The decisive defect in attempt `20260825T061157Z` was split-brain
+execution: the launcher and controller came from current `HEAD`, while the
+controller invoked campaign and baseline-host modules extracted from an older
+evaluation archive. Unit tests imported current source, so they passed without
+testing the bytes the VM actually executed.
+
+Preparation now rehashes every file named by both workspace manifests and
+requires exact equality with current repository source. The evaluation archive
+contains only its actual inference/campaign runtime files; the training archive
+contains only its actual preflight/SFT runtime files. Both archives are rebuilt
+deterministically. The training manifest records a repository-relative archive
+path so a fresh Linux checkout can reproduce it. A dedicated rehearsal safely
+extracts the sealed evaluation archive, imports its modules in an isolated
+Python process, and exercises the exact failed uppercase UTC ID across the base
+container, two LR train/eval pairs, and main train/eval pair. A push CI workflow
+rebuilds both workspaces before running the full suite and this rehearsal. The
+preparation builder requires the rehearsal seal to bind the current evaluation
+manifest and archive, so launch preparation cannot bypass it.
+
+Terminal integrity and resource lifecycle are also separate decisions. Strict
+inventory validation remains mandatory for result admission. If it fails after
+all GCS objects have been downloaded and generation-verified and the exact VM
+is stopped, a quarantine deletion gate may authorize teardown using the exact
+card-bound resource identity and provider evidence. Quarantine finalization is
+explicitly marked `complete-quarantined` and is never admission-eligible. This
+prevents corrupted evidence from becoming a benchmark result without leaving a
+paid VM stranded. No GCloud command was executed during this repair.

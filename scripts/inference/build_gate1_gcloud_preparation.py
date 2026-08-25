@@ -34,10 +34,35 @@ def load_sealed(relative: str, field: str) -> dict[str, Any]:
     return value
 
 
+def require_workspace_matches_source(manifest: dict[str, Any], label: str) -> dict[str, Any]:
+    """Reject a sealed workspace whose files differ from the current source tree."""
+    identities: list[dict[str, Any]] = []
+    for row in manifest.get("files", []):
+        relative = row.get("path")
+        expected_size = row.get("size_bytes", row.get("size"))
+        expected_sha256 = row.get("sha256")
+        if not isinstance(relative, str) or not isinstance(expected_size, int) or not isinstance(expected_sha256, str):
+            raise ValueError(f"invalid {label} workspace file identity")
+        path = ROOT / relative
+        if not path.is_file():
+            raise ValueError(f"{label} workspace source file is missing: {relative}")
+        observed = file_identity(relative)
+        if observed["size_bytes"] != expected_size or observed["sha256"] != expected_sha256:
+            raise ValueError(f"{label} workspace is stale relative to source: {relative}")
+        identities.append(observed)
+    if not identities:
+        raise ValueError(f"{label} workspace has no source files")
+    return {
+        "file_count": len(identities),
+        "source_collection_sha256": canonical_sha256(identities),
+    }
+
+
 def build() -> dict[str, Any]:
     workspace = load_sealed("measurement/gate1/development_workspace_20260823.json", "manifest_sha256")
     training_workspace = load_sealed("measurement/gate1/training_workspace_20260825.json", "manifest_sha256")
     verifier = load_sealed("measurement/gate1/verifier_image_bundle_amd64_v1.json", "manifest_sha256")
+    runtime_rehearsal = load_sealed("measurement/gate1/runtime_bundle_rehearsal.json", "evidence_sha256")
     gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
     gate0_result = load_sealed("measurement/cuda/gcloud/20260824T180957Z/run-result.json", "evidence_sha256")
     if gate0_result.get("status") != "passed" or gate0_result.get("gate") != "0B":
@@ -60,6 +85,7 @@ def build() -> dict[str, Any]:
         "baseline_admitter": file_identity("scripts/inference/admit_gate1_baseline.py"),
         "price_evidence_builder": file_identity("scripts/inference/build_gate1_price_evidence.py"),
         "launcher": file_identity("scripts/inference/gcloud_launch_gate1.sh"),
+        "runtime_bundle_rehearsal": file_identity("measurement/gate1/runtime_bundle_rehearsal.json"),
         "baseline_admission_schema": file_identity("schemas/eval/gate1-baseline-admission.schema.json"),
         "execution_schema": file_identity("schemas/eval/gate1-gcloud-execution.schema.json"),
         "price_evidence_schema": file_identity("schemas/eval/gate1-price-evidence.schema.json"),
@@ -71,6 +97,16 @@ def build() -> dict[str, Any]:
         raise ValueError("training workspace archive no longer matches its sealed manifest")
     if local_inputs["verifier_archive"]["sha256"] != verifier["archive"]["sha256"]:
         raise ValueError("verifier archive no longer matches its sealed manifest")
+    if (
+        runtime_rehearsal.get("status") != "passed"
+        or runtime_rehearsal.get("workspace_manifest_sha256") != workspace["manifest_sha256"]
+        or runtime_rehearsal.get("workspace_archive_sha256") != workspace["archive"]["sha256"]
+    ):
+        raise ValueError("sealed runtime bundle rehearsal does not bind the current evaluation workspace")
+    workspace_source_alignment = {
+        "evaluation": require_workspace_matches_source(workspace, "evaluation"),
+        "training": require_workspace_matches_source(training_workspace, "training"),
+    }
     record: dict[str, Any] = {
         "schema_version": "ganesh-mini-gate1-gcloud-preparation/v1",
         "status": "prepared-not-executable",
@@ -115,6 +151,7 @@ def build() -> dict[str, Any]:
             "checkpoint_interval_seconds": 120,
         },
         "local_inputs": local_inputs,
+        "workspace_source_alignment": workspace_source_alignment,
         "reused_generation_pinned_inputs": {
             "model": gate0["input"]["model_uri"],
             "qualified_cuda_image": gate0["input"]["image_uri"],

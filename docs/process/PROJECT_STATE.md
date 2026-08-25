@@ -7,6 +7,17 @@ Last updated: 2026-08-25
 Gate 1: execute the exact Qwen development baseline on the already frozen
 180-task surface as the first phase of the approved staged L4 campaign.
 
+The repeat-failure audit found that the last provisioned attempt executed a
+stale evaluation archive even though the lowercase Docker-name repair was in
+`HEAD`. Preparation had proved only that each archive matched its historical
+manifest; it had not proved that archived runtime files matched current
+source. Both VM workspaces are now minimal, deterministically resealed, and
+source-aligned during preparation. A rehearsal imported code from the sealed
+evaluation tarball and passed the exact failed attempt ID
+`20260825T061157Z` across all seven baseline/training/evaluation container
+names. Gate 1 still has no model result; another GCloud execution remains the
+next action and requires explicit approval.
+
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
 training logits. Exact package, CUDA, Triton, external-kernel, model-load,
@@ -34,6 +45,15 @@ the global separation report were independently verified. The repaired
 development-only workspace and baseline-runner readiness evidence are sealed.
 Gate 1 now fails closed only because the exact Qwen development baseline does
 not yet exist. Gate 0B no longer blocks that execution.
+
+The current evaluation-workspace manifest seal is
+`f6e8ed646ac7cbc0bc08ae16c60c64dad29b6ea6946660bf898c855d479caab3`;
+the training-workspace manifest seal is
+`4ea6a9384993a97ad39a659a7ab7d8ca5db6a0f8af5c6093af2b13184280ce16`.
+The archive-executed runtime rehearsal seal is
+`087beba0ce724561f06b903ee5e70ba4c506c1908104c02fa46aac2790b193e0`,
+and the non-executable preparation seal is
+`0f0f826390e7e4b3541097d031d9d258df32a4775b294c6b9fe026930fd59b36`.
 
 ## Completed
 

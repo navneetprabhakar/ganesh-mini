@@ -28,6 +28,9 @@ def test_finalizer_orders_verified_backup_before_deletion_and_backs_teardown() -
     assert recovery < wrapper_backup < synthesis < terminal_upload < backup
     assert 'if [[ "$baseline_admissible" == yes ]]' in script
     assert "canonical baseline admission was correctly skipped" in script
+    assert "--integrity-mode quarantine" in script
+    assert "complete-quarantined" in script
+    assert 'deletion.get("admission_eligible",True) is True' in script
 
 
 def test_finalizer_uses_only_exact_card_bound_resource_variables() -> None:

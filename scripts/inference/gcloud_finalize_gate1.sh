@@ -118,12 +118,25 @@ python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
   --project "$project" --prefix "$terminal_prefix" \
   --output "$run_dir/terminal-backup-manifest.json" --download-dir "$terminal_dir"
 cmp "$card" "$terminal_dir/execution-card.json"
+set +e
 python3 "$repo_root/scripts/inference/verify_gate1_terminal.py" \
   --backup-manifest "$run_dir/terminal-backup-manifest.json" \
   --download-root "$terminal_dir" --execution-card "$card" \
-  --expected-prefix "$terminal_prefix" --output "$run_dir/terminal-validation.json" || terminal_status="$?"
-terminal_status="${terminal_status:-0}"
-[[ "$terminal_status" == 0 || "$terminal_status" == 2 ]] || exit "$terminal_status"
+  --expected-prefix "$terminal_prefix" --output "$run_dir/terminal-validation.json" \
+  > "$run_dir/terminal-validation.stdout.log" 2> "$run_dir/terminal-validation.stderr.log"
+terminal_status="$?"
+set -e
+if [[ "$terminal_status" != 0 && "$terminal_status" != 2 ]]; then
+  python3 - "$run_dir/terminal-validation.json" "$card" "$run_dir/terminal-backup-manifest.json" "$run_dir/terminal-validation.stderr.log" "$terminal_prefix" "$attempt" <<'PY'
+import hashlib,json,sys
+out,card_path,manifest_path,error_path,prefix,attempt=sys.argv[1:]
+sha=lambda path:hashlib.sha256(open(path,'rb').read()).hexdigest()
+card=json.load(open(card_path)); manifest=json.load(open(manifest_path))
+value={'schema_version':'ganesh-mini-gate1-terminal-validation/v1','status':'integrity-failure','attempt_id':attempt,'expected_prefix':prefix,'execution_sha256':card.get('execution_sha256'),'backup_manifest_sha256':manifest.get('evidence_sha256'),'validation_error_sha256':sha(error_path),'run':None,'deletion_eligible':'quarantine-only'}
+value['evidence_sha256']=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+json.dump(value,open(out,'w'),indent=2,sort_keys=True)
+PY
+fi
 if [[ "$terminal_status" == 2 ]]; then
   if [[ ! -f "$run_dir/wrapper-failure-backup-manifest.json" ]]; then
     python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
@@ -132,14 +145,23 @@ if [[ "$terminal_status" == 2 ]]; then
   fi
 fi
 
-python3 "$repo_root/scripts/cuda/verify_deletion_gate.py" \
-  --phase gate1-baseline --backup-manifest "$run_dir/terminal-backup-manifest.json" \
-  --resource-state "$terminal_dir/provider/resource-terminated.json" \
-  --inventory "$terminal_dir/runtime-files.sha256" "${serial_option[@]}" \
-  --operations-evidence "$terminal_dir/provider/operations.json" \
-  --system-events-evidence "$terminal_dir/provider/system-events.json" \
-  --expected-resource-name "$instance" --expected-resource-id "$resource_id" \
+deletion_args=(
+  --phase gate1-baseline --backup-manifest "$run_dir/terminal-backup-manifest.json"
+  --resource-state "$terminal_dir/provider/resource-terminated.json"
+  --inventory "$terminal_dir/runtime-files.sha256" "${serial_option[@]}"
+  --operations-evidence "$terminal_dir/provider/operations.json"
+  --system-events-evidence "$terminal_dir/provider/system-events.json"
+  --expected-resource-name "$instance" --expected-resource-id "$resource_id"
   --expected-prefix "$terminal_prefix" --output "$run_dir/deletion-gate.json"
+)
+set +e
+python3 "$repo_root/scripts/cuda/verify_deletion_gate.py" "${deletion_args[@]}" \
+  > "$run_dir/deletion-gate.stdout.log" 2> "$run_dir/deletion-gate.stderr.log"
+deletion_status="$?"
+set -e
+if [[ "$deletion_status" != 0 ]]; then
+  python3 "$repo_root/scripts/cuda/verify_deletion_gate.py" "${deletion_args[@]}" --integrity-mode quarantine
+fi
 
 gcloud compute instances delete "$instance" --zone="$zone" --project="$project" --quiet
 gcloud compute networks subnets delete "$subnet" --region="$region" --project="$project" --quiet
@@ -186,7 +208,8 @@ def sealed(path,field):
  if claimed != actual: raise SystemExit('invalid finalization input seal: '+path)
  return claimed
 fields=['evidence_sha256']*5
-value={'schema_version':'ganesh-mini-gate1-gcloud-finalization/v1','status':'complete','execution_sha256':card,'terminal_backup_sha256':sealed(paths[0],fields[0]),'terminal_validation_sha256':sealed(paths[1],fields[1]),'deletion_gate_sha256':sealed(paths[2],fields[2]),'absence_proof_sha256':sealed(paths[3],fields[3]),'post_delete_backup_sha256':sealed(paths[4],fields[4])}
+deletion=json.load(open(paths[2])); integrity=deletion.get('integrity_mode','strict')
+value={'schema_version':'ganesh-mini-gate1-gcloud-finalization/v1','status':'complete' if integrity=='strict' else 'complete-quarantined','integrity_mode':integrity,'execution_sha256':card,'terminal_backup_sha256':sealed(paths[0],fields[0]),'terminal_validation_sha256':sealed(paths[1],fields[1]),'deletion_gate_sha256':sealed(paths[2],fields[2]),'absence_proof_sha256':sealed(paths[3],fields[3]),'post_delete_backup_sha256':sealed(paths[4],fields[4])}
 value['evidence_sha256']=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 json.dump(value,open(out,'w'),indent=2,sort_keys=True)
 PY
@@ -194,7 +217,7 @@ gcloud storage cp "$run_dir/finalization.json" "$postdelete_prefix/finalization.
 python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
   --project "$project" --prefix "$postdelete_prefix" \
   --output "$run_dir/post-delete-final-backup-manifest.json" --download-dir "$run_dir/post-delete-final-download"
-baseline_admissible="$(python3 -c 'import json,sys; print("yes" if json.load(open(sys.argv[1])).get("run") else "no")' "$run_dir/terminal-validation.json")"
+baseline_admissible="$(python3 -c 'import json,sys; validation=json.load(open(sys.argv[1])); finalization=json.load(open(sys.argv[2])); deletion=json.load(open(sys.argv[3])); print("yes" if validation.get("run") and finalization.get("status")=="complete" and deletion.get("admission_eligible",True) is True else "no")' "$run_dir/terminal-validation.json" "$run_dir/finalization.json" "$run_dir/deletion-gate.json")"
 if [[ "$baseline_admissible" == yes ]]; then
   python3 "$repo_root/scripts/inference/admit_gate1_baseline.py" --finalization-dir "$run_dir"
 else

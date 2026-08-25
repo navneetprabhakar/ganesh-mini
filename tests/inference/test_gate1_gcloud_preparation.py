@@ -21,7 +21,10 @@ def test_gate1_gcloud_preparation_is_sealed_but_not_executable() -> None:
     assert record["public_price_bound"]["eighteen_hour_conservative_upper_usd"] < record["public_price_bound"]["proposed_absolute_ceiling_usd"]
     assert record["utilization"]["generation_batch_size"] == 4
     assert record["utilization"]["verifier_workers"] == 12
-    assert {"execution_card_builder", "terminal_validator", "finalizer", "launcher", "price_evidence_builder", "price_evidence_schema", "baseline_admitter", "baseline_admission_schema", "training_workspace_archive", "training_workspace_manifest"} <= set(record["local_inputs"])
+    assert {"execution_card_builder", "terminal_validator", "finalizer", "launcher", "runtime_bundle_rehearsal", "price_evidence_builder", "price_evidence_schema", "baseline_admitter", "baseline_admission_schema", "training_workspace_archive", "training_workspace_manifest"} <= set(record["local_inputs"])
+    assert record["workspace_source_alignment"]["evaluation"]["file_count"] > 0
+    assert record["workspace_source_alignment"]["training"]["file_count"] > 0
+    assert len(record["workspace_source_alignment"]["evaluation"]["source_collection_sha256"]) == 64
     assert "current_g2_standard_12_price_and_quota_preflight" in record["failed_checks"]
 
 

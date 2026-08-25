@@ -41,6 +41,9 @@ def test_workspace_contains_only_development_execution_material(tmp_path: Path) 
     assert "eval/private/decision/secret.task.json" not in names
     assert "scripts/inference/__pycache__/module.pyc" not in names
     assert not any("decision" in Path(name).parts or "train" in Path(name).parts for name in names)
+    assert "scripts/inference/run_development_baseline_host.py" in names
+    assert "scripts/inference/gcloud_launch_gate1.sh" not in names
+    assert "scripts/inference/build_gate1_gcloud_execution.py" not in names
 
 
 def test_workspace_archive_is_deterministic(tmp_path: Path) -> None:

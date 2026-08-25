@@ -13,8 +13,13 @@ from pathlib import Path
 
 ALLOWLIST = (
     "AGENTS.md", "pyproject.toml", "uv.lock",
-    "configs/cuda", "configs/model", "configs/train", "configs/data",
-    "containers/cuda", "scripts/cuda", "scripts/model", "scripts/train",
+    "configs/model", "configs/train", "configs/data",
+    "scripts/__init__.py",
+    "scripts/train/__init__.py",
+    "scripts/train/pilot.py",
+    "scripts/train/qwen_runtime.py",
+    "scripts/train/response_only.py",
+    "scripts/train/run_sft.py",
     "data/seed", "manifests/datasets", "schemas/train",
     "artifacts/train/seed-pilot/prepared-train.jsonl",
     "artifacts/train/seed-pilot/prepared-validation.jsonl",
@@ -56,7 +61,11 @@ def build(root: Path, archive: Path, manifest_path: Path) -> dict:
                 for path in files:
                     info=output.gettarinfo(str(path),arcname=str(path.relative_to(root))); info.uid=info.gid=0; info.uname=info.gname=""; info.mtime=0
                     with path.open("rb") as handle: output.addfile(info,handle)
-    manifest={"schema_version":"ganesh-mini-training-workspace/v1","status":"sealed","archive_path":str(archive),"archive_size":archive.stat().st_size,"archive_sha256":sha256(archive),"forbidden_roots":sorted(FORBIDDEN_PARTS),"files":entries}
+    try:
+        archive_label = str(archive.relative_to(root))
+    except ValueError:
+        archive_label = str(archive)
+    manifest={"schema_version":"ganesh-mini-training-workspace/v1","status":"sealed","archive_path":archive_label,"archive_size":archive.stat().st_size,"archive_sha256":sha256(archive),"forbidden_roots":sorted(FORBIDDEN_PARTS),"files":entries}
     payload=json.dumps(manifest,sort_keys=True,separators=(",", ":")).encode(); manifest["manifest_sha256"]=hashlib.sha256(payload).hexdigest()
     manifest_path.parent.mkdir(parents=True,exist_ok=True); manifest_path.write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
     return manifest

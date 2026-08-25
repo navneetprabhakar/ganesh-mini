@@ -35,6 +35,7 @@ def main() -> int:
     parser.add_argument("--expected-resource-name", required=True)
     parser.add_argument("--expected-resource-id", required=True)
     parser.add_argument("--expected-prefix", required=True)
+    parser.add_argument("--integrity-mode", choices=("strict", "quarantine"), default="strict")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     manifest = json.loads(args.backup_manifest.read_text())
@@ -46,18 +47,24 @@ def main() -> int:
     objects = manifest.get("objects", [])
     if not objects or not all(row.get("verified") for row in objects):
         raise SystemExit("backup manifest is empty or contains unverified objects")
-    rows = {row["object_uri"].removeprefix(args.expected_prefix.rstrip("/") + "/"): row for row in objects}
-    inventory: dict[str, str] = {}
-    for line in args.inventory.read_text().splitlines():
-        digest, relative = line.split(None, 1)
-        inventory[relative.lstrip("*").removeprefix("./")] = digest
+    object_prefix = args.expected_prefix.rstrip("/") + "/"
+    if any(not str(row.get("object_uri", "")).startswith(object_prefix) for row in objects):
+        raise SystemExit("backup manifest contains an out-of-prefix object")
+    rows = {row["object_uri"].removeprefix(object_prefix): row for row in objects}
+    if len(rows) != len(objects):
+        raise SystemExit("backup manifest contains duplicate objects")
     inventory_row = rows.get("runtime-files.sha256")
     if inventory_row is None or inventory_row.get("downloaded_sha256") != file_sha256(args.inventory):
         raise SystemExit("downloaded runtime inventory is absent or does not match its remote object")
-    for relative, digest in inventory.items():
-        row = rows.get(relative)
-        if row is None or row.get("downloaded_sha256") != digest:
-            raise SystemExit(f"terminal backup is missing or mismatches local inventory: {relative}")
+    inventory: dict[str, str] = {}
+    if args.integrity_mode == "strict":
+        for line in args.inventory.read_text().splitlines():
+            digest, relative = line.split(None, 1)
+            inventory[relative.lstrip("*").removeprefix("./")] = digest
+        for relative, digest in inventory.items():
+            row = rows.get(relative)
+            if row is None or row.get("downloaded_sha256") != digest:
+                raise SystemExit(f"terminal backup is missing or mismatches local inventory: {relative}")
     if args.serial_evidence is not None:
         serial_relative = "provider/serial-port.log"
         serial_path = args.serial_evidence
@@ -78,7 +85,7 @@ def main() -> int:
         row = rows.get(relative)
         if row is None or row.get("downloaded_sha256") != file_sha256(path):
             raise SystemExit(f"provider evidence is absent or mismatched in terminal backup: {relative}")
-    if set(rows) != set(inventory) | {"runtime-files.sha256"} | set(provider):
+    if args.integrity_mode == "strict" and set(rows) != set(inventory) | {"runtime-files.sha256"} | set(provider):
         raise SystemExit("terminal backup object set does not exactly equal local plus provider evidence inventory")
     resource = json.loads(args.resource_state.read_text())
     if resource.get("name") != args.expected_resource_name or str(resource.get("id")) != args.expected_resource_id:
@@ -97,6 +104,8 @@ def main() -> int:
         "resource_state_sha256": file_sha256(args.resource_state),
         "provider_serial_status": serial_status,
         "object_count": len(objects),
+        "integrity_mode": args.integrity_mode,
+        "admission_eligible": args.integrity_mode == "strict",
     }
     evidence["evidence_sha256"] = canonical_sha256(evidence)
     args.output.parent.mkdir(parents=True, exist_ok=True)

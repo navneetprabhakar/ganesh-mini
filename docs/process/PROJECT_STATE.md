@@ -7,16 +7,23 @@ Last updated: 2026-08-25
 Gate 1: execute the exact Qwen development baseline on the already frozen
 180-task surface as the first phase of the approved staged L4 campaign.
 
-Approved attempt `20260825T085926Z` provisioned successfully and qualified the
-model archive, CUDA image, Docker runtime, NVIDIA runtime, and verifier bundle,
-but failed before the first baseline task. Linux wrote import bytecode into the
-writable extracted evaluation workspace; the downstream exact-file-set check
-correctly rejected those unmanifested `__pycache__` files. The controller now
-runs Python with `-B`, the campaign also disables bytecode writes, and the
-archive rehearsal asserts that all imports preserve the exact sealed file set.
-The VM, disk, subnet, and VPC are deleted with verified GCS terminal and
-post-delete backups. Gate 1 still has no model result; another GCloud execution
-is the next action and requires fresh explicit approval.
+Approved attempt `20260825T103213Z` passed every preflight, download, checksum,
+Docker/NVIDIA/CUDA-image, verifier-image, workspace-isolation, and bytecode-
+immutability boundary. It then failed before the first baseline task because
+the model bind target was nested under read-only `/workspace` and did not exist
+in the sealed archive. Docker exited `125` while trying to create that nested
+mountpoint. Zero inference tasks and zero training steps ran. The strict
+failure terminal is backed up, and the exact VM, disk, subnet, and VPC are
+deleted with verified absence evidence.
+
+The repaired container contract keeps only the sealed source workspace at
+`/workspace`. Model, adapter/training output, mutable evaluation output, and
+campaign-control state now use independent top-level mounts. The evaluator has
+explicit runtime path overrides while preserving the frozen configuration hash
+and logical evidence paths. A shared mount builder rejects any external target
+beneath `/workspace`; focused tests and the archive-executed rehearsal enforce
+the invariant. Gate 1 still has no model result. Another GCloud execution is
+the next action and requires fresh explicit approval.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
@@ -47,13 +54,13 @@ Gate 1 now fails closed only because the exact Qwen development baseline does
 not yet exist. Gate 0B no longer blocks that execution.
 
 The current evaluation-workspace manifest seal is
-`1ae244bfc9216c1a0e74f91755c7af338a3769dded95850c04b705e3c4305b3e`;
+`253e3d9e11b4b9c2a7cd187b48a055abe5a47881d7b016ebf4249bfe3538446b`;
 the training-workspace manifest seal is
 `4ea6a9384993a97ad39a659a7ab7d8ca5db6a0f8af5c6093af2b13184280ce16`.
 The archive-executed runtime rehearsal seal is
-`e9d39a0e486c192b05c62810e8ef94fbb39c665c96f2d66af5cad0b009a10902`,
+`8747337210b167a9b0099e605b98c3b7fbcf1e3b291066687b887fad3765aea0`,
 and the non-executable preparation seal is
-`4e52713bcf6caa2f4438a21de8e408c42724d7f34f61c16a238bb88690eca0b9`.
+`7131fb8c768fad2c70bec28d36fb375a92d2e52911803265deec6559208628da`.
 
 ## Completed
 
@@ -960,3 +967,43 @@ Actions was disabled at repository level. Historical native AMD64 and Gate 1
 workflow run IDs remain provenance records only. Current validation is local
 or part of an explicitly approved GCloud execution; no push or manual GitHub
 workflow can run.
+
+## 2026-08-25 — Read-only nested Docker mounts failed closed and were removed
+
+Approved attempt `20260825T103213Z` provisioned one `g2-standard-12` Flex-start
+L4 VM in `us-east1-c`. Fresh price/quota/resource-absence/GCS preflight passed;
+all immutable downloads, hashes, Docker and NVIDIA setup, exact CUDA image,
+verifier runtime readiness, bytecode immutability, and workspace isolation
+passed. The base container then exited `125` before model loading because the
+host model directory targeted `/workspace/models/qwen3.5-2b-15852e8`. That
+target did not exist in the sealed archive, and Docker could not create it
+beneath the read-only `/workspace` bind. No baseline task, inference token,
+training step, or decision prompt executed.
+
+Terminal validation is correctly `sealed-failure` under seal
+`189a75945ba4619cab3a781090b588a6614dd86f835d2108a37f28551732d125`.
+The deletion gate seal is
+`a8f6762bb0a2c1439950beeaad8e753c0f28013bc636855b7d67421f3674189b`;
+absence proof
+`3f2a08d74b521eb1a139505b2d77e4c7986aa1819408043135d5e32bae27189b`
+proves the exact VM, auto-delete disk, subnet, and VPC absent. Finalization seal
+`ad2b702484b4a4d0fcc1b0d8569fd7fa49ac079a8e5d96a7330f900b4717f5c9`
+and final 14-object post-delete backup seal
+`84fb612a6b279a678635d2623d488840e31c72d60b2ce236d2af4fbcc3a03084`
+close the attempt. Provider start-to-stop time was about 588 seconds; this is a
+runtime bound, not an asserted invoice amount.
+
+The repair removes the whole nested-mount failure class. External model,
+training/adapter, output, and control binds use independent top-level container
+paths; `/workspace` remains the only sealed read-only code/data bind. Runtime
+path overrides do not mutate the frozen config or logical evidence paths. A
+mount guard rejects external targets at or beneath `/workspace`, and the
+archive rehearsal executes the exact archived baseline/campaign builders.
+Evaluation archive seal
+`497fdc835ac134d2a20a5fee96e063d60511ef6555f9e2df40db82d054ee5e2c`,
+rehearsal seal
+`8747337210b167a9b0099e605b98c3b7fbcf1e3b291066687b887fad3765aea0`,
+and preparation seal
+`7131fb8c768fad2c70bec28d36fb375a92d2e52911803265deec6559208628da`
+bind the repaired bytes. The full local suite passes. Gate 1 remains closed;
+the consumed approval does not authorize another GCloud VM.

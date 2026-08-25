@@ -8,6 +8,8 @@ from unittest.mock import patch
 import pytest
 
 from scripts.inference.run_development_baseline_host import (
+    CONTAINER_MODEL,
+    CONTAINER_OUTPUT,
     MODEL_RELATIVE,
     OUTPUT_RELATIVE,
     build_container_argv,
@@ -74,8 +76,12 @@ def test_outer_container_is_offline_and_shares_host_verifier_paths() -> None:
     assert "--cap-drop ALL" in joined and "no-new-privileges" in joined
     assert f"src={shared},dst={shared}" in joined
     assert f"TMPDIR={shared}" in argv
-    assert f"dst=/workspace/{MODEL_RELATIVE},readonly" in joined
-    assert f"dst=/workspace/{OUTPUT_RELATIVE}" in joined
+    assert f"dst={CONTAINER_MODEL},readonly" in joined
+    assert f"dst={CONTAINER_OUTPUT}" in joined
+    assert f"dst=/workspace/{MODEL_RELATIVE}" not in joined
+    assert f"dst=/workspace/{OUTPUT_RELATIVE}" not in joined
+    assert ["--model-dir", str(CONTAINER_MODEL)] == argv[-4:-2]
+    assert ["--output-dir", str(CONTAINER_OUTPUT)] == argv[-2:]
     assert "src=/var/run/docker.sock,dst=/var/run/docker.sock" in joined
     assert "--entrypoint python" in joined
 

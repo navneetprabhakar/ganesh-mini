@@ -39,6 +39,8 @@ REVISION = "15852e8c16360a2fea060d615a32b45270f8a8fc"
 CONFIG_RELATIVE = Path("configs/inference/qwen_base_development.json")
 MODEL_RELATIVE = Path("models/qwen3.5-2b-15852e8")
 OUTPUT_RELATIVE = Path("measurement/inference/development/qwen3.5-2b-base-v1")
+CONTAINER_MODEL = Path("/input/model")
+CONTAINER_OUTPUT = Path("/output")
 RUNTIMES_RELATIVE = Path("configs/eval/runtimes.json")
 
 
@@ -157,8 +159,8 @@ def build_container_argv(
         "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=8g",
         "--tmpfs", "/var/cache/triton:rw,exec,nosuid,nodev,size=1g",
         "--mount", f"type=bind,src={workspace},dst=/workspace,readonly",
-        "--mount", f"type=bind,src={model},dst=/workspace/{MODEL_RELATIVE},readonly",
-        "--mount", f"type=bind,src={output},dst=/workspace/{OUTPUT_RELATIVE}",
+        "--mount", f"type=bind,src={model},dst={CONTAINER_MODEL},readonly",
+        "--mount", f"type=bind,src={output},dst={CONTAINER_OUTPUT}",
         "--mount", f"type=bind,src={shared_tmp},dst={shared_tmp}",
         "--mount", f"type=bind,src={docker_socket},dst=/var/run/docker.sock",
         "--mount", f"type=bind,src={docker},dst=/usr/local/bin/docker,readonly",
@@ -168,6 +170,8 @@ def build_container_argv(
         "--entrypoint", "python", image,
         "/workspace/scripts/inference/run_evaluation.py",
         "--config", f"/workspace/{CONFIG_RELATIVE}",
+        "--model-dir", str(CONTAINER_MODEL),
+        "--output-dir", str(CONTAINER_OUTPUT),
     ]
 
 

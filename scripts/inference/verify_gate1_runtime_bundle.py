@@ -69,12 +69,18 @@ def rehearse(root: Path = ROOT) -> dict[str, Any]:
     if archive.stat().st_size != manifest["archive"]["size_bytes"] or file_sha256(archive) != manifest["archive"]["sha256"]:
         raise ValueError("evaluation runtime archive differs from its sealed manifest")
 
-    with tempfile.TemporaryDirectory(prefix="ganesh-gate1-runtime-") as temporary:
+    with (
+        tempfile.TemporaryDirectory(prefix="ganesh-gate1-runtime-") as temporary,
+        tempfile.TemporaryDirectory(prefix="ganesh-gate1-probe-host-") as probe_temporary,
+    ):
         workspace = Path(temporary)
         extract_verified(archive, manifest, workspace)
-        probe = r'''from scripts.campaign.run_host import docker_container_name
-from scripts.inference.run_development_baseline_host import docker_attempt_id
+        probe = r'''from pathlib import Path
+from types import SimpleNamespace
+from scripts.campaign.run_host import Campaign, CONTAINER_MODEL, docker_container_name, external_mount
+from scripts.inference.run_development_baseline_host import build_container_argv, docker_attempt_id
 attempt = "20260825T061157Z"
+probe_host = Path(sys.argv[3])
 assert docker_attempt_id(attempt) == "20260825t061157z"
 names = [
     "ganesh-qwen-base-" + docker_attempt_id(attempt),
@@ -86,7 +92,32 @@ names = [
     docker_container_name("ganesh-eval-" + attempt + "-main"),
 ]
 assert all(name == name.lower() for name in names)
+baseline = build_container_argv(
+    docker="/usr/bin/docker", image="qualified", container_name=names[0],
+    workspace=probe_host/"eval", model=probe_host/"model",
+    output=probe_host/"output", shared_tmp=probe_host/"tmp",
+    docker_socket=Path("/var/run/docker.sock"),
+)
+joined = " ".join(map(str, baseline))
+assert "dst=/workspace,readonly" in joined
+assert "dst=/input/model,readonly" in joined and "dst=/output" in joined
+assert "dst=/workspace/models" not in joined and "dst=/workspace/measurement" not in joined
+campaign = Campaign(SimpleNamespace(
+    output=probe_host/"campaign", max_seconds=63000, attempt_id=attempt,
+    hourly_cost_usd=1, model=probe_host/"model",
+))
+campaign.docker = "/usr/bin/docker"
+campaign_base = " ".join(map(str, campaign.docker_base(names[1], probe_host/"train")))
+assert "dst=/workspace,readonly" in campaign_base
+assert f"dst={CONTAINER_MODEL},readonly" in campaign_base
+try:
+    external_mount(probe_host/"model", Path("/workspace/models/base"), readonly=True)
+except ValueError:
+    pass
+else:
+    raise AssertionError("external mount guard accepted a nested workspace target")
 print("\n".join(names))
+print("MOUNT_TOPOLOGY_OK")
 '''
         environment = {**os.environ, "PYTHONPATH": str(workspace)}
         result = subprocess.run(
@@ -98,12 +129,15 @@ print("\n".join(names))
                 "sys.path.insert(0, sys.argv[1]); exec(sys.argv[2])",
                 str(workspace),
                 probe,
+                str(probe_temporary),
             ],
             cwd=workspace, env=environment, capture_output=True, text=True, check=False, timeout=30,
         )
         if result.returncode != 0:
             raise RuntimeError(f"archived runtime attempt-ID rehearsal failed: {result.stderr.strip()}")
-        container_names = result.stdout.splitlines()
+        probe_lines = result.stdout.splitlines()
+        mount_topology_ok = probe_lines[-1:] == ["MOUNT_TOPOLOGY_OK"]
+        container_names = probe_lines[:-1]
         observed_after_import = {
             str(path.relative_to(workspace))
             for path in workspace.rglob("*")
@@ -122,6 +156,7 @@ print("\n".join(names))
     finish = controller[controller.index("finish() {"):controller.index("trap finish EXIT")]
     checks = {
         "archived_attempt_id_is_docker_safe": len(container_names) == 7 and all(name == name.lower() for name in container_names),
+        "external_mounts_avoid_read_only_workspace": mount_topology_ok,
         "archived_imports_preserve_sealed_file_set": observed_after_import == expected_files,
         "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,

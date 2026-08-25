@@ -33,6 +33,11 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[2]
 MODEL_RELATIVE = Path("models/qwen3.5-2b-15852e8")
 BASE_OUTPUT_RELATIVE = Path("measurement/inference/development/qwen3.5-2b-base-v1")
+CONTAINER_MODEL = Path("/input/model")
+CONTAINER_TRAINING = Path("/training")
+CONTAINER_ADAPTER = CONTAINER_TRAINING / "adapter-final"
+CONTAINER_OUTPUT = Path("/output")
+CONTAINER_CONTROL = Path("/control")
 CUDA_IMAGE_ID = "sha256:cdaf068ffcb933120181168ebf6ae1546ddf81e01b2ad006a1a18dd2e43d9860"
 LR_CANDIDATES = (("lr-1e-4", 0.0001), ("lr-2e-4", 0.0002))
 
@@ -43,6 +48,16 @@ def docker_container_name(name: str) -> str:
     if not re.fullmatch(r"[a-z0-9][a-z0-9_.-]*", normalized):
         raise ValueError(f"invalid Docker container name: {name}")
     return normalized
+
+
+def external_mount(source: Path, destination: Path, *, readonly: bool = False) -> str:
+    """Build a bind whose target cannot depend on a read-only workspace path."""
+    if not destination.is_absolute():
+        raise ValueError("container mount destination must be absolute")
+    if destination == Path("/workspace") or destination.is_relative_to(Path("/workspace")):
+        raise ValueError("external state cannot be mounted beneath /workspace")
+    suffix = ",readonly" if readonly else ""
+    return f"type=bind,src={source.resolve()},dst={destination}{suffix}"
 
 
 def canonical_sha256(value: Any) -> str:
@@ -144,7 +159,7 @@ class Campaign:
             "--security-opt", "no-new-privileges", "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=8g",
             "--tmpfs", "/var/cache/triton:rw,exec,nosuid,nodev,size=1g",
             "--mount", f"type=bind,src={workspace},dst=/workspace,readonly",
-            "--mount", f"type=bind,src={self.args.model.resolve()},dst=/workspace/{MODEL_RELATIVE},readonly",
+            "--mount", external_mount(self.args.model, CONTAINER_MODEL, readonly=True),
             "--env", "HF_HUB_OFFLINE=1", "--env", "TRANSFORMERS_OFFLINE=1",
             "--env", "PYTHONPATH=/workspace", "--env", "TRITON_CACHE_DIR=/var/cache/triton",
             "--workdir", "/workspace",
@@ -213,20 +228,18 @@ class Campaign:
         phase = "main" if label == "main" else "lr-candidate"
         command = self.docker_base(f"ganesh-train-{self.args.attempt_id}-{label}", self.args.train_workspace)
         command += [
-            "--mount", f"type=bind,src={destination},dst=/outputs",
-            "--mount", f"type=bind,src={card.resolve()},dst=/run/training-card.json,readonly",
+            "--mount", external_mount(destination, Path("/outputs")),
+            "--mount", external_mount(self.output, CONTAINER_CONTROL, readonly=True),
         ]
-        if selection:
-            command += ["--mount", f"type=bind,src={selection.resolve()},dst=/run/lr-selection.json,readonly"]
         command += ["--entrypoint", "python", self.args.cuda_image,
             "/workspace/scripts/train/run_sft.py", "--phase", phase,
-            "--card", "/run/training-card.json", "--model-dir", f"/workspace/{MODEL_RELATIVE}",
+            "--card", str(CONTAINER_CONTROL / card.name), "--model-dir", str(CONTAINER_MODEL),
             "--output", "/outputs", "--learning-rate", str(learning_rate),
             "--maximum-seen-tokens", str(maximum_tokens), "--hourly-cost-usd", str(self.args.hourly_cost_usd),
             "--prior-cost-usd", str(self.prior_cost()), "--cost-ceiling-usd", str(self.args.training_cost_ceiling_usd),
         ]
         if selection:
-            command += ["--lr-selection-evidence", "/run/lr-selection.json"]
+            command += ["--lr-selection-evidence", str(CONTAINER_CONTROL / selection.name)]
         self.run(command, log_name=f"train-{label}", timeout=min(self.remaining(self.args.finalization_reserve_seconds), 21600))
         evidence = load_sealed(destination / "run-evidence.json", "evidence_sha256")
         if evidence.get("status") != "complete":
@@ -252,15 +265,17 @@ class Campaign:
         config = self.candidate_config(label, training)
         command = self.docker_base(f"ganesh-eval-{self.args.attempt_id}-{label}", self.args.eval_workspace)
         command += [
-            "--mount", f"type=bind,src={training.resolve()},dst=/workspace/artifacts/campaign/{label},readonly",
-            "--mount", f"type=bind,src={destination},dst=/workspace/measurement/inference/development/{label}",
-            "--mount", f"type=bind,src={config.resolve()},dst=/workspace/configs/inference/campaign-candidate.json,readonly",
-            "--mount", f"type=bind,src={self.args.shared_tmp.resolve()},dst={self.args.shared_tmp.resolve()}",
+            "--mount", external_mount(training, CONTAINER_TRAINING, readonly=True),
+            "--mount", external_mount(destination, CONTAINER_OUTPUT),
+            "--mount", external_mount(self.output, CONTAINER_CONTROL, readonly=True),
+            "--mount", external_mount(self.args.shared_tmp, self.args.shared_tmp.resolve()),
             "--mount", "type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock",
             "--mount", f"type=bind,src={self.docker},dst=/usr/local/bin/docker,readonly",
             "--env", f"TMPDIR={self.args.shared_tmp.resolve()}",
             "--entrypoint", "python", self.args.cuda_image,
-            "/workspace/scripts/inference/run_evaluation.py", "--config", "/workspace/configs/inference/campaign-candidate.json",
+            "/workspace/scripts/inference/run_evaluation.py", "--config", str(CONTAINER_CONTROL / "configs" / config.name),
+            "--model-dir", str(CONTAINER_MODEL), "--adapter-dir", str(CONTAINER_ADAPTER),
+            "--output-dir", str(CONTAINER_OUTPUT),
         ]
         self.run(command, log_name=f"evaluate-{label}", timeout=min(self.remaining(self.args.finalization_reserve_seconds), 21600))
         run = load_sealed(destination / "run.json", "run_sha256")

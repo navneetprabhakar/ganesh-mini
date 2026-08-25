@@ -1442,3 +1442,25 @@ workflow results remain immutable execution evidence but create no continuing
 CI dependency. Required workspace reconstruction, unit tests, runtime-bundle
 rehearsal, and preparation sealing run locally or inside an explicitly
 approved compute campaign.
+
+## 2026-08-25 — External runtime state cannot be mounted beneath a sealed workspace
+
+Attempt `20260825T103213Z` established that making `/workspace` read-only while
+binding model, adapter, configuration, or output paths beneath it is not a
+valid isolation design. Docker must create a missing nested mountpoint before
+starting the container; it cannot do so through an already read-only parent
+bind. Adding empty directories to the archive was rejected as a brittle fix
+because every future external path would depend on archive layout.
+
+The durable contract is one sealed read-only `/workspace` bind plus independent
+top-level mounts for runtime state. The evaluator accepts explicit model,
+adapter, and output locations while continuing to hash the frozen config and
+emit its logical evidence paths. Campaign code constructs external mounts
+through a guard that rejects `/workspace` and every descendant. The archived
+runtime rehearsal executes both the base and campaign mount builders and
+enforces this invariant before a preparation seal can be issued.
+
+The failed run remains lifecycle evidence only and cannot open Gate 1. All
+temporary GCloud resources were deleted after verified GCS backup. Another
+cloud campaign requires fresh explicit GCloud approval; local repair, tests,
+repository push, and preparation sealing do not.

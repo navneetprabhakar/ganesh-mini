@@ -145,18 +145,29 @@ def validate_batch_outputs(outputs: list[tuple[list[int],str,int]], batch_size: 
     if len(outputs)!=batch_size: raise RuntimeError(f"generation backend returned {len(outputs)} outputs for batch size {batch_size}")
 
 
-def model_identity(config: dict[str, Any]) -> tuple[dict[str, Any], int]:
+def rooted(path: str | Path) -> Path:
+    value = Path(path)
+    return value if value.is_absolute() else ROOT / value
+
+
+def model_identity(
+    config: dict[str, Any], *, model_dir: Path | None = None,
+    adapter_dir: Path | None = None,
+) -> tuple[dict[str, Any], int]:
     contract=load_json(ROOT/config["model_contract"]); inventory=load_json(ROOT/config["model_inventory"])
-    artifact=directory_artifact_sha256(ROOT/config["model_dir"],inventory)
+    resolved_model = model_dir or rooted(config["model_dir"])
+    artifact=directory_artifact_sha256(resolved_model,inventory)
     size=sum(int(row["size"]) for row in inventory["files"])
     identity={"model_id":contract["model_id"],"revision":contract["revision"],"artifact_sha256":artifact,"serving_contract_sha256":sha256_object(contract["serving_contract"]),"inventory_sha256":sha256_object(inventory)}
     adapter=config.get("adapter")
     if adapter is not None:
-        run=load_sealed(ROOT/adapter["run_evidence"],"evidence_sha256")
+        resolved_adapter = adapter_dir or rooted(adapter["dir"])
+        run_path = resolved_adapter.parent / "run-evidence.json" if adapter_dir else rooted(adapter["run_evidence"])
+        run=load_sealed(run_path,"evidence_sha256")
         if run is None or run.get("status")!="complete": raise ValueError("candidate adapter run is incomplete")
-        adapter_dir=ROOT/adapter["dir"]; observed={str(path.relative_to(adapter_dir)):file_sha256(path) for path in sorted(adapter_dir.rglob("*")) if path.is_file()}
+        observed={str(path.relative_to(resolved_adapter)):file_sha256(path) for path in sorted(resolved_adapter.rglob("*")) if path.is_file()}
         if observed!=run.get("adapter_files"): raise ValueError("candidate adapter files mismatch sealed run")
-        identity={"model_id":adapter["served_model_id"],"revision":contract["revision"],"artifact_sha256":sha256_object({"base":artifact,"adapter":observed,"run_evidence_sha256":run["evidence_sha256"]}),"serving_contract_sha256":sha256_object(contract["serving_contract"]),"base_artifact_sha256":artifact,"training_run_evidence_sha256":run["evidence_sha256"]}; size+=sum(path.stat().st_size for path in adapter_dir.rglob("*") if path.is_file())
+        identity={"model_id":adapter["served_model_id"],"revision":contract["revision"],"artifact_sha256":sha256_object({"base":artifact,"adapter":observed,"run_evidence_sha256":run["evidence_sha256"]}),"serving_contract_sha256":sha256_object(contract["serving_contract"]),"base_artifact_sha256":artifact,"training_run_evidence_sha256":run["evidence_sha256"]}; size+=sum(path.stat().st_size for path in resolved_adapter.rglob("*") if path.is_file())
     return identity,size
 
 
@@ -189,7 +200,8 @@ def run_manifest(config: dict[str,Any], config_sha: str, model: dict[str,Any], b
     rows=[]
     for _,task in tasks:
         evidence=completed.get(task["task_id"]); path=final_dir/f"{task['task_id']}.json"
-        rows.append({"task_id":task["task_id"],"status":"complete" if evidence else "pending","passed":evidence["verification"]["result"]["passed"] if evidence else None,"evidence_path":str(path.relative_to(ROOT)) if evidence else None,"evidence_sha256":evidence.get("evidence_sha256") if evidence else None})
+        logical_path=Path(config["output_dir"])/"tasks"/path.name
+        rows.append({"task_id":task["task_id"],"status":"complete" if evidence else "pending","passed":evidence["verification"]["result"]["passed"] if evidence else None,"evidence_path":str(logical_path) if evidence else None,"evidence_sha256":evidence.get("evidence_sha256") if evidence else None})
     return sealed({"schema_version":"ganesh-mini-inference-run/v2","run_id":config["run_id"],"classification":config["classification"],"config_sha256":config_sha,"model":model,"runtime":{**backend.identity,"implementation":implementation_identity()},"task_accounting":{"expected":len(rows),"completed":len(completed),"passed":sum(row["passed"] is True for row in rows),"failed":sum(row["passed"] is False for row in rows),"pending":len(rows)-len(completed)},"tasks":rows,"updated_at":utc_now()},"run_sha256")
 
 
@@ -209,9 +221,18 @@ def verify_generated(generated: dict[str,Any], task: dict[str,Any], config: dict
     return sealed(value,"evidence_sha256")
 
 
-def execute(config_path: Path, backend: BatchBackend | None = None, model_override: dict[str,Any] | None = None, artifact_size_override: int | None = None) -> dict[str,Any]:
+def execute(
+    config_path: Path, backend: BatchBackend | None = None,
+    model_override: dict[str,Any] | None = None,
+    artifact_size_override: int | None = None, *,
+    model_dir: Path | None = None, adapter_dir: Path | None = None,
+    output_dir: Path | None = None,
+) -> dict[str,Any]:
     config=load_json(config_path); validate_config(config); config_sha=sha256_object(config)
-    if model_override is None: model,artifact_size=model_identity(config)
+    resolved_model = model_dir or rooted(config["model_dir"])
+    adapter = config.get("adapter")
+    resolved_adapter = adapter_dir or (rooted(adapter["dir"]) if adapter else None)
+    if model_override is None: model,artifact_size=model_identity(config,model_dir=resolved_model,adapter_dir=resolved_adapter)
     else:
         if artifact_size_override is None or artifact_size_override<=0: raise ValueError("model identity override requires positive artifact size")
         model,artifact_size=model_override,artifact_size_override
@@ -221,7 +242,7 @@ def execute(config_path: Path, backend: BatchBackend | None = None, model_overri
     if any(task["surface"]!=config["allowed_surface"] for _,task in tasks): raise ValueError("task surface escaped config")
     task_ids=[task["task_id"] for _,task in tasks]
     if len(task_ids)!=len(set(task_ids)): raise ValueError("duplicate task IDs in selected evaluation surface")
-    backend=backend or TransformersBatchBackend(ROOT/config["model_dir"],config["auto_model_class"],ROOT/config["adapter"]["dir"] if config.get("adapter") else None); output=ROOT/config["output_dir"]; generated_dir=output/"generated"; final_dir=output/"tasks"
+    backend=backend or TransformersBatchBackend(resolved_model,config["auto_model_class"],resolved_adapter); output=output_dir or rooted(config["output_dir"]); generated_dir=output/"generated"; final_dir=output/"tasks"
     if backend.identity.get("device")!=config["execution"]["required_device"]: raise RuntimeError(f"evaluation requires {config['execution']['required_device']}, observed {backend.identity.get('device')}")
     implementation=implementation_identity()
     completed: dict[str,dict[str,Any]]={}; pending=[]
@@ -266,7 +287,19 @@ def execute(config_path: Path, backend: BatchBackend | None = None, model_overri
 
 
 def main() -> int:
-    parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--config",type=Path,required=True); args=parser.parse_args(); result=execute(args.config.resolve()); print(json.dumps(result["task_accounting"],sort_keys=True)); return 0 if result["task_accounting"]["pending"]==0 else 2
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config",type=Path,required=True)
+    parser.add_argument("--model-dir",type=Path)
+    parser.add_argument("--adapter-dir",type=Path)
+    parser.add_argument("--output-dir",type=Path)
+    args=parser.parse_args()
+    result=execute(
+        args.config.resolve(),
+        model_dir=args.model_dir.resolve() if args.model_dir else None,
+        adapter_dir=args.adapter_dir.resolve() if args.adapter_dir else None,
+        output_dir=args.output_dir.resolve() if args.output_dir else None,
+    )
+    print(json.dumps(result["task_accounting"],sort_keys=True)); return 0 if result["task_accounting"]["pending"]==0 else 2
 
 
 if __name__ == "__main__": raise SystemExit(main())

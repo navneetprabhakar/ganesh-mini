@@ -7,18 +7,32 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from scripts.train.qwen_runtime import (
-    configure_cuda_allocator,
-    configure_fused_training_loss,
-    configure_qwen_training_structure,
-    unload_and_reload_saved_adapter,
-    restore_qwen_serving_cache,
-)
-from scripts.train.response_only import ResponseOnlyError, build_response_only_encoding
-
 PACKAGE_IMPORTS = {"torch":"torch","torchvision":"torchvision","transformers":"transformers","peft":"peft","ms-swift":"swift","bitsandbytes":"bitsandbytes","flash-linear-attention":"fla","causal-conv1d":"causal_conv1d","accelerate":"accelerate","qwen-vl-utils":"qwen_vl_utils","triton":"triton","liger-kernel":"liger_kernel"}
 PRIMARY_RECIPE = "bf16-lora-primary-v1"
 FALLBACK_RECIPE = "nf4-qlora-fallback-v1"
+
+# The development evaluation archive intentionally excludes scripts/train. Keep
+# qualification's training-only dependencies lazy so the shared CUDA serving
+# compatibility helpers remain importable inside that isolated archive.
+def configure_cuda_allocator(*args: Any, **kwargs: Any) -> Any:
+    from scripts.train.qwen_runtime import configure_cuda_allocator as implementation
+    return implementation(*args, **kwargs)
+
+def configure_fused_training_loss(*args: Any, **kwargs: Any) -> Any:
+    from scripts.train.qwen_runtime import configure_fused_training_loss as implementation
+    return implementation(*args, **kwargs)
+
+def configure_qwen_training_structure(*args: Any, **kwargs: Any) -> Any:
+    from scripts.train.qwen_runtime import configure_qwen_training_structure as implementation
+    return implementation(*args, **kwargs)
+
+def unload_and_reload_saved_adapter(*args: Any, **kwargs: Any) -> Any:
+    from scripts.train.qwen_runtime import unload_and_reload_saved_adapter as implementation
+    return implementation(*args, **kwargs)
+
+def restore_qwen_serving_cache(*args: Any, **kwargs: Any) -> Any:
+    from scripts.train.qwen_runtime import restore_qwen_serving_cache as implementation
+    return implementation(*args, **kwargs)
 
 class PeakVramExceeded(RuntimeError):
     def __init__(self, observed: int, maximum: int) -> None:
@@ -217,6 +231,7 @@ def select_records(path: Path, tokenizer: Any, count: int, max_length: int) -> l
     return [{"tokens":candidates[index][0],"row":candidates[index][2],"rendered":candidates[index][3]} for index in indices]
 
 def response_only_batch(tokenizer: Any, messages: list[dict[str,str]], max_length: int, device: str) -> dict[str,Any]:
+    from scripts.train.response_only import ResponseOnlyError, build_response_only_encoding
     try:
         response = build_response_only_encoding(
             tokenizer, messages, max_length=max_length, return_tensors="pt"

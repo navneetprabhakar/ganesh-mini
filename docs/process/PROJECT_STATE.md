@@ -5,25 +5,25 @@ Last updated: 2026-08-25
 ## Current gate
 
 Gate 1: execute the exact Qwen development baseline on the already frozen
-180-task surface as the first phase of the approved staged L4 campaign.
+180-task surface as the first phase of the staged L4 campaign.
 
-Approved attempt `20260825T103213Z` passed every preflight, download, checksum,
-Docker/NVIDIA/CUDA-image, verifier-image, workspace-isolation, and bytecode-
-immutability boundary. It then failed before the first baseline task because
-the model bind target was nested under read-only `/workspace` and did not exist
-in the sealed archive. Docker exited `125` while trying to create that nested
-mountpoint. Zero inference tasks and zero training steps ran. The strict
-failure terminal is backed up, and the exact VM, disk, subnet, and VPC are
-deleted with verified absence evidence.
+Approved attempt `20260825T140310Z` passed fresh preflight, immutable input
+verification, offline Docker/NVIDIA setup, the exact qualified CUDA image ID,
+all six verifier-image identities, workspace isolation, and runtime GCS
+checkpointing. The base evaluator then failed before model loading because
+`scripts.cuda.qualify` imported training-only modules at module import time,
+while the intentionally isolated evaluation archive excludes `scripts/train`.
+The exact failure was `ModuleNotFoundError: No module named 'scripts.train'`.
+Zero baseline tasks, inference tokens, and training steps ran. The strict
+failure terminal is backed up; the exact VM, disk, subnet, and VPC are deleted
+with verified absence evidence.
 
-The repaired container contract keeps only the sealed source workspace at
-`/workspace`. Model, adapter/training output, mutable evaluation output, and
-campaign-control state now use independent top-level mounts. The evaluator has
-explicit runtime path overrides while preserving the frozen configuration hash
-and logical evidence paths. A shared mount builder rejects any external target
-beneath `/workspace`; focused tests and the archive-executed rehearsal enforce
-the invariant. Gate 1 still has no model result. Another GCloud execution is
-the next action and requires fresh explicit approval.
+The repair makes qualification's training dependencies lazy while leaving the
+two CUDA serving-compatibility helpers importable in the evaluation archive.
+The archive-executed rehearsal now imports those exact helpers and proves that
+`scripts/train` is absent, closing the packaging gap locally. Gate 1 still has
+no model result. Another GCloud execution is the next action and requires a
+fresh explicit approval.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
@@ -54,13 +54,13 @@ Gate 1 now fails closed only because the exact Qwen development baseline does
 not yet exist. Gate 0B no longer blocks that execution.
 
 The current evaluation-workspace manifest seal is
-`253e3d9e11b4b9c2a7cd187b48a055abe5a47881d7b016ebf4249bfe3538446b`;
+`a6d2b7c64bd6c2cb25e72a6a788e372965fa18a842538e8e9e7d2e7cb18e074a`;
 the training-workspace manifest seal is
 `4ea6a9384993a97ad39a659a7ab7d8ca5db6a0f8af5c6093af2b13184280ce16`.
 The archive-executed runtime rehearsal seal is
-`8747337210b167a9b0099e605b98c3b7fbcf1e3b291066687b887fad3765aea0`,
+`ba782354c142114121cc34d557b19ca2852b9dc48fe58b97fccb2f63de4a7da3`,
 and the non-executable preparation seal is
-`7131fb8c768fad2c70bec28d36fb375a92d2e52911803265deec6559208628da`.
+`d51f342615e3fa77203df45701d757dae8a821938a0ad964ce60c4b813db74ec`.
 
 ## Completed
 

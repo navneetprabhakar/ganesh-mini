@@ -1464,3 +1464,44 @@ The failed run remains lifecycle evidence only and cannot open Gate 1. All
 temporary GCloud resources were deleted after verified GCS backup. Another
 cloud campaign requires fresh explicit GCloud approval; local repair, tests,
 repository push, and preparation sealing do not.
+
+## 2026-08-25 — CUDA serving compatibility must not import training code eagerly
+
+Approved attempt `20260825T140310Z` provisioned one `g2-standard-12`
+Flex-start L4 VM in `us-east1-c`. Fresh price, quota, exact-resource absence,
+GCS round-trip, and immutable generation-pinned input checks passed. Offline
+Docker/NVIDIA setup passed, the loaded CUDA image matched the expected image
+ID, and all six native AMD64 verifier images matched their sealed config and
+manifest identities.
+
+The campaign stopped before model loading and before the first baseline task.
+The isolated evaluation workspace correctly excluded `scripts/train`, but
+`scripts.cuda.qualify` imported `scripts.train.qwen_runtime` eagerly even
+though evaluation uses only `install_fla_recurrent_compatibility` and
+`kernel_identity`. The exact result was `ModuleNotFoundError: No module named
+'scripts.train'`. No inference token or optimizer step ran, and the failed
+attempt is not baseline evidence.
+
+Terminal validation is `sealed-failure` under seal
+`915befcfb5d8c93d39d369a84abcadb543ffbe122968b6983ef6ed4521d27aaf`.
+Terminal backup seal
+`05f01002f1aa050462f6b1c0c65b7a11e82857a59700f5e858a2e789f119e165`
+passed before deletion. Deletion gate seal
+`409bf6ab0c83d7f9a5507c85099d48c39aee7d2551708c8b65411e21d7929480`
+and absence proof
+`1b378af04f32c43c08a46b644a6d64886d4185d1bd02c63e6e8d03901be94f65`
+prove the exact VM, auto-delete disk, subnet, and VPC absent. Finalization seal
+`9336e411e964793c577e8d3f779e4c7e69c9214583f7056c420c7e978861a45d`
+and final post-delete backup seal
+`0052b790551123e32696bdb6c9f82403c20a62dbebb0ca97e2a414ca46d5e687`
+close the lifecycle.
+
+Training-only qualification imports are now lazy. The sealed-archive runtime
+rehearsal imports the exact CUDA serving helpers while asserting that the
+archive contains no `scripts/train` directory, so this dependency-boundary
+failure cannot pass preparation again. The resealed evaluation archive,
+rehearsal, and preparation hashes are
+`8af2f7d2b92b66d6919ee15d5eb06fb2701e678ef8302d022eae77a94abfb2a1`,
+`ba782354c142114121cc34d557b19ca2852b9dc48fe58b97fccb2f63de4a7da3`,
+and `d51f342615e3fa77203df45701d757dae8a821938a0ad964ce60c4b813db74ec`.
+Another cloud execution requires fresh explicit GCloud approval.

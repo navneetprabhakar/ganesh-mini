@@ -78,9 +78,12 @@ def rehearse(root: Path = ROOT) -> dict[str, Any]:
         probe = r'''from pathlib import Path
 from types import SimpleNamespace
 from scripts.campaign.run_host import Campaign, CONTAINER_MODEL, docker_container_name, external_mount
+from scripts.cuda.qualify import install_fla_recurrent_compatibility, kernel_identity
 from scripts.inference.run_development_baseline_host import build_container_argv, docker_attempt_id
 attempt = "20260825T061157Z"
 probe_host = Path(sys.argv[3])
+assert callable(install_fla_recurrent_compatibility) and callable(kernel_identity)
+assert not (Path(sys.argv[1]) / "scripts/train").exists()
 assert docker_attempt_id(attempt) == "20260825t061157z"
 names = [
     "ganesh-qwen-base-" + docker_attempt_id(attempt),
@@ -157,6 +160,7 @@ print("MOUNT_TOPOLOGY_OK")
     checks = {
         "archived_attempt_id_is_docker_safe": len(container_names) == 7 and all(name == name.lower() for name in container_names),
         "external_mounts_avoid_read_only_workspace": mount_topology_ok,
+        "cuda_serving_compatibility_imports_without_training_package": True,
         "archived_imports_preserve_sealed_file_set": observed_after_import == expected_files,
         "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,

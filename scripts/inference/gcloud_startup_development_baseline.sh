@@ -212,7 +212,7 @@ env | sed -E 's/(TOKEN|SECRET|PASSWORD|KEY)=.*/\1=REDACTED/' | sort > "$evidence
 checkpoint_loop & checkpoint_pid="$!"
 
 set +e
-python3 "$work_dir/workspace/scripts/campaign/run_host.py" \
+python3 -B "$work_dir/workspace/scripts/campaign/run_host.py" \
   --eval-workspace "$work_dir/workspace" \
   --eval-manifest "$work_dir/workspace-manifest.json" \
   --eval-archive "$work_dir/workspace.tar.gz" \

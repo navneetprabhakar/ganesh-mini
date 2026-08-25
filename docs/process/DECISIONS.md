@@ -1408,3 +1408,26 @@ card-bound resource identity and provider evidence. Quarantine finalization is
 explicitly marked `complete-quarantined` and is never admission-eligible. This
 prevents corrupted evidence from becoming a benchmark result without leaving a
 paid VM stranded. No GCloud command was executed during this repair.
+
+## 2026-08-25 — Sealed workspaces must remain bytecode-immutable during imports
+
+Provisioned Gate 1 attempt `20260825T085926Z` proved that archive/source
+alignment at launch is necessary but insufficient. Both extracted workspace
+file sets initially matched their manifests. Importing the baseline module on
+Linux then created `__pycache__` files inside the evaluation root, and the
+baseline helper's repeated identity check correctly failed before generation.
+Mac rehearsals had redirected bytecode outside the workspace and therefore did
+not reproduce the mutation.
+
+All VM-host Python execution against sealed workspaces now disables bytecode at
+the interpreter boundary with `-B`; the campaign repeats the guard through
+`sys.dont_write_bytecode`. Runtime rehearsal forces in-tree cache semantics,
+imports the archived modules, and requires the post-import file set to equal
+the manifest exactly. Ignoring `__pycache__` during verification was rejected:
+the correct invariant is that execution must not mutate a sealed input, not
+that the verifier should tolerate undeclared files.
+
+The failed attempt is not baseline evidence and cannot open Gate 1. Its strict
+terminal backup, deletion gate, exact-resource absence proof, and post-delete
+backup are valid lifecycle evidence only. A fresh GCloud approval is required
+for another campaign attempt.

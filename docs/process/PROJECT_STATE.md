@@ -7,16 +7,16 @@ Last updated: 2026-08-25
 Gate 1: execute the exact Qwen development baseline on the already frozen
 180-task surface as the first phase of the approved staged L4 campaign.
 
-The repeat-failure audit found that the last provisioned attempt executed a
-stale evaluation archive even though the lowercase Docker-name repair was in
-`HEAD`. Preparation had proved only that each archive matched its historical
-manifest; it had not proved that archived runtime files matched current
-source. Both VM workspaces are now minimal, deterministically resealed, and
-source-aligned during preparation. A rehearsal imported code from the sealed
-evaluation tarball and passed the exact failed attempt ID
-`20260825T061157Z` across all seven baseline/training/evaluation container
-names. Gate 1 still has no model result; another GCloud execution remains the
-next action and requires explicit approval.
+Approved attempt `20260825T085926Z` provisioned successfully and qualified the
+model archive, CUDA image, Docker runtime, NVIDIA runtime, and verifier bundle,
+but failed before the first baseline task. Linux wrote import bytecode into the
+writable extracted evaluation workspace; the downstream exact-file-set check
+correctly rejected those unmanifested `__pycache__` files. The controller now
+runs Python with `-B`, the campaign also disables bytecode writes, and the
+archive rehearsal asserts that all imports preserve the exact sealed file set.
+The VM, disk, subnet, and VPC are deleted with verified GCS terminal and
+post-delete backups. Gate 1 still has no model result; another GCloud execution
+is the next action and requires fresh explicit approval.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
@@ -47,13 +47,13 @@ Gate 1 now fails closed only because the exact Qwen development baseline does
 not yet exist. Gate 0B no longer blocks that execution.
 
 The current evaluation-workspace manifest seal is
-`f6e8ed646ac7cbc0bc08ae16c60c64dad29b6ea6946660bf898c855d479caab3`;
+`1ae244bfc9216c1a0e74f91755c7af338a3769dded95850c04b705e3c4305b3e`;
 the training-workspace manifest seal is
 `4ea6a9384993a97ad39a659a7ab7d8ca5db6a0f8af5c6093af2b13184280ce16`.
 The archive-executed runtime rehearsal seal is
-`087beba0ce724561f06b903ee5e70ba4c506c1908104c02fa46aac2790b193e0`,
+`e9d39a0e486c192b05c62810e8ef94fbb39c665c96f2d66af5cad0b009a10902`,
 and the non-executable preparation seal is
-`0f0f826390e7e4b3541097d031d9d258df32a4775b294c6b9fe026930fd59b36`.
+`4e52713bcf6caa2f4438a21de8e408c42724d7f34f61c16a238bb88690eca0b9`.
 
 ## Completed
 
@@ -907,3 +907,47 @@ blocked on a fresh explicit approval. The recommended bounded fallback is one
 aggregate campaign attempt sequence in `us-east1-c`, then `us-east1-d` only if
 `c` fails before provisioning, with at most one running VM and the existing
 18-hour runtime and USD 19 aggregate incremental ceiling.
+
+## 2026-08-25 — Gate 1 Linux bytecode mutation failed closed and was repaired
+
+Approved attempt `20260825T085926Z` passed fresh price, quota, resource
+absence, GCS round-trip, immutable input, and double-read preflight checks. It
+provisioned `g2-standard-12` VM `ganesh-mini-g1-l4-20260825t085926z` in
+`us-east1-c`. All staged downloads matched their hashes. The offline Docker
+installation, NVIDIA container runtime, qualified CUDA image load, exact image
+ID, and GPU inspection passed.
+
+The campaign stopped before baseline generation with controller exit `1` and
+the exact diagnostic `extracted development workspace file set mismatch`.
+Workspace isolation had passed immediately before the baseline helper import.
+On Linux, that import created in-tree `__pycache__` files because the extracted
+workspace was host-writable; the helper then correctly rejected the mutation.
+The earlier Mac rehearsal did not expose this because that interpreter directs
+bytecode to an external user cache.
+
+The terminal is a strict `sealed-failure` under seal
+`cbc3bb69978ad0bcd526f195b94526aa71caf03d48ccb7356b24dd240e500334`.
+Deletion gate
+`090f96e55c1f3ba857e9bf8cccb409cc14fc627b54be3f269fe2478a139dc257`
+passed. The exact VM, auto-delete disk, subnet, and VPC were deleted; absence
+proof
+`ba7e3cf424d8c981a280ece41dfdfddcf186803cc2af4312d77f81e7a9e8adf7`
+proves all four absent. Finalization seal
+`84b11ce6b3cb2703e610bf4024dbf2c824be57a959c11f35af57c1dc675fd7f4`
+and final post-delete backup seal
+`308d4da01f815963808989aec625644d2df4d75d3a9aaafd51187c4a164de1bd`
+close the attempt. Provider start-to-stop time was about 536 seconds; this is a
+runtime bound, not an asserted invoice amount.
+
+The startup controller now invokes the campaign with `python3 -B`, and the
+campaign independently sets `sys.dont_write_bytecode`. The runtime rehearsal
+forces in-tree bytecode semantics, imports the archived modules, and asserts
+that the extracted file set remains identical to the 214-file manifest. The
+evaluation archive is resealed at
+`f5a1518ab6d24d3fce649838fb623115988478b508541a5ccb05c13842b868eb`;
+the rehearsal and preparation seals are
+`e9d39a0e486c192b05c62810e8ef94fbb39c665c96f2d66af5cad0b009a10902`
+and
+`4e52713bcf6caa2f4438a21de8e408c42724d7f34f61c16a238bb88690eca0b9`.
+The complete local suite passes. Gate 1 remains closed, no training has
+started, and the consumed one-attempt approval does not authorize another VM.

@@ -23,6 +23,12 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+# The evaluation and training roots are sealed, read-only logical inputs even
+# while they are mounted from writable host directories.  Linux otherwise
+# creates in-tree __pycache__ files when campaign phases import workspace
+# modules, which mutates the file set before the downstream identity check.
+sys.dont_write_bytecode = True
+
 
 ROOT = Path(__file__).resolve().parents[2]
 MODEL_RELATIVE = Path("models/qwen3.5-2b-15852e8")

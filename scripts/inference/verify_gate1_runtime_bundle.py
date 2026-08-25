@@ -90,18 +90,40 @@ print("\n".join(names))
 '''
         environment = {**os.environ, "PYTHONPATH": str(workspace)}
         result = subprocess.run(
-            [sys.executable, "-I", "-c", "import sys; sys.path.insert(0, sys.argv[1]); exec(sys.argv[2])", str(workspace), probe],
+            [
+                sys.executable,
+                "-I",
+                "-c",
+                "import sys; sys.pycache_prefix=None; sys.dont_write_bytecode=True; "
+                "sys.path.insert(0, sys.argv[1]); exec(sys.argv[2])",
+                str(workspace),
+                probe,
+            ],
             cwd=workspace, env=environment, capture_output=True, text=True, check=False, timeout=30,
         )
         if result.returncode != 0:
             raise RuntimeError(f"archived runtime attempt-ID rehearsal failed: {result.stderr.strip()}")
         container_names = result.stdout.splitlines()
+        observed_after_import = {
+            str(path.relative_to(workspace))
+            for path in workspace.rglob("*")
+            if path.is_file()
+        }
+        expected_files = {row["path"] for row in manifest["files"]}
+        if observed_after_import != expected_files:
+            raise RuntimeError(
+                "archived runtime imports mutated the sealed workspace: "
+                f"missing={sorted(expected_files - observed_after_import)[:5]} "
+                f"extra={sorted(observed_after_import - expected_files)[:5]}"
+            )
 
     controller = (root / "scripts/inference/gcloud_startup_development_baseline.sh").read_text(encoding="utf-8")
     launcher = (root / "scripts/inference/gcloud_launch_gate1.sh").read_text(encoding="utf-8")
     finish = controller[controller.index("finish() {"):controller.index("trap finish EXIT")]
     checks = {
         "archived_attempt_id_is_docker_safe": len(container_names) == 7 and all(name == name.lower() for name in container_names),
+        "archived_imports_preserve_sealed_file_set": observed_after_import == expected_files,
+        "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,
         "launcher_uploads_bindings_once": launcher.count("upload_bind bindings ") == 1,
         "runtime_writers_stop_before_inventory": finish.index("stop_runtime_writers") < finish.index("capture_checkpoint_log") < finish.index("write_inventory") < finish.index("final_backup"),

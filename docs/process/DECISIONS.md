@@ -1389,10 +1389,11 @@ deterministically. The training manifest records a repository-relative archive
 path so a fresh Linux checkout can reproduce it. A dedicated rehearsal safely
 extracts the sealed evaluation archive, imports its modules in an isolated
 Python process, and exercises the exact failed uppercase UTC ID across the base
-container, two LR train/eval pairs, and main train/eval pair. A push CI workflow
-rebuilds both workspaces before running the full suite and this rehearsal. The
-preparation builder requires the rehearsal seal to bind the current evaluation
-manifest and archive, so launch preparation cannot bypass it.
+container, two LR train/eval pairs, and main train/eval pair. Local release
+preparation rebuilds both workspaces before running the full suite and this
+rehearsal. The preparation builder requires the rehearsal seal to bind the
+current evaluation manifest and archive, so launch preparation cannot bypass
+it.
 
 The three sealed prepared seed artifacts (manifest plus train and validation
 JSONL, about 7.4 MB) are versioned in the private repository. They are required
@@ -1431,3 +1432,13 @@ The failed attempt is not baseline evidence and cannot open Gate 1. Its strict
 terminal backup, deletion gate, exact-resource absence proof, and post-delete
 backup are valid lifecycle evidence only. A fresh GCloud approval is required
 for another campaign attempt.
+
+## 2026-08-25 — Repository CI is disabled
+
+The project does not use GitHub Actions. Both the push-triggered Gate 1 runtime
+integrity workflow and the manually dispatched native AMD64 directionality
+workflow are removed, and Actions is disabled for the repository. Historical
+workflow results remain immutable execution evidence but create no continuing
+CI dependency. Required workspace reconstruction, unit tests, runtime-bundle
+rehearsal, and preparation sealing run locally or inside an explicitly
+approved compute campaign.

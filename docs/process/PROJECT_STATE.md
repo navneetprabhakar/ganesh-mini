@@ -427,13 +427,14 @@ and the non-executable preparation seal is
   `4d8e66ce89eabbcc08e6bf7520dd9b0baad5edc426ff27add07e4ab5aae5a8e9`.
   Historical ARM64 directionality results remain immutable but are explicitly
   non-current.
-  A manually dispatched, read-only GitHub Actions workflow is prepared to
-  load the exact private content-addressed image archive on native AMD64,
+  A manually dispatched, read-only GitHub Actions workflow was historically
+  used to load the exact private content-addressed image archive on native AMD64,
   execute all 1,080 reference and
   known-bad checks across development and decision surfaces with at most two
   concurrent tranches, rerun global decision separation, and return one sealed
   evidence archive. This is non-GCloud compute and does not expose a task to a
-  model.
+  model. That workflow has since been removed and GitHub Actions is disabled
+  for this repository; the sealed historical results remain evidence.
   The first dispatch, GitHub Actions run `32636800789`, independently loaded
   the exact archive but stopped before task execution because the host-audit
   code used a Docker Go-template helper (`dict`) unavailable on the runner.
@@ -951,3 +952,11 @@ and
 `4e52713bcf6caa2f4438a21de8e408c42724d7f34f61c16a238bb88690eca0b9`.
 The complete local suite passes. Gate 1 remains closed, no training has
 started, and the consumed one-attempt approval does not authorize another VM.
+
+## 2026-08-25 — GitHub Actions removed
+
+At the user's direction, both repository workflows were removed and GitHub
+Actions was disabled at repository level. Historical native AMD64 and Gate 1
+workflow run IDs remain provenance records only. Current validation is local
+or part of an explicitly approved GCloud execution; no push or manual GitHub
+workflow can run.

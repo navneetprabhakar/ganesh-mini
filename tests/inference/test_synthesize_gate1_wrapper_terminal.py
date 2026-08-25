@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.inference.synthesize_gate1_wrapper_terminal import canonical_sha256, synthesize
+from scripts.inference.synthesize_gate1_wrapper_terminal import canonical_sha256, recover_partial, synthesize
 
 
 PREFIX = "gs://bucket/run/wrapper-failure-attempt"
@@ -100,3 +100,48 @@ def test_rejects_bootstrap_not_bound_to_card(tmp_path: Path) -> None:
     card.write_text(json.dumps(value))
     with pytest.raises(ValueError, match="does not bind"):
         synthesize(manifest, root, card, tmp_path / "terminal")
+
+
+def partial_fixture(tmp_path: Path, code: str = "1\n") -> tuple[Path, Path]:
+    root = tmp_path / "partial"
+    root.mkdir()
+    (root / "startup-exit-code.txt").write_text(code)
+    (root / "startup.stderr.log").write_text("generation URI missing\n")
+    (root / "startup.stdout.log").write_text("")
+    (root / "controller-deadline-epoch.txt").write_text("123\n")
+    (root / "hard-stop-deadline-epoch.txt").write_text("456\n")
+    files = sorted(root.iterdir())
+    (root / "runtime-files.sha256").write_text(
+        "".join(f"{sha(path)}  ./{path.name}\n" for path in files)
+    )
+    files.append(root / "runtime-files.sha256")
+    prefix = "gs://bucket/run/runtime-terminal-attempt"
+    objects = [
+        {"object_uri": f"{prefix}/{path.name}", "downloaded_sha256": sha(path), "verified": True}
+        for path in files
+    ]
+    manifest = {"status": "verified", "prefix": prefix, "objects": objects}
+    manifest["evidence_sha256"] = canonical_sha256(manifest)
+    path = tmp_path / "partial-manifest.json"
+    path.write_text(json.dumps(manifest))
+    return root, path
+
+
+def test_recovers_verified_partial_terminal_without_losing_original_inventory(tmp_path: Path) -> None:
+    wrapper, wrapper_manifest, card = fixture(tmp_path, code="1\n")
+    partial, partial_manifest = partial_fixture(tmp_path)
+    output = tmp_path / "recovered"
+    recover_partial(partial_manifest, partial, wrapper_manifest, wrapper, card, output)
+    assert (output / "original-runtime-files.sha256").read_bytes() == (partial / "runtime-files.sha256").read_bytes()
+    assert (output / "execution-card.json").is_file()
+    assert (output / "controller-exit-code.txt").read_text() == "1\n"
+    inventory = (output / "runtime-files.sha256").read_text()
+    assert "./original-runtime-files.sha256" in inventory
+    assert "./startup.stderr.log" in inventory
+
+
+def test_rejects_partial_and_wrapper_exit_disagreement(tmp_path: Path) -> None:
+    wrapper, wrapper_manifest, card = fixture(tmp_path, code="7\n")
+    partial, partial_manifest = partial_fixture(tmp_path, code="1\n")
+    with pytest.raises(ValueError, match="exit codes disagree"):
+        recover_partial(partial_manifest, partial, wrapper_manifest, wrapper, card, tmp_path / "recovered")

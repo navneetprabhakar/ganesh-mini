@@ -287,5 +287,5 @@ value={'schema_version':'ganesh-mini-gate1-launch-plan/v1','status':'submitted',
 value['evidence_sha256']=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 json.dump(value,open(root+'/launch-plan.json','w'),indent=2,sort_keys=True)
 PY
-gcloud storage cp "$work_dir/bindings.json" "$work_dir/execution-card.json" "$work_dir/launch-plan.json" "$input_prefix/" --project="$project"
+gcloud storage cp "$work_dir/launch-plan.json" "$input_prefix/launch-plan.json" --project="$project"
 printf 'Gate 1 Flex-start request submitted. Launch plan: %s\n' "$work_dir/launch-plan.json"

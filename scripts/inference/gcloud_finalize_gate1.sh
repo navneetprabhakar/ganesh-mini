@@ -93,6 +93,20 @@ PY
     --download-root "$run_dir/wrapper-failure-download" --execution-card "$card" \
     --output-dir "$early_terminal"
   gcloud storage rsync "$early_terminal" "$terminal_prefix" --recursive --project="$project"
+elif ! gcloud storage ls "$terminal_prefix/execution-card.json" --project="$project" >/dev/null 2>&1; then
+  python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
+    --project "$project" --prefix "$terminal_prefix" \
+    --output "$run_dir/partial-terminal-backup-manifest.json" --download-dir "$run_dir/partial-terminal-download"
+  python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
+    --project "$project" --prefix "$wrapper_prefix" \
+    --output "$run_dir/wrapper-failure-backup-manifest.json" --download-dir "$run_dir/wrapper-failure-download"
+  recovered_terminal="$run_dir/recovered-partial-terminal"
+  python3 "$repo_root/scripts/inference/synthesize_gate1_wrapper_terminal.py" \
+    --backup-manifest "$run_dir/wrapper-failure-backup-manifest.json" \
+    --download-root "$run_dir/wrapper-failure-download" --execution-card "$card" \
+    --partial-backup-manifest "$run_dir/partial-terminal-backup-manifest.json" \
+    --partial-download-root "$run_dir/partial-terminal-download" --output-dir "$recovered_terminal"
+  gcloud storage rsync "$recovered_terminal" "$terminal_prefix" --recursive --project="$project"
 fi
 
 if [[ -f "$provider_dir/serial-port.log" ]]; then serial_source="$provider_dir/serial-port.log"; else serial_source="$provider_dir/serial-port-unavailable.txt"; fi
@@ -157,6 +171,7 @@ PY
 python3 "$repo_root/scripts/cuda/verify_absence_proof.py" --scope "$postdelete_dir/absence-scope.json" --output "$postdelete_dir/absence-proof.json"
 cp "$run_dir/terminal-backup-manifest.json" "$run_dir/terminal-validation.json" "$run_dir/deletion-gate.json" "$postdelete_dir/"
 if [[ -f "$run_dir/wrapper-failure-backup-manifest.json" ]]; then cp "$run_dir/wrapper-failure-backup-manifest.json" "$postdelete_dir/"; fi
+if [[ -f "$run_dir/partial-terminal-backup-manifest.json" ]]; then cp "$run_dir/partial-terminal-backup-manifest.json" "$postdelete_dir/"; fi
 gcloud storage rsync "$postdelete_dir" "$postdelete_prefix" --recursive --project="$project"
 python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
   --project "$project" --prefix "$postdelete_prefix" \

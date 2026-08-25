@@ -1,5 +1,23 @@
 # Decisions
 
+## 2026-08-25 — Generation-bound inputs are write-once within a campaign
+
+Retry `20260825T055326Z` proved that content-identical re-upload is not safe
+after a guest has received a generation-pinned GCS URI. The launcher replaced
+the execution-card object's generation after VM creation, so the guest could
+no longer resolve the card generation embedded in its metadata. This was a
+control-plane ordering defect, not a content-hash mismatch or model failure.
+
+All objects referenced by guest metadata are now write-once for the lifetime
+of a campaign. After VM creation, the launcher may upload only a distinct
+launch-receipt path. Tests reject any later bindings or execution-card upload.
+
+A partial terminal prefix may be made deletion-eligible only after its original
+generation-pinned object set and runtime inventory are independently verified,
+the original inventory bytes are retained in the recovered envelope, wrapper
+bootstrap hashes bind the card, and the partial/wrapper nonzero exit codes
+agree. Recovery remains deletion-only and cannot admit a baseline.
+
 ## 2026-08-25 — Provisioning consumes the zone fallback; early wrapper failures remain deletion-safe
 
 The approved staged fallback allowed `us-east1-d` only if `us-east1-c` failed

@@ -62,3 +62,12 @@ def test_launcher_backs_preflight_before_resource_creation() -> None:
     backup = script.index("preflight-backup-manifest.json")
     network = script.index('resource_stage=1')
     assert backup < network
+
+
+def test_launcher_never_overwrites_generation_bound_inputs_after_vm_create() -> None:
+    script = (ROOT / "scripts/inference/gcloud_launch_gate1.sh").read_text(encoding="utf-8")
+    vm = script.index('gcloud compute instances create')
+    after_vm = script[vm:]
+    assert 'gcloud storage cp "$work_dir/launch-plan.json" "$input_prefix/launch-plan.json"' in after_vm
+    assert '"$work_dir/bindings.json"' not in after_vm
+    assert '"$work_dir/execution-card.json"' not in after_vm

@@ -668,7 +668,7 @@ deletion on the exact runtime and provider inventory, captures all four
 provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
 post-delete evidence. The current replacement
 preparation seal is
-`4f6cda6e3a1b3003d59385ecd80685048df9c09f2a074ef0af1bd2b89b7e4a7c`.
+`404b92eca32b6b19832abab41329a47e3e2b180fb132c874c4d67223641bdc97`.
 The tools have not been executed against GCloud and do not constitute a card
 or approval.
 
@@ -720,6 +720,52 @@ Any replacement GCloud execution requires fresh explicit approval plus current
 price/quota preflight and a new executable card.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.
+
+## 2026-08-25 — Retry exposed a post-create generation overwrite and was fully torn down
+
+Approved retry `20260825T055326Z` passed fresh price/quota/identity/absence
+preflight and two-read GCS verification, then provisioned immediately in
+`us-east1-c`. The fixed UTC attempt-ID contract passed. The controller stopped
+before downloading any model or verifier assets because the launcher uploaded
+the execution card once to bind its immutable generation, created the VM, and
+then uploaded the same card path again alongside the launch receipt. With
+bucket object versioning unavailable, the second upload replaced the bound
+generation. The guest correctly rejected the stale generation URI and exited
+`1`. No baseline task, training step, or decision prompt executed.
+
+The VM was stopped immediately after the anomaly was confirmed. The guest had
+already backed a six-object partial runtime envelope and a four-object wrapper
+failure envelope. Their independent backup seals are
+`6597132edc1f8444da5527544ad27316cc2f98cfeebcb1e9b8c78f67b086b7ba`
+and
+`29460913df428feb9c6f10bd44e52ae795987263324e897b703bdbd1b3a9e796`.
+The finalizer now permits recovery from this partial state only after verifying
+its original inventory and wrapper independently, requiring matching nonzero
+exit codes and diagnostics, and preserving the original inventory bytes inside
+the recovered terminal envelope.
+
+The recovered terminal is correctly `sealed-failure` under seal
+`797012a6f738b620cb17bdc25a54fd8f6c0bb87ff935af7654bfc73722f1b45d`.
+Deletion-gate seal
+`45cfc61789af7dde2b48c42976a70a481af138468601315000a465a2f843f1d7`
+passed. The VM, auto-delete disk, subnet, and VPC were deleted; absence-proof
+seal
+`591491e56d98abe382c4bd427259887ef4e493072f35521c300c096c2ae0d35f`
+proves all four identities absent. Finalization seal
+`1c78b87a257672d5a417485727fe23e554867dd74a0aa6e56d57a5545592cad1`
+and final 15-object post-delete backup seal
+`fa1ad6dede3deeb6318b8ef3a53b5615aedca829492a8f279679793b4091c7f1`
+close the attempt. Provider timestamps bound creation-to-stop to about 157
+seconds; this is not an asserted invoice amount.
+
+The launcher now uploads only the new launch receipt after VM creation and
+never overwrites generation-bound bindings or the execution card. Direct tests
+enforce this ordering and the partial-terminal recovery invariants. The full
+suite passes with the one intentional Docker integration skip. The rebuilt
+non-executable preparation seal is
+`404b92eca32b6b19832abab41329a47e3e2b180fb132c874c4d67223641bdc97`.
+Gate 1 remains closed and training has not started. The one-retry GCloud
+approval is consumed; another execution requires fresh explicit approval.
 
 ## 2026-08-25 — Provisioned Gate 1 attempt failed before baseline and was fully torn down
 

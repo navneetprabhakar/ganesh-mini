@@ -4,26 +4,37 @@ Last updated: 2026-08-25
 
 ## Current gate
 
-Gate 1: execute the exact Qwen development baseline on the already frozen
-180-task surface as the first phase of the staged L4 campaign.
+Gate 1: rerun the exact Qwen development baseline on the frozen 180-task
+surface after repairing the verifier resource boundary discovered by approved
+attempt `20260825T143537Z`.
 
-Approved attempt `20260825T140310Z` passed fresh preflight, immutable input
-verification, offline Docker/NVIDIA setup, the exact qualified CUDA image ID,
-all six verifier-image identities, workspace isolation, and runtime GCS
-checkpointing. The base evaluator then failed before model loading because
-`scripts.cuda.qualify` imported training-only modules at module import time,
-while the intentionally isolated evaluation archive excludes `scripts/train`.
-The exact failure was `ModuleNotFoundError: No module named 'scripts.train'`.
-Zero baseline tasks, inference tokens, and training steps ran. The strict
-failure terminal is backed up; the exact VM, disk, subnet, and VPC are deleted
-with verified absence evidence.
+That attempt passed fresh price/quota/resource/GCS preflight, provisioned a
+private `g2-standard-12` L4 VM in `us-east1-c`, verified every immutable input,
+loaded the exact qualified CUDA image and all six verifier images, preserved
+workspace isolation, loaded all 617 base-model weights, and began batched
+generation. Training never started. Four inspected Go results were false
+failures: the task's intentional 64-PID container limit was retained, but Go
+observed the host's CPU count and launched enough parallel compiler processes
+to fail with `fork/exec ... resource temporarily unavailable`. Batched output
+also retained pad tokens after each row's first EOS, inflating evidence.
 
-The repair makes qualification's training dependencies lazy while leaving the
-two CUDA serving-compatibility helpers importable in the evaluation archive.
-The archive-executed rehearsal now imports those exact helpers and proves that
-`scripts/train` is absent, closing the packaging gap locally. Gate 1 still has
-no model result. Another GCloud execution is the next action and requires a
-fresh explicit approval.
+The anomaly was stopped before its invalid all-failure baseline could open
+Gate 1. The guest wrote a 50-object generation-verified terminal backup; the
+VM, disk, temporary IAP rule, subnet, and VPC were deleted, and exact-resource
+absence plus post-delete backups passed. The partial baseline is quarantined
+and cannot be admitted. Compiler parallelism is now explicitly bounded within
+the unchanged 64-PID sandbox, verifier infrastructure signatures abort the
+evaluation instead of becoming model scores, and batched rows are trimmed at
+their first EOS. Six-language Docker integration and the full local suite pass.
+
+The evaluation archive is resealed at
+`9fe60b7b4526fa34d60eb7523494a738762069e47e4d202bcdbf6f80c6115138`;
+its manifest, archive-executed rehearsal, and non-executable preparation seals
+are `f6551430af4c5a2cd2ad5d7bcbdcf4daf3105136682c146535e2a2a11c2da5b0`,
+`7c280c5a5c8ec8c28891818d5171dbdea3507dc11eca6799f86cde2d71d50406`,
+and `6ce15ca15de7f7bcad2402d836de155ea5e65b411ac8bec883b0977cb3a3d937`.
+Gate 1 still has no admissible model result. Another GCloud execution is the
+next action and requires fresh explicit approval.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize

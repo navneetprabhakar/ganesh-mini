@@ -1505,3 +1505,51 @@ rehearsal, and preparation hashes are
 `ba782354c142114121cc34d557b19ca2852b9dc48fe58b97fccb2f63de4a7da3`,
 and `d51f342615e3fa77203df45701d757dae8a821938a0ad964ce60c4b813db74ec`.
 Another cloud execution requires fresh explicit GCloud approval.
+
+## 2026-08-25 — Verifier resource failures cannot become quality scores
+
+Approved attempt `20260825T143537Z` was the first staged Gate 1 run to load the
+exact Qwen base and generate development answers. Four of four inspected Go
+tasks were recorded as failed because `go test` could not fork compiler tools
+inside the task's 64-PID cgroup. Docker's one-CPU quota throttles time but does
+not change the host CPU count observed by the Go toolchain, so the compiler
+still scheduled excessive parallel jobs on a 12-vCPU G2 host. At least one
+answer was syntactically valid-looking; these results therefore measure the
+host boundary, not model quality.
+
+The 64-PID security limit remains unchanged. Verifier containers now set
+`GOMAXPROCS=1`, `GOFLAGS=-p=1`, and `CARGO_BUILD_JOBS=1`, keeping compiled
+toolchains within that boundary. Known infrastructure signatures—including
+PID exhaustion, Docker/OCI failures, missing process exit codes, and container
+runtime exit codes—raise a runner error and cannot be persisted as ordinary
+model failures. This is enforced in both the production batched evaluator and
+the synthetic runner. Batched generation also trims each row at its first EOS;
+padding emitted while longer batch peers continue is no longer stored as model
+output.
+
+The live campaign was stopped by removing only the base container, allowing
+the controller's normal failure, terminal-backup, and shutdown path to run.
+Terminal backup seal
+`fc20c38eea9ab2c3b630768dc8364760ed1bb1c501044c9feb49e3e54a14c313`
+contains 50 verified objects. The incomplete baseline correctly has no
+admissible run; terminal validation is quarantined under seal
+`2cb8485e8a54989678ae203740966b7f12ba8b335cc5478877895596d17789a6`.
+Deletion gate
+`e67da65d1062a9719cf8a2c19f5b46c71a9fc72cf14e6df71c5f7501c3b5a27e`,
+absence proof
+`3303b338e160fccd866422c870a602b6887230e01145627fc769f737bdc41af3`,
+strict finalization
+`8eb2de2fec896bfb8ae361004faa1d20e94edc7b472be8e7890ca4cb22328307`,
+and final post-delete backup
+`f04a3555027a7cd9c7ecbfc4210ca6edd50d1d88957c592153611435864dbb73`
+close the lifecycle. Provider start-to-stop time was about 1,135 seconds; this
+is a runtime bound, not an asserted invoice amount.
+
+The repaired evaluation archive, manifest, runtime rehearsal, and preparation
+seals are
+`9fe60b7b4526fa34d60eb7523494a738762069e47e4d202bcdbf6f80c6115138`,
+`f6551430af4c5a2cd2ad5d7bcbdcf4daf3105136682c146535e2a2a11c2da5b0`,
+`7c280c5a5c8ec8c28891818d5171dbdea3507dc11eca6799f86cde2d71d50406`,
+and `6ce15ca15de7f7bcad2402d836de155ea5e65b411ac8bec883b0977cb3a3d937`.
+Six-language Docker integration and the complete local suite pass. Training
+remains blocked until a fresh exact-base baseline opens Gate 1.

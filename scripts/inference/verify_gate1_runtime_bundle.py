@@ -80,11 +80,17 @@ from types import SimpleNamespace
 from scripts.campaign.run_host import Campaign, CONTAINER_MODEL, docker_container_name, external_mount
 from scripts.cuda.qualify import install_fla_recurrent_compatibility, kernel_identity
 from scripts.inference.run_development_baseline_host import build_container_argv, docker_attempt_id
+from scripts.inference.run_evaluation import trim_at_eos
+from scripts.verify.sandbox import _docker_argv, infrastructure_failure
 attempt = "20260825T061157Z"
 probe_host = Path(sys.argv[3])
 assert callable(install_fla_recurrent_compatibility) and callable(kernel_identity)
 assert not (Path(sys.argv[1]) / "scripts/train").exists()
 assert docker_attempt_id(attempt) == "20260825t061157z"
+assert trim_at_eos([1, 248046, 248044], 248046) == [1, 248046]
+assert infrastructure_failure({"exit_codes":[1],"timed_out":False,"stderr":"fork/exec compile: resource temporarily unavailable"})
+verifier_argv = _docker_argv("runtime", "linux/amd64", ["go", "test", "./..."], probe_host, {"pids":64,"cpus":1,"memory_mb":512})
+assert "GOMAXPROCS=1" in verifier_argv and "GOFLAGS=-p=1" in verifier_argv and "CARGO_BUILD_JOBS=1" in verifier_argv
 names = [
     "ganesh-qwen-base-" + docker_attempt_id(attempt),
     docker_container_name("ganesh-train-" + attempt + "-lr-1e-4"),
@@ -161,6 +167,9 @@ print("MOUNT_TOPOLOGY_OK")
         "archived_attempt_id_is_docker_safe": len(container_names) == 7 and all(name == name.lower() for name in container_names),
         "external_mounts_avoid_read_only_workspace": mount_topology_ok,
         "cuda_serving_compatibility_imports_without_training_package": True,
+        "batched_eos_padding_is_trimmed": True,
+        "verifier_compiler_jobs_fit_pid_boundary": True,
+        "verifier_infrastructure_failures_are_fail_closed": True,
         "archived_imports_preserve_sealed_file_set": observed_after_import == expected_files,
         "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,

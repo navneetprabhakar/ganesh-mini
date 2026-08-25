@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from scripts.eval.contracts import load_json
 from scripts.eval.contracts import ContractError
-from scripts.verify.sandbox import _inspect_image, verify
+from scripts.verify.sandbox import _inspect_image, infrastructure_failure, verify
 
 
 class SandboxTests(unittest.TestCase):
@@ -48,6 +48,9 @@ class SandboxTests(unittest.TestCase):
         self.assertIn("--memory", argv)
         self.assertIn("--cpus", argv)
         self.assertIn("--pids-limit", argv)
+        self.assertIn("GOMAXPROCS=1", argv)
+        self.assertIn("GOFLAGS=-p=1", argv)
+        self.assertIn("CARGO_BUILD_JOBS=1", argv)
         self.assertNotIn("sh", argv)
         self.assertFalse(evidence["timed_out"])
         self.assertEqual([0], evidence["exit_codes"])
@@ -64,6 +67,17 @@ class SandboxTests(unittest.TestCase):
         self.assertEqual([], evidence["exit_codes"])
         self.assertEqual("partial \ufffd", evidence["stdout"])
         self.assertEqual("timed out \ufffd", evidence["stderr"])
+
+    def test_resource_exhaustion_is_an_infrastructure_failure(self) -> None:
+        verifier = {
+            "exit_codes": [1], "timed_out": False,
+            "stderr": "compile: fork/exec tool: resource temporarily unavailable",
+        }
+        self.assertIn("resource temporarily unavailable", infrastructure_failure(verifier) or "")
+
+    def test_normal_compile_failure_is_not_an_infrastructure_failure(self) -> None:
+        verifier = {"exit_codes": [1], "timed_out": False, "stderr": "solution.go: undefined: missing"}
+        self.assertIsNone(infrastructure_failure(verifier))
 
 
 if __name__ == "__main__":

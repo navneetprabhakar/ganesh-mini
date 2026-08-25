@@ -125,8 +125,38 @@ def _docker_argv(image: str, platform_name: str, command: list[str], root: Path,
         "--mount", f"type=bind,src={root},dst=/work", "--workdir", "/work",
         "--env", "HOME=/tmp", "--env", "TMPDIR=/exec",
         "--env", "GOTMPDIR=/exec", "--env", "NO_COLOR=1",
+        # Docker's CPU quota does not change the CPU count observed by the Go
+        # and Rust toolchains.  Without explicit job bounds, a 12-vCPU G2 host
+        # can exhaust the task's intentional 64-PID sandbox while compiling
+        # ordinary reference code.  Keep compiler parallelism inside the
+        # frozen PID limit instead of weakening that security boundary.
+        "--env", "GOMAXPROCS=1", "--env", "GOFLAGS=-p=1",
+        "--env", "CARGO_BUILD_JOBS=1",
         "--entrypoint", command[0], image, *command[1:],
     ]
+
+
+def infrastructure_failure(verifier: dict[str, Any]) -> str | None:
+    """Classify verifier-host failures that must never become model scores."""
+    stderr = str(verifier.get("stderr", ""))
+    lowered = stderr.lower()
+    if not verifier.get("timed_out") and not verifier.get("exit_codes"):
+        return "verifier returned no process exit code"
+    if any(int(code) >= 125 for code in verifier.get("exit_codes", [])):
+        return f"container runtime exit code {verifier['exit_codes']}"
+    signatures = (
+        "resource temporarily unavailable",
+        "failed to create new os thread",
+        "cgroup: fork rejected",
+        "oci runtime create failed",
+        "oci runtime exec failed",
+        "cannot connect to the docker daemon",
+        "error response from daemon",
+    )
+    for signature in signatures:
+        if signature in lowered:
+            return f"verifier infrastructure signature: {signature}"
+    return None
 
 
 def _captured_text(value: str | bytes | None) -> str:

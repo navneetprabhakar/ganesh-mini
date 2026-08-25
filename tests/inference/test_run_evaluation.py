@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from scripts.eval.contracts import load_json
-from scripts.inference.run_evaluation import implementation_identity, rooted, validate_batch_outputs, validate_config, validate_resumed_generation
+from scripts.inference.run_evaluation import implementation_identity, rooted, trim_at_eos, validate_batch_outputs, validate_config, validate_resumed_generation
 
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -42,6 +42,11 @@ def test_resumed_generation_binds_runtime_and_implementation() -> None:
 def test_generation_backend_must_return_one_output_per_input() -> None:
     with pytest.raises(RuntimeError,match="1 outputs for batch size 2"):
         validate_batch_outputs([([1],"x",1)],2)
+
+
+def test_batched_generation_drops_padding_after_first_eos() -> None:
+    assert trim_at_eos([10, 248046, 248044, 248044], 248046) == [10, 248046]
+    assert trim_at_eos([10, 11], 248046) == [10, 11]
 
 
 def test_absolute_runtime_mounts_do_not_resolve_beneath_workspace() -> None:

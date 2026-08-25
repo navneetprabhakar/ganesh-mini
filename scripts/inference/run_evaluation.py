@@ -20,7 +20,7 @@ from scripts.eval.contracts import load_json, sha256_bytes, sha256_object, sha25
 from scripts.eval.run_task import build_result
 from scripts.inference.extract import EXTRACTOR_ID, extract_code
 from scripts.inference.run_base import directory_artifact_sha256
-from scripts.verify.sandbox import verify
+from scripts.verify.sandbox import infrastructure_failure, verify
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -119,7 +119,19 @@ class TransformersBatchBackend:
         with torch.inference_mode():
             generated=self.model.generate(input_ids=ids,attention_mask=attention,do_sample=False,max_new_tokens=max_new_tokens,use_cache=use_cache,pad_token_id=pad,eos_token_id=self.eos_token_id)
         elapsed=round((time.perf_counter()-started)*1000)
-        return [(tokens:=generated[index,width:].detach().cpu().tolist(),self.tokenizer.decode(tokens,skip_special_tokens=False),elapsed) for index in range(len(rows))]
+        results=[]
+        for index in range(len(rows)):
+            tokens=trim_at_eos(generated[index,width:].detach().cpu().tolist(),self.eos_token_id)
+            results.append((tokens,self.tokenizer.decode(tokens,skip_special_tokens=False),elapsed))
+        return results
+
+
+def trim_at_eos(tokens: list[int], eos_token_id: int) -> list[int]:
+    """Remove batch padding after the first EOS while retaining the EOS itself."""
+    try:
+        return tokens[: tokens.index(eos_token_id) + 1]
+    except ValueError:
+        return tokens
 
 
 def validate_config(config: dict[str, Any]) -> None:
@@ -215,6 +227,8 @@ def verify_generated(generated: dict[str,Any], task: dict[str,Any], config: dict
     started=time.perf_counter(); extraction_started=time.perf_counter(); code,extraction=extract_code(generated["generation"]["raw_output"],task["language"]); extraction_ms=round((time.perf_counter()-extraction_started)*1000)
     inference_task=dict(task); inference_task["rendered_prompt"]={"text":generated["prompt"]["rendered"],"sha256":generated["prompt"]["rendered_sha256"]}; validate_task(inference_task)
     verifier_started=time.perf_counter(); verification=verify(inference_task,code,runtimes); verifier_ms=round((time.perf_counter()-verifier_started)*1000); completed=utc_now()
+    verifier_failure=infrastructure_failure(verification)
+    if verifier_failure is not None: raise RuntimeError(f"{task['task_id']}: {verifier_failure}")
     inference={"parameters":generated["parameters"],"started_at":generated["generation"]["started_at"],"completed_at":completed}
     result=build_result(inference_task,generated["generation"]["raw_output"],code,EXTRACTOR_ID,{key:model[key] for key in ("model_id","revision","artifact_sha256","serving_contract_sha256")},inference,verification)
     value={"schema_version":"ganesh-mini-task-evidence/v2","classification":config["classification"],"run_id":config["run_id"],"task":{"task_id":task["task_id"],"surface":task["surface"],"language":task["language"],"task_sha256":sha256_object(task),"config_sha256":generated["config_sha256"]},"model":model,"runtime":{**backend.identity,"implementation":implementation_identity()},"prompt":generated["prompt"],"generation":generated["generation"],"generation_sha256":generated["generation_sha256"],"extraction":{**extraction,"extracted_code":code,"extracted_code_sha256":sha256_text(code)},"verification":{"result":result,"result_sha256":result["result_sha256"]},"timings_ms":{"model_load_once":backend.load_ms,"generation_batch":generated["generation"]["generation_ms"],"extraction":extraction_ms,"verifier":verifier_ms,"post_generation_total":round((time.perf_counter()-started)*1000)},"memory":{"process_peak_rss_bytes":peak_rss_bytes()},"recorded_at":completed}

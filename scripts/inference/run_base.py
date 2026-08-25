@@ -30,7 +30,7 @@ from scripts.eval.contracts import (
 )
 from scripts.eval.run_task import build_result
 from scripts.inference.extract import EXTRACTOR_ID, extract_code
-from scripts.verify.sandbox import verify
+from scripts.verify.sandbox import infrastructure_failure, verify
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -236,6 +236,9 @@ def run_task(
     inference_task["rendered_prompt"] = {"text": rendered, "sha256": sha256_text(rendered)}
     validate_task(inference_task)
     verifier = verify(inference_task, code, runtimes)
+    verifier_failure = infrastructure_failure(verifier)
+    if verifier_failure is not None:
+        raise RuntimeError(f"{task['task_id']}: {verifier_failure}")
     verifier_ms = round((time.perf_counter() - verifier_started) * 1000)
     completed_at = utc_now()
     inference = {

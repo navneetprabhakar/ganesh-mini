@@ -3,11 +3,15 @@ from pathlib import Path
 
 import pytest
 
-from scripts.campaign.run_host import Campaign, canonical_sha256
+from scripts.campaign.run_host import Campaign, canonical_sha256, docker_container_name
 
 
 def test_canonical_campaign_seal_is_order_independent() -> None:
     assert canonical_sha256({"b": 2, "a": 1}) == canonical_sha256({"a": 1, "b": 2})
+
+
+def test_campaign_uses_lowercase_docker_names_for_utc_attempt_ids() -> None:
+    assert docker_container_name("ganesh-train-20260825T061157Z-main") == "ganesh-train-20260825t061157z-main"
 
 
 def test_remaining_fails_before_finalization_margin(tmp_path: Path) -> None:

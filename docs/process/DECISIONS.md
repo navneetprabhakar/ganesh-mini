@@ -1349,3 +1349,23 @@ temporary networking are deleted only after verified backup. Any failed phase,
 OOM, non-finite loss, evidence mismatch, cost/time breach, or backup anomaly
 stops subsequent phases. A valid base baseline is still admitted after
 teardown if a later training phase fails, preventing needless remeasurement.
+
+## 2026-08-25 — Evidence IDs and Docker names are separate contracts
+
+Canonical campaign attempt IDs remain exact uppercase UTC timestamps in
+execution cards, ledgers, labels, GCS prefixes, and validation receipts. Docker
+container names are a derived transport identifier and are normalized to
+lowercase without changing the evidence ID. This derivation applies uniformly
+to the base baseline, both learning-rate candidates, the main SFT, and every
+candidate evaluation. Production-format regression tests are required; a
+generic lowercase test slug is insufficient coverage.
+
+Live backup logs are never members of the directory being synchronized. The
+checkpoint command writes outside the evidence tree; checkpoint and NVML
+writers are stopped and awaited; the fixed checkpoint log is copied once; and
+only then is the terminal inventory hashed. Terminal evidence with any
+inventory mismatch remains deletion-motivating but result-inadmissible. If
+that fail-closed check prevents automated cleanup after the VM is already
+stopped, exact resources may be deleted under the existing teardown approval
+only after the failure envelope is durable, followed by exact-name absence
+proof and independently verified GCS backup.

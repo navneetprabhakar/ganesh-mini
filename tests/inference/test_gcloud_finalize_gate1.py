@@ -43,3 +43,11 @@ def test_finalizer_uses_only_exact_card_bound_resource_variables() -> None:
 def test_controller_accepts_only_launcher_utc_attempt_ids() -> None:
     script = (ROOT / "scripts/inference/gcloud_startup_development_baseline.sh").read_text(encoding="utf-8")
     assert '[[ "$GANESH_ATTEMPT_ID" =~ ^[0-9]{8}T[0-9]{6}Z$ ]]' in script
+
+
+def test_controller_freezes_live_logs_before_hashing_terminal_evidence() -> None:
+    script = (ROOT / "scripts/inference/gcloud_startup_development_baseline.sh").read_text(encoding="utf-8")
+    assert '>> /var/log/ganesh-gate1-checkpoint-backup.log' in script
+    assert '>> "$evidence_dir/gcs-backup.log"' not in script
+    finish = script[script.index("finish() {"):script.index("trap finish EXIT")]
+    assert finish.index("stop_runtime_writers") < finish.index("capture_checkpoint_log") < finish.index("write_inventory") < finish.index("final_backup")

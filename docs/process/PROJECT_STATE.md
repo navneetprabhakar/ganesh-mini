@@ -721,6 +721,50 @@ price/quota preflight and a new executable card.
 
 No recurring goal-alignment heartbeat or deviation-review subagent is active.
 
+## 2026-08-25 — Staged retry reached the campaign, failed on Docker-name case, and was fully torn down
+
+Approved attempt `20260825T061157Z` passed fresh price, quota, identity,
+absence, and two-read GCS preflight; provisioned one `g2-standard-12` L4
+Flex-start VM immediately in `us-east1-c`; and authenticated every immutable
+input generation. The guest verified both isolated workspaces, Gate 0 and Gate
+2 receipts, the exact upstream model, the qualified CUDA image, the offline
+Docker bundle, and all verifier images. CUDA image import and NVIDIA Docker
+configuration also completed successfully.
+
+The campaign then failed after workspace isolation and before the first of 180
+baseline tasks. The outer controller correctly requires the canonical
+uppercase UTC attempt ID, but the nested baseline host reused that evidence ID
+as a Docker container name and still allowed only lowercase slug characters.
+Its sealed diagnostic is `staged campaign failed: invalid baseline attempt ID`.
+No baseline metric, training step, decision prompt, or candidate artifact was
+produced; Gate 1 remains closed.
+
+The controller and wrapper backed the runtime and diagnostic envelope to GCS
+and shut the VM down. Finalization rejected that envelope because the
+checkpoint command had appended to `gcs-backup.log` inside the directory it
+was simultaneously hashing and uploading. The inventory therefore recorded
+the empty-file hash while GCS preserved the subsequently written 4,746-byte
+log. This is a genuine integrity failure, not an admissible terminal result.
+
+Because the normal finalizer failed closed before deletion, the exact stopped
+VM, auto-delete disk, subnet, and VPC were then deleted explicitly. Four
+independent exact-name provider listings are empty. Their five-object manual
+teardown envelope was downloaded twice by immutable generation under backup
+seal `5e210a79f37ea445a87d5b3f3c76657c618e86cdc60c12f60d6df1de75cc2747`;
+the manifest itself is also stored in GCS at generation `1787639587497426`.
+No run-scoped resource remains.
+
+The permanent repair preserves the uppercase attempt ID in every evidence
+contract while deriving lowercase-only names for baseline, training, and
+evaluation containers. Checkpoint output now stays under `/var/log`; all
+runtime writers are stopped and awaited before that fixed log is copied into
+the evidence tree and the terminal inventory is written. Regression tests use
+the exact production ID `20260825T061157Z` and enforce stop, capture, hash, then
+backup ordering. The rebuilt non-executable preparation seal is
+`ef3bc566ed3db33602d27e2d15ad52541674e6febce9cb8af92ba08a13950bf8`.
+The approved one-retry GCloud scope is consumed; another cloud execution needs
+fresh explicit approval.
+
 ## 2026-08-25 — Retry exposed a post-create generation overwrite and was fully torn down
 
 Approved retry `20260825T055326Z` passed fresh price/quota/identity/absence

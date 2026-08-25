@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,14 @@ MODEL_RELATIVE = Path("models/qwen3.5-2b-15852e8")
 BASE_OUTPUT_RELATIVE = Path("measurement/inference/development/qwen3.5-2b-base-v1")
 CUDA_IMAGE_ID = "sha256:cdaf068ffcb933120181168ebf6ae1546ddf81e01b2ad006a1a18dd2e43d9860"
 LR_CANDIDATES = (("lr-1e-4", 0.0001), ("lr-2e-4", 0.0002))
+
+
+def docker_container_name(name: str) -> str:
+    """Return a Docker-safe name without changing the canonical campaign ID."""
+    normalized = name.lower()
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_.-]*", normalized):
+        raise ValueError(f"invalid Docker container name: {name}")
+    return normalized
 
 
 def canonical_sha256(value: Any) -> str:
@@ -120,8 +129,9 @@ class Campaign:
             raise RuntimeError(f"{log_name} exited {result.returncode}")
 
     def docker_base(self, name: str, workspace: Path) -> list[str]:
+        container_name = docker_container_name(name)
         return [
-            self.docker, "run", "--pull=never", "--rm", "--name", name,
+            self.docker, "run", "--pull=never", "--rm", "--name", container_name,
             "--label", f"ganesh.campaign={self.args.attempt_id}",
             "--gpus", "device=0", "--network", "none", "--cpus", "12", "--memory", "46g",
             "--pids-limit", "4096", "--read-only", "--cap-drop", "ALL",

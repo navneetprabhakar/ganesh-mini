@@ -42,6 +42,13 @@ OUTPUT_RELATIVE = Path("measurement/inference/development/qwen3.5-2b-base-v1")
 RUNTIMES_RELATIVE = Path("configs/eval/runtimes.json")
 
 
+def docker_attempt_id(attempt_id: str) -> str:
+    """Preserve the evidence ID while deriving a Docker-safe lowercase ID."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]{0,62}", attempt_id):
+        raise ValueError("invalid baseline attempt ID")
+    return attempt_id.lower()
+
+
 def canonical_sha256(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
@@ -185,8 +192,7 @@ def validate_completed_run(path: Path) -> dict[str, Any]:
 def execute(args: argparse.Namespace) -> dict[str, Any]:
     if platform.system() != "Linux" or platform.machine() not in {"x86_64", "amd64"}:
         raise RuntimeError("development baseline host must be Linux/AMD64")
-    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", args.attempt_id):
-        raise ValueError("invalid baseline attempt ID")
+    container_attempt_id = docker_attempt_id(args.attempt_id)
     workspace = args.workspace.resolve(strict=True)
     model = args.model.resolve(strict=True)
     output = args.output.resolve()
@@ -218,7 +224,7 @@ def execute(args: argparse.Namespace) -> dict[str, Any]:
     readiness_path.write_text(json.dumps(readiness, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     if readiness["status"] != "ready" or readiness["ready"] != readiness["expected"]:
         raise RuntimeError(f"verifier runtime images are not ready: {readiness['failures']}")
-    name = f"ganesh-qwen-base-{args.attempt_id}"
+    name = f"ganesh-qwen-base-{container_attempt_id}"
     require_fresh_container_name(docker, name)
     argv = build_container_argv(
         docker=docker, image=args.cuda_image, container_name=name, workspace=workspace,

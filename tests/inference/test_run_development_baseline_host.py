@@ -12,11 +12,19 @@ from scripts.inference.run_development_baseline_host import (
     OUTPUT_RELATIVE,
     build_container_argv,
     canonical_sha256,
+    docker_attempt_id,
     file_sha256,
     require_fresh_container_name,
     validate_completed_run,
     verify_workspace,
 )
+
+
+def test_launcher_utc_attempt_id_keeps_evidence_case_but_is_docker_safe() -> None:
+    attempt_id = "20260825T061157Z"
+    assert docker_attempt_id(attempt_id) == "20260825t061157z"
+    with pytest.raises(ValueError, match="invalid baseline attempt ID"):
+        docker_attempt_id("20260825T061157Z/unsafe")
 
 
 def write_sealed(path: Path, value: dict, field: str) -> dict:

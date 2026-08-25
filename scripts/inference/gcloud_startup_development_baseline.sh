@@ -58,17 +58,36 @@ remaining() { local value=$((controller_deadline_epoch - $(date +%s))); (( value
 backup_remaining() { local value=$((hard_deadline_epoch - 20 - $(date +%s))); (( value > 0 )) || return 1; printf '%s\n' "$value"; }
 phase_timeout() { local cap="$1" left; left="$(remaining)" || return 1; (( left < cap )) && printf '%s\n' "$left" || printf '%s\n' "$cap"; }
 checkpoint() {
-  timeout "$(phase_timeout 300)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/$checkpoint_prefix" --recursive --exclude='shared-tmp/.*' --project="$GANESH_GCP_PROJECT" >> "$evidence_dir/gcs-backup.log" 2>&1 || true
+  timeout "$(phase_timeout 300)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/$checkpoint_prefix" --recursive --exclude='shared-tmp/.*' --project="$GANESH_GCP_PROJECT" >> /var/log/ganesh-gate1-checkpoint-backup.log 2>&1 || true
 }
 checkpoint_loop() { while true; do checkpoint || true; sleep 120; done; }
 final_backup() { timeout "$(backup_remaining)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/$terminal_prefix" --recursive --exclude='shared-tmp/.*' --project="$GANESH_GCP_PROJECT" > /var/log/ganesh-gate1-final-backup.log 2>&1; }
+capture_checkpoint_log() {
+  if [[ -f /var/log/ganesh-gate1-checkpoint-backup.log ]]; then
+    cp /var/log/ganesh-gate1-checkpoint-backup.log "$evidence_dir/gcs-backup.log"
+  else
+    : > "$evidence_dir/gcs-backup.log"
+  fi
+}
+stop_runtime_writers() {
+  local pid
+  for pid in "$watchdog_pid" "${checkpoint_pid:-}" "${nvml_pid:-}"; do
+    [[ -n "$pid" ]] || continue
+    kill "$pid" 2>/dev/null || true
+  done
+  for pid in "${checkpoint_pid:-}" "${nvml_pid:-}"; do
+    [[ -n "$pid" ]] || continue
+    wait "$pid" 2>/dev/null || true
+  done
+}
 write_inventory() { (cd "$evidence_dir" && find . -type f ! -name runtime-files.sha256 ! -name .runtime-files.sha256.tmp -print0 | sort -z | xargs -0 sha256sum > .runtime-files.sha256.tmp && mv .runtime-files.sha256.tmp runtime-files.sha256); }
 inventory_attempted=0
 finish() {
   local status="$?"; trap - EXIT
   printf '%s\n' "$status" > "$evidence_dir/startup-exit-code.txt"
+  stop_runtime_writers
+  capture_checkpoint_log
   if (( inventory_attempted == 0 )); then inventory_attempted=1; write_inventory || status=91; fi
-  kill "$watchdog_pid" "${checkpoint_pid:-}" "${nvml_pid:-}" 2>/dev/null || true
   if final_backup; then
     :
   else
@@ -217,9 +236,9 @@ python3 "$work_dir/workspace/scripts/campaign/run_host.py" \
 run_status="$?"
 set -e
 printf '%s\n' "$run_status" > "$evidence_dir/controller-exit-code.txt"
-kill "$checkpoint_pid" "$nvml_pid" 2>/dev/null || true
-wait "$checkpoint_pid" "$nvml_pid" 2>/dev/null || true
+stop_runtime_writers
 printf '%s\n' "$run_status" > "$evidence_dir/startup-exit-code.txt"
+capture_checkpoint_log
 inventory_attempted=1
 write_inventory
 final_backup

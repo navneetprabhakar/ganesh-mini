@@ -8,10 +8,12 @@ from scripts.eval.build_gate1_readiness import build, canonical_sha256
 ROOT=Path(__file__).resolve().parents[2]
 
 
-def test_repository_gate1_fails_only_on_unexecuted_base_baseline() -> None:
+def test_repository_gate1_is_open_on_admitted_exact_base_baseline() -> None:
     report=build(ROOT,ROOT/"measurement/inference/development/qwen3.5-2b-base-v1/run.json")
-    assert report["status"]=="not_ready"
-    assert report["failed_checks"]==["exact_base_development_baseline"]
+    assert report["status"]=="ready"
+    assert report["failed_checks"]==[]
+    assert report["base_baseline_complete"] is True
+    assert report["checks"][2]["evidence"]["task_evidence"]["validated_task_evidence"]==180
     unsigned=dict(report); claimed=unsigned.pop("evidence_sha256")
     assert canonical_sha256(unsigned)==claimed
 

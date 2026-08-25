@@ -1553,3 +1553,43 @@ seals are
 and `6ce15ca15de7f7bcad2402d836de155ea5e65b411ac8bec883b0977cb3a3d937`.
 Six-language Docker integration and the complete local suite pass. Training
 remains blocked until a fresh exact-base baseline opens Gate 1.
+
+## 2026-08-25 — Gate 1 admitted; CUDA counters require an initialized device
+
+Approved attempt `20260825T153823Z` completed the frozen 180-task exact-base
+development baseline without verifier infrastructure errors. The base passed
+20/180 overall: Go 0, Java 2, JavaScript 4, TypeScript 6, Python 5, and Rust 3
+out of 30 tasks per lane. The canonical run seal is
+`a04361a047080bc479328d52d8be23fabcedb2b42ebbf0a059775e32db823ceb`;
+365 admitted files are bound by admission seal
+`c7d7d33d59d804a3dcd1b0f98e5aed9f409b229a3c31d85f1ef19f5b021faa62`.
+Gate 1 readiness is now `ready` under seal
+`d827ece3d324633a6fc6b0a46be55dcd87a87fb565358d3f2704806ced154971`.
+
+Training preflight passed and preserved evaluation/training isolation. The
+first LR candidate then failed before model loading, token accounting, or an
+optimizer step because the exact Torch/CUDA build rejected
+`torch.cuda.reset_peak_memory_stats(0)` with `Invalid device argument` before
+an active CUDA device had been explicitly established. Peak-memory accounting
+must still begin before model loading, so the repair selects `cuda:0`, calls
+CUDA initialization, and resets counters on the current device with no integer
+argument. A production call-order regression test prevents the pre-load reset
+from moving or reverting to the rejected form.
+
+The training archive, manifest, and non-executable preparation are resealed at
+`d06c4d2a71828c61514d62ae3d1c8dccf6b5e8e9d9d403527b7f95833d919688`,
+`9af762e484c04f54e1728adca9d87a9214c991cfed78bc9cc78a656bfa45fe19`,
+and `b38dcbbb4a8ba0bbbe5a9bbac138ebe335cc0f14e9ceb39b0a171882374cdc5a`.
+The archive rehearsal and full local suite pass.
+
+Terminal validation seal
+`c299e90402004e9ce014f0b04f3fa0f2ae9d33211d3fa5971a7c1f58aecad351`,
+strict finalization seal
+`94963d2fd2deed795d6a883633f2d8cb2064e36cd4b8c6426c95720a1cf36f5a`,
+absence proof
+`1bb8e75d6662083f8da1b27655507952a913c19234b21ecfd7c35b3a1264e7c1`,
+and final 14-object backup seal
+`9a34c63e37a75211234edb5de977c4da5f92e4381e352b4b85fce4a319fbf419`
+close the attempt. The exact VM, auto-delete disk, subnet, and VPC are absent.
+The consumed approval authorizes no second VM; continuing Gate 3 requires a
+fresh explicit GCloud retry approval.

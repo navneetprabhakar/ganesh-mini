@@ -116,20 +116,19 @@ def project(tmp_path: Path) -> tuple[Path, Path]:
     return tmp_path, config_path
 
 
-def test_repository_config_fails_closed_before_gate_evidence() -> None:
+def test_repository_config_is_ready_after_gate1_admission() -> None:
     card = pilot.build_execution_card(ROOT / "configs/train/seed_pilot.json", ROOT, system="Linux")
-    assert card["status"] == "not_ready"
-    assert "gate1_ready" in card["failed_checks"]
-    assert "gate2_ready" not in card["failed_checks"]
-    assert "prepared_dataset" not in card["failed_checks"]
+    assert card["status"] == "ready"
+    assert card["failed_checks"] == []
     assert len(card["card_sha256"]) == 64
 
 
-def test_repository_linux_pilot_is_blocked_only_by_gate1() -> None:
+def test_repository_linux_pilot_binds_all_ready_gate_evidence() -> None:
     card = pilot.build_execution_card(ROOT / "configs/train/seed_pilot.json", ROOT, system="Linux")
-    assert card["status"] == "not_ready"
-    assert card["failed_checks"] == ["gate1_ready"]
+    assert card["status"] == "ready"
+    assert card["failed_checks"] == []
     assert card["prerequisite_evidence"]["gate0"] == json.loads((ROOT / "measurement/gate0/readiness.json").read_text())["report_sha256"]
+    assert card["prerequisite_evidence"]["gate1"] == json.loads((ROOT / "measurement/gate1/readiness.json").read_text())["evidence_sha256"]
     assert card["prerequisite_evidence"]["gate2"] == json.loads((ROOT / "measurement/gate2/readiness.json").read_text())["report_sha256"]
 
 

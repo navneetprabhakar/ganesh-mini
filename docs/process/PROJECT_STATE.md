@@ -4,37 +4,44 @@ Last updated: 2026-08-25
 
 ## Current gate
 
-Gate 1: rerun the exact Qwen development baseline on the frozen 180-task
-surface after repairing the verifier resource boundary discovered by approved
-attempt `20260825T143537Z`.
+Gate 1 is complete. Approved attempt `20260825T153823Z` executed all 180
+frozen private development tasks against exact revision
+`15852e8c16360a2fea060d615a32b45270f8a8fc`, with first-EOS trimming and
+resource-limited network-disabled verifiers. The exact base passed 20/180
+tasks: Go 0/30, Java 2/30, JavaScript 4/30, TypeScript 6/30, Python 5/30,
+and Rust 3/30. Run seal
+`a04361a047080bc479328d52d8be23fabcedb2b42ebbf0a059775e32db823ceb`
+and 365-file admission seal
+`c7d7d33d59d804a3dcd1b0f98e5aed9f409b229a3c31d85f1ef19f5b021faa62`
+bind the canonical result. Gate 1 readiness is `ready` under seal
+`d827ece3d324633a6fc6b0a46be55dcd87a87fb565358d3f2704806ced154971`.
 
-That attempt passed fresh price/quota/resource/GCS preflight, provisioned a
-private `g2-standard-12` L4 VM in `us-east1-c`, verified every immutable input,
-loaded the exact qualified CUDA image and all six verifier images, preserved
-workspace isolation, loaded all 617 base-model weights, and began batched
-generation. Training never started. Four inspected Go results were false
-failures: the task's intentional 64-PID container limit was retained, but Go
-observed the host's CPU count and launched enough parallel compiler processes
-to fail with `fork/exec ... resource temporarily unavailable`. Batched output
-also retained pad tokens after each row's first EOS, inflating evidence.
+Gate 3 training admission also passed, but the first 0.0001 LR candidate
+stopped before model loading or any optimizer/token progress. In the exact
+Torch/CUDA image, `torch.cuda.reset_peak_memory_stats(0)` raised
+`RuntimeError: Invalid device argument` before the CUDA context had been
+explicitly selected and initialized. Production SFT now selects `cuda:0`,
+initializes CUDA, then resets the current device's counters without an integer
+argument. The call-order regression test, archive rehearsal, and full local
+suite pass. The resealed training archive, training manifest, and preparation
+seals are
+`d06c4d2a71828c61514d62ae3d1c8dccf6b5e8e9d9d403527b7f95833d919688`,
+`9af762e484c04f54e1728adca9d87a9214c991cfed78bc9cc78a656bfa45fe19`,
+and `b38dcbbb4a8ba0bbbe5a9bbac138ebe335cc0f14e9ceb39b0a171882374cdc5a`.
 
-The anomaly was stopped before its invalid all-failure baseline could open
-Gate 1. The guest wrote a 50-object generation-verified terminal backup; the
-VM, disk, temporary IAP rule, subnet, and VPC were deleted, and exact-resource
-absence plus post-delete backups passed. The partial baseline is quarantined
-and cannot be admitted. Compiler parallelism is now explicitly bounded within
-the unchanged 64-PID sandbox, verifier infrastructure signatures abort the
-evaluation instead of becoming model scores, and batched rows are trimmed at
-their first EOS. Six-language Docker integration and the full local suite pass.
+Strict terminal validation, finalization, and exact resource absence passed
+under seals
+`c299e90402004e9ce014f0b04f3fa0f2ae9d33211d3fa5971a7c1f58aecad351`,
+`94963d2fd2deed795d6a883633f2d8cb2064e36cd4b8c6426c95720a1cf36f5a`,
+and `1bb8e75d6662083f8da1b27655507952a913c19234b21ecfd7c35b3a1264e7c1`.
+The VM, disk, subnet, and VPC are absent. The final 14-object post-delete GCS
+backup is verified under seal
+`9a34c63e37a75211234edb5de977c4da5f92e4381e352b4b85fce4a319fbf419`.
 
-The evaluation archive is resealed at
-`9fe60b7b4526fa34d60eb7523494a738762069e47e4d202bcdbf6f80c6115138`;
-its manifest, archive-executed rehearsal, and non-executable preparation seals
-are `f6551430af4c5a2cd2ad5d7bcbdcf4daf3105136682c146535e2a2a11c2da5b0`,
-`7c280c5a5c8ec8c28891818d5171dbdea3507dc11eca6799f86cde2d71d50406`,
-and `6ce15ca15de7f7bcad2402d836de155ea5e65b411ac8bec883b0977cb3a3d937`.
-Gate 1 still has no admissible model result. Another GCloud execution is the
-next action and requires fresh explicit approval.
+The next action is a fresh explicitly approved GCloud attempt for the two
+bounded LR candidates, their development evaluations, LR selection, main
+636,093-token SFT, main development evaluation, and Gate 3 promotion decision.
+The consumed one-VM approval does not authorize that retry.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
@@ -65,13 +72,13 @@ Gate 1 now fails closed only because the exact Qwen development baseline does
 not yet exist. Gate 0B no longer blocks that execution.
 
 The current evaluation-workspace manifest seal is
-`a6d2b7c64bd6c2cb25e72a6a788e372965fa18a842538e8e9e7d2e7cb18e074a`;
+`f6551430af4c5a2cd2ad5d7bcbdcf4daf3105136682c146535e2a2a11c2da5b0`;
 the training-workspace manifest seal is
-`4ea6a9384993a97ad39a659a7ab7d8ca5db6a0f8af5c6093af2b13184280ce16`.
+`9af762e484c04f54e1728adca9d87a9214c991cfed78bc9cc78a656bfa45fe19`.
 The archive-executed runtime rehearsal seal is
-`ba782354c142114121cc34d557b19ca2852b9dc48fe58b97fccb2f63de4a7da3`,
+`7c280c5a5c8ec8c28891818d5171dbdea3507dc11eca6799f86cde2d71d50406`,
 and the non-executable preparation seal is
-`d51f342615e3fa77203df45701d757dae8a821938a0ad964ce60c4b813db74ec`.
+`b38dcbbb4a8ba0bbbe5a9bbac138ebe335cc0f14e9ceb39b0a171882374cdc5a`.
 
 ## Completed
 

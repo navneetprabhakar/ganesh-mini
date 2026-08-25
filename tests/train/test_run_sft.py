@@ -1,7 +1,7 @@
 import pytest
 
 from scripts.train.qwen_runtime import configure_cuda_allocator
-from scripts.train.run_sft import bounded_training_wall, five_family_validation, planned_end
+from scripts.train.run_sft import bounded_training_wall, five_family_validation, initialize_cuda_measurement, planned_end
 
 
 def row(tokens: int) -> dict:
@@ -48,3 +48,29 @@ def test_production_sft_allocator_contract_is_process_wide(monkeypatch) -> None:
     evidence=configure_cuda_allocator("expandable_segments:True")
     assert evidence["environment_variable"]=="PYTORCH_CUDA_ALLOC_CONF"
     assert evidence["value"]=="expandable_segments:True"
+
+
+def test_cuda_measurement_initializes_selected_device_before_reset() -> None:
+    calls=[]
+
+    class FakeCuda:
+        def set_device(self, device) -> None: calls.append(("set_device",device))
+        def init(self) -> None: calls.append(("init",))
+        def reset_peak_memory_stats(self) -> None: calls.append(("reset_peak_memory_stats",))
+
+    class FakeTorch:
+        cuda=FakeCuda()
+
+        @staticmethod
+        def device(value):
+            calls.append(("device",value))
+            return f"selected:{value}"
+
+    selected=initialize_cuda_measurement(FakeTorch())
+    assert selected=="selected:cuda:0"
+    assert calls==[
+        ("device","cuda:0"),
+        ("set_device","selected:cuda:0"),
+        ("init",),
+        ("reset_peak_memory_stats",),
+    ]

@@ -51,6 +51,15 @@ def seed_everything(seed: int) -> None:
     random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed); torch.use_deterministic_algorithms(True,warn_only=True)
 
 
+def initialize_cuda_measurement(torch_module: Any) -> Any:
+    """Select and initialize the sole CUDA device before resetting its counters."""
+    device=torch_module.device("cuda:0")
+    torch_module.cuda.set_device(device)
+    torch_module.cuda.init()
+    torch_module.cuda.reset_peak_memory_stats()
+    return device
+
+
 def load_rows(path: Path) -> list[dict[str,Any]]:
     rows=[json.loads(line) for line in path.read_text().splitlines() if line]
     if not rows or any(len(row["input_ids"])!=len(row["labels"]) or row["labels"][:row["prompt_token_count"]]!=[-100]*row["prompt_token_count"] for row in rows): raise ValueError("invalid prepared response-only data")
@@ -124,7 +133,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     identities={"card_sha256":card["card_sha256"],"config_sha256":config_sha,"prepared_manifest_sha256":prepared_manifest["manifest_sha256"],"prepared_data_sha256":file_sha256(args.prepared_data),"validation_data_sha256":file_sha256(args.validation_data),"model_revision":card["model"]["revision"],"recipe_sha256":canonical_sha256(recipe),"learning_rate":str(lr),"phase":args.phase}
     seed_everything(recipe["random_seed"]); kwargs={"local_files_only":True,"dtype":torch.bfloat16,"device_map":{"":0}}
     if recipe["base_loading"]=="qlora": kwargs["quantization_config"]=BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_quant_type="nf4",bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.bfloat16)
-    torch.cuda.reset_peak_memory_stats(0); model=AutoModelForImageTextToText.from_pretrained(args.model_dir,**kwargs)
+    initialize_cuda_measurement(torch); model=AutoModelForImageTextToText.from_pretrained(args.model_dir,**kwargs)
     vision_offload_before=torch.cuda.memory_allocated(0); training_structure=configure_qwen_training_structure(model)
     gc.collect(); torch.cuda.empty_cache()
     vision_offload_after=torch.cuda.memory_allocated(0); training_structure.update({"cuda_allocated_before_vision_offload_bytes":vision_offload_before,"cuda_allocated_after_vision_offload_bytes":vision_offload_after,"cuda_allocated_released_by_vision_offload_bytes":vision_offload_before-vision_offload_after})

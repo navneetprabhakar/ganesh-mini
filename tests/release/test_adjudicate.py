@@ -12,6 +12,7 @@ def cohort(passed: int) -> dict:
     return {
         "task_count": 360,
         "lanes": {lane: {"passed": passed, "denominator": 60} for lane in LANES},
+        "five_family_macro": {"decimal": passed / 60},
     }
 
 
@@ -32,7 +33,7 @@ def comparison(base_model: dict, candidate_model: dict, base_passed: int, candid
         "paired": {
             "aggregate": {"wins": wins, "losses": losses, "ties": 360 - wins - losses, "denominator": 360},
             "lanes": {lane: {"wins": 1, "losses": 0, "ties": 59, "denominator": 60} for lane in LANES},
-            "cluster_aware": {"bootstrap_ci": {"lower": 0.01}, "two_sided_permutation_p": 0.01},
+            "cluster_aware": {"bootstrap_ci": {"lower": 0.01, "upper": 0.03}, "two_sided_permutation_p": 0.01},
         },
         "five_family_macro_delta": {"decimal": delta},
     }
@@ -52,14 +53,14 @@ def release_inputs(tmp_path: Path) -> tuple[dict, dict, dict, dict, list[Path]]:
         MINI,
         5,
         6,
-        0.1,
+        1 / 60,
     )
     v01 = comparison(
         {"model_id": "ganesh-v0.1", "revision": "9" * 40, "artifact_sha256": "3" * 64},
         MINI,
         7,
         6,
-        -0.02,
+        -1 / 60,
     )
     q8_sha, f16_sha, merged_sha = "a" * 64, "b" * 64, "c" * 64
     quant = comparison(
@@ -117,7 +118,11 @@ def release_inputs(tmp_path: Path) -> tuple[dict, dict, dict, dict, list[Path]]:
         "status": "built",
         "model_name": "ganesh-mini-1.0",
         "selected_run_evidence_sha256": training["evidence_sha256"],
-        "artifacts": {"merged_bf16_hf": {"sha256": merged_sha}, "gguf_q8": {"sha256": q8_sha}, "gguf_f16": {"sha256": f16_sha}},
+        "artifacts": {
+            "merged_bf16_hf": {"sha256": merged_sha},
+            "gguf_q8": {"sha256": q8_sha, "bytes": 2 * 1024**3},
+            "gguf_f16": {"sha256": f16_sha, "bytes": 4 * 1024**3},
+        },
     }, "manifest_sha256")
     path = tmp_path / "release-artifacts.json"
     path.write_text(json.dumps(artifact_manifest), encoding="utf-8")

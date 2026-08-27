@@ -71,6 +71,15 @@ def comparison_contract(value: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         candidate_lane_denominators = {lane: candidate["lanes"][lane]["denominator"] for lane in LANES}
         aggregate = paired["aggregate"]
         evidence = value["evidence"]
+        base_macro = base["five_family_macro"]["decimal"]
+        candidate_macro = candidate["five_family_macro"]["decimal"]
+        macro_delta = value["five_family_macro_delta"]["decimal"]
+        macro_valid = (
+            all(isinstance(item, (int, float)) for item in (base_macro, candidate_macro, macro_delta))
+            and 0 <= base_macro <= 1
+            and 0 <= candidate_macro <= 1
+            and abs((candidate_macro - base_macro) - macro_delta) <= 1e-12
+        )
         evidence_bound = all(
             isinstance(evidence.get(key), str) and len(evidence[key]) == 64
             for key in ("base_result_set_sha256", "candidate_result_set_sha256", "source_task_set_sha256")
@@ -97,6 +106,7 @@ def comparison_contract(value: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
             and lane_transitions_complete
             and lane_passes_valid
             and evidence_bound
+            and macro_valid
         )
         return valid, {
             "report_sha256": seal,

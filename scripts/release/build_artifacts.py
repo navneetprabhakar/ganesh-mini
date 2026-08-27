@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -48,7 +49,9 @@ def build(args: argparse.Namespace) -> dict[str,Any]:
     if sha256(converter)!=gate0["converter_sha256"] or sha256(quantizer)!=gate0["quantizer_sha256"]: raise ValueError("llama.cpp tool hash mismatch")
     if args.output.exists(): raise FileExistsError("release output must be fresh")
     args.output.mkdir(parents=True); merged=args.output/"ganesh-mini-1.0-bf16-hf"; f16=args.output/"ganesh-mini-1.0-f16.gguf"; q8=args.output/"ganesh-mini-1.0-q8_0.gguf"
-    base=AutoModelForImageTextToText.from_pretrained(args.base_model,local_files_only=True,dtype=torch.bfloat16,device_map="cpu"); model=PeftModel.from_pretrained(base,args.adapter).merge_and_unload(safe_merge=True); model.save_pretrained(merged,safe_serialization=True,max_shard_size="4GB"); AutoTokenizer.from_pretrained(args.base_model,local_files_only=True).save_pretrained(merged)
+    base_license=args.base_model/"LICENSE"
+    if not base_license.is_file(): raise FileNotFoundError("pinned base LICENSE is missing")
+    base=AutoModelForImageTextToText.from_pretrained(args.base_model,local_files_only=True,dtype=torch.bfloat16,device_map="cpu"); model=PeftModel.from_pretrained(base,args.adapter).merge_and_unload(safe_merge=True); model.save_pretrained(merged,safe_serialization=True,max_shard_size="4GB"); AutoTokenizer.from_pretrained(args.base_model,local_files_only=True).save_pretrained(merged); shutil.copyfile(base_license,merged/"LICENSE")
     try: AutoProcessor.from_pretrained(args.base_model,local_files_only=True).save_pretrained(merged)
     except (ValueError,OSError): pass
     subprocess.run([sys.executable,str(converter),str(merged),"--outfile",str(f16),"--outtype","f16"],check=True)

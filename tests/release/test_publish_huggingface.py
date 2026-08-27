@@ -17,7 +17,7 @@ def write(path: Path, value: dict) -> Path:
     return path
 
 
-def fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
+def fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path, list[Path]]:
     import hashlib
 
     merged = tmp_path / "merged"
@@ -45,31 +45,64 @@ def fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
         "status": "passed",
         "artifact_manifest_sha256": manifest["manifest_sha256"],
     }, "evidence_sha256")
+    comparisons = [
+        sealed({"schema_version": "1.0", "kind": kind}, "report_sha256")
+        for kind in ("qwen", "ganesh-v01", "quantization")
+    ]
+    laptop = sealed({"schema_version": "ganesh-mini-laptop-certification/v1", "status": "passed"}, "evidence_sha256")
+    seed = sealed({"schema_version": "ganesh-mini-seed-manifest/v1"}, "manifest_sha256")
+    readiness = sealed({"schema_version": "ganesh-mini-readiness/v1", "status": "ready"}, "report_sha256")
+    execution_card = sealed({"schema_version": "ganesh-mini-training-execution-card/v1", "status": "ready"}, "card_sha256")
+    training = sealed({"schema_version": "ganesh-mini-sft-run/v1", "status": "complete"}, "evidence_sha256")
+    lineage = [seed, readiness, execution_card, training]
     decision = sealed({
         "schema_version": "ganesh-mini-release-decision/v2",
         "status": "release-eligible",
         "failed_checks": [],
-        "checks": [{
-            "name": "required_manifests_complete",
-            "passed": True,
-            "evidence": {"manifests": [
-                {"seal": manifest["manifest_sha256"], "passed": True},
-                {"seal": export["evidence_sha256"], "passed": True},
-            ]},
-        }],
+        "checks": [
+            {
+                "name": "sealed_complete_decision_comparisons",
+                "passed": True,
+                "evidence": {
+                    "qwen": {"report_sha256": comparisons[0]["report_sha256"]},
+                    "ganesh_v01": {"report_sha256": comparisons[1]["report_sha256"]},
+                    "quantization": {"report_sha256": comparisons[2]["report_sha256"]},
+                },
+            },
+            {
+                "name": "laptop_evidence_and_artifacts_bound",
+                "passed": True,
+                "evidence": {"laptop_evidence_sha256": laptop["evidence_sha256"]},
+            },
+            {
+                "name": "required_manifests_complete",
+                "passed": True,
+                "evidence": {"manifests": [
+                    *[{"seal": value[next(field for field in ("manifest_sha256", "report_sha256", "card_sha256", "evidence_sha256") if field in value)], "passed": True} for value in lineage],
+                    {"seal": manifest["manifest_sha256"], "passed": True},
+                    {"seal": export["evidence_sha256"], "passed": True},
+                ]},
+            },
+        ],
     }, "evidence_sha256")
     card = tmp_path / "README.md"
     card.write_text("---\nlicense: apache-2.0\n---\n# Ganesh Mini\n", encoding="utf-8")
+    evidence = [
+        *[write(tmp_path / f"comparison-{index}.json", value) for index, value in enumerate(comparisons)],
+        write(tmp_path / "laptop.json", laptop),
+        *[write(tmp_path / f"lineage-{index}.json", value) for index, value in enumerate(lineage)],
+    ]
     return (
         write(tmp_path / "decision.json", decision),
         write(tmp_path / "artifacts.json", manifest),
         write(tmp_path / "export.json", export),
         card,
+        evidence,
     )
 
 
 def test_publication_plan_is_sealed_and_contains_all_release_files(tmp_path: Path) -> None:
-    decision, artifacts, export, card = fixture(tmp_path)
+    decision, artifacts, export, card, evidence = fixture(tmp_path)
     plan, uploads = build_plan(
         repo_id="forge/ganesh-mini-1.0",
         visibility="public",
@@ -77,6 +110,7 @@ def test_publication_plan_is_sealed_and_contains_all_release_files(tmp_path: Pat
         artifact_manifest_path=artifacts,
         export_equivalence_path=export,
         model_card_path=card,
+        evidence_paths=evidence,
     )
     assert plan["status"] == "ready"
     assert canonical_sha256({key: value for key, value in plan.items() if key != "plan_sha256"}) == plan["plan_sha256"]
@@ -84,7 +118,7 @@ def test_publication_plan_is_sealed_and_contains_all_release_files(tmp_path: Pat
 
 
 def test_publication_rejects_changed_artifact(tmp_path: Path) -> None:
-    decision, artifacts, export, card = fixture(tmp_path)
+    decision, artifacts, export, card, evidence = fixture(tmp_path)
     manifest = json.loads(artifacts.read_text())
     Path(manifest["artifacts"]["gguf_q8"]["path"]).write_bytes(b"changed")
     with pytest.raises(ValueError, match="gguf_q8 artifact mismatch"):
@@ -95,4 +129,19 @@ def test_publication_rejects_changed_artifact(tmp_path: Path) -> None:
             artifact_manifest_path=artifacts,
             export_equivalence_path=export,
             model_card_path=card,
+            evidence_paths=evidence,
+        )
+
+
+def test_publication_rejects_incomplete_evidence_closure(tmp_path: Path) -> None:
+    decision, artifacts, export, card, evidence = fixture(tmp_path)
+    with pytest.raises(ValueError, match="closure mismatch"):
+        build_plan(
+            repo_id="forge/ganesh-mini-1.0",
+            visibility="public",
+            decision_path=decision,
+            artifact_manifest_path=artifacts,
+            export_equivalence_path=export,
+            model_card_path=card,
+            evidence_paths=evidence[:-1],
         )

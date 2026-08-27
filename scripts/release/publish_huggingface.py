@@ -6,11 +6,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SEAL_FIELDS = ("manifest_sha256", "report_sha256", "evidence_sha256", "run_sha256", "card_sha256")
 
 
 def canonical_sha256(value: Any) -> str:
@@ -34,6 +36,37 @@ def load_sealed(path: Path, field: str) -> dict[str, Any]:
     if claimed != canonical_sha256(unsigned):
         raise ValueError(f"invalid {field}: {path}")
     return value
+
+
+def load_any_sealed(path: Path) -> tuple[dict[str, Any], str]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    present = [field for field in SEAL_FIELDS if field in value]
+    if len(present) != 1:
+        raise ValueError(f"evidence must contain exactly one recognized seal: {path}")
+    field = present[0]
+    return load_sealed(path, field), field
+
+
+def expected_evidence_seals(decision: dict[str, Any]) -> set[str]:
+    checks = {row.get("name"): row for row in decision.get("checks", [])}
+    comparisons = checks.get("sealed_complete_decision_comparisons", {}).get("evidence", {})
+    manifests = checks.get("required_manifests_complete", {}).get("evidence", {}).get("manifests", [])
+    laptop = checks.get("laptop_evidence_and_artifacts_bound", {}).get("evidence", {})
+    expected = {
+        comparisons.get(name, {}).get("report_sha256")
+        for name in ("qwen", "ganesh_v01", "quantization")
+    }
+    expected.add(laptop.get("laptop_evidence_sha256"))
+    expected.update(row.get("seal") for row in manifests if row.get("passed") is True)
+    if None in expected or len(expected) != 10:
+        raise ValueError("release decision does not expose the complete ten-seal evidence closure")
+    return expected
+
+
+def evidence_remote_path(value: dict[str, Any], seal: str) -> str:
+    schema = str(value.get("schema_version", "evidence"))
+    slug = re.sub(r"[^a-zA-Z0-9._-]+", "-", schema).strip("-").lower()
+    return f"evidence/{slug}-{seal[:12]}.json"
 
 
 def verified_release_inputs(
@@ -118,6 +151,7 @@ def build_plan(
     artifact_manifest_path: Path,
     export_equivalence_path: Path,
     model_card_path: Path,
+    evidence_paths: list[Path],
 ) -> tuple[dict[str, Any], list[tuple[str, Path]]]:
     if visibility not in {"private", "public"}:
         raise ValueError("visibility must be private or public")
@@ -126,6 +160,21 @@ def build_plan(
     decision, artifacts, export = verified_release_inputs(
         decision_path, artifact_manifest_path, export_equivalence_path
     )
+    expected_seals = expected_evidence_seals(decision)
+    supplied: dict[str, tuple[Path, dict[str, Any]]] = {}
+    for path in evidence_paths:
+        value, field = load_any_sealed(path)
+        seal = value[field]
+        if seal in supplied:
+            raise ValueError(f"duplicate release evidence seal: {seal}")
+        supplied[seal] = (path, value)
+    already_supplied = {artifacts["manifest_sha256"], export["evidence_sha256"]}
+    required_extras = expected_seals - already_supplied
+    if set(supplied) != required_extras:
+        raise ValueError(
+            f"release evidence closure mismatch; missing={sorted(required_extras - set(supplied))}, "
+            f"unexpected={sorted(set(supplied) - required_extras)}"
+        )
     if not model_card_path.is_file():
         raise FileNotFoundError(model_card_path)
     upload: list[tuple[str, Path]] = [("README.md", model_card_path)]
@@ -138,6 +187,10 @@ def build_plan(
         ("evidence/release-artifacts.json", artifact_manifest_path, artifacts["manifest_sha256"]),
         ("evidence/export-equivalence.json", export_equivalence_path, export["evidence_sha256"]),
     ):
+        upload.append((remote, local))
+        file_rows.append({"path_in_repo": remote, "sha256": file_sha256(local), "bytes": local.stat().st_size, "seal": seal})
+    for seal, (local, value) in sorted(supplied.items()):
+        remote = evidence_remote_path(value, seal)
         upload.append((remote, local))
         file_rows.append({"path_in_repo": remote, "sha256": file_sha256(local), "bytes": local.stat().st_size, "seal": seal})
     remote_paths = [remote for remote, _ in upload]
@@ -206,6 +259,7 @@ def main() -> int:
     parser.add_argument("--artifact-manifest", type=Path, required=True)
     parser.add_argument("--export-equivalence", type=Path, required=True)
     parser.add_argument("--model-card", type=Path, required=True)
+    parser.add_argument("--evidence", type=Path, action="append", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--allow-existing", action="store_true")
@@ -217,6 +271,7 @@ def main() -> int:
         artifact_manifest_path=args.artifact_manifest,
         export_equivalence_path=args.export_equivalence,
         model_card_path=args.model_card,
+        evidence_paths=args.evidence,
     )
     report = publish(plan, upload, allow_existing=args.allow_existing) if args.execute else plan
     args.output.parent.mkdir(parents=True, exist_ok=True)

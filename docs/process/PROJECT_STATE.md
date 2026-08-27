@@ -4,6 +4,36 @@ Last updated: 2026-08-27
 
 ## Current gate
 
+Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict
+sealed bootstrap failure. It had exactly one boot, automatic restart was
+disabled, and it stopped after roughly nine minutes. Every immutable input
+download passed its hash, the offline Docker stack and qualified CUDA image
+loaded, but the host controller failed at its first project import because
+direct file execution omitted the archived workspace root from `sys.path`.
+The completed `1e-5` candidate was not imported or modified; CUDA model work,
+canary evaluation, `3e-5` training, LR selection, and full development
+evaluation did not begin.
+
+Terminal backup, strict finalization, four-resource absence, and final
+post-delete backup passed under seals
+`206a9f8fa0c13a282614524675449712f03ae0dfdd3d44760f51b21c8958d30d`,
+`63d08fa9b7be8dc2af81e4d0e228f227077f34a5f303a67435129fac3a7b7978`,
+`db8c975853b9e7812b87cdaffb1c0af697e7e09cc2f502a4faae115f0abbc3f8`,
+and `6526129fc7289a6dcdf52c32f855c75dc2240b055f490e8f6c0eb029f34c4633`.
+The VM, disk, subnet, and VPC are absent, and the campaign monitor is paused.
+
+The local repair now bootstraps the host controller's repository root before
+project imports and independently supplies the archived workspace in
+`PYTHONPATH`. Runtime-bundle rehearsal executes the archived entrypoint under
+isolated Python with caller `PYTHONPATH` removed. The rebuilt evaluation
+workspace, deterministic archive, runtime rehearsal, and non-executable
+preparation seals are
+`c0e1938c7d9574aaae128a787d38c41f3549b56bb9be99fae2f08c3e5008ff05`,
+`3c738bf40fe3cda1fb62b4ae7b0d88da265a8318f082c63d91527cfb7c9cc6ef`,
+`9c07e39823095cd93f26b580f238ecf9c5f23ad7c3d3d924109dd2f74fba93c1`,
+and `915ddc4fdd90641283b9c49f3025f8519dda48c0f208582a566a1d1e623d9eb9`.
+The consumed approval authorizes no retry.
+
 Gate 3 v2 attempt `20260827T090603Z` is fully finalized as a strict sealed
 failure. The first boot encountered a bucket-IAM 403 before model loading or
 optimizer progress. Granting the run's default Compute Engine service account
@@ -72,10 +102,10 @@ read/write access; this closes the gap that caused the earlier bootstrap 403.
 Its proposed bound is three VM hours,
 including a 30-minute terminal-backup reserve, and USD 3.50. The evaluation
 workspace, archive, runtime rehearsal, and non-executable preparation seals are
-`daba3f5ac1e6b5ec35902fe2cf7997ad93f1d659c1d7a08a35585b9c94a8567e`,
-`0c3f4ee25fe3cd06589a25b9766d574f65088d9c9baecf023457771b6e4894b5`,
-`cd74267bec2a671aeb703a6faf8c77fc432b1ba9ad178cd878bc65ea4d1bff4e`,
-and `1e1330c889e66a229b06b234a0d974091768ec5628d9149a8f1da984b1bec91f`.
+`c0e1938c7d9574aaae128a787d38c41f3549b56bb9be99fae2f08c3e5008ff05`,
+`3c738bf40fe3cda1fb62b4ae7b0d88da265a8318f082c63d91527cfb7c9cc6ef`,
+`9c07e39823095cd93f26b580f238ecf9c5f23ad7c3d3d924109dd2f74fba93c1`,
+and `915ddc4fdd90641283b9c49f3025f8519dda48c0f208582a566a1d1e623d9eb9`.
 The deterministically rebuilt training workspace archive and manifest are
 `684cb5824d4a5b253a747b8ecb41d0d083316560aac2eb8fe20d8f80a39bcd13`
 and `8c8e90ed40938dbe55627e6d2b7c2918ee7334e41097c0ebd2d9372aa0cfcbe8`;

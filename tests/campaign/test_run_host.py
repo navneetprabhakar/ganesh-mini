@@ -1,6 +1,8 @@
 from decimal import Decimal
 import json
 from pathlib import Path
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -31,6 +33,20 @@ def test_campaign_uses_lowercase_docker_names_for_utc_attempt_ids() -> None:
     assert docker_container_name("ganesh-train-20260825T061157Z-main") == "ganesh-train-20260825t061157z-main"
     assert lr_label(0.00001)=="lr-1e-5"
     assert lr_label(0.00003)=="lr-3e-5"
+
+
+def test_host_controller_direct_entrypoint_bootstraps_repository_imports(tmp_path: Path) -> None:
+    script = Path(run_host.__file__).resolve()
+    result = subprocess.run(
+        [sys.executable, "-I", "-B", str(script), "--help"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--eval-workspace" in result.stdout
 
 
 def test_v2_lr_selection_uses_balanced_30_task_canary() -> None:

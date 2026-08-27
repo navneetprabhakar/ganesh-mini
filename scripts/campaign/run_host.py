@@ -23,6 +23,13 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+# Direct file execution sets sys.path[0] to scripts/campaign rather than the
+# repository root.  Establish the sealed workspace root before importing any
+# project modules so the host controller does not depend on caller state.
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from scripts.eval.verify_runtime_images import audit as audit_runtime_images
 from scripts.inference.run_development_baseline_host import verify_bundle
 
@@ -33,7 +40,6 @@ from scripts.inference.run_development_baseline_host import verify_bundle
 sys.dont_write_bytecode = True
 
 
-ROOT = Path(__file__).resolve().parents[2]
 MODEL_RELATIVE = Path("models/qwen3.5-2b-15852e8")
 BASE_OUTPUT_RELATIVE = Path("measurement/inference/development/qwen3.5-2b-base-v1")
 CONTAINER_MODEL = Path("/input/model")

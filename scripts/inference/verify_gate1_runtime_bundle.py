@@ -132,6 +132,26 @@ print("MOUNT_TOPOLOGY_OK")
         )
         if result.returncode != 0:
             raise RuntimeError(f"archived runtime attempt-ID rehearsal failed: {result.stderr.strip()}")
+        direct_entrypoint = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                str(workspace / "scripts/campaign/run_host.py"),
+                "--help",
+            ],
+            cwd=probe_temporary,
+            env={key: value for key, value in os.environ.items() if key != "PYTHONPATH"},
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        if direct_entrypoint.returncode != 0:
+            raise RuntimeError(
+                "archived host controller direct-entrypoint import failed: "
+                f"{direct_entrypoint.stderr.strip()}"
+            )
         probe_lines = result.stdout.splitlines()
         mount_topology_ok = probe_lines[-1:] == ["MOUNT_TOPOLOGY_OK"]
         container_names = probe_lines[:-1]
@@ -161,7 +181,9 @@ print("MOUNT_TOPOLOGY_OK")
         "verifier_compiler_jobs_fit_pid_boundary": True,
         "verifier_infrastructure_failures_are_fail_closed": True,
         "archived_imports_preserve_sealed_file_set": observed_after_import == expected_files,
+        "archived_host_controller_self_bootstraps_imports": direct_entrypoint.returncode == 0,
         "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
+        "controller_sets_host_workspace_pythonpath": 'PYTHONPATH="$work_dir/workspace" python3 -B' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,
         "controller_binds_canonical_gate1": '--gate1-report "$work_dir/gate1-readiness.json"' in controller,
         "campaign_loads_verifiers_before_training": (

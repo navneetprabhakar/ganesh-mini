@@ -1,5 +1,39 @@
 # Decisions
 
+## 2026-08-27 — Host campaign entrypoints must bootstrap the sealed workspace root
+
+Gate 3 continuation attempt `20260827T113051Z` verified every generation-pinned
+input, installed the offline Docker bundle, loaded the qualified CUDA image,
+and then failed before candidate import, CUDA model work, canary evaluation, or
+training. The host invoked the archived controller by absolute file path;
+Python consequently placed `scripts/campaign`, rather than the archived
+workspace root, on `sys.path`. Importing
+`scripts.eval.verify_runtime_images` raised `ModuleNotFoundError`.
+
+This is the same import-path class previously caught inside qualification
+containers, but at a distinct host-controller boundary. The repaired
+controller now bootstraps its repository root before project imports, while
+the startup wrapper also supplies the exact archived workspace through
+`PYTHONPATH`. Archive rehearsal executes the controller directly under
+Python isolated mode with caller `PYTHONPATH` removed, so either an omitted
+bootstrap or a missing archived module fails before another cloud launch.
+The rebuilt evaluation-workspace manifest, deterministic archive, isolated
+runtime rehearsal, and non-executable preparation are sealed by
+`c0e1938c7d9574aaae128a787d38c41f3549b56bb9be99fae2f08c3e5008ff05`,
+`3c738bf40fe3cda1fb62b4ae7b0d88da265a8318f082c63d91527cfb7c9cc6ef`,
+`9c07e39823095cd93f26b580f238ecf9c5f23ad7c3d3d924109dd2f74fba93c1`,
+and `915ddc4fdd90641283b9c49f3025f8519dda48c0f208582a566a1d1e623d9eb9`.
+
+The failed attempt had one boot with automatic restart disabled and consumed
+no optimizer step. Its terminal evidence is a strict sealed failure. Terminal
+backup, finalization, exact four-resource absence, and final post-delete backup
+are sealed respectively by
+`206a9f8fa0c13a282614524675449712f03ae0dfdd3d44760f51b21c8958d30d`,
+`63d08fa9b7be8dc2af81e4d0e228f227077f34a5f303a67435129fac3a7b7978`,
+`db8c975853b9e7812b87cdaffb1c0af697e7e09cc2f502a4faae115f0abbc3f8`,
+and `6526129fc7289a6dcdf52c32f855c75dc2240b055f490e8f6c0eb029f34c4633`.
+No campaign resource remains and the approval is exhausted.
+
 ## 2026-08-27 — Final artifacts and release must bind the repaired run and exact runtime
 
 A downstream readiness audit found that Gate 8 still admitted

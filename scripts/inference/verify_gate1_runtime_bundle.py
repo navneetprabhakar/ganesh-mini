@@ -149,6 +149,7 @@ print("MOUNT_TOPOLOGY_OK")
             )
 
     controller = (root / "scripts/inference/gcloud_startup_development_baseline.sh").read_text(encoding="utf-8")
+    campaign_source = (root / "scripts/campaign/run_host.py").read_text(encoding="utf-8")
     launcher = (root / "scripts/inference/gcloud_launch_gate1.sh").read_text(encoding="utf-8")
     finalizer = (root / "scripts/inference/gcloud_finalize_gate1.sh").read_text(encoding="utf-8")
     finish = controller[controller.index("finish() {"):controller.index("trap finish EXIT")]
@@ -163,6 +164,10 @@ print("MOUNT_TOPOLOGY_OK")
         "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,
         "controller_binds_canonical_gate1": '--gate1-report "$work_dir/gate1-readiness.json"' in controller,
+        "campaign_loads_verifiers_before_training": (
+            campaign_source.index("self.prepare_verifier_images()")
+            < campaign_source.index("for label, learning_rate in candidates:")
+        ),
         "controller_retains_outer_terminal_backup_reserve": '--finalization-reserve-seconds 300' in controller,
         "launcher_uploads_bindings_once": launcher.count("upload_bind bindings ") == 1,
         "provider_stops_before_independent_deletion": "--instance-termination-action=STOP" in launcher,

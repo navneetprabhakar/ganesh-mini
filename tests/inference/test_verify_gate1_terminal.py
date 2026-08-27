@@ -144,7 +144,8 @@ def gate3_fixture(tmp_path: Path, promotion_status: str = "promote") -> tuple[Pa
         "checks": [{"name": name, "passed": promotion_status == "promote"} for name in promotion_checks],
     }, "evidence_sha256")
     phase_names = {
-        "workspace-isolation", "gate1-canonical-baseline", "gate3-training-admission",
+        "workspace-isolation", "gate1-canonical-baseline", "verifier-runtime-images",
+        "gate3-training-admission",
         "train-lr-1e-5", "evaluate-lr-1e-5-canary", "train-lr-3e-5",
         "evaluate-lr-3e-5-canary", "lr-selection", "evaluate-lr-1e-5-full",
         "gate3-promotion",

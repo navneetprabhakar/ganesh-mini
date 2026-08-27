@@ -35,6 +35,9 @@ def test_finalizer_orders_verified_backup_before_deletion_and_backs_teardown() -
     assert "preserve_finalizer_failure deletion-gate" in script
     assert "preserve_finalizer_failure unexpected-instance-absence" in script
     assert "ganesh-mini-gate3-gcloud-finalization/v2" in script
+    assert 'if (( ${#deleted_args[@]} )); then' in script
+    assert 'deletion_args+=("${deleted_args[@]}")' in script
+    assert '--output "$run_dir/deletion-gate.json" "${deleted_args[@]}"' not in script
     assert script.index("preserve_finalizer_failure()") < terminal < deletion_gate < delete_vm
     assert 'deletion.get("admission_eligible",True) is True' in script
     assert "compute.instances.deferredDelete" in script

@@ -216,8 +216,11 @@ deletion_args=(
   --operations-evidence "$terminal_dir/provider/operations.json"
   --system-events-evidence "$terminal_dir/provider/system-events.json"
   --expected-resource-name "$instance" --expected-resource-id "$resource_id"
-  --expected-prefix "$terminal_prefix" --output "$run_dir/deletion-gate.json" "${deleted_args[@]}"
+  --expected-prefix "$terminal_prefix" --output "$run_dir/deletion-gate.json"
 )
+if (( ${#deleted_args[@]} )); then
+  deletion_args+=("${deleted_args[@]}")
+fi
 set +e
 python3 "$repo_root/scripts/cuda/verify_deletion_gate.py" "${deletion_args[@]}" \
   > "$run_dir/deletion-gate.stdout.log" 2> "$run_dir/deletion-gate.stderr.log"

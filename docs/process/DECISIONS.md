@@ -1,5 +1,49 @@
 # Decisions
 
+## 2026-08-27 — Gate 3 v2 first candidate is valid; verifier preparation must be explicit
+
+Approved attempt `20260827T090603Z` repaired an initial bucket-IAM 403 by
+granting the run VM's default Compute Engine service account bucket-scoped
+object access and resetting the same VM. That reset occurred before model
+loading, optimizer state, or training tokens, so it does not invalidate the
+subsequent candidate.
+
+The `1e-5` candidate completed all 1,399 unique rows, 461,235 input tokens,
+242,406 supervised tokens, and 175 optimizer steps. Adapter save/reload had
+zero maximum logit difference. Five-family validation record mean improved
+from `0.3703169807` to `0.3598691403`; supervised-token mean improved from
+`0.3766998041` to `0.3665855866`. This establishes safe learning and a valid
+completed candidate, but validation loss remains diagnostic rather than a
+promotion score.
+
+The first canary generated five Go responses and then failed closed because
+`ganesh-mini-go-verify:amd64-v1` was absent from the host Docker store. The
+staged controller previously loaded verifier images only through the Gate 1
+baseline helper. Gate 3 v2 intentionally reused the canonical baseline and
+therefore never invoked that helper. No canary score is admitted, `3e-5` did
+not run, and no data-sufficiency decision can be made from this attempt.
+
+Verifier preparation is now a first-class campaign phase. Before any paid
+candidate training, the host verifies the frozen verifier bundle and runtime
+configuration, loads the exact archive, audits all six image identities, seals
+the readiness result, and stops on any defect. The archived runtime rehearsal
+requires this phase to occur before the candidate loop.
+
+The local finalizer initially exposed a separate macOS Bash 3.2 defect when an
+empty optional array was expanded under `set -u`. It failed before deletion,
+after preserving the verified terminal result. The portable repair appends
+optional arguments only when the array is non-empty. A fresh finalization pass
+then accepted the strict sealed failure, deleted the exact stopped VM, disk,
+subnet, and VPC, proved all four absent, and independently verified the final
+post-delete GCS receipt. No run-scoped GCloud resource remains.
+
+The next approved Gate 3 campaign should import the exact completed `1e-5`
+adapter and its run evidence, evaluate its canary, train and evaluate `3e-5`,
+then continue the frozen LR-selection and full-development contract. Retraining
+the completed candidate is unnecessary unless a fail-closed import verifier
+cannot establish its identity and completeness. Expansion data remains gated
+on executable candidate evidence, which this attempt did not produce.
+
 ## 2026-08-27 — Rehydrate qualified inputs; never reuse deleted GCS generations
 
 The first approved Gate 3 v2 invocation (`20260827T084230Z`) failed closed at

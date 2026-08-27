@@ -20,11 +20,14 @@ laptop acceptance criterion.
 Gates 0–2 are complete. The exact Qwen checkpoint, six-lane private evaluation
 contract, 20/180 development baseline, and authorized Ganesh v0.1 seed are
 sealed. The first Gate 3 pilot trained but regressed to 13/180; it is rejected,
-not a release candidate. A repaired Gate 3 v2 pilot now uses one unique seed
-epoch, explicit five-family token weighting, conservative attention-only LoRA,
-and robust optimizer-level anomaly detection. Its local inputs and execution
-path are ready, but it has not run on CUDA because every new GCloud operation
-requires a fresh explicit approval.
+not a release candidate. Gate 3 v2 uses one unique seed epoch, explicit five-
+family token weighting, conservative attention-only LoRA, and robust optimizer-
+level anomaly detection. Its `1e-5` candidate completed all 461,235 input
+tokens with improved held-out loss and exact adapter reload equivalence. The
+canary then stopped on a missing verifier-image orchestration defect before an
+executable score existed; `3e-5`, LR selection, and the full development run
+remain incomplete. The defect is repaired and resealed locally. Another
+GCloud campaign requires fresh explicit approval.
 
 No `ganesh-mini-1.0` weights have been released. Gates 4–8 remain evidence-
 dependent: main SFT, optional correction, untouched decision evaluation against

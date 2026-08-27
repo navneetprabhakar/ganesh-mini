@@ -23,6 +23,9 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from scripts.eval.verify_runtime_images import audit as audit_runtime_images
+from scripts.inference.run_development_baseline_host import verify_bundle
+
 # The evaluation and training roots are sealed, read-only logical inputs even
 # while they are mounted from writable host directories.  Linux otherwise
 # creates in-tree __pycache__ files when campaign phases import workspace
@@ -180,6 +183,41 @@ class Campaign:
             "--env", "PYTHONPATH=/workspace", "--env", "TRITON_CACHE_DIR=/var/cache/triton",
             "--workdir", "/workspace",
         ]
+
+    def prepare_verifier_images(self) -> None:
+        """Load and audit the pinned verifier bundle before any paid training.
+
+        The historical staged path loaded these images only as a side effect of
+        rerunning the Gate 1 baseline.  Gate 3 v2 correctly reuses the canonical
+        baseline, so it needs an explicit, unconditional verifier preparation
+        phase before the first candidate is trained.
+        """
+        bundle = verify_bundle(
+            self.args.verifier_manifest.resolve(strict=True),
+            self.args.verifier_archive.resolve(strict=True),
+            self.args.eval_workspace / "configs/eval/runtimes.json",
+        )
+        load = subprocess.run(
+            [self.docker, "load", "--input", str(self.args.verifier_archive.resolve(strict=True))],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        if load.returncode != 0:
+            raise RuntimeError(f"verifier image load failed: {load.stderr.strip()}")
+        readiness = audit_runtime_images(self.args.eval_workspace / "configs/eval/runtimes.json")
+        readiness_path = self.output / "verifier-runtime-readiness.json"
+        atomic_json(readiness_path, readiness)
+        if readiness.get("status") != "ready" or readiness.get("ready") != readiness.get("expected"):
+            raise RuntimeError(f"verifier runtime images are not ready: {readiness.get('failures')}")
+        self.record(
+            "verifier-runtime-images",
+            "passed",
+            manifest_sha256=bundle["manifest_sha256"],
+            archive_sha256=bundle["archive"]["sha256"],
+            runtime_readiness_sha256=readiness["evidence_sha256"],
+        )
 
     def baseline(self) -> None:
         from scripts.inference.run_development_baseline_host import execute
@@ -377,6 +415,7 @@ class Campaign:
         if not gate1_base or gate1_base.get("run_sha256")!=base_run["run_sha256"] or accounting.get("completed")!=180 or accounting.get("pending")!=0:
             raise RuntimeError("canonical Gate 1 report does not bind the sealed 180-task base run")
         self.record("gate1-canonical-baseline", "passed", evidence_sha256=gate1_value["evidence_sha256"], run_sha256=base_run["run_sha256"])
+        self.prepare_verifier_images()
         card = self.training_card(gate1)
         runs: dict[str, Path] = {}
         evaluations: dict[str, Path] = {}

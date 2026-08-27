@@ -182,7 +182,8 @@ def validate_gate3_success(campaign_root: Path, card: dict[str, Any]) -> dict[st
         for value in expected_lrs
     }
     required_phases = {
-        "workspace-isolation", "gate1-canonical-baseline", "gate3-training-admission",
+        "workspace-isolation", "gate1-canonical-baseline", "verifier-runtime-images",
+        "gate3-training-admission",
         "lr-selection", f"evaluate-{label}-full", "gate3-promotion",
         *(f"train-{candidate_label}" for candidate_label in candidate_labels),
         *(f"evaluate-{candidate_label}-canary" for candidate_label in candidate_labels),

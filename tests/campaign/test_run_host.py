@@ -1,7 +1,10 @@
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+
+from scripts.campaign import run_host
 
 from scripts.campaign.run_host import (
     CONTAINER_ADAPTER,
@@ -98,3 +101,69 @@ def test_campaign_mounts_external_state_outside_read_only_workspace(tmp_path: Pa
 
     with pytest.raises(ValueError, match="beneath /workspace"):
         external_mount(model, Path("/workspace/models/base"), readonly=True)
+
+
+def test_campaign_loads_and_audits_verifiers_without_rerunning_gate1(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    eval_workspace = tmp_path / "workspace"
+    verifier_archive = tmp_path / "verifiers.tar"
+    verifier_manifest = tmp_path / "verifiers.json"
+    output = tmp_path / "output"
+    (eval_workspace / "configs/eval").mkdir(parents=True)
+    (eval_workspace / "configs/eval/runtimes.json").write_text("{}")
+    verifier_archive.write_bytes(b"archive")
+    verifier_manifest.write_text("{}")
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(run_host, "verify_bundle", lambda *_: {
+        "manifest_sha256": "a" * 64,
+        "archive": {"sha256": "b" * 64},
+    })
+    monkeypatch.setattr(run_host, "audit_runtime_images", lambda *_: {
+        "status": "ready", "ready": 6, "expected": 6,
+        "failures": [], "evidence_sha256": "c" * 64,
+    })
+    monkeypatch.setattr(run_host.subprocess, "run", lambda argv, **_: (
+        calls.append(argv) or SimpleNamespace(returncode=0, stderr="")
+    ))
+    campaign = Campaign(SimpleNamespace(
+        output=output, max_seconds=3600, attempt_id="test",
+        hourly_cost_usd=Decimal("1"), eval_workspace=eval_workspace,
+        verifier_archive=verifier_archive, verifier_manifest=verifier_manifest,
+    ))
+    campaign.docker = "/usr/bin/docker"
+
+    campaign.prepare_verifier_images()
+
+    assert calls == [["/usr/bin/docker", "load", "--input", str(verifier_archive.resolve())]]
+    assert (output / "verifier-runtime-readiness.json").is_file()
+    assert campaign.phases[-1]["name"] == "verifier-runtime-images"
+
+
+def test_campaign_stops_before_training_when_verifier_load_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    eval_workspace = tmp_path / "workspace"
+    verifier_archive = tmp_path / "verifiers.tar"
+    verifier_manifest = tmp_path / "verifiers.json"
+    (eval_workspace / "configs/eval").mkdir(parents=True)
+    (eval_workspace / "configs/eval/runtimes.json").write_text("{}")
+    verifier_archive.write_bytes(b"archive")
+    verifier_manifest.write_text("{}")
+    monkeypatch.setattr(run_host, "verify_bundle", lambda *_: {
+        "manifest_sha256": "a" * 64,
+        "archive": {"sha256": "b" * 64},
+    })
+    monkeypatch.setattr(run_host.subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(
+        returncode=1, stderr="load rejected",
+    ))
+    campaign = Campaign(SimpleNamespace(
+        output=tmp_path / "output", max_seconds=3600, attempt_id="test",
+        hourly_cost_usd=Decimal("1"), eval_workspace=eval_workspace,
+        verifier_archive=verifier_archive, verifier_manifest=verifier_manifest,
+    ))
+    campaign.docker = "/usr/bin/docker"
+
+    with pytest.raises(RuntimeError, match="verifier image load failed: load rejected"):
+        campaign.prepare_verifier_images()

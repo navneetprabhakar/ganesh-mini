@@ -141,6 +141,13 @@ credible gain from that mix may then justify expansion toward 20,000–60,000
 verified records. Larger 60,000–120,000 runs remain an option only if the
 smaller expansion has not saturated.
 
+The completed `1e-4` pilot regressed from 20/180 to 13/180, so this condition
+has been met. Expansion v1 is frozen at 6,000 rows: Go 1,200, Java 1,200,
+JavaScript 600, TypeScript 600, Python 1,200, and Rust 1,200; 3,600 generation
+and 2,400 repair. `docs/data/EXPANSION_V1.md` is the controlling construction
+and admission contract. Another training run is prohibited until its sealed
+dataset exists and a deterministic quality sample passes.
+
 Composition rules:
 
 - balance training tokens 20% each across Go, Java, JavaScript/TypeScript,
@@ -400,5 +407,6 @@ cards. Code implementing those concepts is still reviewed before it is ported.
 3. Create a bounded Gate 3-only GCloud execution card after explicit approval.
 4. Train both one-epoch candidates, canary-triage them, and fully evaluate only
    the selected candidate.
-5. Expand to 4,000–8,000 verified records only if the repaired mechanism is
-   safe but the seed remains insufficient.
+5. Build and seal expansion v1 at 6,000 execution-verified rows because the
+   completed seed pilot regressed against the exact base.
+6. Run a small expansion pilot before authorizing the full Gate 4 SFT.

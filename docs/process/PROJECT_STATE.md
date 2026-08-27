@@ -4,6 +4,31 @@ Last updated: 2026-08-27
 
 ## Current gate
 
+Gate 3 is now in data-correction, not another seed retry. The completed
+`1e-4` seed pilot passed 13/180 versus the exact base's 20/180, so more epochs
+on the 1,399-row corpus are not justified. Expansion v1 is frozen at 6,000
+execution-verified rows with five-family 20% balance and a 60/40
+generation/repair mix.
+
+The expansion schema and fail-closed admission pipeline are implemented. They
+require pinned source rights, independent behavioral tests, a passing
+reference, rejection of every known-bad implementation, exact code and
+exact/fuzzy prompt separation from all 550 evaluation tasks, within-corpus
+deduplication, and exact final quotas. The pinned McEval-Instruct inventory
+provides 5,988 target-language drafting rows but zero independently tested
+training rows; it is not admitted. NVIDIA OpenCodeInstruct is admitted only as
+a Python drafting source. No new training row is currently sealed.
+
+Teacher preparation now uses authenticated Codex CLI 0.144.4 with
+`gpt-5.6-sol`, medium reasoning, ephemeral schema-constrained runs, and
+separate isolated architect and test-author contexts. The naive qualification
+admitted 1/6 rows; explicit runtime contracts admitted 4/6; isolated architect
+and test critics brought the final combined qualification to 6/6 with zero
+tool events. The final admission report seal is
+`0aeedf655a23eacf67cab8d10bf8a4a40e3366c94b779f1734c8b22aa3dece36`.
+The next boundary is a 60-row, ten-per-lane tranche. No GCloud resource is
+running or authorized for this phase.
+
 Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict
 sealed bootstrap failure. It had exactly one boot, automatic restart was
 disabled, and it stopped after roughly nine minutes. Every immutable input

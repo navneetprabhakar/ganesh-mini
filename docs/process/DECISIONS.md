@@ -1880,3 +1880,43 @@ Face publication is a separate fail-closed operation: it accepts only a sealed
 only release artifacts, aggregate evidence, and the model card, then verifies
 the resulting repository commit. Private benchmark prompts and raw outputs
 are never publication inputs.
+
+## 2026-08-27 — Correct the data before training again
+
+The completed seed result is negative executable evidence: the `1e-4` adapter
+passed 13/180 development tasks against 20/180 for the exact base. Lower
+validation loss does not override that result. More epochs, a larger LoRA
+rank, or immediate preference optimization would reuse an insufficient signal
+and are rejected.
+
+Expansion v1 is fixed at 6,000 execution-verified SFT rows with Go, Java,
+Python, and Rust at 1,200 each; JavaScript and TypeScript at 600 each; and a
+3,600/2,400 generation/repair split. Authenticated Codex CLI 0.144.4 with
+`gpt-5.6-sol` at medium reasoning may draft tasks and independent tests in
+separate ephemeral, schema-constrained contexts, but its output has no
+privileged status. Every admitted row must pass a
+network-disabled behavioral harness, reject at least one known-bad solution,
+and clear exact/fuzzy separation from all evaluation surfaces. Public
+benchmark tasks remain prohibited. Another model-training run cannot begin
+until the dataset is sealed and the stratified quality sample passes.
+
+## 2026-08-27 — Codex CLI teacher requires isolated critics and executable admission
+
+The first one-per-lane Codex CLI qualification admitted only Java. Go lacked
+the verifier's required module support file, JavaScript used the wrong module
+contract, TypeScript tests required unavailable Node types, Python contained a
+real alias-preservation defect, and Rust tests constructed an impossible
+boundary value. Treating structured output as qualified data would therefore
+have admitted a broken corpus.
+
+Explicit pinned runtime contracts and Go module support raised admission to
+4/6. An architect critic, isolated from tests and evaluation data, corrected
+the JavaScript reference. A test critic that saw the TypeScript specification
+and test only—not reference or known-bad code—corrected its strict-compiler
+failure. The combined six-row qualification passed 6/6 with zero tool events
+under admission seal
+`0aeedf655a23eacf67cab8d10bf8a4a40e3366c94b779f1734c8b22aa3dece36`.
+This qualifies construction of a 60-row tranche, not the 6,000-row dataset.
+The iterative qualification consumed 523,568 input and 82,931 output tokens;
+full-scale construction must demonstrate materially better batched efficiency
+before it is accepted as the production method.

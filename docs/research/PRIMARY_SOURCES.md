@@ -65,6 +65,22 @@ revisions and local evidence during execution.
   - CC-BY-4.0, repository-level agent trajectories
   - optional later source; long tool trajectories are not automatically a good
     fit for a 2B single-file laptop model
+- McEval-Instruct:
+  <https://huggingface.co/datasets/Multilingual-Multimodal-NLP/McEval-Instruct>
+  - CC-BY-SA-4.0, 35,943 instruction rows across 36 programming languages
+  - the pinned target-language inventory is useful for drafting but provides
+    no independent behavioral tests and is not directly admitted
+- MdEval-Instruct:
+  <https://huggingface.co/datasets/m-a-p/MdEval-Instruct>
+  - MIT, 16,008 synthetic repair conversations produced by injecting bugs
+  - source-provided tests are useful evidence but do not satisfy the current
+    independent-test requirement on their own
+- Codex CLI non-interactive mode:
+  <https://learn.chatgpt.com/docs/non-interactive-mode>
+  - `codex exec` supports ephemeral runs, JSONL events, output schemas, and a
+    separate final-output file
+  - Ganesh Mini uses isolated architect and test-author invocations and seals
+    raw run evidence because the requested model alias is not snapshot-pinned
 
 ## Candidate public diagnostics
 

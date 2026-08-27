@@ -44,10 +44,8 @@ LOCAL_INPUT_MAPPING = {
     "gate0_report": "gate0_report",
     "gate1_report": "gate1_report",
     "gate2_report": "gate2_report",
-}
-REUSED_INPUT_MAPPING = {
-    "model_archive": "model",
-    "cuda_image_archive": "image",
+    "model_archive": "model_archive",
+    "cuda_image_archive": "cuda_image_archive",
     "docker_bundle": "docker_bundle",
 }
 
@@ -119,7 +117,6 @@ def build(
     if claimed_bindings != canonical_sha256(unsigned_bindings):
         raise ValueError("input bindings seal mismatch")
     preparation = load_sealed("measurement/gate3/gcloud/preparation.json", "preparation_sha256")
-    gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
     if source_commit != current_head(root):
         raise ValueError("source commit is not the current repository HEAD")
     if require_clean and not tracked_worktree_clean(root):
@@ -173,15 +170,6 @@ def build(
         row = inputs[card_key]
         if row["sha256"] != expected["sha256"] or row["size_bytes"] != expected["size_bytes"]:
             raise ValueError(f"uploaded local input mismatch: {card_key}")
-    for card_key, gate0_key in REUSED_INPUT_MAPPING.items():
-        expected_prefix = "model" if gate0_key == "model" else "image" if gate0_key == "image" else "docker_bundle"
-        row = inputs[card_key]
-        if (
-            row["uri"] != gate0["input"][f"{expected_prefix}_uri"]
-            or row["sha256"] != gate0["input"][f"{expected_prefix}_sha256"]
-            or row["size_bytes"] != gate0["input"][f"{expected_prefix}_bytes"]
-        ):
-            raise ValueError(f"reused qualified input mismatch: {card_key}")
 
     launch = bindings.get("launch", {})
     if set(launch) != {"controller", "metadata_wrapper"}:
@@ -252,8 +240,8 @@ def build(
         "inputs": inputs,
         "launch": launch,
         "cuda_image": {
-            "ref": preparation["reused_generation_pinned_inputs"]["cuda_image_ref"],
-            "image_id": preparation["reused_generation_pinned_inputs"]["cuda_image_id"],
+            "ref": preparation["rehydrated_inputs"]["cuda_image_ref"],
+            "image_id": preparation["rehydrated_inputs"]["cuda_image_id"],
         },
         "boot_image": preflight["boot_image"],
         "required_terminal_state": [

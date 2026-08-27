@@ -4,6 +4,25 @@ Last updated: 2026-08-27
 
 ## Current gate
 
+Gate 3 v2 has fresh execution approval for one `g2-standard-12` Flex-start VM
+in `us-east1-c`, bounded to two hours of provisioning wait, four hours of
+runtime, and USD 5 incremental cost. The first launcher invocation,
+`20260827T084230Z`, stopped during preflight because the historical transfer
+bucket no longer existed. It created no VM, disk, subnet, or VPC, and exact
+absence was reconfirmed. This was a storage-lifecycle defect, not a training,
+GPU, quota, or model failure.
+
+The exact Qwen files and the Gate-0B-qualified CUDA image ID remained local.
+The three pinned Ubuntu Docker packages were downloaded again and each matched
+its historical SHA-256; their complete `bundle-files.sha256` also reproduced
+exactly. New local model, CUDA-image, and Docker-bundle archives are sealed by
+rehydration evidence
+`5d5715ef9b8cb687d4ba1ac3593462bf821e1283c895f67804a53cbf69ef4f32`.
+The repaired launcher uploads all three into the new run prefix and binds each
+GCS generation instead of referring to deleted generations. No second VM or
+fallback zone is introduced. The repaired preparation seal is
+`c4c6921cb54e6949dc4ec6494d86ff29664aa8c0a7f34b915282c6681a9f523a`.
+
 Gate 3 is closed after the fully finalized staged attempt
 `20260826T042539Z`. Gate 1 revalidation reproduced the canonical base score of
 20/180 on the same exact Qwen revision and serving contract, although raw
@@ -75,7 +94,8 @@ The evaluation archive itself is byte-reproducible at SHA-256
 The regenerated local training preflight is `ready` with no failed checks under
 card seal
 `c33be811a3eaeda5033bcd93313577f0eb716b8bd42a8514da9f41b40eedba0e`.
-No GCloud action has occurred for v2.
+That preflight is superseded by the approved and rehydrated execution path
+described above.
 
 Gate 1 is complete. Approved attempt `20260825T153823Z` executed all 180
 frozen private development tasks against exact revision
@@ -111,11 +131,11 @@ The VM, disk, subnet, and VPC are absent. The final 14-object post-delete GCS
 backup is verified under seal
 `9a34c63e37a75211234edb5de977c4da5f92e4381e352b4b85fce4a319fbf419`.
 
-That historical repair was superseded by Gate 3 v2. The current next action is
+That historical repair was superseded by Gate 3 v2. The current campaign is
 the Gate 3-only campaign described below: two complete 461,235-token unique-row
 candidates, two 30-task canaries, and one selected-candidate 180-task
-evaluation, with no third SFT. The consumed one-VM approval does not authorize
-that new campaign.
+evaluation, with no third SFT. Its one-VM approval is active and remains bound
+to `us-east1-c`, the four-hour runtime ceiling, and USD 5.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize

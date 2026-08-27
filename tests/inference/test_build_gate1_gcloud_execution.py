@@ -23,7 +23,6 @@ def generation(uri: str, sha256: str, size: int) -> dict:
 
 def bindings() -> dict:
     preparation = json.loads((ROOT / "measurement/gate3/gcloud/preparation.json").read_text())
-    gate0 = json.loads((ROOT / "measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json").read_text())
     local = preparation["local_inputs"]
     value = {
         "schema_version": "ganesh-mini-gate3-gcloud-bindings/v2",
@@ -60,9 +59,9 @@ def bindings() -> dict:
             "gate2_report": generation("gs://b/g2#10", local["gate2_report"]["sha256"], local["gate2_report"]["size_bytes"]),
             "verifier_archive": generation("gs://b/v#3", local["verifier_archive"]["sha256"], local["verifier_archive"]["size_bytes"]),
             "verifier_manifest": generation("gs://b/vm#4", local["verifier_manifest"]["sha256"], local["verifier_manifest"]["size_bytes"]),
-            "model_archive": generation(gate0["input"]["model_uri"], gate0["input"]["model_sha256"], gate0["input"]["model_bytes"]),
-            "cuda_image_archive": generation(gate0["input"]["image_uri"], gate0["input"]["image_sha256"], gate0["input"]["image_bytes"]),
-            "docker_bundle": generation(gate0["input"]["docker_bundle_uri"], gate0["input"]["docker_bundle_sha256"], gate0["input"]["docker_bundle_bytes"]),
+            "model_archive": generation("gs://b/model#12", local["model_archive"]["sha256"], local["model_archive"]["size_bytes"]),
+            "cuda_image_archive": generation("gs://b/image#13", local["cuda_image_archive"]["sha256"], local["cuda_image_archive"]["size_bytes"]),
+            "docker_bundle": generation("gs://b/docker#14", local["docker_bundle"]["sha256"], local["docker_bundle"]["size_bytes"]),
         },
         "launch": {
             "controller": generation("gs://b/c#5", local["controller"]["sha256"], local["controller"]["size_bytes"]),

@@ -1,5 +1,29 @@
 # Decisions
 
+## 2026-08-27 — Rehydrate qualified inputs; never reuse deleted GCS generations
+
+The first approved Gate 3 v2 invocation (`20260827T084230Z`) failed closed at
+bucket preflight. The historical transfer bucket had been deleted, so the
+generation-pinned model, CUDA-image, and offline-Docker-bundle URIs were no
+longer resolvable. Preflight created no compute or networking resource; exact
+VM, disk, subnet, and VPC absence was reconfirmed.
+
+The qualified contents remained recoverable without changing the training
+mechanism. The local model has the exact 13-file, 4,571,274,023-byte pinned
+Qwen revision. The local CUDA image retains qualified image ID
+`sha256:cdaf068ffcb933120181168ebf6ae1546ddf81e01b2ad006a1a18dd2e43d9860`.
+The three pinned Ubuntu Docker packages and the complete bundle-file manifest
+reproduce their historical hashes. New archive bytes are therefore admitted
+only through a rehydration seal that binds those content identities to their
+new archive hashes.
+
+The Gate 3 launcher now uploads all three recovered archives to the new run's
+immutable input prefix and binds their actual GCS generations. The executable
+card validates those hashes and sizes against the rehydration evidence. The
+guest must still verify every download and the loaded CUDA image ID. Deleted
+bucket generations are never reconstructed, aliased, or treated as live
+evidence.
+
 ## 2026-08-27 — Gate 3 v2 repairs the optimization objective before new data
 
 The rejected pilot exposed two mechanism defects independent of GCP. The

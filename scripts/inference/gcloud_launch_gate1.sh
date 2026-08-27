@@ -197,6 +197,9 @@ upload_bind training_workspace_manifest "$repo_root/measurement/gate3/training_w
 upload_bind gate0_report "$repo_root/measurement/gate0/readiness.json" gate0-readiness.json > "$work_dir/input-metadata/gate0_report.binding.json"
 upload_bind gate1_report "$repo_root/measurement/gate1/readiness.json" gate1-readiness.json > "$work_dir/input-metadata/gate1_report.binding.json"
 upload_bind gate2_report "$repo_root/measurement/gate2/readiness.json" gate2-readiness.json > "$work_dir/input-metadata/gate2_report.binding.json"
+upload_bind model_archive "$repo_root/artifacts/gcloud-inputs/gate3/model.tar.gz" model.tar.gz > "$work_dir/input-metadata/model_archive.binding.json"
+upload_bind cuda_image_archive "$repo_root/artifacts/gcloud-inputs/gate3/cuda-image.docker.tar.zst" cuda-image.docker.tar.zst > "$work_dir/input-metadata/cuda_image_archive.binding.json"
+upload_bind docker_bundle "$repo_root/artifacts/gcloud-inputs/gate3/docker-bundle.tar.gz" docker-bundle.tar.gz > "$work_dir/input-metadata/docker_bundle.binding.json"
 upload_bind verifier_archive "$repo_root/artifacts/eval/verifier-images/amd64-v1/verifier-images-amd64-v1.tar" verifier-images-amd64-v1.tar > "$work_dir/input-metadata/verifier_archive.binding.json"
 upload_bind verifier_manifest "$repo_root/measurement/gate1/verifier_image_bundle_amd64_v1.json" verifier-image-bundle.json > "$work_dir/input-metadata/verifier_manifest.binding.json"
 upload_bind controller "$repo_root/scripts/inference/gcloud_startup_development_baseline.sh" gcloud-startup-development-baseline.sh > "$work_dir/input-metadata/controller.binding.json"
@@ -206,14 +209,14 @@ python3 - "$repo_root" "$work_dir" "$run_id" "$project" "$region" "$zone" "$mach
 import hashlib,json,sys
 root,out,run_id,project,region,zone,machine,bucket,prefix,boot,instance,disk,network,subnet,hourly,reserve,ceiling=sys.argv[1:]
 load=lambda path:json.load(open(path))
-prep=load(root+'/measurement/gate3/gcloud/preparation.json'); gate0=load(root+'/measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json')
+prep=load(root+'/measurement/gate3/gcloud/preparation.json')
 binding=lambda key:load(out+'/input-metadata/'+key+'.binding.json')
 value={'schema_version':'ganesh-mini-gate3-gcloud-bindings/v2','status':'verified-generation-pinned','run_id':run_id,'preparation_sha256':prep['preparation_sha256'],
 'preflight':{'project':project,'region':region,'zone':zone,'machine_type':machine,'gcs_bucket':bucket,'gcs_prefix':prefix,'boot_image':boot,'price_passed':True,'quota_passed':True,'machine_type_available':True,'exact_resources_absent':True,'bucket_round_trip_passed':True},
 'cost':{'conservative_hourly_usd':hourly,'support_reserve_usd':reserve,'absolute_cost_ceiling_usd':ceiling},
 'resources':{'instance':instance,'disk':disk,'network':network,'subnet':subnet},
 'inputs':{'workspace_archive':binding('workspace_archive'),'workspace_manifest':binding('workspace_manifest'),'training_workspace_archive':binding('training_workspace_archive'),'training_workspace_manifest':binding('training_workspace_manifest'),'gate0_report':binding('gate0_report'),'gate1_report':binding('gate1_report'),'gate2_report':binding('gate2_report'),'verifier_archive':binding('verifier_archive'),'verifier_manifest':binding('verifier_manifest'),
-'model_archive':{'uri':gate0['input']['model_uri'],'sha256':gate0['input']['model_sha256'],'size_bytes':gate0['input']['model_bytes']},'cuda_image_archive':{'uri':gate0['input']['image_uri'],'sha256':gate0['input']['image_sha256'],'size_bytes':gate0['input']['image_bytes']},'docker_bundle':{'uri':gate0['input']['docker_bundle_uri'],'sha256':gate0['input']['docker_bundle_sha256'],'size_bytes':gate0['input']['docker_bundle_bytes']}},
+'model_archive':binding('model_archive'),'cuda_image_archive':binding('cuda_image_archive'),'docker_bundle':binding('docker_bundle')},
 'launch':{'controller':binding('controller'),'metadata_wrapper':binding('metadata_wrapper')}}
 value['bindings_sha256']=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 json.dump(value,open(out+'/bindings.json','w'),indent=2,sort_keys=True)

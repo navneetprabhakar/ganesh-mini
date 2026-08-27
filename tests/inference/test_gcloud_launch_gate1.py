@@ -40,6 +40,9 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert 'local key="$1" source="$2" object="$3" destination=' not in script
     assert 'us-east1-b|us-east1-c|us-east1-d' in script
     assert 'required=(\'approved\',\'gate 3\',\'g2-standard-12\',zone' in script
+    assert 'upload_bind model_archive' in script
+    assert 'upload_bind cuda_image_archive' in script
+    assert 'upload_bind docker_bundle' in script
 
 
 def test_launcher_preserves_any_created_vm_and_cleans_only_unattached_resources_after_backup() -> None:

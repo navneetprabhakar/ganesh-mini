@@ -65,6 +65,7 @@ def build() -> dict[str, Any]:
     runtime_rehearsal = load_sealed("measurement/gate3/runtime_bundle_rehearsal_v2.json", "evidence_sha256")
     gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
     gate0_result = load_sealed("measurement/cuda/gcloud/20260824T180957Z/run-result.json", "evidence_sha256")
+    rehydrated = load_sealed("measurement/gate3/gcloud/rehydrated_inputs.json", "evidence_sha256")
     if gate0_result.get("status") != "passed" or gate0_result.get("gate") != "0B":
         raise ValueError("qualified Gate 0B evidence is missing")
     local_inputs = {
@@ -77,6 +78,9 @@ def build() -> dict[str, Any]:
         "gate0_report": file_identity("measurement/gate0/readiness.json"),
         "gate1_report": file_identity("measurement/gate1/readiness.json"),
         "gate2_report": file_identity("measurement/gate2/readiness.json"),
+        "model_archive": file_identity("artifacts/gcloud-inputs/gate3/model.tar.gz"),
+        "cuda_image_archive": file_identity("artifacts/gcloud-inputs/gate3/cuda-image.docker.tar.zst"),
+        "docker_bundle": file_identity("artifacts/gcloud-inputs/gate3/docker-bundle.tar.gz"),
         "controller": file_identity("scripts/inference/gcloud_startup_development_baseline.sh"),
         "metadata_wrapper": file_identity("scripts/inference/gcloud_baseline_metadata_wrapper.sh"),
         "execution_card_builder": file_identity("scripts/inference/build_gate1_gcloud_execution.py"),
@@ -86,6 +90,8 @@ def build() -> dict[str, Any]:
         "baseline_admitter": file_identity("scripts/inference/admit_gate1_baseline.py"),
         "price_evidence_builder": file_identity("scripts/inference/build_gate1_price_evidence.py"),
         "launcher": file_identity("scripts/inference/gcloud_launch_gate1.sh"),
+        "rehydration_builder": file_identity("scripts/inference/build_gate3_rehydrated_inputs.py"),
+        "rehydration_evidence": file_identity("measurement/gate3/gcloud/rehydrated_inputs.json"),
         "runtime_bundle_rehearsal": file_identity("measurement/gate3/runtime_bundle_rehearsal_v2.json"),
         "baseline_admission_schema": file_identity("schemas/eval/gate1-baseline-admission.schema.json"),
         "execution_schema": file_identity("schemas/eval/gate3-gcloud-execution.schema.json"),
@@ -98,6 +104,13 @@ def build() -> dict[str, Any]:
         raise ValueError("training workspace archive no longer matches its sealed manifest")
     if local_inputs["verifier_archive"]["sha256"] != verifier["archive"]["sha256"]:
         raise ValueError("verifier archive no longer matches its sealed manifest")
+    if rehydrated.get("status") != "verified-local-rehydration":
+        raise ValueError("rehydrated input evidence is incomplete")
+    for key in ("model_archive", "cuda_image_archive", "docker_bundle"):
+        expected = rehydrated["artifacts"][key]
+        observed = local_inputs[key]
+        if observed["sha256"] != expected["sha256"] or observed["size_bytes"] != expected["size_bytes"]:
+            raise ValueError(f"rehydrated artifact no longer matches its seal: {key}")
     if (
         runtime_rehearsal.get("status") != "passed"
         or runtime_rehearsal.get("workspace_manifest_sha256") != workspace["manifest_sha256"]
@@ -158,10 +171,8 @@ def build() -> dict[str, Any]:
         },
         "local_inputs": local_inputs,
         "workspace_source_alignment": workspace_source_alignment,
-        "reused_generation_pinned_inputs": {
-            "model": gate0["input"]["model_uri"],
-            "qualified_cuda_image": gate0["input"]["image_uri"],
-            "docker_bundle": gate0["input"]["docker_bundle_uri"],
+        "rehydrated_inputs": {
+            "evidence_sha256": rehydrated["evidence_sha256"],
             "cuda_image_id": gate0["input"]["cuda_image_id"],
             "cuda_image_ref": gate0["input"]["cuda_image_ref"],
             "qualified_gate0b_plan_seal": gate0["plan_sha256"],

@@ -60,6 +60,46 @@ def test_deletion_gate_records_explicit_provider_serial_unavailable(tmp_path: Pa
     assert json.loads(output.read_text())["provider_serial_status"]=="provider-unavailable-recorded"
 
 
+def test_deletion_gate_accepts_provider_proven_automatic_delete(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    argv, output = write_inputs(tmp_path, "gate1-baseline")
+    manifest_path = Path(argv[argv.index("--backup-manifest") + 1])
+    resource = Path(argv[argv.index("--resource-state") + 1])
+    operations = Path(argv[argv.index("--operations-evidence") + 1])
+    instance_absence = tmp_path / "absence-instance.json"
+    disk_absence = tmp_path / "absence-disk.json"
+    instance_absence.write_text("[]\n")
+    disk_absence.write_text("[]\n")
+    operations.write_text(json.dumps([
+        {"operationType": "compute.instances.guestTerminate", "targetId": "1", "targetLink": "https://compute/instances/vm", "status": "DONE"},
+        {"operationType": "compute.instances.deferredDelete", "targetId": "1", "targetLink": "https://compute/instances/vm", "status": "DONE"},
+    ]))
+    value = {"schema_version": "ganesh-mini-gcloud-deleted-instance/v1", "name": "vm", "id": "1", "status": "DELETED", "instance_termination_action": "DELETE"}
+    value["evidence_sha256"] = canonical_sha256(value)
+    resource.write_text(json.dumps(value))
+    manifest = json.loads(manifest_path.read_text())
+    prefix = manifest["prefix"]
+    replacements = {
+        "provider/resource-terminated.json": ("provider/resource-deleted.json", resource),
+        "provider/operations.json": ("provider/operations.json", operations),
+    }
+    for row in manifest["objects"]:
+        relative = row["object_uri"].removeprefix(prefix + "/")
+        if relative in replacements:
+            replacement, path = replacements[relative]
+            row["object_uri"] = f"{prefix}/{replacement}"
+            row["downloaded_sha256"] = sha(path)
+    for relative, path in (("provider/absence-instance.json", instance_absence), ("provider/absence-disk.json", disk_absence)):
+        manifest["objects"].append({"object_uri": f"{prefix}/{relative}", "downloaded_sha256": sha(path), "verified": True})
+    manifest["object_count"] = len(manifest["objects"])
+    manifest.pop("evidence_sha256")
+    manifest["evidence_sha256"] = canonical_sha256(manifest)
+    manifest_path.write_text(json.dumps(manifest))
+    argv.extend(["--instance-absence-evidence", str(instance_absence), "--disk-absence-evidence", str(disk_absence)])
+    monkeypatch.setattr("sys.argv", argv)
+    assert main() == 0
+    assert json.loads(output.read_text())["resource_status"] == "DELETED"
+
+
 def test_deletion_gate_accepts_gate1_phase_with_the_same_exact_backup_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     argv, output = write_inputs(tmp_path, "gate1-baseline")
     monkeypatch.setattr("sys.argv", argv)

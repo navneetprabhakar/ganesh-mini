@@ -1,5 +1,40 @@
 # Decisions
 
+## 2026-08-27 — Seed pilot rejected; preserve canonical baseline and revise before scaling
+
+Staged attempt `20260826T042539Z` revalidated the exact Qwen base at 20/180,
+then completed the full 400,652-token LR `1e-4` candidate and its 180-task
+development evaluation. The candidate passed 13/180, reduced five-family macro
+from 10.0% to 7.33%, and produced 10 paired wins against 17 losses. Go gained
+two tasks, Java and Python were flat by count, while JavaScript lost one,
+TypeScript lost five, and Rust lost three. Better malformed/repetition counts
+do not compensate for executable-correctness regression. LR `1e-4` is rejected
+and cannot become Ganesh Mini 1.0.
+
+LR `2e-4` reached 339,550 seen tokens before the predeclared
+consecutive-loss-spike guard stopped it. Because that guard observes adjacent
+heterogeneous record losses rather than a stable windowed divergence signal,
+the stop is valid under the frozen card but is not sufficient evidence that
+the optimizer itself diverged. No LR `2e-4` evaluation, LR selection, main
+run, or promotion adjudication occurred. Another pilot must revise and reseal
+both the seed-data strategy and the loss-anomaly contract; it must not merely
+scale or promote either partial result.
+
+The earlier admitted baseline from attempt `20260825T153823Z` remains
+canonical. Revalidation has the same exact model identity, serving contract,
+and 20/180 aggregate score but different raw CUDA outputs and run seal, so it
+is retained as separate evidence rather than overwriting the frozen canonical
+baseline.
+
+The execution used automatic VM deletion. After credentials were restored,
+the finalizer required the sealed launch identity, matching guest-terminate
+and deferred-delete provider operations, and exact instance/disk absence before
+accepting the already-deleted lifecycle. It then double-verified the complete
+terminal backup, deleted the exact remaining subnet and VPC, proved all four
+resource identities absent, and double-verified the post-delete receipt. This
+recovery is valid only for an execution card explicitly binding
+`instanceTerminationAction=DELETE`; a merely missing VM cannot pass it.
+
 ## 2026-08-25 — Generation-bound inputs are write-once within a campaign
 
 Retry `20260825T055326Z` proved that content-identical re-upload is not safe

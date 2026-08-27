@@ -1,8 +1,43 @@
 # Project state
 
-Last updated: 2026-08-25
+Last updated: 2026-08-27
 
 ## Current gate
+
+Gate 3 is closed after the fully finalized staged attempt
+`20260826T042539Z`. Gate 1 revalidation reproduced the canonical base score of
+20/180 on the same exact Qwen revision and serving contract, although raw
+outputs and the run seal differ from the earlier CUDA run and remain separate
+revalidation evidence under run seal
+`57ea58ece793aee30b8c104dadff5c837d568f5f3effbb5f9770bada91fd64da`.
+The original admitted Gate 1 baseline remains canonical and was not
+overwritten.
+
+The LR `1e-4` candidate completed 400,652 seen tokens, adapter save/reload,
+and all 180 development tasks. It passed 13/180 versus the same-run base's
+20/180: Go 2/30, Java 2/30, JavaScript 3/30, TypeScript 1/30, Python 5/30,
+and Rust 0/30. Five-family macro fell from 10.0% to 7.33%; paired transitions
+were 10 wins, 17 losses, and 153 ties. It therefore cannot be promoted. The
+LR `2e-4` candidate reached 339,550 seen tokens and preserved three
+checkpoints, then the configured consecutive-loss-spike guard stopped the run.
+Its evaluation, LR selection, main 636,093-token SFT, and promotion
+adjudication did not execute. Gate 3 therefore requires a data/mechanism and
+stop-guard correction before another bounded pilot; scaling is not justified.
+
+The terminal is a strict `sealed-failure` under seal
+`8b4acfa783446a210c15ddfc47db71c255c1a8ac6d4ed3616f6f72571ddc03fa`.
+The generation-pinned 805-object terminal backup is verified under seal
+`e9f1439b6b8b1d5c1b17b8e28c7c4e16344d7a1847c47216d051456cb2ffe180`.
+GCP had automatically deleted the exact VM and boot disk under the card's
+`instanceTerminationAction=DELETE` contract; provider operations prove guest
+shutdown followed by deferred deletion. The finalizer verified that lifecycle,
+deleted the remaining subnet and VPC, and proved all four identities absent.
+Deletion-gate, finalization, and final 13-object post-delete backup seals are
+`3028a74002243b0627f8b90489da06a1b1b18ba16efa14ea7ab7b85d6ce6f57a`,
+`f0b6a8049f1d440a2d2e5b602ea62330c1fb30a944d985fe1f7f2ca387743c58`,
+and `96bc79aed2a1819dffbb74c1e88278dd8e151bf48d366da0de814bec9aae6c14`.
+No run-scoped GCloud resource remains. Another GCloud execution requires a
+fresh explicit approval.
 
 Gate 1 is complete. Approved attempt `20260825T153823Z` executed all 180
 frozen private development tasks against exact revision

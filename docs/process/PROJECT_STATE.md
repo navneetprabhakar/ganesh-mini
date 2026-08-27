@@ -13,7 +13,7 @@ generation/repair mix.
 The expansion schema and fail-closed admission pipeline are implemented. They
 require pinned source rights, independent behavioral tests, a passing
 reference, rejection of every known-bad implementation, exact code and
-exact/fuzzy prompt separation from all 550 evaluation tasks, within-corpus
+exact/fuzzy prompt separation from all 546 frozen task manifests, within-corpus
 deduplication, and exact final quotas. The pinned McEval-Instruct inventory
 provides 5,988 target-language drafting rows but zero independently tested
 training rows; it is not admitted. NVIDIA OpenCodeInstruct is admitted only as
@@ -26,8 +26,16 @@ admitted 1/6 rows; explicit runtime contracts admitted 4/6; isolated architect
 and test critics brought the final combined qualification to 6/6 with zero
 tool events. The final admission report seal is
 `0aeedf655a23eacf67cab8d10bf8a4a40e3366c94b779f1734c8b22aa3dece36`.
-The next boundary is a 60-row, ten-per-lane tranche. No GCloud resource is
-running or authorized for this phase.
+The 60-row, ten-per-lane tranche is complete. Generation had zero CLI failures
+and zero tool events. First-pass executable admission accepted 46/60; one
+targeted repair pass changed only the fourteen rejected rows and produced a
+final combined 52/60 result with no cross-batch overlap: Go 8, Java 7,
+JavaScript 10, TypeScript 8, Python 9, and Rust 10. The admission report seal
+is `4324d30331b872e9650c921b018561e16d275b36c2e729b4caf35f74a11ab547`.
+A deterministic one-per-lane manual quality sample passed. The next boundary
+is source-driven oversampling from the pinned multilingual generation and
+repair queues; the ten qualification topic stems must not be scaled directly
+to 6,000 rows. No GCloud resource is running or authorized for this phase.
 
 Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict
 sealed bootstrap failure. It had exactly one boot, automatic restart was

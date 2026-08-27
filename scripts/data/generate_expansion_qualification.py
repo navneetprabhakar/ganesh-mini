@@ -61,6 +61,14 @@ SOURCE_DATASET = "codex-cli/gpt-5.6-sol"
 SOURCE_REVISION = "codex-cli-0.144.4:model-alias-gpt-5.6-sol"
 
 
+class CodexInvocationFailure(RuntimeError):
+    """A failed Codex invocation carrying the raw evidence collected so far."""
+
+    def __init__(self, message: str, evidence: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.evidence = evidence
+
+
 def canonical_json(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
@@ -216,7 +224,12 @@ def invoke_codex(
             command, cwd=workdir, stdin=subprocess.DEVNULL, capture_output=True, text=True,
             timeout=config["execution"].get("timeout_seconds", 1800), check=False,
         )
-        events, usage, disallowed = parse_events(result.stdout)
+        event_parse_error: str | None = None
+        try:
+            events, usage, disallowed = parse_events(result.stdout)
+        except (json.JSONDecodeError, TypeError, ValueError) as exc:
+            events, usage, disallowed = [], None, []
+            event_parse_error = str(exc)
         final_text = output.read_text(encoding="utf-8") if output.is_file() else ""
         run_evidence = {
             "run_kind": run_kind, "lane": lane, "command_identity": command[:-1],
@@ -225,14 +238,30 @@ def invoke_codex(
             "stderr": result.stderr, "stderr_sha256": sha256_text(result.stderr),
             "final_output": final_text, "final_output_sha256": sha256_text(final_text),
             "events": events, "usage": usage, "disallowed_tool_item_types": disallowed,
+            "event_parse_error": event_parse_error,
         }
         if result.returncode != 0:
-            raise RuntimeError(f"Codex {run_kind}/{lane} failed with exit {result.returncode}")
+            raise CodexInvocationFailure(
+                f"Codex {run_kind}/{lane} failed with exit {result.returncode}", run_evidence,
+            )
+        if event_parse_error is not None:
+            raise CodexInvocationFailure(
+                f"Codex {run_kind}/{lane} emitted invalid JSONL: {event_parse_error}", run_evidence,
+            )
         if disallowed:
-            raise RuntimeError(f"Codex {run_kind}/{lane} used disallowed tools: {sorted(set(disallowed))}")
+            raise CodexInvocationFailure(
+                f"Codex {run_kind}/{lane} used disallowed tools: {sorted(set(disallowed))}", run_evidence,
+            )
         if usage is None:
-            raise RuntimeError(f"Codex {run_kind}/{lane} emitted no terminal usage")
-        payload = json.loads(final_text)
+            raise CodexInvocationFailure(
+                f"Codex {run_kind}/{lane} emitted no terminal usage", run_evidence,
+            )
+        try:
+            payload = json.loads(final_text)
+        except json.JSONDecodeError as exc:
+            raise CodexInvocationFailure(
+                f"Codex {run_kind}/{lane} final output is not JSON: {exc}", run_evidence,
+            ) from exc
         if not isinstance(payload, dict):
             raise ValueError("Codex final structured output is not an object")
         return payload, run_evidence
@@ -375,6 +404,8 @@ def main() -> int:
                     lane, record_id, types_by_id[record_id], architecture, tests_by_id[record_id],
                 ))
         except (json.JSONDecodeError, KeyError, OSError, RuntimeError, subprocess.SubprocessError, TypeError, ValueError) as exc:
+            if isinstance(exc, CodexInvocationFailure):
+                runs.append(exc.evidence)
             failures.append({"lane": lane, "reason": str(exc)})
     payload = b"".join(canonical_json(row) + b"\n" for row in candidates)
     args.output.parent.mkdir(parents=True, exist_ok=True)

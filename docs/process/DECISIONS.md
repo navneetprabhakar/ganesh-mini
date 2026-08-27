@@ -1920,3 +1920,28 @@ This qualifies construction of a 60-row tranche, not the 6,000-row dataset.
 The iterative qualification consumed 523,568 input and 82,931 output tokens;
 full-scale construction must demonstrate materially better batched efficiency
 before it is accepted as the production method.
+
+## 2026-08-27 — The 60-row tranche qualifies source-driven oversampling at 86.7% yield
+
+Ten-item batching generated sixty candidates with zero CLI failures and zero
+tool events. Initial executable admission accepted 46/60. A single targeted
+repair pass changed only the fourteen rejected candidates: reference repair
+could see previously independent tests and their verifier transcript, while
+test strengthening could see only specification and tests. Re-admission and a
+combined cross-batch pass accepted 52/60 with no additional exact or fuzzy
+collision. The final lane counts are Go 8, Java 7, JavaScript 10, TypeScript 8,
+Python 9, and Rust 10 under report seal
+`4324d30331b872e9650c921b018561e16d275b36c2e729b4caf35f74a11ab547`.
+
+A deterministic manual review selected the minimum record-ID hash in each
+lane. All six reviewed records passed prompt clarity, API consistency, test
+independence, non-triviality, idiomatic-code, dependency-isolation, and
+realistic-known-bad checks. The tranche used 395,472 input and 163,616 output
+tokens across generation and repair.
+
+Rejected rows remain rejected; repeated critic forcing is prohibited. The ten
+qualification topic stems also cannot provide 6,000-row diversity. Production
+construction must oversample from the pinned multilingual generation and
+repair drafting queues, retain all rejection evidence, and use Codex for
+source transformation, independent test generation, and at most one targeted
+correction pass before replacement.

@@ -104,8 +104,20 @@ TypeScript harness without seeing reference or known-bad code. The final
 combined qualification admitted 6/6 rows with zero tool events under report
 seal `0aeedf655a23eacf67cab8d10bf8a4a40e3366c94b779f1734c8b22aa3dece36`.
 
-The next boundary is the first 60-row stratified tranche (ten per language).
-Full generation starts only if that tranche achieves acceptable execution-
-admission yield and passes manual quality review. The six-row qualification
-used 523,568 input and 82,931 output tokens across iterative diagnosis, so its
-cost cannot be extrapolated linearly as an acceptable 6,000-row process.
+The 60-row tranche generated ten rows per lane with zero CLI failures and zero
+tool events. First-pass admission accepted 46/60. One targeted correction pass
+changed only the fourteen rejected rows and raised the final combined result
+to 52/60: Go 8, Java 7, JavaScript 10, TypeScript 8, Python 9, and Rust 10.
+There were no additional cross-batch exact or fuzzy collisions. The final
+admission report seal is
+`4324d30331b872e9650c921b018561e16d275b36c2e729b4caf35f74a11ab547`.
+
+The tranche consumed 395,472 input and 163,616 output tokens across generation
+and targeted repair. A deterministic manual sample of one admitted row per
+lane passed every quality criterion. This qualifies source-driven expansion
+at an observed 86.7% yield; it does not justify forcing rejected rows through
+repeated critics. The ten qualification topic stems are not a 6,000-row
+diversity source. Production construction must draw from the pinned
+multilingual generation and repair queues, oversample to quota, retain
+rejections, and use Codex for transformation, independent tests, and bounded
+correction.

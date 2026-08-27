@@ -189,6 +189,23 @@ def compare(base_results: list[dict[str, Any]], candidate_results: list[dict[str
         "schema_version": "1.0",
         "base_model": base_results[0]["model"],
         "candidate_model": candidate_results[0]["model"],
+        "evidence": {
+            "base_result_set_sha256": sha256_object([
+                {"task_id": row["task_id"], "result_sha256": row["result_sha256"]}
+                for row in sorted(base_results, key=lambda item: item["task_id"])
+            ]),
+            "candidate_result_set_sha256": sha256_object([
+                {"task_id": row["task_id"], "result_sha256": row["result_sha256"]}
+                for row in sorted(candidate_results, key=lambda item: item["task_id"])
+            ]),
+            "source_task_set_sha256": sha256_object([
+                {
+                    "task_id": row["task_id"],
+                    "source_task_sha256": row.get("_source_task_sha256", row["task_sha256"]),
+                }
+                for row in sorted(base_results, key=lambda item: item["task_id"])
+            ]),
+        },
         "base": _cohort_metrics(base_results),
         "candidate": _cohort_metrics(candidate_results),
         "paired": {
@@ -206,6 +223,7 @@ def compare(base_results: list[dict[str, Any]], candidate_results: list[dict[str
         report["candidate"]["five_family_macro"]["denominator"],
     )
     report["five_family_macro_delta"] = _fraction(candidate_macro - base_macro)
+    report["report_sha256"] = sha256_object(report)
     return report
 
 

@@ -1695,3 +1695,22 @@ and final 14-object backup seal
 close the attempt. The exact VM, auto-delete disk, subnet, and VPC are absent.
 The consumed approval authorizes no second VM; continuing Gate 3 requires a
 fresh explicit GCloud retry approval.
+
+## 2026-08-27 — Release evidence is transitive and publication is fail-closed
+
+Gate 8 may not trust aggregate scores or an arbitrary list of sealed files in
+isolation. Every decision comparison now seals the exact base, candidate, and
+frozen source-task result sets. Release adjudication requires the exact Qwen
+base identity, a fresh Ganesh v0.1 rerun, the complete 360-task/60-per-lane
+contract, seed and readiness lineage, the selected training execution card and
+run evidence, artifact-to-run binding, six-lane BF16/F16/Q8 export
+equivalence, Q8 decision retention, and hash-bound laptop certification.
+
+The GGUF decision path uses the pinned local llama.cpp revision through one
+loopback-only `llama-server`, with reasoning disabled, greedy generation, raw
+token evidence, and the existing network-disabled verifier harness. Hugging
+Face publication is a separate fail-closed operation: it accepts only a sealed
+`release-eligible` decision, rehashes every merged and GGUF artifact, uploads
+only release artifacts, aggregate evidence, and the model card, then verifies
+the resulting repository commit. Private benchmark prompts and raw outputs
+are never publication inputs.

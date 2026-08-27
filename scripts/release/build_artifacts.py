@@ -53,7 +53,8 @@ def build(args: argparse.Namespace) -> dict[str,Any]:
     except (ValueError,OSError): pass
     subprocess.run([sys.executable,str(converter),str(merged),"--outfile",str(f16),"--outtype","f16"],check=True)
     subprocess.run([str(quantizer),str(f16),str(q8),"Q8_0"],check=True)
-    artifacts={"merged_bf16_hf":{"path":str(merged),"files":inventory(merged)},"gguf_f16":{"path":str(f16),"bytes":f16.stat().st_size,"sha256":sha256(f16)},"gguf_q8":{"path":str(q8),"bytes":q8.stat().st_size,"sha256":sha256(q8)}}
+    merged_files=inventory(merged)
+    artifacts={"merged_bf16_hf":{"path":str(merged),"sha256":canonical_sha256(merged_files),"files":merged_files},"gguf_f16":{"path":str(f16),"bytes":f16.stat().st_size,"sha256":sha256(f16)},"gguf_q8":{"path":str(q8),"bytes":q8.stat().st_size,"sha256":sha256(q8)}}
     report={"schema_version":"ganesh-mini-release-artifacts/v1","status":"built","model_name":"ganesh-mini-1.0","selected_run_evidence_sha256":selected["evidence_sha256"],"llama_cpp":{"revision":observed_revision,"converter_sha256":sha256(converter),"quantizer_sha256":sha256(quantizer)},"artifacts":artifacts}; report["manifest_sha256"]=canonical_sha256(report); (args.output/"manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n"); return report
 
 

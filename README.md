@@ -17,12 +17,21 @@ laptop acceptance criterion.
 
 ## Current status
 
-Planning and local qualification are complete. The exact Qwen checkpoint and
-authorized Ganesh v0.1 seed are downloaded/imported and hash-verified. Apple
-BF16 inference, LoRA round-trip, and F16/Q8 GGUF runtime smokes pass. Production
-CUDA LoRA qualification, frozen evaluation tasks, base baselines, and seed
-training have not started. BF16 LoRA is the primary training recipe; NF4 QLoRA
-is an evidence-gated memory/cost fallback. No GCloud resource has been used.
+Gates 0–2 are complete. The exact Qwen checkpoint, six-lane private evaluation
+contract, 20/180 development baseline, and authorized Ganesh v0.1 seed are
+sealed. The first Gate 3 pilot trained but regressed to 13/180; it is rejected,
+not a release candidate. A repaired Gate 3 v2 pilot now uses one unique seed
+epoch, explicit five-family token weighting, conservative attention-only LoRA,
+and robust optimizer-level anomaly detection. Its local inputs and execution
+path are ready, but it has not run on CUDA because every new GCloud operation
+requires a fresh explicit approval.
+
+No `ganesh-mini-1.0` weights have been released. Gates 4–8 remain evidence-
+dependent: main SFT, optional correction, untouched decision evaluation against
+the exact Qwen base and a fresh Ganesh v0.1 run, merge, F16/Q8 export, laptop
+certification, release adjudication, and Hugging Face publication. Release
+tooling exists and fails closed, but none of those pending results are claimed
+as executed evidence.
 
 The canonical execution plan is
 [`docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md`](docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md).

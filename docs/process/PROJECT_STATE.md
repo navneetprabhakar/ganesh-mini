@@ -66,10 +66,12 @@ evaluation. Its manifest seal is
 
 The Gate 3 v2 evaluation-workspace, training-workspace, runtime-rehearsal, and
 non-executable preparation seals are respectively
-`30e02615813821ca81f3baeed6a2518fe0afed951df72ee7d0541df0c8b83361`,
+`336442a47a58ad5f7e0df013db502164f17075868b27f8f4cf60f6ceba5d73fa`,
 `874ac3f8f2bf226a6dd100c470f46ee39b7e7f1591ec5324042e985de17b4ae1`,
-`a18f3f5c933ff3ddd887cf8dd2137429c13ca17ac1a9e1dcd843c794b75ee98f`,
-and `9c3fa7acfb883f1f65bbc2bd9880a4f99d5d0e87c69d395adad1536407271ca5`.
+`152ccdfa187421b15128086dcfe60e57bf70022a78ccfcbd62be23285bad77a6`,
+and `fe24cd69f6c9ef4aa729cbca2e66ba8208a7a2d2525dc25eac9af93584fdaa6a`.
+The evaluation archive itself is byte-reproducible at SHA-256
+`54b2dec44ae7fe0d6775908a29496ed30fafa0d03e82e006f705f845e5210f4a`.
 The regenerated local training preflight is `ready` with no failed checks under
 card seal
 `c33be811a3eaeda5033bcd93313577f0eb716b8bd42a8514da9f41b40eedba0e`.
@@ -499,6 +501,13 @@ and its non-executable preparation seal was
 - Merge, GGUF F16/Q8 construction, constrained laptop certification, clustered
   statistical adjudication, Q8 retention, and final fail-closed release
   decision tooling are present but have not been executed on a trained model.
+  The release path now also has a pinned llama.cpp server backend for sealed
+  F16/Q8 evaluation, a six-lane export-equivalence verifier, and a fail-closed
+  Hugging Face publisher. Gate 8 requires sealed raw-result-set roots, a fresh
+  Ganesh v0.1 comparison, seed/readiness/execution-card/training-run lineage,
+  artifact-to-training binding, export equivalence, quantization retention,
+  and both laptop profiles. These controls are locally tested; they do not
+  constitute executed release evidence.
 - The evaluation verifier contract has been migrated before baseline generation
   from unavailable Apple/ARM64-local images to six project-owned Linux/AMD64
   images. Every base manifest and toolchain version is pinned; TypeScript's

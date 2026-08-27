@@ -20,6 +20,9 @@ def assert_comparison_contract(test: unittest.TestCase, report: dict) -> None:
     schema = load_json(Path("schemas/eval/comparison.schema.json"))
     test.assertEqual(set(schema["required"]), set(report))
     test.assertEqual(schema["properties"]["schema_version"]["const"], report["schema_version"])
+    unsigned = dict(report)
+    claimed = unsigned.pop("report_sha256")
+    test.assertEqual(sha256_object(unsigned), claimed)
 
     cohort_keys = set(schema["$defs"]["cohort"]["required"])
     for cohort_name in ("base", "candidate"):
@@ -29,6 +32,7 @@ def assert_comparison_contract(test: unittest.TestCase, report: dict) -> None:
     test.assertEqual(paired_keys, set(report["paired"]))
     lane_keys = set(schema["properties"]["paired"]["properties"]["lanes"]["required"])
     test.assertEqual(lane_keys, set(report["paired"]["lanes"]))
+    test.assertEqual(set(schema["properties"]["evidence"]["required"]), set(report["evidence"]))
 
     fraction_keys = set(schema["$defs"]["fraction"]["required"])
     for fraction in (

@@ -43,6 +43,8 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert 'upload_bind model_archive' in script
     assert 'upload_bind cuda_image_archive' in script
     assert 'upload_bind docker_bundle' in script
+    assert "bucket.get('location')!='US-EAST1'" in script
+    assert "bucket.get('versioning_enabled') is not True" in script
 
 
 def test_launcher_preserves_any_created_vm_and_cleans_only_unattached_resources_after_backup() -> None:

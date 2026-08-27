@@ -158,6 +158,9 @@ if load('region.json').get('status')!='UP': raise SystemExit('region is not UP')
 m=load('machine.json')
 if m.get('name')!=machine or m.get('guestCpus')!=12 or m.get('memoryMb')!=49152: raise SystemExit('machine contract mismatch')
 if load('boot-image.json').get('name')!=boot: raise SystemExit('boot image mismatch')
+bucket=load('bucket.json')
+if bucket.get('location')!='US-EAST1' or bucket.get('default_storage_class')!='STANDARD': raise SystemExit('bucket location or storage class mismatch')
+if bucket.get('uniform_bucket_level_access') is not True or bucket.get('public_access_prevention')!='enforced' or bucket.get('versioning_enabled') is not True: raise SystemExit('bucket immutability/privacy controls are incomplete')
 for name in ('absence-instance.json','absence-disk.json','absence-network.json','absence-subnet-or-cidr.json','prefix.json'):
  if load(name)!=[]: raise SystemExit('preflight absence failed: '+name)
 region_data=load('region.json'); quotas={q['metric']:q for q in region_data.get('quotas',[])}

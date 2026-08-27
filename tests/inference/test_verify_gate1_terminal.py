@@ -67,17 +67,22 @@ def gate3_fixture(tmp_path: Path, promotion_status: str = "promote") -> tuple[Pa
     root = tmp_path / "download"
     campaign_root = root / "output" / "campaign"
     card = {
-        "schema_version": "ganesh-mini-gate3-gcloud-execution/v2",
+        "schema_version": "ganesh-mini-gate3-gcloud-execution/v3",
         "status": "authorized-executable",
         "gate": 3,
         "gate_range": [3, 3],
         "model": {"model_id": "Qwen/Qwen3.5-2B", "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"},
-        "training": {"lr_candidates": [0.00001, 0.00003], "lr_candidate_seen_tokens_each": 461235, "unique_train_records": 1399},
+        "training": {
+            "lr_candidates": [0.00001, 0.00003],
+            "imported_lr_candidates": [0.00001],
+            "trained_lr_candidates": [0.00003],
+            "lr_candidate_seen_tokens_each": 461235,
+            "unique_train_records": 1399,
+            "completed_candidate_manifest_sha256": "a" * 64,
+        },
         "execution": {"attempt_id": "attempt"},
     }
-    card["execution_sha256"] = canonical_sha256(card)
     card_path = tmp_path / "card.json"
-    card_path.write_text(json.dumps(card))
     selected = 0.00001
     label = "lr-1e-5"
     lanes = ("go", "java", "javascript", "typescript", "python", "rust")
@@ -114,11 +119,15 @@ def gate3_fixture(tmp_path: Path, promotion_status: str = "promote") -> tuple[Pa
     selection_candidates = {}
     for learning_rate in card["training"]["lr_candidates"]:
         candidate_label = f"lr-{learning_rate:.0e}".replace("e-0", "e-")
+        adapter_path = campaign_root / "training" / candidate_label / "adapter-final" / "adapter_model.safetensors"
+        adapter_path.parent.mkdir(parents=True, exist_ok=True)
+        adapter_path.write_bytes(f"adapter-{learning_rate}".encode())
         training = write_sealed(campaign_root / "training" / candidate_label / "run-evidence.json", {
             "schema_version": "ganesh-mini-sft-run/v2", "status": "complete",
             "identities": {"phase": "lr-candidate", "learning_rate": str(learning_rate)},
             "state": {"seen_tokens": 461235}, "planned_end_row": 1399,
             "save_reload": {"passed": True},
+            "adapter_files": {"adapter_model.safetensors": sha(adapter_path)},
         }, "evidence_sha256")
         canary, collection, lane_passes = evaluation(f"{candidate_label}-canary", 30)
         selection_candidates[str(learning_rate)] = {
@@ -127,6 +136,8 @@ def gate3_fixture(tmp_path: Path, promotion_status: str = "promote") -> tuple[Pa
             "passed": canary["task_accounting"]["passed"],
             "lanes": lane_passes,
         }
+        if learning_rate == 0.00001:
+            card["training"]["completed_candidate_run_evidence_sha256"] = training["evidence_sha256"]
     write_sealed(campaign_root / "lr-selection.json", {
         "schema_version": "ganesh-mini-lr-selection/v2", "status": "selected",
         "surface": "development-canary", "expected_task_count": 30,
@@ -146,14 +157,26 @@ def gate3_fixture(tmp_path: Path, promotion_status: str = "promote") -> tuple[Pa
     phase_names = {
         "workspace-isolation", "gate1-canonical-baseline", "verifier-runtime-images",
         "gate3-training-admission",
-        "train-lr-1e-5", "evaluate-lr-1e-5-canary", "train-lr-3e-5",
+        "import-lr-1e-5", "evaluate-lr-1e-5-canary", "train-lr-3e-5",
         "evaluate-lr-3e-5-canary", "lr-selection", "evaluate-lr-1e-5-full",
         "gate3-promotion",
     }
     write_sealed(campaign_root / "campaign-result.json", {
         "schema_version": "ganesh-mini-staged-campaign-result/v1", "status": "passed",
-        "attempt_id": "attempt", "phases": [{"name": name, "status": "passed"} for name in sorted(phase_names)],
+        "attempt_id": "attempt", "phases": [
+            {
+                "name": name,
+                "status": "passed",
+                "evidence": {
+                    "manifest_sha256": "a" * 64,
+                    "run_evidence_sha256": card["training"]["completed_candidate_run_evidence_sha256"],
+                } if name == "import-lr-1e-5" else {},
+            }
+            for name in sorted(phase_names)
+        ],
     }, "evidence_sha256")
+    card["execution_sha256"] = canonical_sha256(card)
+    card_path.write_text(json.dumps(card))
     (root / "startup-exit-code.txt").write_text("0\n")
     (root / "controller-exit-code.txt").write_text("0\n")
     (root / "controller.stderr.log").write_text("diagnostic\n")

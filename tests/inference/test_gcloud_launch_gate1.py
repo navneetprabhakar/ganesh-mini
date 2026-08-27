@@ -9,13 +9,14 @@ def test_launcher_orders_approval_preflight_upload_card_network_and_vm() -> None
     approval = script.index("approval does not bind")
     identity = script.index("gcloud config get-value account")
     absence = script.index('gcloud compute instances list --zones="$zone"', identity)
+    service_account_iam = script.index("gcloud storage buckets get-iam-policy", identity)
     roundtrip = script.index("roundtrip_uri=")
     upload = script.index("upload_bind workspace_archive")
     card = script.index("build_gate1_gcloud_execution.py")
     network = script.index('gcloud compute networks create')
     subnet = script.index('gcloud compute networks subnets create')
     vm = script.index('gcloud compute instances create')
-    assert approval < identity < absence < roundtrip < upload < card < network < subnet < vm
+    assert approval < identity < absence < service_account_iam < roundtrip < upload < card < network < subnet < vm
 
 
 def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
@@ -23,8 +24,9 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     for token in (
         "--provisioning-model=FLEX_START",
         "--request-valid-for-duration=2h",
-        "--max-run-duration=4h",
+        "--max-run-duration=3h",
         "--instance-termination-action=STOP",
+        "--no-restart-on-failure",
         "--no-address",
         "--enable-private-ip-google-access",
         "--reservation-affinity=none",
@@ -43,8 +45,14 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert 'upload_bind model_archive' in script
     assert 'upload_bind cuda_image_archive' in script
     assert 'upload_bind docker_bundle' in script
+    assert 'upload_bind completed_candidate_archive' in script
+    assert 'upload_bind completed_candidate_manifest' in script
     assert "bucket.get('location')!='US-EAST1'" in script
     assert "bucket.get('versioning_enabled') is not True" in script
+    assert "VM service account lacks bucket-scoped object read/write access" in script
+    assert "service_account_bucket_access_passed" in script
+    assert '--service-account="$compute_service_account"' in script
+    assert "'service_account':service_account" in script
 
 
 def test_launcher_preserves_any_created_vm_and_cleans_only_unattached_resources_after_backup() -> None:

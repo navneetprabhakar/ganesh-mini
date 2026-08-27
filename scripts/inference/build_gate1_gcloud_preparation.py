@@ -66,6 +66,9 @@ def build() -> dict[str, Any]:
     gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
     gate0_result = load_sealed("measurement/cuda/gcloud/20260824T180957Z/run-result.json", "evidence_sha256")
     rehydrated = load_sealed("measurement/gate3/gcloud/rehydrated_inputs.json", "evidence_sha256")
+    completed_candidate = load_sealed(
+        "measurement/gate3/completed_candidate_lr_1e_5.json", "manifest_sha256"
+    )
     if gate0_result.get("status") != "passed" or gate0_result.get("gate") != "0B":
         raise ValueError("qualified Gate 0B evidence is missing")
     local_inputs = {
@@ -75,6 +78,8 @@ def build() -> dict[str, Any]:
         "verifier_manifest": file_identity("measurement/gate1/verifier_image_bundle_amd64_v1.json"),
         "training_workspace_archive": file_identity("artifacts/train/workspaces/seed-pilot-v2.tar.gz"),
         "training_workspace_manifest": file_identity("measurement/gate3/training_workspace_v2.json"),
+        "completed_candidate_archive": file_identity("artifacts/gcloud-inputs/gate3/completed-lr-1e-5.tar.gz"),
+        "completed_candidate_manifest": file_identity("measurement/gate3/completed_candidate_lr_1e_5.json"),
         "gate0_report": file_identity("measurement/gate0/readiness.json"),
         "gate1_report": file_identity("measurement/gate1/readiness.json"),
         "gate2_report": file_identity("measurement/gate2/readiness.json"),
@@ -104,6 +109,15 @@ def build() -> dict[str, Any]:
         raise ValueError("training workspace archive no longer matches its sealed manifest")
     if local_inputs["verifier_archive"]["sha256"] != verifier["archive"]["sha256"]:
         raise ValueError("verifier archive no longer matches its sealed manifest")
+    if (
+        completed_candidate.get("status") != "sealed"
+        or completed_candidate.get("candidate", {}).get("learning_rate") != 0.00001
+        or completed_candidate.get("candidate", {}).get("seen_tokens") != 461235
+        or completed_candidate.get("candidate", {}).get("unique_train_records") != 1399
+        or local_inputs["completed_candidate_archive"]["sha256"] != completed_candidate.get("archive", {}).get("sha256")
+        or local_inputs["completed_candidate_archive"]["size_bytes"] != completed_candidate.get("archive", {}).get("size_bytes")
+    ):
+        raise ValueError("completed 1e-5 candidate bundle no longer matches its seal")
     if rehydrated.get("status") != "verified-local-rehydration":
         raise ValueError("rehydrated input evidence is incomplete")
     for key in ("model_archive", "cuda_image_archive", "docker_bundle"):
@@ -122,22 +136,24 @@ def build() -> dict[str, Any]:
         "training": require_workspace_matches_source(training_workspace, "training"),
     }
     record: dict[str, Any] = {
-        "schema_version": "ganesh-mini-gate3-gcloud-preparation/v2",
+        "schema_version": "ganesh-mini-gate3-gcloud-preparation/v3",
         "status": "prepared-not-executable",
         "gate": 3,
-        "purpose": "Gate 3 v2 two-point conservative LoRA pilot, deterministic canary selection, and full development adjudication on one L4",
+        "purpose": "Gate 3 v2 continuation: import the sealed completed 1e-5 candidate, train only 3e-5, run both canaries, select, and fully adjudicate one candidate on one L4",
         "model": {"model_id": "Qwen/Qwen3.5-2B", "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"},
         "resource_proposal": {
             "region": "us-east1",
             "allowed_zones": ["us-east1-b", "us-east1-c", "us-east1-d"],
             "machine_type": "g2-standard-12",
+            "service_account": "1061994342941-compute@developer.gserviceaccount.com",
             "accelerator": "1x nvidia-l4",
             "provisioning_model": "FLEX_START",
             "request_valid_for_seconds": 7200,
-            "maximum_run_seconds": 14400,
-            "controller_budget_seconds": 12600,
+            "maximum_run_seconds": 10800,
+            "controller_budget_seconds": 9000,
             "backup_reserve_seconds": 1800,
             "instance_termination_action": "STOP",
+            "automatic_restart": False,
             "external_ip": False,
             "temporary_private_network": True,
         },
@@ -149,8 +165,8 @@ def build() -> dict[str, Any]:
             "published_dws_flex_start_hourly_usd": 0.790328877,
             "controller_conservative_hourly_usd": 1.000416348,
             "support_reserve_usd": 0.35,
-            "four_hour_conservative_upper_usd": 4.351665392,
-            "proposed_absolute_ceiling_usd": 5.00,
+            "three_hour_conservative_upper_usd": 3.351249044,
+            "proposed_absolute_ceiling_usd": 3.50,
             "source": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
             "fresh_account_preflight_still_required": True,
         },
@@ -159,7 +175,7 @@ def build() -> dict[str, Any]:
             "verifier_workers": 12,
             "length_bucketing": True,
             "generation_and_verification_overlap": True,
-            "sequential_gpu_phases": ["lr-1e-5-train", "lr-1e-5-canary", "lr-3e-5-train", "lr-3e-5-canary", "selected-candidate-full-eval"],
+            "sequential_gpu_phases": ["lr-1e-5-import", "lr-1e-5-canary", "lr-3e-5-train", "lr-3e-5-canary", "selected-candidate-full-eval"],
             "evaluation_training_mount_isolation": True,
             "nvml_interval_seconds": 5,
             "checkpoint_interval_seconds": 120,
@@ -170,6 +186,14 @@ def build() -> dict[str, Any]:
             },
         },
         "local_inputs": local_inputs,
+        "completed_candidate": {
+            "manifest_sha256": completed_candidate["manifest_sha256"],
+            "run_evidence_sha256": completed_candidate["candidate"]["run_evidence_sha256"],
+            "adapter_model_sha256": completed_candidate["candidate"]["adapter_model_sha256"],
+            "source_attempt_id": completed_candidate["source"]["attempt_id"],
+            "source_terminal_backup_sha256": completed_candidate["source"]["terminal_backup_sha256"],
+            "source_terminal_validation_sha256": completed_candidate["source"]["terminal_validation_sha256"],
+        },
         "workspace_source_alignment": workspace_source_alignment,
         "rehydrated_inputs": {
             "evidence_sha256": rehydrated["evidence_sha256"],
@@ -179,13 +203,15 @@ def build() -> dict[str, Any]:
             "qualified_gate0b_result_seal": gate0_result["evidence_sha256"],
         },
         "lifecycle": [
-            "price, quota, exact-resource-absence, and bucket round-trip preflight",
+            "price, quota, exact-resource-absence, bucket round-trip, and VM-service-account bucket-IAM preflight",
             "upload local inputs and bind immutable GCS generations",
             "double-verify preflight evidence in GCS before any resource creation",
             "create temporary private network and Flex-start VM",
             "on launch failure, double-verify failure evidence; preserve any created STOP-bounded VM and attached resources, otherwise clean unattached temporary resources",
+            "do not automatically restart the VM after host failure; terminate the attempt and preserve its latest GCS checkpoint evidence",
             "verify the canonical Gate 1 readiness report and sealed 180-task base evidence before training",
-            "run both frozen one-epoch LR candidates sequentially and evaluate each on the 30-task deterministic canary",
+            "verify and import the completed sealed 1e-5 candidate without optimizer execution, then evaluate it on the deterministic canary",
+            "train only the missing 3e-5 unique-row epoch and evaluate it on the same deterministic canary",
             "seal LR selection, evaluate only the selected candidate on all 180 development tasks, and adjudicate Gate 3",
             "checkpoint the complete campaign evidence to GCS every two minutes",
             "write terminal inventory and verified terminal GCS backup",
@@ -197,12 +223,13 @@ def build() -> dict[str, Any]:
         ],
         "hard_stops": [
             "no GCloud action without a fresh explicit execution approval",
-            "no create until current price and quota preflight fit the approved ceiling",
+            "no create until current price and quota preflight fit the approved ceiling and the exact VM service account has bucket-scoped object read/write access",
             "no pilot training unless the existing Gate 1 report and all 180 base task evidence seals verify",
             "no next phase after any anomaly or failed frozen gate",
         ],
         "failed_checks": [
             "current_g2_standard_12_price_and_quota_preflight",
+            "exact_vm_service_account_bucket_iam_preflight",
             "generation_pinned_uploads_for_staged_campaign_inputs",
             "final_executable_card_and_metadata_bindings",
         ],

@@ -1,4 +1,5 @@
 from decimal import Decimal
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -18,6 +19,7 @@ from scripts.campaign.run_host import (
     external_mount,
     lr_label,
     select_lr_evidence,
+    verify_completed_candidate,
 )
 
 
@@ -167,3 +169,91 @@ def test_campaign_stops_before_training_when_verifier_load_fails(
 
     with pytest.raises(RuntimeError, match="verifier image load failed: load rejected"):
         campaign.prepare_verifier_images()
+
+
+def test_completed_candidate_import_is_bound_to_current_training_contract(tmp_path: Path) -> None:
+    candidate_root = tmp_path / "candidate"
+    adapter = candidate_root / "adapter-final"
+    adapter.mkdir(parents=True)
+    for name, content in (
+        ("README.md", b"adapter"),
+        ("adapter_config.json", b"{}"),
+        ("adapter_model.safetensors", b"weights"),
+    ):
+        (adapter / name).write_bytes(content)
+    recipe = {"recipe_id": "bf16-lora-conservative-v2"}
+    card = {
+        "status": "ready",
+        "inputs": {"config_sha256": "b" * 64, "prepared_manifest_sha256": "c" * 64},
+        "model": {"revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"},
+        "selected_recipe": recipe,
+    }
+    card["card_sha256"] = canonical_sha256(card)
+    identities = {
+        "card_sha256": card["card_sha256"],
+        "config_sha256": "b" * 64,
+        "prepared_manifest_sha256": "c" * 64,
+        "prepared_data_sha256": "d" * 64,
+        "validation_data_sha256": "e" * 64,
+        "model_revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+        "recipe_sha256": canonical_sha256(recipe),
+        "learning_rate": "1e-05",
+        "phase": "lr-candidate",
+    }
+    adapter_files = {
+        path.name: run_host.file_sha256(path) for path in sorted(adapter.iterdir())
+    }
+    run = {
+        "schema_version": "ganesh-mini-sft-run/v2",
+        "status": "complete",
+        "identities": identities,
+        "state": {"seen_tokens": 461235},
+        "planned_end_row": 1399,
+        "save_reload": {"passed": True},
+        "adapter_files": adapter_files,
+    }
+    run["evidence_sha256"] = canonical_sha256(run)
+    (candidate_root / "run-evidence.json").write_text(json.dumps(run))
+    archive = tmp_path / "candidate.tar.gz"
+    archive.write_bytes(b"sealed archive")
+    files = [
+        {"path": str(path.relative_to(candidate_root)), "size_bytes": path.stat().st_size, "sha256": run_host.file_sha256(path)}
+        for path in sorted(candidate_root.rglob("*")) if path.is_file()
+    ]
+    manifest = {
+        "schema_version": "ganesh-mini-completed-candidate/v1",
+        "status": "sealed",
+        "candidate": {
+            "label": "lr-1e-5", "learning_rate": 0.00001,
+            "run_evidence_sha256": run["evidence_sha256"],
+            "seen_tokens": 461235, "unique_train_records": 1399,
+        },
+        "model": {"revision": identities["model_revision"]},
+        "training_inputs": {key: identities[key] for key in (
+            "card_sha256", "config_sha256", "prepared_manifest_sha256",
+            "prepared_data_sha256", "validation_data_sha256", "recipe_sha256",
+        )},
+        "files": files,
+        "archive": {"size_bytes": archive.stat().st_size, "sha256": run_host.file_sha256(archive)},
+    }
+    manifest["manifest_sha256"] = canonical_sha256(manifest)
+    manifest_path = tmp_path / "candidate.json"
+    manifest_path.write_text(json.dumps(manifest))
+
+    observed_manifest, observed_run = verify_completed_candidate(
+        candidate_root, manifest_path, archive,
+        expected_learning_rate=0.00001, expected_tokens=461235,
+        expected_records=1399,
+        expected_model_revision=identities["model_revision"], training_card=card,
+    )
+    assert observed_manifest["manifest_sha256"] == manifest["manifest_sha256"]
+    assert observed_run["evidence_sha256"] == run["evidence_sha256"]
+
+    (adapter / "adapter_model.safetensors").write_bytes(b"tampered")
+    with pytest.raises(ValueError, match="file identity mismatch"):
+        verify_completed_candidate(
+            candidate_root, manifest_path, archive,
+            expected_learning_rate=0.00001, expected_tokens=461235,
+            expected_records=1399,
+            expected_model_revision=identities["model_revision"], training_card=card,
+        )

@@ -127,6 +127,74 @@ def verify_workspace(root: Path, manifest_path: Path, archive_path: Path, schema
     return manifest
 
 
+def verify_completed_candidate(
+    root: Path,
+    manifest_path: Path,
+    archive_path: Path,
+    *,
+    expected_learning_rate: float,
+    expected_tokens: int,
+    expected_records: int,
+    expected_model_revision: str,
+    training_card: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Verify an extracted candidate and its archive before it enters a run."""
+    manifest = load_sealed(manifest_path, "manifest_sha256")
+    if manifest.get("schema_version") != "ganesh-mini-completed-candidate/v1" or manifest.get("status") != "sealed":
+        raise ValueError("completed candidate manifest contract mismatch")
+    archive = manifest.get("archive", {})
+    if (
+        archive_path.stat().st_size != archive.get("size_bytes")
+        or file_sha256(archive_path) != archive.get("sha256")
+    ):
+        raise ValueError("completed candidate archive identity mismatch")
+    files = manifest.get("files", [])
+    expected = {row.get("path"): row for row in files if isinstance(row, dict)}
+    if len(expected) != len(files) or None in expected:
+        raise ValueError("completed candidate manifest contains duplicate or invalid files")
+    observed = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
+    if observed != set(expected):
+        raise ValueError("completed candidate extracted file set mismatch")
+    for relative, row in expected.items():
+        path = root / relative
+        if path.is_symlink() or path.stat().st_size != row.get("size_bytes") or file_sha256(path) != row.get("sha256"):
+            raise ValueError(f"completed candidate file identity mismatch: {relative}")
+    candidate = manifest.get("candidate", {})
+    if (
+        candidate.get("label") != lr_label(expected_learning_rate)
+        or candidate.get("learning_rate") != expected_learning_rate
+        or candidate.get("seen_tokens") != expected_tokens
+        or candidate.get("unique_train_records") != expected_records
+        or manifest.get("model", {}).get("revision") != expected_model_revision
+    ):
+        raise ValueError("completed candidate identity mismatch")
+    run = load_sealed(root / "run-evidence.json", "evidence_sha256")
+    identities = run.get("identities", {})
+    card_inputs = training_card.get("inputs", {})
+    source_inputs = manifest.get("training_inputs", {})
+    if (
+        run.get("schema_version") != "ganesh-mini-sft-run/v2"
+        or run.get("status") != "complete"
+        or run.get("evidence_sha256") != candidate.get("run_evidence_sha256")
+        or run.get("state", {}).get("seen_tokens") != expected_tokens
+        or run.get("planned_end_row") != expected_records
+        or run.get("save_reload", {}).get("passed") is not True
+        or identities.get("phase") != "lr-candidate"
+        or identities.get("learning_rate") != str(expected_learning_rate)
+        or identities.get("model_revision") != expected_model_revision
+        or identities.get("config_sha256") != card_inputs.get("config_sha256")
+        or identities.get("prepared_manifest_sha256") != card_inputs.get("prepared_manifest_sha256")
+        or identities.get("recipe_sha256") != canonical_sha256(training_card.get("selected_recipe", {}))
+        or any(identities.get(key) != value for key, value in source_inputs.items())
+    ):
+        raise ValueError("completed candidate run evidence escaped the current frozen training contract")
+    for name, digest in run.get("adapter_files", {}).items():
+        row = expected.get(f"adapter-final/{name}")
+        if row is None or row.get("sha256") != digest:
+            raise ValueError(f"completed candidate adapter hash mismatch: {name}")
+    return manifest, run
+
+
 class Campaign:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
@@ -305,6 +373,32 @@ class Campaign:
         self.record(f"train-{label}", "passed", evidence_sha256=evidence["evidence_sha256"], seen_tokens=evidence["state"]["seen_tokens"])
         return destination
 
+    def import_candidate(self, label: str, learning_rate: float, budget: int, card: Path) -> Path:
+        if not self.args.completed_candidate_root or not self.args.completed_candidate_manifest or not self.args.completed_candidate_archive:
+            raise RuntimeError("completed candidate import inputs are incomplete")
+        card_value = load_sealed(card, "card_sha256")
+        manifest, run = verify_completed_candidate(
+            self.args.completed_candidate_root,
+            self.args.completed_candidate_manifest,
+            self.args.completed_candidate_archive,
+            expected_learning_rate=learning_rate,
+            expected_tokens=budget,
+            expected_records=1399,
+            expected_model_revision="15852e8c16360a2fea060d615a32b45270f8a8fc",
+            training_card=card_value,
+        )
+        destination = self.output / "training" / label
+        shutil.copytree(self.args.completed_candidate_root, destination)
+        self.record(
+            f"import-{label}",
+            "passed",
+            manifest_sha256=manifest["manifest_sha256"],
+            run_evidence_sha256=run["evidence_sha256"],
+            source_attempt_id=manifest["source"]["attempt_id"],
+            seen_tokens=run["state"]["seen_tokens"],
+        )
+        return destination
+
     def candidate_config(self, label: str, training: Path, *, canary: bool = False) -> Path:
         base = json.loads((self.args.eval_workspace / "configs/inference/qwen_base_development.json").read_text())
         base.update({
@@ -419,8 +513,12 @@ class Campaign:
         card = self.training_card(gate1)
         runs: dict[str, Path] = {}
         evaluations: dict[str, Path] = {}
-        for label, learning_rate in candidates:
-            runs[label] = self.train(label, learning_rate, budget, card)
+        imported = self.args.completed_candidate_root is not None
+        for index, (label, learning_rate) in enumerate(candidates):
+            if imported and index == 0:
+                runs[label] = self.import_candidate(label, learning_rate, budget, card)
+            else:
+                runs[label] = self.train(label, learning_rate, budget, card)
             evaluations[label] = self.evaluate(f"{label}-canary", runs[label],canary=True)
         selection = self.select_lr(runs, evaluations,candidates,budget,recipe["lr_selection_rule"])
         selected = float(load_sealed(selection, "evidence_sha256")["selected_learning_rate"])
@@ -446,6 +544,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gate0-report", type=Path, required=True)
     parser.add_argument("--gate1-report", type=Path, required=True)
     parser.add_argument("--gate2-report", type=Path, required=True)
+    parser.add_argument("--completed-candidate-root", type=Path)
+    parser.add_argument("--completed-candidate-manifest", type=Path)
+    parser.add_argument("--completed-candidate-archive", type=Path)
     parser.add_argument("--train-config-relative",type=Path,default=Path("configs/train/seed_pilot_v2.json"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--shared-tmp", type=Path, required=True)
@@ -461,6 +562,13 @@ def parse_args() -> argparse.Namespace:
         parser.error("invalid campaign time envelope")
     if args.hourly_cost_usd <= 0 or args.training_cost_ceiling_usd <= 0:
         parser.error("invalid campaign cost envelope")
+    completed = (
+        args.completed_candidate_root,
+        args.completed_candidate_manifest,
+        args.completed_candidate_archive,
+    )
+    if any(completed) and not all(completed):
+        parser.error("completed candidate root, manifest, and archive must be supplied together")
     return args
 
 

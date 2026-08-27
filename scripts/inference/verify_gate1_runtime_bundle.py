@@ -100,7 +100,7 @@ names = [
 ]
 assert all(name == name.lower() for name in names)
 campaign = Campaign(SimpleNamespace(
-    output=probe_host/"campaign", max_seconds=12600, attempt_id=attempt,
+    output=probe_host/"campaign", max_seconds=9000, attempt_id=attempt,
     hourly_cost_usd=1, model=probe_host/"model",
 ))
 campaign.docker = "/usr/bin/docker"
@@ -166,19 +166,40 @@ print("MOUNT_TOPOLOGY_OK")
         "controller_binds_canonical_gate1": '--gate1-report "$work_dir/gate1-readiness.json"' in controller,
         "campaign_loads_verifiers_before_training": (
             campaign_source.index("self.prepare_verifier_images()")
-            < campaign_source.index("for label, learning_rate in candidates:")
+            < campaign_source.index("for index, (label, learning_rate) in enumerate(candidates):")
+        ),
+        "campaign_imports_completed_low_lr_without_retraining": (
+            'runs[label] = self.import_candidate(label, learning_rate, budget, card)' in campaign_source
+            and 'if imported and index == 0:' in campaign_source
+        ),
+        "controller_binds_completed_candidate": all(token in controller for token in (
+            'download_verified "$GANESH_COMPLETED_CANDIDATE_ARCHIVE_URI"',
+            '--completed-candidate-root "$work_dir/completed-candidate"',
+            'unsafe completed candidate archive member',
+        )),
+        "controller_derives_training_ceiling_from_campaign_budget": (
+            '--training-cost-ceiling-usd "$training_cost_ceiling_usd"' in controller
+            and '"$GANESH_ABSOLUTE_COST_CEILING_USD" "$GANESH_SUPPORT_RESERVE_USD"' in controller
+            and '--training-cost-ceiling-usd "4.65"' not in controller
         ),
         "controller_retains_outer_terminal_backup_reserve": '--finalization-reserve-seconds 300' in controller,
         "launcher_uploads_bindings_once": launcher.count("upload_bind bindings ") == 1,
         "provider_stops_before_independent_deletion": "--instance-termination-action=STOP" in launcher,
+        "provider_automatic_restart_is_disabled": "--no-restart-on-failure" in launcher,
+        "vm_service_account_bucket_iam_precedes_resources": (
+            "VM service account lacks bucket-scoped object read/write access" in launcher
+            and "service_account_bucket_access_passed" in launcher
+            and launcher.index("gcloud storage buckets get-iam-policy") < launcher.index("resource_stage=1")
+            and '--service-account="$compute_service_account"' in launcher
+        ),
         "finalizer_preserves_on_terminal_failure": "preserve_finalizer_failure terminal-integrity" in finalizer and "preserve_finalizer_failure deletion-gate" in finalizer,
-        "finalizer_uses_gate3_terminal_contract": "ganesh-mini-gate3-gcloud-finalization/v2" in finalizer and "gate3-campaign" in finalizer,
+        "finalizer_uses_gate3_terminal_contract": "ganesh-mini-gate3-gcloud-finalization/v2" in finalizer and "ganesh-mini-gate3-gcloud-execution/v3" in finalizer and "gate3-campaign" in finalizer,
         "runtime_writers_stop_before_inventory": finish.index("stop_runtime_writers") < finish.index("capture_checkpoint_log") < finish.index("write_inventory") < finish.index("final_backup"),
     }
     if not all(checks.values()):
         raise ValueError(f"Gate 1 runtime bundle rehearsal failed: {[key for key, passed in checks.items() if not passed]}")
     evidence: dict[str, Any] = {
-        "schema_version": "ganesh-mini-gate3-runtime-bundle-rehearsal/v2",
+        "schema_version": "ganesh-mini-gate3-runtime-bundle-rehearsal/v3",
         "status": "passed",
         "attempt_id": ATTEMPT_ID,
         "workspace_manifest_sha256": manifest["manifest_sha256"],

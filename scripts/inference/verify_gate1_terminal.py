@@ -112,6 +112,17 @@ def validate_gate3_training_run(
         or training.get("save_reload", {}).get("passed") is not True
     ):
         raise ValueError("Gate 3 training run is incomplete or escaped its exact epoch")
+    adapter_files = training.get("adapter_files", {})
+    adapter_root = path.parent / "adapter-final"
+    if not isinstance(adapter_files, dict) or not adapter_files:
+        raise ValueError("Gate 3 training run does not bind adapter files")
+    observed = {item.name for item in adapter_root.iterdir() if item.is_file()} if adapter_root.is_dir() else set()
+    if observed != set(adapter_files):
+        raise ValueError("Gate 3 terminal adapter file set mismatch")
+    for name, digest in adapter_files.items():
+        adapter_path = adapter_root / name
+        if not isinstance(digest, str) or len(digest) != 64 or file_sha256(adapter_path) != digest:
+            raise ValueError(f"Gate 3 terminal adapter hash mismatch: {name}")
     return training
 
 
@@ -126,6 +137,10 @@ def validate_gate3_success(campaign_root: Path, card: dict[str, Any]) -> dict[st
     selection = load_sealed(campaign_root / "lr-selection.json", "evidence_sha256")
     selected = selection.get("selected_learning_rate")
     expected_lrs = card.get("training", {}).get("lr_candidates", [])
+    imported_lrs = set(card.get("training", {}).get("imported_lr_candidates", []))
+    trained_lrs = set(card.get("training", {}).get("trained_lr_candidates", expected_lrs))
+    if imported_lrs & trained_lrs or imported_lrs | trained_lrs != set(expected_lrs):
+        raise ValueError("Gate 3 execution card candidate disposition is invalid")
     if (
         selection.get("schema_version") != "ganesh-mini-lr-selection/v2"
         or selection.get("status") != "selected"
@@ -185,14 +200,30 @@ def validate_gate3_success(campaign_root: Path, card: dict[str, Any]) -> dict[st
         "workspace-isolation", "gate1-canonical-baseline", "verifier-runtime-images",
         "gate3-training-admission",
         "lr-selection", f"evaluate-{label}-full", "gate3-promotion",
-        *(f"train-{candidate_label}" for candidate_label in candidate_labels),
         *(f"evaluate-{candidate_label}-canary" for candidate_label in candidate_labels),
+        *(f"import-lr-{float(value):.0e}".replace("e-0", "e-").replace("e+0", "e+") for value in imported_lrs),
+        *(f"train-lr-{float(value):.0e}".replace("e-0", "e-").replace("e+0", "e+") for value in trained_lrs),
     }
     passed_phases = {
         row.get("name") for row in campaign.get("phases", []) if row.get("status") == "passed"
     }
     if not required_phases <= passed_phases:
         raise ValueError("Gate 3 campaign result omits required passed phases")
+    if imported_lrs:
+        imported_label = f"lr-{float(next(iter(imported_lrs))):.0e}".replace("e-0", "e-").replace("e+0", "e+")
+        import_phase = next(
+            row for row in campaign.get("phases", []) if row.get("name") == f"import-{imported_label}"
+        )
+        imported_training = validated_training[next(iter(imported_lrs))]
+        if (
+            import_phase.get("evidence", {}).get("manifest_sha256")
+            != card["training"].get("completed_candidate_manifest_sha256")
+            or import_phase.get("evidence", {}).get("run_evidence_sha256")
+            != card["training"].get("completed_candidate_run_evidence_sha256")
+            or imported_training["evidence_sha256"]
+            != card["training"].get("completed_candidate_run_evidence_sha256")
+        ):
+            raise ValueError("Gate 3 imported candidate is not bound by the execution card")
     return {
         "campaign_result_sha256": campaign["evidence_sha256"],
         "lr_selection_sha256": selection["evidence_sha256"],
@@ -214,7 +245,7 @@ def verify(
     card = load_sealed(execution_card_path, "execution_sha256")
     if manifest.get("status") != "verified" or manifest.get("prefix") != expected_prefix:
         raise ValueError("terminal backup manifest status or prefix mismatch")
-    if card.get("schema_version") not in {"ganesh-mini-staged-gcloud-execution/v1", "ganesh-mini-gate3-gcloud-execution/v2"} or card.get("status") != "authorized-executable":
+    if card.get("schema_version") not in {"ganesh-mini-staged-gcloud-execution/v1", "ganesh-mini-gate3-gcloud-execution/v2", "ganesh-mini-gate3-gcloud-execution/v3"} or card.get("status") != "authorized-executable":
         raise ValueError("execution card contract mismatch")
     objects = manifest.get("objects", [])
     if not objects or not all(row.get("verified") is True for row in objects):
@@ -245,7 +276,7 @@ def verify(
     successful = startup_code == controller_code == 0
     run_summary: dict[str, Any] | None = None
     campaign_root=download_root / "output/campaign"
-    is_gate3 = card.get("schema_version") == "ganesh-mini-gate3-gcloud-execution/v2"
+    is_gate3 = card.get("schema_version") in {"ganesh-mini-gate3-gcloud-execution/v2", "ganesh-mini-gate3-gcloud-execution/v3"}
     if not is_gate3 and (campaign_root / "baseline/run.json").is_file():
         run = validate_completed_run(campaign_root / "baseline/run.json")
         host = load_sealed(campaign_root / "baseline/host-execution.json", "evidence_sha256")

@@ -16,7 +16,7 @@ import hashlib, json, shlex, sys
 card=json.load(open(sys.argv[1],encoding='utf-8'))
 claimed=card.pop('execution_sha256',None)
 actual=hashlib.sha256(json.dumps(card,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
-if claimed != actual or card.get('schema_version') not in {'ganesh-mini-staged-gcloud-execution/v1','ganesh-mini-gate3-gcloud-execution/v2'} or card.get('status') != 'authorized-executable':
+if claimed != actual or card.get('schema_version') not in {'ganesh-mini-staged-gcloud-execution/v1','ganesh-mini-gate3-gcloud-execution/v2','ganesh-mini-gate3-gcloud-execution/v3'} or card.get('status') != 'authorized-executable':
     raise SystemExit('invalid executable card')
 execution=card['execution']; resources=execution['resources']
 values={
@@ -25,8 +25,8 @@ values={
     'instance':resources['instance'],'disk':resources['disk'],'network':resources['network'],'subnet':resources['subnet'],
     'card_seal':claimed,'source_commit':card['source_commit'],
     'termination_action':execution['instance_termination_action'],
-    'finalization_phase':'gate3-campaign' if card.get('schema_version')=='ganesh-mini-gate3-gcloud-execution/v2' else 'gate1-baseline',
-    'finalization_schema':'ganesh-mini-gate3-gcloud-finalization/v2' if card.get('schema_version')=='ganesh-mini-gate3-gcloud-execution/v2' else 'ganesh-mini-gate1-gcloud-finalization/v1',
+    'finalization_phase':'gate3-campaign' if card.get('schema_version') in {'ganesh-mini-gate3-gcloud-execution/v2','ganesh-mini-gate3-gcloud-execution/v3'} else 'gate1-baseline',
+    'finalization_schema':'ganesh-mini-gate3-gcloud-finalization/v2' if card.get('schema_version') in {'ganesh-mini-gate3-gcloud-execution/v2','ganesh-mini-gate3-gcloud-execution/v3'} else 'ganesh-mini-gate1-gcloud-finalization/v1',
 }
 for key,value in values.items(): print(f'{key}={shlex.quote(str(value))}')
 PY

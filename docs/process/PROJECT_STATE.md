@@ -34,12 +34,8 @@ sufficient.
 The repaired campaign now loads, identity-checks, and audits the complete
 verifier archive before any paid training. Unit coverage rejects a missing
 image load, and the archive-executed rehearsal proves verifier preparation
-precedes candidate training. The evaluation workspace, archive, rehearsal,
-and non-executable preparation seals are now
-`6e001b04de84d785feaf96dbd42ce5adcad62fd8e7a6cc969c991e4f90222532`,
-`56c29ec107782fe2870496f4d54ab0fb466269a535210d88823afb1d4f2ae7dd`,
-`dff92b7d1cf9676ea59f6e5ba66c10ee7447647c84dfd19a876714d126e18594`,
-and `bedaf55f5309c40d0044f1d1aff8aa3ae080dead312091fd56a4ea92e9ad04eb`.
+precedes candidate work. The current continuation seals supersede the earlier
+repaired full-campaign fallback seals and are recorded below.
 
 The independently generation-pinned 75-object terminal backup passed under
 seal `93d7206401744b7c66e55800352f87a2204d084ae88119d3f6c5038b769f9fb5`.
@@ -53,6 +49,36 @@ The strict deletion gate, exact four-resource absence proof, finalization, and
 and `fea0b331acd56baf7eefcb6591656c3c76f35c5da2313f507380792a32c6fc37`.
 The exact VM, boot disk, subnet, and VPC are absent. The run approval is
 exhausted; another GCloud execution requires a fresh explicit approval.
+
+The local Gate 3 continuation is now prepared. It does not retrain the valid
+`1e-5` epoch. A deterministic 2,711,227-byte bundle contains its final adapter
+and run evidence, and is sealed by manifest
+`5b882126fe59fcd28f6b1e9ffe578929b0b65ac0bd39fbd029f0baa0e3f325a7`
+and archive SHA-256
+`95a4a1054bab679dfd3255b752eac01ff3c6d42467304348a8ecff048dc998da`.
+The packager proved every included file against the prior generation-verified
+terminal backup and source execution/terminal seals. Runtime import then
+rechecks the current frozen config, data manifest, model revision, recipe,
+epoch size, save/reload result, and adapter hashes before evaluation.
+
+The continuation loads and audits all six verifier images before candidate
+work, evaluates the imported `1e-5` canary, trains only `3e-5`, evaluates its
+canary, applies the frozen LR selection, and fully evaluates the selected
+candidate. The provider contract now disables automatic restart so no VM
+reboot can silently restart training. Before any resource is created, the
+launcher verifies that the exact VM service account
+`1061994342941-compute@developer.gserviceaccount.com` has bucket-scoped object
+read/write access; this closes the gap that caused the earlier bootstrap 403.
+Its proposed bound is three VM hours,
+including a 30-minute terminal-backup reserve, and USD 3.50. The evaluation
+workspace, archive, runtime rehearsal, and non-executable preparation seals are
+`daba3f5ac1e6b5ec35902fe2cf7997ad93f1d659c1d7a08a35585b9c94a8567e`,
+`0c3f4ee25fe3cd06589a25b9766d574f65088d9c9baecf023457771b6e4894b5`,
+`cd74267bec2a671aeb703a6faf8c77fc432b1ba9ad178cd878bc65ea4d1bff4e`,
+and `3c95af5fb31bc72b85c00e09f04c076e16af08d3e2a488df93523f0eb7e76888`.
+It is still `prepared-not-executable`: fresh price/quota preflight,
+VM-service-account IAM verification, generation-pinned uploads, an executable
+card, and explicit GCloud approval remain missing.
 
 Gate 3 is closed after the fully finalized staged attempt
 `20260826T042539Z`. Gate 1 revalidation reproduced the canonical base score of

@@ -26,8 +26,13 @@ level anomaly detection. Its `1e-5` candidate completed all 461,235 input
 tokens with improved held-out loss and exact adapter reload equivalence. The
 canary then stopped on a missing verifier-image orchestration defect before an
 executable score existed; `3e-5`, LR selection, and the full development run
-remain incomplete. The defect is repaired and resealed locally. Another
-GCloud campaign requires fresh explicit approval.
+remain incomplete. The defect is repaired. A sealed continuation now imports
+the completed `1e-5` adapter without retraining it, loads and audits all six
+verifier images first, trains only `3e-5`, evaluates both canaries, and performs
+the frozen full-development adjudication. Automatic VM restart is explicitly
+disabled. The exact VM service account's bucket read/write IAM is verified
+before any compute or temporary network resource is created. Another GCloud
+campaign requires fresh explicit approval.
 
 No `ganesh-mini-1.0` weights have been released. Gates 4–8 remain evidence-
 dependent: main SFT, optional correction, untouched decision evaluation against

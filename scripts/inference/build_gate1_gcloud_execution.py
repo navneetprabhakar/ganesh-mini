@@ -25,6 +25,8 @@ INPUT_KEYS = {
     "workspace_manifest",
     "training_workspace_archive",
     "training_workspace_manifest",
+    "completed_candidate_archive",
+    "completed_candidate_manifest",
     "gate0_report",
     "gate1_report",
     "gate2_report",
@@ -41,6 +43,8 @@ LOCAL_INPUT_MAPPING = {
     "verifier_manifest": "verifier_manifest",
     "training_workspace_archive": "training_workspace_archive",
     "training_workspace_manifest": "training_workspace_manifest",
+    "completed_candidate_archive": "completed_candidate_archive",
+    "completed_candidate_manifest": "completed_candidate_manifest",
     "gate0_report": "gate0_report",
     "gate1_report": "gate1_report",
     "gate2_report": "gate2_report",
@@ -98,7 +102,7 @@ def tracked_worktree_clean(root: Path) -> bool:
 
 def validate_approval(text: str, zone: str) -> None:
     normalized = " ".join(text.lower().split())
-    required = ("approved", "gate 3", "g2-standard-12", zone.lower(), "4 hours", "usd 5")
+    required = ("approved", "gate 3", "g2-standard-12", zone.lower(), "3 hours", "usd 3.50")
     missing = [token for token in required if token not in normalized]
     if missing:
         raise ValueError(f"approval text does not bind the prepared execution: {missing}")
@@ -121,7 +125,7 @@ def build(
         raise ValueError("source commit is not the current repository HEAD")
     if require_clean and not tracked_worktree_clean(root):
         raise ValueError("tracked worktree must be clean before sealing an executable card")
-    if bindings.get("schema_version") != "ganesh-mini-gate3-gcloud-bindings/v2" or bindings.get("status") != "verified-generation-pinned":
+    if bindings.get("schema_version") != "ganesh-mini-gate3-gcloud-bindings/v3" or bindings.get("status") != "verified-generation-pinned":
         raise ValueError("unsupported or incomplete Gate 1 bindings")
     if not re.fullmatch(r"[0-9]{8}T[0-9]{6}Z", str(bindings.get("run_id", ""))):
         raise ValueError("Gate 3 run ID must be an exact UTC timestamp")
@@ -138,11 +142,19 @@ def build(
         "region": proposal["region"],
         "zone": zone,
         "machine_type": proposal["machine_type"],
+        "service_account": proposal["service_account"],
     }
     for key, expected in expected_preflight.items():
         if preflight.get(key) != expected:
             raise ValueError(f"preflight {key} mismatch")
-    for key in ("price_passed", "quota_passed", "machine_type_available", "exact_resources_absent", "bucket_round_trip_passed"):
+    for key in (
+        "price_passed",
+        "quota_passed",
+        "machine_type_available",
+        "exact_resources_absent",
+        "bucket_round_trip_passed",
+        "service_account_bucket_access_passed",
+    ):
         if preflight.get(key) is not True:
             raise ValueError(f"preflight did not pass: {key}")
     for key in ("project", "gcs_bucket", "gcs_prefix", "boot_image"):
@@ -155,7 +167,7 @@ def build(
     hourly = Decimal(str(cost.get("conservative_hourly_usd")))
     reserve = Decimal(str(cost.get("support_reserve_usd")))
     ceiling = Decimal(str(cost.get("absolute_cost_ceiling_usd")))
-    approved_ceiling = Decimal("5.00")
+    approved_ceiling = Decimal("3.50")
     upper = hourly * Decimal(proposal["maximum_run_seconds"]) / Decimal(3600) + reserve
     if hourly <= 0 or reserve < 0 or ceiling <= upper or ceiling > approved_ceiling:
         raise ValueError("cost preflight exceeds the approved bound")
@@ -199,18 +211,20 @@ def build(
         "controller_budget_seconds": proposal["controller_budget_seconds"],
         "backup_reserve_seconds": proposal["backup_reserve_seconds"],
         "instance_termination_action": proposal["instance_termination_action"],
+        "automatic_restart": proposal["automatic_restart"],
+        "service_account": preflight["service_account"],
         "external_ip": False,
         "resources": resources,
     }
     card: dict[str, Any] = {
-        "schema_version": "ganesh-mini-gate3-gcloud-execution/v2",
+        "schema_version": "ganesh-mini-gate3-gcloud-execution/v3",
         "status": "authorized-executable",
         "gate": 3,
         "gate_range": [3, 3],
         "source_commit": source_commit,
         "preparation_sha256": preparation["preparation_sha256"],
         "bindings_sha256": bindings["bindings_sha256"],
-        "approval": {"verbatim": approval_text, "maximum_incremental_cost_usd": "5.00"},
+        "approval": {"verbatim": approval_text, "maximum_incremental_cost_usd": "3.50"},
         "model": preparation["model"],
         "evaluation": {
             "classification": "private_candidate_development",
@@ -223,12 +237,16 @@ def build(
             "objective": "unique-row-token-weighted-five-family-v2",
             "unique_train_records": 1399,
             "lr_candidates": [0.00001, 0.00003],
+            "imported_lr_candidates": [0.00001],
+            "trained_lr_candidates": [0.00003],
             "lr_candidate_seen_tokens_each": 461235,
             "main_seen_tokens": 0,
             "candidate_selection_tasks": 30,
             "selected_candidate_full_evaluation_tasks": 180,
             "evaluation_training_mount_isolation": True,
             "decision_prompts_exposed": False,
+            "completed_candidate_manifest_sha256": preparation["completed_candidate"]["manifest_sha256"],
+            "completed_candidate_run_evidence_sha256": preparation["completed_candidate"]["run_evidence_sha256"],
         },
         "execution": execution,
         "cost": {
@@ -249,6 +267,7 @@ def build(
             "terminal GCS inventory verified twice by immutable generation",
             "guest shutdown only after terminal backup",
             "provider maximum runtime stops rather than deletes the VM",
+            "automatic restart is disabled; any host failure terminates this attempt",
             "VM and disk deleted only after independent backup verification",
             "temporary subnet and network deleted",
             "exact resource absence sealed and backed to GCS",

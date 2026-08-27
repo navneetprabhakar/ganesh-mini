@@ -16,7 +16,7 @@ def make(**overrides):
         "source": SOURCE,
         "conservative_hourly_usd": "1.000416348",
         "support_reserve_usd": "0.35",
-        "absolute_cost_ceiling_usd": "5.00",
+        "absolute_cost_ceiling_usd": "3.50",
         "now": NOW,
     }
     values.update(overrides)
@@ -30,6 +30,7 @@ def test_builds_canonical_fresh_price_evidence() -> None:
     assert evidence["region"] == "us-east1"
     assert evidence["machine_type"] == "g2-standard-12"
     assert evidence["conservative_hourly_usd"] == "1.000416348"
+    assert evidence["schema_version"] == "ganesh-mini-gate3-price-evidence/v3"
 
 
 @pytest.mark.parametrize(
@@ -40,7 +41,7 @@ def test_builds_canonical_fresh_price_evidence() -> None:
         ("source", "https://example.com/pricing", "official Google Cloud"),
         ("conservative_hourly_usd", "nan", "finite"),
         ("conservative_hourly_usd", "1.20", "exceeds"),
-        ("absolute_cost_ceiling_usd", "5.01", "exceeds"),
+        ("absolute_cost_ceiling_usd", "3.51", "exceeds"),
     ],
 )
 def test_rejects_untrusted_stale_or_over_budget_observations(field, value, message) -> None:

@@ -48,11 +48,11 @@ def build(
         raise ValueError("price values must be finite decimals") from error
     if not all(value.is_finite() for value in (hourly, reserve, ceiling)):
         raise ValueError("price values must be finite decimals")
-    upper = hourly * Decimal(4) + reserve
-    if hourly <= 0 or reserve < 0 or ceiling > Decimal("5.00") or upper >= ceiling:
+    upper = hourly * Decimal(3) + reserve
+    if hourly <= 0 or reserve < 0 or ceiling > Decimal("3.50") or upper >= ceiling:
         raise ValueError("price observation exceeds the Gate 3 approval envelope")
     value = {
-        "schema_version": "ganesh-mini-gate3-price-evidence/v2",
+        "schema_version": "ganesh-mini-gate3-price-evidence/v3",
         "status": "verified",
         "checked_at": observed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
         "region": "us-east1",
@@ -72,7 +72,7 @@ def main() -> int:
     parser.add_argument("--source", required=True)
     parser.add_argument("--conservative-hourly-usd", required=True)
     parser.add_argument("--support-reserve-usd", default="0.35")
-    parser.add_argument("--absolute-cost-ceiling-usd", default="5.00")
+    parser.add_argument("--absolute-cost-ceiling-usd", default="3.50")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     evidence = build(

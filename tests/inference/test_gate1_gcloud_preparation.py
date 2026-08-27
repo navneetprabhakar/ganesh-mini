@@ -15,14 +15,17 @@ def test_gate1_gcloud_preparation_is_sealed_but_not_executable() -> None:
     assert claimed == canonical_sha256(record)
     assert record["status"] == "prepared-not-executable"
     assert record["gate"] == 3
-    assert record["resource_proposal"]["maximum_run_seconds"] == 14400
+    assert record["resource_proposal"]["maximum_run_seconds"] == 10800
     assert record["resource_proposal"]["allowed_zones"] == ["us-east1-b", "us-east1-c", "us-east1-d"]
-    assert record["resource_proposal"]["controller_budget_seconds"] + record["resource_proposal"]["backup_reserve_seconds"] == 14400
+    assert record["resource_proposal"]["controller_budget_seconds"] + record["resource_proposal"]["backup_reserve_seconds"] == 10800
     assert record["resource_proposal"]["instance_termination_action"] == "STOP"
-    assert record["public_price_bound"]["four_hour_conservative_upper_usd"] < record["public_price_bound"]["proposed_absolute_ceiling_usd"]
+    assert record["resource_proposal"]["automatic_restart"] is False
+    assert record["resource_proposal"]["service_account"] == "1061994342941-compute@developer.gserviceaccount.com"
+    assert record["public_price_bound"]["three_hour_conservative_upper_usd"] < record["public_price_bound"]["proposed_absolute_ceiling_usd"]
     assert record["utilization"]["generation_batch_size"] == 4
     assert record["utilization"]["verifier_workers"] == 12
-    assert {"execution_card_builder", "terminal_validator", "finalizer", "launcher", "runtime_bundle_rehearsal", "price_evidence_builder", "price_evidence_schema", "baseline_admitter", "baseline_admission_schema", "training_workspace_archive", "training_workspace_manifest", "gate1_report"} <= set(record["local_inputs"])
+    assert {"execution_card_builder", "terminal_validator", "finalizer", "launcher", "runtime_bundle_rehearsal", "price_evidence_builder", "price_evidence_schema", "baseline_admitter", "baseline_admission_schema", "training_workspace_archive", "training_workspace_manifest", "completed_candidate_archive", "completed_candidate_manifest", "gate1_report"} <= set(record["local_inputs"])
+    assert record["completed_candidate"]["run_evidence_sha256"] == "d885af11f3c7346959b2fcfadd6b77c6009bca99410f527038f923ad09f1c5a0"
     assert record["workspace_source_alignment"]["evaluation"]["file_count"] > 0
     assert record["workspace_source_alignment"]["training"]["file_count"] > 0
     assert len(record["workspace_source_alignment"]["evaluation"]["source_collection_sha256"]) == 64
@@ -47,6 +50,9 @@ def test_gate1_startup_scripts_are_fail_closed() -> None:
     assert "shutdown -h now" in wrapper
     assert wrapper.index("wrapper_backed == 1") < wrapper.rindex("shutdown -h now")
     assert "GANESH_VERIFIER_ARCHIVE_URI" in wrapper
+    assert "GANESH_COMPLETED_CANDIDATE_ARCHIVE_URI" in wrapper
+    assert '--completed-candidate-root "$work_dir/completed-candidate"' in controller
+    assert "unsafe completed candidate archive member" in controller
     assert "GANESH_EXECUTION_CARD_INTERNAL_SHA256" in wrapper
     assert "execution card metadata mismatch" in controller
     assert "execution card input mismatch" in controller

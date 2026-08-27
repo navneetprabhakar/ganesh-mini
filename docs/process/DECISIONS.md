@@ -1,5 +1,43 @@
 # Decisions
 
+## 2026-08-27 — Continue Gate 3 from the completed candidate; never auto-restart training
+
+The completed `1e-5` candidate from attempt `20260827T090603Z` is now a
+minimal deterministic input bundle rather than a reason to repeat training.
+The bundle contains only the final adapter and sealed run evidence. Its four
+files are independently matched to the generation-verified terminal backup,
+the source execution card, the strict terminal validation, the frozen model
+revision, the 461,235-token/1,399-row epoch, and save/reload equivalence. The
+candidate manifest, archive, run, and adapter seals are respectively
+`5b882126fe59fcd28f6b1e9ffe578929b0b65ac0bd39fbd029f0baa0e3f325a7`,
+`95a4a1054bab679dfd3255b752eac01ff3c6d42467304348a8ecff048dc998da`,
+`d885af11f3c7346959b2fcfadd6b77c6009bca99410f527038f923ad09f1c5a0`,
+and `6a6ccf88c85a5c16d3569bdedc8ccb5662eeb79f583006a777c7ba2d2f51fc8d`.
+
+The continuation imports and revalidates that candidate against the current
+frozen model, configuration, prepared-data manifest, recipe, token budget, and
+adapter file hashes. It reruns the `1e-5` canary with the now-mandatory verifier
+runtime, trains only the missing `3e-5` epoch, runs the same canary, applies the
+frozen LR rule, and evaluates the selected candidate on all 180 development
+tasks. Terminal admission distinguishes the imported candidate from the newly
+trained candidate and independently verifies every terminal adapter file.
+
+The earlier VM reset was an explicit bootstrap retry after a pre-training IAM
+403, not a training restart. Nonetheless, the provider default had
+`automaticRestart=true`. Future execution explicitly uses
+`--no-restart-on-failure`; a host failure ends the attempt and preserves
+checkpoint evidence instead of silently rebooting. The earlier preflight also
+proved bucket access only for the signed-in launcher account, not for the VM
+service account. The repaired launcher resolves and binds the exact Compute
+Engine service account, reads the bucket IAM policy, and fails before uploads
+or resource creation unless that identity has bucket-scoped object read/write
+access. The VM is then created with that same explicitly bound identity. The
+new non-executable
+proposal is bounded to three VM hours, including a 30-minute backup reserve,
+with a conservative USD 3.50 ceiling. It remains non-executable until fresh
+price/quota/service-account-IAM checks, generation-pinned uploads, an exact
+card, and explicit GCloud approval exist.
+
 ## 2026-08-27 — Gate 3 v2 first candidate is valid; verifier preparation must be explicit
 
 Approved attempt `20260827T090603Z` repaired an initial bucket-IAM 403 by

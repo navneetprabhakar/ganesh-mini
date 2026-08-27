@@ -233,7 +233,7 @@ python3 -B "$work_dir/workspace/scripts/campaign/run_host.py" \
   --cuda-image-id "$GANESH_CUDA_IMAGE_ID" \
   --attempt-id "$GANESH_ATTEMPT_ID" \
   --max-seconds "$(remaining)" \
-  --finalization-reserve-seconds 1800 \
+  --finalization-reserve-seconds 300 \
   --hourly-cost-usd "$GANESH_GPU_HOURLY_USD" \
   --training-cost-ceiling-usd "4.65" > "$evidence_dir/controller.stdout.log" 2> "$evidence_dir/controller.stderr.log"
 run_status="$?"

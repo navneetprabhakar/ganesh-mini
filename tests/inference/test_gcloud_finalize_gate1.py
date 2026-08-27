@@ -19,7 +19,8 @@ def test_finalizer_orders_verified_backup_before_deletion_and_backs_teardown() -
     post_delete_backup = script.index("gcloud_backup_manifest.py", absence)
     admission = script.index("admit_gate1_baseline.py")
     assert backup < terminal < deletion_gate < delete_vm < delete_subnet < absence < post_delete_backup < admission
-    assert "--phase gate1-baseline" in script
+    assert "--phase \"$finalization_phase\"" in script
+    assert "'gate3-campaign' if card.get('schema_version')" in script
     assert "cmp \"$card\" \"$terminal_dir/execution-card.json\"" in script
     assert "post-delete-final-backup-manifest.json" in script
     assert "wrapper-failure-backup-manifest.json" in script
@@ -29,8 +30,12 @@ def test_finalizer_orders_verified_backup_before_deletion_and_backs_teardown() -
     assert 'if [[ "$baseline_admissible" == yes ]]' in script
     assert "Canonical Gate 1 baseline already exists; preserving it" in script
     assert "canonical baseline admission was correctly skipped" in script
-    assert "--integrity-mode quarantine" in script
-    assert "complete-quarantined" in script
+    assert "--integrity-mode quarantine" not in script
+    assert "preserve_finalizer_failure terminal-integrity" in script
+    assert "preserve_finalizer_failure deletion-gate" in script
+    assert "preserve_finalizer_failure unexpected-instance-absence" in script
+    assert "ganesh-mini-gate3-gcloud-finalization/v2" in script
+    assert script.index("preserve_finalizer_failure()") < terminal < deletion_gate < delete_vm
     assert 'deletion.get("admission_eligible",True) is True' in script
     assert "compute.instances.deferredDelete" in script
     assert 'if [[ "$instance_present" == true ]]; then gcloud compute instances delete' in script
@@ -57,3 +62,4 @@ def test_controller_freezes_live_logs_before_hashing_terminal_evidence() -> None
     assert '>> "$evidence_dir/gcs-backup.log"' not in script
     finish = script[script.index("finish() {"):script.index("trap finish EXIT")]
     assert finish.index("stop_runtime_writers") < finish.index("capture_checkpoint_log") < finish.index("write_inventory") < finish.index("final_backup")
+    assert '--finalization-reserve-seconds 300' in script

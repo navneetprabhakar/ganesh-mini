@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from decimal import Decimal
@@ -125,6 +126,8 @@ def build(
         raise ValueError("tracked worktree must be clean before sealing an executable card")
     if bindings.get("schema_version") != "ganesh-mini-gate3-gcloud-bindings/v2" or bindings.get("status") != "verified-generation-pinned":
         raise ValueError("unsupported or incomplete Gate 1 bindings")
+    if not re.fullmatch(r"[0-9]{8}T[0-9]{6}Z", str(bindings.get("run_id", ""))):
+        raise ValueError("Gate 3 run ID must be an exact UTC timestamp")
     if bindings.get("preparation_sha256") != preparation["preparation_sha256"]:
         raise ValueError("bindings do not reference the current preparation")
 
@@ -230,6 +233,7 @@ def build(
         "training": {
             "mechanism": "bf16-lora-conservative-v2",
             "objective": "unique-row-token-weighted-five-family-v2",
+            "unique_train_records": 1399,
             "lr_candidates": [0.00001, 0.00003],
             "lr_candidate_seen_tokens_each": 461235,
             "main_seen_tokens": 0,
@@ -256,7 +260,8 @@ def build(
             "exact 180-task run or sealed bounded failure",
             "terminal GCS inventory verified twice by immutable generation",
             "guest shutdown only after terminal backup",
-            "VM and disk deleted after backup verification",
+            "provider maximum runtime stops rather than deletes the VM",
+            "VM and disk deleted only after independent backup verification",
             "temporary subnet and network deleted",
             "exact resource absence sealed and backed to GCS",
         ],

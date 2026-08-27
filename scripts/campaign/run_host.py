@@ -418,7 +418,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hourly-cost-usd", type=Decimal, required=True)
     parser.add_argument("--training-cost-ceiling-usd", type=Decimal, required=True)
     args = parser.parse_args()
-    if not 3600 <= args.max_seconds <= 64800 or not 1200 <= args.finalization_reserve_seconds < args.max_seconds:
+    if not 3600 <= args.max_seconds <= 64800 or not 300 <= args.finalization_reserve_seconds < args.max_seconds:
         parser.error("invalid campaign time envelope")
     if args.hourly_cost_usd <= 0 or args.training_cost_ceiling_usd <= 0:
         parser.error("invalid campaign cost envelope")

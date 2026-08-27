@@ -150,6 +150,7 @@ print("MOUNT_TOPOLOGY_OK")
 
     controller = (root / "scripts/inference/gcloud_startup_development_baseline.sh").read_text(encoding="utf-8")
     launcher = (root / "scripts/inference/gcloud_launch_gate1.sh").read_text(encoding="utf-8")
+    finalizer = (root / "scripts/inference/gcloud_finalize_gate1.sh").read_text(encoding="utf-8")
     finish = controller[controller.index("finish() {"):controller.index("trap finish EXIT")]
     checks = {
         "archived_attempt_id_is_docker_safe": len(container_names) == 5 and all(name == name.lower() for name in container_names),
@@ -162,7 +163,11 @@ print("MOUNT_TOPOLOGY_OK")
         "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,
         "controller_binds_canonical_gate1": '--gate1-report "$work_dir/gate1-readiness.json"' in controller,
+        "controller_retains_outer_terminal_backup_reserve": '--finalization-reserve-seconds 300' in controller,
         "launcher_uploads_bindings_once": launcher.count("upload_bind bindings ") == 1,
+        "provider_stops_before_independent_deletion": "--instance-termination-action=STOP" in launcher,
+        "finalizer_preserves_on_terminal_failure": "preserve_finalizer_failure terminal-integrity" in finalizer and "preserve_finalizer_failure deletion-gate" in finalizer,
+        "finalizer_uses_gate3_terminal_contract": "ganesh-mini-gate3-gcloud-finalization/v2" in finalizer and "gate3-campaign" in finalizer,
         "runtime_writers_stop_before_inventory": finish.index("stop_runtime_writers") < finish.index("capture_checkpoint_log") < finish.index("write_inventory") < finish.index("final_backup"),
     }
     if not all(checks.values()):

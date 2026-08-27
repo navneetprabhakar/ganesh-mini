@@ -24,6 +24,9 @@ values={
     'bucket':execution['gcs_bucket'],'prefix':execution['gcs_prefix'],'attempt':execution['attempt_id'],
     'instance':resources['instance'],'disk':resources['disk'],'network':resources['network'],'subnet':resources['subnet'],
     'card_seal':claimed,'source_commit':card['source_commit'],
+    'termination_action':execution['instance_termination_action'],
+    'finalization_phase':'gate3-campaign' if card.get('schema_version')=='ganesh-mini-gate3-gcloud-execution/v2' else 'gate1-baseline',
+    'finalization_schema':'ganesh-mini-gate3-gcloud-finalization/v2' if card.get('schema_version')=='ganesh-mini-gate3-gcloud-execution/v2' else 'ganesh-mini-gate1-gcloud-finalization/v1',
 }
 for key,value in values.items(): print(f'{key}={shlex.quote(str(value))}')
 PY
@@ -38,6 +41,22 @@ terminal_prefix="gs://$bucket/$prefix/runtime-terminal-$attempt"
 wrapper_prefix="gs://$bucket/$prefix/wrapper-failure-$attempt"
 postdelete_prefix="gs://$bucket/$prefix/post-delete"
 launch_plan="$(dirname "$card")/launch-plan.json"
+
+preserve_finalizer_failure() {
+  local label="$1" status="$2"
+  local failure_prefix="gs://$bucket/$prefix/finalizer-failure-$attempt-$label"
+  printf '%s\n' "$status" > "$run_dir/finalizer-failure-exit-code.txt"
+  printf '%s\n' "$label" > "$run_dir/finalizer-failure-phase.txt"
+  gcloud storage rsync "$run_dir" "$failure_prefix" --recursive \
+    --exclude='(terminal-download|wrapper-failure-download|partial-terminal-download|finalizer-failure-download)/.*' \
+    --project="$project"
+  python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
+    --project "$project" --prefix "$failure_prefix" \
+    --output "$run_dir/finalizer-failure-backup-manifest.json" \
+    --download-dir "$run_dir/finalizer-failure-download"
+  echo "finalization failed before deletion; all remaining exact resources are preserved" >&2
+  exit "$status"
+}
 
 gcloud compute networks describe "$network" --project="$project" --format=json > "$provider_dir/network-before-delete.json"
 gcloud compute networks subnets describe "$subnet" --region="$region" --project="$project" --format=json > "$provider_dir/subnet-before-delete.json"
@@ -65,6 +84,9 @@ else
   rm -f "$provider_dir/resource-terminated.json"
   gcloud compute instances list --zones="$zone" --project="$project" --filter="name=('$instance')" --format=json > "$provider_dir/absence-instance.json"
   gcloud compute disks list --zones="$zone" --project="$project" --filter="name=('$disk')" --format=json > "$provider_dir/absence-disk.json"
+  if [[ "$termination_action" != DELETE ]]; then
+    preserve_finalizer_failure unexpected-instance-absence 3
+  fi
   python3 - "$launch_plan" "$card" "$provider_dir/operations.json" "$provider_dir/absence-instance.json" "$provider_dir/absence-disk.json" "$provider_dir/resource-deleted.json" "$instance" <<'PY'
 import hashlib,json,sys
 launch_path,card_path,operations_path,instance_absence_path,disk_absence_path,out,expected_name=sys.argv[1:]
@@ -177,6 +199,7 @@ value={'schema_version':'ganesh-mini-gate1-terminal-validation/v1','status':'int
 value['evidence_sha256']=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 json.dump(value,open(out,'w'),indent=2,sort_keys=True)
 PY
+  preserve_finalizer_failure terminal-integrity "$terminal_status"
 fi
 if [[ "$terminal_status" == 2 ]]; then
   if [[ ! -f "$run_dir/wrapper-failure-backup-manifest.json" ]]; then
@@ -187,7 +210,7 @@ if [[ "$terminal_status" == 2 ]]; then
 fi
 
 deletion_args=(
-  --phase gate1-baseline --backup-manifest "$run_dir/terminal-backup-manifest.json"
+  --phase "$finalization_phase" --backup-manifest "$run_dir/terminal-backup-manifest.json"
   --resource-state "$terminal_dir/provider/$resource_relative"
   --inventory "$terminal_dir/runtime-files.sha256" "${serial_option[@]}"
   --operations-evidence "$terminal_dir/provider/operations.json"
@@ -201,7 +224,7 @@ python3 "$repo_root/scripts/cuda/verify_deletion_gate.py" "${deletion_args[@]}" 
 deletion_status="$?"
 set -e
 if [[ "$deletion_status" != 0 ]]; then
-  python3 "$repo_root/scripts/cuda/verify_deletion_gate.py" "${deletion_args[@]}" --integrity-mode quarantine
+  preserve_finalizer_failure deletion-gate "$deletion_status"
 fi
 
 if [[ "$instance_present" == true ]]; then gcloud compute instances delete "$instance" --zone="$zone" --project="$project" --quiet; fi
@@ -241,9 +264,9 @@ python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
   --project "$project" --prefix "$postdelete_prefix" \
   --output "$run_dir/post-delete-backup-manifest.json" --download-dir "$run_dir/post-delete-download"
 
-python3 - "$run_dir/finalization.json" "$card_seal" "$run_dir/terminal-backup-manifest.json" "$run_dir/terminal-validation.json" "$run_dir/deletion-gate.json" "$postdelete_dir/absence-proof.json" "$run_dir/post-delete-backup-manifest.json" <<'PY'
+python3 - "$run_dir/finalization.json" "$card_seal" "$finalization_schema" "$run_dir/terminal-backup-manifest.json" "$run_dir/terminal-validation.json" "$run_dir/deletion-gate.json" "$postdelete_dir/absence-proof.json" "$run_dir/post-delete-backup-manifest.json" <<'PY'
 import hashlib,json,sys
-out,card,*paths=sys.argv[1:]
+out,card,schema,*paths=sys.argv[1:]
 def sealed(path,field):
  value=json.load(open(path)); claimed=value.pop(field,None)
  actual=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
@@ -251,7 +274,7 @@ def sealed(path,field):
  return claimed
 fields=['evidence_sha256']*5
 deletion=json.load(open(paths[2])); integrity=deletion.get('integrity_mode','strict')
-value={'schema_version':'ganesh-mini-gate1-gcloud-finalization/v1','status':'complete' if integrity=='strict' else 'complete-quarantined','integrity_mode':integrity,'execution_sha256':card,'terminal_backup_sha256':sealed(paths[0],fields[0]),'terminal_validation_sha256':sealed(paths[1],fields[1]),'deletion_gate_sha256':sealed(paths[2],fields[2]),'absence_proof_sha256':sealed(paths[3],fields[3]),'post_delete_backup_sha256':sealed(paths[4],fields[4])}
+value={'schema_version':schema,'status':'complete' if integrity=='strict' else 'complete-quarantined','integrity_mode':integrity,'execution_sha256':card,'terminal_backup_sha256':sealed(paths[0],fields[0]),'terminal_validation_sha256':sealed(paths[1],fields[1]),'deletion_gate_sha256':sealed(paths[2],fields[2]),'absence_proof_sha256':sealed(paths[3],fields[3]),'post_delete_backup_sha256':sealed(paths[4],fields[4])}
 value['evidence_sha256']=hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 json.dump(value,open(out,'w'),indent=2,sort_keys=True)
 PY
@@ -259,7 +282,7 @@ gcloud storage cp "$run_dir/finalization.json" "$postdelete_prefix/finalization.
 python3 "$repo_root/scripts/cuda/gcloud_backup_manifest.py" \
   --project "$project" --prefix "$postdelete_prefix" \
   --output "$run_dir/post-delete-final-backup-manifest.json" --download-dir "$run_dir/post-delete-final-download"
-baseline_admissible="$(python3 -c 'import json,sys; validation=json.load(open(sys.argv[1])); finalization=json.load(open(sys.argv[2])); deletion=json.load(open(sys.argv[3])); print("yes" if validation.get("run") and finalization.get("status")=="complete" and deletion.get("admission_eligible",True) is True else "no")' "$run_dir/terminal-validation.json" "$run_dir/finalization.json" "$run_dir/deletion-gate.json")"
+baseline_admissible="$(python3 -c 'import json,sys; validation=json.load(open(sys.argv[1])); finalization=json.load(open(sys.argv[2])); deletion=json.load(open(sys.argv[3])); print("yes" if validation.get("schema_version")=="ganesh-mini-gate1-terminal-validation/v1" and validation.get("run") and finalization.get("status")=="complete" and deletion.get("admission_eligible",True) is True else "no")' "$run_dir/terminal-validation.json" "$run_dir/finalization.json" "$run_dir/deletion-gate.json")"
 if [[ "$baseline_admissible" == yes ]]; then
   canonical_baseline="$repo_root/measurement/inference/development/qwen3.5-2b-base-v1"
   if [[ -d "$canonical_baseline" ]]; then

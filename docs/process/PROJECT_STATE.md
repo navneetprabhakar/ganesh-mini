@@ -66,10 +66,10 @@ evaluation. Its manifest seal is
 
 The Gate 3 v2 evaluation-workspace, training-workspace, runtime-rehearsal, and
 non-executable preparation seals are respectively
-`24f80b9cc0609ecc9212a0e71fdec4a218e37798df087a1803fb8021dc498a80`,
+`30e02615813821ca81f3baeed6a2518fe0afed951df72ee7d0541df0c8b83361`,
 `874ac3f8f2bf226a6dd100c470f46ee39b7e7f1591ec5324042e985de17b4ae1`,
-`cccdc65535aeb8b0f17884dad8c0d0ef739ddc34c88499191caac5b169af83b6`,
-and `ebfac3a70c6b15f3a5273bb653205f42db580847d95a5a4866e2584edc319be8`.
+`a18f3f5c933ff3ddd887cf8dd2137429c13ca17ac1a9e1dcd843c794b75ee98f`,
+and `9c3fa7acfb883f1f65bbc2bd9880a4f99d5d0e87c69d395adad1536407271ca5`.
 The regenerated local training preflight is `ready` with no failed checks under
 card seal
 `c33be811a3eaeda5033bcd93313577f0eb716b8bd42a8514da9f41b40eedba0e`.
@@ -109,10 +109,11 @@ The VM, disk, subnet, and VPC are absent. The final 14-object post-delete GCS
 backup is verified under seal
 `9a34c63e37a75211234edb5de977c4da5f92e4381e352b4b85fce4a319fbf419`.
 
-The next action is a fresh explicitly approved GCloud attempt for the two
-bounded LR candidates, their development evaluations, LR selection, main
-636,093-token SFT, main development evaluation, and Gate 3 promotion decision.
-The consumed one-VM approval does not authorize that retry.
+That historical repair was superseded by Gate 3 v2. The current next action is
+the Gate 3-only campaign described below: two complete 461,235-token unique-row
+candidates, two 30-task canaries, and one selected-candidate 180-task
+evaluation, with no third SFT. The consumed one-VM approval does not authorize
+that new campaign.
 
 Gate 0B is now passed. The approved `us-east1-b` Flex-start L4 execution used
 Liger 0.8.2 only for Qwen3.5 fused linear cross-entropy and did not materialize
@@ -777,9 +778,22 @@ The preparation record is `measurement/gate3/gcloud/preparation.json`. It is
 generation-pinned uploads, and a clean-commit execution card remain missing.
 The public-price conservative upper is `$4.351665392`, below the proposed USD
 5.00 ceiling. The launcher retains two-minute GCS checkpoints, fail-closed
-backup, provider automatic deletion, exact-resource teardown proof, and double
-immutable-generation verification. No GCloud action occurred while preparing
-this revision.
+backup, exact-resource teardown proof, and double immutable-generation
+verification. Its maximum-runtime action is `STOP`, not `DELETE`, so the boot
+disk survives until the local finalizer independently verifies the complete
+terminal GCS inventory. Only then may the finalizer delete the VM, disk,
+subnet, and VPC. Any terminal-integrity or deletion-gate failure preserves the
+stopped resources. No GCloud action occurred while preparing this revision.
+
+The terminal validator is now version-aware. Historical Gate 1 success still
+requires its generated baseline, while Gate 3 v2 success requires both
+candidate training artifacts, both canary task-evidence collections, sealed LR
+selection with exact collection hashes and lane counts, the selected
+candidate's complete SFT and save/reload evidence, its 180-task collection,
+every promotion check, and the terminal campaign seal. The output has a
+dedicated Gate 3 terminal schema. This prevents both a valid reused-baseline
+run from being rejected by the obsolete Gate 1 contract and an incomplete
+candidate path from being trusted through phase-ledger claims alone.
 
 The dependency-complete `.venv` suite passes with only the intentionally
 disabled Docker integration test skipped. Forcing that optional test on the

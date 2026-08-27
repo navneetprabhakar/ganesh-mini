@@ -24,7 +24,7 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
         "--provisioning-model=FLEX_START",
         "--request-valid-for-duration=2h",
         "--max-run-duration=4h",
-        "--instance-termination-action=DELETE",
+        "--instance-termination-action=STOP",
         "--no-address",
         "--enable-private-ip-google-access",
         "--reservation-affinity=none",
@@ -42,15 +42,16 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert 'required=(\'approved\',\'gate 3\',\'g2-standard-12\',zone' in script
 
 
-def test_launcher_cleans_failed_create_only_after_verified_backup() -> None:
+def test_launcher_preserves_any_created_vm_and_cleans_only_unattached_resources_after_backup() -> None:
     script = (ROOT / "scripts/inference/gcloud_launch_gate1.sh").read_text(encoding="utf-8")
     backup = script.index("launch-failure-backup-manifest.json")
-    instance = script.index('gcloud compute instances delete')
+    preserve = script.index("preserving the STOP-bounded VM")
     disk = script.index('gcloud compute disks delete')
     subnet = script.index('gcloud compute networks subnets delete')
     network = script.index('gcloud compute networks delete')
-    assert backup < instance < disk < subnet < network
+    assert backup < preserve < disk < subnet < network
     assert "refusing resource deletion" in script
+    assert 'gcloud compute instances delete' not in script
     absence = script.index("launch-failure-cleanup.json")
     final_backup = script.index("launch-failure-final-backup-manifest.json")
     assert network < absence < final_backup

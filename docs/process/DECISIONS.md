@@ -52,6 +52,21 @@ maximum, a 30-minute terminal-backup reserve, and a USD 5 absolute incremental
 ceiling. This is a fresh Gate 3-only preparation and still requires explicit
 GCloud approval before preflight, upload, or resource creation.
 
+The maximum-runtime action is `STOP`, not `DELETE`. Google Compute Engine
+supports both actions for standalone Flex-start VMs; `STOP` preserves the boot
+disk until independent terminal-backup verification. The finalizer may delete
+the VM, disk, subnet, and VPC only after the generation-pinned GCS inventory
+and Gate 3 terminal contract pass. An integrity or deletion-gate failure backs
+up the finalizer evidence and preserves the stopped resources rather than
+entering quarantine teardown. Source:
+<https://cloud.google.com/compute/docs/instances/create-flex-start-vm>.
+
+Terminal admission independently opens both complete SFT evidence files, both
+30-task canary runs and their sealed task results, the LR-selection bindings,
+the selected 180-task run, and every promotion check. A phase-ledger entry by
+itself is not sufficient. Gate 3 terminal output has its own v2 schema, while
+the historical Gate 1 schema remains unchanged.
+
 ## 2026-08-27 — Seed pilot rejected; preserve canonical baseline and revise before scaling
 
 Staged attempt `20260826T042539Z` revalidated the exact Qwen base at 20/180,

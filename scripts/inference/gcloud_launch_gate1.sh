@@ -61,7 +61,9 @@ cleanup_failed_launch() {
     exit 97
   fi
   if gcloud compute instances describe "$instance" --zone="$zone" --project="$project" --format=json > "$work_dir/raw/failure-instance.json" 2>/dev/null; then
-    gcloud compute instances delete "$instance" --zone="$zone" --project="$project" --quiet || exit 98
+    gcloud storage rsync "$work_dir" "$failure_prefix" --recursive --project="$project" || exit 97
+    echo "launch failed after the VM existed; preserving the STOP-bounded VM, disk, subnet, and network for terminal-backup verification" >&2
+    exit 97
   fi
   if gcloud compute disks describe "$disk" --zone="$zone" --project="$project" --format=json > "$work_dir/raw/failure-disk.json" 2>/dev/null; then
     gcloud compute disks delete "$disk" --zone="$zone" --project="$project" --quiet || exit 98
@@ -275,7 +277,7 @@ project_number="$(gcloud projects describe "$project" --format='value(projectNum
 gcloud compute instances create "$instance" --project="$project" --zone="$zone" --machine-type="$machine_type" \
   --image-project="$boot_image_project" --image="$boot_image_name" --boot-disk-size=200GB --boot-disk-type=pd-balanced --no-address \
   --network-interface="network=$network,subnet=$subnet,no-address" --service-account="$project_number-compute@developer.gserviceaccount.com" --scopes=cloud-platform \
-  --provisioning-model=FLEX_START --request-valid-for-duration=2h --max-run-duration=4h --instance-termination-action=DELETE --maintenance-policy=TERMINATE --reservation-affinity=none \
+  --provisioning-model=FLEX_START --request-valid-for-duration=2h --max-run-duration=4h --instance-termination-action=STOP --maintenance-policy=TERMINATE --reservation-affinity=none \
   --metadata="$(cat "$work_dir/metadata.txt")" --metadata-from-file="startup-script=$repo_root/scripts/inference/gcloud_baseline_metadata_wrapper.sh" \
   --format=json > "$work_dir/provider-instance-create.json" 2> "$work_dir/provider-instance-create.stderr.txt"
 

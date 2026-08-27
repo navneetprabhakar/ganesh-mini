@@ -28,7 +28,7 @@ def bindings() -> dict:
     value = {
         "schema_version": "ganesh-mini-gate3-gcloud-bindings/v2",
         "status": "verified-generation-pinned",
-        "run_id": "gate1-qwen-base-east1-v1",
+        "run_id": "20260827T000000Z",
         "preparation_sha256": preparation["preparation_sha256"],
         "preflight": {
             "project": "executespecv1",
@@ -36,7 +36,7 @@ def bindings() -> dict:
             "zone": "us-east1-b",
             "machine_type": "g2-standard-12",
             "gcs_bucket": "ganesh-gate0-model-transfer-1061994342941",
-            "gcs_prefix": "ganesh-mini-1.0/gate1/test",
+            "gcs_prefix": "ganesh-mini-1.0/gate3/20260827T000000Z",
             "boot_image": "projects/dl/global/images/pinned",
             "price_passed": True,
             "quota_passed": True,
@@ -88,6 +88,7 @@ def test_builds_exact_authorized_generation_pinned_card() -> None:
     assert card["cost"]["conservative_upper_usd"] == "4.351665392"
     assert card["gate_range"] == [3, 3]
     assert card["training"]["lr_candidates"] == [0.00001, 0.00003]
+    assert card["training"]["unique_train_records"] == 1399
     assert card["training"]["main_seen_tokens"] == 0
     assert all(row["uri"].rsplit("#", 1)[-1].isdigit() for row in card["inputs"].values())
 

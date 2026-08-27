@@ -23,7 +23,7 @@ def file_sha256(path: Path) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phase", choices=("prebuild", "runtime", "gate1-baseline"), required=True)
+    parser.add_argument("--phase", choices=("prebuild", "runtime", "gate1-baseline", "gate3-campaign"), required=True)
     parser.add_argument("--backup-manifest", type=Path, required=True)
     parser.add_argument("--resource-state", type=Path, required=True)
     parser.add_argument("--inventory", type=Path, required=True)

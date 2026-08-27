@@ -23,7 +23,7 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     for token in (
         "--provisioning-model=FLEX_START",
         "--request-valid-for-duration=2h",
-        "--max-run-duration=18h",
+        "--max-run-duration=4h",
         "--instance-termination-action=DELETE",
         "--no-address",
         "--enable-private-ip-google-access",
@@ -39,7 +39,7 @@ def test_launcher_is_bounded_private_and_uses_exact_artifacts() -> None:
     assert "tr '[:upper:]' '[:lower:]'" in script
     assert 'local key="$1" source="$2" object="$3" destination=' not in script
     assert 'us-east1-b|us-east1-c|us-east1-d' in script
-    assert 'required=(\'approved\',\'staged\',\'g2-standard-12\',zone' in script
+    assert 'required=(\'approved\',\'gate 3\',\'g2-standard-12\',zone' in script
 
 
 def test_launcher_cleans_failed_create_only_after_verified_backup() -> None:

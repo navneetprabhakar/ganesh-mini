@@ -59,22 +59,23 @@ def require_workspace_matches_source(manifest: dict[str, Any], label: str) -> di
 
 
 def build() -> dict[str, Any]:
-    workspace = load_sealed("measurement/gate1/development_workspace_20260823.json", "manifest_sha256")
-    training_workspace = load_sealed("measurement/gate1/training_workspace_20260825.json", "manifest_sha256")
+    workspace = load_sealed("measurement/gate3/development_workspace_v2.json", "manifest_sha256")
+    training_workspace = load_sealed("measurement/gate3/training_workspace_v2.json", "manifest_sha256")
     verifier = load_sealed("measurement/gate1/verifier_image_bundle_amd64_v1.json", "manifest_sha256")
-    runtime_rehearsal = load_sealed("measurement/gate1/runtime_bundle_rehearsal.json", "evidence_sha256")
+    runtime_rehearsal = load_sealed("measurement/gate3/runtime_bundle_rehearsal_v2.json", "evidence_sha256")
     gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
     gate0_result = load_sealed("measurement/cuda/gcloud/20260824T180957Z/run-result.json", "evidence_sha256")
     if gate0_result.get("status") != "passed" or gate0_result.get("gate") != "0B":
         raise ValueError("qualified Gate 0B evidence is missing")
     local_inputs = {
-        "workspace_archive": file_identity("artifacts/eval/workspaces/development-v1.tar.gz"),
-        "workspace_manifest": file_identity("measurement/gate1/development_workspace_20260823.json"),
+        "workspace_archive": file_identity("artifacts/eval/workspaces/development-v2.tar.gz"),
+        "workspace_manifest": file_identity("measurement/gate3/development_workspace_v2.json"),
         "verifier_archive": file_identity("artifacts/eval/verifier-images/amd64-v1/verifier-images-amd64-v1.tar"),
         "verifier_manifest": file_identity("measurement/gate1/verifier_image_bundle_amd64_v1.json"),
-        "training_workspace_archive": file_identity("artifacts/train/workspaces/seed-pilot-v1.tar.gz"),
-        "training_workspace_manifest": file_identity("measurement/gate1/training_workspace_20260825.json"),
+        "training_workspace_archive": file_identity("artifacts/train/workspaces/seed-pilot-v2.tar.gz"),
+        "training_workspace_manifest": file_identity("measurement/gate3/training_workspace_v2.json"),
         "gate0_report": file_identity("measurement/gate0/readiness.json"),
+        "gate1_report": file_identity("measurement/gate1/readiness.json"),
         "gate2_report": file_identity("measurement/gate2/readiness.json"),
         "controller": file_identity("scripts/inference/gcloud_startup_development_baseline.sh"),
         "metadata_wrapper": file_identity("scripts/inference/gcloud_baseline_metadata_wrapper.sh"),
@@ -85,10 +86,10 @@ def build() -> dict[str, Any]:
         "baseline_admitter": file_identity("scripts/inference/admit_gate1_baseline.py"),
         "price_evidence_builder": file_identity("scripts/inference/build_gate1_price_evidence.py"),
         "launcher": file_identity("scripts/inference/gcloud_launch_gate1.sh"),
-        "runtime_bundle_rehearsal": file_identity("measurement/gate1/runtime_bundle_rehearsal.json"),
+        "runtime_bundle_rehearsal": file_identity("measurement/gate3/runtime_bundle_rehearsal_v2.json"),
         "baseline_admission_schema": file_identity("schemas/eval/gate1-baseline-admission.schema.json"),
-        "execution_schema": file_identity("schemas/eval/gate1-gcloud-execution.schema.json"),
-        "price_evidence_schema": file_identity("schemas/eval/gate1-price-evidence.schema.json"),
+        "execution_schema": file_identity("schemas/eval/gate3-gcloud-execution.schema.json"),
+        "price_evidence_schema": file_identity("schemas/eval/gate3-price-evidence.schema.json"),
         "terminal_validation_schema": file_identity("schemas/eval/gate1-terminal-validation.schema.json"),
     }
     if local_inputs["workspace_archive"]["sha256"] != workspace["archive"]["sha256"]:
@@ -108,10 +109,10 @@ def build() -> dict[str, Any]:
         "training": require_workspace_matches_source(training_workspace, "training"),
     }
     record: dict[str, Any] = {
-        "schema_version": "ganesh-mini-gate1-gcloud-preparation/v1",
+        "schema_version": "ganesh-mini-gate3-gcloud-preparation/v2",
         "status": "prepared-not-executable",
-        "gate": 1,
-        "purpose": "staged exact-base baseline, two-point LR pilot, main seed SFT, and development adjudication on one L4",
+        "gate": 3,
+        "purpose": "Gate 3 v2 two-point conservative LoRA pilot, deterministic canary selection, and full development adjudication on one L4",
         "model": {"model_id": "Qwen/Qwen3.5-2B", "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"},
         "resource_proposal": {
             "region": "us-east1",
@@ -120,8 +121,8 @@ def build() -> dict[str, Any]:
             "accelerator": "1x nvidia-l4",
             "provisioning_model": "FLEX_START",
             "request_valid_for_seconds": 7200,
-            "maximum_run_seconds": 64800,
-            "controller_budget_seconds": 63000,
+            "maximum_run_seconds": 14400,
+            "controller_budget_seconds": 12600,
             "backup_reserve_seconds": 1800,
             "instance_termination_action": "DELETE",
             "external_ip": False,
@@ -135,8 +136,8 @@ def build() -> dict[str, Any]:
             "published_dws_flex_start_hourly_usd": 0.790328877,
             "controller_conservative_hourly_usd": 1.000416348,
             "support_reserve_usd": 0.35,
-            "eighteen_hour_conservative_upper_usd": 18.357494264,
-            "proposed_absolute_ceiling_usd": 19.00,
+            "four_hour_conservative_upper_usd": 4.351665392,
+            "proposed_absolute_ceiling_usd": 5.00,
             "source": "https://cloud.google.com/products/compute/pricing/accelerator-optimized",
             "fresh_account_preflight_still_required": True,
         },
@@ -145,10 +146,15 @@ def build() -> dict[str, Any]:
             "verifier_workers": 12,
             "length_bucketing": True,
             "generation_and_verification_overlap": True,
-            "sequential_gpu_phases": ["base-baseline", "lr-1e-4-train", "lr-1e-4-eval", "lr-2e-4-train", "lr-2e-4-eval", "main-train", "main-eval"],
+            "sequential_gpu_phases": ["lr-1e-5-train", "lr-1e-5-canary", "lr-3e-5-train", "lr-3e-5-canary", "selected-candidate-full-eval"],
             "evaluation_training_mount_isolation": True,
             "nvml_interval_seconds": 5,
             "checkpoint_interval_seconds": 120,
+            "historical_timing_basis": {
+                "400652_token_candidate_seconds": 1845.013,
+                "180_task_candidate_evaluation_seconds": 1709.522,
+                "source_attempt": "20260826T042539Z"
+            },
         },
         "local_inputs": local_inputs,
         "workspace_source_alignment": workspace_source_alignment,
@@ -167,22 +173,21 @@ def build() -> dict[str, Any]:
             "double-verify preflight evidence in GCS before any resource creation",
             "create temporary private network and Flex-start VM",
             "on launch failure, double-verify failure evidence, delete exact temporary resources, then prove absence and double-verify teardown evidence",
-            "run offline baseline and require Gate 1 admission before training",
-            "run both frozen LR candidates sequentially and evaluate each on development",
-            "seal LR selection, run the exact main seed-token budget, evaluate, and adjudicate Gate 3",
+            "verify the canonical Gate 1 readiness report and sealed 180-task base evidence before training",
+            "run both frozen one-epoch LR candidates sequentially and evaluate each on the 30-task deterministic canary",
+            "seal LR selection, evaluate only the selected candidate on all 180 development tasks, and adjudicate Gate 3",
             "checkpoint the complete campaign evidence to GCS every two minutes",
             "write terminal inventory and verified terminal GCS backup",
             "request guest shutdown only after terminal backup succeeds",
             "delete the stopped VM and disk, with provider max-run deletion as a backstop",
             "prove instance and disk absent, delete network, and prove all exact resources absent",
-            "download every terminal object twice by immutable generation before Gate 1 admission",
-            "atomically admit only a successful finalized baseline and rebuild the fail-closed Gate 1 readiness report",
+            "download every terminal object twice by immutable generation before admitting Gate 3 evidence",
+            "admit only a successful, finalized Gate 3 campaign",
         ],
         "hard_stops": [
             "no GCloud action without a fresh explicit execution approval",
             "no create until current price and quota preflight fit the approved ceiling",
-            "no Gate 1 pass without all 180 task evidence seals",
-            "no pilot training before Gate 1 passes",
+            "no pilot training unless the existing Gate 1 report and all 180 base task evidence seals verify",
             "no next phase after any anomaly or failed frozen gate",
         ],
         "failed_checks": [
@@ -196,7 +201,7 @@ def build() -> dict[str, Any]:
 
 
 def main() -> int:
-    output = ROOT / "measurement/gate1/gcloud/preparation.json"
+    output = ROOT / "measurement/gate3/gcloud/preparation.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(build(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return 0

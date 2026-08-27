@@ -64,8 +64,8 @@ def extract_verified(archive: Path, manifest: dict[str, Any], destination: Path)
 
 
 def rehearse(root: Path = ROOT) -> dict[str, Any]:
-    archive = root / "artifacts/eval/workspaces/development-v1.tar.gz"
-    manifest = load_sealed(root / "measurement/gate1/development_workspace_20260823.json", "manifest_sha256")
+    archive = root / "artifacts/eval/workspaces/development-v2.tar.gz"
+    manifest = load_sealed(root / "measurement/gate3/development_workspace_v2.json", "manifest_sha256")
     if archive.stat().st_size != manifest["archive"]["size_bytes"] or file_sha256(archive) != manifest["archive"]["sha256"]:
         raise ValueError("evaluation runtime archive differs from its sealed manifest")
 
@@ -79,7 +79,7 @@ def rehearse(root: Path = ROOT) -> dict[str, Any]:
 from types import SimpleNamespace
 from scripts.campaign.run_host import Campaign, CONTAINER_MODEL, docker_container_name, external_mount
 from scripts.cuda.qualify import install_fla_recurrent_compatibility, kernel_identity
-from scripts.inference.run_development_baseline_host import build_container_argv, docker_attempt_id
+from scripts.inference.run_development_baseline_host import docker_attempt_id
 from scripts.inference.run_evaluation import trim_at_eos
 from scripts.verify.sandbox import _docker_argv, infrastructure_failure
 attempt = "20260825T061157Z"
@@ -92,27 +92,15 @@ assert infrastructure_failure({"exit_codes":[1],"timed_out":False,"stderr":"fork
 verifier_argv = _docker_argv("runtime", "linux/amd64", ["go", "test", "./..."], probe_host, {"pids":64,"cpus":1,"memory_mb":512})
 assert "GOMAXPROCS=1" in verifier_argv and "GOFLAGS=-p=1" in verifier_argv and "CARGO_BUILD_JOBS=1" in verifier_argv
 names = [
-    "ganesh-qwen-base-" + docker_attempt_id(attempt),
-    docker_container_name("ganesh-train-" + attempt + "-lr-1e-4"),
-    docker_container_name("ganesh-eval-" + attempt + "-lr-1e-4"),
-    docker_container_name("ganesh-train-" + attempt + "-lr-2e-4"),
-    docker_container_name("ganesh-eval-" + attempt + "-lr-2e-4"),
-    docker_container_name("ganesh-train-" + attempt + "-main"),
-    docker_container_name("ganesh-eval-" + attempt + "-main"),
+    docker_container_name("ganesh-train-" + attempt + "-lr-1e-5"),
+    docker_container_name("ganesh-eval-" + attempt + "-lr-1e-5-canary"),
+    docker_container_name("ganesh-train-" + attempt + "-lr-3e-5"),
+    docker_container_name("ganesh-eval-" + attempt + "-lr-3e-5-canary"),
+    docker_container_name("ganesh-eval-" + attempt + "-lr-1e-5-full"),
 ]
 assert all(name == name.lower() for name in names)
-baseline = build_container_argv(
-    docker="/usr/bin/docker", image="qualified", container_name=names[0],
-    workspace=probe_host/"eval", model=probe_host/"model",
-    output=probe_host/"output", shared_tmp=probe_host/"tmp",
-    docker_socket=Path("/var/run/docker.sock"),
-)
-joined = " ".join(map(str, baseline))
-assert "dst=/workspace,readonly" in joined
-assert "dst=/input/model,readonly" in joined and "dst=/output" in joined
-assert "dst=/workspace/models" not in joined and "dst=/workspace/measurement" not in joined
 campaign = Campaign(SimpleNamespace(
-    output=probe_host/"campaign", max_seconds=63000, attempt_id=attempt,
+    output=probe_host/"campaign", max_seconds=12600, attempt_id=attempt,
     hourly_cost_usd=1, model=probe_host/"model",
 ))
 campaign.docker = "/usr/bin/docker"
@@ -164,7 +152,7 @@ print("MOUNT_TOPOLOGY_OK")
     launcher = (root / "scripts/inference/gcloud_launch_gate1.sh").read_text(encoding="utf-8")
     finish = controller[controller.index("finish() {"):controller.index("trap finish EXIT")]
     checks = {
-        "archived_attempt_id_is_docker_safe": len(container_names) == 7 and all(name == name.lower() for name in container_names),
+        "archived_attempt_id_is_docker_safe": len(container_names) == 5 and all(name == name.lower() for name in container_names),
         "external_mounts_avoid_read_only_workspace": mount_topology_ok,
         "cuda_serving_compatibility_imports_without_training_package": True,
         "batched_eos_padding_is_trimmed": True,
@@ -173,13 +161,14 @@ print("MOUNT_TOPOLOGY_OK")
         "archived_imports_preserve_sealed_file_set": observed_after_import == expected_files,
         "controller_disables_workspace_bytecode": 'python3 -B "$work_dir/workspace/scripts/campaign/run_host.py"' in controller,
         "controller_preserves_evidence_attempt_id": '--attempt-id "$GANESH_ATTEMPT_ID"' in controller,
+        "controller_binds_canonical_gate1": '--gate1-report "$work_dir/gate1-readiness.json"' in controller,
         "launcher_uploads_bindings_once": launcher.count("upload_bind bindings ") == 1,
         "runtime_writers_stop_before_inventory": finish.index("stop_runtime_writers") < finish.index("capture_checkpoint_log") < finish.index("write_inventory") < finish.index("final_backup"),
     }
     if not all(checks.values()):
         raise ValueError(f"Gate 1 runtime bundle rehearsal failed: {[key for key, passed in checks.items() if not passed]}")
     evidence: dict[str, Any] = {
-        "schema_version": "ganesh-mini-gate1-runtime-bundle-rehearsal/v1",
+        "schema_version": "ganesh-mini-gate3-runtime-bundle-rehearsal/v2",
         "status": "passed",
         "attempt_id": ATTEMPT_ID,
         "workspace_manifest_sha256": manifest["manifest_sha256"],

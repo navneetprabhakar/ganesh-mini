@@ -21,3 +21,14 @@ def test_higher_lr_requires_gain_and_no_lane_regression() -> None:
     assert select(low,high,run(0.0001),run(0.0002))["selected_learning_rate"]==0.0002
     high[0]["passed"]=False; high[1]["passed"]=True; low[2]["passed"]=True
     assert select(low,high,run(0.0001),run(0.0002))["selected_learning_rate"]==0.0001
+
+
+def test_conservative_v2_learning_rates_and_budget_are_bound() -> None:
+    low=cohort(); high=[dict(row) for row in low]; high[0]["passed"]=True
+    low_run=run(0.00001); high_run=run(0.00003)
+    low_run["state"]["seen_tokens"]=high_run["state"]["seen_tokens"]=461235
+    selected=select(low,high,low_run,high_run,low_lr=0.00001,high_lr=0.00003,minimum_seen_tokens=461235,rule="v2-rule")
+    assert selected["schema_version"]=="ganesh-mini-lr-selection/v2"
+    assert selected["selected_learning_rate"]==0.00003
+    assert selected["minimum_seen_tokens"]==461235
+    assert set(selected["candidates"])=={"1e-05","3e-05"}

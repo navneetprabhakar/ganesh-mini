@@ -25,6 +25,7 @@ INPUT_KEYS = {
     "training_workspace_archive",
     "training_workspace_manifest",
     "gate0_report",
+    "gate1_report",
     "gate2_report",
     "model_archive",
     "cuda_image_archive",
@@ -40,6 +41,7 @@ LOCAL_INPUT_MAPPING = {
     "training_workspace_archive": "training_workspace_archive",
     "training_workspace_manifest": "training_workspace_manifest",
     "gate0_report": "gate0_report",
+    "gate1_report": "gate1_report",
     "gate2_report": "gate2_report",
 }
 REUSED_INPUT_MAPPING = {
@@ -97,7 +99,7 @@ def tracked_worktree_clean(root: Path) -> bool:
 
 def validate_approval(text: str, zone: str) -> None:
     normalized = " ".join(text.lower().split())
-    required = ("approved", "staged", "g2-standard-12", zone.lower(), "18 hours", "usd 19")
+    required = ("approved", "gate 3", "g2-standard-12", zone.lower(), "4 hours", "usd 5")
     missing = [token for token in required if token not in normalized]
     if missing:
         raise ValueError(f"approval text does not bind the prepared execution: {missing}")
@@ -115,13 +117,13 @@ def build(
     unsigned_bindings = {key: value for key, value in bindings.items() if key != "bindings_sha256"}
     if claimed_bindings != canonical_sha256(unsigned_bindings):
         raise ValueError("input bindings seal mismatch")
-    preparation = load_sealed("measurement/gate1/gcloud/preparation.json", "preparation_sha256")
+    preparation = load_sealed("measurement/gate3/gcloud/preparation.json", "preparation_sha256")
     gate0 = load_sealed("measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json", "plan_sha256")
     if source_commit != current_head(root):
         raise ValueError("source commit is not the current repository HEAD")
     if require_clean and not tracked_worktree_clean(root):
         raise ValueError("tracked worktree must be clean before sealing an executable card")
-    if bindings.get("schema_version") != "ganesh-mini-gate1-gcloud-bindings/v1" or bindings.get("status") != "verified-generation-pinned":
+    if bindings.get("schema_version") != "ganesh-mini-gate3-gcloud-bindings/v2" or bindings.get("status") != "verified-generation-pinned":
         raise ValueError("unsupported or incomplete Gate 1 bindings")
     if bindings.get("preparation_sha256") != preparation["preparation_sha256"]:
         raise ValueError("bindings do not reference the current preparation")
@@ -153,7 +155,7 @@ def build(
     hourly = Decimal(str(cost.get("conservative_hourly_usd")))
     reserve = Decimal(str(cost.get("support_reserve_usd")))
     ceiling = Decimal(str(cost.get("absolute_cost_ceiling_usd")))
-    approved_ceiling = Decimal("19.00")
+    approved_ceiling = Decimal("5.00")
     upper = hourly * Decimal(proposal["maximum_run_seconds"]) / Decimal(3600) + reserve
     if hourly <= 0 or reserve < 0 or ceiling <= upper or ceiling > approved_ceiling:
         raise ValueError("cost preflight exceeds the approved bound")
@@ -210,26 +212,29 @@ def build(
         "resources": resources,
     }
     card: dict[str, Any] = {
-        "schema_version": "ganesh-mini-staged-gcloud-execution/v1",
+        "schema_version": "ganesh-mini-gate3-gcloud-execution/v2",
         "status": "authorized-executable",
-        "gate": 1,
-        "gate_range": [1, 3],
+        "gate": 3,
+        "gate_range": [3, 3],
         "source_commit": source_commit,
         "preparation_sha256": preparation["preparation_sha256"],
         "bindings_sha256": bindings["bindings_sha256"],
-        "approval": {"verbatim": approval_text, "maximum_incremental_cost_usd": "19.00"},
+        "approval": {"verbatim": approval_text, "maximum_incremental_cost_usd": "5.00"},
         "model": preparation["model"],
         "evaluation": {
-            "classification": "private_development_baseline",
+            "classification": "private_candidate_development",
             "surface": "development",
             "expected_task_count": 180,
             "decision_prompts_exposed": False,
         },
         "training": {
-            "mechanism": "bf16-lora-fused-linear-cross-entropy",
-            "lr_candidates": [0.0001, 0.0002],
-            "lr_candidate_seen_tokens_each": 400000,
-            "main_seen_tokens": 636093,
+            "mechanism": "bf16-lora-conservative-v2",
+            "objective": "unique-row-token-weighted-five-family-v2",
+            "lr_candidates": [0.00001, 0.00003],
+            "lr_candidate_seen_tokens_each": 461235,
+            "main_seen_tokens": 0,
+            "candidate_selection_tasks": 30,
+            "selected_candidate_full_evaluation_tasks": 180,
             "evaluation_training_mount_isolation": True,
             "decision_prompts_exposed": False,
         },

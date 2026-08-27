@@ -11,9 +11,9 @@ from scripts.inference.build_gate1_gcloud_preparation import ROOT
 
 
 APPROVAL = (
-    "Approved: one staged Gate 1 through Gate 3 G2 L4 Flex-start campaign in us-east1-b "
-    "on g2-standard-12, maximum provisioning wait 2 hours, maximum runtime 18 hours, "
-    "and USD 19 incremental cost."
+    "Approved: one staged Gate 3 G2 L4 Flex-start campaign in us-east1-b "
+    "on g2-standard-12, maximum provisioning wait 2 hours, maximum runtime 4 hours, "
+    "and USD 5 incremental cost."
 )
 
 
@@ -22,11 +22,11 @@ def generation(uri: str, sha256: str, size: int) -> dict:
 
 
 def bindings() -> dict:
-    preparation = json.loads((ROOT / "measurement/gate1/gcloud/preparation.json").read_text())
+    preparation = json.loads((ROOT / "measurement/gate3/gcloud/preparation.json").read_text())
     gate0 = json.loads((ROOT / "measurement/cuda/gcloud/20260824T180957Z/gpu_run_plan.json").read_text())
     local = preparation["local_inputs"]
     value = {
-        "schema_version": "ganesh-mini-gate1-gcloud-bindings/v1",
+        "schema_version": "ganesh-mini-gate3-gcloud-bindings/v2",
         "status": "verified-generation-pinned",
         "run_id": "gate1-qwen-base-east1-v1",
         "preparation_sha256": preparation["preparation_sha256"],
@@ -47,7 +47,7 @@ def bindings() -> dict:
         "cost": {
             "conservative_hourly_usd": "1.000416348",
             "support_reserve_usd": "0.35",
-            "absolute_cost_ceiling_usd": "19.00",
+            "absolute_cost_ceiling_usd": "5.00",
         },
         "resources": {"instance": "vm", "disk": "disk", "network": "net", "subnet": "subnet"},
         "inputs": {
@@ -56,6 +56,7 @@ def bindings() -> dict:
             "training_workspace_archive": generation("gs://b/tw#7", local["training_workspace_archive"]["sha256"], local["training_workspace_archive"]["size_bytes"]),
             "training_workspace_manifest": generation("gs://b/twm#8", local["training_workspace_manifest"]["sha256"], local["training_workspace_manifest"]["size_bytes"]),
             "gate0_report": generation("gs://b/g0#9", local["gate0_report"]["sha256"], local["gate0_report"]["size_bytes"]),
+            "gate1_report": generation("gs://b/g1#11", local["gate1_report"]["sha256"], local["gate1_report"]["size_bytes"]),
             "gate2_report": generation("gs://b/g2#10", local["gate2_report"]["sha256"], local["gate2_report"]["size_bytes"]),
             "verifier_archive": generation("gs://b/v#3", local["verifier_archive"]["sha256"], local["verifier_archive"]["size_bytes"]),
             "verifier_manifest": generation("gs://b/vm#4", local["verifier_manifest"]["sha256"], local["verifier_manifest"]["size_bytes"]),
@@ -81,10 +82,13 @@ def test_builds_exact_authorized_generation_pinned_card() -> None:
     claimed = card.pop("execution_sha256")
     assert claimed == canonical_sha256(card)
     assert card["status"] == "authorized-executable"
+    assert card["schema_version"] == "ganesh-mini-gate3-gcloud-execution/v2"
     assert card["evaluation"]["expected_task_count"] == 180
-    assert card["execution"]["maximum_run_seconds"] == 64800
-    assert card["cost"]["conservative_upper_usd"] == "18.357494264"
-    assert card["gate_range"] == [1, 3]
+    assert card["execution"]["maximum_run_seconds"] == 14400
+    assert card["cost"]["conservative_upper_usd"] == "4.351665392"
+    assert card["gate_range"] == [3, 3]
+    assert card["training"]["lr_candidates"] == [0.00001, 0.00003]
+    assert card["training"]["main_seen_tokens"] == 0
     assert all(row["uri"].rsplit("#", 1)[-1].isdigit() for row in card["inputs"].values())
 
 
@@ -119,7 +123,7 @@ def test_rejects_invalid_bindings_seal() -> None:
 
 def test_rejects_cost_above_approval() -> None:
     value = bindings()
-    value["cost"]["conservative_hourly_usd"] = "1.10"
+    value["cost"]["conservative_hourly_usd"] = "1.20"
     value["bindings_sha256"] = canonical_sha256({k: v for k, v in value.items() if k != "bindings_sha256"})
     with pytest.raises(ValueError, match="cost preflight"):
         build(value, APPROVAL, head(), require_clean=False)

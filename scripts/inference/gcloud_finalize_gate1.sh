@@ -16,7 +16,7 @@ import hashlib, json, shlex, sys
 card=json.load(open(sys.argv[1],encoding='utf-8'))
 claimed=card.pop('execution_sha256',None)
 actual=hashlib.sha256(json.dumps(card,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
-if claimed != actual or card.get('schema_version') != 'ganesh-mini-staged-gcloud-execution/v1' or card.get('status') != 'authorized-executable':
+if claimed != actual or card.get('schema_version') not in {'ganesh-mini-staged-gcloud-execution/v1','ganesh-mini-gate3-gcloud-execution/v2'} or card.get('status') != 'authorized-executable':
     raise SystemExit('invalid executable card')
 execution=card['execution']; resources=execution['resources']
 values={

@@ -24,6 +24,9 @@ ALLOWLIST = (
     "artifacts/train/seed-pilot/prepared-train.jsonl",
     "artifacts/train/seed-pilot/prepared-validation.jsonl",
     "artifacts/train/seed-pilot/prepared-dataset-manifest.json",
+    "artifacts/train/seed-pilot-v2/prepared-train.jsonl",
+    "artifacts/train/seed-pilot-v2/prepared-validation.jsonl",
+    "artifacts/train/seed-pilot-v2/prepared-dataset-manifest.json",
 )
 FORBIDDEN_PARTS = {"eval", "measurement", "outputs", ".git", ".gcloud-staging", "__pycache__"}
 

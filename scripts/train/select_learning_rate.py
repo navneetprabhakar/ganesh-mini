@@ -30,13 +30,16 @@ def load_run(path: Path) -> dict[str,Any]:
     value["evidence_sha256"]=claimed; return value
 
 
-def select(low: list[dict[str,Any]], high: list[dict[str,Any]], low_run: dict[str,Any], high_run: dict[str,Any]) -> dict[str,Any]:
+def select(low: list[dict[str,Any]], high: list[dict[str,Any]], low_run: dict[str,Any], high_run: dict[str,Any], *, low_lr: float = 0.0001, high_lr: float = 0.0002, minimum_seen_tokens: int = 400000, rule: str = RULE, expected_task_count: int = 180) -> dict[str,Any]:
     low_by={row["task_id"]:row for row in low}; high_by={row["task_id"]:row for row in high}
-    if set(low_by)!=set(high_by) or len(low_by)!=180: raise ValueError("LR candidates must cover the same 180 development tasks")
-    for run,lr in ((low_run,0.0001),(high_run,0.0002)):
-        if run.get("status")!="complete" or run.get("identities",{}).get("phase")!="lr-candidate" or run.get("identities",{}).get("learning_rate")!=str(lr) or run.get("state",{}).get("seen_tokens",0)<400000: raise ValueError("LR selection requires two complete, bounded candidate runs")
+    if set(low_by)!=set(high_by) or len(low_by)!=expected_task_count: raise ValueError(f"LR candidates must cover the same {expected_task_count} development tasks")
+    for run,lr in ((low_run,low_lr),(high_run,high_lr)):
+        if run.get("status")!="complete" or run.get("identities",{}).get("phase")!="lr-candidate" or run.get("identities",{}).get("learning_rate")!=str(lr) or run.get("state",{}).get("seen_tokens",0)<minimum_seen_tokens: raise ValueError("LR selection requires two complete, bounded candidate runs")
     low_lane={lane:sum(row["passed"] for row in low if row["language"]==lane) for lane in LANES}; high_lane={lane:sum(row["passed"] for row in high if row["language"]==lane) for lane in LANES}; low_total=sum(low_lane.values()); high_total=sum(high_lane.values()); choose_high=high_total>=low_total+1 and all(high_lane[lane]>=low_lane[lane] for lane in LANES)
-    evidence={"schema_version":"ganesh-mini-lr-selection/v1","status":"selected","rule":RULE,"candidates":{"0.0001":{"run_evidence_sha256":low_run["evidence_sha256"],"result_collection_sha256":collection_sha256(low),"passed":low_total,"lanes":low_lane},"0.0002":{"run_evidence_sha256":high_run["evidence_sha256"],"result_collection_sha256":collection_sha256(high),"passed":high_total,"lanes":high_lane}},"selected_learning_rate":0.0002 if choose_high else 0.0001,"decision":"higher_lr_improved_without_lane_regression" if choose_high else "conservative_lower_lr_default"}; evidence["evidence_sha256"]=canonical_sha256(evidence); return evidence
+    v2=(low_lr,high_lr)!=(0.0001,0.0002)
+    evidence={"schema_version":"ganesh-mini-lr-selection/v2" if v2 else "ganesh-mini-lr-selection/v1","status":"selected","rule":rule,"candidates":{str(low_lr):{"run_evidence_sha256":low_run["evidence_sha256"],"result_collection_sha256":collection_sha256(low),"passed":low_total,"lanes":low_lane},str(high_lr):{"run_evidence_sha256":high_run["evidence_sha256"],"result_collection_sha256":collection_sha256(high),"passed":high_total,"lanes":high_lane}},"selected_learning_rate":high_lr if choose_high else low_lr,"decision":"higher_lr_improved_without_lane_regression" if choose_high else "conservative_lower_lr_default"}
+    if v2: evidence["minimum_seen_tokens"]=minimum_seen_tokens
+    evidence["evidence_sha256"]=canonical_sha256(evidence); return evidence
 
 
 def main() -> int:

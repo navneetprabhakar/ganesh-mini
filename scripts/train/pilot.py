@@ -47,6 +47,7 @@ REQUIRED_STOP_CONDITIONS = {
     "checkpoint_write_failure",
     "evidence_write_failure",
 }
+V5_STOP_CONDITIONS = (REQUIRED_STOP_CONDITIONS-{"three_consecutive_loss_spikes"})|{"robust_optimizer_group_loss_anomaly"}
 FALLBACK_REASONS = {
     "primary_cuda_oom",
     "primary_peak_vram_exceeded",
@@ -166,10 +167,11 @@ def verify_gate_report(
     return report
 
 
-def audit_prepared_records(path: Path) -> tuple[int, Counter[str], int]:
+def audit_prepared_records(path: Path) -> tuple[int, Counter[str], int, Counter[str]]:
     records = 0
     input_tokens = 0
     response_tokens: Counter[str] = Counter()
+    objective_weights: Counter[str] = Counter()
     with path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, 1):
             value = json.loads(line)
@@ -192,7 +194,12 @@ def audit_prepared_records(path: Path) -> tuple[int, Counter[str], int]:
             records += 1
             input_tokens += len(input_ids)
             response_tokens[lane] += len(labels) - prompt_tokens
-    return records, response_tokens, input_tokens
+            weight=value.get("objective_weight")
+            if weight is not None:
+                if not isinstance(weight,(int,float)) or not math.isfinite(weight) or weight<=0:
+                    raise PreflightError(f"invalid objective weight at {path}:{line_number}")
+                objective_weights[lane]+=weight
+    return records, response_tokens, input_tokens, objective_weights
 
 
 def verify_prepared_manifest(
@@ -221,13 +228,13 @@ def verify_prepared_manifest(
     prepared_path = resolve(root, manifest.get("prepared_train_path", ""))
     prepared_hash_ok = prepared_path.is_file() and file_sha256(prepared_path) == manifest.get("prepared_train_sha256")
     try:
-        prepared_records, audited_tokens, audited_input_tokens = audit_prepared_records(prepared_path) if prepared_hash_ok else (0, Counter(), 0)
+        prepared_records, audited_tokens, audited_input_tokens, audited_weights = audit_prepared_records(prepared_path) if prepared_hash_ok else (0, Counter(), 0, Counter())
     except (OSError, json.JSONDecodeError, PreflightError):
-        prepared_records, audited_tokens, audited_input_tokens = 0, Counter(), 0
+        prepared_records, audited_tokens, audited_input_tokens, audited_weights = 0, Counter(), 0, Counter()
     validation_path = resolve(root, manifest.get("prepared_validation_path", ""))
     validation_hash_ok = validation_path.is_file() and file_sha256(validation_path) == manifest.get("prepared_validation_sha256")
     try:
-        validation_records, _, _ = audit_prepared_records(validation_path) if validation_hash_ok else (0, Counter(), 0)
+        validation_records, _, _, _ = audit_prepared_records(validation_path) if validation_hash_ok else (0, Counter(), 0, Counter())
     except (OSError, json.JSONDecodeError, PreflightError):
         validation_records = 0
     bound = (
@@ -256,7 +263,21 @@ def verify_prepared_manifest(
     )
     total = sum(token_counts.get(lane, 0) for lane in LANES) if all(isinstance(token_counts.get(lane), int) and token_counts[lane] > 0 for lane in LANES) else 0
     tolerance = config["data"]["maximum_absolute_share_error"]
-    shares_ok = total > 0 and all(abs(token_counts[lane] / total - target) <= tolerance for lane, target in config["data"]["family_token_targets"].items())
+    objective=manifest.get("objective",{})
+    if config["schema_version"]=="ganesh-mini-train-config/v5":
+        weight_total=sum(audited_weights.values())
+        realized=objective.get("realized_normalized_weight_by_lane",{})
+        shares_ok=(
+            manifest.get("schema_version")=="ganesh-mini-prepared-seed/v2"
+            and objective.get("method")=="unique-row-token-weighted-five-family-v2"
+            and objective.get("unique_source_rows") is True
+            and prepared_records==config["data"]["train_records"]==1399
+            and weight_total>0
+            and set(realized)==set(LANES)
+            and all(abs(audited_weights[lane]/weight_total-target)<=1e-9 and abs(realized[lane]-target)<=1e-9 for lane,target in config["data"]["family_token_targets"].items())
+        )
+    else:
+        shares_ok = total > 0 and all(abs(token_counts[lane] / total - target) <= tolerance for lane, target in config["data"]["family_token_targets"].items())
     epochs = manifest.get("effective_epochs_by_lane", {})
     epochs_ok = set(epochs) == set(LANES) and all(
         isinstance(epochs[lane], (int, float)) and 0 < epochs[lane] <= config["recipes"]["primary"]["maximum_effective_epochs"]
@@ -306,6 +327,40 @@ def common_recipe_ok(recipe: dict[str, Any], system: str) -> bool:
         and isinstance(recipe.get("maximum_effective_epochs"), (int, float))
         and 0 < recipe["maximum_effective_epochs"] <= 3
         and recipe.get("checkpoint_every_effective_epochs") == 0.5
+    )
+
+
+def conservative_recipe_ok(recipe: dict[str,Any], system: str) -> bool:
+    detector=recipe.get("loss_anomaly_detector",{})
+    return (
+        system=="Linux"==recipe.get("host_os")
+        and recipe.get("accelerator")=="CUDA"
+        and recipe.get("backend")=="transformers-peft"
+        and recipe.get("adapter")=="lora"
+        and recipe.get("compute_dtype")=="bfloat16"
+        and recipe.get("gradient_checkpointing") is True
+        and recipe.get("cuda_allocator_config")=="expandable_segments:True"
+        and recipe.get("fused_linear_cross_entropy")=={"provider":"liger-kernel","version":"0.8.2","materialize_training_logits":False}
+        and recipe.get("micro_batch_size")==1
+        and recipe.get("vision_frozen") is True
+        and recipe.get("sequence_length")==2944
+        and recipe.get("packing") is False
+        and (recipe.get("lora_rank"),recipe.get("lora_alpha"),recipe.get("lora_dropout"))==(8,16,0.05)
+        and recipe.get("target_policy")=={"scope":"last-n-attention-projections","model_layer_count":24,"layer_count":8,"full_attention_projections":["q_proj","v_proj"],"linear_attention_projections":["in_proj_qkv","out_proj"],"mlp_projections":[]}
+        and recipe.get("learning_rate_candidates")==[0.00001,0.00003]
+        and recipe.get("random_seed")==3502
+        and recipe.get("gradient_accumulation_steps")==8
+        and recipe.get("effective_batch_size")==8
+        and recipe.get("optimizer")=="adamw_torch"
+        and recipe.get("optimizer_betas")==[0.9,0.95]
+        and recipe.get("optimizer_epsilon")==1e-8
+        and recipe.get("weight_decay")==0.01
+        and recipe.get("max_gradient_norm")==1.0
+        and recipe.get("scheduler")=="cosine"
+        and recipe.get("warmup_ratio")==0.03
+        and recipe.get("maximum_effective_epochs")==1.0
+        and recipe.get("checkpoint_every_effective_epochs")==0.25
+        and detector=={"metric":"weighted_optimizer_group_loss","warmup_optimizer_steps":12,"rolling_window_optimizer_steps":20,"minimum_history_optimizer_steps":12,"robust_z_threshold":8.0,"minimum_median_ratio":3.0,"mad_floor":1e-6,"consecutive_optimizer_groups":3}
     )
 
 
@@ -370,7 +425,7 @@ def validate_fallback_qualification(
 def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     checks: list[dict[str, Any]] = []
     required_top = {"schema_version", "run_id", "output_model_name", "model", "data", "prerequisites", "rendering", "strategy", "recipes", "control", "outputs"}
-    add(checks, "config_shape", set(config) == required_top and config.get("schema_version") == "ganesh-mini-train-config/v4", "Config must contain exactly the versioned controller sections.")
+    add(checks, "config_shape", set(config) == required_top and config.get("schema_version") in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5"}, "Config must contain exactly the supported versioned controller sections.")
 
     model = config["model"]
     contract_ok, contract_evidence = verify_file(root, model["contract_path"], model["contract_file_sha256"])
@@ -396,9 +451,13 @@ def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[li
     add(checks, "rendering_contract", render_ok, "Training must use the upstream Qwen template with response-only labels and no vision tokens.")
 
     primary, fallback = config["recipes"]["primary"], config["recipes"]["fallback"]
+    v5=config["schema_version"]=="ganesh-mini-train-config/v5"
+    recipe_validator=conservative_recipe_ok if v5 else common_recipe_ok
+    primary_id="bf16-lora-conservative-v2" if v5 else "bf16-lora-primary-v1"
+    fallback_id="nf4-qlora-conservative-v2" if v5 else "nf4-qlora-fallback-v1"
     primary_ok = (
-        primary.get("recipe_id") == "bf16-lora-primary-v1"
-        and common_recipe_ok(primary, system)
+        primary.get("recipe_id") == primary_id
+        and recipe_validator(primary, system)
         and primary.get("minimum_gpu_vram_gb") == 24
         and primary.get("maximum_peak_vram_gb") == 23
         and primary.get("base_loading") == "bfloat16"
@@ -406,8 +465,8 @@ def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[li
     )
     add(checks, "primary_bf16_lora_recipe", primary_ok, "Primary pilot must be BF16 LoRA on Linux CUDA with at least 24 GB VRAM, microbatch 1, and gradient checkpointing.", observed_system=system)
     fallback_ok = (
-        fallback.get("recipe_id") == "nf4-qlora-fallback-v1"
-        and common_recipe_ok(fallback, system)
+        fallback.get("recipe_id") == fallback_id
+        and recipe_validator(fallback, system)
         and fallback.get("base_loading") == "qlora"
         and fallback.get("quantization_bits") == 4
         and fallback.get("quantization_type") == "nf4"
@@ -424,7 +483,7 @@ def validate_static(config: dict[str, Any], root: Path, system: str) -> tuple[li
         and isinstance(control["maximum_cost_usd"], (int, float)) and control["maximum_cost_usd"] > 0
         and control["resume_requires_checkpoint_manifest"] is True
         and control["resume_requires_hash_match"] is True
-        and REQUIRED_STOP_CONDITIONS <= set(control["stop_conditions"])
+        and (V5_STOP_CONDITIONS if v5 else REQUIRED_STOP_CONDITIONS) <= set(control["stop_conditions"])
     )
     add(checks, "budgets_resume_and_stops", controls_ok, "Finite token/time/cost ceilings, hash-bound resume, checkpoints, and mandatory stop conditions are required.")
     validate_fallback_qualification(checks, config, root)

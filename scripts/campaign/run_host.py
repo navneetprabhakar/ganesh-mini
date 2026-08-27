@@ -39,7 +39,23 @@ CONTAINER_ADAPTER = CONTAINER_TRAINING / "adapter-final"
 CONTAINER_OUTPUT = Path("/output")
 CONTAINER_CONTROL = Path("/control")
 CUDA_IMAGE_ID = "sha256:cdaf068ffcb933120181168ebf6ae1546ddf81e01b2ad006a1a18dd2e43d9860"
-LR_CANDIDATES = (("lr-1e-4", 0.0001), ("lr-2e-4", 0.0002))
+
+
+def lr_label(value: float) -> str:
+    return f"lr-{value:.0e}".replace("e-0","e-").replace("e+0","e+")
+
+
+def select_lr_evidence(low: list[dict[str,Any]], high: list[dict[str,Any]], low_run: dict[str,Any], high_run: dict[str,Any], *, low_lr: float, high_lr: float, budget: int, rule: str) -> dict[str,Any]:
+    if len(low) != 30 or len(high) != 30 or {row["task_id"] for row in low} != {row["task_id"] for row in high}:
+        raise RuntimeError("LR canaries must cover the same 30 tasks")
+    for run,learning_rate in ((low_run,low_lr),(high_run,high_lr)):
+        if run.get("status")!="complete" or run.get("identities",{}).get("phase")!="lr-candidate" or run.get("identities",{}).get("learning_rate")!=str(learning_rate) or run.get("state",{}).get("seen_tokens",0)<budget: raise RuntimeError("LR selection requires two complete unique-epoch candidates")
+    lanes=("go","java","javascript","typescript","python","rust")
+    lane_counts=lambda rows:{lane:sum(row["passed"] for row in rows if row["language"]==lane) for lane in lanes}
+    low_lane=lane_counts(low); high_lane=lane_counts(high); choose_high=sum(high_lane.values())>=sum(low_lane.values())+1 and all(high_lane[lane]>=low_lane[lane] for lane in lanes)
+    collection=lambda rows:canonical_sha256([row["result_sha256"] for row in sorted(rows,key=lambda item:item["task_id"])])
+    evidence={"schema_version":"ganesh-mini-lr-selection/v2","status":"selected","rule":rule,"minimum_seen_tokens":budget,"surface":"development-canary","expected_task_count":30,"candidates":{str(low_lr):{"run_evidence_sha256":low_run["evidence_sha256"],"result_collection_sha256":collection(low),"passed":sum(low_lane.values()),"lanes":low_lane},str(high_lr):{"run_evidence_sha256":high_run["evidence_sha256"],"result_collection_sha256":collection(high),"passed":sum(high_lane.values()),"lanes":high_lane}},"selected_learning_rate":high_lr if choose_high else low_lr,"decision":"higher_lr_improved_without_lane_regression" if choose_high else "conservative_lower_lr_default"}
+    evidence["evidence_sha256"]=canonical_sha256(evidence); return evidence
 
 
 def docker_container_name(name: str) -> str:
@@ -213,7 +229,7 @@ class Campaign:
         self.run([
             sys.executable, str(self.args.train_workspace / "scripts/train/pilot.py"), "preflight",
             "--root", str(self.args.train_workspace),
-            "--config", str(self.args.train_workspace / "configs/train/seed_pilot.json"),
+            "--config", str(self.args.train_workspace / self.args.train_config_relative),
             "--system", "Linux", "--output", str(card),
         ], log_name="training-preflight", timeout=min(self.remaining(), 600), env=env)
         value = load_sealed(card, "card_sha256")
@@ -234,6 +250,10 @@ class Campaign:
         command += ["--entrypoint", "python", self.args.cuda_image,
             "/workspace/scripts/train/run_sft.py", "--phase", phase,
             "--card", str(CONTAINER_CONTROL / card.name), "--model-dir", str(CONTAINER_MODEL),
+            "--config", f"/workspace/{self.args.train_config_relative}",
+            "--prepared-manifest", f"/workspace/{self.train_manifest_relative}",
+            "--prepared-data", f"/workspace/{self.train_data_relative}",
+            "--validation-data", f"/workspace/{self.validation_data_relative}",
             "--output", "/outputs", "--learning-rate", str(learning_rate),
             "--maximum-seen-tokens", str(maximum_tokens), "--hourly-cost-usd", str(self.args.hourly_cost_usd),
             "--prior-cost-usd", str(self.prior_cost()), "--cost-ceiling-usd", str(self.args.training_cost_ceiling_usd),
@@ -247,7 +267,7 @@ class Campaign:
         self.record(f"train-{label}", "passed", evidence_sha256=evidence["evidence_sha256"], seen_tokens=evidence["state"]["seen_tokens"])
         return destination
 
-    def candidate_config(self, label: str, training: Path) -> Path:
+    def candidate_config(self, label: str, training: Path, *, canary: bool = False) -> Path:
         base = json.loads((self.args.eval_workspace / "configs/inference/qwen_base_development.json").read_text())
         base.update({
             "run_id": f"ganesh-mini-1.0-{label}-development-v1",
@@ -255,14 +275,17 @@ class Campaign:
             "output_dir": f"measurement/inference/development/{label}",
             "adapter": {"dir": f"artifacts/campaign/{label}/adapter-final", "run_evidence": f"artifacts/campaign/{label}/run-evidence.json", "served_model_id": f"ganesh-mini-1.0-{label}"},
         })
+        if canary:
+            base["task_globs"]=self.canary_paths
+            base["expected_task_count"]=30
         path = self.output / "configs" / f"{label}.json"
         atomic_json(path, base)
         return path
 
-    def evaluate(self, label: str, training: Path) -> Path:
+    def evaluate(self, label: str, training: Path, *, canary: bool = False) -> Path:
         destination = self.output / "evaluation" / label
         destination.mkdir(parents=True, exist_ok=False)
-        config = self.candidate_config(label, training)
+        config = self.candidate_config(label, training,canary=canary)
         command = self.docker_base(f"ganesh-eval-{self.args.attempt_id}-{label}", self.args.eval_workspace)
         command += [
             "--mount", external_mount(training, CONTAINER_TRAINING, readonly=True),
@@ -280,27 +303,20 @@ class Campaign:
         self.run(command, log_name=f"evaluate-{label}", timeout=min(self.remaining(self.args.finalization_reserve_seconds), 21600))
         run = load_sealed(destination / "run.json", "run_sha256")
         accounting = run.get("task_accounting", {})
-        if accounting.get("completed") != 180 or accounting.get("pending") != 0:
+        expected=30 if canary else 180
+        if accounting.get("completed") != expected or accounting.get("pending") != 0:
             raise RuntimeError(f"{label} evaluation is incomplete")
         self.record(f"evaluate-{label}", "passed", run_sha256=run["run_sha256"], passed=accounting["passed"])
         return destination
 
-    def select_lr(self, runs: dict[str, Path], evaluations: dict[str, Path]) -> Path:
+    def select_lr(self, runs: dict[str, Path], evaluations: dict[str, Path], candidates: tuple[tuple[str,float],...], budget: int, rule: str) -> Path:
         output = self.output / "lr-selection.json"
         if str(self.args.eval_workspace) not in sys.path:
             sys.path.insert(0,str(self.args.eval_workspace))
         from scripts.eval.score import load_results
-        low=load_results(evaluations["lr-1e-4"] / "tasks"); high=load_results(evaluations["lr-2e-4"] / "tasks")
-        low_run=load_sealed(runs["lr-1e-4"] / "run-evidence.json","evidence_sha256"); high_run=load_sealed(runs["lr-2e-4"] / "run-evidence.json","evidence_sha256")
-        for run,expected in ((low_run,"0.0001"),(high_run,"0.0002")):
-            if run.get("status")!="complete" or run.get("identities",{}).get("phase")!="lr-candidate" or run.get("identities",{}).get("learning_rate")!=expected or run.get("state",{}).get("seen_tokens",0)<400000: raise RuntimeError("LR selection requires two complete 400k-token candidates")
-        if len(low)!=180 or {row["task_id"] for row in low}!={row["task_id"] for row in high}: raise RuntimeError("LR candidates do not cover the same 180 tasks")
-        lanes=("go","java","javascript","typescript","python","rust")
-        low_lane={lane:sum(row["passed"] for row in low if row["language"]==lane) for lane in lanes}; high_lane={lane:sum(row["passed"] for row in high if row["language"]==lane) for lane in lanes}
-        choose_high=sum(high_lane.values())>=sum(low_lane.values())+1 and all(high_lane[lane]>=low_lane[lane] for lane in lanes)
-        collection=lambda rows:canonical_sha256([row["result_sha256"] for row in sorted(rows,key=lambda item:item["task_id"])])
-        selected={"schema_version":"ganesh-mini-lr-selection/v1","status":"selected","rule":"select_0.0002_only_if_development_macro_improves_by_at_least_one_task_equivalent_with_no_lane_regression_else_0.0001","candidates":{"0.0001":{"run_evidence_sha256":low_run["evidence_sha256"],"result_collection_sha256":collection(low),"passed":sum(low_lane.values()),"lanes":low_lane},"0.0002":{"run_evidence_sha256":high_run["evidence_sha256"],"result_collection_sha256":collection(high),"passed":sum(high_lane.values()),"lanes":high_lane}},"selected_learning_rate":0.0002 if choose_high else 0.0001,"decision":"higher_lr_improved_without_lane_regression" if choose_high else "conservative_lower_lr_default"}
-        selected["evidence_sha256"]=canonical_sha256(selected); atomic_json(output,selected)
+        (low_label,low_lr),(high_label,high_lr)=candidates
+        selected=select_lr_evidence(load_results(evaluations[low_label]/"tasks"),load_results(evaluations[high_label]/"tasks"),load_sealed(runs[low_label]/"run-evidence.json","evidence_sha256"),load_sealed(runs[high_label]/"run-evidence.json","evidence_sha256"),low_lr=low_lr,high_lr=high_lr,budget=budget,rule=rule)
+        atomic_json(output,selected)
         self.record("lr-selection", "passed", evidence_sha256=selected["evidence_sha256"], selected_learning_rate=selected["selected_learning_rate"])
         return output
 
@@ -309,7 +325,7 @@ class Campaign:
         promotion = self.output / "pilot-promotion.json"
         if str(self.args.eval_workspace) not in sys.path: sys.path.insert(0,str(self.args.eval_workspace))
         from scripts.eval.score import compare,load_results
-        base=load_results(self.output/"baseline/tasks"); candidate=load_results(main_eval/"tasks"); scored=compare(base,candidate); atomic_json(comparison,scored)
+        base=load_results(self.base_results_dir/"tasks"); candidate=load_results(main_eval/"tasks"); scored=compare(base,candidate); atomic_json(comparison,scored)
         families=("go","java","javascript_typescript","python","rust"); lanes=("go","java","javascript","typescript","python","rust")
         improved=[family for family in families if scored["candidate"]["families"][family]["decimal"]>scored["base"]["families"][family]["decimal"]]
         lane_deltas={lane:scored["candidate"]["lanes"][lane]["passed"]-scored["base"]["lanes"][lane]["passed"] for lane in lanes}
@@ -332,22 +348,46 @@ class Campaign:
             raise RuntimeError("campaign escaped the qualified CUDA image")
         verify_workspace(self.args.eval_workspace, self.args.eval_manifest, self.args.eval_archive, "ganesh-mini-development-evaluation-workspace/v1")
         verify_workspace(self.args.train_workspace, self.args.train_manifest, self.args.train_archive, "ganesh-mini-training-workspace/v1")
+        config=json.loads((self.args.train_workspace/self.args.train_config_relative).read_text())
+        recipe=config["recipes"]["primary"]
+        if config.get("schema_version")!="ganesh-mini-train-config/v5" or recipe.get("recipe_id")!="bf16-lora-conservative-v2": raise RuntimeError("campaign requires the repaired Gate 3 v2 contract")
+        manifest=load_sealed(self.args.train_workspace/config["data"]["prepared_manifest_path"],"manifest_sha256")
+        self.train_manifest_relative=config["data"]["prepared_manifest_path"]
+        self.train_data_relative=manifest["prepared_train_path"]
+        self.validation_data_relative=manifest["prepared_validation_path"]
+        budget=config["control"]["maximum_seen_tokens"]
+        if budget!=manifest["prepared_train_input_tokens"] or recipe["lr_selection_budget_seen_tokens_per_candidate"]!=budget: raise RuntimeError("v2 unique-epoch budget mismatch")
+        candidates=tuple((lr_label(float(value)),float(value)) for value in recipe["learning_rate_candidates"])
+        if len(candidates)!=2: raise RuntimeError("Gate 3 v2 requires exactly two learning-rate candidates")
+        canary=load_sealed(self.args.eval_workspace/"eval/private/development/gate3_canary_manifest.json","manifest_sha256")
+        if canary.get("status")!="frozen" or canary.get("records")!=30 or canary.get("promotion_selection_allowed") is not False:
+            raise RuntimeError("Gate 3 canary contract is not frozen")
+        self.canary_paths=[row["path"] for row in canary["tasks"]]
         if str(self.args.eval_workspace) not in sys.path:
             sys.path.insert(0, str(self.args.eval_workspace))
-        self.record("workspace-isolation", "passed", evaluation_root=str(self.args.eval_workspace), training_root=str(self.args.train_workspace))
-        self.baseline()
-        gate1 = self.build_gate1()
+        self.record("workspace-isolation", "passed", evaluation_root=str(self.args.eval_workspace), training_root=str(self.args.train_workspace), canary_manifest_sha256=canary["manifest_sha256"])
+        gate1=self.args.gate1_report
+        gate1_value=load_sealed(gate1,"evidence_sha256")
+        if gate1_value.get("status")!="ready" or gate1_value.get("base_baseline_complete") is not True: raise RuntimeError("canonical Gate 1 evidence is not ready")
+        self.base_results_dir=self.args.eval_workspace/BASE_OUTPUT_RELATIVE
+        if not (self.base_results_dir/"run.json").is_file(): raise RuntimeError("canonical base result is absent from evaluation workspace")
+        base_run=load_sealed(self.base_results_dir/"run.json","run_sha256")
+        gate1_base=next((row.get("evidence",{}) for row in gate1_value.get("checks",[]) if row.get("name")=="exact_base_development_baseline" and row.get("passed") is True),None)
+        accounting=base_run.get("task_accounting",{})
+        if not gate1_base or gate1_base.get("run_sha256")!=base_run["run_sha256"] or accounting.get("completed")!=180 or accounting.get("pending")!=0:
+            raise RuntimeError("canonical Gate 1 report does not bind the sealed 180-task base run")
+        self.record("gate1-canonical-baseline", "passed", evidence_sha256=gate1_value["evidence_sha256"], run_sha256=base_run["run_sha256"])
         card = self.training_card(gate1)
         runs: dict[str, Path] = {}
         evaluations: dict[str, Path] = {}
-        for label, learning_rate in LR_CANDIDATES:
-            runs[label] = self.train(label, learning_rate, 400000, card)
-            evaluations[label] = self.evaluate(label, runs[label])
-        selection = self.select_lr(runs, evaluations)
+        for label, learning_rate in candidates:
+            runs[label] = self.train(label, learning_rate, budget, card)
+            evaluations[label] = self.evaluate(f"{label}-canary", runs[label],canary=True)
+        selection = self.select_lr(runs, evaluations,candidates,budget,recipe["lr_selection_rule"])
         selected = float(load_sealed(selection, "evidence_sha256")["selected_learning_rate"])
-        main = self.train("main", selected, 636093, card, selection)
-        main_eval = self.evaluate("main", main)
-        self.adjudicate(main, main_eval)
+        selected_label=next(label for label,value in candidates if value==selected)
+        pilot_eval=self.evaluate(f"{selected_label}-full",runs[selected_label])
+        self.adjudicate(runs[selected_label],pilot_eval)
         final = {"schema_version": "ganesh-mini-staged-campaign-result/v1", "status": "passed", "attempt_id": self.args.attempt_id, "elapsed_seconds": round(time.monotonic()-self.started, 3), "phases": self.phases, "projected_compute_cost_usd": str(self.prior_cost())}
         final["evidence_sha256"] = canonical_sha256(final)
         atomic_json(self.output / "campaign-result.json", final)
@@ -365,7 +405,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--verifier-manifest", type=Path, required=True)
     parser.add_argument("--verifier-archive", type=Path, required=True)
     parser.add_argument("--gate0-report", type=Path, required=True)
+    parser.add_argument("--gate1-report", type=Path, required=True)
     parser.add_argument("--gate2-report", type=Path, required=True)
+    parser.add_argument("--train-config-relative",type=Path,default=Path("configs/train/seed_pilot_v2.json"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--shared-tmp", type=Path, required=True)
     parser.add_argument("--cuda-image", required=True)

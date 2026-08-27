@@ -39,6 +39,10 @@ ALLOWLIST = (
     "manifests/evaluation/private/development-tranche4.json",
     "manifests/evaluation/private/development-tranche5.json",
     "manifests/evaluation/private/development-tranche6.json",
+    # Reuse the canonical, already-admitted Gate 1 baseline.  This is measured
+    # evaluation evidence, never training input, and avoids spending GPU time
+    # regenerating the exact same 180-task base run in every Gate 3 attempt.
+    "measurement/inference/development/qwen3.5-2b-base-v1",
 )
 FORBIDDEN_PARTS = {
     ".git", ".gcloud-staging", "__pycache__", "artifacts", "checkpoints",
@@ -58,14 +62,16 @@ def collect(root: Path) -> list[Path]:
     files: set[Path] = set()
     for relative in ALLOWLIST:
         path = root / relative
+        is_canonical_baseline = relative == "measurement/inference/development/qwen3.5-2b-base-v1"
         if path.is_file():
-            if FORBIDDEN_PARTS & set(path.relative_to(root).parts):
+            if FORBIDDEN_PARTS & set(path.relative_to(root).parts) and not is_canonical_baseline:
                 raise ValueError(f"forbidden evaluation workspace allowlist entry: {relative}")
             files.add(path)
         elif path.is_dir():
             files.update(
                 item for item in path.rglob("*")
-                if item.is_file() and not FORBIDDEN_PARTS & set(item.relative_to(root).parts)
+                if item.is_file()
+                and (is_canonical_baseline or not FORBIDDEN_PARTS & set(item.relative_to(root).parts))
             )
         else:
             raise ValueError(f"evaluation workspace allowlist entry is missing: {relative}")

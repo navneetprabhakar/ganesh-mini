@@ -14,14 +14,14 @@ def test_gate1_gcloud_preparation_is_sealed_but_not_executable() -> None:
     claimed = record.pop("preparation_sha256")
     assert claimed == canonical_sha256(record)
     assert record["status"] == "prepared-not-executable"
-    assert record["gate"] == 1
-    assert record["resource_proposal"]["maximum_run_seconds"] == 64800
+    assert record["gate"] == 3
+    assert record["resource_proposal"]["maximum_run_seconds"] == 14400
     assert record["resource_proposal"]["allowed_zones"] == ["us-east1-b", "us-east1-c", "us-east1-d"]
-    assert record["resource_proposal"]["controller_budget_seconds"] + record["resource_proposal"]["backup_reserve_seconds"] == 64800
-    assert record["public_price_bound"]["eighteen_hour_conservative_upper_usd"] < record["public_price_bound"]["proposed_absolute_ceiling_usd"]
+    assert record["resource_proposal"]["controller_budget_seconds"] + record["resource_proposal"]["backup_reserve_seconds"] == 14400
+    assert record["public_price_bound"]["four_hour_conservative_upper_usd"] < record["public_price_bound"]["proposed_absolute_ceiling_usd"]
     assert record["utilization"]["generation_batch_size"] == 4
     assert record["utilization"]["verifier_workers"] == 12
-    assert {"execution_card_builder", "terminal_validator", "finalizer", "launcher", "runtime_bundle_rehearsal", "price_evidence_builder", "price_evidence_schema", "baseline_admitter", "baseline_admission_schema", "training_workspace_archive", "training_workspace_manifest"} <= set(record["local_inputs"])
+    assert {"execution_card_builder", "terminal_validator", "finalizer", "launcher", "runtime_bundle_rehearsal", "price_evidence_builder", "price_evidence_schema", "baseline_admitter", "baseline_admission_schema", "training_workspace_archive", "training_workspace_manifest", "gate1_report"} <= set(record["local_inputs"])
     assert record["workspace_source_alignment"]["evaluation"]["file_count"] > 0
     assert record["workspace_source_alignment"]["training"]["file_count"] > 0
     assert len(record["workspace_source_alignment"]["evaluation"]["source_collection_sha256"]) == 64
@@ -30,7 +30,7 @@ def test_gate1_gcloud_preparation_is_sealed_but_not_executable() -> None:
 
 def test_committed_preparation_matches_builder() -> None:
     expected = build()
-    observed = json.loads((ROOT / "measurement/gate1/gcloud/preparation.json").read_text(encoding="utf-8"))
+    observed = json.loads((ROOT / "measurement/gate3/gcloud/preparation.json").read_text(encoding="utf-8"))
     assert observed == expected
 
 

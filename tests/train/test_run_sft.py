@@ -1,7 +1,7 @@
 import pytest
 
 from scripts.train.qwen_runtime import configure_cuda_allocator
-from scripts.train.run_sft import bounded_training_wall, five_family_validation, initialize_cuda_measurement, planned_end
+from scripts.train.run_sft import RollingLossGuard, bounded_training_wall, five_family_validation, initialize_cuda_measurement, planned_end, select_lora_targets, summarize_validation
 
 
 def row(tokens: int) -> dict:
@@ -74,3 +74,35 @@ def test_cuda_measurement_initializes_selected_device_before_reset() -> None:
         ("init",),
         ("reset_peak_memory_stats",),
     ]
+
+
+def test_conservative_target_policy_covers_only_attention_in_last_eight_layers() -> None:
+    class Linear: pass
+    modules=[]
+    for layer in range(24):
+        attention="self_attn" if layer%4==3 else "linear_attn"
+        names=("q_proj","k_proj","v_proj","o_proj") if attention=="self_attn" else ("in_proj_qkv","in_proj_z","in_proj_a","in_proj_b","out_proj")
+        modules.extend((f"model.language_model.layers.{layer}.{attention}.{name}",Linear()) for name in names)
+        modules.append((f"model.language_model.layers.{layer}.mlp.down_proj",Linear()))
+    policy={"scope":"last-n-attention-projections","model_layer_count":24,"layer_count":8,"full_attention_projections":["q_proj","v_proj"],"linear_attention_projections":["in_proj_qkv","out_proj"],"mlp_projections":[]}
+    selected=select_lora_targets(modules,Linear,{"target_policy":policy})
+    assert len(selected)==16
+    assert all(16<=int(name.split(".")[3])<=23 for name in selected)
+    assert not any("mlp" in name or "in_proj_z" in name or "k_proj" in name or "o_proj" in name for name in selected)
+
+
+def test_robust_guard_uses_optimizer_groups_and_persists_trigger_evidence() -> None:
+    contract={"warmup_optimizer_steps":4,"rolling_window_optimizer_steps":4,"minimum_history_optimizer_steps":4,"robust_z_threshold":8.0,"minimum_median_ratio":3.0,"mad_floor":1e-6,"consecutive_optimizer_groups":3}
+    guard=RollingLossGuard(contract)
+    assert not any(guard.observe(value)["triggered"] for value in (1.0,1.1,0.9,1.0))
+    first=guard.observe(4.0); second=guard.observe(4.1); third=guard.observe(4.2)
+    assert first["spike"] and first["streak"]==1
+    assert second["spike"] and second["streak"]==2
+    assert third["triggered"] and third["streak"]==3
+
+
+def test_validation_diagnostic_reports_comparable_token_and_record_means() -> None:
+    rows={lane:[{"loss":1.0,"response_tokens":1.0},{"loss":3.0,"response_tokens":3.0}] for lane in ("go","java","javascript","typescript","python","rust")}
+    result=summarize_validation(rows)
+    assert result["record_mean"]["five_family_macro_mean"]==2.0
+    assert result["supervised_token_mean"]["five_family_macro_mean"]==2.5

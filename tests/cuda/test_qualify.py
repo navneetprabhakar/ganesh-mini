@@ -390,7 +390,7 @@ def test_cuda_qualification_requires_measured_vision_offload_savings() -> None:
     assert "labels=labels,skip_logits=True" in qualifier
     assert "model(**batch,skip_logits=True)" in qualifier
     assert "result=model(**batch,skip_logits=True)" in production
-    assert 'validation_result=model(**collate(row,"cuda:0"),skip_logits=True)' in production
+    assert 'validation_result=current_model(**collate(row,"cuda:0"),skip_logits=True)' in production
     assert 'if current_peak>maximum: raise RuntimeError(f"peak VRAM {current_peak} exceeds {maximum}")' in production
 
 

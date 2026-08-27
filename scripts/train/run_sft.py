@@ -10,7 +10,9 @@ import json
 import math
 import os
 import random
+import re
 import resource
+import statistics
 import time
 from decimal import Decimal
 from datetime import datetime, timezone
@@ -98,6 +100,64 @@ def five_family_validation(lane_losses: dict[str,list[float]]) -> dict[str,float
     return result
 
 
+def summarize_validation(lane_rows: dict[str,list[dict[str,float]]]) -> dict[str,Any]:
+    """Report comparable record-mean and supervised-token-mean diagnostics."""
+    record_means=five_family_validation({lane:[row["loss"] for row in rows] for lane,rows in lane_rows.items()})
+    token_means={lane:sum(row["loss"]*row["response_tokens"] for row in rows)/sum(row["response_tokens"] for row in rows) for lane,rows in lane_rows.items()}
+    token_summary=five_family_validation({lane:[value] for lane,value in token_means.items()})
+    return {"record_mean":record_means,"supervised_token_mean":token_summary,"records_by_lane":{lane:len(rows) for lane,rows in lane_rows.items()},"response_tokens_by_lane":{lane:int(sum(row["response_tokens"] for row in rows)) for lane,rows in lane_rows.items()}}
+
+
+def select_lora_targets(named_modules: Any, linear_type: type, recipe: dict[str,Any]) -> list[str]:
+    """Select exact, layer-bounded Qwen attention projections for LoRA."""
+    policy=recipe.get("target_policy",{"scope":"all-language-model-linears"})
+    if policy["scope"]=="all-language-model-linears":
+        return [name for name,module in named_modules if isinstance(module,linear_type) and name.startswith("model.language_model.") and not name.endswith("lm_head")]
+    if policy["scope"]!="last-n-attention-projections":
+        raise RuntimeError("unsupported LoRA target policy")
+    layer_count=policy.get("layer_count")
+    layer_total=policy.get("model_layer_count")
+    full=set(policy.get("full_attention_projections",[])); linear=set(policy.get("linear_attention_projections",[]))
+    if not isinstance(layer_count,int) or not isinstance(layer_total,int) or not 0<layer_count<=layer_total or not full or not linear:
+        raise RuntimeError("invalid layer-bounded LoRA target policy")
+    first_layer=layer_total-layer_count; selected=[]
+    pattern=re.compile(r"^model\.language_model\.layers\.(\d+)\.(self_attn|linear_attn)\.([^.]+)$")
+    for name,module in named_modules:
+        match=pattern.fullmatch(name)
+        if not match or not isinstance(module,linear_type) or int(match.group(1))<first_layer:
+            continue
+        allowed=full if match.group(2)=="self_attn" else linear
+        if match.group(3) in allowed: selected.append(name)
+    layers={int(pattern.fullmatch(name).group(1)) for name in selected}
+    if layers != set(range(first_layer,layer_total)):
+        raise RuntimeError("LoRA target policy did not cover every declared final layer")
+    return selected
+
+
+class RollingLossGuard:
+    """Robust optimizer-group anomaly detector; raw record losses never trip it."""
+
+    def __init__(self, contract: dict[str,Any], history: list[float] | None = None, streak: int = 0) -> None:
+        self.contract=contract; self.history=list(history or []); self.streak=streak
+
+    def observe(self, value: float) -> dict[str,Any]:
+        window=self.history[-self.contract["rolling_window_optimizer_steps"]:]
+        ready=len(self.history)>=self.contract["warmup_optimizer_steps"] and len(window)>=self.contract["minimum_history_optimizer_steps"]
+        median=statistics.median(window) if window else None
+        mad=statistics.median(abs(item-median) for item in window) if window else None
+        scale=1.4826*max(mad or 0.0,self.contract["mad_floor"])
+        ratio=value/max(median or 0.0,self.contract["mad_floor"]) if median is not None else None
+        robust_z=(value-median)/scale if median is not None else None
+        spike=bool(ready and ratio>=self.contract["minimum_median_ratio"] and robust_z>=self.contract["robust_z_threshold"])
+        self.streak=self.streak+1 if spike else 0
+        triggered=self.streak>=self.contract["consecutive_optimizer_groups"]
+        # Keep anomalous groups out of the reference window; otherwise the
+        # first spike raises the median enough to hide a genuinely consecutive
+        # run. A normal group resets the streak and becomes new baseline data.
+        if not spike: self.history.append(value)
+        return {"ready":ready,"median":median,"mad":mad,"median_ratio":ratio,"robust_z":robust_z,"spike":spike,"streak":self.streak,"triggered":triggered}
+
+
 def save_checkpoint(output: Path, model: Any, optimizer: Any, scheduler: Any, state: dict[str,Any], identities: dict[str,str]) -> dict[str,Any]:
     import torch
     checkpoint=output/"checkpoints"/f"tokens-{state['seen_tokens']:012d}"; checkpoint.mkdir(parents=True,exist_ok=False); model.save_pretrained(checkpoint/"adapter",safe_serialization=True); torch.save({"optimizer":optimizer.state_dict(),"scheduler":scheduler.state_dict(),"torch_rng":torch.get_rng_state(),"cuda_rng":torch.cuda.get_rng_state_all(),"state":state},checkpoint/"trainer-state.pt")
@@ -108,7 +168,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     card=load_sealed(args.card,"card_sha256")
     if card.get("status")!="ready" or card.get("failed_checks"): raise RuntimeError("training execution card is not ready")
     config=json.loads(args.config.read_text()); config_sha=file_sha256(args.config)
-    if config.get("schema_version")!="ganesh-mini-train-config/v4": raise RuntimeError("unsupported training config schema")
+    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5"}: raise RuntimeError("unsupported training config schema")
     if card["inputs"]["config_sha256"]!=config_sha: raise RuntimeError("card/config identity mismatch")
     prepared_manifest=load_sealed(args.prepared_manifest,"manifest_sha256")
     if card["inputs"]["prepared_manifest_sha256"]!=prepared_manifest["manifest_sha256"]: raise RuntimeError("card/prepared manifest mismatch")
@@ -142,7 +202,16 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     else: model.gradient_checkpointing_enable(); model.enable_input_require_grads(); linear_type=torch.nn.Linear
     if not model.is_gradient_checkpointing: raise RuntimeError("gradient checkpointing did not activate on the Qwen3.5 language model")
     fused_training_loss=configure_fused_training_loss(model,recipe["fused_linear_cross_entropy"]["version"])
-    targets=[name for name,module in model.named_modules() if isinstance(module,linear_type) and name.startswith("model.language_model.") and not name.endswith("lm_head")]
+    def validation_diagnostic(current_model: Any) -> dict[str,Any]:
+        current_model.eval(); lane_rows={lane:[] for lane in ("go","java","javascript","typescript","python","rust")}
+        with torch.inference_mode():
+            for row in validation_rows:
+                validation_result=current_model(**collate(row,"cuda:0"),skip_logits=True)
+                if validation_result.logits is not None: raise RuntimeError("fused training loss materialized validation logits")
+                lane_rows[row["lane"]].append({"loss":float(validation_result.loss.detach().cpu()),"response_tokens":float(sum(label!=-100 for label in row["labels"]))})
+        return summarize_validation(lane_rows)
+    base_validation=validation_diagnostic(model)
+    targets=select_lora_targets(model.named_modules(),linear_type,recipe)
     if not targets: raise RuntimeError("no eligible Qwen3.5 language-model LoRA targets found")
     resume_manifest=None
     if args.resume_checkpoint:
@@ -159,38 +228,44 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     model.train()
     optimizer=torch.optim.AdamW((parameter for parameter in model.parameters() if parameter.requires_grad),lr=lr,betas=tuple(recipe["optimizer_betas"]),eps=recipe["optimizer_epsilon"],weight_decay=recipe["weight_decay"])
     end_row=planned_end(rows,args.maximum_seen_tokens,recipe["gradient_accumulation_steps"]); total_micro_steps=end_row; total_optimizer_steps=math.ceil(total_micro_steps/recipe["gradient_accumulation_steps"]); scheduler=get_cosine_schedule_with_warmup(optimizer,math.ceil(total_optimizer_steps*recipe["warmup_ratio"]),total_optimizer_steps)
-    state={"next_row":0,"seen_tokens":0,"response_tokens":0,"optimizer_steps":0,"micro_steps":0,"last_optimizer_micro_step":0,"losses":[],"started_at":datetime.now(timezone.utc).isoformat()}; output=args.output; output.mkdir(parents=True,exist_ok=True)
+    state={"next_row":0,"seen_tokens":0,"response_tokens":0,"optimizer_steps":0,"micro_steps":0,"last_optimizer_micro_step":0,"losses":[],"anomaly_detector":{"history":[],"streak":0},"started_at":datetime.now(timezone.utc).isoformat()}; output=args.output; output.mkdir(parents=True,exist_ok=True)
     if resume_manifest:
         saved=torch.load(args.resume_checkpoint/"trainer-state.pt",map_location="cpu",weights_only=False); state=saved["state"]
         if state!=resume_manifest["state"]: raise RuntimeError("resume state disagrees with manifest")
         optimizer.load_state_dict(saved["optimizer"]); scheduler.load_state_dict(saved["scheduler"]); torch.set_rng_state(saved["torch_rng"]); torch.cuda.set_rng_state_all(saved["cuda_rng"])
     maximum=int(recipe.get("maximum_peak_vram_gb",23)*1024**3)
-    checkpoint_interval=min(config["control"]["checkpoint_every_tokens"],max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); spikes=0; last_loss=None
+    anomaly_contract=recipe.get("loss_anomaly_detector")
+    if config["schema_version"]=="ganesh-mini-train-config/v5" and not anomaly_contract: raise RuntimeError("v5 recipe requires optimizer-group anomaly detection")
+    detector=RollingLossGuard(anomaly_contract,state.get("anomaly_detector",{}).get("history",[]),state.get("anomaly_detector",{}).get("streak",0)) if anomaly_contract else None
+    checkpoint_interval=min(config["control"]["checkpoint_every_tokens"],max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); group_raw_losses=[]; group_weighted_loss=0.0; group_weight=0.0
     for index,row in enumerate(rows[state["next_row"]:end_row],state["next_row"]):
         if time.monotonic()-started>=wall_limit and state["last_optimizer_micro_step"]==state["micro_steps"]: break
         batch=collate(row,"cuda:0"); result=model(**batch,skip_logits=True)
         if result.logits is not None: raise RuntimeError("fused training loss materialized record logits")
-        loss=result.loss/recipe["gradient_accumulation_steps"]
+        objective_weight=float(row.get("objective_weight",1/recipe["gradient_accumulation_steps"]))
+        if not math.isfinite(objective_weight) or objective_weight<=0: raise RuntimeError("invalid training objective weight")
+        loss=result.loss*objective_weight
         if not torch.isfinite(loss): raise RuntimeError("non-finite loss")
-        loss.backward(); raw_loss=float(result.loss.detach().cpu()); spikes=spikes+1 if last_loss is not None and raw_loss>last_loss*3 else 0; last_loss=raw_loss
+        loss.backward(); raw_loss=float(result.loss.detach().cpu()); group_raw_losses.append(raw_loss); group_weighted_loss+=raw_loss*objective_weight; group_weight+=objective_weight
         current_peak=max(torch.cuda.max_memory_allocated(0),torch.cuda.max_memory_reserved(0))
         if current_peak>maximum: raise RuntimeError(f"peak VRAM {current_peak} exceeds {maximum}")
-        if spikes>=3: raise RuntimeError("three consecutive loss spikes")
         state.update({"next_row":index+1,"seen_tokens":state["seen_tokens"]+int(batch["attention_mask"].sum()),"response_tokens":state["response_tokens"]+int((batch["labels"]!=-100).sum()),"micro_steps":state["micro_steps"]+1}); state["losses"]=(state["losses"]+[raw_loss])[-100:]
-        if state["micro_steps"]%recipe["gradient_accumulation_steps"]==0 or index==len(rows)-1:
-            torch.nn.utils.clip_grad_norm_(model.parameters(),recipe["max_gradient_norm"]); optimizer.step(); scheduler.step(); optimizer.zero_grad(set_to_none=True); state["optimizer_steps"]+=1; state["last_optimizer_micro_step"]=state["micro_steps"]; append_jsonl(output/"telemetry.jsonl",{"recorded_at":datetime.now(timezone.utc).isoformat(),"seen_tokens":state["seen_tokens"],"response_tokens":state["response_tokens"],"optimizer_steps":state["optimizer_steps"],"loss":raw_loss,"learning_rate":scheduler.get_last_lr()[0],"peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"peak_reserved_bytes":torch.cuda.max_memory_reserved(0)})
+        if state["micro_steps"]%recipe["gradient_accumulation_steps"]==0 or index==end_row-1:
+            gradient_norm=float(torch.nn.utils.clip_grad_norm_(model.parameters(),recipe["max_gradient_norm"]))
+            guard=detector.observe(group_weighted_loss) if detector else {"ready":False,"triggered":False}
+            telemetry={"recorded_at":datetime.now(timezone.utc).isoformat(),"seen_tokens":state["seen_tokens"],"response_tokens":state["response_tokens"],"optimizer_steps":state["optimizer_steps"]+1,"weighted_group_loss":group_weighted_loss,"group_objective_weight":group_weight,"raw_record_loss_min":min(group_raw_losses),"raw_record_loss_mean":sum(group_raw_losses)/len(group_raw_losses),"raw_record_loss_max":max(group_raw_losses),"gradient_norm_before_clip":gradient_norm,"loss_anomaly":guard,"learning_rate":scheduler.get_last_lr()[0],"peak_allocated_bytes":torch.cuda.max_memory_allocated(0),"peak_reserved_bytes":torch.cuda.max_memory_reserved(0)}
+            append_jsonl(output/"telemetry.jsonl",telemetry)
+            if guard["triggered"]:
+                optimizer.zero_grad(set_to_none=True); raise RuntimeError("robust optimizer-group loss anomaly")
+            optimizer.step(); scheduler.step(); optimizer.zero_grad(set_to_none=True); state["optimizer_steps"]+=1; state["last_optimizer_micro_step"]=state["micro_steps"]
+            if detector: state["anomaly_detector"]={"history":detector.history,"streak":detector.streak}
+            group_raw_losses=[]; group_weighted_loss=0.0; group_weight=0.0
         if state["seen_tokens"]>=next_checkpoint and state["last_optimizer_micro_step"]==state["micro_steps"]: save_checkpoint(output,model,optimizer,scheduler,state,identities); next_checkpoint+=checkpoint_interval
     completed_training=state["next_row"]==end_row and state["last_optimizer_micro_step"]==state["micro_steps"]
     if not completed_training:
         terminal_checkpoint=output/"checkpoints"/f"tokens-{state['seen_tokens']:012d}"
         if not terminal_checkpoint.exists(): save_checkpoint(output,model,optimizer,scheduler,state,identities)
-    model.eval(); validation_loss_by_lane={lane:[] for lane in ("go","java","javascript","typescript","python","rust")}
-    with torch.inference_mode():
-        for row in validation_rows:
-            validation_result=model(**collate(row,"cuda:0"),skip_logits=True)
-            if validation_result.logits is not None: raise RuntimeError("fused training loss materialized validation logits")
-            validation_loss_by_lane[row["lane"]].append(float(validation_result.loss.detach().cpu()))
-    validation=five_family_validation(validation_loss_by_lane)
+    validation=validation_diagnostic(model)
     probe=collate(validation_rows[0],"cuda:0")
     with torch.inference_mode(): original_logits=model(**probe).logits[:,-1,:].float().cpu()
     final=output/"adapter-final"; model.save_pretrained(final,safe_serialization=True); files={str(path.relative_to(final)):file_sha256(path) for path in sorted(final.rglob("*")) if path.is_file()}
@@ -201,7 +276,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     peak=max(torch.cuda.max_memory_allocated(0),torch.cuda.max_memory_reserved(0))
     if peak>maximum: raise RuntimeError(f"peak VRAM {peak} exceeds {maximum}")
     state["completed_at"]=datetime.now(timezone.utc).isoformat(); state["wall_seconds"]=time.monotonic()-started
-    evidence={"schema_version":"ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"trainable_parameter_names":trainable_names,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
+    evidence={"schema_version":"ganesh-mini-sft-run/v2" if config["schema_version"].endswith("v5") else "ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"lora_target_policy":recipe.get("target_policy",{"scope":"all-language-model-linears"}),"trainable_parameter_names":trainable_names,"base_validation_loss_diagnostic":base_validation,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
 
 
 def main() -> int:

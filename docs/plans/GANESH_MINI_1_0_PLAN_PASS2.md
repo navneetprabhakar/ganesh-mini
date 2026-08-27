@@ -134,10 +134,12 @@ evaluation manifests. These are compatibility and integrity checks, not a
 fresh rights-admission process.
 
 Use the cleaned seed first. Do not inflate it to a predetermined scale before
-measuring the Qwen base and seed-trained pilot. If the seed produces a credible
-but capacity-limited gain, expand toward 20,000–60,000 verified records based
-on measured per-lane failure clusters. Larger 60,000–120,000 runs remain an
-option only if the smaller expansion has not saturated.
+measuring the Qwen base and seed-trained pilot. If the repaired seed pilot does
+not establish a safe learning mechanism, prepare a 4,000–8,000-record
+execution-verified diagnostic expansion around measured failure clusters. A
+credible gain from that mix may then justify expansion toward 20,000–60,000
+verified records. Larger 60,000–120,000 runs remain an option only if the
+smaller expansion has not saturated.
 
 Composition rules:
 
@@ -175,26 +177,43 @@ manifest.
 
 ### Gate 3 — bounded multilingual pilot
 
-Run the first pilot on the full 1,399-row v0.1 seed corpus. Because its lane
-sizes differ, sample by a five-family token-weight policy and report both seen
-tokens and effective epochs per lane. Preserve the original 50 validation rows
-for loss diagnostics, but select the model only on the new private development
-surface.
+Run the repaired pilot on every one of the 1,399 unique v0.1 seed rows exactly
+once. Do not duplicate rows to simulate family balance. Because the fused
+model loss is already a per-record supervised-token mean, attach an explicit
+per-row coefficient that reconstructs the desired per-family supervised-token
+mean and gives each product family 20% of the epoch objective. JavaScript and
+TypeScript receive 10% each. Preserve the original 50 validation rows for
+comparable base/candidate loss diagnostics, but select and promote models only
+through executable development results.
 
-Starting recipe, subject to the Gate 0 smoke result:
+The rejected v1 recipe—rank 32 across all 24 layers and all language-model
+linear projections at learning rates `1e-4` and `2e-4`—is historical evidence
+and must not be rerun. The repaired v2 recipe is:
 
 - BF16 base loading with BF16 LoRA compute on a CUDA GPU with at least 24 GB;
 - freeze vision components;
 - response-only loss using the exact Qwen chat template;
 - 2,944-token training sequence length with packing only after a packing
   equivalence test;
-- LoRA rank 32, alpha 64, dropout 0.05;
+- LoRA rank 8, alpha 16, dropout 0.05;
+- target attention projections only in language-model layers 16–23: `q_proj`
+  and `v_proj` for full-attention layers, and `in_proj_qkv` plus `out_proj` for
+  linear-attention layers; exclude MLP, vision, head, gating, key-only, and
+  output-only full-attention projections;
 - micro-batch 1, gradient checkpointing, and gradient accumulation to reach the
   frozen effective batch size;
-- a fixed token budget capped at three balanced effective epochs, with
-  half-epoch checkpoints, cosine schedule, and warmup ratio 0.03;
-- learning rate selected by a tiny predeclared two-point pilot, not an open
-  sweep;
+- one unique epoch (461,235 input tokens), quarter-epoch checkpoints, cosine
+  schedule, and warmup ratio 0.03;
+- learning rate selected between `1e-5` and `3e-5`, not an open sweep;
+- loss anomalies evaluated only at optimizer-group boundaries using the
+  weighted group loss, a warmup, rolling median/MAD, gradient norm, and three
+  consecutive robust spikes; adjacent heterogeneous record losses never form
+  a stop signal;
+- measure the untouched base and trained adapter on the same 50 validation
+  records using both record means and supervised-token means;
+- use the frozen 30-task development tranche-1 canary only to triage the two
+  learning-rate candidates, then run the complete 180-task development surface
+  on the selected candidate for promotion;
 - checkpoint on a token interval and score only the private development set.
 
 The original 4,096-token envelope was reduced to 3,072 only after two sealed
@@ -224,13 +243,12 @@ remain unchanged. Gate 0B passed this contract on one L4: the full envelope,
 16 real optimizer steps, adapter save/reload, safe merge, and peak-VRAM ceiling
 all passed. This qualifies the mechanism; it is not a model-quality result.
 
-To avoid repeated L4 provisioning and repeated loading of the same qualified
-assets, Gate 1 and the bounded Gate 3 loop may execute as one staged campaign
-on a single VM. This does not collapse the gates: the exact base baseline must
-open Gate 1 before the training workspace is mounted; each LR candidate must
-finish its frozen 400,000-token budget and complete development evaluation;
-the sealed LR rule must select the main-run rate; and the main 636,093-token
-seed run must complete development evaluation and promotion adjudication.
+Gate 1 is already complete and its canonical baseline remains immutable. A
+repaired Gate 3 campaign reuses that admitted evidence instead of paying to
+regenerate it. Each LR candidate completes the same 461,235-token unique epoch
+and the frozen 30-task canary. The sealed rule chooses one candidate, which is
+then evaluated on all 180 development tasks. There is no redundant third
+training pass: the selected complete candidate is the pilot artifact.
 Evaluation and training use separate content-sealed workspaces and separate
 offline containers. A failed phase stops later phases. Runtime evidence is
 backed to GCS throughout, and teardown still requires independently verified
@@ -250,12 +268,12 @@ scaling.
 ### Gate 4 — Pass A joint verified SFT
 
 If the seed pilot qualifies, either promote it directly to Pass B or run one
-technically validated expansion recipe on a frozen 20k–60k mix. The decision is based on
-per-lane learning curves and failure coverage, not a row-count target. Rank 64
-is the initial expansion candidate if the pilot shows gradient coverage and no
-overfit; rank 32 is the predeclared lower-capacity fallback. Sequence length
-may move to 8,192 only if measured training cost and example-length coverage
-justify it.
+technically validated expansion recipe. The decision is based on per-lane
+learning curves and failure coverage, not a row-count target. Adapter capacity
+starts from the qualified rank-8 attention-only recipe; rank 16 becomes
+eligible only when the pilot demonstrates under-capacity without forgetting.
+Rank 32/64 is not a default. Sequence length may move to 8,192 only if measured
+training cost and example-length coverage justify it.
 
 Select checkpoints on the development surface using:
 
@@ -375,13 +393,12 @@ cards. Code implementing those concepts is still reviewed before it is ported.
 
 ## 6. Immediate implementation queue
 
-1. Add Gate 0 model-inventory and dependency-lock tooling with tests.
-2. Add the six-lane verifier interface and sandbox contract.
-3. Define task and result JSON Schemas before authoring evaluation data.
-4. Build a base inference smoke harness that preserves rendered prompts and
-   raw outputs.
-5. Download and verify the exact pinned model inventory after recording its
-   expected size and immutable identities.
-
-Training starts only after its technical predecessor gates pass. This is a
-readiness dependency, not an authorization dependency.
+1. Seal the Gate 3 v2 unique-row objective, conservative adapter policy,
+   optimizer-level anomaly detector, base/candidate validation diagnostic, and
+   30-task development canary.
+2. Rebuild and rehearse the isolated training/evaluation workspaces locally.
+3. Create a bounded Gate 3-only GCloud execution card after explicit approval.
+4. Train both one-epoch candidates, canary-triage them, and fully evaluate only
+   the selected candidate.
+5. Expand to 4,000–8,000 verified records only if the repaired mechanism is
+   safe but the seed remains insufficient.

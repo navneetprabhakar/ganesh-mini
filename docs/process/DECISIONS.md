@@ -1,5 +1,57 @@
 # Decisions
 
+## 2026-08-27 — Gate 3 v2 repairs the optimization objective before new data
+
+The rejected pilot exposed two mechanism defects independent of GCP. The
+prepared schedule balanced response-token totals by duplicating seed rows, but
+the trainer averaged the already-token-averaged loss of every record equally.
+The actual gradient objective therefore followed record frequency rather than
+the declared five-family token balance. The v1 adapter also exposed every
+eligible language-model linear projection in all 24 layers at rank 32 and
+learning rates `1e-4`/`2e-4`; this was materially more aggressive than the
+authorized v0.1 recipe and is consistent with the observed executable
+regressions.
+
+Gate 3 v2 keeps all 1,399 authorized source rows exactly once. Their 461,235
+input tokens and 242,406 response tokens remain naturally imbalanced, but
+explicit loss coefficients reconstruct an exact 20% objective for Go, Java,
+JavaScript/TypeScript, Python, and Rust, with JavaScript and TypeScript at 10%
+each. The prepared manifest proves one effective epoch in every lane and no
+duplicate source ID.
+
+The v2 adapter is rank 8/alpha 16 and targets 16 attention projections only in
+layers 16–23: q/v in full-attention layers and fused qkv/output in linear-
+attention layers. MLP and gating projections are excluded. The two frozen
+learning rates are `1e-5` and `3e-5`. Each runs one complete unique epoch; the
+selected complete candidate is the pilot, so no redundant third seed-training
+pass occurs.
+
+The adjacent-record three-spike guard is retired. V2 records raw loss min,
+mean, and max, weighted optimizer-group loss, group objective weight, and
+gradient norm. Only three consecutive post-warmup optimizer-group anomalies
+against a rolling median/MAD and a 3x median ratio stop training. Anomalous
+groups do not contaminate the reference window.
+
+Development tranche 1 is frozen as a structural 30-task canary, five tasks per
+lane. It may triage checkpoints or the two LR candidates but cannot select
+promotion and can never enter training. The selected LR receives the complete
+180-task development evaluation. Base and adapter validation losses are also
+captured on the same 50 held-out records as record and supervised-token means;
+they remain diagnostic, not promotion evidence.
+
+The existing v0.1 corpus remains the authorized seed. New data is not admitted
+before this controlled mechanism test. If v2 is safe but insufficient, the
+next data step is a separately admitted 4,000–8,000-record execution-verified
+diagnostic expansion emphasizing repair, APIs, parsing, error handling,
+concurrency, and measured base failures.
+
+The previous 18-hour/USD 19 campaign envelope is not reused. Executed timing
+evidence shows 400,652 training tokens in 1,845 seconds and a full 180-task
+candidate evaluation in 1,710 seconds. Gate 3 v2 therefore uses a four-hour VM
+maximum, a 30-minute terminal-backup reserve, and a USD 5 absolute incremental
+ceiling. This is a fresh Gate 3-only preparation and still requires explicit
+GCloud approval before preflight, upload, or resource creation.
+
 ## 2026-08-27 — Seed pilot rejected; preserve canonical baseline and revise before scaling
 
 Staged attempt `20260826T042539Z` revalidated the exact Qwen base at 20/180,

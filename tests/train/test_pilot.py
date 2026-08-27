@@ -132,6 +132,17 @@ def test_repository_linux_pilot_binds_all_ready_gate_evidence() -> None:
     assert card["prerequisite_evidence"]["gate2"] == json.loads((ROOT / "measurement/gate2/readiness.json").read_text())["report_sha256"]
 
 
+def test_repository_v2_pilot_is_unique_weighted_and_conservative() -> None:
+    card=pilot.build_execution_card(ROOT/"configs/train/seed_pilot_v2.json",ROOT,system="Linux")
+    assert card["status"]=="ready",card["failed_checks"]
+    recipe=card["selected_recipe"]
+    assert recipe["recipe_id"]=="bf16-lora-conservative-v2"
+    assert recipe["lora_rank"]==8
+    assert recipe["learning_rate_candidates"]==[0.00001,0.00003]
+    assert recipe["target_policy"]["scope"]=="last-n-attention-projections"
+    assert card["budgets"]["maximum_seen_tokens"]==461235
+
+
 def test_ready_card_binds_model_seed_rendering_balance_and_budget(project: tuple[Path, Path]) -> None:
     root, config_path = project
     card = pilot.build_execution_card(config_path, root, system="Linux")

@@ -39,6 +39,42 @@ and `96bc79aed2a1819dffbb74c1e88278dd8e151bf48d366da0de814bec9aae6c14`.
 No run-scoped GCloud resource remains. Another GCloud execution requires a
 fresh explicit approval.
 
+Local Gate 3 v2 repair is now implemented and remains unexecuted on CUDA. The
+rejected v1 config and 2,155-row duplicated schedule remain immutable
+historical evidence. The new versioned config uses all 1,399 authorized rows
+exactly once: 461,235 input tokens and 242,406 response tokens. Raw response
+volume is not balanced, so every row carries a supervised-token objective
+coefficient. The prepared-manifest audit proves the normalized objective is
+Go 20%, Java 20%, JavaScript 10%, TypeScript 10%, Python 20%, and Rust 20%,
+with one effective epoch and no repeated source ID. Its manifest seal is
+`1b24782e32dcab4ea2e42a80564c45cba29fdcff0c198f7c7df465595e3f7edf`.
+
+The repaired primary recipe is BF16 LoRA rank 8/alpha 16 on 16 attention
+projections in layers 16–23, excluding every MLP and gating projection. Its
+learning-rate candidates are `1e-5` and `3e-5`. The trainer now measures the
+untouched base and adapter on the same validation rows, records both record-
+mean and supervised-token-mean diagnostics, and replaces adjacent-record loss
+comparisons with a post-warmup optimizer-group rolling median/MAD detector
+that also preserves group min/mean/max and gradient norm telemetry.
+
+Development tranche 1 is frozen as the deterministic Gate 3 canary: 30 tasks,
+five per lane, selected structurally without reading model results. It can
+triage the two complete LR candidates but cannot decide promotion or enter
+training. The selected candidate still requires the full 180-task development
+evaluation. Its manifest seal is
+`0b7483141ba64ba223bc976ed7711ad847bc1056888be0e7bd9d261b85cffa44`.
+
+The Gate 3 v2 evaluation-workspace, training-workspace, runtime-rehearsal, and
+non-executable preparation seals are respectively
+`24f80b9cc0609ecc9212a0e71fdec4a218e37798df087a1803fb8021dc498a80`,
+`874ac3f8f2bf226a6dd100c470f46ee39b7e7f1591ec5324042e985de17b4ae1`,
+`cccdc65535aeb8b0f17884dad8c0d0ef739ddc34c88499191caac5b169af83b6`,
+and `ebfac3a70c6b15f3a5273bb653205f42db580847d95a5a4866e2584edc319be8`.
+The regenerated local training preflight is `ready` with no failed checks under
+card seal
+`c33be811a3eaeda5033bcd93313577f0eb716b8bd42a8514da9f41b40eedba0e`.
+No GCloud action has occurred for v2.
+
 Gate 1 is complete. Approved attempt `20260825T153823Z` executed all 180
 frozen private development tasks against exact revision
 `15852e8c16360a2fea060d615a32b45270f8a8fc`, with first-EOS trimming and
@@ -102,17 +138,17 @@ Native AMD64 verifier qualification is complete. GitHub Actions run
 development/decision tranches: 540 reference passes, 540 known-bad rejections,
 and zero timeouts. All 15 JSON seals, runtime identities, output hashes, and
 the global separation report were independently verified. The repaired
-development-only workspace and baseline-runner readiness evidence are sealed.
-Gate 1 now fails closed only because the exact Qwen development baseline does
-not yet exist. Gate 0B no longer blocks that execution.
+development-only v1 workspace and baseline-runner readiness evidence were
+sealed before Gate 1 execution. Gate 1 subsequently completed; its canonical
+result and the current Gate 3 v2 workspace are recorded above.
 
-The current evaluation-workspace manifest seal is
+The superseded pre-Gate-1 evaluation-workspace manifest seal was
 `f6551430af4c5a2cd2ad5d7bcbdcf4daf3105136682c146535e2a2a11c2da5b0`;
-the training-workspace manifest seal is
+the corresponding v1 training-workspace manifest seal was
 `9af762e484c04f54e1728adca9d87a9214c991cfed78bc9cc78a656bfa45fe19`.
-The archive-executed runtime rehearsal seal is
+The v1 archive-executed runtime rehearsal seal was
 `7c280c5a5c8ec8c28891818d5171dbdea3507dc11eca6799f86cde2d71d50406`,
-and the non-executable preparation seal is
+and its non-executable preparation seal was
 `b38dcbbb4a8ba0bbbe5a9bbac138ebe335cc0f14e9ceb39b0a171882374cdc5a`.
 
 ## Completed
@@ -404,8 +440,10 @@ and the non-executable preparation seal is
 
 ## Not started or incomplete
 
-- Exact Qwen base baseline on the frozen development surface
-- Seed-pilot training
+- Gate 3 v2 CUDA execution and candidate evaluation
+- Evidence-triggered 4,000–8,000-row expansion, if the repaired seed remains
+  insufficient
+- Main joint verified SFT and optional correction pass
 - Candidate quantization and final laptop certification
 - Ganesh v0.1 rerun on the Ganesh Mini decision surface
 
@@ -707,74 +745,41 @@ and the non-executable preparation seal is
 
 ## Next action
 
-Gate 0B is complete. Execute the exact 180-task Qwen development baseline and
-admit it through the fail-closed Gate 1 report. Then run the bounded
-multilingual seed pilot under the qualified BF16 LoRA fused-loss contract.
-Seed-pilot training remains blocked until Gate 1 is ready. The native verifier,
-global separation, Gate 2 seed cascade, and baseline host audit are already
-complete.
+Gate 0B, Gate 1, and Gate 2 are complete. The local v2 workspaces and campaign
+rehearsal are sealed and the complete local test suite passes. The next action
+is a fresh explicitly approved Gate 3-only GCloud preflight, immutable upload,
+and execution card followed by the bounded campaign. No new base generation or
+third seed-training pass is needed:
+the admitted 20/180 base remains canonical, both v2 learning-rate candidates
+run one unique epoch and the 30-task canary, and only the selected complete
+candidate runs all 180 development tasks. Any GCloud preflight, upload, or VM
+creation requires that fresh explicit approval.
 
-The local cloud layer prepares one `g2-standard-12` L4 Flex-start VM in an
-explicitly selected approved `us-east1` G2 zone, a two-hour provisioning
-window, an 18-hour maximum runtime and USD 19.00 ceiling, 12 host vCPUs aligned
-with the frozen 12 verifier workers, two-minute incremental GCS synchronization,
-a 30-minute
-terminal backup reserve, guest shutdown only after terminal backup, control-plane
-VM/disk deletion with provider max-run deletion as a backstop,
-exact-resource teardown proof, and double immutable-generation verification.
-After the exact base result opens Gate 1, the same allocation runs both frozen
-400k-token LR candidates and their development evaluations, seals LR
-selection, runs the 636,093-token main seed SFT and its development evaluation,
-and applies Gate 3 promotion. Evaluation and training are isolated in separate
-sealed workspaces and offline containers; any failed phase stops the campaign.
-The sealed preparation record is
-`measurement/gate1/gcloud/preparation.json`. It is intentionally
-`prepared-not-executable`: current account price/quota preflight,
-generation-pinned uploads of both isolated workspaces and runtime assets, and
-the final executable card are still missing. The public-price conservative
-upper is `$18.357494264`; the absolute ceiling used by the completed attempt
-was `$19.00`. A new execution now requires fresh explicit GCloud approval
-because the approved `us-east1-c` request provisioned; its `us-east1-d`
-fallback applied only to failure before provisioning.
-No GCloud action occurred while preparing it.
+The local cloud layer now prepares a Gate 3-only campaign on one
+`g2-standard-12` L4 Flex-start VM in an explicitly approved `us-east1` G2 zone.
+It allows two hours for provisioning, caps runtime at four hours, reserves the
+last 30 minutes for terminal backup, and caps incremental cost at USD 5.00.
+This bound is based on executed attempt `20260826T042539Z`: 400,652 training
+tokens took 1,845 seconds and a full 180-task candidate evaluation took 1,710
+seconds. Two 461,235-token candidates, two 30-task canaries, and one full
+selected-candidate evaluation therefore retain substantial contingency without
+the obsolete 18-hour envelope.
 
-The executable-card and teardown tooling are now locally complete. The
-executable-card builder requires the exact approval wording, a clean tracked
-source commit, passed account preflight, exact temporary resource names, and
-generation-pinned GCS identities. The guest rechecks those bindings before
-downloading inputs. A wrapper supervisor retries durable backup before early
-shutdown on controller failure. After execution, the finalizer double-verifies
-the terminal prefix, validates the 180-task result or sealed failure, gates
-deletion on the exact runtime and provider inventory, captures all four
-provider IDs, proves VM/disk/network/subnet absence, and double-verifies the
-post-delete evidence. The current replacement
-preparation seal is
-`404b92eca32b6b19832abab41329a47e3e2b180fb132c874c4d67223641bdc97`.
-The tools have not been executed against GCloud and do not constitute a card
-or approval.
+The evaluation v2 workspace seals the canonical 180-task base result and the
+deterministic canary. The training v2 workspace seals the unique-row weighted
+seed and contains no evaluation surface. The guest verifies the canonical Gate
+1 report against the bundled base run, trains both candidates, selects on the
+canary under the frozen rule, and fully evaluates only the selected already-
+trained candidate. It does not regenerate the base and does not run a third SFT.
 
-The launch path is also locally complete. It verifies fresh sealed price
-evidence and the applicable preemptible-or-standard quota pool, uploads all
-local inputs by immutable generation, and double-verifies the preflight prefix
-before creating the temporary VPC. A launch anomaly triggers verified GCS
-failure backup followed by exact run-scoped VM/disk/subnet/network cleanup; an
-exact absence proof and a second verified backup close that failure path. An
-unverifiable backup fails closed. Large artifact hashing is streaming, and the
-guest wrapper authenticates its own startup-script bytes. This preparation
-does not create executable evidence: account preflight, uploads, the execution
-card, and the 180-task baseline are still outstanding.
-
-Successful execution now has a fail-closed admission bridge. After teardown
-and the final double-verified post-delete backup, the finalizer reopens all
-receipts, stages and rehashes every baseline output, atomically installs the
-canonical Qwen baseline directory, and rebuilds Gate 1 readiness. Admission
-requires `status=ready`; sealed failures remain preserved and torn down but are
-never promoted. This removes the previous manual-copy step without changing
-the frozen evaluation contract.
-
-Fresh price evidence now has a canonical builder as well. It rejects stale or
-future timestamps, non-Google sources, non-finite values, and any conservative
-18-hour bound that reaches the approved ceiling.
+The preparation record is `measurement/gate3/gcloud/preparation.json`. It is
+`prepared-not-executable`: fresh account price/quota preflight,
+generation-pinned uploads, and a clean-commit execution card remain missing.
+The public-price conservative upper is `$4.351665392`, below the proposed USD
+5.00 ceiling. The launcher retains two-minute GCS checkpoints, fail-closed
+backup, provider automatic deletion, exact-resource teardown proof, and double
+immutable-generation verification. No GCloud action occurred while preparing
+this revision.
 
 The dependency-complete `.venv` suite passes with only the intentionally
 disabled Docker integration test skipped. Forcing that optional test on the

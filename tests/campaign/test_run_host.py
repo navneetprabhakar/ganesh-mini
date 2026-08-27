@@ -13,6 +13,8 @@ from scripts.campaign.run_host import (
     canonical_sha256,
     docker_container_name,
     external_mount,
+    lr_label,
+    select_lr_evidence,
 )
 
 
@@ -22,6 +24,20 @@ def test_canonical_campaign_seal_is_order_independent() -> None:
 
 def test_campaign_uses_lowercase_docker_names_for_utc_attempt_ids() -> None:
     assert docker_container_name("ganesh-train-20260825T061157Z-main") == "ganesh-train-20260825t061157z-main"
+    assert lr_label(0.00001)=="lr-1e-5"
+    assert lr_label(0.00003)=="lr-3e-5"
+
+
+def test_v2_lr_selection_uses_balanced_30_task_canary() -> None:
+    lanes=("go","java","javascript","typescript","python","rust")
+    low=[]
+    for index in range(30):
+        task_id=f"task-{index}"; low.append({"task_id":task_id,"language":lanes[index%6],"passed":False,"result_sha256":f"{index:064x}"})
+    high=[dict(row) for row in low]; high[0]["passed"]=True
+    run=lambda lr:{"status":"complete","identities":{"phase":"lr-candidate","learning_rate":str(lr)},"state":{"seen_tokens":461235},"evidence_sha256":str(lr).encode().hex().ljust(64,"0")[:64]}
+    evidence=select_lr_evidence(low,high,run(0.00001),run(0.00003),low_lr=0.00001,high_lr=0.00003,budget=461235,rule="frozen")
+    assert evidence["selected_learning_rate"]==0.00003
+    assert evidence["surface"]=="development-canary"
 
 
 def test_remaining_fails_before_finalization_margin(tmp_path: Path) -> None:

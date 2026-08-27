@@ -52,7 +52,7 @@ def verify(
     card = load_sealed(execution_card_path, "execution_sha256")
     if manifest.get("status") != "verified" or manifest.get("prefix") != expected_prefix:
         raise ValueError("terminal backup manifest status or prefix mismatch")
-    if card.get("schema_version") != "ganesh-mini-staged-gcloud-execution/v1" or card.get("status") != "authorized-executable":
+    if card.get("schema_version") not in {"ganesh-mini-staged-gcloud-execution/v1", "ganesh-mini-gate3-gcloud-execution/v2"} or card.get("status") != "authorized-executable":
         raise ValueError("execution card contract mismatch")
     objects = manifest.get("objects", [])
     if not objects or not all(row.get("verified") is True for row in objects):

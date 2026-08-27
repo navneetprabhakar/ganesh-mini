@@ -62,7 +62,7 @@ def release_inputs(tmp_path: Path) -> tuple[dict, dict, dict, dict, list[Path]]:
         6,
         -1 / 60,
     )
-    q8_sha, f16_sha, merged_sha = "a" * 64, "b" * 64, "c" * 64
+    q8_sha, f16_sha, merged_sha = "a" * 64, "b" * 64, MINI["artifact_sha256"]
     quant = comparison(
         {"model_id": "ganesh-mini-1.0-bf16", "revision": QWEN_REVISION, "artifact_sha256": merged_sha},
         {"model_id": "ganesh-mini-1.0-q8_0", "revision": QWEN_REVISION, "artifact_sha256": q8_sha},
@@ -73,6 +73,9 @@ def release_inputs(tmp_path: Path) -> tuple[dict, dict, dict, dict, list[Path]]:
     laptop = sealed({
         "schema_version": "ganesh-mini-laptop-certification/v1",
         "status": "passed",
+        "artifact_manifest_sha256": "pending",
+        "llama_cpp_revision": "d" * 40,
+        "llama_cli_sha256": "e" * 64,
         "profiles": {
             "q8": {"passed": True, "peak_rss_bytes": 6 * 1024**3, "artifact": {"sha256": q8_sha}},
             "f16": {"passed": True, "peak_rss_bytes": 13 * 1024**3, "artifact": {"sha256": f16_sha}},
@@ -107,9 +110,10 @@ def release_inputs(tmp_path: Path) -> tuple[dict, dict, dict, dict, list[Path]]:
     card_path = tmp_path / "card.json"
     card_path.write_text(json.dumps(card), encoding="utf-8")
     training = sealed({
-        "schema_version": "ganesh-mini-sft-run/v1",
+        "schema_version": "ganesh-mini-sft-run/v2",
         "status": "complete",
         "identities": {"model_revision": QWEN_REVISION, "card_sha256": card["card_sha256"]},
+        "save_reload": {"passed": True},
     }, "evidence_sha256")
     training_path = tmp_path / "training.json"
     training_path.write_text(json.dumps(training), encoding="utf-8")
@@ -117,13 +121,22 @@ def release_inputs(tmp_path: Path) -> tuple[dict, dict, dict, dict, list[Path]]:
         "schema_version": "ganesh-mini-release-artifacts/v1",
         "status": "built",
         "model_name": "ganesh-mini-1.0",
+        "base_model": {
+            "model_id": "Qwen/Qwen3.5-2B", "revision": QWEN_REVISION,
+            "inventory_sha256": "7" * 64, "readiness_report_sha256": readiness["report_sha256"],
+            "artifact_sha256": "8" * 64,
+        },
         "selected_run_evidence_sha256": training["evidence_sha256"],
+        "llama_cpp": {"revision": "d" * 40, "llama_cli_sha256": "e" * 64},
         "artifacts": {
             "merged_bf16_hf": {"sha256": merged_sha},
             "gguf_q8": {"sha256": q8_sha, "bytes": 2 * 1024**3},
             "gguf_f16": {"sha256": f16_sha, "bytes": 4 * 1024**3},
         },
     }, "manifest_sha256")
+    laptop.pop("evidence_sha256")
+    laptop["artifact_manifest_sha256"] = artifact_manifest["manifest_sha256"]
+    laptop["evidence_sha256"] = canonical_sha256(laptop)
     path = tmp_path / "release-artifacts.json"
     path.write_text(json.dumps(artifact_manifest), encoding="utf-8")
     export = sealed({
@@ -181,3 +194,34 @@ def test_artifact_must_bind_selected_training_run(tmp_path: Path) -> None:
     report = adjudicate(base, v01, quant, laptop, manifests)
     assert report["status"] == "release-blocked"
     assert "required_manifests_complete" in report["failed_checks"]
+
+
+def test_all_comparisons_must_use_identical_frozen_decision_surface(tmp_path: Path) -> None:
+    base, v01, quant, laptop, manifests = release_inputs(tmp_path)
+    v01["evidence"]["source_task_set_sha256"] = "f" * 64
+    v01.pop("report_sha256")
+    v01["report_sha256"] = canonical_sha256(v01)
+    report = adjudicate(base, v01, quant, laptop, manifests)
+    assert report["status"] == "release-blocked"
+    assert "identical_frozen_decision_surface" in report["failed_checks"]
+
+
+def test_decision_candidate_must_be_the_merged_release_artifact(tmp_path: Path) -> None:
+    base, v01, quant, laptop, manifests = release_inputs(tmp_path)
+    base["candidate_model"] = dict(base["candidate_model"])
+    base["candidate_model"]["artifact_sha256"] = "f" * 64
+    base.pop("report_sha256")
+    base["report_sha256"] = canonical_sha256(base)
+    report = adjudicate(base, v01, quant, laptop, manifests)
+    assert report["status"] == "release-blocked"
+    assert "quantization_comparison_binds_release_artifacts" in report["failed_checks"]
+
+
+def test_laptop_runtime_must_match_artifact_build_runtime(tmp_path: Path) -> None:
+    base, v01, quant, laptop, manifests = release_inputs(tmp_path)
+    laptop["llama_cpp_revision"] = "f" * 40
+    laptop.pop("evidence_sha256")
+    laptop["evidence_sha256"] = canonical_sha256(laptop)
+    report = adjudicate(base, v01, quant, laptop, manifests)
+    assert report["status"] == "release-blocked"
+    assert "laptop_evidence_and_artifacts_bound" in report["failed_checks"]

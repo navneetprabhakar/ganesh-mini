@@ -16,6 +16,7 @@ from typing import Any
 
 
 GIB=1024**3
+ROOT=Path(__file__).resolve().parents[2]
 PROMPTS=(
     "Return only a Go function Add(a, b int) int that returns the sum.",
     "Return only a Java class Solution with static int add(int a,int b).",
@@ -35,6 +36,23 @@ def sha256(path: Path) -> str:
 
 def canonical_sha256(value: Any) -> str:
     return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(",", ":")).encode()).hexdigest()
+
+
+def load_sealed(path: Path, field: str) -> dict[str,Any]:
+    value=json.loads(path.read_text(encoding="utf-8")); unsigned=dict(value); claimed=unsigned.pop(field,None)
+    if claimed!=canonical_sha256(unsigned): raise ValueError(f"invalid {field}: {path}")
+    return value
+
+
+def validate_release_inputs(manifest_path: Path, llama_cpp: Path, cli: Path, q8: Path, f16: Path) -> tuple[dict[str,Any],str]:
+    manifest=load_sealed(manifest_path,"manifest_sha256")
+    if manifest.get("schema_version")!="ganesh-mini-release-artifacts/v1" or manifest.get("status")!="built" or manifest.get("model_name")!="ganesh-mini-1.0": raise ValueError("invalid release artifact manifest")
+    llama=manifest.get("llama_cpp",{}); revision=subprocess.run(["git","rev-parse","HEAD"],cwd=llama_cpp,check=True,capture_output=True,text=True).stdout.strip()
+    if revision!=llama.get("revision") or sha256(cli)!=llama.get("llama_cli_sha256"): raise ValueError("laptop runtime does not match the artifact build's pinned llama.cpp")
+    for key,path in (("gguf_q8",q8),("gguf_f16",f16)):
+        row=manifest.get("artifacts",{}).get(key,{})
+        if not path.is_file() or path.stat().st_size!=row.get("bytes") or sha256(path)!=row.get("sha256"): raise ValueError(f"{key} does not match the release artifact manifest")
+    return manifest,revision
 
 
 def peak_rss(stderr: str, system: str) -> int | None:
@@ -70,8 +88,9 @@ def run_profile(name: str, model: Path, limit: int, cli: Path, timeout: int, met
 
 
 def main() -> int:
-    parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--llama-cli",type=Path,required=True); parser.add_argument("--llama-revision",required=True); parser.add_argument("--q8",type=Path,required=True); parser.add_argument("--f16",type=Path,required=True); parser.add_argument("--profile-method",choices=("actual_machine","cgroup_v2"),required=True); parser.add_argument("--timeout-seconds",type=int,default=300); parser.add_argument("--output",type=Path,required=True); args=parser.parse_args()
-    value={"schema_version":"ganesh-mini-laptop-certification/v1","llama_cpp_revision":args.llama_revision,"llama_cli_sha256":sha256(args.llama_cli),"host":{"system":platform.system(),"release":platform.release(),"machine":platform.machine()},"profiles":{"q8":run_profile("q8",args.q8,7*GIB,args.llama_cli,args.timeout_seconds,args.profile_method),"f16":run_profile("f16",args.f16,14*GIB,args.llama_cli,args.timeout_seconds,args.profile_method)}}; value["status"]="passed" if all(item["passed"] for item in value["profiles"].values()) else "failed"; value["evidence_sha256"]=canonical_sha256(value); args.output.parent.mkdir(parents=True,exist_ok=True); args.output.write_text(json.dumps(value,indent=2,sort_keys=True)+"\n"); return 0 if value["status"]=="passed" else 2
+    parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--artifact-manifest",type=Path,required=True); parser.add_argument("--llama-cpp",type=Path,default=Path("models/llama.cpp")); parser.add_argument("--llama-cli",type=Path,required=True); parser.add_argument("--q8",type=Path,required=True); parser.add_argument("--f16",type=Path,required=True); parser.add_argument("--profile-method",choices=("actual_machine","cgroup_v2"),required=True); parser.add_argument("--timeout-seconds",type=int,default=300); parser.add_argument("--output",type=Path,required=True); args=parser.parse_args()
+    manifest,revision=validate_release_inputs(args.artifact_manifest,args.llama_cpp,args.llama_cli,args.q8,args.f16)
+    value={"schema_version":"ganesh-mini-laptop-certification/v1","artifact_manifest_sha256":manifest["manifest_sha256"],"llama_cpp_revision":revision,"llama_cli_sha256":sha256(args.llama_cli),"host":{"system":platform.system(),"release":platform.release(),"machine":platform.machine()},"profiles":{"q8":run_profile("q8",args.q8,7*GIB,args.llama_cli,args.timeout_seconds,args.profile_method),"f16":run_profile("f16",args.f16,14*GIB,args.llama_cli,args.timeout_seconds,args.profile_method)}}; value["status"]="passed" if all(item["passed"] for item in value["profiles"].values()) else "failed"; value["evidence_sha256"]=canonical_sha256(value); args.output.parent.mkdir(parents=True,exist_ok=True); args.output.write_text(json.dumps(value,indent=2,sort_keys=True)+"\n"); return 0 if value["status"]=="passed" else 2
 
 
 if __name__=="__main__": raise SystemExit(main())

@@ -34,6 +34,11 @@ def fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path, list[Path]]:
         "schema_version": "ganesh-mini-release-artifacts/v1",
         "status": "built",
         "model_name": "ganesh-mini-1.0",
+        "base_model": {
+            "model_id": "Qwen/Qwen3.5-2B",
+            "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+        },
+        "llama_cpp": {"llama_cli_sha256": "c" * 64},
         "artifacts": {
             "merged_bf16_hf": {"path": str(merged), "sha256": canonical_sha256(inventory), "files": inventory},
             "gguf_f16": {"path": str(f16), "bytes": 3, "sha256": hashlib.sha256(b"f16").hexdigest()},
@@ -53,7 +58,7 @@ def fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path, list[Path]]:
     seed = sealed({"schema_version": "ganesh-mini-seed-manifest/v1"}, "manifest_sha256")
     readiness = sealed({"schema_version": "ganesh-mini-readiness/v1", "status": "ready"}, "report_sha256")
     execution_card = sealed({"schema_version": "ganesh-mini-training-execution-card/v1", "status": "ready"}, "card_sha256")
-    training = sealed({"schema_version": "ganesh-mini-sft-run/v1", "status": "complete"}, "evidence_sha256")
+    training = sealed({"schema_version": "ganesh-mini-sft-run/v2", "status": "complete"}, "evidence_sha256")
     lineage = [seed, readiness, execution_card, training]
     decision = sealed({
         "schema_version": "ganesh-mini-release-decision/v2",

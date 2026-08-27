@@ -12,6 +12,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+QWEN_MODEL_ID = "Qwen/Qwen3.5-2B"
+QWEN_REVISION = "15852e8c16360a2fea060d615a32b45270f8a8fc"
 SEAL_FIELDS = ("manifest_sha256", "report_sha256", "evidence_sha256", "run_sha256", "card_sha256")
 
 
@@ -89,6 +91,9 @@ def verified_release_inputs(
         artifacts.get("schema_version") != "ganesh-mini-release-artifacts/v1"
         or artifacts.get("status") != "built"
         or artifacts.get("model_name") != "ganesh-mini-1.0"
+        or artifacts.get("base_model", {}).get("model_id") != QWEN_MODEL_ID
+        or artifacts.get("base_model", {}).get("revision") != QWEN_REVISION
+        or not isinstance(artifacts.get("llama_cpp", {}).get("llama_cli_sha256"), str)
     ):
         raise ValueError("release artifact manifest is invalid")
     if (

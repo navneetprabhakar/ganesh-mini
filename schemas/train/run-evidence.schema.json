@@ -1,21 +1,54 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "ganesh-mini-sft-run/v1",
+  "$id": "ganesh-mini-sft-run/v2",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "status", "identities", "planned_end_row", "validation_loss_diagnostic", "save_reload", "state", "cost", "cuda", "adapter_files", "peak_rss_bytes", "evidence_sha256"],
+  "required": [
+    "schema_version", "status", "identities", "planned_end_row",
+    "cuda_allocator", "training_structure", "fused_training_loss",
+    "lora_target_policy", "trainable_parameter_names",
+    "base_validation_loss_diagnostic", "validation_loss_diagnostic",
+    "save_reload", "state", "cost", "cuda", "adapter_files",
+    "peak_rss_bytes", "evidence_sha256"
+  ],
   "properties": {
-    "schema_version": {"const": "ganesh-mini-sft-run/v1"},
+    "schema_version": {"const": "ganesh-mini-sft-run/v2"},
     "status": {"enum": ["complete", "bounded-stop"]},
-    "identities": {"type": "object"},
+    "identities": {
+      "type": "object",
+      "required": [
+        "card_sha256", "config_sha256", "learning_rate", "model_revision",
+        "phase", "prepared_data_sha256", "prepared_manifest_sha256",
+        "recipe_sha256", "validation_data_sha256"
+      ]
+    },
     "planned_end_row": {"type": "integer", "minimum": 1},
-    "validation_loss_diagnostic": {"type": "object", "required": ["go", "java", "javascript", "typescript", "python", "rust", "macro_mean"]},
-    "save_reload": {"type": "object"},
-    "state": {"type": "object"},
-    "cost": {"type": "object"},
-    "cuda": {"type": "object"},
-    "adapter_files": {"type": "object"},
+    "cuda_allocator": {"type": "object", "required": ["passed"]},
+    "training_structure": {"type": "object", "required": ["passed"]},
+    "fused_training_loss": {"type": "object", "required": ["passed", "materialize_training_logits"]},
+    "lora_target_policy": {"type": "object", "required": ["scope", "layer_count"]},
+    "trainable_parameter_names": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "base_validation_loss_diagnostic": {"$ref": "#/$defs/validation"},
+    "validation_loss_diagnostic": {"$ref": "#/$defs/validation"},
+    "save_reload": {"type": "object", "required": ["passed", "maximum_absolute_logit_difference", "tolerance"]},
+    "state": {
+      "type": "object",
+      "required": ["next_row", "optimizer_steps", "response_tokens", "seen_tokens", "wall_seconds", "anomaly_detector"]
+    },
+    "cost": {"type": "object", "required": ["ceiling_usd", "projected_final_usd", "training_wall_limit_seconds", "finalization_reserve_seconds"]},
+    "cuda": {"type": "object", "required": ["name", "peak_vram_bytes", "maximum_peak_vram_bytes"]},
+    "adapter_files": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
     "peak_rss_bytes": {"type": "integer", "minimum": 0},
     "evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "validation": {
+      "type": "object",
+      "required": ["record_mean", "records_by_lane", "response_tokens_by_lane", "supervised_token_mean"]
+    }
   }
 }

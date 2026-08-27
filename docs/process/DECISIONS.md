@@ -1,5 +1,31 @@
 # Decisions
 
+## 2026-08-27 — Final artifacts and release must bind the repaired run and exact runtime
+
+A downstream readiness audit found that Gate 8 still admitted
+`ganesh-mini-sft-run/v1`, while the repaired unique-row, five-family-weighted
+training engine emits `ganesh-mini-sft-run/v2`. That stale contract would have
+rejected a valid repaired run or encouraged selection of an obsolete recipe.
+Release lineage now requires a complete v2 run, exact pinned Qwen revision,
+successful save/reload evidence, and adapter files that rehash exactly before
+merge. The run-evidence schema is updated to the executed v2 structure.
+
+Artifact construction previously trusted the supplied base directory and an
+unsealed GGUF record. It now reopens the sealed Gate 0 readiness report,
+matches the exact upstream inventory, verifies every local base file, verifies
+the sealed Gate 0 GGUF evidence and exact llama.cpp converter, quantizer, and
+CLI binaries, and records those identities in the release manifest.
+
+Laptop certification now takes the sealed artifact manifest rather than a
+caller-provided revision string. It verifies the checked-out llama.cpp commit,
+CLI binary, and both GGUF hashes before measurement. Release adjudication binds
+that certification back to the artifact manifest, requires the exact same
+frozen decision-task set for the Qwen, Ganesh v0.1, and quantization
+comparisons, and proves that the decision candidate is the merged release
+artifact. Publication independently requires the exact Qwen base identity and
+the bound llama.cpp CLI identity. These are readiness controls only; no final
+artifact, laptop result, release decision, or publication is claimed.
+
 ## 2026-08-27 — Continue Gate 3 from the completed candidate; never auto-restart training
 
 The completed `1e-5` candidate from attempt `20260827T090603Z` is now a

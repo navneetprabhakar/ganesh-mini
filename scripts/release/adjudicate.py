@@ -18,7 +18,7 @@ REQUIRED_MANIFEST_SCHEMAS = {
     "seed": "ganesh-mini-seed-manifest/v1",
     "readiness": "ganesh-mini-readiness/v1",
     "execution_card": "ganesh-mini-training-execution-card/v1",
-    "training_run": "ganesh-mini-sft-run/v1",
+    "training_run": "ganesh-mini-sft-run/v2",
     "artifacts": "ganesh-mini-release-artifacts/v1",
     "export_equivalence": "ganesh-mini-export-equivalence/v1",
 }
@@ -149,9 +149,21 @@ def manifest_contract(paths: list[Path]) -> tuple[bool, list[dict[str, Any]], di
                 elif name == "execution_card":
                     passed = passed and value.get("status") == "ready" and value.get("output_model_name") == "ganesh-mini-1.0"
                 elif name == "training_run":
-                    passed = passed and value.get("status") == "complete" and value.get("identities", {}).get("model_revision") == QWEN_REVISION
+                    passed = (
+                        passed and value.get("status") == "complete"
+                        and value.get("identities", {}).get("model_revision") == QWEN_REVISION
+                        and value.get("save_reload", {}).get("passed") is True
+                    )
                 elif name == "artifacts":
-                    passed = passed and value.get("status") == "built" and value.get("model_name") == "ganesh-mini-1.0"
+                    base = value.get("base_model", {})
+                    llama = value.get("llama_cpp", {})
+                    passed = (
+                        passed and value.get("status") == "built" and value.get("model_name") == "ganesh-mini-1.0"
+                        and base.get("model_id") == QWEN_MODEL_ID and base.get("revision") == QWEN_REVISION
+                        and all(isinstance(base.get(key), str) and len(base[key]) == 64 for key in ("inventory_sha256", "readiness_report_sha256", "artifact_sha256"))
+                        and isinstance(llama.get("revision"), str) and len(llama["revision"]) == 40
+                        and isinstance(llama.get("llama_cli_sha256"), str) and len(llama["llama_cli_sha256"]) == 64
+                    )
                 elif name == "export_equivalence":
                     passed = passed and value.get("status") == "passed" and value.get("task_count") == 6
             rows.append({
@@ -247,13 +259,18 @@ def adjudicate(
     quant_artifacts_bound = (
         quant_valid
         and quant_base_model.get("artifact_sha256") == artifacts.get("merged_bf16_hf", {}).get("sha256")
+        and candidate_model.get("artifact_sha256") == artifacts.get("merged_bf16_hf", {}).get("sha256")
         and quant_candidate_model.get("artifact_sha256") == q8_artifact.get("sha256")
         and str(quant_base_model.get("model_id", "")).startswith("ganesh-mini-1.0")
         and str(quant_candidate_model.get("model_id", "")).startswith("ganesh-mini-1.0")
     )
     laptop_artifacts_bound = (
         laptop_seal is not None
+        and laptop.get("schema_version") == "ganesh-mini-laptop-certification/v1"
         and laptop.get("status") == "passed"
+        and laptop.get("artifact_manifest_sha256") == (artifact_manifest or {}).get("manifest_sha256")
+        and laptop.get("llama_cpp_revision") == (artifact_manifest or {}).get("llama_cpp", {}).get("revision")
+        and laptop.get("llama_cli_sha256") == (artifact_manifest or {}).get("llama_cpp", {}).get("llama_cli_sha256")
         and q8_profile.get("artifact", {}).get("sha256") == q8_artifact.get("sha256")
         and f16_profile.get("artifact", {}).get("sha256") == f16_artifact.get("sha256")
         and isinstance(q8_artifact.get("sha256"), str)
@@ -261,9 +278,15 @@ def adjudicate(
     )
 
     v01_delta = ganesh_v01_comparison.get("five_family_macro_delta", {}).get("decimal")
+    source_task_sets = {
+        contract.get("result_sets", {}).get("source_task_set_sha256")
+        for contract in (base_contract, v01_contract, quant_contract)
+    }
+    same_decision_surface = base_valid and v01_valid and quant_valid and len(source_task_sets) == 1 and None not in source_task_sets
     checks = [
         check("sealed_complete_decision_comparisons", base_valid and v01_valid and quant_valid,
               qwen=base_contract, ganesh_v01=v01_contract, quantization=quant_contract),
+        check("identical_frozen_decision_surface", same_decision_surface, source_task_set_sha256=next(iter(source_task_sets)) if same_decision_surface else None),
         check("exact_model_and_reference_identities", exact_model_contract,
               qwen_base=base_model, ganesh_mini=candidate_model, ganesh_v01=v01_base_model),
         check("positive_five_family_macro", base_valid and isinstance(delta, (int, float)) and delta > 0, delta=delta),

@@ -75,10 +75,26 @@ workspace, archive, runtime rehearsal, and non-executable preparation seals are
 `daba3f5ac1e6b5ec35902fe2cf7997ad93f1d659c1d7a08a35585b9c94a8567e`,
 `0c3f4ee25fe3cd06589a25b9766d574f65088d9c9baecf023457771b6e4894b5`,
 `cd74267bec2a671aeb703a6faf8c77fc432b1ba9ad178cd878bc65ea4d1bff4e`,
-and `3c95af5fb31bc72b85c00e09f04c076e16af08d3e2a488df93523f0eb7e76888`.
+and `1e1330c889e66a229b06b234a0d974091768ec5628d9149a8f1da984b1bec91f`.
+The deterministically rebuilt training workspace archive and manifest are
+`684cb5824d4a5b253a747b8ecb41d0d083316560aac2eb8fe20d8f80a39bcd13`
+and `8c8e90ed40938dbe55627e6d2b7c2918ee7334e41097c0ebd2d9372aa0cfcbe8`;
+their only substantive downstream change is the repaired v2 run-evidence
+schema.
 It is still `prepared-not-executable`: fresh price/quota preflight,
 VM-service-account IAM verification, generation-pinned uploads, an executable
 card, and explicit GCloud approval remain missing.
+
+A local Gates 4–8 audit also repaired a downstream schema and identity gap.
+Final artifact construction now accepts only the repaired v2 SFT evidence,
+revalidates the exact pinned Qwen inventory and sealed Gate 0 GGUF toolchain,
+and records the exact llama.cpp CLI identity. Laptop certification derives its
+runtime revision from that sealed artifact manifest and verifies both GGUF
+hashes before measurement. Gate 8 now requires all three comparisons to bind
+the same frozen decision-task set, binds the decision candidate to the merged
+release artifact, and binds laptop evidence to the same artifact manifest and
+llama.cpp binary. Focused release tests pass. This is local readiness, not
+executed Gate 4–8 evidence.
 
 Gate 3 is closed after the fully finalized staged attempt
 `20260826T042539Z`. Gate 1 revalidation reproduced the canonical base score of

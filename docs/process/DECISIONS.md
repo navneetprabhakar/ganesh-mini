@@ -1,5 +1,21 @@
 # Decisions
 
+## 2026-08-28 — Verifier infrastructure retries must not become data repair
+
+Expansion production stopped at a Docker Desktop bind-mount failure while the
+reference execution had already passed. A missing transient host mount is not
+evidence about candidate correctness and must never be sent to the Codex
+teacher as a repair request.
+
+Local expansion admission therefore uses a Docker-stable macOS temporary root,
+retries only classified verifier infrastructure failures with a bound of three
+attempts, and records the failed attempts separately from the final verifier
+result. Exhaustion still fails closed. The controller may resume an unfinished
+batch only from candidate bytes whose hash and selection match its teacher
+evidence. It also holds a process-level lock, preventing duplicate writers.
+These changes are expansion-local and do not alter the frozen evaluation
+verifier contract or stale the admitted Gate 1 workspace.
+
 ## 2026-08-28 — Source-driven construction is admitted; correction must preserve source lineage
 
 The ten-topic teacher qualification could not establish production diversity.

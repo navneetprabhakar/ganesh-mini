@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts.data.admit_expansion import admit_records, normalized_sha256, simhash
 from scripts.eval.contracts import sha256_text
@@ -72,6 +73,24 @@ def test_admits_reference_and_rejects_known_bad() -> None:
     assert len(accepted) == 1
     assert accepted[0]["language"] == "Python"
     assert accepted[0]["verification"]["known_bad"][0]["result"]["exit_codes"] == [1]
+
+
+@patch("scripts.data.admit_expansion.time.sleep")
+def test_retries_infrastructure_failure_and_preserves_attempt_evidence(_sleep) -> None:
+    results = iter([
+        {"exit_codes": [125], "timed_out": False, "stderr": "OCI runtime create failed", "stdout": ""},
+        {"exit_codes": [0], "timed_out": False, "stderr": "", "stdout": ""},
+        {"exit_codes": [1], "timed_out": False, "stderr": "assertion failed", "stdout": ""},
+    ])
+
+    def transient(task_value: dict, code: str, runtime: Path) -> dict:
+        return next(results)
+
+    accepted, rejected = admit_records([record()], config(), empty_index(), Path("runtime.json"), transient)
+    assert not rejected and len(accepted) == 1
+    retries = accepted[0]["verification"]["reference_runtime_retries"]
+    assert len(retries) == 1
+    assert retries[0]["result"]["exit_codes"] == [125]
 
 
 def test_rejects_unadmitted_source() -> None:

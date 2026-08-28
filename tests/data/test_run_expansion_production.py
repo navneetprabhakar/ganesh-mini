@@ -1,4 +1,11 @@
-from scripts.data.run_expansion_production import Corpus, frozen_targets, selection
+import json
+
+import pytest
+
+from scripts.data.run_expansion_production import (
+    Corpus, frozen_targets, selection, sha256_bytes, unfinished_batch, verify_reusable_candidates,
+    verifier_infrastructure_rejections,
+)
 
 
 def targets() -> dict:
@@ -35,3 +42,35 @@ def test_corpus_rejects_duplicate_and_quota_surplus() -> None:
     for index in range(2, 7):
         assert corpus.add(admitted(str(index))) is None
     assert corpus.add(admitted("7")) == "quota already met"
+
+
+def test_unfinished_batch_requires_at_most_one_per_lane() -> None:
+    entry = {"kind": "production", "lane": "java", "name": "java-1", "status": "failed"}
+    state = {"batches": [entry]}
+    assert unfinished_batch(state, "java") is entry
+    state["batches"].append({**entry, "name": "java-2", "status": "running"})
+    with pytest.raises(ValueError, match="multiple unfinished"):
+        unfinished_batch(state, "java")
+
+
+def test_reusable_candidates_are_bound_to_hash_and_selection(tmp_path) -> None:
+    candidate = tmp_path / "candidates.jsonl"
+    candidate.write_bytes(b'{"id":"one"}\n')
+    plan = {"generation_start": 6, "generation_count": 6, "repair_start": 4, "repair_count": 4}
+    evidence = tmp_path / "teacher-evidence.json"
+    evidence.write_text(json.dumps({
+        "candidate_output_sha256": sha256_bytes(candidate.read_bytes()),
+        "selection": {"lane": "java", **plan},
+    }))
+    verify_reusable_candidates(candidate, evidence, "java", plan)
+    candidate.write_bytes(b'{"id":"changed"}\n')
+    with pytest.raises(ValueError, match="candidate hash"):
+        verify_reusable_candidates(candidate, evidence, "java", plan)
+
+
+def test_infrastructure_rejections_are_separated_from_teacher_repairs() -> None:
+    report = {"rejected": [
+        {"id": "infra", "reason": "known-bad verifier infrastructure failure: container runtime exit code [125]"},
+        {"id": "repair", "reason": "reference solution failed behavioral verification"},
+    ]}
+    assert [row["id"] for row in verifier_infrastructure_rejections(report)] == ["infra"]

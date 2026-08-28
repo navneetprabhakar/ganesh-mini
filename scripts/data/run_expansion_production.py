@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import argparse
-import argparse
+import fcntl
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -168,19 +169,59 @@ def selection(corpus: Corpus, lane: str, consumed: dict[str, int], limits: dict[
     }
 
 
+def verify_reusable_candidates(candidate: Path, evidence_path: Path, lane: str, plan: dict[str, int]) -> None:
+    if not candidate.is_file() or not evidence_path.is_file():
+        raise ValueError("recoverable batch is missing sealed candidate or teacher evidence")
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    if evidence.get("candidate_output_sha256") != sha256_bytes(candidate.read_bytes()):
+        raise ValueError("recoverable batch candidate hash differs from teacher evidence")
+    expected = {"lane": lane, **plan}
+    if evidence.get("selection") != expected:
+        raise ValueError("recoverable batch selection differs from teacher evidence")
+
+
+def unfinished_batch(state: dict[str, Any], lane: str) -> dict[str, Any] | None:
+    rows = [
+        item for item in state["batches"]
+        if item.get("kind") == "production" and item.get("lane") == lane
+        and item.get("status") in {"failed", "running"}
+    ]
+    if len(rows) > 1:
+        raise ValueError(f"{lane}: multiple unfinished production batches")
+    return rows[0] if rows else None
+
+
+def verifier_infrastructure_rejections(report: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        row for row in report.get("rejected", [])
+        if "verifier infrastructure failure:" in str(row.get("reason", ""))
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--queue", type=Path, default=Path("datasets/cache/expansion-v1/source-reserve-queue-v1.jsonl"))
     parser.add_argument("--workers", type=int, default=5)
     parser.add_argument("--max-new-batches", type=int, help="bounded controller qualification/resume run")
+    parser.add_argument("--recover-only", action="store_true", help="finish existing failed/running batches without starting new ones")
     parser.add_argument("--state", type=Path, default=Path("datasets/cache/expansion-v1/production/state.json"))
     parser.add_argument("--corpus", type=Path, default=Path("datasets/cache/expansion-v1/production/admitted.jsonl"))
+    parser.add_argument("--lock-file", type=Path, default=Path("datasets/cache/expansion-v1/production/controller.lock"))
     args = parser.parse_args()
     root = args.root.resolve()
     queue = (root / args.queue).resolve()
     state_path = (root / args.state).resolve()
     corpus_path = (root / args.corpus).resolve()
+    lock_path = (root / args.lock_file).resolve()
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    controller_lock = lock_path.open("a+", encoding="utf-8")
+    try:
+        fcntl.flock(controller_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as exc:
+        raise RuntimeError(f"another expansion production controller holds {lock_path}") from exc
+    controller_lock.seek(0); controller_lock.truncate()
+    controller_lock.write(f"{os.getpid()}\n"); controller_lock.flush()
     expansion_config = json.loads((root / "configs/data/expansion_v1.json").read_text(encoding="utf-8"))
     reserve_config = json.loads((root / "configs/data/expansion_queue_v1.json").read_text(encoding="utf-8"))
     targets = frozen_targets(expansion_config)
@@ -210,7 +251,7 @@ def main() -> int:
         reason = corpus.add(row)
         if reason is not None:
             raise ValueError(f"existing corpus row {row['id']}: {reason}")
-    lock = threading.Lock()
+    state_lock = threading.Lock()
     stop = threading.Event()
     new_batches_started = 0
 
@@ -225,33 +266,52 @@ def main() -> int:
         nonlocal new_batches_started
         limits = reserve_config["candidate_targets"][lane]
         while not stop.is_set():
-            with lock:
+            with state_lock:
                 if corpus.lane_complete(lane):
                     return
-                if args.max_new_batches is not None and new_batches_started >= args.max_new_batches:
-                    return
-                plan = selection(corpus, lane, state["consumed"][lane], limits)
-                sequence = sum(1 for item in state["batches"] if item["kind"] == "production" and item["lane"] == lane)
-                name = (
-                    f"{lane}-{sequence:04d}-g{plan['generation_start']:04d}n{plan['generation_count']}"
-                    f"-r{plan['repair_start']:04d}n{plan['repair_count']}"
-                )
-                state["consumed"][lane]["generation"] += plan["generation_count"]
-                state["consumed"][lane]["repair"] += plan["repair_count"]
-                new_batches_started += 1
-                state["batches"].append({"kind": "production", "lane": lane, "name": name, "status": "running", "selection": plan})
+                entry = unfinished_batch(state, lane)
+                recovering = entry is not None
+                if recovering:
+                    plan = entry["selection"]
+                    name = entry["name"]
+                    if entry["status"] == "failed":
+                        entry.setdefault("attempt_errors", []).append({
+                            "attempt": entry.get("attempts", 1), "error": entry.pop("error"),
+                        })
+                    entry["attempts"] = entry.get("attempts", 1) + 1
+                    entry["status"] = "running"
+                else:
+                    if args.recover_only:
+                        return
+                    if args.max_new_batches is not None and new_batches_started >= args.max_new_batches:
+                        return
+                    plan = selection(corpus, lane, state["consumed"][lane], limits)
+                    sequence = sum(1 for item in state["batches"] if item["kind"] == "production" and item["lane"] == lane)
+                    name = (
+                        f"{lane}-{sequence:04d}-g{plan['generation_start']:04d}n{plan['generation_count']}"
+                        f"-r{plan['repair_start']:04d}n{plan['repair_count']}"
+                    )
+                    state["consumed"][lane]["generation"] += plan["generation_count"]
+                    state["consumed"][lane]["repair"] += plan["repair_count"]
+                    new_batches_started += 1
+                    entry = {"kind": "production", "lane": lane, "name": name, "status": "running", "selection": plan, "attempts": 1}
+                    state["batches"].append(entry)
+                state["status"] = "running"
                 persist()
             batch_dir = root / "datasets/cache/expansion-v1/production/batches" / name
             batch_dir.mkdir(parents=True, exist_ok=True)
             candidate = batch_dir / "candidates.jsonl"
             teacher = batch_dir / "teacher-evidence.json"
             try:
-                run([
-                    sys.executable, "scripts/data/generate_expansion_source_batch.py", "--queue", str(queue),
-                    "--lane", lane, "--generation-start", str(plan["generation_start"]),
-                    "--generation-count", str(plan["generation_count"]), "--repair-start", str(plan["repair_start"]),
-                    "--repair-count", str(plan["repair_count"]), "--output", str(candidate), "--evidence", str(teacher),
-                ], root)
+                if recovering:
+                    verify_reusable_candidates(candidate, teacher, lane, plan)
+                else:
+                    run([
+                        sys.executable, "scripts/data/generate_expansion_source_batch.py", "--queue", str(queue),
+                        "--lane", lane, "--generation-start", str(plan["generation_start"]),
+                        "--generation-count", str(plan["generation_count"]), "--repair-start", str(plan["repair_start"]),
+                        "--repair-count", str(plan["repair_count"]), "--output", str(candidate), "--evidence", str(teacher),
+                    ], root)
                 admitted = batch_dir / "admitted.jsonl"
                 report_path = batch_dir / "admission.json"
                 run([
@@ -262,6 +322,12 @@ def main() -> int:
                 final_rows = read_jsonl(admitted)
                 final_report = report_path
                 remaining_rejections = report["rejected"]
+                infrastructure_rejections = verifier_infrastructure_rejections(report)
+                if infrastructure_rejections:
+                    identifiers = ", ".join(str(row.get("id")) for row in infrastructure_rejections)
+                    raise RuntimeError(
+                        f"verifier infrastructure retries exhausted for {identifiers}; batch preserved for exact recovery"
+                    )
                 if report["rejected"]:
                     repaired = batch_dir / "repaired.candidates.jsonl"
                     repair_evidence = batch_dir / "repair.teacher-evidence.json"
@@ -294,7 +360,7 @@ def main() -> int:
                     final_rows.extend(read_jsonl(repaired_admitted))
                 final = json.loads(final_report.read_text(encoding="utf-8"))
                 remaining_rejections = final["rejected"]
-                with lock:
+                with state_lock:
                     accepted_now = 0
                     for row in final_rows:
                         reason = corpus.add(row)
@@ -313,7 +379,7 @@ def main() -> int:
                     })
                     persist()
             except Exception as exc:
-                with lock:
+                with state_lock:
                     entry = next(item for item in state["batches"] if item.get("name") == name)
                     entry.update({"status": "failed", "error": str(exc)})
                     state["status"] = "failed"
@@ -325,7 +391,7 @@ def main() -> int:
         futures = [executor.submit(lane_worker, lane) for lane in LANES]
         for future in as_completed(futures):
             future.result()
-    with lock:
+    with state_lock:
         complete = all(corpus.lane_complete(lane) for lane in LANES)
         if state.get("status") != "failed":
             state["status"] = "complete" if complete else "paused"

@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import tempfile
+import time
 import sys
 import unicodedata
 from collections import Counter
@@ -21,6 +23,8 @@ SCHEMA_VERSION = "ganesh-mini-expansion-candidate/v1"
 LANES = {"go", "java", "javascript", "typescript", "python", "rust"}
 LANGUAGE_NAMES = {"go": "Go", "java": "Java", "javascript": "JavaScript", "typescript": "TypeScript", "python": "Python", "rust": "Rust"}
 TASK_TYPES = {"generation", "repair"}
+VERIFIER_ATTEMPTS = 3
+VERIFIER_RETRY_SECONDS = (0.25, 0.75)
 RECORD_KEYS = {
     "schema_version", "id", "lane", "task_type", "messages", "source",
     "rights", "verification_task", "test_origin",
@@ -37,6 +41,31 @@ class AdmissionFailure(ValueError):
     def __init__(self, message: str, evidence: dict[str, Any] | None = None) -> None:
         super().__init__(message)
         self.evidence = evidence
+
+
+def configure_verifier_temp_root() -> Path | None:
+    if sys.platform != "darwin":
+        return None
+    parent = Path("/private/tmp/ganesh-mini-verifier")
+    parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    tempfile.tempdir = str(parent)
+    return parent
+
+
+def verify_with_retries(
+    verifier: Callable[[dict[str, Any], str, Path], dict[str, Any]],
+    task: dict[str, Any], code: str, runtime_config: Path,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    retries: list[dict[str, Any]] = []
+    for attempt in range(1, VERIFIER_ATTEMPTS + 1):
+        result = verifier(task, code, runtime_config)
+        classification = infrastructure_failure(result)
+        if classification is None:
+            return result, retries
+        retries.append({"attempt": attempt, "classification": classification, "result": result})
+        if attempt < VERIFIER_ATTEMPTS:
+            time.sleep(VERIFIER_RETRY_SECONDS[attempt - 1])
+    return result, retries
 
 
 def canonical_json(value: Any) -> bytes:
@@ -194,12 +223,14 @@ def admit_records(
                     if other_tokens >= minimum_tokens and (candidate_simhash ^ other_hash).bit_count() <= fuzzy_limit:
                         raise AdmissionFailure(f"fuzzy expansion prompt overlap: {source_id}")
             executable_task = {**task, "surface": "synthetic_harness"}
-            reference_result = verifier(executable_task, answer, runtime_config)
+            reference_result, reference_retries = verify_with_retries(
+                verifier, executable_task, answer, runtime_config,
+            )
             infrastructure = infrastructure_failure(reference_result)
             if infrastructure:
                 raise AdmissionFailure(
                     f"reference verifier infrastructure failure: {infrastructure}",
-                    {"reference": reference_result},
+                    {"reference": reference_result, "reference_runtime_retries": reference_retries},
                 )
             if reference_result["timed_out"] or any(code != 0 for code in reference_result["exit_codes"]):
                 raise AdmissionFailure(
@@ -208,23 +239,29 @@ def admit_records(
                 )
             known_bad_results = []
             for known_bad in task["validation"]["known_bad"]:
-                result = verifier(executable_task, known_bad["code"], runtime_config)
+                result, runtime_retries = verify_with_retries(
+                    verifier, executable_task, known_bad["code"], runtime_config,
+                )
                 infrastructure = infrastructure_failure(result)
                 if infrastructure:
                     raise AdmissionFailure(
                         f"known-bad verifier infrastructure failure: {infrastructure}",
-                        {"reference": reference_result, "known_bad": [{"label": known_bad["label"], "result": result}]},
+                        {
+                            "reference": reference_result, "reference_runtime_retries": reference_retries,
+                            "known_bad": [{"label": known_bad["label"], "result": result, "runtime_retries": runtime_retries}],
+                        },
                     )
                 if not result["timed_out"] and result["exit_codes"] and all(code == 0 for code in result["exit_codes"]):
                     raise AdmissionFailure(
                         f"tests accepted known-bad implementation: {known_bad['label']}",
                         {"reference": reference_result, "known_bad": [{"label": known_bad["label"], "result": result}]},
                     )
-                known_bad_results.append({"label": known_bad["label"], "result": result})
+                known_bad_results.append({"label": known_bad["label"], "result": result, "runtime_retries": runtime_retries})
             evidence = {
                 "schema_version": "ganesh-mini-expansion-verification/v1",
                 "task_sha256": sha256_object(task),
                 "reference": reference_result,
+                "reference_runtime_retries": reference_retries,
                 "known_bad": known_bad_results,
             }
             evidence["evidence_sha256"] = sha256_object(evidence)
@@ -257,6 +294,7 @@ def read_jsonl(path: Path) -> list[Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    configure_verifier_temp_root()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=Path("configs/data/expansion_v1.json"))
     parser.add_argument("--input", type=Path, required=True)

@@ -52,13 +52,12 @@ An adaptive 8,480-row reserve queue is sealed at
 `a020b6f66a40688547b71052d5123252102eb91d51f69196bef9a70d7dc9ac78`.
 It is a ceiling, not a mandate: the resumable controller stops each lane/task
 stratum at the frozen 6,000-row quota, uses up to five parallel lane workers,
-and admits only execution-verified rows. A two-batch controller qualification
-added 8 Go and 9 Java rows, so the resumable corpus currently contains 88
-rows under SHA-256
-`2aa801311eb493c58d4f73c2cc069aea52f5a79768d09148bc1044b8984401a8`.
-The controller is paused at its declared qualification bound and is ready for
-production continuation. No GCloud resource is running or authorized for this
-phase.
+and admits only execution-verified rows. Production has reached 1,403 rows
+under SHA-256
+`9c05e3d2efd510cf857e23e0bb1a2678877a2bef89383c983dcb4eac6ebb968f`
+after exact recovery of one Docker-infrastructure-failed Java batch. The
+controller is paused only for the recovery commit and is ready for production
+continuation. No GCloud resource is running or authorized for this phase.
 
 Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict
 sealed bootstrap failure. It had exactly one boot, automatic restart was
@@ -1274,3 +1273,29 @@ and preparation seal
 `7131fb8c768fad2c70bec28d36fb375a92d2e52911803265deec6559208628da`
 bind the repaired bytes. The full local suite passes. Gate 1 remains closed;
 the consumed approval does not authorize another GCloud VM.
+## 2026-08-28 — Expansion production recovered at 1,403 rows
+
+The first production controller failed closed after a transient Docker Desktop
+bind-mount race while verifying the known-bad implementation in sealed batch
+`java-0029-g0180n6-r0120n4`. Docker returned exit `127` because its translated
+`/private/var/folders` source briefly did not exist inside the Docker VM. This
+was verifier infrastructure failure, not candidate failure. The controller
+drained already-running lanes, preserved 1,393 accepted rows, and exited.
+
+Expansion admission now uses a stable `/private/tmp/ganesh-mini-verifier` root
+on macOS and retries verifier infrastructure failures at most three times,
+retaining every failed attempt in expansion evidence. Persistent
+infrastructure failures are separated before the teacher-repair path. The
+production controller now holds a non-blocking process lock and can recover an
+exact failed/running batch only when its candidate hash and teacher selection
+match the sealed evidence; recovery neither regenerates teacher output nor
+advances queue offsets.
+
+The exact Java batch was reverified from candidate SHA-256
+`4b28b4d553ef0d495e902d6e3ea928036a29c5396f3d6022f6cf906a7fee3f0f`
+and admitted 10/10 with zero remaining rejection. Production is paused at
+1,403 rows under corpus SHA-256
+`9c05e3d2efd510cf857e23e0bb1a2678877a2bef89383c983dcb4eac6ebb968f`.
+A six-way, 30-execution local Docker mount smoke passed without failure, and
+the complete local test suite passes with one intentional skip. The next
+action is to resume exactly one five-worker local controller.

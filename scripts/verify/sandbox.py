@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -112,9 +113,13 @@ def _inspect_image(
     return expected_image_id
 
 
-def _docker_argv(image: str, platform_name: str, command: list[str], root: Path, limits: dict[str, Any]) -> list[str]:
+def _docker_argv(
+    image: str, platform_name: str, command: list[str], root: Path,
+    limits: dict[str, Any], container_name: str,
+) -> list[str]:
     return [
         "docker", "run", "--rm", "--pull", "never", "--platform", platform_name, "--init",
+        "--name", container_name,
         "--network", "none", "--read-only", "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges", "--pids-limit", str(limits["pids"]),
         "--cpus", str(limits["cpus"]), "--memory", f"{limits['memory_mb']}m",
@@ -134,6 +139,20 @@ def _docker_argv(image: str, platform_name: str, command: list[str], root: Path,
         "--env", "CARGO_BUILD_JOBS=1",
         "--entrypoint", command[0], image, *command[1:],
     ]
+
+
+def _remove_timed_out_container(container_name: str) -> None:
+    """Remove the exact container left behind when docker CLI is timed out."""
+    try:
+        subprocess.run(
+            ["docker", "rm", "--force", container_name],
+            check=False, capture_output=True, text=True, timeout=10,
+            env={"PATH": os.environ.get("PATH", "")},
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        # Verification still fails closed. A later orphan preflight can surface
+        # a daemon that is too unhealthy to complete this bounded cleanup.
+        pass
 
 
 def infrastructure_failure(verifier: dict[str, Any]) -> str | None:
@@ -196,13 +215,17 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
 
         deadline = start + limits["timeout_seconds"]
         for command in runtime["commands"]:
+            container_name = f"ganesh-verifier-{os.getpid()}-{uuid.uuid4().hex[:12]}"
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 timed_out = True
                 break
             try:
                 process = subprocess.run(
-                    _docker_argv(runtime["image"], runtime["platform"], command, root, limits),
+                    _docker_argv(
+                        runtime["image"], runtime["platform"], command, root, limits,
+                        container_name,
+                    ),
                     check=False, capture_output=True, text=True, timeout=remaining,
                     env={"PATH": os.environ.get("PATH", "")},
                 )
@@ -210,6 +233,7 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
                 timed_out = True
                 stdout_parts.append(_captured_text(error.stdout))
                 stderr_parts.append(_captured_text(error.stderr))
+                _remove_timed_out_container(container_name)
                 break
             except OSError as error:
                 stderr_parts.append(str(error))

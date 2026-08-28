@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 from collections import defaultdict
@@ -64,6 +65,12 @@ def classify_rejection(reason: str) -> str:
     if reason.startswith("tests accepted known-bad implementation:"):
         return "tests"
     raise ValueError(f"rejection is not teacher-repairable: {reason}")
+
+
+def corrected_source(candidate: dict[str, Any], annotation: str) -> dict[str, str]:
+    source = copy.deepcopy(candidate["source"])
+    source["transformation"] += f"; {annotation}"
+    return source
 
 
 def reference_repair_prompt(
@@ -127,8 +134,8 @@ def repair_candidates(
                         raise ValueError(f"{row['id']}: reference repair changed frozen problem text")
                     replacement = build_candidate(
                         lane, row["id"], row["task_type"], item, test_code(row),
+                        source=corrected_source(row, "reference corrected against independent tests"),
                     )
-                    replacement["source"]["transformation"] += "; reference corrected against independent tests"
                     replacements[row["id"]] = replacement
             else:
                 architecture_items = [architecture(row) for row in rows]
@@ -144,8 +151,8 @@ def repair_candidates(
                     item = architecture(row)
                     replacement = build_candidate(
                         lane, row["id"], row["task_type"], item, repaired_by_id[row["id"]],
+                        source=corrected_source(row, "independent tests strengthened after rejection"),
                     )
-                    replacement["source"]["transformation"] += "; independent tests strengthened after rejection"
                     replacements[row["id"]] = replacement
         except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
             if isinstance(exc, CodexInvocationFailure):

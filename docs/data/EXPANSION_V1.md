@@ -121,3 +121,32 @@ diversity source. Production construction must draw from the pinned
 multilingual generation and repair queues, oversample to quota, retain
 rejections, and use Codex for transformation, independent tests, and bounded
 correction.
+
+## Source-driven pilot and production reserve
+
+The deterministic source-driven pilot used the exact pinned McEval-Instruct
+and MdEval-Instruct snapshots. Eight ten-row batches were generated: one per
+lane plus a second TypeScript and Rust batch. After at most one targeted
+correction per rejected row, 71/80 rows passed executable admission (88.75%):
+41 generation and 30 repair. TypeScript finished 17/20 and Rust 16/20, so the
+initial ten-row weakness was partly sampling variance. No cross-batch exact or
+fuzzy collision was found. A deterministic one-per-lane manual review passed
+all seven quality criteria. The summary seal is
+`a69cbdd35f2de099eb009a6e82eee53efc33c9951863b2d58f14a1b26d888a77`.
+
+During that pilot, the rejection-correction path was found to replace pinned
+source lineage with the Codex identity on changed rows. Those rows were not
+accepted as production evidence. The implementation now carries the original
+source object through correction; a deterministic restoration bound the old
+teacher outputs to their original sources, and all corrected-lineage inputs
+were re-admitted from scratch. The reproduced results, not the pre-restoration
+reports, control the pilot decision.
+
+The adaptive production reserve contains 8,480 drafting stimuli under SHA-256
+`a020b6f66a40688547b71052d5123252102eb91d51f69196bef9a70d7dc9ac78`.
+Its extra capacity is concentrated in Go repair and Rust generation based on
+measured yield. Cross-language McEval stimuli are allowed only after the same
+transformation into a new target-language task; source identity and record
+hashes remain intact. The controller does not generate the full reserve
+unconditionally. It stops each lane/task type when the frozen final quota is
+met, applies no more than one correction, and rejects the remainder.

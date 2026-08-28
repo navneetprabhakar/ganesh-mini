@@ -5,6 +5,7 @@ from scripts.data.repair_expansion_rejections import (
     architecture,
     base_problem,
     classify_rejection,
+    corrected_source,
     reference_repair_prompt,
 )
 
@@ -12,6 +13,7 @@ from scripts.data.repair_expansion_rejections import (
 def candidate() -> dict:
     return {
         "id": "x", "lane": "python", "task_type": "generation",
+        "source": {"dataset": "pinned", "transformation": "source-driven synthesis"},
         "messages": [{"role": "user", "content": "Implement x." + ANSWER_SUFFIX}, {"role": "assistant", "content": "GOOD"}],
         "verification_task": {
             "files": [{"role": "test", "content": "assert x() == 1"}],
@@ -37,6 +39,13 @@ def test_extracts_architecture_and_frozen_problem() -> None:
         "id": "x", "problem": "Implement x.", "reference_code": "GOOD",
         "known_bad_code": "BAD", "known_bad_label": "returns zero",
     }
+
+
+def test_corrected_source_preserves_lineage_without_mutating_input() -> None:
+    row = candidate()
+    corrected = corrected_source(row, "reference corrected")
+    assert corrected == {"dataset": "pinned", "transformation": "source-driven synthesis; reference corrected"}
+    assert row["source"]["transformation"] == "source-driven synthesis"
 
 
 def test_reference_repair_uses_independent_test_evidence() -> None:

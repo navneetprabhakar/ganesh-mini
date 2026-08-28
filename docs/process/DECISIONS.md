@@ -1,5 +1,37 @@
 # Decisions
 
+## 2026-08-28 — Source-driven construction is admitted; correction must preserve source lineage
+
+The ten-topic teacher qualification could not establish production diversity.
+A deterministic queue now draws from pinned McEval-Instruct generation stimuli
+and MdEval-Instruct repair stimuli, with same-lane and declared cross-language
+fallbacks only in the reserve. Source answers and tests are not trusted. Codex
+creates a new standard-library task, while an isolated test author receives
+only the transformed specification.
+
+The source-driven pilot admitted 71/80 rows after one bounded correction pass,
+with zero cross-batch exact/fuzzy collisions and a passed deterministic manual
+sample. Its seal is
+`a69cbdd35f2de099eb009a6e82eee53efc33c9951863b2d58f14a1b26d888a77`.
+The result supports adaptive construction, not unconditional generation of a
+fixed candidate count.
+
+The first correction path accidentally rebuilt changed candidates under the
+Codex source identity. Work stopped before scale. The repaired implementation
+copies the immutable original source object and appends only the correction
+transformation. Existing teacher outputs were deterministically restored with
+a separate evidence link and then re-admitted; acceptance counts reproduced.
+Reports against the wrong-lineage inputs remain historical and never control
+the decision.
+
+The production reserve is 8,480 rows under SHA-256
+`a020b6f66a40688547b71052d5123252102eb91d51f69196bef9a70d7dc9ac78`.
+A resumable controller starts from the 71 pilot rows, operates independent lane
+workers, stops each generation/repair stratum at its frozen quota, and admits
+only executable rows. Its bounded two-batch qualification added 17 rows and
+paused with an 88-row corpus under SHA-256
+`2aa801311eb493c58d4f73c2cc069aea52f5a79768d09148bc1044b8984401a8`.
+
 ## 2026-08-27 — Host campaign entrypoints must bootstrap the sealed workspace root
 
 Gate 3 continuation attempt `20260827T113051Z` verified every generation-pinned

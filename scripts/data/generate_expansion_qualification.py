@@ -292,6 +292,7 @@ def build_candidate(
     architecture: dict[str, str],
     tests: str,
     source_revision: str = SOURCE_REVISION,
+    source: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     required = {"id", "problem", "reference_code", "known_bad_code", "known_bad_label"}
     if set(architecture) != required or architecture["id"] != record_id:
@@ -327,17 +328,18 @@ def build_candidate(
         },
     }
     source_hash = hashlib.sha256(canonical_json(architecture)).hexdigest()
+    lineage = source or {
+        "dataset": SOURCE_DATASET, "uri": "https://learn.chatgpt.com/docs/non-interactive-mode",
+        "revision": source_revision, "record_id": record_id, "license": "user-owned-output",
+        "license_uri": "https://openai.com/policies/terms-of-use/",
+        "source_record_sha256": source_hash,
+        "transformation": "two-pass Codex CLI synthesis; independent test pass saw specification only",
+    }
     return {
         "schema_version": "ganesh-mini-expansion-candidate/v1", "id": record_id,
         "lane": lane, "task_type": row_task_type,
         "messages": [{"role": "user", "content": problem}, {"role": "assistant", "content": reference}],
-        "source": {
-            "dataset": SOURCE_DATASET, "uri": "https://learn.chatgpt.com/docs/non-interactive-mode",
-            "revision": source_revision, "record_id": record_id, "license": "user-owned-output",
-            "license_uri": "https://openai.com/policies/terms-of-use/",
-            "source_record_sha256": source_hash,
-            "transformation": "two-pass Codex CLI synthesis; independent test pass saw specification only",
-        },
+        "source": lineage,
         "rights": {key: True for key in ("prompt", "answer", "tests", "redistribution", "model_training")},
         "verification_task": task, "test_origin": "independent_teacher",
     }

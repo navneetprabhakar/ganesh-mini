@@ -1,10 +1,10 @@
 # Project state
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 
 ## Current gate
 
-Gate 3 is now in data-correction, not another seed retry. The completed
+Gate 3 is now in source-driven data construction, not another seed retry. The completed
 `1e-4` seed pilot passed 13/180 versus the exact base's 20/180, so more epochs
 on the 1,399-row corpus are not justified. Expansion v1 is frozen at 6,000
 execution-verified rows with five-family 20% balance and a 60/40
@@ -14,10 +14,12 @@ The expansion schema and fail-closed admission pipeline are implemented. They
 require pinned source rights, independent behavioral tests, a passing
 reference, rejection of every known-bad implementation, exact code and
 exact/fuzzy prompt separation from all 546 frozen task manifests, within-corpus
-deduplication, and exact final quotas. The pinned McEval-Instruct inventory
-provides 5,988 target-language drafting rows but zero independently tested
-training rows; it is not admitted. NVIDIA OpenCodeInstruct is admitted only as
-a Python drafting source. No new training row is currently sealed.
+deduplication, and exact final quotas. The pinned McEval-Instruct and
+MdEval-Instruct snapshots are hash-verified drafting sources under
+CC-BY-SA-4.0 and MIT. Their answers and tests are never trusted: Codex creates
+a new self-contained task and an isolated test author sees only the transformed
+specification. NVIDIA OpenCodeInstruct remains admitted only as a Python
+drafting source.
 
 Teacher preparation now uses authenticated Codex CLI 0.144.4 with
 `gpt-5.6-sol`, medium reasoning, ephemeral schema-constrained runs, and
@@ -32,10 +34,31 @@ targeted repair pass changed only the fourteen rejected rows and produced a
 final combined 52/60 result with no cross-batch overlap: Go 8, Java 7,
 JavaScript 10, TypeScript 8, Python 9, and Rust 10. The admission report seal
 is `4324d30331b872e9650c921b018561e16d275b36c2e729b4caf35f74a11ab547`.
-A deterministic one-per-lane manual quality sample passed. The next boundary
-is source-driven oversampling from the pinned multilingual generation and
-repair queues; the ten qualification topic stems must not be scaled directly
-to 6,000 rows. No GCloud resource is running or authorized for this phase.
+A deterministic one-per-lane manual quality sample passed. The source-driven
+pilot then generated 80 rows across all lanes, including a second TypeScript
+and Rust tranche. After exactly one targeted correction pass, 71/80 were
+admitted (88.75%): Go 9, Java 9, JavaScript 10, TypeScript 17, Python 10, and
+Rust 16; 41 generation and 30 repair. Cross-batch exact/fuzzy collisions were
+zero and the deterministic one-per-lane manual review passed. The pilot is
+sealed by `a69cbdd35f2de099eb009a6e82eee53efc33c9951863b2d58f14a1b26d888a77`.
+
+The first correction implementation lost McEval/MdEval lineage on changed
+rows by rebuilding them under the Codex source identity. Scale stopped. The
+repair path now preserves the original source object; pilot rows were
+deterministically restored with explicit evidence and re-executed. Their
+acceptance counts reproduced exactly. No old admission report was relabelled.
+
+An adaptive 8,480-row reserve queue is sealed at
+`a020b6f66a40688547b71052d5123252102eb91d51f69196bef9a70d7dc9ac78`.
+It is a ceiling, not a mandate: the resumable controller stops each lane/task
+stratum at the frozen 6,000-row quota, uses up to five parallel lane workers,
+and admits only execution-verified rows. A two-batch controller qualification
+added 8 Go and 9 Java rows, so the resumable corpus currently contains 88
+rows under SHA-256
+`2aa801311eb493c58d4f73c2cc069aea52f5a79768d09148bc1044b8984401a8`.
+The controller is paused at its declared qualification bound and is ready for
+production continuation. No GCloud resource is running or authorized for this
+phase.
 
 Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict
 sealed bootstrap failure. It had exactly one boot, automatic restart was

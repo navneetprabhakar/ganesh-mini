@@ -161,7 +161,11 @@ def infrastructure_failure(verifier: dict[str, Any]) -> str | None:
     lowered = stderr.lower()
     if not verifier.get("timed_out") and not verifier.get("exit_codes"):
         return "verifier returned no process exit code"
-    if any(int(code) >= 125 for code in verifier.get("exit_codes", [])):
+    # Docker reserves 125-127 for failures to invoke the container command.
+    # Larger values are valid container-process exits (for example, 134 is
+    # SIGABRT) and are expected evidence when a known-bad implementation
+    # triggers a runtime safety check.
+    if any(int(code) in {125, 126, 127} for code in verifier.get("exit_codes", [])):
         return f"container runtime exit code {verifier['exit_codes']}"
     signatures = (
         "resource temporarily unavailable",

@@ -202,7 +202,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--queue", type=Path, default=Path("datasets/cache/expansion-v1/source-reserve-queue-v1.jsonl"))
-    parser.add_argument("--workers", type=int, default=5)
+    parser.add_argument("--workers", type=int, default=len(LANES))
     parser.add_argument("--max-new-batches", type=int, help="bounded controller qualification/resume run")
     parser.add_argument("--recover-only", action="store_true", help="finish existing failed/running batches without starting new ones")
     parser.add_argument("--state", type=Path, default=Path("datasets/cache/expansion-v1/production/state.json"))

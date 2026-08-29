@@ -87,6 +87,18 @@ class SandboxTests(unittest.TestCase):
         verifier = {"exit_codes": [1], "timed_out": False, "stderr": "solution.go: undefined: missing"}
         self.assertIsNone(infrastructure_failure(verifier))
 
+    def test_known_bad_sigabrt_is_behavioral_evidence_not_infrastructure(self) -> None:
+        verifier = {
+            "exit_codes": [0, 134], "timed_out": False,
+            "stderr": "unsafe precondition violated; thread caused non-unwinding panic. aborting.",
+        }
+        self.assertIsNone(infrastructure_failure(verifier))
+
+    def test_docker_reserved_exit_codes_are_infrastructure_failures(self) -> None:
+        for code in (125, 126, 127):
+            verifier = {"exit_codes": [code], "timed_out": False, "stderr": ""}
+            self.assertIn("container runtime exit code", infrastructure_failure(verifier) or "")
+
 
 if __name__ == "__main__":
     unittest.main()

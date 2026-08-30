@@ -3,7 +3,8 @@ import json
 import pytest
 
 from scripts.data.run_expansion_production import (
-    Corpus, frozen_targets, selection, sha256_bytes, unfinished_batch, verify_reusable_candidates,
+    Corpus, frozen_targets, recovery_requires_generation, selection, sha256_bytes, unfinished_batch,
+    verify_reusable_candidates,
     verifier_infrastructure_rejections,
 )
 
@@ -66,6 +67,30 @@ def test_reusable_candidates_are_bound_to_hash_and_selection(tmp_path) -> None:
     candidate.write_bytes(b'{"id":"changed"}\n')
     with pytest.raises(ValueError, match="candidate hash"):
         verify_reusable_candidates(candidate, evidence, "java", plan)
+
+
+def test_empty_interrupted_batch_regenerates_same_recorded_selection(tmp_path) -> None:
+    batch = tmp_path / "batch"
+    batch.mkdir()
+    plan = {"generation_start": 6, "generation_count": 6, "repair_start": 4, "repair_count": 4}
+    assert recovery_requires_generation(
+        batch, batch / "candidates.jsonl", batch / "teacher-evidence.json", "java", plan,
+    )
+
+
+def test_partial_or_unsealed_interrupted_batch_fails_closed(tmp_path) -> None:
+    batch = tmp_path / "batch"
+    batch.mkdir()
+    plan = {"generation_start": 6, "generation_count": 6, "repair_start": 4, "repair_count": 4}
+    candidate = batch / "candidates.jsonl"
+    evidence = batch / "teacher-evidence.json"
+    candidate.write_text('{"id":"one"}\n')
+    with pytest.raises(ValueError, match="only one"):
+        recovery_requires_generation(batch, candidate, evidence, "java", plan)
+    candidate.unlink()
+    (batch / "unexpected.json").write_text("{}")
+    with pytest.raises(ValueError, match="unsealed artifacts"):
+        recovery_requires_generation(batch, candidate, evidence, "java", plan)
 
 
 def test_infrastructure_rejections_are_separated_from_teacher_repairs() -> None:

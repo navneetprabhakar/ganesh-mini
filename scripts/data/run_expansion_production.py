@@ -180,6 +180,23 @@ def verify_reusable_candidates(candidate: Path, evidence_path: Path, lane: str, 
         raise ValueError("recoverable batch selection differs from teacher evidence")
 
 
+def recovery_requires_generation(
+    batch_dir: Path, candidate: Path, evidence_path: Path, lane: str, plan: dict[str, int],
+) -> bool:
+    """Decide whether an interrupted batch must regenerate its unsealed teacher output."""
+    candidate_exists = candidate.is_file()
+    evidence_exists = evidence_path.is_file()
+    if candidate_exists and evidence_exists:
+        verify_reusable_candidates(candidate, evidence_path, lane, plan)
+        return False
+    if candidate_exists != evidence_exists:
+        raise ValueError("recoverable batch has only one of candidate or teacher evidence")
+    artifacts = sorted(path.name for path in batch_dir.iterdir()) if batch_dir.is_dir() else []
+    if artifacts:
+        raise ValueError(f"recoverable batch has unsealed artifacts without teacher output: {artifacts}")
+    return True
+
+
 def unfinished_batch(state: dict[str, Any], lane: str) -> dict[str, Any] | None:
     rows = [
         item for item in state["batches"]
@@ -303,9 +320,10 @@ def main() -> int:
             candidate = batch_dir / "candidates.jsonl"
             teacher = batch_dir / "teacher-evidence.json"
             try:
-                if recovering:
-                    verify_reusable_candidates(candidate, teacher, lane, plan)
-                else:
+                requires_generation = not recovering or recovery_requires_generation(
+                    batch_dir, candidate, teacher, lane, plan,
+                )
+                if requires_generation:
                     run([
                         sys.executable, "scripts/data/generate_expansion_source_batch.py", "--queue", str(queue),
                         "--lane", lane, "--generation-start", str(plan["generation_start"]),

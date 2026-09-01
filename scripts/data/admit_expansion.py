@@ -290,7 +290,9 @@ def admit_records(
 
 
 def read_jsonl(path: Path) -> list[Any]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    # JSON strings may legally contain U+2028/U+2029. splitlines() treats those
+    # code points as record separators even though JSONL uses physical LF only.
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
 
 
 def main(argv: list[str] | None = None) -> int:

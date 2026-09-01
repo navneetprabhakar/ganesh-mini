@@ -3,7 +3,7 @@ import json
 import pytest
 
 from scripts.data.run_expansion_production import (
-    Corpus, frozen_targets, recovery_requires_generation, selection, sha256_bytes, unfinished_batch,
+    Corpus, frozen_targets, read_jsonl, recovery_requires_generation, selection, sha256_bytes, unfinished_batch,
     verify_reusable_candidates,
     verifier_infrastructure_rejections,
 )
@@ -25,6 +25,15 @@ def admitted(identifier: str, lane: str = "python", task_type: str = "generation
 def test_frozen_targets_split_each_lane_sixty_forty() -> None:
     config = {"lane_targets": {lane: 10 for lane in targets()}}
     assert frozen_targets(config) == targets()
+
+
+def test_jsonl_reader_preserves_unicode_line_separator_inside_strings(tmp_path) -> None:
+    path = tmp_path / "rows.jsonl"
+    path.write_text('{"id":"one","text":"before\u2028after"}\n{"id":"two","text":"ok"}\n')
+    assert read_jsonl(path) == [
+        {"id": "one", "text": "before\u2028after"},
+        {"id": "two", "text": "ok"},
+    ]
 
 
 def test_selection_stops_completed_stratum() -> None:

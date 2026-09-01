@@ -8,6 +8,7 @@ import fcntl
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -169,7 +170,9 @@ def selection(corpus: Corpus, lane: str, consumed: dict[str, int], limits: dict[
     }
 
 
-def verify_reusable_candidates(candidate: Path, evidence_path: Path, lane: str, plan: dict[str, int]) -> None:
+def verify_reusable_candidates(
+    candidate: Path, evidence_path: Path, lane: str, plan: dict[str, int],
+) -> dict[str, Any]:
     if not candidate.is_file() or not evidence_path.is_file():
         raise ValueError("recoverable batch is missing sealed candidate or teacher evidence")
     evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
@@ -178,6 +181,75 @@ def verify_reusable_candidates(candidate: Path, evidence_path: Path, lane: str, 
     expected = {"lane": lane, **plan}
     if evidence.get("selection") != expected:
         raise ValueError("recoverable batch selection differs from teacher evidence")
+    expected_count = plan["generation_count"] + plan["repair_count"]
+    requested_ids = evidence.get("requested_ids")
+    if (
+        not isinstance(requested_ids, list)
+        or len(requested_ids) != expected_count
+        or any(not isinstance(identifier, str) or not identifier for identifier in requested_ids)
+        or len(set(requested_ids)) != len(requested_ids)
+    ):
+        raise ValueError("recoverable batch requested IDs differ from recorded selection size")
+    generated = evidence.get("generated")
+    if isinstance(generated, bool) or not isinstance(generated, int) or generated < 0:
+        raise ValueError("recoverable batch has invalid generated count")
+    failures = evidence.get("failures")
+    if not isinstance(failures, list):
+        raise ValueError("recoverable batch has invalid teacher failures")
+    candidate_rows = read_jsonl(candidate)
+    if generated != len(candidate_rows):
+        raise ValueError("recoverable batch generated count differs from candidate rows")
+    candidate_ids = [row.get("id") for row in candidate_rows]
+    if any(not isinstance(identifier, str) or not identifier for identifier in candidate_ids):
+        raise ValueError("recoverable batch contains an invalid candidate ID")
+    if failures:
+        if generated > expected_count or any(identifier not in requested_ids for identifier in candidate_ids):
+            raise ValueError("failed teacher output contains candidates outside the recorded selection")
+        return evidence
+    if generated != expected_count or candidate_ids != requested_ids:
+        raise ValueError("successful teacher output does not exactly cover the recorded selection")
+    return evidence
+
+
+def archive_failed_teacher_output(
+    batch_dir: Path, candidate: Path, evidence_path: Path, evidence: dict[str, Any],
+) -> None:
+    """Preserve a sealed unsuccessful teacher attempt before exact regeneration."""
+    archive_root = batch_dir / "failed-teacher-attempts"
+    evidence_bytes = evidence_path.read_bytes()
+    candidate_bytes = candidate.read_bytes()
+    attempt_key = sha256_bytes(evidence_bytes)
+    archive = archive_root / attempt_key
+    archived_candidate = archive / candidate.name
+    archived_evidence = archive / evidence_path.name
+    manifest = archive / "manifest.json"
+    if archive.exists():
+        if (
+            not archived_candidate.is_file()
+            or not archived_evidence.is_file()
+            or archived_candidate.read_bytes() != candidate_bytes
+            or archived_evidence.read_bytes() != evidence_bytes
+        ):
+            raise ValueError("failed teacher archive conflicts with sealed output")
+    else:
+        temporary = archive_root / f".{attempt_key}.{os.getpid()}.tmp"
+        temporary.mkdir(parents=True, exist_ok=False)
+        shutil.copyfile(candidate, temporary / candidate.name)
+        shutil.copyfile(evidence_path, temporary / evidence_path.name)
+        write_state(temporary / "manifest.json", {
+            "schema_version": "ganesh-mini-failed-teacher-attempt/v1",
+            "selection": evidence["selection"],
+            "requested_ids": evidence["requested_ids"],
+            "generated": evidence["generated"],
+            "failures": evidence["failures"],
+            "candidate_sha256": sha256_bytes(candidate_bytes),
+            "teacher_evidence_sha256": attempt_key,
+        })
+        temporary.replace(archive)
+    if not manifest.is_file():
+        raise ValueError("failed teacher archive lacks its manifest")
+    candidate.unlink()
+    evidence_path.unlink()
 
 
 def recovery_requires_generation(
@@ -187,11 +259,17 @@ def recovery_requires_generation(
     candidate_exists = candidate.is_file()
     evidence_exists = evidence_path.is_file()
     if candidate_exists and evidence_exists:
-        verify_reusable_candidates(candidate, evidence_path, lane, plan)
+        evidence = verify_reusable_candidates(candidate, evidence_path, lane, plan)
+        if evidence["failures"]:
+            archive_failed_teacher_output(batch_dir, candidate, evidence_path, evidence)
+            return True
         return False
     if candidate_exists != evidence_exists:
         raise ValueError("recoverable batch has only one of candidate or teacher evidence")
-    artifacts = sorted(path.name for path in batch_dir.iterdir()) if batch_dir.is_dir() else []
+    artifacts = sorted(
+        path.name for path in batch_dir.iterdir()
+        if not (path.name == "failed-teacher-attempts" and path.is_dir())
+    ) if batch_dir.is_dir() else []
     if artifacts:
         raise ValueError(f"recoverable batch has unsealed artifacts without teacher output: {artifacts}")
     return True

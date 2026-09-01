@@ -57,16 +57,67 @@ def test_unfinished_batch_requires_at_most_one_per_lane() -> None:
 def test_reusable_candidates_are_bound_to_hash_and_selection(tmp_path) -> None:
     candidate = tmp_path / "candidates.jsonl"
     candidate.write_bytes(b'{"id":"one"}\n')
-    plan = {"generation_start": 6, "generation_count": 6, "repair_start": 4, "repair_count": 4}
+    plan = {"generation_start": 6, "generation_count": 1, "repair_start": 4, "repair_count": 0}
     evidence = tmp_path / "teacher-evidence.json"
     evidence.write_text(json.dumps({
         "candidate_output_sha256": sha256_bytes(candidate.read_bytes()),
         "selection": {"lane": "java", **plan},
+        "requested_ids": ["one"],
+        "generated": 1,
+        "failures": [],
     }))
     verify_reusable_candidates(candidate, evidence, "java", plan)
     candidate.write_bytes(b'{"id":"changed"}\n')
     with pytest.raises(ValueError, match="candidate hash"):
         verify_reusable_candidates(candidate, evidence, "java", plan)
+
+
+def test_sealed_failed_teacher_output_is_archived_before_exact_regeneration(tmp_path) -> None:
+    batch = tmp_path / "batch"
+    batch.mkdir()
+    plan = {"generation_start": 780, "generation_count": 10, "repair_start": 517, "repair_count": 0}
+    candidate = batch / "candidates.jsonl"
+    candidate.write_bytes(b"")
+    evidence = batch / "teacher-evidence.json"
+    requested_ids = [f"java-{index}" for index in range(10)]
+    evidence.write_text(json.dumps({
+        "candidate_output_sha256": sha256_bytes(candidate.read_bytes()),
+        "selection": {"lane": "java", **plan},
+        "requested_ids": requested_ids,
+        "generated": 0,
+        "failures": [{"lane": "java", "reason": "structured output item count differs from request"}],
+    }))
+    candidate_bytes = candidate.read_bytes()
+    evidence_bytes = evidence.read_bytes()
+
+    assert recovery_requires_generation(batch, candidate, evidence, "java", plan)
+    archive = batch / "failed-teacher-attempts" / sha256_bytes(evidence_bytes)
+    assert (archive / "candidates.jsonl").read_bytes() == candidate_bytes
+    assert (archive / "teacher-evidence.json").read_bytes() == evidence_bytes
+    manifest = json.loads((archive / "manifest.json").read_text())
+    assert manifest["requested_ids"] == requested_ids
+    assert manifest["generated"] == 0
+    assert not candidate.exists()
+    assert not evidence.exists()
+    assert recovery_requires_generation(batch, candidate, evidence, "java", plan)
+
+
+def test_malformed_successful_teacher_output_fails_closed(tmp_path) -> None:
+    batch = tmp_path / "batch"
+    batch.mkdir()
+    plan = {"generation_start": 6, "generation_count": 1, "repair_start": 4, "repair_count": 0}
+    candidate = batch / "candidates.jsonl"
+    candidate.write_bytes(b"")
+    evidence = batch / "teacher-evidence.json"
+    evidence.write_text(json.dumps({
+        "candidate_output_sha256": sha256_bytes(candidate.read_bytes()),
+        "selection": {"lane": "java", **plan},
+        "requested_ids": ["one"],
+        "generated": 0,
+        "failures": [],
+    }))
+    with pytest.raises(ValueError, match="does not exactly cover"):
+        recovery_requires_generation(batch, candidate, evidence, "java", plan)
 
 
 def test_empty_interrupted_batch_regenerates_same_recorded_selection(tmp_path) -> None:

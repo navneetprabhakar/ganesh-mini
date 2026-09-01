@@ -11,6 +11,7 @@ import time
 import sys
 import unicodedata
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -185,7 +186,10 @@ def validate_candidate(record: Any, config: dict[str, Any]) -> dict[str, Any]:
 def admit_records(
     records: Iterable[Any], config: dict[str, Any], eval_index: dict[str, Any],
     runtime_config: Path, verifier: Callable[[dict[str, Any], str, Path], dict[str, Any]] = verify,
+    verifier_workers: int = 1,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if verifier_workers <= 0:
+        raise ValueError("verifier workers must be positive")
     accepted: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
@@ -223,9 +227,28 @@ def admit_records(
                     if other_tokens >= minimum_tokens and (candidate_simhash ^ other_hash).bit_count() <= fuzzy_limit:
                         raise AdmissionFailure(f"fuzzy expansion prompt overlap: {source_id}")
             executable_task = {**task, "surface": "synthetic_harness"}
-            reference_result, reference_retries = verify_with_retries(
-                verifier, executable_task, answer, runtime_config,
-            )
+            known_bad_values = task["validation"]["known_bad"]
+            if verifier_workers == 1:
+                reference_result, reference_retries = verify_with_retries(
+                    verifier, executable_task, answer, runtime_config,
+                )
+                known_bad_verifications = [
+                    verify_with_retries(verifier, executable_task, known_bad["code"], runtime_config)
+                    for known_bad in known_bad_values
+                ]
+            else:
+                with ThreadPoolExecutor(max_workers=min(verifier_workers, 1 + len(known_bad_values))) as executor:
+                    reference_future = executor.submit(
+                        verify_with_retries, verifier, executable_task, answer, runtime_config,
+                    )
+                    known_bad_futures = [
+                        executor.submit(
+                            verify_with_retries, verifier, executable_task, known_bad["code"], runtime_config,
+                        )
+                        for known_bad in known_bad_values
+                    ]
+                    reference_result, reference_retries = reference_future.result()
+                    known_bad_verifications = [future.result() for future in known_bad_futures]
             infrastructure = infrastructure_failure(reference_result)
             if infrastructure:
                 raise AdmissionFailure(
@@ -238,10 +261,9 @@ def admit_records(
                     {"reference": reference_result},
                 )
             known_bad_results = []
-            for known_bad in task["validation"]["known_bad"]:
-                result, runtime_retries = verify_with_retries(
-                    verifier, executable_task, known_bad["code"], runtime_config,
-                )
+            for known_bad, (result, runtime_retries) in zip(
+                known_bad_values, known_bad_verifications, strict=True,
+            ):
                 infrastructure = infrastructure_failure(result)
                 if infrastructure:
                     raise AdmissionFailure(
@@ -304,12 +326,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runtime-config", type=Path, default=Path("configs/eval/runtimes.json"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument("--verifier-workers", type=int, default=2)
     parser.add_argument("--seal", action="store_true", help="require the complete frozen 6,000-row balance before succeeding")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     config = json.loads(args.config.read_text(encoding="utf-8"))
     roots = args.evaluation_root or [Path("eval")]
     index = evaluation_index(roots)
-    accepted, rejected = admit_records(read_jsonl(args.input), config, index, args.runtime_config)
+    accepted, rejected = admit_records(
+        read_jsonl(args.input), config, index, args.runtime_config,
+        verifier_workers=args.verifier_workers,
+    )
     lane_counts = Counter(row["lane"] for row in accepted)
     type_counts = Counter(row["task_type"] for row in accepted)
     balance_passed = (
@@ -325,6 +351,7 @@ def main(argv: list[str] | None = None) -> int:
         "mode": "sealed" if args.seal else "candidate", "input": str(args.input),
         "input_sha256": hashlib.sha256(args.input.read_bytes()).hexdigest(),
         "evaluation_files_inspected": len(index["inspected"]),
+        "execution": {"verifier_workers": args.verifier_workers},
         "accepted": len(accepted), "rejected": rejected,
         "counts_by_lane": dict(sorted(lane_counts.items())),
         "counts_by_task_type": dict(sorted(type_counts.items())),

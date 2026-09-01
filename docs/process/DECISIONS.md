@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-09-01 — Remaining single-lane expansion uses bounded inner parallelism
+
+Expansion production reached 5,422/6,000 rows with every lane except Go
+complete. Additional controller lane workers cannot improve throughput because
+the production state contract permits one unfinished batch per lane, and
+multiple same-lane corpus writers would make quota, deduplication, and commit
+ordering unsafe.
+
+Future batches therefore retain one Go lane worker and one ordered corpus
+writer while using two deterministic contiguous teacher shards per batch.
+Each shard still performs isolated architect and test-author passes; all raw
+run evidence is reassembled in original record order, and any shard failure
+fails the entire batch closed with no partial candidate output. Admission also
+runs a record's reference and known-bad implementations concurrently with at
+most two network-disabled, resource-limited verifier containers. Candidate
+ordering, deduplication, acceptance rules, retry classification, and corpus
+commit semantics are unchanged. The active pre-change batch is allowed to
+finish; subsequent subprocesses load the bounded parallel implementation.
+
 ## 2026-08-28 — Verifier infrastructure retries must not become data repair
 
 Expansion production stopped at a Docker Desktop bind-mount failure while the

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -83,39 +84,89 @@ Never include tests in a problem. Audit API consistency, compilation, boundary b
 returning only the schema-constrained object."""
 
 
-def generate_batch(
+def teacher_shards(rows: list[dict[str, Any]], workers: int) -> list[list[dict[str, Any]]]:
+    """Partition an ordered batch into deterministic contiguous teacher shards."""
+    if workers <= 0:
+        raise ValueError("teacher workers must be positive")
+    worker_count = min(workers, len(rows))
+    base, remainder = divmod(len(rows), worker_count)
+    shards: list[list[dict[str, Any]]] = []
+    offset = 0
+    for index in range(worker_count):
+        width = base + (1 if index < remainder else 0)
+        shards.append(rows[offset:offset + width])
+        offset += width
+    return shards
+
+
+def generate_shard(
     rows: list[dict[str, Any]], config: dict[str, Any], codex_bin: str,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str | None]:
+    lane = rows[0]["lane"]
+    expected_ids = [row["id"] for row in rows]
+    runs: list[dict[str, Any]] = []
+    try:
+        architecture_payload, architecture_evidence = invoke_codex(
+            codex_bin, config, ARCHITECT_SCHEMA, source_architect_prompt(lane, rows),
+            "source-architect", lane,
+        )
+        runs.append(architecture_evidence)
+        architecture_items = exact_items(
+            architecture_payload, expected_ids,
+            {"id", "problem", "reference_code", "known_bad_code", "known_bad_label"},
+        )
+        tests_payload, tests_evidence = invoke_codex(
+            codex_bin, config, TEST_SCHEMA, test_prompt(lane, architecture_items), "source-test-author", lane,
+        )
+        runs.append(tests_evidence)
+        test_items = exact_items(tests_payload, expected_ids, {"id", "test_code"})
+        tests_by_id = {item["id"]: item["test_code"] for item in test_items}
+        source_by_id = {row["id"]: row["source"] for row in rows}
+        type_by_id = {row["id"]: row["task_type"] for row in rows}
+        candidates = [
+            build_candidate(
+                lane, item["id"], type_by_id[item["id"]], item, tests_by_id[item["id"]],
+                source=source_by_id[item["id"]],
+            )
+            for item in architecture_items
+        ]
+        return candidates, runs, None
+    except CodexInvocationFailure as exc:
+        runs.append(exc.evidence)
+        return [], runs, str(exc)
+    except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        return [], runs, str(exc)
+
+
+def generate_batch(
+    rows: list[dict[str, Any]], config: dict[str, Any], codex_bin: str, teacher_workers: int = 1,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, str]]]:
     lane = rows[0]["lane"]
     if any(row["lane"] != lane for row in rows):
         raise ValueError("teacher batch must be homogeneous by lane")
-    expected_ids = [row["id"] for row in rows]
+    shards = teacher_shards(rows, teacher_workers)
+    results: list[tuple[list[dict[str, Any]], list[dict[str, Any]], str | None] | None] = [None] * len(shards)
+    with ThreadPoolExecutor(max_workers=len(shards)) as executor:
+        futures = {
+            executor.submit(generate_shard, shard, config, codex_bin): index
+            for index, shard in enumerate(shards)
+        }
+        for future in as_completed(futures):
+            results[futures[future]] = future.result()
+    candidates: list[dict[str, Any]] = []
     runs: list[dict[str, Any]] = []
-    architecture_payload, architecture_evidence = invoke_codex(
-        codex_bin, config, ARCHITECT_SCHEMA, source_architect_prompt(lane, rows),
-        "source-architect", lane,
-    )
-    runs.append(architecture_evidence)
-    architecture_items = exact_items(
-        architecture_payload, expected_ids,
-        {"id", "problem", "reference_code", "known_bad_code", "known_bad_label"},
-    )
-    tests_payload, tests_evidence = invoke_codex(
-        codex_bin, config, TEST_SCHEMA, test_prompt(lane, architecture_items), "source-test-author", lane,
-    )
-    runs.append(tests_evidence)
-    test_items = exact_items(tests_payload, expected_ids, {"id", "test_code"})
-    tests_by_id = {item["id"]: item["test_code"] for item in test_items}
-    source_by_id = {row["id"]: row["source"] for row in rows}
-    type_by_id = {row["id"]: row["task_type"] for row in rows}
-    candidates = [
-        build_candidate(
-            lane, item["id"], type_by_id[item["id"]], item, tests_by_id[item["id"]],
-            source=source_by_id[item["id"]],
-        )
-        for item in architecture_items
-    ]
-    return candidates, runs
+    failures: list[dict[str, str]] = []
+    for index, result in enumerate(results):
+        if result is None:
+            raise RuntimeError(f"teacher shard {index} did not return a result")
+        shard_candidates, shard_runs, error = result
+        runs.extend(shard_runs)
+        if error is not None:
+            failures.append({"lane": lane, "shard": str(index), "reason": error})
+        candidates.extend(shard_candidates)
+    if failures:
+        candidates = []
+    return candidates, runs, failures
 
 
 def main() -> int:
@@ -129,9 +180,12 @@ def main() -> int:
     parser.add_argument("--repair-start", type=int)
     parser.add_argument("--repair-count", type=int)
     parser.add_argument("--codex-bin", default="codex")
+    parser.add_argument("--teacher-workers", type=int, default=2)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     args = parser.parse_args()
+    if args.teacher_workers <= 0:
+        raise ValueError("teacher-workers must be positive")
     custom_values = (args.generation_start, args.generation_count, args.repair_start, args.repair_count)
     if args.batch_index is not None and any(value is not None for value in custom_values):
         raise ValueError("batch-index and custom selection are mutually exclusive")
@@ -160,7 +214,7 @@ def main() -> int:
     runs: list[dict[str, Any]] = []
     failures: list[dict[str, str]] = []
     try:
-        candidates, runs = generate_batch(rows, config, args.codex_bin)
+        candidates, runs, failures = generate_batch(rows, config, args.codex_bin, args.teacher_workers)
     except (CodexInvocationFailure, KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
         if isinstance(exc, CodexInvocationFailure):
             runs.append(exc.evidence)
@@ -173,6 +227,10 @@ def main() -> int:
         "teacher": config, "cli_identity": cli_identity,
         "queue": {"path": str(args.queue), "sha256": hashlib.sha256(queue_bytes).hexdigest()},
         "selection": selection,
+        "execution": {
+            "teacher_workers": min(args.teacher_workers, len(rows)),
+            "teacher_shards": [[row["id"] for row in shard] for shard in teacher_shards(rows, args.teacher_workers)],
+        },
         "requested_ids": [row["id"] for row in rows], "generated": len(candidates),
         "candidate_output_sha256": hashlib.sha256(payload).hexdigest(), "failures": failures, "runs": runs,
     }

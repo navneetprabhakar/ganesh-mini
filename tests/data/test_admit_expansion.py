@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
+import threading
+import time
 from unittest.mock import patch
 
 from scripts.data.admit_expansion import admit_records, normalized_sha256, simhash
@@ -73,6 +75,29 @@ def test_admits_reference_and_rejects_known_bad() -> None:
     assert len(accepted) == 1
     assert accepted[0]["language"] == "Python"
     assert accepted[0]["verification"]["known_bad"][0]["result"]["exit_codes"] == [1]
+
+
+def test_reference_and_known_bad_can_verify_concurrently_without_reordering() -> None:
+    active = 0
+    maximum = 0
+    lock = threading.Lock()
+
+    def concurrent_verifier(task_value: dict, code: str, runtime: Path) -> dict:
+        nonlocal active, maximum
+        with lock:
+            active += 1
+            maximum = max(maximum, active)
+        time.sleep(0.02)
+        with lock:
+            active -= 1
+        passed = code == task_value["validation"]["reference"]["code"]
+        return {"exit_codes": [0 if passed else 1], "timed_out": False, "stderr": "", "stdout": ""}
+
+    accepted, rejected = admit_records(
+        [record()], config(), empty_index(), Path("runtime.json"), concurrent_verifier, verifier_workers=2,
+    )
+    assert not rejected and len(accepted) == 1
+    assert maximum == 2
 
 
 @patch("scripts.data.admit_expansion.time.sleep")

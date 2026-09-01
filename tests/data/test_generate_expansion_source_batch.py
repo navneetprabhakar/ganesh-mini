@@ -1,8 +1,13 @@
+import time
+from unittest.mock import patch
+
 from scripts.data.generate_expansion_source_batch import (
+    generate_batch,
     select_batch,
     select_custom_batch,
     select_planned_batch,
     source_architect_prompt,
+    teacher_shards,
 )
 
 
@@ -40,3 +45,28 @@ def test_source_prompt_demands_original_self_contained_transformation() -> None:
     assert "Do not copy its wording" in prompt
     assert "embed the complete known-bad source" in prompt
     assert "independent" not in prompt.casefold()  # architect is not told about downstream test implementation
+
+
+def test_teacher_shards_are_balanced_contiguous_and_order_preserving() -> None:
+    rows = [{"id": str(index)} for index in range(10)]
+    shards = teacher_shards(rows, 2)
+    assert [[row["id"] for row in shard] for shard in shards] == [
+        ["0", "1", "2", "3", "4"],
+        ["5", "6", "7", "8", "9"],
+    ]
+    assert [row for shard in shards for row in shard] == rows
+
+
+def test_parallel_teacher_shards_reassemble_in_original_order() -> None:
+    rows = [draft(str(index)) for index in range(4)]
+
+    def fake_generate(shard, _config, _codex_bin):
+        if shard[0]["id"] == "0":
+            time.sleep(0.02)
+        return ([{"id": row["id"]} for row in shard], [{"first": shard[0]["id"]}], None)
+
+    with patch("scripts.data.generate_expansion_source_batch.generate_shard", side_effect=fake_generate):
+        candidates, runs, failures = generate_batch(rows, {}, "codex", teacher_workers=2)
+    assert [row["id"] for row in candidates] == ["0", "1", "2", "3"]
+    assert runs == [{"first": "0"}, {"first": "2"}]
+    assert failures == []

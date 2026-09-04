@@ -52,14 +52,15 @@ An adaptive 8,480-row reserve queue is sealed at
 `a020b6f66a40688547b71052d5123252102eb91d51f69196bef9a70d7dc9ac78`.
 It is a ceiling, not a mandate: the resumable controller stops each lane/task
 stratum at the frozen 6,000-row quota and admits only execution-verified rows.
-Production has reached 5,422 rows under SHA-256
-`80b3a722a0e883c4d1588fa5770258dc86756af31060f94a80e8cc861fc4abf5`.
-Java, JavaScript, TypeScript, Python, and Rust are complete; Go has 622/1,200
-rows and is the sole remaining lane. Batch `go-0073-g0444n6-r0296n4` is active.
-Future Go batches use two deterministic teacher shards and two bounded verifier
-workers while preserving a single ordered lane/corpus writer. The relevant 48
-data-pipeline tests pass. No GCloud resource is used or authorized for this
-phase.
+Production reached 5,585 rows under SHA-256
+`61d897579d024cf33b3897ca39b4bf06526ac176da5369e8815a3ddfc6b38860`
+when the admission-capacity change was prepared.
+Java, JavaScript, TypeScript, Python, and Rust are complete; Go has 785/1,200
+rows and is the sole remaining lane. Future Go batches use two deterministic
+teacher shards and up to four concurrent records/two implementations per
+record, capped at eight verifier containers, while preserving a single ordered
+lane/corpus writer. The relevant 50 data-pipeline tests pass. No GCloud
+resource is used or authorized for this phase.
 
 Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict
 sealed bootstrap failure. It had exactly one boot, automatic restart was

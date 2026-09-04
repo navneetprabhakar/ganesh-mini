@@ -183,7 +183,7 @@ def validate_candidate(record: Any, config: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
-def admit_records(
+def _admit_records_serial(
     records: Iterable[Any], config: dict[str, Any], eval_index: dict[str, Any],
     runtime_config: Path, verifier: Callable[[dict[str, Any], str, Path], dict[str, Any]] = verify,
     verifier_workers: int = 1,
@@ -311,6 +311,89 @@ def admit_records(
     return accepted, rejected
 
 
+def admit_records(
+    records: Iterable[Any], config: dict[str, Any], eval_index: dict[str, Any],
+    runtime_config: Path, verifier: Callable[[dict[str, Any], str, Path], dict[str, Any]] = verify,
+    verifier_workers: int = 1, record_workers: int = 1,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Admit records concurrently, then replay collision decisions in input order."""
+    if record_workers <= 0:
+        raise ValueError("record workers must be positive")
+    rows = list(records)
+    if record_workers == 1 or len(rows) <= 1:
+        return _admit_records_serial(rows, config, eval_index, runtime_config, verifier, verifier_workers)
+
+    def execute_one(raw_record: Any) -> tuple[str, Any]:
+        try:
+            return "ok", _admit_records_serial(
+                [raw_record], config, eval_index, runtime_config, verifier, verifier_workers,
+            )
+        except Exception as exc:  # replay decides whether a speculative result is relevant
+            return "error", exc
+
+    with ThreadPoolExecutor(max_workers=min(record_workers, len(rows))) as executor:
+        futures = [executor.submit(execute_one, raw_record) for raw_record in rows]
+        results = [future.result() for future in futures]
+
+    accepted: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    seen_prompts: set[str] = set()
+    seen_conversations: set[str] = set()
+    seen_prompt_simhashes: list[tuple[int, str, int]] = []
+    fuzzy_limit = config["deduplication"]["prompt_simhash_max_hamming"]
+    minimum_tokens = config["deduplication"]["minimum_fuzzy_tokens"]
+
+    for line_number, (raw_record, (result_kind, result)) in enumerate(zip(rows, results, strict=True), 1):
+        record_id = raw_record.get("id", f"line-{line_number}") if isinstance(raw_record, dict) else f"line-{line_number}"
+        collision: str | None = None
+        record: dict[str, Any] | None = None
+        try:
+            record = validate_candidate(raw_record, config)
+            prompt = record["messages"][0]["content"]
+            prompt_hash = normalized_sha256(prompt)
+            conversation_hash = hashlib.sha256(canonical_json(record["messages"])).hexdigest()
+            if record["id"] in seen_ids or prompt_hash in seen_prompts or conversation_hash in seen_conversations:
+                collision = "duplicate within expansion candidates"
+            prompt_tokens = len(_tokens(prompt))
+            candidate_simhash = simhash(prompt) if prompt_tokens >= minimum_tokens else None
+            if collision is None and candidate_simhash is not None:
+                for other_hash, source_id, other_tokens in seen_prompt_simhashes:
+                    if other_tokens >= minimum_tokens and (candidate_simhash ^ other_hash).bit_count() <= fuzzy_limit:
+                        collision = f"fuzzy expansion prompt overlap: {source_id}"
+                        break
+        except (AdmissionFailure, ContractError, KeyError, TypeError, ValueError):
+            prompt_hash = conversation_hash = None
+            prompt_tokens = 0
+            candidate_simhash = None
+
+        if collision is not None:
+            rejected.append({"line": line_number, "id": record_id, "reason": collision})
+            continue
+        if result_kind == "error":
+            raise result
+        one_accepted, one_rejected = result
+        if len(one_accepted) + len(one_rejected) != 1:
+            raise RuntimeError(f"record {line_number} produced an invalid admission cardinality")
+        if one_rejected:
+            rejection = dict(one_rejected[0])
+            rejection["line"] = line_number
+            rejection["id"] = record_id
+            rejected.append(rejection)
+            continue
+
+        admitted = one_accepted[0]
+        accepted.append(admitted)
+        if record is None or prompt_hash is None or conversation_hash is None:
+            raise RuntimeError(f"record {line_number} was admitted without validated collision metadata")
+        seen_ids.add(record["id"])
+        seen_prompts.add(prompt_hash)
+        seen_conversations.add(conversation_hash)
+        if candidate_simhash is not None:
+            seen_prompt_simhashes.append((candidate_simhash, record["id"], prompt_tokens))
+    return accepted, rejected
+
+
 def read_jsonl(path: Path) -> list[Any]:
     # JSON strings may legally contain U+2028/U+2029. splitlines() treats those
     # code points as record separators even though JSONL uses physical LF only.
@@ -327,6 +410,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--verifier-workers", type=int, default=2)
+    parser.add_argument("--record-workers", type=int, default=4)
     parser.add_argument("--seal", action="store_true", help="require the complete frozen 6,000-row balance before succeeding")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     config = json.loads(args.config.read_text(encoding="utf-8"))
@@ -334,7 +418,7 @@ def main(argv: list[str] | None = None) -> int:
     index = evaluation_index(roots)
     accepted, rejected = admit_records(
         read_jsonl(args.input), config, index, args.runtime_config,
-        verifier_workers=args.verifier_workers,
+        verifier_workers=args.verifier_workers, record_workers=args.record_workers,
     )
     lane_counts = Counter(row["lane"] for row in accepted)
     type_counts = Counter(row["task_type"] for row in accepted)
@@ -351,7 +435,11 @@ def main(argv: list[str] | None = None) -> int:
         "mode": "sealed" if args.seal else "candidate", "input": str(args.input),
         "input_sha256": hashlib.sha256(args.input.read_bytes()).hexdigest(),
         "evaluation_files_inspected": len(index["inspected"]),
-        "execution": {"verifier_workers": args.verifier_workers},
+        "execution": {
+            "record_workers": args.record_workers,
+            "verifier_workers_per_record": args.verifier_workers,
+            "maximum_parallel_verifiers": args.record_workers * args.verifier_workers,
+        },
         "accepted": len(accepted), "rejected": rejected,
         "counts_by_lane": dict(sorted(lane_counts.items())),
         "counts_by_task_type": dict(sorted(type_counts.items())),

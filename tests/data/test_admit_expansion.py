@@ -100,6 +100,59 @@ def test_reference_and_known_bad_can_verify_concurrently_without_reordering() ->
     assert maximum == 2
 
 
+def test_records_can_verify_concurrently_and_reassemble_in_input_order() -> None:
+    active = 0
+    maximum = 0
+    lock = threading.Lock()
+    records = []
+    for index in range(3):
+        candidate = deepcopy(record())
+        candidate["id"] = f"source-{index}"
+        candidate["source"]["record_id"] = f"source-{index}"
+        candidate["source"]["source_record_sha256"] = str(index + 1) * 64
+        prompt = f"Create deterministic utility number {index} with separately specified behavior token {index}."
+        candidate["messages"][0]["content"] = prompt
+        candidate["verification_task"]["task_id"] = candidate["id"]
+        candidate["verification_task"]["prompt"] = {"text": prompt, "sha256": sha256_text(prompt)}
+        candidate["verification_task"]["rendered_prompt"] = {"text": prompt, "sha256": sha256_text(prompt)}
+        records.append(candidate)
+
+    def concurrent_verifier(task_value: dict, code: str, runtime: Path) -> dict:
+        nonlocal active, maximum
+        with lock:
+            active += 1
+            maximum = max(maximum, active)
+        time.sleep(0.02)
+        with lock:
+            active -= 1
+        passed = code == task_value["validation"]["reference"]["code"]
+        return {"exit_codes": [0 if passed else 1], "timed_out": False, "stderr": "", "stdout": ""}
+
+    accepted, rejected = admit_records(
+        records, config(), empty_index(), Path("runtime.json"), concurrent_verifier,
+        verifier_workers=1, record_workers=3,
+    )
+    assert not rejected
+    assert [row["id"] for row in accepted] == ["source-0", "source-1", "source-2"]
+    assert maximum == 3
+
+
+def test_parallel_records_preserve_serial_duplicate_winner() -> None:
+    first = record()
+    duplicate = deepcopy(first)
+    duplicate["id"] = "source-duplicate"
+    duplicate["verification_task"]["task_id"] = duplicate["id"]
+    duplicate["source"]["record_id"] = "duplicate"
+    duplicate["source"]["source_record_sha256"] = "b" * 64
+    serial = admit_records([first, duplicate], config(), empty_index(), Path("runtime.json"), verifier)
+    parallel = admit_records(
+        [first, duplicate], config(), empty_index(), Path("runtime.json"), verifier,
+        verifier_workers=2, record_workers=2,
+    )
+    assert [row["id"] for row in parallel[0]] == [row["id"] for row in serial[0]]
+    assert [row["reason"] for row in parallel[1]] == [row["reason"] for row in serial[1]]
+
+
 @patch("scripts.data.admit_expansion.time.sleep")
 def test_retries_infrastructure_failure_and_preserves_attempt_evidence(_sleep) -> None:
     results = iter([

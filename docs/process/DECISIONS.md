@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-09-04 — Go admission scales to eight bounded verifier containers
+
+The remaining Go lane is verification-bound on an Apple Silicon host while
+using the pinned AMD64 verifier image. Docker Desktop exposes eight CPUs and
+12.5 GB RAM; each verifier remains capped at one CPU and 512 MB. Admission now
+speculatively verifies up to four independent records concurrently, with the
+reference and known-bad implementation for each record also running in
+parallel. This creates a hard ceiling of eight verifier containers and 4 GB of
+declared container memory.
+
+Speculative execution does not decide admission. After all executions return,
+the controller replays candidate collision checks and acceptance in original
+JSONL order through one serial path. Exact/fuzzy duplicate winners, rejection
+ordering, evidence ordering, quotas, and the single corpus writer therefore
+remain unchanged. A speculative verifier exception is ignored only when an
+earlier accepted row makes that record a duplicate; otherwise it remains a
+fail-closed batch error. Infrastructure classification and bounded retries are
+unchanged.
+
 ## 2026-09-01 — Remaining single-lane expansion uses bounded inner parallelism
 
 Expansion production reached 5,422/6,000 rows with every lane except Go

@@ -15,9 +15,10 @@ evidence of teacher or data quality.
 An explicit verifier timeout is now an infrastructure failure. It receives
 only the existing bounded infrastructure retry and can never become a model
 score, behavioral rejection, or teacher-correction input. Production defaults
-back to one record at a time while retaining parallel reference/known-bad
-execution, giving at most two verifier containers. The concurrent-record
-implementation remains tested but is no longer the production default.
+back to one record and one verifier execution at a time. A two-container retry
+of batch 111 still exhausted the task deadline, so even reference/known-bad
+parallelism is disabled by default on this emulated host. Both concurrency
+implementations remain tested but are no longer the production default.
 
 The already-recorded timed-out batches remain preserved. Their source rows
 must not be treated as behavioral rejections when final evidence is sealed;

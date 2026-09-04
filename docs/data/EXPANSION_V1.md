@@ -156,9 +156,10 @@ four concurrent records and eight AMD64 verifier containers. Starting with Go
 batch 98, reference executions repeatedly reached the 60-second task deadline;
 the missing timeout classification incorrectly sent them through the
 behavioral correction path. Explicit timeouts are now infrastructure failures
-and cannot be corrected or scored. Production defaults to one record and at
-most two parallel verifier containers. The affected reports remain preserved
-and are not teacher-quality evidence.
+and cannot be corrected or scored. A two-container retry of batch 111 also
+exhausted the deadline, so production defaults to one record and one verifier
+container on this host. The affected reports remain preserved and are not
+teacher-quality evidence.
 
 `scripts/data/build_expansion_quality_sample.py` implements the final manual
 review selection. It requires the complete 6,000-row state, exact quotas, and a

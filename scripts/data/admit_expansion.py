@@ -409,7 +409,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runtime-config", type=Path, default=Path("configs/eval/runtimes.json"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
-    parser.add_argument("--verifier-workers", type=int, default=2)
+    parser.add_argument("--verifier-workers", type=int, default=1)
     parser.add_argument("--record-workers", type=int, default=1)
     parser.add_argument("--seal", action="store_true", help="require the complete frozen 6,000-row balance before succeeding")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)

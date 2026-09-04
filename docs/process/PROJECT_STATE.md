@@ -65,7 +65,8 @@ explicit timeouts were missing from the infrastructure classifier, those runs
 were incorrectly recorded as behavioral failures and sent to correction;
 batches 105 through 110 admitted zero. They are not valid teacher-quality
 evidence. Timeouts are now fail-closed infrastructure failures and production
-defaults to one record with at most two parallel verifier containers. Exact
+defaults to one record and one verifier container after a two-container retry
+of batch 111 also exhausted the task deadline. Exact
 old candidate and teacher evidence is preserved for bounded recovery rather
 than relabelled.
 

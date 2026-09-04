@@ -1,6 +1,6 @@
 # Decisions
 
-## 2026-09-04 — Verifier timeouts are infrastructure failures; eight-way Go verification is withdrawn
+## 2026-09-04 — Eight-way Go verification is withdrawn; timeout classification remains contextual
 
 The eight-container Go admission configuration did not improve useful
 throughput on the Apple Silicon host. Beginning with production batch
@@ -12,13 +12,20 @@ reference behavioral failures and sent them to the one-correction path.
 Batches 105 through 110 consequently admitted zero; this is not admissible
 evidence of teacher or data quality.
 
-An explicit verifier timeout is now an infrastructure failure. It receives
-only the existing bounded infrastructure retry and can never become a model
-score, behavioral rejection, or teacher-correction input. Production defaults
-back to one record and one verifier execution at a time. A two-container retry
-of batch 111 still exhausted the task deadline, so even reference/known-bad
-parallelism is disabled by default on this emulated host. Both concurrency
-implementations remain tested but are no longer the production default.
+Production defaults back to one record and one verifier execution at a time.
+A two-container retry of batch 111 still exhausted the task deadline, so even
+reference/known-bad parallelism is disabled by default on this emulated host.
+Both concurrency implementations remain tested but are no longer the
+production default.
+
+Timeout alone is not globally classified as infrastructure. Serial diagnosis
+of batch 111 showed that one record still timed out three times and contained
+a malformed generated Go test file; that is a candidate/test behavioral
+failure eligible for the single correction pass. The mass timeouts under
+eight-way execution are host-capacity evidence because otherwise comparable
+records complete under serialization. Infrastructure classification remains
+reserved for explicit host/runtime signatures and missing process exits
+without a candidate timeout.
 
 The already-recorded timed-out batches remain preserved. Their source rows
 must not be treated as behavioral rejections when final evidence is sealed;

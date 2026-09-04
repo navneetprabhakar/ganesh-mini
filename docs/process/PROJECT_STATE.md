@@ -64,9 +64,10 @@ repeated emulated-AMD64 task timeouts beginning with Go batch 98. Because
 explicit timeouts were missing from the infrastructure classifier, those runs
 were incorrectly recorded as behavioral failures and sent to correction;
 batches 105 through 110 admitted zero. They are not valid teacher-quality
-evidence. Timeouts are now fail-closed infrastructure failures and production
-defaults to one record and one verifier container after a two-container retry
-of batch 111 also exhausted the task deadline. Exact
+evidence. Production defaults to one record and one verifier container after
+a two-container retry of batch 111 also exhausted the task deadline. A timeout
+that persists under serialization remains behavioral; batch 111 exposed a
+malformed test file rather than a host failure. Exact
 old candidate and teacher evidence is preserved for bounded recovery rather
 than relabelled.
 

@@ -155,11 +155,12 @@ Production later exposed a host-capacity defect when Go admission was raised to
 four concurrent records and eight AMD64 verifier containers. Starting with Go
 batch 98, reference executions repeatedly reached the 60-second task deadline;
 the missing timeout classification incorrectly sent them through the
-behavioral correction path. Explicit timeouts are now infrastructure failures
-and cannot be corrected or scored. A two-container retry of batch 111 also
-exhausted the deadline, so production defaults to one record and one verifier
-container on this host. The affected reports remain preserved and are not
-teacher-quality evidence.
+behavioral correction path. A two-container retry of batch 111 also exhausted
+the deadline, so production defaults to one record and one verifier container
+on this host. Timeout alone remains contextual: serial batch 111 exposed a
+malformed candidate test file, which is a behavioral failure eligible for the
+single correction pass. The earlier parallel reports remain preserved and are
+not teacher-quality evidence.
 
 `scripts/data/build_expansion_quality_sample.py` implements the final manual
 review selection. It requires the complete 6,000-row state, exact quotas, and a

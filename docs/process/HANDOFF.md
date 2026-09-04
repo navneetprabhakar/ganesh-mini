@@ -6,6 +6,33 @@ This document is an operational handoff, not a replacement for the canonical
 plan or evidence. Live state can advance after the timestamp above. Re-read the
 files in the "Start here" section before acting.
 
+Continuation update: 2026-09-04 16:36 IST
+
+- Commit `3632f23` is pushed to `origin/main`.
+- Batch 111 was recovered from exact hash-bound candidate/teacher evidence
+  using one verifier container. It admitted 8/10 rows: four generation and
+  four repair. Two corrected rows remained behavioral rejects.
+- Live corpus is 5,616/6,000: Go generation 474/720 and repair 342/480; every
+  other lane is complete. Corpus SHA-256 is
+  `02d7598aae42064d4cb38a3acedfc5d01dd1484f6b379ee7d13c90879af83ac4`
+  and matches production state.
+- The single launchd controller is running batch
+  `go-0112-g0678n6-r0452n4`. Production admission now defaults to one record
+  and one verifier container because the attempted eight-container setting
+  caused host-contention timeouts under AMD64 emulation. Timeout status remains
+  contextual: a timeout that persists when serialized is a behavioral failure,
+  as proven by batch 111's malformed generated test.
+- `scripts/data/build_expansion_quality_sample.py` now implements and tests the
+  missing deterministic 300-row review sample. It remains intentionally
+  blocked until the corpus reaches exact quotas and complete state.
+- The full suite still has the same three known stale Gate 1/workspace failures;
+  353 tests passed and one optional Docker test was skipped. Focused data and
+  verifier tests pass.
+
+This continuation update supersedes older live counts, concurrency guidance,
+and the immediate batch identity below. Preserve the older text as timestamped
+historical context.
+
 ## 1. Executive summary
 
 The project is building `ganesh-mini-1.0`, a Qwen3.5-2B coding model intended

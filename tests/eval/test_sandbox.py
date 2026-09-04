@@ -83,6 +83,10 @@ class SandboxTests(unittest.TestCase):
         }
         self.assertIn("resource temporarily unavailable", infrastructure_failure(verifier) or "")
 
+    def test_timeout_is_an_infrastructure_failure(self) -> None:
+        verifier = {"exit_codes": [], "timed_out": True, "stderr": ""}
+        self.assertEqual(infrastructure_failure(verifier), "verifier timed out")
+
     def test_normal_compile_failure_is_not_an_infrastructure_failure(self) -> None:
         verifier = {"exit_codes": [1], "timed_out": False, "stderr": "solution.go: undefined: missing"}
         self.assertIsNone(infrastructure_failure(verifier))

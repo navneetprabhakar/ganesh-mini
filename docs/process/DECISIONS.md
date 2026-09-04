@@ -1,5 +1,35 @@
 # Decisions
 
+## 2026-09-04 — Verifier timeouts are infrastructure failures; eight-way Go verification is withdrawn
+
+The eight-container Go admission configuration did not improve useful
+throughput on the Apple Silicon host. Beginning with production batch
+`go-0098-g0594n6-r0396n4`, concurrent AMD64 verifier processes repeatedly hit
+the frozen 60-second task deadline. The results had `timed_out=true`, no exit
+code, and empty stdout/stderr. The shared infrastructure classifier did not
+classify an explicit timeout, so admission incorrectly recorded these as
+reference behavioral failures and sent them to the one-correction path.
+Batches 105 through 110 consequently admitted zero; this is not admissible
+evidence of teacher or data quality.
+
+An explicit verifier timeout is now an infrastructure failure. It receives
+only the existing bounded infrastructure retry and can never become a model
+score, behavioral rejection, or teacher-correction input. Production defaults
+back to one record at a time while retaining parallel reference/known-bad
+execution, giving at most two verifier containers. The concurrent-record
+implementation remains tested but is no longer the production default.
+
+The already-recorded timed-out batches remain preserved. Their source rows
+must not be treated as behavioral rejections when final evidence is sealed;
+any recovery must reuse and hash-check exact candidate/teacher evidence and
+pass current admission rather than relabeling old reports.
+
+The deterministic final quality-sample builder is now implemented. It refuses
+incomplete state, hash mismatch, row-count mismatch, or quota mismatch, and
+selects exactly 300 of 6,000 rows across lane, source, task type, and preserved
+correction history. Its output remains pending evidence until the final corpus
+exists and every selected row is manually reviewed.
+
 ## 2026-09-04 — Go admission scales to eight bounded verifier containers
 
 The remaining Go lane is verification-bound on an Apple Silicon host while

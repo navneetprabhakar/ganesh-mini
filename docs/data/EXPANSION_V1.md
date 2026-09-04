@@ -150,3 +150,19 @@ transformation into a new target-language task; source identity and record
 hashes remain intact. The controller does not generate the full reserve
 unconditionally. It stops each lane/task type when the frozen final quota is
 met, applies no more than one correction, and rejects the remainder.
+
+Production later exposed a host-capacity defect when Go admission was raised to
+four concurrent records and eight AMD64 verifier containers. Starting with Go
+batch 98, reference executions repeatedly reached the 60-second task deadline;
+the missing timeout classification incorrectly sent them through the
+behavioral correction path. Explicit timeouts are now infrastructure failures
+and cannot be corrected or scored. Production defaults to one record and at
+most two parallel verifier containers. The affected reports remain preserved
+and are not teacher-quality evidence.
+
+`scripts/data/build_expansion_quality_sample.py` implements the final manual
+review selection. It requires the complete 6,000-row state, exact quotas, and a
+matching corpus hash, then deterministically selects 300 full records across
+lane, source, task type, and correction history. The generated report remains
+pending until every criterion is manually adjudicated and any systematic
+defect has been resolved.

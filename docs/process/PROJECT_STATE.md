@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-09-01
+Last updated: 2026-09-04
 
 ## Current gate
 
@@ -54,12 +54,25 @@ It is a ceiling, not a mandate: the resumable controller stops each lane/task
 stratum at the frozen 6,000-row quota and admits only execution-verified rows.
 Production reached 5,585 rows under SHA-256
 `61d897579d024cf33b3897ca39b4bf06526ac176da5369e8815a3ddfc6b38860`
-when the admission-capacity change was prepared.
-Java, JavaScript, TypeScript, Python, and Rust are complete; Go has 785/1,200
-rows and is the sole remaining lane. Future Go batches use two deterministic
-teacher shards and up to four concurrent records/two implementations per
-record, capped at eight verifier containers, while preserving a single ordered
-lane/corpus writer. The relevant 50 data-pipeline tests pass. No GCloud
+when the admission-capacity change was prepared. Live state later reached
+5,608 rows (Go 808/1,200) with corpus SHA-256
+`a8419804a375107d8294a4777aafa6b371c23a4983389f09938bfbc9161770db`
+before the timeout-classification defect was diagnosed.
+Java, JavaScript, TypeScript, Python, and Rust are complete; Go is the sole
+remaining lane. The attempted four-record/eight-verifier configuration caused
+repeated emulated-AMD64 task timeouts beginning with Go batch 98. Because
+explicit timeouts were missing from the infrastructure classifier, those runs
+were incorrectly recorded as behavioral failures and sent to correction;
+batches 105 through 110 admitted zero. They are not valid teacher-quality
+evidence. Timeouts are now fail-closed infrastructure failures and production
+defaults to one record with at most two parallel verifier containers. Exact
+old candidate and teacher evidence is preserved for bounded recovery rather
+than relabelled.
+
+The missing deterministic 5% production-quality sample builder is implemented
+and covered by focused tests. It will select exactly 300 rows stratified by
+lane, source, task type, and correction history only after state is complete,
+the corpus/state hash matches, and all frozen quotas are exact. No GCloud
 resource is used or authorized for this phase.
 
 Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict

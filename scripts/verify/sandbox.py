@@ -159,6 +159,8 @@ def infrastructure_failure(verifier: dict[str, Any]) -> str | None:
     """Classify verifier-host failures that must never become model scores."""
     stderr = str(verifier.get("stderr", ""))
     lowered = stderr.lower()
+    if verifier.get("timed_out"):
+        return "verifier timed out"
     if not verifier.get("timed_out") and not verifier.get("exit_codes"):
         return "verifier returned no process exit code"
     # Docker reserves 125-127 for failures to invoke the container command.

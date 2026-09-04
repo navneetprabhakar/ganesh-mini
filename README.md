@@ -46,6 +46,11 @@ The canonical execution plan is
 It supersedes the first-pass plan after a deliberate critical review. The
 first pass is retained as design history.
 
+The current operational continuation and recovery guide is
+[`docs/process/HANDOFF.md`](docs/process/HANDOFF.md). Its status snapshot is
+time-stamped; live expansion counts must always be read from the production
+state and verified against the corpus hash before acting.
+
 ## Design principles
 
 - Measure the correctly served base before training.

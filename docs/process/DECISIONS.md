@@ -1,5 +1,18 @@
 # Decisions
 
+## 2026-09-05 — GCS-first backup and double post-teardown verification
+
+Navneet requires all VM evidence and data points to be backed up to GCS and
+verified before VM/related-resource teardown. Perform two post-teardown
+checks for anything that can still incur non-GCS charges. The current watcher
+requires expected terminal artifacts, checks downloaded object bytes, and
+roundtrips its backup inventory and resource identity through GCS before
+deletion. It then saves campaign absence proof and two project-wide Compute
+and Cloud Asset inventories in GCS, separated by 60 seconds. Scan errors and
+other-service assets require explicit review; delayed billing entries are
+not evidence of a running resource, and an empty VM list alone cannot prove
+GCS-only billing. Unrelated resources are reported, not automatically deleted.
+
 ## 2026-09-05 — User closes construction at 5,885 rows
 
 Navneet explicitly accepted the current corpus and requested the next steps.

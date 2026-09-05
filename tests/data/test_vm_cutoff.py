@@ -34,3 +34,19 @@ def test_failed_qualification_never_runs_full_corpus(tmp_path, monkeypatch):
             runner.main()
     assert admit.call_count == 1
     assert not (tmp_path / "results/final.admission.json").exists()
+
+
+def test_gcs_audit_mismatch_blocks_cleanup(tmp_path):
+    audit = tmp_path / "audit.json"
+    audit.write_text("original")
+    audit.with_suffix(".json.gcs-verified").write_text("wrong bytes")
+    with patch.object(watcher, "run", side_effect=["", '{"generation":"42"}', ""]):
+        with pytest.raises(RuntimeError, match="roundtrip failed"):
+            watcher.backup_verified(audit)
+
+
+def test_inventory_preserves_errors_instead_of_claiming_no_resources():
+    with patch.object(watcher, "run", side_effect=ValueError("unavailable")):
+        result = watcher.billing_resource_inventory()
+    assert len(result["errors"]) == 10
+    assert not result["resources"]

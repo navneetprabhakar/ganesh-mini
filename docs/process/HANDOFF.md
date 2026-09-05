@@ -2,6 +2,16 @@
 
 ## VM verification campaign — 2026-09-05
 
+Latest user instruction: after VM work completes, save all evidence and data
+in GCS, verify those backups, then tear down the VM and related resources.
+Perform two post-teardown checks for non-GCS chargeable resources. The watcher
+now requires the backup inventory and resource identity to roundtrip through
+GCS before deletion, and uploads two project-wide resource inventories spaced
+60 seconds apart after teardown. Review scan errors and non-Compute assets;
+do not equate resource absence with instantaneous zero billing, because usage
+postings can lag. Preserve and report any unrelated resources rather than
+deleting them under this campaign's cleanup authority.
+
 Navneet approved a 16-vCPU CPU verification VM with a $15 pre-tax budget and
 eight-hour runtime ceiling. Private VM `ganesh-mini-verify-20260905` in
 `executespecv1/us-central1-a`, instance ID `5175709884199568151`, started at

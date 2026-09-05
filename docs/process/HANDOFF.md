@@ -1,5 +1,26 @@
 # Ganesh Mini 1.0 handoff
 
+## VM verification campaign — 2026-09-05
+
+Navneet approved a 16-vCPU CPU verification VM with a $15 pre-tax budget and
+eight-hour runtime ceiling. Private VM `ganesh-mini-verify-20260905` in
+`executespecv1/us-central1-a`, instance ID `5175709884199568151`, started at
+2026-09-05 16:06 UTC. Provider maximum duration is 28,800 seconds with STOP;
+automatic restart is disabled. See
+`measurement/data/expansion-v1/cutoff-5885-review/VM_EXECUTION.md`.
+
+VM results are under
+`gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/verification/cutoff5885-20260905/results/`.
+Qualification compares 1/4/8 workers, then the fastest passing setting verifies
+the complete cutoff. This is execution only; quality review remains incomplete.
+
+Local launchd job `com.ganesh-mini.vm-cutoff-watch` runs the finite evidence
+retrieval/cleanup watcher. Its logs and verified downloads are under
+`artifacts/verification/cutoff-5885-vm/`. It verifies instance identity and
+downloaded object checksums before removing the named VM/disk/subnet/network.
+If backup is incomplete it fails closed and retains the stopped disk. Check
+watch.err.log and resource-absence.json before claiming cleanup succeeded.
+
 ## Latest override — user cutoff, 2026-09-05
 
 Construction is stopped at 5,885 rows by Navneet's instruction. The original

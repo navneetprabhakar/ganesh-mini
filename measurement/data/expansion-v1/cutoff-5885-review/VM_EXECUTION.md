@@ -48,3 +48,14 @@ its unfinished evidence. Retrieve and verify terminal output before deleting
 the VM/disk, subnet, and network; retain evidence in the campaign prefix.
 If runtime is exhausted, stop and retain the disk until evidence retrieval.
 Do not automatically retry, restart, enlarge the VM, or extend the deadline.
+
+## Observed launch and qualification
+
+Instance ID `5175709884199568151` started at 2026-09-05 16:06 UTC. All
+downloads passed SHA-256 and the offline runtime loaded all six verifier
+images. All 12 qualification records were accepted with zero rejections in
+each trial: 1 worker 85.059 s, 4 workers 31.645 s, 8 workers 32.018 s.
+The runner selected four workers and began full verification. The local copy
+of the qualification report is `artifacts/verification/cutoff-5885-vm/qualification.json`.
+The laptop verifier was stopped after VM qualification; its partial evidence
+was retained. Local cleanup watcher `com.ganesh-mini.vm-cutoff-watch` is active.

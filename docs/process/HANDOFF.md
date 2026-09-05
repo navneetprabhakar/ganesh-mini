@@ -14,6 +14,11 @@ VM results are under
 Qualification compares 1/4/8 workers, then the fastest passing setting verifies
 the complete cutoff. This is execution only; quality review remains incomplete.
 
+Qualification passed 12/12 at every setting: 85.059 seconds with one worker,
+31.645 with four, 32.018 with eight. The VM selected four and started full
+verification. The redundant laptop admission process was stopped after this
+qualification passed. Do not restart either laptop generation or verification.
+
 Local launchd job `com.ganesh-mini.vm-cutoff-watch` runs the finite evidence
 retrieval/cleanup watcher. Its logs and verified downloads are under
 `artifacts/verification/cutoff-5885-vm/`. It verifies instance identity and

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import base64
+import json
 import subprocess
 import unittest
-import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -70,11 +71,21 @@ class SandboxTests(unittest.TestCase):
         evidence = verify(task, task["validation"]["reference"]["code"], Path("configs/eval/runtimes.json"))
         self.assertTrue(evidence["timed_out"])
         self.assertEqual([], evidence["exit_codes"])
-        self.assertEqual("partial \ufffd", evidence["stdout"])
-        self.assertEqual("timed out \ufffd", evidence["stderr"])
+        self.assertEqual("base64:" + base64.b64encode(b"partial \xff").decode(), evidence["stdout"])
+        self.assertEqual("base64:" + base64.b64encode(b"timed out \xfe").decode(), evidence["stderr"])
         cleanup = run.call_args_list[1].args[0]
         self.assertEqual(["docker", "rm", "--force"], cleanup[:3])
         self.assertEqual(run.call_args_list[0].args[0][run.call_args_list[0].args[0].index("--name") + 1], cleanup[3])
+
+    @patch("scripts.verify.sandbox._inspect_image", return_value="sha256:" + "1" * 64)
+    @patch("scripts.verify.sandbox.subprocess.run")
+    def test_completed_process_preserves_non_utf8_output(self, run, _inspect) -> None:
+        run.return_value = subprocess.CompletedProcess([], 1, b"output \x81", b"error \xfe")
+        task = load_json(Path("eval/fixtures/synthetic_harness/python.task.json"))
+        evidence = verify(task, task["validation"]["reference"]["code"], Path("configs/eval/runtimes.json"))
+        self.assertEqual("base64:" + base64.b64encode(b"output \x81").decode(), evidence["stdout"])
+        self.assertEqual("base64:" + base64.b64encode(b"error \xfe").decode(), evidence["stderr"])
+        self.assertEqual([1], evidence["exit_codes"])
 
     def test_resource_exhaustion_is_an_infrastructure_failure(self) -> None:
         verifier = {

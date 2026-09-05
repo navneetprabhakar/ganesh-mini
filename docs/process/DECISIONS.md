@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-09-05 — Verifier evidence preserves arbitrary output bytes
+
+Verifier stdout and stderr are byte streams, not guaranteed UTF-8 text. Go
+batch `go-0128-g0774n6-r0516n4` exposed this when one generated test emitted
+byte `0x81`; Python's implicit text decoding raised before verifier evidence
+could be recorded, and the controller failed closed with the batch uncommitted.
+
+Docker verification now captures bytes. Valid UTF-8 is stored unchanged;
+output containing invalid UTF-8 is stored losslessly as a `base64:` envelope.
+The raw byte limit is applied before encoding, and the evidence hash continues
+to bind the stored representation. This changes neither execution limits nor
+admission criteria and does not reinterpret the candidate as infrastructure
+failure.
+
+Exact recovery reused the batch's hash-bound candidates and teacher evidence.
+First-pass admission accepted nine rows and produced one ordinary behavioral
+repair rejection; the single correction pass admitted that row. The recovered
+batch atomically added all ten rows, with no aggregation rejection.
+
 ## 2026-09-04 — Eight-way Go verification is withdrawn; timeout classification remains contextual
 
 The eight-container Go admission configuration did not improve useful

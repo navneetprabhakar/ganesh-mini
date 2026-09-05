@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
 import subprocess
@@ -182,13 +183,21 @@ def infrastructure_failure(verifier: dict[str, Any]) -> str | None:
     return None
 
 
-def _captured_text(value: str | bytes | None) -> str:
-    """Normalize TimeoutExpired output, which may be bytes even with text=True."""
+def _captured_bytes(value: str | bytes | None) -> bytes:
+    """Normalize subprocess output without losing non-UTF-8 verifier bytes."""
     if value is None:
-        return ""
+        return b""
     if isinstance(value, bytes):
-        return value.decode("utf-8", errors="replace")
-    return value
+        return value
+    return value.encode("utf-8")
+
+
+def _evidence_text(value: bytes) -> str:
+    """Store UTF-8 directly and arbitrary bytes as an exact base64 envelope."""
+    try:
+        return value.decode("utf-8")
+    except UnicodeDecodeError:
+        return "base64:" + base64.b64encode(value).decode("ascii")
 
 
 def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, Any]:
@@ -199,8 +208,8 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
         runtime["rootfs_layers"], runtime["platform"],
     )
     limits = task["limits"]
-    stdout_parts: list[str] = []
-    stderr_parts: list[str] = []
+    stdout_parts: list[bytes] = []
+    stderr_parts: list[bytes] = []
     exit_codes: list[int] = []
     timed_out = False
     start = time.monotonic()
@@ -230,28 +239,28 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
                         runtime["image"], runtime["platform"], command, root, limits,
                         container_name,
                     ),
-                    check=False, capture_output=True, text=True, timeout=remaining,
+                    check=False, capture_output=True, timeout=remaining,
                     env={"PATH": os.environ.get("PATH", "")},
                 )
             except subprocess.TimeoutExpired as error:
                 timed_out = True
-                stdout_parts.append(_captured_text(error.stdout))
-                stderr_parts.append(_captured_text(error.stderr))
+                stdout_parts.append(_captured_bytes(error.stdout))
+                stderr_parts.append(_captured_bytes(error.stderr))
                 _remove_timed_out_container(container_name)
                 break
             except OSError as error:
-                stderr_parts.append(str(error))
+                stderr_parts.append(str(error).encode("utf-8"))
                 exit_codes.append(127)
                 break
-            stdout_parts.append(process.stdout)
-            stderr_parts.append(process.stderr)
+            stdout_parts.append(_captured_bytes(process.stdout))
+            stderr_parts.append(_captured_bytes(process.stderr))
             exit_codes.append(process.returncode)
             if process.returncode != 0:
                 break
 
     output_limit = limits["output_bytes"]
-    stdout = "".join(stdout_parts).encode("utf-8")[:output_limit].decode("utf-8", errors="replace")
-    stderr = "".join(stderr_parts).encode("utf-8")[:output_limit].decode("utf-8", errors="replace")
+    stdout = _evidence_text(b"".join(stdout_parts)[:output_limit])
+    stderr = _evidence_text(b"".join(stderr_parts)[:output_limit])
     duration_ms = max(0, round((time.monotonic() - start) * 1000))
     return {
         "runtime_id": task["runtime_id"],

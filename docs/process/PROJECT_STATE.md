@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 ## Current gate
 
@@ -76,6 +76,17 @@ and covered by focused tests. It will select exactly 300 rows stratified by
 lane, source, task type, and correction history only after state is complete,
 the corpus/state hash matches, and all frozen quotas are exact. No GCloud
 resource is used or authorized for this phase.
+
+Production reached 5,769/6,000 rows after exact recovery of Go batch 128:
+Go generation 564/720 and repair 405/480. The corpus SHA-256 was
+`1a99cd89e3172300d4aadd1d10cb24b383ca9f6de581223f4aef310e2eb499c5`,
+matching state, with zero aggregation rejections. Batch 128 had failed before
+commit because verifier output contained invalid UTF-8. Verification now
+captures Docker output as bytes and stores non-UTF-8 output losslessly in a
+base64 envelope. Recovery reused the exact candidate and teacher artifacts,
+admitted nine rows on the first pass, and admitted the remaining behavioral
+rejection after the one permitted correction. The single local controller was
+then resumed on batch 129. GCloud remains untouched and unauthorized.
 
 Gate 3 continuation attempt `20260827T113051Z` is fully finalized as a strict
 sealed bootstrap failure. It had exactly one boot, automatic restart was

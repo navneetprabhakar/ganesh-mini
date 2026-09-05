@@ -33,6 +33,25 @@ This continuation update supersedes older live counts, concurrency guidance,
 and the immediate batch identity below. Preserve the older text as timestamped
 historical context.
 
+Continuation update: 2026-09-05 09:34 IST
+
+- Batch 128 failed before corpus commit because a verifier subprocess emitted
+  invalid UTF-8 and Python attempted implicit text decoding. Docker verifier
+  output is now captured as bytes; valid UTF-8 remains direct text and invalid
+  UTF-8 is preserved exactly in a `base64:` envelope.
+- Focused verifier and expansion tests pass: 35 passed. Exact recovery reused
+  the recorded hash-bound candidate and teacher evidence. First-pass admission
+  accepted 9/10; the remaining behavioral rejection passed the one permitted
+  correction, so the batch atomically admitted 10/10.
+- At the recovery checkpoint the corpus was 5,769/6,000: Go generation
+  564/720 and repair 405/480, with every other lane complete. Corpus SHA-256
+  `1a99cd89e3172300d4aadd1d10cb24b383ca9f6de581223f4aef310e2eb499c5`
+  matched state and aggregation rejections were zero.
+- The single launchd controller was restored and opened
+  `go-0129-g0780n6-r0520n4`. State was `running`; no GCloud action occurred.
+
+This update supersedes all older live counts and immediate batch identities.
+
 ## 1. Executive summary
 
 The project is building `ganesh-mini-1.0`, a Qwen3.5-2B coding model intended

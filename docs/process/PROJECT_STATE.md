@@ -1,8 +1,23 @@
 # Project state
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
 ## Current gate
+
+Latest override, 2026-09-06: native CPU verification completed all 5,885 rows
+in 12,031.077 seconds. 5,883 passed; two Rust reference executions timed out.
+Navneet directed separate review of flagged records, not treating the campaign
+as an overall failure. The original strict-seal report remains unchanged.
+An independent Go quality defect is also held out, leaving 5,882 rows in
+`datasets/cache/expansion-v1/review-partition-v1/review-eligible.jsonl`.
+This partition is not training-ready; only 3/300 quality samples are reviewed.
+Do not restart generation or the superseded laptop final-admission job below.
+
+All 13 VM artifacts were checksum-verified from GCS before the campaign VM,
+disk, network, and subnet were deleted. Two project-wide Compute inventories
+are empty. Cloud Asset API is disabled; broader GCS-only billing certification
+remains unresolved. No VM remains to stop or reuse. See the handoff for the
+additional full-history backup and follow-up service inventory.
 
 Latest update, 2026-09-05: Navneet closed construction at 5,885 rows and
 authorized validation of that cutoff. Production is stopped; batch 144 is

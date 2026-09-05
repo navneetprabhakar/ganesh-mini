@@ -1,5 +1,17 @@
 # Decisions
 
+## 2026-09-06 — Completed verification; flagged rows reviewed separately
+
+Navneet clarified that candidate-level failures do not make the completed VM
+campaign an overall failure. Preserve the raw strict-seal report: 5,883 passed,
+two Rust timeouts, `status=failed` against the original all-record seal.
+Do not relabel it as a passed seal. Quarantine the two Rust candidates and the
+independently demonstrated Go temporal defect in a separate derived partition;
+the other 5,882 rows remain eligible for quality review, not yet for training.
+Retain the original 300-row sample including flagged records; do not resample
+to conceal the defect. All original candidate, teacher, execution, and lineage
+evidence remains immutable. No new GCloud compute is authorized by this step.
+
 ## 2026-09-05 — GCS-first backup and double post-teardown verification
 
 Navneet requires all VM evidence and data points to be backed up to GCS and

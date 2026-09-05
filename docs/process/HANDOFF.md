@@ -1,5 +1,28 @@
 # Ganesh Mini 1.0 handoff
 
+## Completed verification and separate review — 2026-09-06
+
+The native VM run completed 5,885 records: 5,883 passed and two Rust references
+timed out (`exp-v1-rust-generation-0161`, `exp-v1-rust-generation-0224`).
+Navneet directed reviewing flagged records separately and continuing with the
+passing corpus. Preserve the original strict-seal report (`status=failed`)
+as executed evidence; this is a completed verification run with exceptions.
+The separate partition under `datasets/cache/expansion-v1/review-partition-v1/`
+holds those two plus the independently confirmed Go quality defect, leaving
+5,882 review-eligible rows. Quality review is incomplete; no training seal.
+
+All 13 VM artifacts were verified from GCS before VM/disk/network/subnet
+deletion. Both project-wide Compute inventories were empty. Cloud Asset API
+is disabled, leaving broader non-Compute billing verification unresolved.
+Do not claim GCS-only billing without resolving that gap. No VM remains to
+stop. Local source/candidate/teacher history is additionally archived to the
+campaign's `archive/` prefix so lineage survives independently of this laptop.
+The full-history archive is 122,389,351 bytes, generation `1788638543675053`,
+and passed an exact-generation download/SHA-256 roundtrip. See
+`measurement/data/expansion-v1/cutoff-5885-review/BACKUP_COMPLETION.md` for its
+hash and scope. Follow-up SQL, GKE, Artifact Registry, and Cloud DNS listings
+were also empty; these do not close the broader billing-audit gap.
+
 ## VM verification campaign — 2026-09-05
 
 Latest user instruction: after VM work completes, save all evidence and data

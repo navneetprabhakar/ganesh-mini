@@ -142,9 +142,12 @@ verified records. Larger 60,000–120,000 runs remain an option only if the
 smaller expansion has not saturated.
 
 The completed `1e-4` pilot regressed from 20/180 to 13/180, so this condition
-has been met. Expansion v1 is frozen at 6,000 rows: Go 1,200, Java 1,200,
-JavaScript 600, TypeScript 600, Python 1,200, and Rust 1,200; 3,600 generation
-and 2,400 repair. `docs/data/EXPANSION_V1.md` is the controlling construction
+has been met. On 2026-09-05 Navneet ended expansion construction at 5,885
+admitted rows: Go 1,085, Java 1,200, JavaScript 600, TypeScript 600, Python
+1,200, and Rust 1,200; 3,507 generation and 2,378 repair. This supersedes the
+original 6,000-row construction quota without changing execution, separation,
+quality-review, or 20%-per-family supervised-token requirements.
+`docs/data/EXPANSION_V1.md` is the controlling construction
 and admission contract. Another training run is prohibited until its sealed
 dataset exists and a deterministic quality sample passes.
 

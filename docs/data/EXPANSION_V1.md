@@ -1,5 +1,20 @@
 # Ganesh Mini expansion v1
 
+## Current cutoff — 2026-09-05
+
+Navneet approved ending construction at 5,885 admitted rows: Go 1,085
+(627 generation, 458 repair), Java/Python/Rust 1,200 each, and
+JavaScript/TypeScript 600 each. Total mix: 3,507 generation and 2,378 repair.
+This supersedes the historical 6,000-row targets below. The original config
+and production state remain historical; final admission uses the separate
+`datasets/cache/expansion-v1/cutoff-5885/cutoff.config.json`.
+
+`python -m scripts.data.prepare_expansion_cutoff --output-dir <new-directory>`
+validates the approved corpus hash and counts, resolves exact original
+executable candidates, and creates a manifest and 300-row review sample.
+Quality review and full serial execution remain pending; the family token
+objective and all other quality requirements remain in force.
+
 ## Decision
 
 The 1,399-row seed established that LoRA training works, but the completed

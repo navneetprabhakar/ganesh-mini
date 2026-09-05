@@ -1,5 +1,43 @@
 # Ganesh Mini 1.0 handoff
 
+## Latest override — user cutoff, 2026-09-05
+
+Construction is stopped at 5,885 rows by Navneet's instruction. The original
+production state still says running; preserve it as historical evidence and
+do not restart generation. Batch 144 is excluded. Use the manifest under
+`datasets/cache/expansion-v1/cutoff-5885/` for the accepted cutoff. Its status
+is pending final execution and quality review. All 5,885 original executable
+candidates were recovered by matching their admitted task and content identity.
+
+The active final-admission launchd label is
+`com.ganesh-mini.cutoff5885-final-admission`. Logs and eventual final report
+are in the cutoff directory. The intended command is:
+
+```bash
+.venv/bin/python -m scripts.data.admit_expansion \
+  --config datasets/cache/expansion-v1/cutoff-5885/cutoff.config.json \
+  --input datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl \
+  --output datasets/cache/expansion-v1/cutoff-5885/final.admitted.jsonl \
+  --report datasets/cache/expansion-v1/cutoff-5885/final.admission.json \
+  --record-workers 1 --verifier-workers 1 --seal
+```
+
+Do not launch a duplicate. The older command below using admitted training
+rows is invalid: admission requires executable candidate objects. Eight-way
+verification is also superseded. Review the 300 original executable candidates
+in `quality-sample.candidates.jsonl`; record actual review findings separately
+from the immutable pending selection report. Full execution and quality review
+must pass before token balancing and a bounded training pilot.
+
+Review progress: 3/300 records inspected; the review is incomplete. A focused
+sandbox counterexample confirmed a missing temporal edge case in
+`exp-v1-go-generation-0165`. See
+`measurement/data/expansion-v1/cutoff-5885-review/REVIEW.md` and its executed
+probe evidence. Passing the original tests cannot waive this defect. Resolve
+it and audit related lifecycle tasks before a quality sign-off. The full
+suite reproduced the same three historical readiness/workspace failures;
+20 focused cutoff/admission/sampling tests passed.
+
 Last verified snapshot: 2026-09-04 14:38 IST
 
 This document is an operational handoff, not a replacement for the canonical

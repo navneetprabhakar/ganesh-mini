@@ -4,6 +4,24 @@ Last updated: 2026-09-05
 
 ## Current gate
 
+Latest update, 2026-09-05: Navneet closed construction at 5,885 rows and
+authorized validation of that cutoff. Production is stopped; batch 144 is
+preserved but excluded. The cutoff snapshot SHA-256 is
+`3ca9209b51d36b9137d65f6f0424bfc369a662bd5af7f99666f4ecc60ee24e92`.
+All rows resolved to original executable candidates. A separate cutoff config,
+manifest, and deterministic 300-row sample are prepared under
+`datasets/cache/expansion-v1/cutoff-5885/`. Serial final admission has been
+launched under `com.ganesh-mini.cutoff5885-final-admission`; execution and
+quality review are pending. Historical counts and 6,000-row targets below are
+superseded by this user-authorized cutoff. No training-ready seal exists yet.
+
+Initial quality review has inspected 3/300 sample records and confirmed a
+reference/test gap in Go ticket-registry record `exp-v1-go-generation-0165`:
+Consume before start deletes a future ticket. A new independent sandbox test
+failed with exit 1 and no timeout. Findings and raw evidence are under
+`measurement/data/expansion-v1/cutoff-5885-review/`. This must be resolved;
+the remaining review is incomplete and full execution continues separately.
+
 Gate 3 is now in source-driven data construction, not another seed retry. The completed
 `1e-4` seed pilot passed 13/180 versus the exact base's 20/180, so more epochs
 on the 1,399-row corpus are not justified. Expansion v1 is frozen at 6,000

@@ -1,5 +1,31 @@
 # Decisions
 
+## 2026-09-05 — User closes construction at 5,885 rows
+
+Navneet explicitly accepted the current corpus and requested the next steps.
+The production controller was stopped at the last committed checkpoint:
+5,885 rows (Go generation 627, Go repair 458; other lanes at their original
+targets), SHA-256
+`3ca9209b51d36b9137d65f6f0424bfc369a662bd5af7f99666f4ecc60ee24e92`.
+Unfinished batch 144 remains historical, excluded evidence. Production state
+is preserved as recorded, including its stale running marker; it is not proof
+of a live process or completion of the old quotas.
+
+The cutoff has a separate configuration and manifest under
+`datasets/cache/expansion-v1/cutoff-5885/`. Original configuration, state, and
+corpus bytes remain intact. Every admitted record must resolve to its exact
+original executable candidate by messages, source, rights, and task hash.
+Normalized admitted rows cannot be fed directly to candidate admission.
+The cutoff preparation script validates all 5,885 matches and selects 300
+review candidates with tests and known-bad code included. Tests and training
+code in those candidates are untrusted and execute only in the sandbox.
+
+Full serial re-execution, evaluation separation, and the quality review remain
+mandatory. The 300-row sample is over 5% of the cutoff. Family balance remains
+a 20%-per-family supervised-token objective, without duplicating rows.
+Neither the cutoff nor a running verification job constitutes training-ready
+evidence. GCloud still requires explicit authorization.
+
 ## 2026-09-05 — Verifier evidence preserves arbitrary output bytes
 
 Verifier stdout and stderr are byte streams, not guaranteed UTF-8 text. Go

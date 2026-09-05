@@ -4,6 +4,13 @@ Last updated: 2026-09-06
 
 ## Current gate
 
+Quality continuation: 13/300 records inspected, with archived original-test
+provenance matched for 295/300 (five tracing follow-ups). Go generation 0058
+is an additional hold after its known-bad passed the original tests 2/64 times
+in a pinned sandbox repeatability probe; reference control passed 64/64.
+The historical v1 partition remains unchanged and cannot be sealed as-is.
+See `cutoff-5885-review/FIRST_BATCH_REVIEW.md`; 287 semantic reviews remain.
+
 Latest override, 2026-09-06: native CPU verification completed all 5,885 rows
 in 12,031.077 seconds. 5,883 passed; two Rust reference executions timed out.
 Navneet directed separate review of flagged records, not treating the campaign

@@ -1,0 +1,110 @@
+{
+  "id": "exp-v1-go-generation-0058",
+  "candidate_sha256": "e0c5f37654331e1b22630adc28d0c540ff87468433945188f57466718798d5f4",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"sort\"\n\t\"testing\"\n)\n\nfunc TestStockLedgerConstructionSnapshotAndInputCopy(t *testing.T) {\n\tinitial := map[string]int{\"SKU_2\": 3, \"SKU-1\": 7}\n\tledger, err := NewStockLedger(initial)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tinitial[\"SKU_2\"] = 100\n\tinitial[\"new\"] = 4\n\n\twant := []StockItem{{SKU: \"SKU-1\", Quantity: 7}, {SKU: \"SKU_2\", Quantity: 3}}\n\tif got := ledger.Snapshot(); !reflect.DeepEqual(got, want) {\n\t\tt.Fatalf(\"Snapshot() = %#v, want %#v\", got, want)\n\t}\n\tif _, ok := ledger.Quantity(\"new\"); ok {\n\t\tt.Fatal(\"ledger retained the initial map\")\n\t}\n}\n\nfunc TestStockLedgerConstructionErrorsAndEmptySnapshot(t *testing.T) {\n\tfor _, sku := range []string{\"\", \"bad sku\", \"\u00e9\", \"slash/name\"} {\n\t\tif ledger, err := NewStockLedger(map[string]int{sku: 0}); ledger != nil || err != ErrInvalidSKU {\n\t\t\tt.Errorf(\"NewStockLedger(%q) = %#v, %v\", sku, ledger, err)\n\t\t}\n\t}\n\tif ledger, err := NewStockLedger(map[string]int{\"valid\": -1}); ledger != nil || err != ErrInsufficientStock {\n\t\tt.Fatalf(\"negative initial quantity = %#v, %v\", ledger, err)\n\t}\n\tledger, err := NewStockLedger(nil)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif got := ledger.Snapshot(); got == nil || len(got) != 0 {\n\t\tt.Fatalf(\"empty Snapshot() = %#v\", got)\n\t}\n}\n\nfunc TestStockLedgerApplyIsAtomic(t *testing.T) {\n\tledger, err := NewStockLedger(map[string]int{\"A\": 5, \"B\": 2})\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tchanges := map[string]int{\"A\": -3, \"B\": 4, \"C\": 1}\n\tif err := ledger.Apply(changes); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tchanges[\"A\"] = 100\n\tfor sku, want := range map[string]int{\"A\": 2, \"B\": 6, \"C\": 1} {\n\t\tif got, ok := ledger.Quantity(sku); !ok || got != want {\n\t\t\tt.Errorf(\"Quantity(%q) = %d, %v; want %d, true\", sku, got, ok, want)\n\t\t}\n\t}\n\n\tbefore := ledger.Snapshot()\n\tif err := ledger.Apply(map[string]int{\"A\": 1, \"B\": -7}); err != ErrInsufficientStock {\n\t\tt.Fatalf(\"insufficient Apply error = %v\", err)\n\t}\n\tif got := ledger.Snapshot(); !reflect.DeepEqual(got, before) {\n\t\tt.Fatalf(\"failed Apply partially mutated ledger: %#v\", got)\n\t}\n\tif err := ledger.Apply(map[string]int{\"A\": 1, \"bad sku\": 1}); err != ErrInvalidSKU {\n\t\tt.Fatalf(\"invalid Apply error = %v\", err)\n\t}\n\tif got := ledger.Snapshot(); !reflect.DeepEqual(got, before) {\n\t\tt.Fatalf(\"invalid Apply partially mutated ledger: %#v\", got)\n\t}\n}\n\nfunc TestStockLedgerZeroDeltaRecordsMissingSKUAndSortsBytewise(t *testing.T) {\n\tledger, _ := NewStockLedger(nil)\n\tif err := ledger.Apply(map[string]int{\"z\": 0, \"A\": 0, \"a\": 0}); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tgot := ledger.Snapshot()\n\twantNames := []string{\"A\", \"a\", \"z\"}\n\tif len(got) != len(wantNames) {\n\t\tt.Fatalf(\"Snapshot() = %#v\", got)\n\t}\n\tfor index, name := range wantNames {\n\t\tif got[index] != (StockItem{SKU: name, Quantity: 0}) {\n\t\t\tt.Errorf(\"entry %d = %#v\", index, got[index])\n\t\t}\n\t}\n\tif !sort.SliceIsSorted(got, func(a, b int) bool { return got[a].SKU < got[b].SKU }) {\n\t\tt.Fatal(\"snapshot is not sorted\")\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "52f55839ca54197e0dcf576a669d73594cc5e322bde14b086059f229d72d31ca"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport (\n\t\"os\"\n\t\"os/exec\"\n\t\"testing\"\n)\n\n// Re-run the unmodified original tests in fresh processes to expose dependence\n// on Go's unspecified map iteration order. This is a diagnostic, not admission.\nfunc TestReviewStockDirectionalityRepeatability(t *testing.T) {\n\tpassed := 0\n\tfor i := 0; i < 64; i++ {\n\t\tcmd := exec.Command(os.Args[0], \"-test.run=^TestStockLedger\", \"-test.count=1\")\n\t\toutput, err := cmd.CombinedOutput()\n\t\tif err == nil {\n\t\t\tpassed++\n\t\t} else if _, ok := err.(*exec.ExitError); !ok {\n\t\t\tt.Fatalf(\"child infrastructure error: %v; %s\", err, output)\n\t\t}\n\t}\n\t// Always emit counts, including on a passing reference control.\n\tt.Errorf(\"DIAGNOSTIC_ONLY: original-suite passes=%d failures=%d trials=64\", passed, 64-passed)\n}\n",
+        "sha256": "928ca4635c8fd67186f3eeb98205d2f65c53981261304491e93188825d1833ae"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "76c242f7edd93c958335960bd7f188ac8de05e657fc9843257f1d8588991db30",
+      "text": "Implement package `solution` with an atomic stock ledger:\n\n```go\ntype StockLedger struct { /* private fields */ }\ntype StockItem struct { SKU string; Quantity int }\nvar ErrInvalidSKU error\nvar ErrInsufficientStock error\nfunc NewStockLedger(initial map[string]int) (*StockLedger, error)\nfunc (s *StockLedger) Apply(changes map[string]int) error\nfunc (s *StockLedger) Quantity(sku string) (int, bool)\nfunc (s *StockLedger) Snapshot() []StockItem\n```\n\nA SKU is valid when non-empty and composed only of ASCII letters, digits, `-`, or `_`. Initial quantities and resulting quantities must be non-negative. Construction returns `ErrInvalidSKU` for an invalid SKU and `ErrInsufficientStock` for a negative quantity. `Apply` adds each delta atomically: if any SKU is invalid or any resulting quantity would be negative, no quantity changes. A missing valid SKU starts at zero, including for a zero delta. `Snapshot` lists every recorded SKU in ascending bytewise order and returns a non-nil empty slice when empty. The ledger must copy the input maps and never expose mutable internal state. Methods may assume a non-nil receiver.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "76c242f7edd93c958335960bd7f188ac8de05e657fc9843257f1d8588991db30",
+      "text": "Implement package `solution` with an atomic stock ledger:\n\n```go\ntype StockLedger struct { /* private fields */ }\ntype StockItem struct { SKU string; Quantity int }\nvar ErrInvalidSKU error\nvar ErrInsufficientStock error\nfunc NewStockLedger(initial map[string]int) (*StockLedger, error)\nfunc (s *StockLedger) Apply(changes map[string]int) error\nfunc (s *StockLedger) Quantity(sku string) (int, bool)\nfunc (s *StockLedger) Snapshot() []StockItem\n```\n\nA SKU is valid when non-empty and composed only of ASCII letters, digits, `-`, or `_`. Initial quantities and resulting quantities must be non-negative. Construction returns `ErrInvalidSKU` for an invalid SKU and `ErrInsufficientStock` for a negative quantity. `Apply` adds each delta atomically: if any SKU is invalid or any resulting quantity would be negative, no quantity changes. A missing valid SKU starts at zero, including for a zero delta. `Snapshot` lists every recorded SKU in ascending bytewise order and returns a non-nil empty slice when empty. The ledger must copy the input maps and never expose mutable internal state. Methods may assume a non-nil receiver.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0058",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n)\n\nvar ErrInvalidSKU = errors.New(\"invalid sku\")\nvar ErrInsufficientStock = errors.New(\"insufficient stock\")\n\ntype StockItem struct {\n\tSKU      string\n\tQuantity int\n}\n\ntype StockLedger struct {\n\tstock map[string]int\n}\n\nfunc validSKU(s string) bool {\n\tif s == \"\" {\n\t\treturn false\n\t}\n\tfor i := 0; i < len(s); i++ {\n\t\tc := s[i]\n\t\tif !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\nfunc NewStockLedger(initial map[string]int) (*StockLedger, error) {\n\tledger := &StockLedger{stock: make(map[string]int)}\n\tfor sku, quantity := range initial {\n\t\tif !validSKU(sku) {\n\t\t\treturn nil, ErrInvalidSKU\n\t\t}\n\t\tif quantity < 0 {\n\t\t\treturn nil, ErrInsufficientStock\n\t\t}\n\t\tledger.stock[sku] = quantity\n\t}\n\treturn ledger, nil\n}\n\nfunc (s *StockLedger) Apply(changes map[string]int) error {\n\tfor sku, delta := range changes {\n\t\tif !validSKU(sku) {\n\t\t\treturn ErrInvalidSKU\n\t\t}\n\t\tif s.stock[sku]+delta < 0 {\n\t\t\treturn ErrInsufficientStock\n\t\t}\n\t\ts.stock[sku] += delta\n\t}\n\treturn nil\n}\n\nfunc (s *StockLedger) Quantity(sku string) (int, bool) {\n\tquantity, ok := s.stock[sku]\n\treturn quantity, ok\n}\n\nfunc (s *StockLedger) Snapshot() []StockItem {\n\tkeys := make([]string, 0, len(s.stock))\n\tfor sku := range s.stock {\n\t\tkeys = append(keys, sku)\n\t}\n\tsort.Strings(keys)\n\titems := make([]StockItem, 0, len(keys))\n\tfor _, sku := range keys {\n\t\titems = append(items, StockItem{sku, s.stock[sku]})\n\t}\n\treturn items\n}\n",
+          "label": "Apply mutates earlier map entries before discovering a later invalid or insufficient entry, violating atomicity.",
+          "sha256": "8f9955c282ba34845ed40844a7c8df7273ac69181df867dfdea58e958fe5e889"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n)\n\nvar ErrInvalidSKU = errors.New(\"invalid sku\")\nvar ErrInsufficientStock = errors.New(\"insufficient stock\")\n\ntype StockItem struct {\n\tSKU      string\n\tQuantity int\n}\n\ntype StockLedger struct {\n\tstock map[string]int\n}\n\nfunc validSKU(s string) bool {\n\tif s == \"\" {\n\t\treturn false\n\t}\n\tfor i := 0; i < len(s); i++ {\n\t\tc := s[i]\n\t\tif !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\nfunc NewStockLedger(initial map[string]int) (*StockLedger, error) {\n\tledger := &StockLedger{stock: make(map[string]int)}\n\tfor sku, quantity := range initial {\n\t\tif !validSKU(sku) {\n\t\t\treturn nil, ErrInvalidSKU\n\t\t}\n\t\tif quantity < 0 {\n\t\t\treturn nil, ErrInsufficientStock\n\t\t}\n\t\tledger.stock[sku] = quantity\n\t}\n\treturn ledger, nil\n}\n\nfunc (s *StockLedger) Apply(changes map[string]int) error {\n\tfor sku, delta := range changes {\n\t\tif !validSKU(sku) {\n\t\t\treturn ErrInvalidSKU\n\t\t}\n\t\tif s.stock[sku]+delta < 0 {\n\t\t\treturn ErrInsufficientStock\n\t\t}\n\t}\n\tfor sku, delta := range changes {\n\t\ts.stock[sku] += delta\n\t}\n\treturn nil\n}\n\nfunc (s *StockLedger) Quantity(sku string) (int, bool) {\n\tquantity, ok := s.stock[sku]\n\treturn quantity, ok\n}\n\nfunc (s *StockLedger) Snapshot() []StockItem {\n\tkeys := make([]string, 0, len(s.stock))\n\tfor sku := range s.stock {\n\t\tkeys = append(keys, sku)\n\t}\n\tsort.Strings(keys)\n\titems := make([]StockItem, 0, len(keys))\n\tfor _, sku := range keys {\n\t\titems = append(items, StockItem{sku, s.stock[sku]})\n\t}\n\treturn items\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8fe2c44901083728e4aab8b642bac41e85eaa78028d8c1994f0bfb3e9669ec88"
+      }
+    }
+  },
+  "interpretation": "Outer diagnostic deliberately exits nonzero to expose counts; child original-suite counts control interpretation.",
+  "reference": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewStockDirectionalityRepeatability (1.13s)\n    review_test.go:23: DIAGNOSTIC_ONLY: original-suite passes=64 failures=0 trials=64\nFAIL\nFAIL\tganesh.invalid/expansion\t1.143s\nFAIL\n",
+    "stdout_sha256": "aa62cd2f5c6d199c3a6277ca37579ad3f25bb37be550e9affd928e90d3571216",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 27159,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  },
+  "known_bad": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewStockDirectionalityRepeatability (1.21s)\n    review_test.go:23: DIAGNOSTIC_ONLY: original-suite passes=2 failures=62 trials=64\n--- FAIL: TestStockLedgerApplyIsAtomic (0.00s)\n    solution_test.go:66: failed Apply partially mutated ledger: []solution.StockItem{solution.StockItem{SKU:\"A\", Quantity:3}, solution.StockItem{SKU:\"B\", Quantity:6}, solution.StockItem{SKU:\"C\", Quantity:1}}\nFAIL\nFAIL\tganesh.invalid/expansion\t1.227s\nFAIL\n",
+    "stdout_sha256": "0a44afb142f3b51d24c3e691309901f8af22ab44cb6230d8aab9d3e201d69b92",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 27070,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

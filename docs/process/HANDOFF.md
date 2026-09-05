@@ -1,5 +1,20 @@
 # Ganesh Mini 1.0 handoff
 
+## Quality review continuation — 2026-09-06
+
+Semantic inspection is now 13/300: first twelve frozen rows plus Go repair
+0465 (atomicity follow-up). Archived original-test provenance matched 295/300;
+five require critic-chain/source-pilot tracing, not automatic rejection.
+See `measurement/data/expansion-v1/cutoff-5885-review/FIRST_BATCH_REVIEW.md`.
+
+New hold: Go generation 0058 has nondeterministic known-bad rejection. Its
+unchanged original tests passed the known-bad 2/64 times in fresh sandboxed
+processes; the reference passed 64/64. Preserve the original VM evidence.
+The v1 5,882-row partition is unchanged and still contains this additional
+hold; removing it would leave 5,881. No revised training seal exists. Continue
+sample order at index 12 and audit related atomic-map/temporal cases. No new
+cloud compute was used for this review.
+
 ## Completed verification and separate review — 2026-09-06
 
 The native VM run completed 5,885 records: 5,883 passed and two Rust references

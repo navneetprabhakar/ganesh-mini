@@ -5,10 +5,14 @@ Population: 5,885; deterministic sample: 300. Cutoff corpus SHA-256:
 Prepared manifest SHA-256:
 `0a58d3d30f98202bd6fd87fafb1c7ddb415a2fabbfa21f6378da0399e72b6623`.
 
-This is a partial review, not a passed sample. Three candidate specifications,
-reference implementations, original tests, and known-bad implementations were
-read. Teacher isolation evidence has not yet been independently audited for
-these rows. The remaining 297 sample records have not been reviewed.
+This is a partial review, not a passed sample. Thirteen candidate specifications,
+reference implementations, original tests, and known-bad implementations have
+been read: the first twelve in frozen sample order and Go repair 0465, selected
+for follow-up on atomicity. The remaining 287 have not had semantic review.
+Archived test-origin checks matched 295/300 samples to exact specification-only
+test-author prompts and unchanged test outputs; five need additional provenance
+tracing. This automated trace is not 295 semantic reviews or a quality seal.
+See `test-origin-all300.json` and `FIRST_BATCH_REVIEW.md`.
 
 ## Confirmed gap: exp-v1-go-generation-0165
 
@@ -41,5 +45,38 @@ Passing original tests in final re-execution cannot waive this finding.
   the strict-upper-bound mutation is a plausible failure. No defect identified
   in this read. Neither row has a completed seven-criterion sign-off yet.
 
-Final re-execution continues separately. Training remains blocked by incomplete
-review and the confirmed ticket-registry finding.
+Final VM re-execution is complete. Training remains blocked by incomplete
+review. The original ticket finding is held out in review-partition-v1; the
+additional stock-ledger finding below must also be held out before sealing.
+
+## Confirmed nondeterministic directionality: exp-v1-go-generation-0058
+
+The stock-ledger known-bad implementation commits changes while iterating an
+unordered map. The original atomicity tests can miss the defect when invalid
+entries happen to be visited first. A pinned, network-disabled sandbox probe
+ran the unmodified original suite in 64 fresh child processes for each code:
+the reference passed 64/64; the known-bad passed 2/64 and failed 62/64.
+Neither outer execution timed out. This is a test reliability defect, not a
+newly demonstrated reference-code defect. Do not treat 2/64 as a population
+estimate or alter the original VM report.
+
+A second diagnostic retained the combined output and exit status of every
+child trial: reference 64/64 passed, known-bad 0/64 passed. All 128 trial
+records are present and neither run timed out. This does not negate the first
+run's observed false accepts; the variation is consistent with the map-order
+dependence. Keep both runs rather than selecting the more convenient result.
+The full-output run is `stock-repeatability-trial-output-result.json`; each
+result embeds its own exact diagnostic task, including the test version.
+
+`stock_repeatability_test.go`, `stock-repeatability-result.json`, and
+`scripts/data/probe_stock_repeatability.py` preserve the diagnostic and exact
+inputs. The outer diagnostic deliberately reports nonzero to expose counts;
+interpret its child counts, not the outer exit as reference failure.
+
+Disposition: additional hold, separate from the three original held records.
+The historical 5,882-row v1 partition is unchanged and must not be sealed as-is;
+it still contains this row. Excluding it leaves 5,881 before any further review
+exclusions. Audit map-order-dependent atomicity tests before signing off the
+affected stratum. Go repair 0465 uses ordered slice changes and explicit
+valid-then-invalid sequences; static review found it does not share this gap.
+That single follow-up is not a corpus-wide systematic-defect clearance.

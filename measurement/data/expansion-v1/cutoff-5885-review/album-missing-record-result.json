@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0263",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "aab40fe8510bf03af012d215268b4584cf2c6a95786105cca64df18231e0e0d6",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { buildAlbumView } = require('./solution');\nassert.throws(() => buildAlbumView(new Array(1)), TypeError);\n",
+        "sha256": "c927d9c7f2beb9b3606e9f2bc9faf665a5e0d91e6fc8d4bd5ad7e3a5eb9a0ad4"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "80819ed768e48311a741341245e63b4eac7ff54dfebebc10b1de9e1eda64a916",
+      "text": "Implement `buildAlbumView` and export exactly `module.exports = { buildAlbumView }`. It accepts an array of album objects and optional options `{ query, limit }`. Every album must be a plain object with exactly `id`, `title`, `artist`, and `cover`; all four values are non-empty strings, and IDs must be unique. Options, when present, must be a plain object containing no fields other than `query` and `limit`. `query` defaults to `\"\"` and must be a string; `limit` defaults to the album count and must be a non-negative safe integer.\n\nFilter albums whose title or artist contains the query using case-insensitive matching, preserve input order, and then take at most `limit`. Return a fresh frozen object `{ total, cards }`, where `total` is the number matching before limiting and `cards` is a frozen array of fresh frozen objects `{ id, heading, subtitle, image }` mapped from the album fields. Empty inputs or zero limits return an empty cards array. Inputs must never be sorted, mutated, retained, or exposed through aliases. Malformed values throw `TypeError`; duplicate IDs or an invalid limit range throw `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "80819ed768e48311a741341245e63b4eac7ff54dfebebc10b1de9e1eda64a916",
+      "text": "Implement `buildAlbumView` and export exactly `module.exports = { buildAlbumView }`. It accepts an array of album objects and optional options `{ query, limit }`. Every album must be a plain object with exactly `id`, `title`, `artist`, and `cover`; all four values are non-empty strings, and IDs must be unique. Options, when present, must be a plain object containing no fields other than `query` and `limit`. `query` defaults to `\"\"` and must be a string; `limit` defaults to the album count and must be a non-negative safe integer.\n\nFilter albums whose title or artist contains the query using case-insensitive matching, preserve input order, and then take at most `limit`. Return a fresh frozen object `{ total, cards }`, where `total` is the number matching before limiting and `cards` is a frozen array of fresh frozen objects `{ id, heading, subtitle, image }` mapped from the album fields. Empty inputs or zero limits return an empty cards array. Inputs must never be sorted, mutated, retained, or exposed through aliases. Malformed values throw `TypeError`; duplicate IDs or an invalid limit range throw `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0263",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function buildAlbumView(albums, options = {}) {\n  if (!Array.isArray(albums)) throw new TypeError('albums must be an array');\n  if (!options || typeof options !== 'object' || Array.isArray(options) ||\n      Object.getPrototypeOf(options) !== Object.prototype) {\n    throw new TypeError('options must be a plain object');\n  }\n\n  const optionKeys = Reflect.ownKeys(options);\n  if (optionKeys.some(key => key !== 'query' && key !== 'limit')) {\n    throw new TypeError('unknown option');\n  }\n\n  const query = options.query === undefined ? '' : options.query;\n  if (typeof query !== 'string') throw new TypeError('query must be a string');\n\n  const limit = options.limit === undefined ? albums.length : options.limit;\n  if (typeof limit !== 'number' || !Number.isFinite(limit)) {\n    throw new TypeError('limit must be a finite number');\n  }\n  if (!Number.isSafeInteger(limit) || limit < 0) {\n    throw new RangeError('invalid limit');\n  }\n\n  const ids = new Set();\n  const expected = ['id', 'title', 'artist', 'cover'];\n  const normalized = albums.map(album => {\n    if (!album || typeof album !== 'object' || Array.isArray(album) ||\n        Object.getPrototypeOf(album) !== Object.prototype) {\n      throw new TypeError('album must be a plain object');\n    }\n    const keys = Reflect.ownKeys(album);\n    if (keys.length !== expected.length ||\n        expected.some(key => !Object.prototype.hasOwnProperty.call(album, key))) {\n      throw new TypeError('invalid album fields');\n    }\n    for (const key of expected) {\n      if (typeof album[key] !== 'string' || album[key].length === 0) {\n        throw new TypeError(key + ' must be non-empty');\n      }\n    }\n    if (ids.has(album.id)) throw new RangeError('duplicate id');\n    ids.add(album.id);\n    return {\n      id: album.id,\n      title: album.title,\n      artist: album.artist,\n      cover: album.cover\n    };\n  });\n\n  const needle = query.toLocaleLowerCase();\n  const matches = normalized.filter(album =>\n    album.title.includes(needle) || album.artist.includes(needle)\n  );\n  const cards = matches.slice(0, limit).map(album => Object.freeze({\n    id: album.id,\n    heading: album.title,\n    subtitle: album.artist,\n    image: album.cover\n  }));\n\n  return Object.freeze({\n    total: matches.length,\n    cards: Object.freeze(cards)\n  });\n}\n\nmodule.exports = { buildAlbumView };\n",
+          "label": "Filtering lowercases only the query, so matching is incorrectly case-sensitive for album fields.",
+          "sha256": "fe08c0838685224a16924ecadb0100bd1607489a7ac8b2998cc9f10b494d36db"
+        }
+      ],
+      "reference": {
+        "code": "function buildAlbumView(albums, options = {}) {\n  if (!Array.isArray(albums)) throw new TypeError('albums must be an array');\n  if (!options || typeof options !== 'object' || Array.isArray(options) ||\n      Object.getPrototypeOf(options) !== Object.prototype) {\n    throw new TypeError('options must be a plain object');\n  }\n\n  const optionKeys = Reflect.ownKeys(options);\n  if (optionKeys.some(key => key !== 'query' && key !== 'limit')) {\n    throw new TypeError('unknown option');\n  }\n\n  const query = options.query === undefined ? '' : options.query;\n  if (typeof query !== 'string') throw new TypeError('query must be a string');\n\n  const limit = options.limit === undefined ? albums.length : options.limit;\n  if (typeof limit !== 'number' || !Number.isFinite(limit)) {\n    throw new TypeError('limit must be a finite number');\n  }\n  if (!Number.isSafeInteger(limit) || limit < 0) {\n    throw new RangeError('invalid limit');\n  }\n\n  const ids = new Set();\n  const expected = ['id', 'title', 'artist', 'cover'];\n  const normalized = albums.map(album => {\n    if (!album || typeof album !== 'object' || Array.isArray(album) ||\n        Object.getPrototypeOf(album) !== Object.prototype) {\n      throw new TypeError('album must be a plain object');\n    }\n    const keys = Reflect.ownKeys(album);\n    if (keys.length !== expected.length ||\n        expected.some(key => !Object.prototype.hasOwnProperty.call(album, key))) {\n      throw new TypeError('invalid album fields');\n    }\n    for (const key of expected) {\n      if (typeof album[key] !== 'string' || album[key].length === 0) {\n        throw new TypeError(key + ' must be non-empty');\n      }\n    }\n    if (ids.has(album.id)) throw new RangeError('duplicate id');\n    ids.add(album.id);\n    return {\n      id: album.id,\n      title: album.title,\n      artist: album.artist,\n      cover: album.cover\n    };\n  });\n\n  const needle = query.toLocaleLowerCase();\n  const matches = normalized.filter(album =>\n    album.title.toLocaleLowerCase().includes(needle) ||\n    album.artist.toLocaleLowerCase().includes(needle)\n  );\n  const cards = matches.slice(0, limit).map(album => Object.freeze({\n    id: album.id,\n    heading: album.title,\n    subtitle: album.artist,\n    image: album.cover\n  }));\n\n  return Object.freeze({\n    total: matches.length,\n    cards: Object.freeze(cards)\n  });\n}\n\nmodule.exports = { buildAlbumView };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0f872632eae806ab3dd8292742e763806a3f2483f91162ab4443c6498b2f62d5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst { buildAlbumView } = require('./solution');\n\nassert.deepStrictEqual(Object.keys(require('./solution')), ['buildAlbumView']);\n\nconst albums = [\n  { id: '1', title: 'Blue Sky', artist: 'Alpha', cover: '/1.jpg' },\n  { id: '2', title: 'Night', artist: 'The BLUE Band', cover: '/2.jpg' },\n  { id: '3', title: 'Green', artist: 'Gamma', cover: '/3.jpg' }\n];\nconst original = JSON.parse(JSON.stringify(albums));\nconst view = buildAlbumView(albums, { query: 'bLuE', limit: 1 });\nassert.deepStrictEqual(view, {\n  total: 2,\n  cards: [{ id: '1', heading: 'Blue Sky', subtitle: 'Alpha', image: '/1.jpg' }]\n});\nassert.ok(Object.isFrozen(view));\nassert.ok(Object.isFrozen(view.cards));\nassert.ok(Object.isFrozen(view.cards[0]));\nassert.deepStrictEqual(albums, original);\n\nalbums[0].title = 'Changed';\nassert.strictEqual(view.cards[0].heading, 'Blue Sky');\nassert.throws(() => { view.cards[0].heading = 'x'; }, TypeError);\nassert.throws(() => view.cards.push({}), TypeError);\n\nconst all = buildAlbumView(original);\nassert.strictEqual(all.total, 3);\nassert.deepStrictEqual(all.cards.map(card => card.id), ['1', '2', '3']);\nassert.deepStrictEqual(buildAlbumView(original, { limit: 0 }), { total: 3, cards: [] });\nassert.deepStrictEqual(buildAlbumView([], { query: 'x' }), { total: 0, cards: [] });\nassert.notStrictEqual(buildAlbumView(original).cards[0], buildAlbumView(original).cards[0]);\n\nfor (const bad of [null, {}, 'albums']) assert.throws(() => buildAlbumView(bad), TypeError);\nassert.throws(() => buildAlbumView([{ id: '1', title: 'T', artist: 'A', cover: 'C' }, { id: '1', title: 'U', artist: 'B', cover: 'D' }]), RangeError);\nassert.throws(() => buildAlbumView([{ id: '', title: 'T', artist: 'A', cover: 'C' }]), TypeError);\nassert.throws(() => buildAlbumView([{ id: '1', title: 'T', artist: 'A', cover: 'C', extra: 1 }]), TypeError);\nassert.throws(() => buildAlbumView([Object.assign(Object.create({ inherited: true }), { id: '1', title: 'T', artist: 'A', cover: 'C' })]), TypeError);\n\nfor (const options of [null, [], { query: 1 }, { limit: '1' }, { extra: 1 }, Object.assign(Object.create({ inherited: true }), { query: '' })]) {\n  assert.throws(() => buildAlbumView(original, options), TypeError);\n}\nfor (const limit of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {\n  assert.throws(() => buildAlbumView(original, { limit }), RangeError);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "d601c8b09140cb6985da0b3f3264f6fd778ba429ca6b8daf78e6ed7c50dc254c"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "80819ed768e48311a741341245e63b4eac7ff54dfebebc10b1de9e1eda64a916",
+      "text": "Implement `buildAlbumView` and export exactly `module.exports = { buildAlbumView }`. It accepts an array of album objects and optional options `{ query, limit }`. Every album must be a plain object with exactly `id`, `title`, `artist`, and `cover`; all four values are non-empty strings, and IDs must be unique. Options, when present, must be a plain object containing no fields other than `query` and `limit`. `query` defaults to `\"\"` and must be a string; `limit` defaults to the album count and must be a non-negative safe integer.\n\nFilter albums whose title or artist contains the query using case-insensitive matching, preserve input order, and then take at most `limit`. Return a fresh frozen object `{ total, cards }`, where `total` is the number matching before limiting and `cards` is a frozen array of fresh frozen objects `{ id, heading, subtitle, image }` mapped from the album fields. Empty inputs or zero limits return an empty cards array. Inputs must never be sorted, mutated, retained, or exposed through aliases. Malformed values throw `TypeError`; duplicate IDs or an invalid limit range throw `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "80819ed768e48311a741341245e63b4eac7ff54dfebebc10b1de9e1eda64a916",
+      "text": "Implement `buildAlbumView` and export exactly `module.exports = { buildAlbumView }`. It accepts an array of album objects and optional options `{ query, limit }`. Every album must be a plain object with exactly `id`, `title`, `artist`, and `cover`; all four values are non-empty strings, and IDs must be unique. Options, when present, must be a plain object containing no fields other than `query` and `limit`. `query` defaults to `\"\"` and must be a string; `limit` defaults to the album count and must be a non-negative safe integer.\n\nFilter albums whose title or artist contains the query using case-insensitive matching, preserve input order, and then take at most `limit`. Return a fresh frozen object `{ total, cards }`, where `total` is the number matching before limiting and `cards` is a frozen array of fresh frozen objects `{ id, heading, subtitle, image }` mapped from the album fields. Empty inputs or zero limits return an empty cards array. Inputs must never be sorted, mutated, retained, or exposed through aliases. Malformed values throw `TypeError`; duplicate IDs or an invalid limit range throw `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0263",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function buildAlbumView(albums, options = {}) {\n  if (!Array.isArray(albums)) throw new TypeError('albums must be an array');\n  if (!options || typeof options !== 'object' || Array.isArray(options) ||\n      Object.getPrototypeOf(options) !== Object.prototype) {\n    throw new TypeError('options must be a plain object');\n  }\n\n  const optionKeys = Reflect.ownKeys(options);\n  if (optionKeys.some(key => key !== 'query' && key !== 'limit')) {\n    throw new TypeError('unknown option');\n  }\n\n  const query = options.query === undefined ? '' : options.query;\n  if (typeof query !== 'string') throw new TypeError('query must be a string');\n\n  const limit = options.limit === undefined ? albums.length : options.limit;\n  if (typeof limit !== 'number' || !Number.isFinite(limit)) {\n    throw new TypeError('limit must be a finite number');\n  }\n  if (!Number.isSafeInteger(limit) || limit < 0) {\n    throw new RangeError('invalid limit');\n  }\n\n  const ids = new Set();\n  const expected = ['id', 'title', 'artist', 'cover'];\n  const normalized = albums.map(album => {\n    if (!album || typeof album !== 'object' || Array.isArray(album) ||\n        Object.getPrototypeOf(album) !== Object.prototype) {\n      throw new TypeError('album must be a plain object');\n    }\n    const keys = Reflect.ownKeys(album);\n    if (keys.length !== expected.length ||\n        expected.some(key => !Object.prototype.hasOwnProperty.call(album, key))) {\n      throw new TypeError('invalid album fields');\n    }\n    for (const key of expected) {\n      if (typeof album[key] !== 'string' || album[key].length === 0) {\n        throw new TypeError(key + ' must be non-empty');\n      }\n    }\n    if (ids.has(album.id)) throw new RangeError('duplicate id');\n    ids.add(album.id);\n    return {\n      id: album.id,\n      title: album.title,\n      artist: album.artist,\n      cover: album.cover\n    };\n  });\n\n  const needle = query.toLocaleLowerCase();\n  const matches = normalized.filter(album =>\n    album.title.includes(needle) || album.artist.includes(needle)\n  );\n  const cards = matches.slice(0, limit).map(album => Object.freeze({\n    id: album.id,\n    heading: album.title,\n    subtitle: album.artist,\n    image: album.cover\n  }));\n\n  return Object.freeze({\n    total: matches.length,\n    cards: Object.freeze(cards)\n  });\n}\n\nmodule.exports = { buildAlbumView };\n",
+          "label": "Filtering lowercases only the query, so matching is incorrectly case-sensitive for album fields.",
+          "sha256": "fe08c0838685224a16924ecadb0100bd1607489a7ac8b2998cc9f10b494d36db"
+        }
+      ],
+      "reference": {
+        "code": "function buildAlbumView(albums, options = {}) {\n  if (!Array.isArray(albums)) throw new TypeError('albums must be an array');\n  if (!options || typeof options !== 'object' || Array.isArray(options) ||\n      Object.getPrototypeOf(options) !== Object.prototype) {\n    throw new TypeError('options must be a plain object');\n  }\n\n  const optionKeys = Reflect.ownKeys(options);\n  if (optionKeys.some(key => key !== 'query' && key !== 'limit')) {\n    throw new TypeError('unknown option');\n  }\n\n  const query = options.query === undefined ? '' : options.query;\n  if (typeof query !== 'string') throw new TypeError('query must be a string');\n\n  const limit = options.limit === undefined ? albums.length : options.limit;\n  if (typeof limit !== 'number' || !Number.isFinite(limit)) {\n    throw new TypeError('limit must be a finite number');\n  }\n  if (!Number.isSafeInteger(limit) || limit < 0) {\n    throw new RangeError('invalid limit');\n  }\n\n  const ids = new Set();\n  const expected = ['id', 'title', 'artist', 'cover'];\n  const normalized = albums.map(album => {\n    if (!album || typeof album !== 'object' || Array.isArray(album) ||\n        Object.getPrototypeOf(album) !== Object.prototype) {\n      throw new TypeError('album must be a plain object');\n    }\n    const keys = Reflect.ownKeys(album);\n    if (keys.length !== expected.length ||\n        expected.some(key => !Object.prototype.hasOwnProperty.call(album, key))) {\n      throw new TypeError('invalid album fields');\n    }\n    for (const key of expected) {\n      if (typeof album[key] !== 'string' || album[key].length === 0) {\n        throw new TypeError(key + ' must be non-empty');\n      }\n    }\n    if (ids.has(album.id)) throw new RangeError('duplicate id');\n    ids.add(album.id);\n    return {\n      id: album.id,\n      title: album.title,\n      artist: album.artist,\n      cover: album.cover\n    };\n  });\n\n  const needle = query.toLocaleLowerCase();\n  const matches = normalized.filter(album =>\n    album.title.toLocaleLowerCase().includes(needle) ||\n    album.artist.toLocaleLowerCase().includes(needle)\n  );\n  const cards = matches.slice(0, limit).map(album => Object.freeze({\n    id: album.id,\n    heading: album.title,\n    subtitle: album.artist,\n    image: album.cover\n  }));\n\n  return Object.freeze({\n    total: matches.length,\n    cards: Object.freeze(cards)\n  });\n}\n\nmodule.exports = { buildAlbumView };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0f872632eae806ab3dd8292742e763806a3f2483f91162ab4443c6498b2f62d5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "be4f4db01520d29deb1d99870bf72eb8994bc3524783d4ffccf7a59a42806f51",
+    "duration_ms": 373,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

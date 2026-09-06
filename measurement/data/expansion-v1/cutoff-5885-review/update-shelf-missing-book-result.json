@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0274",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "51e1f1f1af72ef1a44f8564f9c58ab4349025e8f5e6aa1cb109a61fa484745fa",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { updateShelf } = require('./solution');\nassert.throws(() => updateShelf(new Array(1), { type: 'REMOVE', payload: 'x' }), TypeError);\n",
+        "sha256": "08ca07abfdcca5af5ce17a9f5ad276c71bb12c76cacf46ebe39c8df2ad30c884"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f1eac44381852d8360568b553c8d87b9203b1acb613df270db87c40a89f2c7a5",
+      "text": "Implement a CommonJS module exporting exactly `{ updateShelf }`.\n\n`updateShelf(books, command)` treats `books` as an ordered array of records shaped `{ id, title, pages }`, where `id` and `title` are non-empty strings and `pages` is a positive safe integer. Every existing record and every payload record must be validated; malformed input throws `TypeError` without mutating anything.\n\nSupported commands are:\n- `{ type: 'REPLACE', payload: bookArray }`: replace the entire ordered list.\n- `{ type: 'APPEND', payload: book }`: append a book; duplicate IDs throw `RangeError`.\n- `{ type: 'REMOVE', payload: id }`: remove the matching book; a missing ID returns an unchanged-by-value copy.\n- `{ type: 'REVISE', payload: { id, changes } }`: update only `title` and/or `pages`. Unknown change fields, an empty changes object, or a missing ID throw `RangeError`.\n\nIDs must be unique in every resulting list. The original arrays, command, payloads, and records must never be mutated. The returned array must contain newly allocated records so later caller mutation cannot affect any input record. Preserve relative ordering except for append and replace. Empty arrays are valid. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f1eac44381852d8360568b553c8d87b9203b1acb613df270db87c40a89f2c7a5",
+      "text": "Implement a CommonJS module exporting exactly `{ updateShelf }`.\n\n`updateShelf(books, command)` treats `books` as an ordered array of records shaped `{ id, title, pages }`, where `id` and `title` are non-empty strings and `pages` is a positive safe integer. Every existing record and every payload record must be validated; malformed input throws `TypeError` without mutating anything.\n\nSupported commands are:\n- `{ type: 'REPLACE', payload: bookArray }`: replace the entire ordered list.\n- `{ type: 'APPEND', payload: book }`: append a book; duplicate IDs throw `RangeError`.\n- `{ type: 'REMOVE', payload: id }`: remove the matching book; a missing ID returns an unchanged-by-value copy.\n- `{ type: 'REVISE', payload: { id, changes } }`: update only `title` and/or `pages`. Unknown change fields, an empty changes object, or a missing ID throw `RangeError`.\n\nIDs must be unique in every resulting list. The original arrays, command, payloads, and records must never be mutated. The returned array must contain newly allocated records so later caller mutation cannot affect any input record. Preserve relative ordering except for append and replace. Empty arrays are valid. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0274",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction cloneBook(book) {\n  if (\n    book === null || typeof book !== 'object' || Array.isArray(book) ||\n    typeof book.id !== 'string' || book.id.length === 0 ||\n    typeof book.title !== 'string' || book.title.length === 0 ||\n    !Number.isSafeInteger(book.pages) || book.pages <= 0\n  ) throw new TypeError('Malformed book');\n  return { id: book.id, title: book.title, pages: book.pages };\n}\n\nfunction cloneUniqueList(value) {\n  if (!Array.isArray(value)) throw new TypeError('Books must be an array');\n  const result = value.map(cloneBook);\n  const ids = new Set(result.map(book => book.id));\n  if (ids.size !== result.length) throw new RangeError('Duplicate book id');\n  return result;\n}\n\nfunction updateShelf(books, command) {\n  const current = cloneUniqueList(books);\n  if (command === null || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('Malformed command');\n  }\n\n  if (command.type === 'REPLACE') return cloneUniqueList(command.payload);\n  if (command.type === 'APPEND') {\n    const added = cloneBook(command.payload);\n    if (current.some(book => book.id === added.id)) throw new RangeError('Duplicate book id');\n    return current.concat(command.payload);\n  }\n  if (command.type === 'REMOVE') {\n    if (typeof command.payload !== 'string' || command.payload.length === 0) {\n      throw new TypeError('Malformed id');\n    }\n    return current.filter(book => book.id !== command.payload).map(book => ({ ...book }));\n  }\n  if (command.type === 'REVISE') {\n    const payload = command.payload;\n    if (\n      payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n      typeof payload.id !== 'string' || payload.id.length === 0\n    ) {\n      throw new TypeError('Malformed revision');\n    }\n    const changes = payload.changes;\n    if (changes === null || typeof changes !== 'object' || Array.isArray(changes)) {\n      throw new TypeError('Malformed changes');\n    }\n    const keys = Object.keys(changes);\n    if (keys.length === 0 || keys.some(key => key !== 'title' && key !== 'pages')) {\n      throw new RangeError('Unsupported changes');\n    }\n    const index = current.findIndex(book => book.id === payload.id);\n    if (index < 0) throw new RangeError('Unknown book id');\n    const revised = cloneBook({ ...current[index], ...changes });\n    return current.map((book, i) => i === index ? revised : { ...book });\n  }\n  throw new TypeError('Unknown command type');\n}\n\nmodule.exports = { updateShelf };\n",
+          "label": "Appending retains an alias to the command payload instead of returning a new record.",
+          "sha256": "a6d25a581f500813d64e5a123cf310506337fd1ac3a02da045c3a035e3f1c6d8"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction cloneBook(book) {\n  if (\n    book === null || typeof book !== 'object' || Array.isArray(book) ||\n    typeof book.id !== 'string' || book.id.length === 0 ||\n    typeof book.title !== 'string' || book.title.length === 0 ||\n    !Number.isSafeInteger(book.pages) || book.pages <= 0\n  ) throw new TypeError('Malformed book');\n  return { id: book.id, title: book.title, pages: book.pages };\n}\n\nfunction cloneUniqueList(value) {\n  if (!Array.isArray(value)) throw new TypeError('Books must be an array');\n  const result = value.map(cloneBook);\n  const ids = new Set(result.map(book => book.id));\n  if (ids.size !== result.length) throw new RangeError('Duplicate book id');\n  return result;\n}\n\nfunction updateShelf(books, command) {\n  const current = cloneUniqueList(books);\n  if (command === null || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('Malformed command');\n  }\n\n  if (command.type === 'REPLACE') return cloneUniqueList(command.payload);\n  if (command.type === 'APPEND') {\n    const added = cloneBook(command.payload);\n    if (current.some(book => book.id === added.id)) throw new RangeError('Duplicate book id');\n    return current.concat({ ...added });\n  }\n  if (command.type === 'REMOVE') {\n    if (typeof command.payload !== 'string' || command.payload.length === 0) {\n      throw new TypeError('Malformed id');\n    }\n    return current.filter(book => book.id !== command.payload).map(book => ({ ...book }));\n  }\n  if (command.type === 'REVISE') {\n    const payload = command.payload;\n    if (\n      payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n      typeof payload.id !== 'string' || payload.id.length === 0\n    ) {\n      throw new TypeError('Malformed revision');\n    }\n    const changes = payload.changes;\n    if (changes === null || typeof changes !== 'object' || Array.isArray(changes)) {\n      throw new TypeError('Malformed changes');\n    }\n    const keys = Object.keys(changes);\n    if (keys.length === 0 || keys.some(key => key !== 'title' && key !== 'pages')) {\n      throw new RangeError('Unsupported changes');\n    }\n    const index = current.findIndex(book => book.id === payload.id);\n    if (index < 0) throw new RangeError('Unknown book id');\n    const revised = cloneBook({ ...current[index], ...changes });\n    return current.map((book, i) => i === index ? revised : { ...book });\n  }\n  throw new TypeError('Unknown command type');\n}\n\nmodule.exports = { updateShelf };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "65e68d71dd5de211ea1003d03f03946d94e71a0badce18533d0a41782bc9cddd"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['updateShelf']);\nconst { updateShelf } = api;\n\nconst original = [\n  { id: 'a', title: 'Alpha', pages: 10 },\n  { id: 'b', title: 'Beta', pages: 20 }\n];\nconst snapshot = JSON.parse(JSON.stringify(original));\n\nconst appendedBook = { id: 'c', title: 'Gamma', pages: 30 };\nconst appended = updateShelf(original, { type: 'APPEND', payload: appendedBook });\nassert.deepStrictEqual(appended, [...snapshot, appendedBook]);\nassert.deepStrictEqual(original, snapshot);\nassert.notStrictEqual(appended, original);\nfor (let i = 0; i < original.length; i++) assert.notStrictEqual(appended[i], original[i]);\nassert.notStrictEqual(appended[2], appendedBook);\nappended[0].title = 'changed';\nappendedBook.title = 'changed payload';\nassert.deepStrictEqual(original, snapshot);\n\nconst removed = updateShelf(original, { type: 'REMOVE', payload: 'a' });\nassert.deepStrictEqual(removed, [{ id: 'b', title: 'Beta', pages: 20 }]);\nassert.notStrictEqual(removed[0], original[1]);\nconst missing = updateShelf(original, { type: 'REMOVE', payload: 'missing' });\nassert.deepStrictEqual(missing, original);\nassert.notStrictEqual(missing, original);\nassert.notStrictEqual(missing[0], original[0]);\n\nconst revised = updateShelf(original, {\n  type: 'REVISE', payload: { id: 'b', changes: { title: 'Beta II', pages: 21 } }\n});\nassert.deepStrictEqual(revised, [\n  { id: 'a', title: 'Alpha', pages: 10 },\n  { id: 'b', title: 'Beta II', pages: 21 }\n]);\nassert.deepStrictEqual(original, snapshot);\nassert.notStrictEqual(revised[0], original[0]);\nassert.notStrictEqual(revised[1], original[1]);\n\nconst replacementPayload = [{ id: 'z', title: 'Last', pages: Number.MAX_SAFE_INTEGER }];\nconst replaced = updateShelf(original, { type: 'REPLACE', payload: replacementPayload });\nassert.deepStrictEqual(replaced, replacementPayload);\nassert.notStrictEqual(replaced, replacementPayload);\nassert.notStrictEqual(replaced[0], replacementPayload[0]);\nassert.deepStrictEqual(updateShelf(original, { type: 'REPLACE', payload: [] }), []);\n\nassert.throws(() => updateShelf(original, { type: 'APPEND', payload: { id: 'a', title: 'Duplicate', pages: 1 } }), RangeError);\nassert.throws(() => updateShelf(original, { type: 'REVISE', payload: { id: 'x', changes: { title: 'X' } } }), RangeError);\nassert.throws(() => updateShelf(original, { type: 'REVISE', payload: { id: 'a', changes: {} } }), RangeError);\nassert.throws(() => updateShelf(original, { type: 'REVISE', payload: { id: 'a', changes: { id: 'x' } } }), RangeError);\n\nconst malformedBooks = [\n  null, {}, [{ id: '', title: 'T', pages: 1 }], [{ id: 'x', title: '', pages: 1 }],\n  [{ id: 'x', title: 'T', pages: 0 }], [{ id: 'x', title: 'T', pages: 1.5 }],\n  [{ id: 'x', title: 'T', pages: Number.MAX_SAFE_INTEGER + 1 }]\n];\nfor (const books of malformedBooks) {\n  assert.throws(() => updateShelf(books, { type: 'REMOVE', payload: 'x' }), TypeError);\n}\n\nconst malformedPayloads = [\n  { type: 'APPEND', payload: null },\n  { type: 'APPEND', payload: { id: 'x', title: 'X', pages: Infinity } },\n  { type: 'REMOVE', payload: '' },\n  { type: 'REPLACE', payload: [{ id: 'x', title: 'X', pages: -1 }] },\n  null,\n  { type: 'UNKNOWN', payload: null }\n];\nfor (const command of malformedPayloads) {\n  assert.throws(() => updateShelf(original, command), TypeError);\n  assert.deepStrictEqual(original, snapshot);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "824874f50d355fc190b9d54b1a5211799e284a50834d077f6660798984aeb72e"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f1eac44381852d8360568b553c8d87b9203b1acb613df270db87c40a89f2c7a5",
+      "text": "Implement a CommonJS module exporting exactly `{ updateShelf }`.\n\n`updateShelf(books, command)` treats `books` as an ordered array of records shaped `{ id, title, pages }`, where `id` and `title` are non-empty strings and `pages` is a positive safe integer. Every existing record and every payload record must be validated; malformed input throws `TypeError` without mutating anything.\n\nSupported commands are:\n- `{ type: 'REPLACE', payload: bookArray }`: replace the entire ordered list.\n- `{ type: 'APPEND', payload: book }`: append a book; duplicate IDs throw `RangeError`.\n- `{ type: 'REMOVE', payload: id }`: remove the matching book; a missing ID returns an unchanged-by-value copy.\n- `{ type: 'REVISE', payload: { id, changes } }`: update only `title` and/or `pages`. Unknown change fields, an empty changes object, or a missing ID throw `RangeError`.\n\nIDs must be unique in every resulting list. The original arrays, command, payloads, and records must never be mutated. The returned array must contain newly allocated records so later caller mutation cannot affect any input record. Preserve relative ordering except for append and replace. Empty arrays are valid. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f1eac44381852d8360568b553c8d87b9203b1acb613df270db87c40a89f2c7a5",
+      "text": "Implement a CommonJS module exporting exactly `{ updateShelf }`.\n\n`updateShelf(books, command)` treats `books` as an ordered array of records shaped `{ id, title, pages }`, where `id` and `title` are non-empty strings and `pages` is a positive safe integer. Every existing record and every payload record must be validated; malformed input throws `TypeError` without mutating anything.\n\nSupported commands are:\n- `{ type: 'REPLACE', payload: bookArray }`: replace the entire ordered list.\n- `{ type: 'APPEND', payload: book }`: append a book; duplicate IDs throw `RangeError`.\n- `{ type: 'REMOVE', payload: id }`: remove the matching book; a missing ID returns an unchanged-by-value copy.\n- `{ type: 'REVISE', payload: { id, changes } }`: update only `title` and/or `pages`. Unknown change fields, an empty changes object, or a missing ID throw `RangeError`.\n\nIDs must be unique in every resulting list. The original arrays, command, payloads, and records must never be mutated. The returned array must contain newly allocated records so later caller mutation cannot affect any input record. Preserve relative ordering except for append and replace. Empty arrays are valid. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0274",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction cloneBook(book) {\n  if (\n    book === null || typeof book !== 'object' || Array.isArray(book) ||\n    typeof book.id !== 'string' || book.id.length === 0 ||\n    typeof book.title !== 'string' || book.title.length === 0 ||\n    !Number.isSafeInteger(book.pages) || book.pages <= 0\n  ) throw new TypeError('Malformed book');\n  return { id: book.id, title: book.title, pages: book.pages };\n}\n\nfunction cloneUniqueList(value) {\n  if (!Array.isArray(value)) throw new TypeError('Books must be an array');\n  const result = value.map(cloneBook);\n  const ids = new Set(result.map(book => book.id));\n  if (ids.size !== result.length) throw new RangeError('Duplicate book id');\n  return result;\n}\n\nfunction updateShelf(books, command) {\n  const current = cloneUniqueList(books);\n  if (command === null || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('Malformed command');\n  }\n\n  if (command.type === 'REPLACE') return cloneUniqueList(command.payload);\n  if (command.type === 'APPEND') {\n    const added = cloneBook(command.payload);\n    if (current.some(book => book.id === added.id)) throw new RangeError('Duplicate book id');\n    return current.concat(command.payload);\n  }\n  if (command.type === 'REMOVE') {\n    if (typeof command.payload !== 'string' || command.payload.length === 0) {\n      throw new TypeError('Malformed id');\n    }\n    return current.filter(book => book.id !== command.payload).map(book => ({ ...book }));\n  }\n  if (command.type === 'REVISE') {\n    const payload = command.payload;\n    if (\n      payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n      typeof payload.id !== 'string' || payload.id.length === 0\n    ) {\n      throw new TypeError('Malformed revision');\n    }\n    const changes = payload.changes;\n    if (changes === null || typeof changes !== 'object' || Array.isArray(changes)) {\n      throw new TypeError('Malformed changes');\n    }\n    const keys = Object.keys(changes);\n    if (keys.length === 0 || keys.some(key => key !== 'title' && key !== 'pages')) {\n      throw new RangeError('Unsupported changes');\n    }\n    const index = current.findIndex(book => book.id === payload.id);\n    if (index < 0) throw new RangeError('Unknown book id');\n    const revised = cloneBook({ ...current[index], ...changes });\n    return current.map((book, i) => i === index ? revised : { ...book });\n  }\n  throw new TypeError('Unknown command type');\n}\n\nmodule.exports = { updateShelf };\n",
+          "label": "Appending retains an alias to the command payload instead of returning a new record.",
+          "sha256": "a6d25a581f500813d64e5a123cf310506337fd1ac3a02da045c3a035e3f1c6d8"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction cloneBook(book) {\n  if (\n    book === null || typeof book !== 'object' || Array.isArray(book) ||\n    typeof book.id !== 'string' || book.id.length === 0 ||\n    typeof book.title !== 'string' || book.title.length === 0 ||\n    !Number.isSafeInteger(book.pages) || book.pages <= 0\n  ) throw new TypeError('Malformed book');\n  return { id: book.id, title: book.title, pages: book.pages };\n}\n\nfunction cloneUniqueList(value) {\n  if (!Array.isArray(value)) throw new TypeError('Books must be an array');\n  const result = value.map(cloneBook);\n  const ids = new Set(result.map(book => book.id));\n  if (ids.size !== result.length) throw new RangeError('Duplicate book id');\n  return result;\n}\n\nfunction updateShelf(books, command) {\n  const current = cloneUniqueList(books);\n  if (command === null || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('Malformed command');\n  }\n\n  if (command.type === 'REPLACE') return cloneUniqueList(command.payload);\n  if (command.type === 'APPEND') {\n    const added = cloneBook(command.payload);\n    if (current.some(book => book.id === added.id)) throw new RangeError('Duplicate book id');\n    return current.concat({ ...added });\n  }\n  if (command.type === 'REMOVE') {\n    if (typeof command.payload !== 'string' || command.payload.length === 0) {\n      throw new TypeError('Malformed id');\n    }\n    return current.filter(book => book.id !== command.payload).map(book => ({ ...book }));\n  }\n  if (command.type === 'REVISE') {\n    const payload = command.payload;\n    if (\n      payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n      typeof payload.id !== 'string' || payload.id.length === 0\n    ) {\n      throw new TypeError('Malformed revision');\n    }\n    const changes = payload.changes;\n    if (changes === null || typeof changes !== 'object' || Array.isArray(changes)) {\n      throw new TypeError('Malformed changes');\n    }\n    const keys = Object.keys(changes);\n    if (keys.length === 0 || keys.some(key => key !== 'title' && key !== 'pages')) {\n      throw new RangeError('Unsupported changes');\n    }\n    const index = current.findIndex(book => book.id === payload.id);\n    if (index < 0) throw new RangeError('Unknown book id');\n    const revised = cloneBook({ ...current[index], ...changes });\n    return current.map((book, i) => i === index ? revised : { ...book });\n  }\n  throw new TypeError('Unknown command type');\n}\n\nmodule.exports = { updateShelf };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "65e68d71dd5de211ea1003d03f03946d94e71a0badce18533d0a41782bc9cddd"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "be4f4db01520d29deb1d99870bf72eb8994bc3524783d4ffccf7a59a42806f51",
+    "duration_ms": 354,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

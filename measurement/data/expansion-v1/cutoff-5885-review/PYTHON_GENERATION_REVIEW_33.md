@@ -24,8 +24,8 @@ inspections. No seven-criterion approval. Continue position 496.
 | 495 | 0575 | Ordinary prefix cycling, all-input validation at zero count and distinct dictionaries agree. Mutable scalar-subclass destination domain pending; no new hold. |
 
 Candidate SHA-256: `680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec`.
-Original candidates/tests/sample/partition unchanged. This batch awaits backup;
-last verified backup is through 657 holds / Python position 480.
+Original candidates/tests/sample/partition unchanged. This batch is backed up
+through 663 holds / Python position 510; see QUALITY_STRATUM_663_BACKUP.md.
 
 Five pinned Python 3.11.15 probe runs, network disabled/resource limited; all
 exit 1 without timeout. Holds are review items, not final rejections.

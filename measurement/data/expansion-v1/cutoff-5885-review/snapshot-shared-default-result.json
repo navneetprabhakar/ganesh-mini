@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0598",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "d8d56ae70723a82667304763a79cc1edc2fd0c5b8d3ce2f7817924f5f3d6f6d6",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import merge_snapshot\n\n\nclass SharedDefaultTests(unittest.TestCase):\n    def test_override_does_not_change_other_path(self):\n        shared = {\"value\": 1}\n        defaults = {\"a\": shared, \"b\": shared}\n        result = merge_snapshot(defaults, {\"a\": {\"value\": 2}}, [])\n        self.assertEqual(result, {\"a\": {\"value\": 2}, \"b\": {\"value\": 1}})\n        self.assertEqual(shared, {\"value\": 1})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "689a290f579c3b15b876dd7d0f795277ddbd4f786a21360bdd212fd65c21ea89"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "29f24c6ff73095d6c22560e33f5df8535ff3c8fb8c86c1a4be0f606f8503f2dd",
+      "text": "Implement `merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict` in `solution.py`.\n\nRecursively merge `snapshot` into `defaults`. A snapshot may replace an existing non-dictionary value or recursively override an existing dictionary, but it may not introduce unknown keys or replace a dictionary with a non-dictionary (or vice versa). `required` contains dot-separated paths that must resolve to values other than `None` in the merged result.\n\nRequirements:\n- All three arguments must have the declared container types.\n- Every dictionary key at every depth must be a non-empty string.\n- Each required path must be a non-empty string with no empty segment.\n- Unknown snapshot keys, structural type mismatches, and absent required paths raise `ValueError`.\n- Empty dictionaries and an empty required list are valid.\n- Return a full deep copy: no mutable object in the result may alias an object reachable from either input.\n- Do not mutate any argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "29f24c6ff73095d6c22560e33f5df8535ff3c8fb8c86c1a4be0f606f8503f2dd",
+      "text": "Implement `merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict` in `solution.py`.\n\nRecursively merge `snapshot` into `defaults`. A snapshot may replace an existing non-dictionary value or recursively override an existing dictionary, but it may not introduce unknown keys or replace a dictionary with a non-dictionary (or vice versa). `required` contains dot-separated paths that must resolve to values other than `None` in the merged result.\n\nRequirements:\n- All three arguments must have the declared container types.\n- Every dictionary key at every depth must be a non-empty string.\n- Each required path must be a non-empty string with no empty segment.\n- Unknown snapshot keys, structural type mismatches, and absent required paths raise `ValueError`.\n- Empty dictionaries and an empty required list are valid.\n- Return a full deep copy: no mutable object in the result may alias an object reachable from either input.\n- Do not mutate any argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0598",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef _validate_mapping(value: dict) -> None:\n    for key, child in value.items():\n        if not isinstance(key, str):\n            raise TypeError(\"dictionary keys must be strings\")\n        if not key:\n            raise ValueError(\"dictionary keys must not be empty\")\n        if isinstance(child, dict):\n            _validate_mapping(child)\n\n\ndef merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict:\n    if not isinstance(defaults, dict):\n        raise TypeError(\"defaults must be a dictionary\")\n    if not isinstance(snapshot, dict):\n        raise TypeError(\"snapshot must be a dictionary\")\n    if not isinstance(required, list):\n        raise TypeError(\"required must be a list\")\n    _validate_mapping(defaults)\n    _validate_mapping(snapshot)\n\n    for path in required:\n        if not isinstance(path, str):\n            raise TypeError(\"required paths must be strings\")\n        if not path or any(not part for part in path.split(\".\")):\n            raise ValueError(\"required path is malformed\")\n\n    result = defaults.copy()\n\n    def apply(target: dict, changes: dict) -> None:\n        for key, value in changes.items():\n            if key not in target:\n                raise ValueError(f\"unknown key: {key}\")\n            current = target[key]\n            if isinstance(current, dict) != isinstance(value, dict):\n                raise ValueError(f\"structural mismatch at {key}\")\n            if isinstance(value, dict):\n                apply(current, value)\n            else:\n                target[key] = copy.deepcopy(value)\n\n    apply(result, snapshot)\n    for path in required:\n        current = result\n        for part in path.split(\".\"):\n            if not isinstance(current, dict) or part not in current:\n                raise ValueError(f\"missing required path: {path}\")\n            current = current[part]\n        if current is None:\n            raise ValueError(f\"required path is None: {path}\")\n    return result\n",
+          "label": "Only shallow-copies the defaults, so recursive overrides mutate nested dictionaries owned by the caller.",
+          "sha256": "ebc4d90a8a4c38a3eb84395340aaaf20dcec69a931c2c6533b5bfadca30319be"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef _validate_mapping(value: dict) -> None:\n    for key, child in value.items():\n        if not isinstance(key, str):\n            raise TypeError(\"dictionary keys must be strings\")\n        if not key:\n            raise ValueError(\"dictionary keys must not be empty\")\n        if isinstance(child, dict):\n            _validate_mapping(child)\n\n\ndef merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict:\n    if not isinstance(defaults, dict):\n        raise TypeError(\"defaults must be a dictionary\")\n    if not isinstance(snapshot, dict):\n        raise TypeError(\"snapshot must be a dictionary\")\n    if not isinstance(required, list):\n        raise TypeError(\"required must be a list\")\n    _validate_mapping(defaults)\n    _validate_mapping(snapshot)\n\n    for path in required:\n        if not isinstance(path, str):\n            raise TypeError(\"required paths must be strings\")\n        if not path or any(not part for part in path.split(\".\")):\n            raise ValueError(\"required path is malformed\")\n\n    result = copy.deepcopy(defaults)\n\n    def apply(target: dict, changes: dict) -> None:\n        for key, value in changes.items():\n            if key not in target:\n                raise ValueError(f\"unknown key: {key}\")\n            current = target[key]\n            if isinstance(current, dict) != isinstance(value, dict):\n                raise ValueError(f\"structural mismatch at {key}\")\n            if isinstance(value, dict):\n                apply(current, value)\n            else:\n                target[key] = copy.deepcopy(value)\n\n    apply(result, snapshot)\n    for path in required:\n        current = result\n        for part in path.split(\".\"):\n            if not isinstance(current, dict) or part not in current:\n                raise ValueError(f\"missing required path: {path}\")\n            current = current[part]\n        if current is None:\n            raise ValueError(f\"required path is None: {path}\")\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "124466d2aca88d88c02a2187b4025b9e60028f714aec7a4d0e531bb4e0f0213d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import merge_snapshot\n\n\nclass MergeSnapshotTests(unittest.TestCase):\n    def test_recursive_merge_and_required_paths(self):\n        defaults = {\n            \"service\": {\"host\": \"localhost\", \"port\": 80, \"auth\": {\"token\": None}},\n            \"features\": {\"enabled\": False},\n        }\n        snapshot = {\"service\": {\"port\": 443, \"auth\": {\"token\": \"secret\"}}}\n        result = merge_snapshot(defaults, snapshot, [\"service.host\", \"service.auth.token\"])\n        self.assertEqual(result, {\n            \"service\": {\"host\": \"localhost\", \"port\": 443, \"auth\": {\"token\": \"secret\"}},\n            \"features\": {\"enabled\": False},\n        })\n\n    def test_empty_values(self):\n        self.assertEqual(merge_snapshot({}, {}, []), {})\n        self.assertEqual(merge_snapshot({\"empty\": {}}, {\"empty\": {}}, []), {\"empty\": {}})\n\n    def test_full_deep_copy_and_no_mutation(self):\n        defaults = {\"a\": {\"items\": [1, {\"x\": [2]}]}, \"b\": {\"keep\": [3]}}\n        snapshot = {\"a\": {\"items\": [4, {\"y\": [5]}]}}\n        defaults_before = {\"a\": {\"items\": [1, {\"x\": [2]}]}, \"b\": {\"keep\": [3]}}\n        snapshot_before = {\"a\": {\"items\": [4, {\"y\": [5]}]}}\n        result = merge_snapshot(defaults, snapshot, [])\n        self.assertEqual(defaults, defaults_before)\n        self.assertEqual(snapshot, snapshot_before)\n        self.assertIsNot(result[\"a\"], defaults[\"a\"])\n        self.assertIsNot(result[\"a\"][\"items\"], snapshot[\"a\"][\"items\"])\n        self.assertIsNot(result[\"a\"][\"items\"][1], snapshot[\"a\"][\"items\"][1])\n        self.assertIsNot(result[\"a\"][\"items\"][1][\"y\"], snapshot[\"a\"][\"items\"][1][\"y\"])\n        self.assertIsNot(result[\"b\"][\"keep\"], defaults[\"b\"][\"keep\"])\n        result[\"a\"][\"items\"][1][\"y\"].append(9)\n        result[\"b\"][\"keep\"].append(9)\n        self.assertEqual(defaults, defaults_before)\n        self.assertEqual(snapshot, snapshot_before)\n\n    def test_declared_container_types(self):\n        valid = ({}, {}, [])\n        for position, bad in ((0, []), (1, []), (2, ())):\n            args = list(valid)\n            args[position] = bad\n            with self.subTest(position=position, bad=bad):\n                with self.assertRaises(TypeError):\n                    merge_snapshot(*args)\n\n    def test_dictionary_keys_at_all_depths(self):\n        invalid_dicts = [\n            {1: \"x\"},\n            {\"\": \"x\"},\n            {\"outer\": {False: \"x\"}},\n            {\"outer\": {\"\": \"x\"}},\n        ]\n        for invalid in invalid_dicts:\n            with self.subTest(defaults=invalid):\n                with self.assertRaises((TypeError, ValueError)):\n                    merge_snapshot(invalid, {}, [])\n        for invalid in invalid_dicts:\n            with self.subTest(snapshot=invalid):\n                with self.assertRaises((TypeError, ValueError)):\n                    merge_snapshot({\"outer\": {}}, invalid, [])\n\n    def test_required_path_validation(self):\n        for path in (1, None, True):\n            with self.subTest(path=path):\n                with self.assertRaises(TypeError):\n                    merge_snapshot({}, {}, [path])\n        for path in (\"\", \".a\", \"a.\", \"a..b\"):\n            with self.subTest(path=path):\n                with self.assertRaises(ValueError):\n                    merge_snapshot({}, {}, [path])\n\n    def test_unknown_keys_and_structural_mismatches(self):\n        with self.assertRaises(ValueError):\n            merge_snapshot({\"a\": 1}, {\"b\": 2}, [])\n        with self.assertRaises(ValueError):\n            merge_snapshot({\"a\": {\"b\": 1}}, {\"a\": {\"c\": 2}}, [])\n        with self.assertRaises(ValueError):\n            merge_snapshot({\"a\": {}}, {\"a\": 1}, [])\n        with self.assertRaises(ValueError):\n            merge_snapshot({\"a\": 1}, {\"a\": {}}, [])\n\n    def test_missing_or_none_required_value(self):\n        with self.assertRaises(ValueError):\n            merge_snapshot({\"a\": {}}, {}, [\"a.b\"])\n        with self.assertRaises(ValueError):\n            merge_snapshot({\"a\": {\"b\": None}}, {}, [\"a.b\"])\n        self.assertEqual(merge_snapshot({\"a\": {\"b\": 0}}, {}, [\"a.b\"])[\"a\"][\"b\"], 0)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "ee294c4515261e251dd0ef4d27cdc9182993802efa9cbc972aba0440629fc2f6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "29f24c6ff73095d6c22560e33f5df8535ff3c8fb8c86c1a4be0f606f8503f2dd",
+      "text": "Implement `merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict` in `solution.py`.\n\nRecursively merge `snapshot` into `defaults`. A snapshot may replace an existing non-dictionary value or recursively override an existing dictionary, but it may not introduce unknown keys or replace a dictionary with a non-dictionary (or vice versa). `required` contains dot-separated paths that must resolve to values other than `None` in the merged result.\n\nRequirements:\n- All three arguments must have the declared container types.\n- Every dictionary key at every depth must be a non-empty string.\n- Each required path must be a non-empty string with no empty segment.\n- Unknown snapshot keys, structural type mismatches, and absent required paths raise `ValueError`.\n- Empty dictionaries and an empty required list are valid.\n- Return a full deep copy: no mutable object in the result may alias an object reachable from either input.\n- Do not mutate any argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "29f24c6ff73095d6c22560e33f5df8535ff3c8fb8c86c1a4be0f606f8503f2dd",
+      "text": "Implement `merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict` in `solution.py`.\n\nRecursively merge `snapshot` into `defaults`. A snapshot may replace an existing non-dictionary value or recursively override an existing dictionary, but it may not introduce unknown keys or replace a dictionary with a non-dictionary (or vice versa). `required` contains dot-separated paths that must resolve to values other than `None` in the merged result.\n\nRequirements:\n- All three arguments must have the declared container types.\n- Every dictionary key at every depth must be a non-empty string.\n- Each required path must be a non-empty string with no empty segment.\n- Unknown snapshot keys, structural type mismatches, and absent required paths raise `ValueError`.\n- Empty dictionaries and an empty required list are valid.\n- Return a full deep copy: no mutable object in the result may alias an object reachable from either input.\n- Do not mutate any argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0598",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef _validate_mapping(value: dict) -> None:\n    for key, child in value.items():\n        if not isinstance(key, str):\n            raise TypeError(\"dictionary keys must be strings\")\n        if not key:\n            raise ValueError(\"dictionary keys must not be empty\")\n        if isinstance(child, dict):\n            _validate_mapping(child)\n\n\ndef merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict:\n    if not isinstance(defaults, dict):\n        raise TypeError(\"defaults must be a dictionary\")\n    if not isinstance(snapshot, dict):\n        raise TypeError(\"snapshot must be a dictionary\")\n    if not isinstance(required, list):\n        raise TypeError(\"required must be a list\")\n    _validate_mapping(defaults)\n    _validate_mapping(snapshot)\n\n    for path in required:\n        if not isinstance(path, str):\n            raise TypeError(\"required paths must be strings\")\n        if not path or any(not part for part in path.split(\".\")):\n            raise ValueError(\"required path is malformed\")\n\n    result = defaults.copy()\n\n    def apply(target: dict, changes: dict) -> None:\n        for key, value in changes.items():\n            if key not in target:\n                raise ValueError(f\"unknown key: {key}\")\n            current = target[key]\n            if isinstance(current, dict) != isinstance(value, dict):\n                raise ValueError(f\"structural mismatch at {key}\")\n            if isinstance(value, dict):\n                apply(current, value)\n            else:\n                target[key] = copy.deepcopy(value)\n\n    apply(result, snapshot)\n    for path in required:\n        current = result\n        for part in path.split(\".\"):\n            if not isinstance(current, dict) or part not in current:\n                raise ValueError(f\"missing required path: {path}\")\n            current = current[part]\n        if current is None:\n            raise ValueError(f\"required path is None: {path}\")\n    return result\n",
+          "label": "Only shallow-copies the defaults, so recursive overrides mutate nested dictionaries owned by the caller.",
+          "sha256": "ebc4d90a8a4c38a3eb84395340aaaf20dcec69a931c2c6533b5bfadca30319be"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef _validate_mapping(value: dict) -> None:\n    for key, child in value.items():\n        if not isinstance(key, str):\n            raise TypeError(\"dictionary keys must be strings\")\n        if not key:\n            raise ValueError(\"dictionary keys must not be empty\")\n        if isinstance(child, dict):\n            _validate_mapping(child)\n\n\ndef merge_snapshot(defaults: dict, snapshot: dict, required: list[str]) -> dict:\n    if not isinstance(defaults, dict):\n        raise TypeError(\"defaults must be a dictionary\")\n    if not isinstance(snapshot, dict):\n        raise TypeError(\"snapshot must be a dictionary\")\n    if not isinstance(required, list):\n        raise TypeError(\"required must be a list\")\n    _validate_mapping(defaults)\n    _validate_mapping(snapshot)\n\n    for path in required:\n        if not isinstance(path, str):\n            raise TypeError(\"required paths must be strings\")\n        if not path or any(not part for part in path.split(\".\")):\n            raise ValueError(\"required path is malformed\")\n\n    result = copy.deepcopy(defaults)\n\n    def apply(target: dict, changes: dict) -> None:\n        for key, value in changes.items():\n            if key not in target:\n                raise ValueError(f\"unknown key: {key}\")\n            current = target[key]\n            if isinstance(current, dict) != isinstance(value, dict):\n                raise ValueError(f\"structural mismatch at {key}\")\n            if isinstance(value, dict):\n                apply(current, value)\n            else:\n                target[key] = copy.deepcopy(value)\n\n    apply(result, snapshot)\n    for path in required:\n        current = result\n        for part in path.split(\".\"):\n            if not isinstance(current, dict) or part not in current:\n                raise ValueError(f\"missing required path: {path}\")\n            current = current[part]\n        if current is None:\n            raise ValueError(f\"required path is None: {path}\")\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "124466d2aca88d88c02a2187b4025b9e60028f714aec7a4d0e531bb4e0f0213d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_override_does_not_change_other_path (__main__.SharedDefaultTests.test_override_does_not_change_other_path)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_override_does_not_change_other_path\n    self.assertEqual(result, {\"a\": {\"value\": 2}, \"b\": {\"value\": 1}})\nAssertionError: {'a': {'value': 2}, 'b': {'value': 2}} != {'a': {'value': 2}, 'b': {'value': 1}}\n- {'a': {'value': 2}, 'b': {'value': 2}}\n?                                    ^\n\n+ {'a': {'value': 2}, 'b': {'value': 1}}\n?                                    ^\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "c6311e180fad7b11d42ae279c40d498f622f8a5bee6b6b2199294a9947b21b4b",
+    "duration_ms": 474,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

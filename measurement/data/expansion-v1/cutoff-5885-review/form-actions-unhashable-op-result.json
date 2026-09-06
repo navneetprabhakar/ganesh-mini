@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0586",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "02aabb9fcb2ab6d18499294cf9252a5dfd1c91aeea36bc790618b466fa944e9f",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import apply_form_actions\n\n\nclass MalformedOperationTests(unittest.TestCase):\n    def test_unhashable_operation_raises_value_error(self):\n        for operation in ([], {}):\n            with self.subTest(operation=operation):\n                with self.assertRaises(ValueError):\n                    apply_form_actions({}, [{\"op\": operation}])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "c40ce7d3b00256d3e165aeb75eb9dd5d0c436d0c57df90652592b78737da601d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "199ce8b2916d046815fb5c2729699791811fcf63ff401d31e8d98646a54ba8e0",
+      "text": "Create `solution.py` with the public function `apply_form_actions(initial, actions)`.\n\n`initial` must be a dictionary with string keys; values may be arbitrary deepcopy-compatible values. `actions` must be a list of dictionaries processed in order. Supported exact shapes are:\n- `{\"op\": \"set\", \"field\": str, \"value\": any}`: set a field to a deep copy of the value.\n- `{\"op\": \"copy\", \"source\": str, \"target\": str}`: copy an existing field's current value to a distinct target field.\n- `{\"op\": \"remove\", \"field\": str}`: remove an existing field.\n- `{\"op\": \"require\", \"field\": str}`: require that the field exists and its value is neither `None` nor the empty string.\n\nField names must be non-empty strings. `copy` requires distinct source and target names. Missing fields, unknown operations, wrong fields, or malformed inputs raise `ValueError`. An empty action list returns a deep copy of `initial`. Validation and application must not mutate either input, including if a later action fails. The result and every value installed by `set` or `copy` must be deeply independent of caller-owned values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "199ce8b2916d046815fb5c2729699791811fcf63ff401d31e8d98646a54ba8e0",
+      "text": "Create `solution.py` with the public function `apply_form_actions(initial, actions)`.\n\n`initial` must be a dictionary with string keys; values may be arbitrary deepcopy-compatible values. `actions` must be a list of dictionaries processed in order. Supported exact shapes are:\n- `{\"op\": \"set\", \"field\": str, \"value\": any}`: set a field to a deep copy of the value.\n- `{\"op\": \"copy\", \"source\": str, \"target\": str}`: copy an existing field's current value to a distinct target field.\n- `{\"op\": \"remove\", \"field\": str}`: remove an existing field.\n- `{\"op\": \"require\", \"field\": str}`: require that the field exists and its value is neither `None` nor the empty string.\n\nField names must be non-empty strings. `copy` requires distinct source and target names. Missing fields, unknown operations, wrong fields, or malformed inputs raise `ValueError`. An empty action list returns a deep copy of `initial`. Validation and application must not mutate either input, including if a later action fails. The result and every value installed by `set` or `copy` must be deeply independent of caller-owned values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0586",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef apply_form_actions(initial, actions):\n    if not isinstance(initial, dict) or any(not isinstance(k, str) for k in initial):\n        raise ValueError(\"invalid initial form\")\n    if not isinstance(actions, list):\n        raise ValueError(\"actions must be a list\")\n    state = deepcopy(initial)\n    expected = {\n        \"set\": {\"op\", \"field\", \"value\"},\n        \"copy\": {\"op\", \"source\", \"target\"},\n        \"remove\": {\"op\", \"field\"},\n        \"require\": {\"op\", \"field\"},\n    }\n    for raw in actions:\n        if not isinstance(raw, dict) or raw.get(\"op\") not in expected:\n            raise ValueError(\"unknown action\")\n        action = deepcopy(raw)\n        op = action[\"op\"]\n        if set(action) != expected[op]:\n            raise ValueError(\"invalid action fields\")\n        names = [action[k] for k in (\"field\", \"source\", \"target\") if k in action]\n        if any(not isinstance(name, str) or not name for name in names):\n            raise ValueError(\"invalid field name\")\n        if op == \"set\":\n            state[action[\"field\"]] = deepcopy(action[\"value\"])\n        elif op == \"copy\":\n            source, target = action[\"source\"], action[\"target\"]\n            if source == target or source not in state:\n                raise ValueError(\"invalid copy\")\n            state[target] = state[source]\n        elif op == \"remove\":\n            if action[\"field\"] not in state:\n                raise ValueError(\"missing field\")\n            del state[action[\"field\"]]\n        elif action[\"field\"] not in state or state[action[\"field\"]] is None or state[action[\"field\"]] == \"\":\n            raise ValueError(\"required field is empty\")\n    return deepcopy(state)\n",
+          "label": "The `copy` action aliases the source value instead of creating the required independent deep copy.",
+          "sha256": "a6dfef325b1e6b76d1bdd2b931a69b696a452909accb3c6785953f2ed6d9f10d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef apply_form_actions(initial, actions):\n    if not isinstance(initial, dict) or any(not isinstance(k, str) for k in initial):\n        raise ValueError(\"invalid initial form\")\n    if not isinstance(actions, list):\n        raise ValueError(\"actions must be a list\")\n    state = deepcopy(initial)\n    expected = {\n        \"set\": {\"op\", \"field\", \"value\"},\n        \"copy\": {\"op\", \"source\", \"target\"},\n        \"remove\": {\"op\", \"field\"},\n        \"require\": {\"op\", \"field\"},\n    }\n    for raw in actions:\n        if not isinstance(raw, dict) or raw.get(\"op\") not in expected:\n            raise ValueError(\"unknown action\")\n        action = deepcopy(raw)\n        op = action[\"op\"]\n        if set(action) != expected[op]:\n            raise ValueError(\"invalid action fields\")\n        names = [action[k] for k in (\"field\", \"source\", \"target\") if k in action]\n        if any(not isinstance(name, str) or not name for name in names):\n            raise ValueError(\"invalid field name\")\n        if op == \"set\":\n            state[action[\"field\"]] = deepcopy(action[\"value\"])\n        elif op == \"copy\":\n            source, target = action[\"source\"], action[\"target\"]\n            if source == target or source not in state:\n                raise ValueError(\"invalid copy\")\n            state[target] = deepcopy(state[source])\n        elif op == \"remove\":\n            if action[\"field\"] not in state:\n                raise ValueError(\"missing field\")\n            del state[action[\"field\"]]\n        elif action[\"field\"] not in state or state[action[\"field\"]] is None or state[action[\"field\"]] == \"\":\n            raise ValueError(\"required field is empty\")\n    return deepcopy(state)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "32ae2e76eb9a3d4fa5ebfba518eeaaec95703270b57313329ff50c1ac9207e4b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport unittest\n\nfrom solution import apply_form_actions\n\n\nclass ApplyFormActionsTests(unittest.TestCase):\n    def test_actions_are_applied_in_order(self):\n        initial = {\"name\": \"old\", \"meta\": {\"tags\": [\"a\"]}, \"keep\": 0}\n        actions = [\n            {\"op\": \"set\", \"field\": \"name\", \"value\": \"new\"},\n            {\"op\": \"copy\", \"source\": \"meta\", \"target\": \"backup\"},\n            {\"op\": \"remove\", \"field\": \"meta\"},\n            {\"op\": \"require\", \"field\": \"name\"},\n            {\"op\": \"require\", \"field\": \"keep\"},\n        ]\n        self.assertEqual(\n            apply_form_actions(initial, actions),\n            {\"name\": \"new\", \"keep\": 0, \"backup\": {\"tags\": [\"a\"]}},\n        )\n\n    def test_empty_actions_returns_deep_copy(self):\n        initial = {\"nested\": {\"items\": [1, 2]}}\n        result = apply_form_actions(initial, [])\n        self.assertEqual(result, initial)\n        self.assertIsNot(result, initial)\n        self.assertIsNot(result[\"nested\"], initial[\"nested\"])\n        self.assertIsNot(result[\"nested\"][\"items\"], initial[\"nested\"][\"items\"])\n\n    def test_set_and_copy_values_are_deeply_independent(self):\n        caller_value = {\"items\": [[1]]}\n        initial = {\"source\": caller_value}\n        actions = [\n            {\"op\": \"set\", \"field\": \"set_value\", \"value\": caller_value},\n            {\"op\": \"copy\", \"source\": \"source\", \"target\": \"copied\"},\n        ]\n        result = apply_form_actions(initial, actions)\n        result[\"set_value\"][\"items\"][0].append(2)\n        result[\"copied\"][\"items\"][0].append(3)\n        self.assertEqual(caller_value, {\"items\": [[1]]})\n        self.assertEqual(result[\"source\"], {\"items\": [[1]]})\n        self.assertEqual(result[\"set_value\"], {\"items\": [[1, 2]]})\n        self.assertEqual(result[\"copied\"], {\"items\": [[1, 3]]})\n\n    def test_require_rejects_only_missing_none_and_empty_string(self):\n        for value in (0, False, [], {}):\n            with self.subTest(value=value):\n                self.assertEqual(\n                    apply_form_actions({\"field\": value}, [{\"op\": \"require\", \"field\": \"field\"}]),\n                    {\"field\": value},\n                )\n        for initial in ({}, {\"field\": None}, {\"field\": \"\"}):\n            with self.subTest(initial=initial):\n                with self.assertRaises(ValueError):\n                    apply_form_actions(initial, [{\"op\": \"require\", \"field\": \"field\"}])\n\n    def test_missing_remove_copy_source_and_same_copy_names_fail(self):\n        bad_actions = [\n            {\"op\": \"remove\", \"field\": \"missing\"},\n            {\"op\": \"copy\", \"source\": \"missing\", \"target\": \"x\"},\n            {\"op\": \"copy\", \"source\": \"x\", \"target\": \"x\"},\n        ]\n        for action in bad_actions:\n            with self.subTest(action=action):\n                with self.assertRaises(ValueError):\n                    apply_form_actions({\"x\": 1}, [action])\n\n    def test_malformed_inputs_and_exact_shapes(self):\n        cases = [\n            ([], []),\n            ({1: \"bad key\"}, []),\n            ({}, None),\n            ({}, [\"set\"]),\n            ({}, [{}]),\n            ({}, [{\"op\": \"unknown\", \"field\": \"x\"}]),\n            ({}, [{\"op\": \"set\", \"field\": \"x\"}]),\n            ({}, [{\"op\": \"set\", \"field\": \"x\", \"value\": 1, \"extra\": 2}]),\n            ({}, [{\"op\": \"remove\", \"field\": \"\",}]),\n            ({}, [{\"op\": \"require\", \"field\": 1}]),\n            ({\"x\": 1}, [{\"op\": \"copy\", \"source\": \"x\"}]),\n            ({\"x\": 1}, [{\"op\": \"copy\", \"source\": \"x\", \"target\": \"y\", \"extra\": 1}]),\n        ]\n        for initial, actions in cases:\n            with self.subTest(initial=initial, actions=actions):\n                with self.assertRaises(ValueError):\n                    apply_form_actions(initial, actions)\n\n    def test_later_failure_leaves_inputs_unchanged(self):\n        initial = {\"nested\": {\"values\": [1]}}\n        supplied = {\"new\": [2]}\n        actions = [\n            {\"op\": \"set\", \"field\": \"added\", \"value\": supplied},\n            {\"op\": \"remove\", \"field\": \"missing\"},\n        ]\n        before_initial = copy.deepcopy(initial)\n        before_actions = copy.deepcopy(actions)\n        with self.assertRaises(ValueError):\n            apply_form_actions(initial, actions)\n        self.assertEqual(initial, before_initial)\n        self.assertEqual(actions, before_actions)\n        self.assertEqual(supplied, {\"new\": [2]})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "97f8866532196994a25c4b5636ae3c5a0a785e21e06d2682c5cf3f2499a9733c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "199ce8b2916d046815fb5c2729699791811fcf63ff401d31e8d98646a54ba8e0",
+      "text": "Create `solution.py` with the public function `apply_form_actions(initial, actions)`.\n\n`initial` must be a dictionary with string keys; values may be arbitrary deepcopy-compatible values. `actions` must be a list of dictionaries processed in order. Supported exact shapes are:\n- `{\"op\": \"set\", \"field\": str, \"value\": any}`: set a field to a deep copy of the value.\n- `{\"op\": \"copy\", \"source\": str, \"target\": str}`: copy an existing field's current value to a distinct target field.\n- `{\"op\": \"remove\", \"field\": str}`: remove an existing field.\n- `{\"op\": \"require\", \"field\": str}`: require that the field exists and its value is neither `None` nor the empty string.\n\nField names must be non-empty strings. `copy` requires distinct source and target names. Missing fields, unknown operations, wrong fields, or malformed inputs raise `ValueError`. An empty action list returns a deep copy of `initial`. Validation and application must not mutate either input, including if a later action fails. The result and every value installed by `set` or `copy` must be deeply independent of caller-owned values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "199ce8b2916d046815fb5c2729699791811fcf63ff401d31e8d98646a54ba8e0",
+      "text": "Create `solution.py` with the public function `apply_form_actions(initial, actions)`.\n\n`initial` must be a dictionary with string keys; values may be arbitrary deepcopy-compatible values. `actions` must be a list of dictionaries processed in order. Supported exact shapes are:\n- `{\"op\": \"set\", \"field\": str, \"value\": any}`: set a field to a deep copy of the value.\n- `{\"op\": \"copy\", \"source\": str, \"target\": str}`: copy an existing field's current value to a distinct target field.\n- `{\"op\": \"remove\", \"field\": str}`: remove an existing field.\n- `{\"op\": \"require\", \"field\": str}`: require that the field exists and its value is neither `None` nor the empty string.\n\nField names must be non-empty strings. `copy` requires distinct source and target names. Missing fields, unknown operations, wrong fields, or malformed inputs raise `ValueError`. An empty action list returns a deep copy of `initial`. Validation and application must not mutate either input, including if a later action fails. The result and every value installed by `set` or `copy` must be deeply independent of caller-owned values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0586",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef apply_form_actions(initial, actions):\n    if not isinstance(initial, dict) or any(not isinstance(k, str) for k in initial):\n        raise ValueError(\"invalid initial form\")\n    if not isinstance(actions, list):\n        raise ValueError(\"actions must be a list\")\n    state = deepcopy(initial)\n    expected = {\n        \"set\": {\"op\", \"field\", \"value\"},\n        \"copy\": {\"op\", \"source\", \"target\"},\n        \"remove\": {\"op\", \"field\"},\n        \"require\": {\"op\", \"field\"},\n    }\n    for raw in actions:\n        if not isinstance(raw, dict) or raw.get(\"op\") not in expected:\n            raise ValueError(\"unknown action\")\n        action = deepcopy(raw)\n        op = action[\"op\"]\n        if set(action) != expected[op]:\n            raise ValueError(\"invalid action fields\")\n        names = [action[k] for k in (\"field\", \"source\", \"target\") if k in action]\n        if any(not isinstance(name, str) or not name for name in names):\n            raise ValueError(\"invalid field name\")\n        if op == \"set\":\n            state[action[\"field\"]] = deepcopy(action[\"value\"])\n        elif op == \"copy\":\n            source, target = action[\"source\"], action[\"target\"]\n            if source == target or source not in state:\n                raise ValueError(\"invalid copy\")\n            state[target] = state[source]\n        elif op == \"remove\":\n            if action[\"field\"] not in state:\n                raise ValueError(\"missing field\")\n            del state[action[\"field\"]]\n        elif action[\"field\"] not in state or state[action[\"field\"]] is None or state[action[\"field\"]] == \"\":\n            raise ValueError(\"required field is empty\")\n    return deepcopy(state)\n",
+          "label": "The `copy` action aliases the source value instead of creating the required independent deep copy.",
+          "sha256": "a6dfef325b1e6b76d1bdd2b931a69b696a452909accb3c6785953f2ed6d9f10d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef apply_form_actions(initial, actions):\n    if not isinstance(initial, dict) or any(not isinstance(k, str) for k in initial):\n        raise ValueError(\"invalid initial form\")\n    if not isinstance(actions, list):\n        raise ValueError(\"actions must be a list\")\n    state = deepcopy(initial)\n    expected = {\n        \"set\": {\"op\", \"field\", \"value\"},\n        \"copy\": {\"op\", \"source\", \"target\"},\n        \"remove\": {\"op\", \"field\"},\n        \"require\": {\"op\", \"field\"},\n    }\n    for raw in actions:\n        if not isinstance(raw, dict) or raw.get(\"op\") not in expected:\n            raise ValueError(\"unknown action\")\n        action = deepcopy(raw)\n        op = action[\"op\"]\n        if set(action) != expected[op]:\n            raise ValueError(\"invalid action fields\")\n        names = [action[k] for k in (\"field\", \"source\", \"target\") if k in action]\n        if any(not isinstance(name, str) or not name for name in names):\n            raise ValueError(\"invalid field name\")\n        if op == \"set\":\n            state[action[\"field\"]] = deepcopy(action[\"value\"])\n        elif op == \"copy\":\n            source, target = action[\"source\"], action[\"target\"]\n            if source == target or source not in state:\n                raise ValueError(\"invalid copy\")\n            state[target] = deepcopy(state[source])\n        elif op == \"remove\":\n            if action[\"field\"] not in state:\n                raise ValueError(\"missing field\")\n            del state[action[\"field\"]]\n        elif action[\"field\"] not in state or state[action[\"field\"]] is None or state[action[\"field\"]] == \"\":\n            raise ValueError(\"required field is empty\")\n    return deepcopy(state)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "32ae2e76eb9a3d4fa5ebfba518eeaaec95703270b57313329ff50c1ac9207e4b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "EE\n======================================================================\nERROR: test_unhashable_operation_raises_value_error (__main__.MalformedOperationTests.test_unhashable_operation_raises_value_error) (operation=[])\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_unhashable_operation_raises_value_error\n    apply_form_actions({}, [{\"op\": operation}])\n  File \"/work/solution.py\", line 17, in apply_form_actions\n    if not isinstance(raw, dict) or raw.get(\"op\") not in expected:\n                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n======================================================================\nERROR: test_unhashable_operation_raises_value_error (__main__.MalformedOperationTests.test_unhashable_operation_raises_value_error) (operation={})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_unhashable_operation_raises_value_error\n    apply_form_actions({}, [{\"op\": operation}])\n  File \"/work/solution.py\", line 17, in apply_form_actions\n    if not isinstance(raw, dict) or raw.get(\"op\") not in expected:\n                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'dict'\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=2)\n",
+    "stderr_sha256": "040c0af74fcce3ece9c486b25d47e328ebc5c8e3bb3c318c8eff0fce1746a1be",
+    "duration_ms": 465,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

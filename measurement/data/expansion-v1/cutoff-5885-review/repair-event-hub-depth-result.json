@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0160",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e8b223ec3e40f57cdff9cd3313abfda48e5865f899b4435764717029871de009",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import EventHub\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_payload(self):\n        value = []\n        for _ in range(600):\n            value = [value]\n        hub = EventHub()\n        hub.subscribe('[event]', lambda payload: 'called')\n        error = None\n        try:\n            result = hub.emit('[event]', value)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n        self.assertEqual(result, ['called'])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "35d94861cf1608854bc3298a6876c2c0aad0412368277020d528726e46e9587d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e57822407bef97185b6625a24670c3029a0f9e4e21bb297bf873505166c6d6a8",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is class `EventHub` with methods `subscribe(pattern, callback)` and `emit(pattern, payload) -> list[object]`.\n\nContract:\n- A pattern must be a string in the form `[name]`, where `name` is non-empty and contains neither `[` nor `]`. Malformed patterns raise `ValueError`; non-strings raise `TypeError`.\n- A callback must be callable or `TypeError` is raised.\n- Subscriptions preserve insertion order, and registering the same callback repeatedly creates repeated subscriptions.\n- `emit` invokes a snapshot of the current subscriptions for that pattern. Subscriptions added during emission are visible only to later emissions.\n- Each callback receives its own deep copy of `payload`. Mutation by one callback must not affect the original payload or another callback.\n- Return callback results in invocation order. With no subscribers, return a new empty list.\n- Callback exceptions propagate immediately.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e57822407bef97185b6625a24670c3029a0f9e4e21bb297bf873505166c6d6a8",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is class `EventHub` with methods `subscribe(pattern, callback)` and `emit(pattern, payload) -> list[object]`.\n\nContract:\n- A pattern must be a string in the form `[name]`, where `name` is non-empty and contains neither `[` nor `]`. Malformed patterns raise `ValueError`; non-strings raise `TypeError`.\n- A callback must be callable or `TypeError` is raised.\n- Subscriptions preserve insertion order, and registering the same callback repeatedly creates repeated subscriptions.\n- `emit` invokes a snapshot of the current subscriptions for that pattern. Subscriptions added during emission are visible only to later emissions.\n- Each callback receives its own deep copy of `payload`. Mutation by one callback must not affect the original payload or another callback.\n- Return callback results in invocation order. With no subscribers, return a new empty list.\n- Callback exceptions propagate immediately.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0160",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n",
+          "label": "Pattern validation rejects every correctly closed pattern because it treats a present closing bracket as an error.",
+          "sha256": "204f6d01571f4b40849cd18255ef328faf82ce696b5114278e289d08e5247dc1"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or not pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "615245a50a23f1c254d066ae6b72f0f3a999fdc286c9e717ce5c619d768bf1d2"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import EventHub\n\n\nclass EventHubTests(unittest.TestCase):\n    def test_insertion_order_repeated_callbacks_and_results(self):\n        hub = EventHub()\n        calls = []\n        def first(payload):\n            calls.append(\"first\")\n            return payload + 1\n        def second(payload):\n            calls.append(\"second\")\n            return payload + 2\n        hub.subscribe(\"[event]\", first)\n        hub.subscribe(\"[event]\", second)\n        hub.subscribe(\"[event]\", first)\n        self.assertEqual(hub.emit(\"[event]\", 10), [11, 12, 11])\n        self.assertEqual(calls, [\"first\", \"second\", \"first\"])\n\n    def test_each_callback_gets_independent_deep_copy(self):\n        hub = EventHub()\n        seen = []\n        def mutate(payload):\n            seen.append(payload)\n            payload[\"nested\"][0].append(9)\n            return payload\n        hub.subscribe(\"[x]\", mutate)\n        hub.subscribe(\"[x]\", mutate)\n        original = {\"nested\": [[1]]}\n        results = hub.emit(\"[x]\", original)\n        self.assertEqual(original, {\"nested\": [[1]]})\n        self.assertEqual(results, [{\"nested\": [[1, 9]]}, {\"nested\": [[1, 9]]}])\n        self.assertIsNot(seen[0], seen[1])\n        self.assertIsNot(seen[0][\"nested\"], seen[1][\"nested\"])\n        self.assertIsNot(seen[0][\"nested\"][0], seen[1][\"nested\"][0])\n\n    def test_emission_uses_subscription_snapshot(self):\n        hub = EventHub()\n        calls = []\n        def late(payload): calls.append(\"late\")\n        def registering(payload):\n            calls.append(\"registering\")\n            hub.subscribe(\"[x]\", late)\n        hub.subscribe(\"[x]\", registering)\n        hub.emit(\"[x]\", None)\n        self.assertEqual(calls, [\"registering\"])\n        hub.emit(\"[x]\", None)\n        self.assertEqual(calls, [\"registering\", \"registering\", \"late\"])\n\n    def test_no_subscribers_returns_fresh_empty_lists(self):\n        hub = EventHub()\n        first = hub.emit(\"[none]\", {\"x\": 1})\n        second = hub.emit(\"[none]\", {\"x\": 1})\n        self.assertEqual(first, [])\n        self.assertEqual(second, [])\n        self.assertIsNot(first, second)\n\n    def test_pattern_and_callback_validation(self):\n        hub = EventHub()\n        for pattern in (None, 3, []):\n            with self.assertRaises(TypeError): hub.emit(pattern, None)\n            with self.assertRaises(TypeError): hub.subscribe(pattern, lambda value: value)\n        for pattern in (\"\", \"x\", \"[\", \"]\", \"[]\", \"[x\", \"x]\", \"[[x]\", \"[x]]\", \"[a[b]\", \"[a]b]\"):\n            with self.subTest(pattern=pattern):\n                with self.assertRaises(ValueError): hub.emit(pattern, None)\n        with self.assertRaises(TypeError): hub.subscribe(\"[x]\", 42)\n        hub.subscribe(\"[valid name]\", lambda value: value)\n        self.assertEqual(hub.emit(\"[valid name]\", \"ok\"), [\"ok\"])\n\n    def test_callback_exception_propagates_and_stops(self):\n        hub = EventHub()\n        calls = []\n        def fail(payload):\n            calls.append(\"fail\")\n            raise RuntimeError(\"boom\")\n        def later(payload): calls.append(\"later\")\n        hub.subscribe(\"[x]\", fail)\n        hub.subscribe(\"[x]\", later)\n        with self.assertRaisesRegex(RuntimeError, \"boom\"):\n            hub.emit(\"[x]\", None)\n        self.assertEqual(calls, [\"fail\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "4a919bd61c81efa8ffa4163e7bd5e43f315f58982bd918161a499658010313f0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e57822407bef97185b6625a24670c3029a0f9e4e21bb297bf873505166c6d6a8",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is class `EventHub` with methods `subscribe(pattern, callback)` and `emit(pattern, payload) -> list[object]`.\n\nContract:\n- A pattern must be a string in the form `[name]`, where `name` is non-empty and contains neither `[` nor `]`. Malformed patterns raise `ValueError`; non-strings raise `TypeError`.\n- A callback must be callable or `TypeError` is raised.\n- Subscriptions preserve insertion order, and registering the same callback repeatedly creates repeated subscriptions.\n- `emit` invokes a snapshot of the current subscriptions for that pattern. Subscriptions added during emission are visible only to later emissions.\n- Each callback receives its own deep copy of `payload`. Mutation by one callback must not affect the original payload or another callback.\n- Return callback results in invocation order. With no subscribers, return a new empty list.\n- Callback exceptions propagate immediately.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e57822407bef97185b6625a24670c3029a0f9e4e21bb297bf873505166c6d6a8",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is class `EventHub` with methods `subscribe(pattern, callback)` and `emit(pattern, payload) -> list[object]`.\n\nContract:\n- A pattern must be a string in the form `[name]`, where `name` is non-empty and contains neither `[` nor `]`. Malformed patterns raise `ValueError`; non-strings raise `TypeError`.\n- A callback must be callable or `TypeError` is raised.\n- Subscriptions preserve insertion order, and registering the same callback repeatedly creates repeated subscriptions.\n- `emit` invokes a snapshot of the current subscriptions for that pattern. Subscriptions added during emission are visible only to later emissions.\n- Each callback receives its own deep copy of `payload`. Mutation by one callback must not affect the original payload or another callback.\n- Return callback results in invocation order. With no subscribers, return a new empty list.\n- Callback exceptions propagate immediately.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0160",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n",
+          "label": "Pattern validation rejects every correctly closed pattern because it treats a present closing bracket as an error.",
+          "sha256": "204f6d01571f4b40849cd18255ef328faf82ce696b5114278e289d08e5247dc1"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Callable\n\n\nclass EventHub:\n    def __init__(self) -> None:\n        self._callbacks: dict[str, list[Callable]] = {}\n\n    @staticmethod\n    def _validate_pattern(pattern: object) -> str:\n        if not isinstance(pattern, str):\n            raise TypeError(\"pattern must be a string\")\n        if not pattern.startswith(\"[\") or not pattern.endswith(\"]\"):\n            raise ValueError(\"pattern must have [name] form\")\n        name = pattern[1:-1]\n        if not name or \"[\" in name or \"]\" in name:\n            raise ValueError(\"pattern must have [name] form\")\n        return pattern\n\n    def subscribe(self, pattern: str, callback: Callable) -> None:\n        key = self._validate_pattern(pattern)\n        if not callable(callback):\n            raise TypeError(\"callback must be callable\")\n        self._callbacks.setdefault(key, []).append(callback)\n\n    def emit(self, pattern: str, payload: object) -> list[object]:\n        key = self._validate_pattern(pattern)\n        callbacks = tuple(self._callbacks.get(key, ()))\n        return [callback(deepcopy(payload)) for callback in callbacks]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "615245a50a23f1c254d066ae6b72f0f3a999fdc286c9e717ce5c619d768bf1d2"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_payload (__main__.Probe.test_finite_payload)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 17, in test_finite_payload\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "3d848ff1a3030da3efb050c5869a1acc3e4740fa3fdf761b5efa2f71f8048eb5",
+    "duration_ms": 429,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

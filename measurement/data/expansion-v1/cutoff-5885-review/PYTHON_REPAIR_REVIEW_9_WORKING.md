@@ -1,5 +1,7 @@
 # Python repair review, batch 9 working notes
 
+Historical partial note, now superseded by PYTHON_REPAIR_REVIEW_9.md.
+
 Uncheckpointed continuation after batch 8. Positions 121–126 fully read
 (prompt, known-bad source, corrected source, original tests); do not add these
 to the checkpointed inspection count until the batch reconciliation.

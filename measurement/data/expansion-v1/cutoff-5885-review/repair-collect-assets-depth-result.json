@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0157",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c89f2d6b1467bc62d724cc74139a39ebc661ea0086794aa07bb151d46137eb5b",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import Document, collect_assets\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_dependency_chain(self):\n        documents = {str(i): Document(b'x', (str(i + 1),) if i < 1099 else ()) for i in range(1100)}\n        error = None\n        try:\n            result = collect_assets(documents, '0')\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n        self.assertEqual(list(result), [str(i) for i in range(1100)])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "fdcb2640f11577c0dd4fdae5e76545a71a49f75c29b5e25f38d3a1f117128f93"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3c7e3b86e61c74c770f5627298a3c03eb57946850d99754b083d1d12f10185d0",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is `collect_assets(documents, entry) -> dict[str, bytes]`.\n\nContract:\n- `documents` must be a dictionary mapping non-empty string names to `Document` values; `entry` must be a non-empty string. Invalid types raise `TypeError`, and empty names raise `ValueError`.\n- Each frozen `Document` has `content: bytes` and `links: tuple[str, ...]`; links must be non-empty strings.\n- Missing entry or linked names raise `KeyError`.\n- Return the full transitive dependency closure as a new dictionary, in depth-first preorder: a document appears before its links, and links follow tuple order.\n- Cycles and repeated links include each document only once.\n- Empty document maps fail with `KeyError` for the requested entry.\n- Input objects are not mutated or aliased. Bytes are immutable, and the returned dictionary must be newly allocated.\n\nKnown-bad source:\n\n```python\nfrom dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n\n    visit(entry)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3c7e3b86e61c74c770f5627298a3c03eb57946850d99754b083d1d12f10185d0",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is `collect_assets(documents, entry) -> dict[str, bytes]`.\n\nContract:\n- `documents` must be a dictionary mapping non-empty string names to `Document` values; `entry` must be a non-empty string. Invalid types raise `TypeError`, and empty names raise `ValueError`.\n- Each frozen `Document` has `content: bytes` and `links: tuple[str, ...]`; links must be non-empty strings.\n- Missing entry or linked names raise `KeyError`.\n- Return the full transitive dependency closure as a new dictionary, in depth-first preorder: a document appears before its links, and links follow tuple order.\n- Cycles and repeated links include each document only once.\n- Empty document maps fail with `KeyError` for the requested entry.\n- Input objects are not mutated or aliased. Bytes are immutable, and the returned dictionary must be newly allocated.\n\nKnown-bad source:\n\n```python\nfrom dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n\n    visit(entry)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0157",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n\n    visit(entry)\n    return result\n",
+          "label": "The traversal validates direct link existence but never visits linked documents, so the transitive closure is omitted.",
+          "sha256": "e01d24c42839ab3a45b70634f55eaf95337923e30fe7f9ca25f431fefb6ad0b1"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n            visit(linked_name)\n\n    visit(entry)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "20d4cda1990b96ee9a99d73b68a7bfffe542765ab636971ee68489b4eb545079"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom dataclasses import FrozenInstanceError\nfrom solution import Document, collect_assets\n\n\nclass CollectAssetsTests(unittest.TestCase):\n    def test_depth_first_preorder_transitive_closure(self):\n        documents = {\n            \"root\": Document(b\"r\", (\"a\", \"b\")),\n            \"a\": Document(b\"a\", (\"c\",)),\n            \"b\": Document(b\"b\", ()),\n            \"c\": Document(b\"c\", ()),\n        }\n        result = collect_assets(documents, \"root\")\n        self.assertEqual(list(result), [\"root\", \"a\", \"c\", \"b\"])\n        self.assertEqual(result, {\"root\": b\"r\", \"a\": b\"a\", \"c\": b\"c\", \"b\": b\"b\"})\n        self.assertIsNot(result, documents)\n\n    def test_cycles_and_repeated_links_are_visited_once(self):\n        documents = {\n            \"a\": Document(b\"a\", (\"b\", \"b\", \"c\")),\n            \"b\": Document(b\"b\", (\"a\", \"c\")),\n            \"c\": Document(b\"c\", ()),\n        }\n        result = collect_assets(documents, \"a\")\n        self.assertEqual(list(result), [\"a\", \"b\", \"c\"])\n\n    def test_missing_entry_and_transitive_link(self):\n        with self.assertRaises(KeyError): collect_assets({}, \"missing\")\n        with self.assertRaises(KeyError): collect_assets({\"a\": Document(b\"a\", (\"missing\",))}, \"a\")\n\n    def test_document_validation_and_frozen(self):\n        with self.assertRaises(TypeError): Document(\"bytes\", ())\n        with self.assertRaises(TypeError): Document(b\"x\", [])\n        with self.assertRaises(TypeError): Document(b\"x\", (1,))\n        with self.assertRaises(ValueError): Document(b\"x\", (\"\",))\n        document = Document(b\"x\", ())\n        with self.assertRaises(FrozenInstanceError): document.content = b\"y\"\n\n    def test_function_validation(self):\n        valid = {\"x\": Document(b\"x\", ())}\n        for documents in ([], None, \"x\"):\n            with self.assertRaises(TypeError): collect_assets(documents, \"x\")\n        for entry in (None, 1):\n            with self.assertRaises(TypeError): collect_assets(valid, entry)\n        with self.assertRaises(ValueError): collect_assets(valid, \"\")\n        with self.assertRaises(TypeError): collect_assets({1: Document(b\"x\", ())}, \"x\")\n        with self.assertRaises(ValueError): collect_assets({\"\": Document(b\"x\", ())}, \"x\")\n        with self.assertRaises(TypeError): collect_assets({\"x\": b\"x\"}, \"x\")\n\n    def test_result_is_new_on_each_call(self):\n        documents = {\"x\": Document(b\"x\", ())}\n        first = collect_assets(documents, \"x\")\n        second = collect_assets(documents, \"x\")\n        self.assertIsNot(first, second)\n        first[\"extra\"] = b\"e\"\n        self.assertEqual(second, {\"x\": b\"x\"})\n        self.assertEqual(list(documents), [\"x\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "cf9f6c6ed6c83ef681bd4f9b9cb8810a5f203ed5d4f5438e96223e63da884d34"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3c7e3b86e61c74c770f5627298a3c03eb57946850d99754b083d1d12f10185d0",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is `collect_assets(documents, entry) -> dict[str, bytes]`.\n\nContract:\n- `documents` must be a dictionary mapping non-empty string names to `Document` values; `entry` must be a non-empty string. Invalid types raise `TypeError`, and empty names raise `ValueError`.\n- Each frozen `Document` has `content: bytes` and `links: tuple[str, ...]`; links must be non-empty strings.\n- Missing entry or linked names raise `KeyError`.\n- Return the full transitive dependency closure as a new dictionary, in depth-first preorder: a document appears before its links, and links follow tuple order.\n- Cycles and repeated links include each document only once.\n- Empty document maps fail with `KeyError` for the requested entry.\n- Input objects are not mutated or aliased. Bytes are immutable, and the returned dictionary must be newly allocated.\n\nKnown-bad source:\n\n```python\nfrom dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n\n    visit(entry)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3c7e3b86e61c74c770f5627298a3c03eb57946850d99754b083d1d12f10185d0",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is `collect_assets(documents, entry) -> dict[str, bytes]`.\n\nContract:\n- `documents` must be a dictionary mapping non-empty string names to `Document` values; `entry` must be a non-empty string. Invalid types raise `TypeError`, and empty names raise `ValueError`.\n- Each frozen `Document` has `content: bytes` and `links: tuple[str, ...]`; links must be non-empty strings.\n- Missing entry or linked names raise `KeyError`.\n- Return the full transitive dependency closure as a new dictionary, in depth-first preorder: a document appears before its links, and links follow tuple order.\n- Cycles and repeated links include each document only once.\n- Empty document maps fail with `KeyError` for the requested entry.\n- Input objects are not mutated or aliased. Bytes are immutable, and the returned dictionary must be newly allocated.\n\nKnown-bad source:\n\n```python\nfrom dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n\n    visit(entry)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0157",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n\n    visit(entry)\n    return result\n",
+          "label": "The traversal validates direct link existence but never visits linked documents, so the transitive closure is omitted.",
+          "sha256": "e01d24c42839ab3a45b70634f55eaf95337923e30fe7f9ca25f431fefb6ad0b1"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Document:\n    content: bytes\n    links: tuple[str, ...]\n\n    def __post_init__(self) -> None:\n        if not isinstance(self.content, bytes):\n            raise TypeError(\"content must be bytes\")\n        if not isinstance(self.links, tuple):\n            raise TypeError(\"links must be a tuple\")\n        for link in self.links:\n            if not isinstance(link, str):\n                raise TypeError(\"links must contain strings\")\n            if not link:\n                raise ValueError(\"links must not be empty\")\n\n\ndef collect_assets(documents: dict[str, Document], entry: str) -> dict[str, bytes]:\n    if not isinstance(documents, dict):\n        raise TypeError(\"documents must be a dictionary\")\n    if not isinstance(entry, str):\n        raise TypeError(\"entry must be a string\")\n    if not entry:\n        raise ValueError(\"entry must not be empty\")\n    for name, document in documents.items():\n        if not isinstance(name, str) or not isinstance(document, Document):\n            raise TypeError(\"invalid document mapping\")\n        if not name:\n            raise ValueError(\"document names must not be empty\")\n    result: dict[str, bytes] = {}\n\n    def visit(name: str) -> None:\n        if name in result:\n            return\n        document = documents[name]\n        result[name] = document.content\n        for linked_name in document.links:\n            if linked_name not in documents:\n                raise KeyError(linked_name)\n            visit(linked_name)\n\n    visit(entry)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "20d4cda1990b96ee9a99d73b68a7bfffe542765ab636971ee68489b4eb545079"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_dependency_chain (__main__.Probe.test_finite_dependency_chain)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 13, in test_finite_dependency_chain\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "4b71aa68deca1232dc969fb222062b8949fbb21fd9ae188f9a9bd487ea7d01cd",
+    "duration_ms": 888,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

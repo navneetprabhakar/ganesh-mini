@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0738",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e23b7270f5b8e9988a062f204d40dae6d70a02e52b2f77b88bae0b6862b8c3e5",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import merge_identity\n\n\nclass SharedAccountTests(unittest.TestCase):\n    def test_only_selected_account_email_changes(self):\n        account = {\"username\": \"u\", \"email\": \"old\", \"password\": \"p\"}\n        result, selected = merge_identity({\"a\": account, \"b\": account},\n                                          {\"external_key\": \"a\", \"email\": \"new\", \"secret\": \"s\"})\n        self.assertIs(selected, result[\"a\"])\n        self.assertEqual(result[\"b\"][\"email\"], \"old\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "9a06330a198614e25a817eb0abcfad4afd2b1c11e47da9a9a0e848aa9119cbb6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "826f1794e88ba7756095ab87917abe2d9f45239daf21d4630fb9dfcbb1e1fe45",
+      "text": "Create `solution.py` with `merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]`.\n\n`payload` must contain exactly `external_key`, `email`, and `secret`, each mapped to a non-empty string. `directory` maps string external keys to mutable account dictionaries. Every existing account must contain at least `username`, `email`, and `password`.\n\nReturn a new directory without mutating the input. If the key exists, update only that copied account's `email`; preserve all other fields. If it does not exist, add `{\"username\": external_key, \"email\": email, \"password\": secret}`. The second tuple element must be the exact same dictionary object stored under the key in the returned directory. All pre-existing nested values must be deeply copied so no mutable value in the returned directory aliases input data. Malformed arguments raise `TypeError` or `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "826f1794e88ba7756095ab87917abe2d9f45239daf21d4630fb9dfcbb1e1fe45",
+      "text": "Create `solution.py` with `merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]`.\n\n`payload` must contain exactly `external_key`, `email`, and `secret`, each mapped to a non-empty string. `directory` maps string external keys to mutable account dictionaries. Every existing account must contain at least `username`, `email`, and `password`.\n\nReturn a new directory without mutating the input. If the key exists, update only that copied account's `email`; preserve all other fields. If it does not exist, add `{\"username\": external_key, \"email\": email, \"password\": secret}`. The second tuple element must be the exact same dictionary object stored under the key in the returned directory. All pre-existing nested values must be deeply copied so no mutable value in the returned directory aliases input data. Malformed arguments raise `TypeError` or `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0738",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]:\n    if not isinstance(directory, dict):\n        raise TypeError(\"directory must be a dict\")\n    for key, account in directory.items():\n        if not isinstance(key, str) or not isinstance(account, dict):\n            raise TypeError(\"malformed directory entry\")\n        if not {\"username\", \"email\", \"password\"} <= set(account):\n            raise ValueError(\"account is missing required fields\")\n\n    if not isinstance(payload, dict):\n        raise TypeError(\"payload must be a dict\")\n    if set(payload) != {\"external_key\", \"email\", \"secret\"}:\n        raise ValueError(\"malformed payload\")\n    for value in payload.values():\n        if not isinstance(value, str):\n            raise TypeError(\"payload values must be strings\")\n        if not value:\n            raise ValueError(\"payload values must be non-empty\")\n\n    key = payload[\"external_key\"]\n    result = dict(directory)\n    if key in result:\n        result[key][\"email\"] = payload[\"email\"]\n    else:\n        result[key] = {\n            \"username\": key,\n            \"email\": payload[\"email\"],\n            \"password\": payload[\"secret\"],\n        }\n    return result, result[key]\n",
+          "label": "The shallow directory copy aliases existing accounts and mutates input data during updates.",
+          "sha256": "65e3eac0f5f21a4b0477923d3d2b794aadfbd102d38a5a76a96c3fb47649d436"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]:\n    if not isinstance(directory, dict):\n        raise TypeError(\"directory must be a dict\")\n    for key, account in directory.items():\n        if not isinstance(key, str) or not isinstance(account, dict):\n            raise TypeError(\"malformed directory entry\")\n        if not {\"username\", \"email\", \"password\"} <= set(account):\n            raise ValueError(\"account is missing required fields\")\n\n    if not isinstance(payload, dict):\n        raise TypeError(\"payload must be a dict\")\n    if set(payload) != {\"external_key\", \"email\", \"secret\"}:\n        raise ValueError(\"malformed payload\")\n    for value in payload.values():\n        if not isinstance(value, str):\n            raise TypeError(\"payload values must be strings\")\n        if not value:\n            raise ValueError(\"payload values must be non-empty\")\n\n    key = payload[\"external_key\"]\n    result = deepcopy(directory)\n    if key in result:\n        result[key][\"email\"] = payload[\"email\"]\n    else:\n        result[key] = {\n            \"username\": key,\n            \"email\": payload[\"email\"],\n            \"password\": payload[\"secret\"],\n        }\n    return result, result[key]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "69a358e79d9e0255ba5b6e55e568c3a5a5afc099e4048438f8ae2e582da43ae2"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import merge_identity\n\n\nclass MergeIdentityTests(unittest.TestCase):\n    def test_existing_account_updates_only_email_and_deep_copies(self):\n        nested = {\"roles\": [\"reader\"], \"prefs\": {\"theme\": \"dark\"}}\n        directory = {\n            \"key-1\": {\n                \"username\": \"original-user\",\n                \"email\": \"old@example.com\",\n                \"password\": \"old-secret\",\n                \"metadata\": nested,\n            },\n            \"other\": {\n                \"username\": \"other\",\n                \"email\": \"other@example.com\",\n                \"password\": \"pw\",\n                \"tags\": [\"x\"],\n            },\n        }\n        payload = {\"external_key\": \"key-1\", \"email\": \"new@example.com\", \"secret\": \"unused\"}\n        result, account = merge_identity(directory, payload)\n        self.assertIsNot(result, directory)\n        self.assertIs(account, result[\"key-1\"])\n        self.assertEqual(account[\"username\"], \"original-user\")\n        self.assertEqual(account[\"email\"], \"new@example.com\")\n        self.assertEqual(account[\"password\"], \"old-secret\")\n        self.assertEqual(account[\"metadata\"], nested)\n        self.assertEqual(directory[\"key-1\"][\"email\"], \"old@example.com\")\n        self.assertIsNot(account, directory[\"key-1\"])\n        self.assertIsNot(account[\"metadata\"], nested)\n        self.assertIsNot(account[\"metadata\"][\"roles\"], nested[\"roles\"])\n        self.assertIsNot(result[\"other\"][\"tags\"], directory[\"other\"][\"tags\"])\n        account[\"metadata\"][\"roles\"].append(\"writer\")\n        self.assertEqual(nested[\"roles\"], [\"reader\"])\n        directory[\"other\"][\"tags\"].append(\"y\")\n        self.assertEqual(result[\"other\"][\"tags\"], [\"x\"])\n\n    def test_new_account_and_exact_return_identity(self):\n        directory = {}\n        payload = {\"external_key\": \"new\", \"email\": \"n@example.com\", \"secret\": \"secret\"}\n        result, account = merge_identity(directory, payload)\n        self.assertEqual(result, {\n            \"new\": {\"username\": \"new\", \"email\": \"n@example.com\", \"password\": \"secret\"}\n        })\n        self.assertIs(account, result[\"new\"])\n        self.assertEqual(directory, {})\n        self.assertEqual(payload, {\"external_key\": \"new\", \"email\": \"n@example.com\", \"secret\": \"secret\"})\n\n    def test_payload_must_be_exact_and_nonempty_strings(self):\n        valid_directory = {}\n        payloads = [\n            {},\n            {\"external_key\": \"k\", \"email\": \"e\"},\n            {\"external_key\": \"k\", \"email\": \"e\", \"secret\": \"s\", \"extra\": \"x\"},\n            {\"external_key\": \"\", \"email\": \"e\", \"secret\": \"s\"},\n            {\"external_key\": \"k\", \"email\": \"\", \"secret\": \"s\"},\n            {\"external_key\": \"k\", \"email\": \"e\", \"secret\": \"\"},\n            {\"external_key\": \"k\", \"email\": 3, \"secret\": \"s\"},\n        ]\n        for payload in payloads:\n            with self.subTest(payload=payload), self.assertRaises((TypeError, ValueError)):\n                merge_identity(valid_directory, payload)\n        with self.assertRaises(TypeError):\n            merge_identity(valid_directory, [])\n\n    def test_malformed_directory_rejected(self):\n        payload = {\"external_key\": \"k\", \"email\": \"e\", \"secret\": \"s\"}\n        directories = [\n            [],\n            {1: {\"username\": \"u\", \"email\": \"e\", \"password\": \"p\"}},\n            {\"k\": []},\n            {\"k\": {\"username\": \"u\", \"email\": \"e\"}},\n            {\"k\": {\"username\": \"u\", \"password\": \"p\"}},\n            {\"k\": {\"email\": \"e\", \"password\": \"p\"}},\n        ]\n        for directory in directories:\n            with self.subTest(directory=directory), self.assertRaises((TypeError, ValueError)):\n                merge_identity(directory, payload)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "b70c916f920b45fdfe4ec67297fae5bb9062ef6199f2ef04036d469580cf3cca"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "826f1794e88ba7756095ab87917abe2d9f45239daf21d4630fb9dfcbb1e1fe45",
+      "text": "Create `solution.py` with `merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]`.\n\n`payload` must contain exactly `external_key`, `email`, and `secret`, each mapped to a non-empty string. `directory` maps string external keys to mutable account dictionaries. Every existing account must contain at least `username`, `email`, and `password`.\n\nReturn a new directory without mutating the input. If the key exists, update only that copied account's `email`; preserve all other fields. If it does not exist, add `{\"username\": external_key, \"email\": email, \"password\": secret}`. The second tuple element must be the exact same dictionary object stored under the key in the returned directory. All pre-existing nested values must be deeply copied so no mutable value in the returned directory aliases input data. Malformed arguments raise `TypeError` or `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "826f1794e88ba7756095ab87917abe2d9f45239daf21d4630fb9dfcbb1e1fe45",
+      "text": "Create `solution.py` with `merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]`.\n\n`payload` must contain exactly `external_key`, `email`, and `secret`, each mapped to a non-empty string. `directory` maps string external keys to mutable account dictionaries. Every existing account must contain at least `username`, `email`, and `password`.\n\nReturn a new directory without mutating the input. If the key exists, update only that copied account's `email`; preserve all other fields. If it does not exist, add `{\"username\": external_key, \"email\": email, \"password\": secret}`. The second tuple element must be the exact same dictionary object stored under the key in the returned directory. All pre-existing nested values must be deeply copied so no mutable value in the returned directory aliases input data. Malformed arguments raise `TypeError` or `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0738",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]:\n    if not isinstance(directory, dict):\n        raise TypeError(\"directory must be a dict\")\n    for key, account in directory.items():\n        if not isinstance(key, str) or not isinstance(account, dict):\n            raise TypeError(\"malformed directory entry\")\n        if not {\"username\", \"email\", \"password\"} <= set(account):\n            raise ValueError(\"account is missing required fields\")\n\n    if not isinstance(payload, dict):\n        raise TypeError(\"payload must be a dict\")\n    if set(payload) != {\"external_key\", \"email\", \"secret\"}:\n        raise ValueError(\"malformed payload\")\n    for value in payload.values():\n        if not isinstance(value, str):\n            raise TypeError(\"payload values must be strings\")\n        if not value:\n            raise ValueError(\"payload values must be non-empty\")\n\n    key = payload[\"external_key\"]\n    result = dict(directory)\n    if key in result:\n        result[key][\"email\"] = payload[\"email\"]\n    else:\n        result[key] = {\n            \"username\": key,\n            \"email\": payload[\"email\"],\n            \"password\": payload[\"secret\"],\n        }\n    return result, result[key]\n",
+          "label": "The shallow directory copy aliases existing accounts and mutates input data during updates.",
+          "sha256": "65e3eac0f5f21a4b0477923d3d2b794aadfbd102d38a5a76a96c3fb47649d436"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef merge_identity(directory: dict, payload: dict) -> tuple[dict, dict]:\n    if not isinstance(directory, dict):\n        raise TypeError(\"directory must be a dict\")\n    for key, account in directory.items():\n        if not isinstance(key, str) or not isinstance(account, dict):\n            raise TypeError(\"malformed directory entry\")\n        if not {\"username\", \"email\", \"password\"} <= set(account):\n            raise ValueError(\"account is missing required fields\")\n\n    if not isinstance(payload, dict):\n        raise TypeError(\"payload must be a dict\")\n    if set(payload) != {\"external_key\", \"email\", \"secret\"}:\n        raise ValueError(\"malformed payload\")\n    for value in payload.values():\n        if not isinstance(value, str):\n            raise TypeError(\"payload values must be strings\")\n        if not value:\n            raise ValueError(\"payload values must be non-empty\")\n\n    key = payload[\"external_key\"]\n    result = deepcopy(directory)\n    if key in result:\n        result[key][\"email\"] = payload[\"email\"]\n    else:\n        result[key] = {\n            \"username\": key,\n            \"email\": payload[\"email\"],\n            \"password\": payload[\"secret\"],\n        }\n    return result, result[key]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "69a358e79d9e0255ba5b6e55e568c3a5a5afc099e4048438f8ae2e582da43ae2"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_only_selected_account_email_changes (__main__.SharedAccountTests.test_only_selected_account_email_changes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_only_selected_account_email_changes\n    self.assertEqual(result[\"b\"][\"email\"], \"old\")\nAssertionError: 'new' != 'old'\n- new\n+ old\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "2ea5b2ecd0061e47f364a1c5904aac135f3fbc55dc31faeb00b03270faad2ebc",
+    "duration_ms": 469,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

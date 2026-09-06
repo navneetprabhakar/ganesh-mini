@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0737",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5413eb1946186be8b63a8e13721967ce7bb4662bb2b9ccacebc191d1aa267ba9",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import csv\nimport io\nimport unittest\nfrom solution import render_group_csv\n\n\nclass GroupCsvTests(unittest.TestCase):\n    def test_lowercase_precedes_ascii_replacement(self):\n        self.assertEqual(list(render_group_csv([{\"name\": \"\\u212a\", \"enabled\": True, \"rows\": []}])), [\"k.csv\"])\n\n    def test_carriage_return_field_roundtrips(self):\n        rows = [[\"a\\rb\", \"1\", \"2\", \"z\"]]\n        text = render_group_csv([{\"name\": \"g\", \"enabled\": True, \"rows\": rows}])[\"g.csv\"]\n        self.assertEqual(list(csv.reader(io.StringIO(text, newline=\"\")))[1:], rows)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "e8da06bfe25cae0a4871079927edeb2efb96a6d5b36b030e0a54983eaef68d5c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "79d2f614483b74a65ca62bd52341a0af2f5326e78db495875dd20ce375dd9f8b",
+      "text": "Create `solution.py` with `render_group_csv(groups: list[dict]) -> dict[str, str]`.\n\nEach group must be a dictionary with exactly `name`, `enabled`, and `rows`. `name` is a non-empty string, `enabled` is a bool, and `rows` is a list. Disabled groups are skipped. Each row must be a four-element list or tuple containing strings for item, units, unit cost, and zone.\n\nFor each enabled group, create a filename by converting the trimmed name to lowercase, replacing each run of non-ASCII-alphanumeric characters with one underscore, stripping leading or trailing underscores, and appending `.csv`. If nothing remains, use `group.csv`. Two enabled groups producing the same filename raise `ValueError`.\n\nEach result value is RFC-style CSV text with header `Item,Units,Unit Cost,Zone`, rows in input order, `\\n` line endings, and correct CSV quoting. Return a dictionary in group order. Malformed data raises `TypeError` or `ValueError`. The implementation must not perform I/O or mutate or retain aliases to any input container.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "79d2f614483b74a65ca62bd52341a0af2f5326e78db495875dd20ce375dd9f8b",
+      "text": "Create `solution.py` with `render_group_csv(groups: list[dict]) -> dict[str, str]`.\n\nEach group must be a dictionary with exactly `name`, `enabled`, and `rows`. `name` is a non-empty string, `enabled` is a bool, and `rows` is a list. Disabled groups are skipped. Each row must be a four-element list or tuple containing strings for item, units, unit cost, and zone.\n\nFor each enabled group, create a filename by converting the trimmed name to lowercase, replacing each run of non-ASCII-alphanumeric characters with one underscore, stripping leading or trailing underscores, and appending `.csv`. If nothing remains, use `group.csv`. Two enabled groups producing the same filename raise `ValueError`.\n\nEach result value is RFC-style CSV text with header `Item,Units,Unit Cost,Zone`, rows in input order, `\\n` line endings, and correct CSV quoting. Return a dictionary in group order. Malformed data raises `TypeError` or `ValueError`. The implementation must not perform I/O or mutate or retain aliases to any input container.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0737",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import csv\nimport io\nimport re\n\n\ndef render_group_csv(groups: list[dict]) -> dict[str, str]:\n    if not isinstance(groups, list):\n        raise TypeError(\"groups must be a list\")\n    result = {}\n    for group in groups:\n        if not isinstance(group, dict) or set(group) != {\"name\", \"enabled\", \"rows\"}:\n            raise ValueError(\"malformed group\")\n        name = group[\"name\"]\n        enabled = group[\"enabled\"]\n        rows = group[\"rows\"]\n        if not isinstance(name, str) or not name.strip():\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(enabled, bool):\n            raise TypeError(\"enabled must be a bool\")\n        if not isinstance(rows, list):\n            raise TypeError(\"rows must be a list\")\n        checked = []\n        for row in rows:\n            if not isinstance(row, (list, tuple)) or len(row) != 4:\n                raise ValueError(\"each row must contain four fields\")\n            if not all(isinstance(value, str) for value in row):\n                raise TypeError(\"row fields must be strings\")\n            checked.append(tuple(row))\n        if not enabled:\n            continue\n        stem = re.sub(r\"\\s+\", \"_\", name.strip()).strip(\"_\").lower()\n        filename = (stem or \"group\") + \".csv\"\n        if filename in result:\n            raise ValueError(\"duplicate output filename\")\n        stream = io.StringIO(newline=\"\")\n        writer = csv.writer(stream, lineterminator=\"\\n\")\n        writer.writerow([\"Item\", \"Units\", \"Unit Cost\", \"Zone\"])\n        writer.writerows(checked)\n        result[filename] = stream.getvalue()\n    return result\n",
+          "label": "Filename normalization replaces whitespace only instead of every non-alphanumeric run.",
+          "sha256": "698c2e252c9e1a18674aab1d3e019610a36a00b3ef90a60d3f358b5941703feb"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport io\nimport re\n\n\ndef render_group_csv(groups: list[dict]) -> dict[str, str]:\n    if not isinstance(groups, list):\n        raise TypeError(\"groups must be a list\")\n    result = {}\n    for group in groups:\n        if not isinstance(group, dict) or set(group) != {\"name\", \"enabled\", \"rows\"}:\n            raise ValueError(\"malformed group\")\n        name = group[\"name\"]\n        enabled = group[\"enabled\"]\n        rows = group[\"rows\"]\n        if not isinstance(name, str) or not name.strip():\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(enabled, bool):\n            raise TypeError(\"enabled must be a bool\")\n        if not isinstance(rows, list):\n            raise TypeError(\"rows must be a list\")\n        checked = []\n        for row in rows:\n            if not isinstance(row, (list, tuple)) or len(row) != 4:\n                raise ValueError(\"each row must contain four fields\")\n            if not all(isinstance(value, str) for value in row):\n                raise TypeError(\"row fields must be strings\")\n            checked.append(tuple(row))\n        if not enabled:\n            continue\n        stem = re.sub(r\"[^A-Za-z0-9]+\", \"_\", name.strip()).strip(\"_\").lower()\n        filename = (stem or \"group\") + \".csv\"\n        if filename in result:\n            raise ValueError(\"duplicate output filename\")\n        stream = io.StringIO(newline=\"\")\n        writer = csv.writer(stream, lineterminator=\"\\n\")\n        writer.writerow([\"Item\", \"Units\", \"Unit Cost\", \"Zone\"])\n        writer.writerows(checked)\n        result[filename] = stream.getvalue()\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fa936c5a6d9fb2f2b991f1d0dd2597a1d30f339fbe685149215634feff7348c7"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import render_group_csv\n\n\nclass RenderGroupCsvTests(unittest.TestCase):\n    def test_enabled_groups_filename_and_csv_quoting(self):\n        groups = [\n            {\n                \"name\": \"  North / EAST!!  \",\n                \"enabled\": True,\n                \"rows\": [\n                    [\"plain\", \"2\", \"3.50\", \"A\"],\n                    [\"comma,item\", \"1\", 'say \"hi\"', \"line\\nbreak\"],\n                ],\n            },\n            {\"name\": \"Ignored\", \"enabled\": False, \"rows\": []},\n            {\"name\": \"Second\", \"enabled\": True, \"rows\": []},\n        ]\n        result = render_group_csv(groups)\n        self.assertEqual(list(result), [\"north_east.csv\", \"second.csv\"])\n        self.assertEqual(\n            result[\"north_east.csv\"],\n            'Item,Units,Unit Cost,Zone\\nplain,2,3.50,A\\n\"comma,item\",1,\"say \"\"hi\"\"\",\"line\\nbreak\"\\n',\n        )\n        self.assertEqual(result[\"second.csv\"], \"Item,Units,Unit Cost,Zone\\n\")\n\n    def test_unicode_replacement_fallback_and_case_conversion(self):\n        result = render_group_csv([\n            {\"name\": \"Caf\u00e9 \u6771\u4eac\", \"enabled\": True, \"rows\": []},\n            {\"name\": \" !!! \", \"enabled\": True, \"rows\": []},\n        ])\n        self.assertEqual(list(result), [\"caf.csv\", \"group.csv\"])\n\n    def test_disabled_group_is_skipped(self):\n        groups = [{\"name\": \"off\", \"enabled\": False, \"rows\": [[\"a\", \"b\", \"c\", \"d\"]]}]\n        self.assertEqual(render_group_csv(groups), {})\n\n    def test_duplicate_enabled_filename_rejected(self):\n        groups = [\n            {\"name\": \"A-B\", \"enabled\": True, \"rows\": []},\n            {\"name\": \"a b\", \"enabled\": True, \"rows\": []},\n        ]\n        with self.assertRaises(ValueError):\n            render_group_csv(groups)\n\n    def test_input_is_not_mutated_or_retained(self):\n        row = [\"item\", \"1\", \"2\", \"zone\"]\n        group = {\"name\": \"Group\", \"enabled\": True, \"rows\": [row]}\n        groups = [group]\n        result = render_group_csv(groups)\n        row[0] = \"changed\"\n        group[\"rows\"].append([\"new\", \"1\", \"1\", \"z\"])\n        groups.clear()\n        self.assertEqual(result[\"group.csv\"], \"Item,Units,Unit Cost,Zone\\nitem,1,2,zone\\n\")\n\n    def test_malformed_groups_and_rows(self):\n        cases = [\n            None,\n            [{}],\n            [{\"name\": \"g\", \"enabled\": True, \"rows\": [], \"extra\": 1}],\n            [{\"name\": \"\", \"enabled\": True, \"rows\": []}],\n            [{\"name\": 3, \"enabled\": True, \"rows\": []}],\n            [{\"name\": \"g\", \"enabled\": 1, \"rows\": []}],\n            [{\"name\": \"g\", \"enabled\": True, \"rows\": ()}],\n            [{\"name\": \"g\", \"enabled\": True, \"rows\": [[\"a\", \"b\", \"c\"]]}],\n            [{\"name\": \"g\", \"enabled\": True, \"rows\": [[\"a\", \"b\", \"c\", 4]]}],\n            [{\"name\": \"g\", \"enabled\": True, \"rows\": [\"abcd\"]}],\n        ]\n        for groups in cases:\n            with self.subTest(groups=groups), self.assertRaises((TypeError, ValueError)):\n                render_group_csv(groups)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "926ca57f0e765629e4e615abb7dcd66294febb86f2c5af28af80559e1781b1e3"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "79d2f614483b74a65ca62bd52341a0af2f5326e78db495875dd20ce375dd9f8b",
+      "text": "Create `solution.py` with `render_group_csv(groups: list[dict]) -> dict[str, str]`.\n\nEach group must be a dictionary with exactly `name`, `enabled`, and `rows`. `name` is a non-empty string, `enabled` is a bool, and `rows` is a list. Disabled groups are skipped. Each row must be a four-element list or tuple containing strings for item, units, unit cost, and zone.\n\nFor each enabled group, create a filename by converting the trimmed name to lowercase, replacing each run of non-ASCII-alphanumeric characters with one underscore, stripping leading or trailing underscores, and appending `.csv`. If nothing remains, use `group.csv`. Two enabled groups producing the same filename raise `ValueError`.\n\nEach result value is RFC-style CSV text with header `Item,Units,Unit Cost,Zone`, rows in input order, `\\n` line endings, and correct CSV quoting. Return a dictionary in group order. Malformed data raises `TypeError` or `ValueError`. The implementation must not perform I/O or mutate or retain aliases to any input container.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "79d2f614483b74a65ca62bd52341a0af2f5326e78db495875dd20ce375dd9f8b",
+      "text": "Create `solution.py` with `render_group_csv(groups: list[dict]) -> dict[str, str]`.\n\nEach group must be a dictionary with exactly `name`, `enabled`, and `rows`. `name` is a non-empty string, `enabled` is a bool, and `rows` is a list. Disabled groups are skipped. Each row must be a four-element list or tuple containing strings for item, units, unit cost, and zone.\n\nFor each enabled group, create a filename by converting the trimmed name to lowercase, replacing each run of non-ASCII-alphanumeric characters with one underscore, stripping leading or trailing underscores, and appending `.csv`. If nothing remains, use `group.csv`. Two enabled groups producing the same filename raise `ValueError`.\n\nEach result value is RFC-style CSV text with header `Item,Units,Unit Cost,Zone`, rows in input order, `\\n` line endings, and correct CSV quoting. Return a dictionary in group order. Malformed data raises `TypeError` or `ValueError`. The implementation must not perform I/O or mutate or retain aliases to any input container.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0737",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import csv\nimport io\nimport re\n\n\ndef render_group_csv(groups: list[dict]) -> dict[str, str]:\n    if not isinstance(groups, list):\n        raise TypeError(\"groups must be a list\")\n    result = {}\n    for group in groups:\n        if not isinstance(group, dict) or set(group) != {\"name\", \"enabled\", \"rows\"}:\n            raise ValueError(\"malformed group\")\n        name = group[\"name\"]\n        enabled = group[\"enabled\"]\n        rows = group[\"rows\"]\n        if not isinstance(name, str) or not name.strip():\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(enabled, bool):\n            raise TypeError(\"enabled must be a bool\")\n        if not isinstance(rows, list):\n            raise TypeError(\"rows must be a list\")\n        checked = []\n        for row in rows:\n            if not isinstance(row, (list, tuple)) or len(row) != 4:\n                raise ValueError(\"each row must contain four fields\")\n            if not all(isinstance(value, str) for value in row):\n                raise TypeError(\"row fields must be strings\")\n            checked.append(tuple(row))\n        if not enabled:\n            continue\n        stem = re.sub(r\"\\s+\", \"_\", name.strip()).strip(\"_\").lower()\n        filename = (stem or \"group\") + \".csv\"\n        if filename in result:\n            raise ValueError(\"duplicate output filename\")\n        stream = io.StringIO(newline=\"\")\n        writer = csv.writer(stream, lineterminator=\"\\n\")\n        writer.writerow([\"Item\", \"Units\", \"Unit Cost\", \"Zone\"])\n        writer.writerows(checked)\n        result[filename] = stream.getvalue()\n    return result\n",
+          "label": "Filename normalization replaces whitespace only instead of every non-alphanumeric run.",
+          "sha256": "698c2e252c9e1a18674aab1d3e019610a36a00b3ef90a60d3f358b5941703feb"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport io\nimport re\n\n\ndef render_group_csv(groups: list[dict]) -> dict[str, str]:\n    if not isinstance(groups, list):\n        raise TypeError(\"groups must be a list\")\n    result = {}\n    for group in groups:\n        if not isinstance(group, dict) or set(group) != {\"name\", \"enabled\", \"rows\"}:\n            raise ValueError(\"malformed group\")\n        name = group[\"name\"]\n        enabled = group[\"enabled\"]\n        rows = group[\"rows\"]\n        if not isinstance(name, str) or not name.strip():\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(enabled, bool):\n            raise TypeError(\"enabled must be a bool\")\n        if not isinstance(rows, list):\n            raise TypeError(\"rows must be a list\")\n        checked = []\n        for row in rows:\n            if not isinstance(row, (list, tuple)) or len(row) != 4:\n                raise ValueError(\"each row must contain four fields\")\n            if not all(isinstance(value, str) for value in row):\n                raise TypeError(\"row fields must be strings\")\n            checked.append(tuple(row))\n        if not enabled:\n            continue\n        stem = re.sub(r\"[^A-Za-z0-9]+\", \"_\", name.strip()).strip(\"_\").lower()\n        filename = (stem or \"group\") + \".csv\"\n        if filename in result:\n            raise ValueError(\"duplicate output filename\")\n        stream = io.StringIO(newline=\"\")\n        writer = csv.writer(stream, lineterminator=\"\\n\")\n        writer.writerow([\"Item\", \"Units\", \"Unit Cost\", \"Zone\"])\n        writer.writerows(checked)\n        result[filename] = stream.getvalue()\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fa936c5a6d9fb2f2b991f1d0dd2597a1d30f339fbe685149215634feff7348c7"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": ".F\n======================================================================\nFAIL: test_lowercase_precedes_ascii_replacement (__main__.GroupCsvTests.test_lowercase_precedes_ascii_replacement)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_lowercase_precedes_ascii_replacement\n    self.assertEqual(list(render_group_csv([{\"name\": \"\\u212a\", \"enabled\": True, \"rows\": []}])), [\"k.csv\"])\nAssertionError: Lists differ: ['group.csv'] != ['k.csv']\n\nFirst differing element 0:\n'group.csv'\n'k.csv'\n\n- ['group.csv']\n+ ['k.csv']\n\n----------------------------------------------------------------------\nRan 2 tests in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "3b628efda9a72c35b9d0380b6c180470c42bce42d6d1845e85193121c80c8fa4",
+    "duration_ms": 451,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

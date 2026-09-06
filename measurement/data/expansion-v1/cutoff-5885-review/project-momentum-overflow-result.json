@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0727",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "68ee303d854b068d97bbfd766791a560e0a888d1ce30c5c17bc3d18da7ca1503",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import project_state\n\n\nclass MomentumTests(unittest.TestCase):\n    def test_finite_representable_adjusted_velocity(self):\n        bodies = [\n            {\"name\": \"a\", \"mass\": 1e308, \"position\": [0, 0, 0], \"velocity\": [0, 0, 0]},\n            {\"name\": \"b\", \"mass\": 1e308, \"position\": [0, 0, 0], \"velocity\": [2, 0, 0]},\n        ]\n        self.assertEqual(project_state(bodies)[0][\"velocity\"][0], -2.0)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "cdf61056838accaa35254704dcba89e83c58aa664670eae7cb43bb623d72cb9c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6623907004429ec0350d9db83ae6215822a384e667c477785d2009fe76f0efee",
+      "text": "Implement `solution.py` with this public API:\n\n`project_state(bodies, anchor=None) -> list[dict]`\n\n`bodies` is an iterable of dictionaries containing exactly `name` (non-empty string), `mass` (positive finite number), `position` (three finite numbers), and `velocity` (three finite numbers). Names must be unique. Return a new list in input order. Each returned dictionary must have the same four keys, with position and velocity represented as new three-element lists of floats.\n\nSet every z coordinate and z velocity to `0.0`. Then adjust one body's x/y velocity so total x/y momentum becomes zero. If `anchor` is `None`, adjust the first body; otherwise adjust the uniquely named body. Positions and all other velocities remain unchanged except for z projection. The input and all nested objects must never be mutated or aliased by the result.\n\nAn empty input returns `[]` only when `anchor` is `None`; otherwise raise `ValueError`. Raise `TypeError` for a non-iterable input, non-dictionary body, wrong field types, or non-numeric vector elements. Raise `ValueError` for missing/extra keys, duplicate/empty names, invalid vector lengths, non-positive/non-finite masses, non-finite vector values, or an unknown anchor.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6623907004429ec0350d9db83ae6215822a384e667c477785d2009fe76f0efee",
+      "text": "Implement `solution.py` with this public API:\n\n`project_state(bodies, anchor=None) -> list[dict]`\n\n`bodies` is an iterable of dictionaries containing exactly `name` (non-empty string), `mass` (positive finite number), `position` (three finite numbers), and `velocity` (three finite numbers). Names must be unique. Return a new list in input order. Each returned dictionary must have the same four keys, with position and velocity represented as new three-element lists of floats.\n\nSet every z coordinate and z velocity to `0.0`. Then adjust one body's x/y velocity so total x/y momentum becomes zero. If `anchor` is `None`, adjust the first body; otherwise adjust the uniquely named body. Positions and all other velocities remain unchanged except for z projection. The input and all nested objects must never be mutated or aliased by the result.\n\nAn empty input returns `[]` only when `anchor` is `None`; otherwise raise `ValueError`. Raise `TypeError` for a non-iterable input, non-dictionary body, wrong field types, or non-numeric vector elements. Raise `ValueError` for missing/extra keys, duplicate/empty names, invalid vector lengths, non-positive/non-finite masses, non-finite vector values, or an unknown anchor.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0727",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"expected a number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"number must be finite\")\n    return value\n\n\ndef _vector(value):\n    if isinstance(value, (str, bytes)):\n        raise TypeError(\"vector must be an iterable\")\n    try:\n        values = list(value)\n    except TypeError:\n        raise TypeError(\"vector must be an iterable\") from None\n    if len(values) != 3:\n        raise ValueError(\"vector must contain three values\")\n    return [_number(item) for item in values]\n\n\ndef project_state(bodies, anchor=None):\n    if isinstance(bodies, (str, bytes)):\n        raise TypeError(\"bodies must be an iterable\")\n    try:\n        source = list(bodies)\n    except TypeError:\n        raise TypeError(\"bodies must be an iterable\") from None\n    result = []\n    names = set()\n    for body in source:\n        if not isinstance(body, dict):\n            raise TypeError(\"each body must be a dictionary\")\n        if set(body) != {\"name\", \"mass\", \"position\", \"velocity\"}:\n            raise ValueError(\"invalid body fields\")\n        name = body[\"name\"]\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or name in names:\n            raise ValueError(\"names must be non-empty and unique\")\n        names.add(name)\n        mass = _number(body[\"mass\"])\n        if mass <= 0:\n            raise ValueError(\"mass must be positive\")\n        position = _vector(body[\"position\"])\n        velocity = _vector(body[\"velocity\"])\n        position[2] = 0.0\n        velocity[2] = 0.0\n        result.append({\"name\": name, \"mass\": mass, \"position\": position, \"velocity\": velocity})\n    if not result:\n        if anchor is not None:\n            raise ValueError(\"unknown anchor\")\n        return []\n    if anchor is not None and not isinstance(anchor, str):\n        raise TypeError(\"anchor must be a string or None\")\n    target = 0 if anchor is None else next((i for i, b in enumerate(result) if b[\"name\"] == anchor), -1)\n    if target < 0:\n        raise ValueError(\"unknown anchor\")\n    px = sum(b[\"mass\"] * b[\"velocity\"][0] for b in result)\n    py = sum(b[\"mass\"] * b[\"velocity\"][1] for b in result)\n    result[target][\"velocity\"][0] = -px / result[target][\"mass\"]\n    result[target][\"velocity\"][1] = -py / result[target][\"mass\"]\n    return result\n",
+          "label": "Includes the anchor's existing momentum when calculating its replacement velocity, so the final total momentum is generally not zero.",
+          "sha256": "6b29502292cc36be3b7107d220425c9fb1f63c769853c2851fd82a77a90e05b2"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"expected a number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"number must be finite\")\n    return value\n\n\ndef _vector(value):\n    if isinstance(value, (str, bytes)):\n        raise TypeError(\"vector must be an iterable\")\n    try:\n        values = list(value)\n    except TypeError:\n        raise TypeError(\"vector must be an iterable\") from None\n    if len(values) != 3:\n        raise ValueError(\"vector must contain three values\")\n    return [_number(item) for item in values]\n\n\ndef project_state(bodies, anchor=None):\n    if isinstance(bodies, (str, bytes)):\n        raise TypeError(\"bodies must be an iterable\")\n    try:\n        source = list(bodies)\n    except TypeError:\n        raise TypeError(\"bodies must be an iterable\") from None\n    result = []\n    names = set()\n    for body in source:\n        if not isinstance(body, dict):\n            raise TypeError(\"each body must be a dictionary\")\n        if set(body) != {\"name\", \"mass\", \"position\", \"velocity\"}:\n            raise ValueError(\"invalid body fields\")\n        name = body[\"name\"]\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or name in names:\n            raise ValueError(\"names must be non-empty and unique\")\n        names.add(name)\n        mass = _number(body[\"mass\"])\n        if mass <= 0:\n            raise ValueError(\"mass must be positive\")\n        position = _vector(body[\"position\"])\n        velocity = _vector(body[\"velocity\"])\n        position[2] = 0.0\n        velocity[2] = 0.0\n        result.append({\"name\": name, \"mass\": mass, \"position\": position, \"velocity\": velocity})\n    if not result:\n        if anchor is not None:\n            raise ValueError(\"unknown anchor\")\n        return []\n    if anchor is not None and not isinstance(anchor, str):\n        raise TypeError(\"anchor must be a string or None\")\n    target = 0 if anchor is None else next((i for i, b in enumerate(result) if b[\"name\"] == anchor), -1)\n    if target < 0:\n        raise ValueError(\"unknown anchor\")\n    px = sum(b[\"mass\"] * b[\"velocity\"][0] for b in result if b is not result[target])\n    py = sum(b[\"mass\"] * b[\"velocity\"][1] for b in result if b is not result[target])\n    result[target][\"velocity\"][0] = -px / result[target][\"mass\"]\n    result[target][\"velocity\"][1] = -py / result[target][\"mass\"]\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "591f6b7c806221140173eaa37f5c2210a9c7af9bd111690b217fddfbc06be8ce"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import project_state\n\n\nclass ProjectStateTests(unittest.TestCase):\n    def test_projection_momentum_order_and_independence(self):\n        bodies = [\n            {\"name\": \"a\", \"mass\": 2, \"position\": [1, 2, 3], \"velocity\": [1, 2, 3]},\n            {\"name\": \"b\", \"mass\": 1, \"position\": (4, 5, 6), \"velocity\": (-1, 4, 5)},\n        ]\n        original = [dict(bodies[0]), dict(bodies[1])]\n        original[0][\"position\"] = list(bodies[0][\"position\"])\n        original[0][\"velocity\"] = list(bodies[0][\"velocity\"])\n        result = project_state(iter(bodies))\n        self.assertEqual(result, [\n            {\"name\": \"a\", \"mass\": 2, \"position\": [1.0, 2.0, 0.0], \"velocity\": [0.5, -2.0, 0.0]},\n            {\"name\": \"b\", \"mass\": 1, \"position\": [4.0, 5.0, 0.0], \"velocity\": [-1.0, 4.0, 0.0]},\n        ])\n        self.assertEqual(bodies[0], original[0])\n        result[0][\"position\"][0] = 99\n        self.assertEqual(bodies[0][\"position\"][0], 1)\n        self.assertIsNot(result[0][\"position\"], result[0][\"velocity\"])\n\n    def test_named_anchor_and_empty(self):\n        bodies = [\n            {\"name\": \"a\", \"mass\": 2.0, \"position\": [0, 0, 1], \"velocity\": [1, 2, 3]},\n            {\"name\": \"b\", \"mass\": 1.0, \"position\": [0, 0, 1], \"velocity\": [-1, 4, 5]},\n        ]\n        self.assertEqual(project_state(bodies, \"b\")[1][\"velocity\"], [-2.0, -4.0, 0.0])\n        self.assertEqual(project_state([], None), [])\n        with self.assertRaises(ValueError):\n            project_state([], \"a\")\n        with self.assertRaises(ValueError):\n            project_state(bodies, \"missing\")\n\n    def test_invalid_inputs(self):\n        valid = {\"name\": \"a\", \"mass\": 1, \"position\": [0, 0, 0], \"velocity\": [0, 0, 0]}\n        for value in (None, 3):\n            with self.assertRaises(TypeError): project_state(value)\n        with self.assertRaises(TypeError): project_state([[]])\n        with self.assertRaises(ValueError): project_state([dict(valid, extra=1)])\n        with self.assertRaises(ValueError): project_state([valid, dict(valid)])\n        with self.assertRaises(ValueError): project_state([dict(valid, name=\"\")])\n        with self.assertRaises(ValueError): project_state([dict(valid, mass=0)])\n        with self.assertRaises(ValueError): project_state([dict(valid, mass=math.inf)])\n        with self.assertRaises(TypeError): project_state([dict(valid, mass=True)])\n        with self.assertRaises(ValueError): project_state([dict(valid, position=[0, 0])])\n        with self.assertRaises(ValueError): project_state([dict(valid, velocity=[0, math.nan, 0])])\n        with self.assertRaises(TypeError): project_state([dict(valid, position=[0, \"x\", 0])])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "6ecb2cf42d0e0ed0e863cb56c7125911091285eeb65c27576f0a31eacaec55be"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6623907004429ec0350d9db83ae6215822a384e667c477785d2009fe76f0efee",
+      "text": "Implement `solution.py` with this public API:\n\n`project_state(bodies, anchor=None) -> list[dict]`\n\n`bodies` is an iterable of dictionaries containing exactly `name` (non-empty string), `mass` (positive finite number), `position` (three finite numbers), and `velocity` (three finite numbers). Names must be unique. Return a new list in input order. Each returned dictionary must have the same four keys, with position and velocity represented as new three-element lists of floats.\n\nSet every z coordinate and z velocity to `0.0`. Then adjust one body's x/y velocity so total x/y momentum becomes zero. If `anchor` is `None`, adjust the first body; otherwise adjust the uniquely named body. Positions and all other velocities remain unchanged except for z projection. The input and all nested objects must never be mutated or aliased by the result.\n\nAn empty input returns `[]` only when `anchor` is `None`; otherwise raise `ValueError`. Raise `TypeError` for a non-iterable input, non-dictionary body, wrong field types, or non-numeric vector elements. Raise `ValueError` for missing/extra keys, duplicate/empty names, invalid vector lengths, non-positive/non-finite masses, non-finite vector values, or an unknown anchor.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6623907004429ec0350d9db83ae6215822a384e667c477785d2009fe76f0efee",
+      "text": "Implement `solution.py` with this public API:\n\n`project_state(bodies, anchor=None) -> list[dict]`\n\n`bodies` is an iterable of dictionaries containing exactly `name` (non-empty string), `mass` (positive finite number), `position` (three finite numbers), and `velocity` (three finite numbers). Names must be unique. Return a new list in input order. Each returned dictionary must have the same four keys, with position and velocity represented as new three-element lists of floats.\n\nSet every z coordinate and z velocity to `0.0`. Then adjust one body's x/y velocity so total x/y momentum becomes zero. If `anchor` is `None`, adjust the first body; otherwise adjust the uniquely named body. Positions and all other velocities remain unchanged except for z projection. The input and all nested objects must never be mutated or aliased by the result.\n\nAn empty input returns `[]` only when `anchor` is `None`; otherwise raise `ValueError`. Raise `TypeError` for a non-iterable input, non-dictionary body, wrong field types, or non-numeric vector elements. Raise `ValueError` for missing/extra keys, duplicate/empty names, invalid vector lengths, non-positive/non-finite masses, non-finite vector values, or an unknown anchor.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0727",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"expected a number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"number must be finite\")\n    return value\n\n\ndef _vector(value):\n    if isinstance(value, (str, bytes)):\n        raise TypeError(\"vector must be an iterable\")\n    try:\n        values = list(value)\n    except TypeError:\n        raise TypeError(\"vector must be an iterable\") from None\n    if len(values) != 3:\n        raise ValueError(\"vector must contain three values\")\n    return [_number(item) for item in values]\n\n\ndef project_state(bodies, anchor=None):\n    if isinstance(bodies, (str, bytes)):\n        raise TypeError(\"bodies must be an iterable\")\n    try:\n        source = list(bodies)\n    except TypeError:\n        raise TypeError(\"bodies must be an iterable\") from None\n    result = []\n    names = set()\n    for body in source:\n        if not isinstance(body, dict):\n            raise TypeError(\"each body must be a dictionary\")\n        if set(body) != {\"name\", \"mass\", \"position\", \"velocity\"}:\n            raise ValueError(\"invalid body fields\")\n        name = body[\"name\"]\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or name in names:\n            raise ValueError(\"names must be non-empty and unique\")\n        names.add(name)\n        mass = _number(body[\"mass\"])\n        if mass <= 0:\n            raise ValueError(\"mass must be positive\")\n        position = _vector(body[\"position\"])\n        velocity = _vector(body[\"velocity\"])\n        position[2] = 0.0\n        velocity[2] = 0.0\n        result.append({\"name\": name, \"mass\": mass, \"position\": position, \"velocity\": velocity})\n    if not result:\n        if anchor is not None:\n            raise ValueError(\"unknown anchor\")\n        return []\n    if anchor is not None and not isinstance(anchor, str):\n        raise TypeError(\"anchor must be a string or None\")\n    target = 0 if anchor is None else next((i for i, b in enumerate(result) if b[\"name\"] == anchor), -1)\n    if target < 0:\n        raise ValueError(\"unknown anchor\")\n    px = sum(b[\"mass\"] * b[\"velocity\"][0] for b in result)\n    py = sum(b[\"mass\"] * b[\"velocity\"][1] for b in result)\n    result[target][\"velocity\"][0] = -px / result[target][\"mass\"]\n    result[target][\"velocity\"][1] = -py / result[target][\"mass\"]\n    return result\n",
+          "label": "Includes the anchor's existing momentum when calculating its replacement velocity, so the final total momentum is generally not zero.",
+          "sha256": "6b29502292cc36be3b7107d220425c9fb1f63c769853c2851fd82a77a90e05b2"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"expected a number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"number must be finite\")\n    return value\n\n\ndef _vector(value):\n    if isinstance(value, (str, bytes)):\n        raise TypeError(\"vector must be an iterable\")\n    try:\n        values = list(value)\n    except TypeError:\n        raise TypeError(\"vector must be an iterable\") from None\n    if len(values) != 3:\n        raise ValueError(\"vector must contain three values\")\n    return [_number(item) for item in values]\n\n\ndef project_state(bodies, anchor=None):\n    if isinstance(bodies, (str, bytes)):\n        raise TypeError(\"bodies must be an iterable\")\n    try:\n        source = list(bodies)\n    except TypeError:\n        raise TypeError(\"bodies must be an iterable\") from None\n    result = []\n    names = set()\n    for body in source:\n        if not isinstance(body, dict):\n            raise TypeError(\"each body must be a dictionary\")\n        if set(body) != {\"name\", \"mass\", \"position\", \"velocity\"}:\n            raise ValueError(\"invalid body fields\")\n        name = body[\"name\"]\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or name in names:\n            raise ValueError(\"names must be non-empty and unique\")\n        names.add(name)\n        mass = _number(body[\"mass\"])\n        if mass <= 0:\n            raise ValueError(\"mass must be positive\")\n        position = _vector(body[\"position\"])\n        velocity = _vector(body[\"velocity\"])\n        position[2] = 0.0\n        velocity[2] = 0.0\n        result.append({\"name\": name, \"mass\": mass, \"position\": position, \"velocity\": velocity})\n    if not result:\n        if anchor is not None:\n            raise ValueError(\"unknown anchor\")\n        return []\n    if anchor is not None and not isinstance(anchor, str):\n        raise TypeError(\"anchor must be a string or None\")\n    target = 0 if anchor is None else next((i for i, b in enumerate(result) if b[\"name\"] == anchor), -1)\n    if target < 0:\n        raise ValueError(\"unknown anchor\")\n    px = sum(b[\"mass\"] * b[\"velocity\"][0] for b in result if b is not result[target])\n    py = sum(b[\"mass\"] * b[\"velocity\"][1] for b in result if b is not result[target])\n    result[target][\"velocity\"][0] = -px / result[target][\"mass\"]\n    result[target][\"velocity\"][1] = -py / result[target][\"mass\"]\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "591f6b7c806221140173eaa37f5c2210a9c7af9bd111690b217fddfbc06be8ce"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_representable_adjusted_velocity (__main__.MomentumTests.test_finite_representable_adjusted_velocity)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_finite_representable_adjusted_velocity\n    self.assertEqual(project_state(bodies)[0][\"velocity\"][0], -2.0)\nAssertionError: -inf != -2.0\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "2016dba7b89cac1816c09959a0534a6982f399cfbf772f5f0ed6de9e8781a8bf",
+    "duration_ms": 439,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

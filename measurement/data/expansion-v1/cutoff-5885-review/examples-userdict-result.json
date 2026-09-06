@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0741",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "8be310442dba97d554be2561d473d8ca7934207a377c12d1db0c6d39e8440a82",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom collections import UserDict\nfrom solution import prepare_examples\n\n\nclass MappingRecordTests(unittest.TestCase):\n    def test_standard_mapping_record(self):\n        result = prepare_examples([UserDict(pixels=[[0]], sector=\"s\", distance=\"d\")], 2)\n        self.assertEqual(result[\"sector\"][\"train\"], [{\"pixels\": [[0]], \"label\": \"s\"}])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "6aea5494c901fe8d8d1f8c4ad49bea3cc98bbf682dd14a078db4726c1a39a94b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "36957cd7be2a735650abab3571506d4c2e2177577e5de0576e0a71b4ffefbaa8",
+      "text": "Implement `solution.py` with `prepare_examples(records, holdout_stride)`.\n\nEach record must be a mapping containing exactly `pixels`, `sector`, and `distance`. `sector` and `distance` must be non-empty strings. `pixels` must be a non-empty rectangular sequence of non-empty rows containing integers from 0 through 255, excluding booleans. `holdout_stride` must be an integer of at least 2, excluding booleans.\n\nReturn `{\"sector\": {\"train\": ..., \"validation\": ...}, \"distance\": {\"train\": ..., \"validation\": ...}}`. Every output example has keys `pixels` and `label`. Records whose one-based input position is divisible by `holdout_stride` go to validation; all others go to training. Preserve input order. Each target receives an independent deep copy of the pixel matrix, so mutations to the input or any returned example cannot affect another returned example. Empty input is valid and produces four empty lists. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "36957cd7be2a735650abab3571506d4c2e2177577e5de0576e0a71b4ffefbaa8",
+      "text": "Implement `solution.py` with `prepare_examples(records, holdout_stride)`.\n\nEach record must be a mapping containing exactly `pixels`, `sector`, and `distance`. `sector` and `distance` must be non-empty strings. `pixels` must be a non-empty rectangular sequence of non-empty rows containing integers from 0 through 255, excluding booleans. `holdout_stride` must be an integer of at least 2, excluding booleans.\n\nReturn `{\"sector\": {\"train\": ..., \"validation\": ...}, \"distance\": {\"train\": ..., \"validation\": ...}}`. Every output example has keys `pixels` and `label`. Records whose one-based input position is divisible by `holdout_stride` go to validation; all others go to training. Preserve input order. Each target receives an independent deep copy of the pixel matrix, so mutations to the input or any returned example cannot affect another returned example. Empty input is valid and produces four empty lists. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0741",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef prepare_examples(records, holdout_stride):\n    \"\"\"Validate records and build independent deterministic data partitions.\"\"\"\n    if isinstance(holdout_stride, bool) or not isinstance(holdout_stride, int) or holdout_stride < 2:\n        raise ValueError(\"holdout_stride must be an integer of at least 2\")\n\n    result = {\n        \"sector\": {\"train\": [], \"validation\": []},\n        \"distance\": {\"train\": [], \"validation\": []},\n    }\n    for position, record in enumerate(records, 1):\n        if not isinstance(record, dict) or set(record) != {\"pixels\", \"sector\", \"distance\"}:\n            raise TypeError(\"each record must have exactly the required keys\")\n        if not isinstance(record[\"sector\"], str) or not record[\"sector\"]:\n            raise ValueError(\"sector must be a non-empty string\")\n        if not isinstance(record[\"distance\"], str) or not record[\"distance\"]:\n            raise ValueError(\"distance must be a non-empty string\")\n\n        pixels = record[\"pixels\"]\n        if isinstance(pixels, (str, bytes)) or not pixels:\n            raise ValueError(\"pixels must be a non-empty matrix\")\n        width = None\n        for row in pixels:\n            if isinstance(row, (str, bytes)) or not row:\n                raise ValueError(\"pixel rows must be non-empty\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"pixels must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:\n                    raise ValueError(\"pixel values must be integers from 0 to 255\")\n\n        bucket = \"validation\" if position % holdout_stride == 0 else \"train\"\n        for target in (\"sector\", \"distance\"):\n            result[target][bucket].append({\n                \"pixels\": pixels,\n                \"label\": record[target],\n            })\n    return result\n",
+          "label": "Aliases the original pixel matrix across the input and both target datasets instead of deep-copying it.",
+          "sha256": "1f124130958242e23111dfdab0505a3ed713827406a7a95b59ba31fa3ce2cf06"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef prepare_examples(records, holdout_stride):\n    \"\"\"Validate records and build independent deterministic data partitions.\"\"\"\n    if isinstance(holdout_stride, bool) or not isinstance(holdout_stride, int) or holdout_stride < 2:\n        raise ValueError(\"holdout_stride must be an integer of at least 2\")\n\n    result = {\n        \"sector\": {\"train\": [], \"validation\": []},\n        \"distance\": {\"train\": [], \"validation\": []},\n    }\n    for position, record in enumerate(records, 1):\n        if not isinstance(record, dict) or set(record) != {\"pixels\", \"sector\", \"distance\"}:\n            raise TypeError(\"each record must have exactly the required keys\")\n        if not isinstance(record[\"sector\"], str) or not record[\"sector\"]:\n            raise ValueError(\"sector must be a non-empty string\")\n        if not isinstance(record[\"distance\"], str) or not record[\"distance\"]:\n            raise ValueError(\"distance must be a non-empty string\")\n\n        pixels = record[\"pixels\"]\n        if isinstance(pixels, (str, bytes)) or not pixels:\n            raise ValueError(\"pixels must be a non-empty matrix\")\n        width = None\n        for row in pixels:\n            if isinstance(row, (str, bytes)) or not row:\n                raise ValueError(\"pixel rows must be non-empty\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"pixels must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:\n                    raise ValueError(\"pixel values must be integers from 0 to 255\")\n\n        bucket = \"validation\" if position % holdout_stride == 0 else \"train\"\n        for target in (\"sector\", \"distance\"):\n            result[target][bucket].append({\n                \"pixels\": deepcopy(pixels),\n                \"label\": record[target],\n            })\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0654fb10b11f2165d1a9a655d14ae10da7b755f57f1efe8ea718f76ea9069915"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import prepare_examples\n\n\nclass PrepareExamplesTests(unittest.TestCase):\n    def test_split_order_labels_and_independent_deep_copies(self):\n        records = [\n            {\"pixels\": [[1, 2], [3, 4]], \"sector\": \"north\", \"distance\": \"near\"},\n            {\"pixels\": [[5, 6], [7, 8]], \"sector\": \"south\", \"distance\": \"far\"},\n            {\"pixels\": [[9, 10], [11, 12]], \"sector\": \"east\", \"distance\": \"mid\"},\n        ]\n        result = prepare_examples(records, 2)\n        self.assertEqual(result, {\n            \"sector\": {\n                \"train\": [\n                    {\"pixels\": [[1, 2], [3, 4]], \"label\": \"north\"},\n                    {\"pixels\": [[9, 10], [11, 12]], \"label\": \"east\"},\n                ],\n                \"validation\": [{\"pixels\": [[5, 6], [7, 8]], \"label\": \"south\"}],\n            },\n            \"distance\": {\n                \"train\": [\n                    {\"pixels\": [[1, 2], [3, 4]], \"label\": \"near\"},\n                    {\"pixels\": [[9, 10], [11, 12]], \"label\": \"mid\"},\n                ],\n                \"validation\": [{\"pixels\": [[5, 6], [7, 8]], \"label\": \"far\"}],\n            },\n        })\n\n        sector_pixels = result[\"sector\"][\"train\"][0][\"pixels\"]\n        distance_pixels = result[\"distance\"][\"train\"][0][\"pixels\"]\n        self.assertIsNot(sector_pixels, records[0][\"pixels\"])\n        self.assertIsNot(sector_pixels[0], records[0][\"pixels\"][0])\n        self.assertIsNot(sector_pixels, distance_pixels)\n        self.assertIsNot(sector_pixels[0], distance_pixels[0])\n\n        records[0][\"pixels\"][0][0] = 200\n        self.assertEqual(sector_pixels[0][0], 1)\n        sector_pixels[0][1] = 201\n        self.assertEqual(distance_pixels[0][1], 2)\n        self.assertEqual(records[0][\"pixels\"][0][1], 2)\n\n    def test_empty_input(self):\n        records = []\n        result = prepare_examples(records, 2)\n        self.assertEqual(result, {\n            \"sector\": {\"train\": [], \"validation\": []},\n            \"distance\": {\"train\": [], \"validation\": []},\n        })\n        self.assertEqual(records, [])\n\n    def test_holdout_stride_validation(self):\n        for stride in (True, False, 1, 0, -2, 2.0, \"2\", None):\n            with self.subTest(stride=stride), self.assertRaises((TypeError, ValueError)):\n                prepare_examples([], stride)\n\n    def test_record_keys_and_text_fields_are_validated(self):\n        valid = {\"pixels\": [[0]], \"sector\": \"s\", \"distance\": \"d\"}\n        malformed = [\n            {\"pixels\": [[0]], \"sector\": \"s\"},\n            dict(valid, extra=1),\n            {\"pixels\": [[0]], \"sector\": \"\", \"distance\": \"d\"},\n            {\"pixels\": [[0]], \"sector\": 1, \"distance\": \"d\"},\n            {\"pixels\": [[0]], \"sector\": \"s\", \"distance\": \"\"},\n            {\"pixels\": [[0]], \"sector\": \"s\", \"distance\": None},\n            [\"not\", \"a\", \"mapping\"],\n        ]\n        for record in malformed:\n            with self.subTest(record=record), self.assertRaises((TypeError, ValueError)):\n                prepare_examples([record], 2)\n\n    def test_pixel_matrix_validation(self):\n        matrices = [\n            [],\n            [[]],\n            [[1, 2], [3]],\n            [[True]],\n            [[1.5]],\n            [[\"1\"]],\n            [[-1]],\n            [[256]],\n            [1, 2],\n        ]\n        for pixels in matrices:\n            record = {\"pixels\": pixels, \"sector\": \"s\", \"distance\": \"d\"}\n            with self.subTest(pixels=pixels), self.assertRaises((TypeError, ValueError)):\n                prepare_examples([record], 2)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "7263c601f663acd1ff7fdfa97eb75f936930988794e7bae70ca43d2d750989e8"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "36957cd7be2a735650abab3571506d4c2e2177577e5de0576e0a71b4ffefbaa8",
+      "text": "Implement `solution.py` with `prepare_examples(records, holdout_stride)`.\n\nEach record must be a mapping containing exactly `pixels`, `sector`, and `distance`. `sector` and `distance` must be non-empty strings. `pixels` must be a non-empty rectangular sequence of non-empty rows containing integers from 0 through 255, excluding booleans. `holdout_stride` must be an integer of at least 2, excluding booleans.\n\nReturn `{\"sector\": {\"train\": ..., \"validation\": ...}, \"distance\": {\"train\": ..., \"validation\": ...}}`. Every output example has keys `pixels` and `label`. Records whose one-based input position is divisible by `holdout_stride` go to validation; all others go to training. Preserve input order. Each target receives an independent deep copy of the pixel matrix, so mutations to the input or any returned example cannot affect another returned example. Empty input is valid and produces four empty lists. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "36957cd7be2a735650abab3571506d4c2e2177577e5de0576e0a71b4ffefbaa8",
+      "text": "Implement `solution.py` with `prepare_examples(records, holdout_stride)`.\n\nEach record must be a mapping containing exactly `pixels`, `sector`, and `distance`. `sector` and `distance` must be non-empty strings. `pixels` must be a non-empty rectangular sequence of non-empty rows containing integers from 0 through 255, excluding booleans. `holdout_stride` must be an integer of at least 2, excluding booleans.\n\nReturn `{\"sector\": {\"train\": ..., \"validation\": ...}, \"distance\": {\"train\": ..., \"validation\": ...}}`. Every output example has keys `pixels` and `label`. Records whose one-based input position is divisible by `holdout_stride` go to validation; all others go to training. Preserve input order. Each target receives an independent deep copy of the pixel matrix, so mutations to the input or any returned example cannot affect another returned example. Empty input is valid and produces four empty lists. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0741",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef prepare_examples(records, holdout_stride):\n    \"\"\"Validate records and build independent deterministic data partitions.\"\"\"\n    if isinstance(holdout_stride, bool) or not isinstance(holdout_stride, int) or holdout_stride < 2:\n        raise ValueError(\"holdout_stride must be an integer of at least 2\")\n\n    result = {\n        \"sector\": {\"train\": [], \"validation\": []},\n        \"distance\": {\"train\": [], \"validation\": []},\n    }\n    for position, record in enumerate(records, 1):\n        if not isinstance(record, dict) or set(record) != {\"pixels\", \"sector\", \"distance\"}:\n            raise TypeError(\"each record must have exactly the required keys\")\n        if not isinstance(record[\"sector\"], str) or not record[\"sector\"]:\n            raise ValueError(\"sector must be a non-empty string\")\n        if not isinstance(record[\"distance\"], str) or not record[\"distance\"]:\n            raise ValueError(\"distance must be a non-empty string\")\n\n        pixels = record[\"pixels\"]\n        if isinstance(pixels, (str, bytes)) or not pixels:\n            raise ValueError(\"pixels must be a non-empty matrix\")\n        width = None\n        for row in pixels:\n            if isinstance(row, (str, bytes)) or not row:\n                raise ValueError(\"pixel rows must be non-empty\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"pixels must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:\n                    raise ValueError(\"pixel values must be integers from 0 to 255\")\n\n        bucket = \"validation\" if position % holdout_stride == 0 else \"train\"\n        for target in (\"sector\", \"distance\"):\n            result[target][bucket].append({\n                \"pixels\": pixels,\n                \"label\": record[target],\n            })\n    return result\n",
+          "label": "Aliases the original pixel matrix across the input and both target datasets instead of deep-copying it.",
+          "sha256": "1f124130958242e23111dfdab0505a3ed713827406a7a95b59ba31fa3ce2cf06"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef prepare_examples(records, holdout_stride):\n    \"\"\"Validate records and build independent deterministic data partitions.\"\"\"\n    if isinstance(holdout_stride, bool) or not isinstance(holdout_stride, int) or holdout_stride < 2:\n        raise ValueError(\"holdout_stride must be an integer of at least 2\")\n\n    result = {\n        \"sector\": {\"train\": [], \"validation\": []},\n        \"distance\": {\"train\": [], \"validation\": []},\n    }\n    for position, record in enumerate(records, 1):\n        if not isinstance(record, dict) or set(record) != {\"pixels\", \"sector\", \"distance\"}:\n            raise TypeError(\"each record must have exactly the required keys\")\n        if not isinstance(record[\"sector\"], str) or not record[\"sector\"]:\n            raise ValueError(\"sector must be a non-empty string\")\n        if not isinstance(record[\"distance\"], str) or not record[\"distance\"]:\n            raise ValueError(\"distance must be a non-empty string\")\n\n        pixels = record[\"pixels\"]\n        if isinstance(pixels, (str, bytes)) or not pixels:\n            raise ValueError(\"pixels must be a non-empty matrix\")\n        width = None\n        for row in pixels:\n            if isinstance(row, (str, bytes)) or not row:\n                raise ValueError(\"pixel rows must be non-empty\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"pixels must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:\n                    raise ValueError(\"pixel values must be integers from 0 to 255\")\n\n        bucket = \"validation\" if position % holdout_stride == 0 else \"train\"\n        for target in (\"sector\", \"distance\"):\n            result[target][bucket].append({\n                \"pixels\": deepcopy(pixels),\n                \"label\": record[target],\n            })\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0654fb10b11f2165d1a9a655d14ae10da7b755f57f1efe8ea718f76ea9069915"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_standard_mapping_record (__main__.MappingRecordTests.test_standard_mapping_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_standard_mapping_record\n    result = prepare_examples([UserDict(pixels=[[0]], sector=\"s\", distance=\"d\")], 2)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 15, in prepare_examples\n    raise TypeError(\"each record must have exactly the required keys\")\nTypeError: each record must have exactly the required keys\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "0ace3b20ffe179c0a61bd64caf42b69ee51137951d8145a0735efdf651a32072",
+    "duration_ms": 584,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

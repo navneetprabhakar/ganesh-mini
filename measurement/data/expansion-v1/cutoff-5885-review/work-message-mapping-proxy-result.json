@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0717",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4432a25372e0cd1ef3da2401dbab9b82886ecdeb5d0a791dbf22d3fb4768e3e4",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom types import MappingProxyType\nfrom solution import WorkMessage\n\n\nclass MappingProxyTests(unittest.TestCase):\n    def test_standard_readonly_mapping_is_accepted_and_detached(self):\n        raw = {\"id\": \"r\", \"accepted\": True}\n        message = WorkMessage(\"reply\", MappingProxyType(raw))\n        raw[\"accepted\"] = False\n        self.assertEqual(message.fields, {\"id\": \"r\", \"accepted\": True})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "fc3b8d859b8329ae754550bae3e6d0e63df5f6e9f0952494c58639db567d9193"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "49701ab781d8b5d856d109aab003eefd3548095d2471b20e8975195434763be5",
+      "text": "Implement a complete `solution.py` defining `WorkMessage(kind, fields)`.\n\n`kind` must be either `\"job\"` or `\"reply\"`. `fields` must be a mapping with exactly the required keys:\n- A job has `id`, `priority`, and `tags`. `id` is a non-empty string. `priority` is an integer from 0 through 9, with booleans rejected. `tags` is a list of unique, non-empty strings.\n- A reply has `id` and `accepted`. `id` is a non-empty string and `accepted` is exactly a boolean.\n\nMalformed types raise `TypeError`; invalid values, keys, or kinds raise `ValueError`. The constructor must deeply copy the supplied fields. Expose read-only `kind` and `fields` properties; every `fields` access must return a fresh deep copy. `is_consistent()` returns whether the internally stored message still follows all rules and must not raise for inconsistent internal content. Valid construction makes it return `True`. Mutating the input mapping, nested tag list, or a returned property value must never change the message.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "49701ab781d8b5d856d109aab003eefd3548095d2471b20e8975195434763be5",
+      "text": "Implement a complete `solution.py` defining `WorkMessage(kind, fields)`.\n\n`kind` must be either `\"job\"` or `\"reply\"`. `fields` must be a mapping with exactly the required keys:\n- A job has `id`, `priority`, and `tags`. `id` is a non-empty string. `priority` is an integer from 0 through 9, with booleans rejected. `tags` is a list of unique, non-empty strings.\n- A reply has `id` and `accepted`. `id` is a non-empty string and `accepted` is exactly a boolean.\n\nMalformed types raise `TypeError`; invalid values, keys, or kinds raise `ValueError`. The constructor must deeply copy the supplied fields. Expose read-only `kind` and `fields` properties; every `fields` access must return a fresh deep copy. `is_consistent()` returns whether the internally stored message still follows all rules and must not raise for inconsistent internal content. Valid construction makes it return `True`. Mutating the input mapping, nested tag list, or a returned property value must never change the message.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0717",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\nclass WorkMessage:\n    def __init__(self, kind, fields):\n        self._validate(kind, fields)\n        self._kind = kind\n        self._fields = dict(fields)\n\n    @property\n    def kind(self):\n        return self._kind\n\n    @property\n    def fields(self):\n        return deepcopy(self._fields)\n\n    def is_consistent(self):\n        try:\n            self._validate(self._kind, self._fields)\n        except (TypeError, ValueError):\n            return False\n        return True\n\n    @staticmethod\n    def _validate(kind, fields):\n        if kind not in {\"job\", \"reply\"}:\n            raise ValueError(\"unknown kind\")\n        if not isinstance(fields, Mapping):\n            raise TypeError(\"fields must be a mapping\")\n\n        required = (\n            {\"id\", \"priority\", \"tags\"}\n            if kind == \"job\"\n            else {\"id\", \"accepted\"}\n        )\n        if set(fields) != required:\n            raise ValueError(\"incorrect fields\")\n        if not isinstance(fields[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if not fields[\"id\"]:\n            raise ValueError(\"id must not be empty\")\n\n        if kind == \"job\":\n            priority = fields[\"priority\"]\n            if isinstance(priority, bool) or not isinstance(priority, int):\n                raise TypeError(\"priority must be an integer\")\n            if not 0 <= priority <= 9:\n                raise ValueError(\"priority out of range\")\n            tags = fields[\"tags\"]\n            if not isinstance(tags, list):\n                raise TypeError(\"tags must be a list\")\n            if any(not isinstance(tag, str) for tag in tags):\n                raise TypeError(\"tags must contain strings\")\n            if any(not tag for tag in tags) or len(set(tags)) != len(tags):\n                raise ValueError(\"tags must be non-empty and unique\")\n        elif type(fields[\"accepted\"]) is not bool:\n            raise TypeError(\"accepted must be a boolean\")\n",
+          "label": "The constructor makes only a shallow copy, leaving a job's nested tag list aliased to the caller's list.",
+          "sha256": "c46b7facde23f0796a265752c09b1062761daf9e1fc9fec5d3de461da553b26f"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\nclass WorkMessage:\n    def __init__(self, kind, fields):\n        self._validate(kind, fields)\n        self._kind = kind\n        self._fields = deepcopy(fields)\n\n    @property\n    def kind(self):\n        return self._kind\n\n    @property\n    def fields(self):\n        return deepcopy(self._fields)\n\n    def is_consistent(self):\n        try:\n            self._validate(self._kind, self._fields)\n        except (TypeError, ValueError):\n            return False\n        return True\n\n    @staticmethod\n    def _validate(kind, fields):\n        if kind not in {\"job\", \"reply\"}:\n            raise ValueError(\"unknown kind\")\n        if not isinstance(fields, Mapping):\n            raise TypeError(\"fields must be a mapping\")\n\n        required = (\n            {\"id\", \"priority\", \"tags\"}\n            if kind == \"job\"\n            else {\"id\", \"accepted\"}\n        )\n        if set(fields) != required:\n            raise ValueError(\"incorrect fields\")\n        if not isinstance(fields[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if not fields[\"id\"]:\n            raise ValueError(\"id must not be empty\")\n\n        if kind == \"job\":\n            priority = fields[\"priority\"]\n            if isinstance(priority, bool) or not isinstance(priority, int):\n                raise TypeError(\"priority must be an integer\")\n            if not 0 <= priority <= 9:\n                raise ValueError(\"priority out of range\")\n            tags = fields[\"tags\"]\n            if not isinstance(tags, list):\n                raise TypeError(\"tags must be a list\")\n            if any(not isinstance(tag, str) for tag in tags):\n                raise TypeError(\"tags must contain strings\")\n            if any(not tag for tag in tags) or len(set(tags)) != len(tags):\n                raise ValueError(\"tags must be non-empty and unique\")\n        elif type(fields[\"accepted\"]) is not bool:\n            raise TypeError(\"accepted must be a boolean\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f91b9e8db5d9bed1193c2a386981e530ceb046e60c3da4635e5d6048f065b07b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import UserDict\n\nfrom solution import WorkMessage\n\n\nclass WorkMessageTests(unittest.TestCase):\n    def test_valid_job_and_reply(self):\n        job = WorkMessage(\"job\", {\"id\": \"j1\", \"priority\": 0, \"tags\": [\"one\", \"two\"]})\n        reply = WorkMessage(\"reply\", UserDict({\"id\": \"j1\", \"accepted\": False}))\n        self.assertEqual(job.kind, \"job\")\n        self.assertEqual(job.fields, {\"id\": \"j1\", \"priority\": 0, \"tags\": [\"one\", \"two\"]})\n        self.assertEqual(reply.fields, {\"id\": \"j1\", \"accepted\": False})\n        self.assertTrue(job.is_consistent())\n        self.assertTrue(reply.is_consistent())\n\n    def test_constructor_and_property_are_defensive_copies(self):\n        tags = [\"stable\"]\n        supplied = {\"id\": \"j\", \"priority\": 9, \"tags\": tags}\n        message = WorkMessage(\"job\", supplied)\n        tags.append(\"later\")\n        supplied[\"id\"] = \"changed\"\n        exposed = message.fields\n        exposed[\"tags\"].append(\"external\")\n        exposed[\"id\"] = \"external\"\n        self.assertEqual(message.fields, {\"id\": \"j\", \"priority\": 9, \"tags\": [\"stable\"]})\n        self.assertIsNot(message.fields, message.fields)\n\n    def test_properties_are_read_only(self):\n        message = WorkMessage(\"reply\", {\"id\": \"r\", \"accepted\": True})\n        with self.assertRaises((AttributeError, TypeError)):\n            message.kind = \"job\"\n        with self.assertRaises((AttributeError, TypeError)):\n            message.fields = {}\n\n    def test_invalid_kinds_and_keys_raise_value_error(self):\n        for kind in (\"\", \"other\", None, 1):\n            with self.subTest(kind=kind), self.assertRaises(ValueError):\n                WorkMessage(kind, {\"id\": \"x\", \"accepted\": True})\n        invalid_fields = [\n            {\"id\": \"x\", \"priority\": 1},\n            {\"id\": \"x\", \"priority\": 1, \"tags\": [], \"extra\": 2},\n            {\"id\": \"x\", \"accepted\": True, \"tags\": []},\n        ]\n        for fields in invalid_fields:\n            with self.subTest(fields=fields), self.assertRaises(ValueError):\n                WorkMessage(\"job\", fields)\n\n    def test_malformed_field_types_raise_type_error(self):\n        with self.assertRaises(TypeError):\n            WorkMessage(\"job\", [])\n        cases = [\n            (\"job\", {\"id\": 1, \"priority\": 1, \"tags\": []}),\n            (\"job\", {\"id\": \"x\", \"priority\": True, \"tags\": []}),\n            (\"job\", {\"id\": \"x\", \"priority\": 1.0, \"tags\": []}),\n            (\"job\", {\"id\": \"x\", \"priority\": 1, \"tags\": ()}),\n            (\"job\", {\"id\": \"x\", \"priority\": 1, \"tags\": [1]}),\n            (\"reply\", {\"id\": \"x\", \"accepted\": 1}),\n        ]\n        for kind, fields in cases:\n            with self.subTest(kind=kind, fields=fields), self.assertRaises(TypeError):\n                WorkMessage(kind, fields)\n\n    def test_invalid_field_values_raise_value_error(self):\n        cases = [\n            (\"job\", {\"id\": \"\", \"priority\": 1, \"tags\": []}),\n            (\"job\", {\"id\": \"x\", \"priority\": -1, \"tags\": []}),\n            (\"job\", {\"id\": \"x\", \"priority\": 10, \"tags\": []}),\n            (\"job\", {\"id\": \"x\", \"priority\": 1, \"tags\": [\"\"]}),\n            (\"job\", {\"id\": \"x\", \"priority\": 1, \"tags\": [\"a\", \"a\"]}),\n            (\"reply\", {\"id\": \"\", \"accepted\": True}),\n        ]\n        for kind, fields in cases:\n            with self.subTest(kind=kind, fields=fields), self.assertRaises(ValueError):\n                WorkMessage(kind, fields)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "22a3ed0e0057189a407dc2bd3e8cd0bb148ab808e11c486e03e193624c9e3a40"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "49701ab781d8b5d856d109aab003eefd3548095d2471b20e8975195434763be5",
+      "text": "Implement a complete `solution.py` defining `WorkMessage(kind, fields)`.\n\n`kind` must be either `\"job\"` or `\"reply\"`. `fields` must be a mapping with exactly the required keys:\n- A job has `id`, `priority`, and `tags`. `id` is a non-empty string. `priority` is an integer from 0 through 9, with booleans rejected. `tags` is a list of unique, non-empty strings.\n- A reply has `id` and `accepted`. `id` is a non-empty string and `accepted` is exactly a boolean.\n\nMalformed types raise `TypeError`; invalid values, keys, or kinds raise `ValueError`. The constructor must deeply copy the supplied fields. Expose read-only `kind` and `fields` properties; every `fields` access must return a fresh deep copy. `is_consistent()` returns whether the internally stored message still follows all rules and must not raise for inconsistent internal content. Valid construction makes it return `True`. Mutating the input mapping, nested tag list, or a returned property value must never change the message.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "49701ab781d8b5d856d109aab003eefd3548095d2471b20e8975195434763be5",
+      "text": "Implement a complete `solution.py` defining `WorkMessage(kind, fields)`.\n\n`kind` must be either `\"job\"` or `\"reply\"`. `fields` must be a mapping with exactly the required keys:\n- A job has `id`, `priority`, and `tags`. `id` is a non-empty string. `priority` is an integer from 0 through 9, with booleans rejected. `tags` is a list of unique, non-empty strings.\n- A reply has `id` and `accepted`. `id` is a non-empty string and `accepted` is exactly a boolean.\n\nMalformed types raise `TypeError`; invalid values, keys, or kinds raise `ValueError`. The constructor must deeply copy the supplied fields. Expose read-only `kind` and `fields` properties; every `fields` access must return a fresh deep copy. `is_consistent()` returns whether the internally stored message still follows all rules and must not raise for inconsistent internal content. Valid construction makes it return `True`. Mutating the input mapping, nested tag list, or a returned property value must never change the message.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0717",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\nclass WorkMessage:\n    def __init__(self, kind, fields):\n        self._validate(kind, fields)\n        self._kind = kind\n        self._fields = dict(fields)\n\n    @property\n    def kind(self):\n        return self._kind\n\n    @property\n    def fields(self):\n        return deepcopy(self._fields)\n\n    def is_consistent(self):\n        try:\n            self._validate(self._kind, self._fields)\n        except (TypeError, ValueError):\n            return False\n        return True\n\n    @staticmethod\n    def _validate(kind, fields):\n        if kind not in {\"job\", \"reply\"}:\n            raise ValueError(\"unknown kind\")\n        if not isinstance(fields, Mapping):\n            raise TypeError(\"fields must be a mapping\")\n\n        required = (\n            {\"id\", \"priority\", \"tags\"}\n            if kind == \"job\"\n            else {\"id\", \"accepted\"}\n        )\n        if set(fields) != required:\n            raise ValueError(\"incorrect fields\")\n        if not isinstance(fields[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if not fields[\"id\"]:\n            raise ValueError(\"id must not be empty\")\n\n        if kind == \"job\":\n            priority = fields[\"priority\"]\n            if isinstance(priority, bool) or not isinstance(priority, int):\n                raise TypeError(\"priority must be an integer\")\n            if not 0 <= priority <= 9:\n                raise ValueError(\"priority out of range\")\n            tags = fields[\"tags\"]\n            if not isinstance(tags, list):\n                raise TypeError(\"tags must be a list\")\n            if any(not isinstance(tag, str) for tag in tags):\n                raise TypeError(\"tags must contain strings\")\n            if any(not tag for tag in tags) or len(set(tags)) != len(tags):\n                raise ValueError(\"tags must be non-empty and unique\")\n        elif type(fields[\"accepted\"]) is not bool:\n            raise TypeError(\"accepted must be a boolean\")\n",
+          "label": "The constructor makes only a shallow copy, leaving a job's nested tag list aliased to the caller's list.",
+          "sha256": "c46b7facde23f0796a265752c09b1062761daf9e1fc9fec5d3de461da553b26f"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\nclass WorkMessage:\n    def __init__(self, kind, fields):\n        self._validate(kind, fields)\n        self._kind = kind\n        self._fields = deepcopy(fields)\n\n    @property\n    def kind(self):\n        return self._kind\n\n    @property\n    def fields(self):\n        return deepcopy(self._fields)\n\n    def is_consistent(self):\n        try:\n            self._validate(self._kind, self._fields)\n        except (TypeError, ValueError):\n            return False\n        return True\n\n    @staticmethod\n    def _validate(kind, fields):\n        if kind not in {\"job\", \"reply\"}:\n            raise ValueError(\"unknown kind\")\n        if not isinstance(fields, Mapping):\n            raise TypeError(\"fields must be a mapping\")\n\n        required = (\n            {\"id\", \"priority\", \"tags\"}\n            if kind == \"job\"\n            else {\"id\", \"accepted\"}\n        )\n        if set(fields) != required:\n            raise ValueError(\"incorrect fields\")\n        if not isinstance(fields[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if not fields[\"id\"]:\n            raise ValueError(\"id must not be empty\")\n\n        if kind == \"job\":\n            priority = fields[\"priority\"]\n            if isinstance(priority, bool) or not isinstance(priority, int):\n                raise TypeError(\"priority must be an integer\")\n            if not 0 <= priority <= 9:\n                raise ValueError(\"priority out of range\")\n            tags = fields[\"tags\"]\n            if not isinstance(tags, list):\n                raise TypeError(\"tags must be a list\")\n            if any(not isinstance(tag, str) for tag in tags):\n                raise TypeError(\"tags must contain strings\")\n            if any(not tag for tag in tags) or len(set(tags)) != len(tags):\n                raise ValueError(\"tags must be non-empty and unique\")\n        elif type(fields[\"accepted\"]) is not bool:\n            raise TypeError(\"accepted must be a boolean\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f91b9e8db5d9bed1193c2a386981e530ceb046e60c3da4635e5d6048f065b07b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_standard_readonly_mapping_is_accepted_and_detached (__main__.MappingProxyTests.test_standard_readonly_mapping_is_accepted_and_detached)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_standard_readonly_mapping_is_accepted_and_detached\n    message = WorkMessage(\"reply\", MappingProxyType(raw))\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 9, in __init__\n    self._fields = deepcopy(fields)\n                   ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "bb71de91940fa4c7d985e6ddcadbce8be841ca31122810c892acb47aaec5d94e",
+    "duration_ms": 436,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

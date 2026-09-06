@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0477",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9db14f047760609397e1748ffe08387832ed239ea6123170edc9129d4429e27a",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import is_schema_supported\n\n\nclass Probe(unittest.TestCase):\n    def test_contract(self):\n        self.assertTrue(is_schema_supported('0' * 5000 + '2.7.3'))\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "13a323ad97e29262574d35077106511078c8de656303936875cc3175f5a96dfc"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "948da501ec106e39af4c969d8cb9bfb22ea6ec9eff5fbe4afebfef8b7f66721f",
+      "text": "The complete `solution.py` below is intended to expose `is_schema_supported(revision)`. A revision must be a string containing exactly three dot-separated decimal components. Leading zeros are allowed. Non-string input raises `TypeError`; malformed strings raise `ValueError`. The function returns whether the numeric revision is at least `2.7.3`, comparing major, minor, and patch components numerically.\n\nThe source has one semantic bug. Return a corrected complete source file.\n\n```python\nimport re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    return revision >= \"2.7.3\"\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "948da501ec106e39af4c969d8cb9bfb22ea6ec9eff5fbe4afebfef8b7f66721f",
+      "text": "The complete `solution.py` below is intended to expose `is_schema_supported(revision)`. A revision must be a string containing exactly three dot-separated decimal components. Leading zeros are allowed. Non-string input raises `TypeError`; malformed strings raise `ValueError`. The function returns whether the numeric revision is at least `2.7.3`, comparing major, minor, and patch components numerically.\n\nThe source has one semantic bug. Return a corrected complete source file.\n\n```python\nimport re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    return revision >= \"2.7.3\"\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0477",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    return revision >= \"2.7.3\"\n",
+          "label": "The revision is compared lexicographically as text rather than component-by-component as integers.",
+          "sha256": "cf0d0d9d1c38c64a1f5da59394abb83ad5a1ae477fc95c2a8bf2f44b54a7d4ad"
+        }
+      ],
+      "reference": {
+        "code": "import re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    parts = tuple(int(part) for part in revision.split(\".\"))\n    return parts >= (2, 7, 3)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "091fa4e0b6aeb2f2bbc8a707c2a23f26755cd0d807e5f4ab58ef72502f94b905"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import is_schema_supported\n\n\nclass SchemaSupportTests(unittest.TestCase):\n    def test_numeric_comparison_not_lexicographic(self):\n        self.assertTrue(is_schema_supported(\"2.10.0\"))\n        self.assertFalse(is_schema_supported(\"2.7.2\"))\n        self.assertTrue(is_schema_supported(\"10.0.0\"))\n        self.assertFalse(is_schema_supported(\"1.99.99\"))\n\n    def test_boundary_and_leading_zeroes(self):\n        self.assertTrue(is_schema_supported(\"2.7.3\"))\n        self.assertTrue(is_schema_supported(\"02.007.0003\"))\n        self.assertFalse(is_schema_supported(\"002.0007.0002\"))\n        self.assertTrue(is_schema_supported(\"2.7.4\"))\n\n    def test_malformed_strings(self):\n        for revision in (\"\", \"2.7\", \"2.7.3.0\", \"2..3\", \"v2.7.3\", \"2.7.-3\", \"2.7.3 \", \" 2.7.3\", \"2.a.3\"):\n            with self.subTest(revision=revision), self.assertRaises(ValueError):\n                is_schema_supported(revision)\n\n    def test_non_strings(self):\n        for revision in (None, 273, 2.73, [2, 7, 3], True):\n            with self.subTest(revision=revision), self.assertRaises(TypeError):\n                is_schema_supported(revision)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "418e04bf3813b1836b85f8a40fc0164ba1a5a09bea9dfd0ffd6cd03fe310e776"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "948da501ec106e39af4c969d8cb9bfb22ea6ec9eff5fbe4afebfef8b7f66721f",
+      "text": "The complete `solution.py` below is intended to expose `is_schema_supported(revision)`. A revision must be a string containing exactly three dot-separated decimal components. Leading zeros are allowed. Non-string input raises `TypeError`; malformed strings raise `ValueError`. The function returns whether the numeric revision is at least `2.7.3`, comparing major, minor, and patch components numerically.\n\nThe source has one semantic bug. Return a corrected complete source file.\n\n```python\nimport re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    return revision >= \"2.7.3\"\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "948da501ec106e39af4c969d8cb9bfb22ea6ec9eff5fbe4afebfef8b7f66721f",
+      "text": "The complete `solution.py` below is intended to expose `is_schema_supported(revision)`. A revision must be a string containing exactly three dot-separated decimal components. Leading zeros are allowed. Non-string input raises `TypeError`; malformed strings raise `ValueError`. The function returns whether the numeric revision is at least `2.7.3`, comparing major, minor, and patch components numerically.\n\nThe source has one semantic bug. Return a corrected complete source file.\n\n```python\nimport re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    return revision >= \"2.7.3\"\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0477",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    return revision >= \"2.7.3\"\n",
+          "label": "The revision is compared lexicographically as text rather than component-by-component as integers.",
+          "sha256": "cf0d0d9d1c38c64a1f5da59394abb83ad5a1ae477fc95c2a8bf2f44b54a7d4ad"
+        }
+      ],
+      "reference": {
+        "code": "import re\n\n\n_PATTERN = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+$\")\n\n\ndef is_schema_supported(revision):\n    if not isinstance(revision, str):\n        raise TypeError(\"revision must be a string\")\n    if _PATTERN.fullmatch(revision) is None:\n        raise ValueError(\"invalid revision\")\n    parts = tuple(int(part) for part in revision.split(\".\"))\n    return parts >= (2, 7, 3)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "091fa4e0b6aeb2f2bbc8a707c2a23f26755cd0d807e5f4ab58ef72502f94b905"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_contract (__main__.Probe.test_contract)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_contract\n    self.assertTrue(is_schema_supported('0' * 5000 + '2.7.3'))\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 12, in is_schema_supported\n    parts = tuple(int(part) for part in revision.split(\".\"))\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 12, in <genexpr>\n    parts = tuple(int(part) for part in revision.split(\".\"))\n                  ^^^^^^^^^\nValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5001 digits; use sys.set_int_max_str_digits() to increase the limit\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "0588f4856cfc1abcc2618dc26d08a366d977a8b5be477208ebaab7c637d5980a",
+    "duration_ms": 687,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

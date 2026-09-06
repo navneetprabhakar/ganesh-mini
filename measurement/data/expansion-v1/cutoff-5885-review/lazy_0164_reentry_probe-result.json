@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0164",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "85ff7f68e8d831c6bbc59afa62864468ac1406e19e1b214bf74ac6684e7dbad4",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createLazyValue } = require('./solution');\nlet calls = 0;\nlet nested;\nconst lazy = createLazyValue(() => {\n  calls++;\n  if (calls === 1) nested = lazy.read();\n  return 42;\n});\nconst outer = lazy.read();\nassert.equal(calls, 1, 'overlapping reads must share one loader invocation');\nassert.strictEqual(outer, nested, 'overlapping reads share pending Promise');\n",
+        "sha256": "40e639d49d34d5c221d81cff5019cedef1cf9a99abc17f861651a70c8d70b766"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e148a685bc637af4af4984d1fd95db822226d7a916c8537e34773b7e67010f64",
+      "text": "Implement a new utility exported exactly as `{ createLazyValue }`. It accepts a zero-argument `loader` function and returns `{ read, inspect }`. A non-function loader must throw `TypeError` immediately.\n\n`read()` returns a Promise for the loader's value. The loader must not run until the first read, and concurrent reads must share one invocation and the same pending Promise. Once fulfilled, later reads return the cached value without invoking the loader again, including when the value is `undefined`. If loading rejects, cache that rejection and never retry. `inspect()` returns a fresh object: `{ state: \"idle\" }`, `{ state: \"pending\" }`, `{ state: \"fulfilled\", value }`, or `{ state: \"rejected\", error }`. Synchronous loader exceptions must become Promise rejections. The utility must not mutate supplied values or error objects. Use only standard JavaScript and CommonJS.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e148a685bc637af4af4984d1fd95db822226d7a916c8537e34773b7e67010f64",
+      "text": "Implement a new utility exported exactly as `{ createLazyValue }`. It accepts a zero-argument `loader` function and returns `{ read, inspect }`. A non-function loader must throw `TypeError` immediately.\n\n`read()` returns a Promise for the loader's value. The loader must not run until the first read, and concurrent reads must share one invocation and the same pending Promise. Once fulfilled, later reads return the cached value without invoking the loader again, including when the value is `undefined`. If loading rejects, cache that rejection and never retry. `inspect()` returns a fresh object: `{ state: \"idle\" }`, `{ state: \"pending\" }`, `{ state: \"fulfilled\", value }`, or `{ state: \"rejected\", error }`. Synchronous loader exceptions must become Promise rejections. The utility must not mutate supplied values or error objects. Use only standard JavaScript and CommonJS.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0164",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createLazyValue(loader) {\n  if (typeof loader !== 'function') throw new TypeError('loader must be a function');\n\n  let state = 'idle';\n  let value;\n  let error;\n  let pending = null;\n\n  function read() {\n    if (state === 'fulfilled') return Promise.resolve(value);\n    if (state === 'rejected') return Promise.reject(error);\n    if (false && pending) return pending;\n\n    state = 'pending';\n    let loaded;\n    try {\n      loaded = loader();\n    } catch (reason) {\n      loaded = Promise.reject(reason);\n    }\n\n    pending = Promise.resolve(loaded).then(\n      result => {\n        value = result;\n        state = 'fulfilled';\n        return result;\n      },\n      reason => {\n        error = reason;\n        state = 'rejected';\n        throw reason;\n      }\n    );\n    return pending;\n  }\n\n  function inspect() {\n    if (state === 'fulfilled') return { state, value };\n    if (state === 'rejected') return { state, error };\n    return { state };\n  }\n\n  return { read, inspect };\n}\n\nmodule.exports = { createLazyValue };\n",
+          "label": "Concurrent reads bypass the cached pending Promise and invoke the loader more than once.",
+          "sha256": "2465631781401556218b11d0d1d9846c2ed7130469d445e195adacf4f8f64dea"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createLazyValue(loader) {\n  if (typeof loader !== 'function') throw new TypeError('loader must be a function');\n\n  let state = 'idle';\n  let value;\n  let error;\n  let pending = null;\n\n  function read() {\n    if (state === 'fulfilled') return Promise.resolve(value);\n    if (state === 'rejected') return Promise.reject(error);\n    if (pending) return pending;\n\n    state = 'pending';\n    let loaded;\n    try {\n      loaded = loader();\n    } catch (reason) {\n      loaded = Promise.reject(reason);\n    }\n\n    pending = Promise.resolve(loaded).then(\n      result => {\n        value = result;\n        state = 'fulfilled';\n        return result;\n      },\n      reason => {\n        error = reason;\n        state = 'rejected';\n        throw reason;\n      }\n    );\n    return pending;\n  }\n\n  function inspect() {\n    if (state === 'fulfilled') return { state, value };\n    if (state === 'rejected') return { state, error };\n    return { state };\n  }\n\n  return { read, inspect };\n}\n\nmodule.exports = { createLazyValue };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "85ecced35686f133ad6deefd3d0a44df42ca84d531c7a77247e8d7d50caa1114"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert');\nconst api = require('./solution');\n\nassert.deepStrictEqual(Object.keys(api).sort(), ['createLazyValue']);\nassert.strictEqual(typeof api.createLazyValue, 'function');\nassert.throws(() => api.createLazyValue(), TypeError);\nassert.throws(() => api.createLazyValue(42), TypeError);\n\n(async () => {\n  let calls = 0;\n  let release;\n  const sourceValue = { answer: 42 };\n  const gate = new Promise(resolve => { release = resolve; });\n  const lazy = api.createLazyValue(async () => {\n    calls += 1;\n    await gate;\n    return sourceValue;\n  });\n\n  const idleA = lazy.inspect();\n  const idleB = lazy.inspect();\n  assert.deepStrictEqual(idleA, { state: 'idle' });\n  assert.deepStrictEqual(idleB, { state: 'idle' });\n  assert.notStrictEqual(idleA, idleB);\n  assert.strictEqual(calls, 0);\n\n  const first = lazy.read();\n  const second = lazy.read();\n  assert.ok(first instanceof Promise);\n  assert.strictEqual(first, second);\n  assert.strictEqual(calls, 1);\n  assert.deepStrictEqual(lazy.inspect(), { state: 'pending' });\n\n  release();\n  assert.strictEqual(await first, sourceValue);\n  assert.strictEqual(calls, 1);\n  const fulfilledA = lazy.inspect();\n  const fulfilledB = lazy.inspect();\n  assert.deepStrictEqual(fulfilledA, { state: 'fulfilled', value: sourceValue });\n  assert.notStrictEqual(fulfilledA, fulfilledB);\n  assert.strictEqual(fulfilledA.value, sourceValue);\n  assert.deepStrictEqual(sourceValue, { answer: 42 });\n  assert.strictEqual(await lazy.read(), sourceValue);\n  assert.strictEqual(calls, 1);\n\n  let undefinedCalls = 0;\n  const undefinedLazy = api.createLazyValue(() => {\n    undefinedCalls += 1;\n    return undefined;\n  });\n  assert.strictEqual(await undefinedLazy.read(), undefined);\n  assert.strictEqual(await undefinedLazy.read(), undefined);\n  assert.strictEqual(undefinedCalls, 1);\n  assert.deepStrictEqual(undefinedLazy.inspect(), {\n    state: 'fulfilled', value: undefined\n  });\n\n  const failure = new Error('load failed');\n  let rejectedCalls = 0;\n  const rejectedLazy = api.createLazyValue(() => {\n    rejectedCalls += 1;\n    return Promise.reject(failure);\n  });\n  const rejectedPromise = rejectedLazy.read();\n  await assert.rejects(rejectedPromise, error => error === failure);\n  await assert.rejects(rejectedLazy.read(), error => error === failure);\n  assert.strictEqual(rejectedCalls, 1);\n  const rejectedState = rejectedLazy.inspect();\n  assert.strictEqual(rejectedState.state, 'rejected');\n  assert.strictEqual(rejectedState.error, failure);\n  assert.strictEqual(failure.message, 'load failed');\n\n  const synchronousFailure = new Error('synchronous');\n  const throwingLazy = api.createLazyValue(() => { throw synchronousFailure; });\n  let syncPromise;\n  assert.doesNotThrow(() => { syncPromise = throwingLazy.read(); });\n  assert.ok(syncPromise instanceof Promise);\n  await assert.rejects(syncPromise, error => error === synchronousFailure);\n})().catch(error => {\n  console.error(error);\n  process.exitCode = 1;\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "9d3e38c69c85a8800bd380d0dfdcdb4065d7ded82e36e8dd322c06869bc678c2"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e148a685bc637af4af4984d1fd95db822226d7a916c8537e34773b7e67010f64",
+      "text": "Implement a new utility exported exactly as `{ createLazyValue }`. It accepts a zero-argument `loader` function and returns `{ read, inspect }`. A non-function loader must throw `TypeError` immediately.\n\n`read()` returns a Promise for the loader's value. The loader must not run until the first read, and concurrent reads must share one invocation and the same pending Promise. Once fulfilled, later reads return the cached value without invoking the loader again, including when the value is `undefined`. If loading rejects, cache that rejection and never retry. `inspect()` returns a fresh object: `{ state: \"idle\" }`, `{ state: \"pending\" }`, `{ state: \"fulfilled\", value }`, or `{ state: \"rejected\", error }`. Synchronous loader exceptions must become Promise rejections. The utility must not mutate supplied values or error objects. Use only standard JavaScript and CommonJS.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e148a685bc637af4af4984d1fd95db822226d7a916c8537e34773b7e67010f64",
+      "text": "Implement a new utility exported exactly as `{ createLazyValue }`. It accepts a zero-argument `loader` function and returns `{ read, inspect }`. A non-function loader must throw `TypeError` immediately.\n\n`read()` returns a Promise for the loader's value. The loader must not run until the first read, and concurrent reads must share one invocation and the same pending Promise. Once fulfilled, later reads return the cached value without invoking the loader again, including when the value is `undefined`. If loading rejects, cache that rejection and never retry. `inspect()` returns a fresh object: `{ state: \"idle\" }`, `{ state: \"pending\" }`, `{ state: \"fulfilled\", value }`, or `{ state: \"rejected\", error }`. Synchronous loader exceptions must become Promise rejections. The utility must not mutate supplied values or error objects. Use only standard JavaScript and CommonJS.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0164",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createLazyValue(loader) {\n  if (typeof loader !== 'function') throw new TypeError('loader must be a function');\n\n  let state = 'idle';\n  let value;\n  let error;\n  let pending = null;\n\n  function read() {\n    if (state === 'fulfilled') return Promise.resolve(value);\n    if (state === 'rejected') return Promise.reject(error);\n    if (false && pending) return pending;\n\n    state = 'pending';\n    let loaded;\n    try {\n      loaded = loader();\n    } catch (reason) {\n      loaded = Promise.reject(reason);\n    }\n\n    pending = Promise.resolve(loaded).then(\n      result => {\n        value = result;\n        state = 'fulfilled';\n        return result;\n      },\n      reason => {\n        error = reason;\n        state = 'rejected';\n        throw reason;\n      }\n    );\n    return pending;\n  }\n\n  function inspect() {\n    if (state === 'fulfilled') return { state, value };\n    if (state === 'rejected') return { state, error };\n    return { state };\n  }\n\n  return { read, inspect };\n}\n\nmodule.exports = { createLazyValue };\n",
+          "label": "Concurrent reads bypass the cached pending Promise and invoke the loader more than once.",
+          "sha256": "2465631781401556218b11d0d1d9846c2ed7130469d445e195adacf4f8f64dea"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createLazyValue(loader) {\n  if (typeof loader !== 'function') throw new TypeError('loader must be a function');\n\n  let state = 'idle';\n  let value;\n  let error;\n  let pending = null;\n\n  function read() {\n    if (state === 'fulfilled') return Promise.resolve(value);\n    if (state === 'rejected') return Promise.reject(error);\n    if (pending) return pending;\n\n    state = 'pending';\n    let loaded;\n    try {\n      loaded = loader();\n    } catch (reason) {\n      loaded = Promise.reject(reason);\n    }\n\n    pending = Promise.resolve(loaded).then(\n      result => {\n        value = result;\n        state = 'fulfilled';\n        return result;\n      },\n      reason => {\n        error = reason;\n        state = 'rejected';\n        throw reason;\n      }\n    );\n    return pending;\n  }\n\n  function inspect() {\n    if (state === 'fulfilled') return { state, value };\n    if (state === 'rejected') return { state, error };\n    return { state };\n  }\n\n  return { read, inspect };\n}\n\nmodule.exports = { createLazyValue };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "85ecced35686f133ad6deefd3d0a44df42ca84d531c7a77247e8d7d50caa1114"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: overlapping reads must share one loader invocation\n\n2 !== 1\n\n    at Object.<anonymous> (/work/solution.test.js:12:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: 2,\n  expected: 1,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "24d14324c782d62463ae9f0589171983f582bad9c4d249adee8355cf0a388280",
+    "duration_ms": 486,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

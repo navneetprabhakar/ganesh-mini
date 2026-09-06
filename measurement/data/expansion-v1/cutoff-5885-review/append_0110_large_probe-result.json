@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-repair-0110",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e4c8ffecb0ba77a3e1a8ffbb1a66dfcb3513974be4d4389224b2ac4c813ec800",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { appendBatch } = require('./solution');\nconst added = new Array(200000).fill(7);\nlet result;\ntry { result = appendBatch([1], added); } catch (error) { throw new Error('valid 200000-item append failed: ' + error.name + ': ' + error.message); }\nassert.equal(result.length, 200001);\nassert.equal(result[200000], 7);\n",
+        "sha256": "457ea2c62c440c28e68f2fa39a88ba793fead1d5c30666032ecbae135321c274"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "543fa661ad52f47f5b709ee7801caf18bc187659004547d8186b2b5d57318c8e",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ appendBatch }`. Both arguments must be arrays or the function throws `TypeError`. Return a new array containing every existing element followed by every added element, preserving order, duplicates, sparse-array iteration semantics, and element references. Empty arrays are valid. The returned array must not be either input array, and neither input array may be mutated.\n\n```javascript\n'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing;\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "543fa661ad52f47f5b709ee7801caf18bc187659004547d8186b2b5d57318c8e",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ appendBatch }`. Both arguments must be arrays or the function throws `TypeError`. Return a new array containing every existing element followed by every added element, preserving order, duplicates, sparse-array iteration semantics, and element references. Empty arrays are valid. The returned array must not be either input array, and neither input array may be mutated.\n\n```javascript\n'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing;\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-repair-0110",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing;\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n",
+          "label": "The result aliases and mutates the existing input array.",
+          "sha256": "e655176a6efe7f66acf847b66b1f5adca3c73e3512dc39bfb370e770432e7b8d"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing.slice();\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "608c689f7038b02b9efaedf9026edb902a9587e8f2076254b2ba7e54f85a5437"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert');\nconst api = require('./solution');\n\nassert.deepStrictEqual(Object.keys(api).sort(), ['appendBatch']);\nassert.strictEqual(typeof api.appendBatch, 'function');\n\nconst firstRef = { source: 'existing' };\nconst secondRef = { source: 'added' };\nconst existing = [firstRef, 'x', 'x'];\nconst added = [secondRef, 'y', 'x'];\nconst existingSnapshot = existing.slice();\nconst addedSnapshot = added.slice();\nconst result = api.appendBatch(existing, added);\n\nassert.deepStrictEqual(result, [firstRef, 'x', 'x', secondRef, 'y', 'x']);\nassert.strictEqual(result[0], firstRef);\nassert.strictEqual(result[3], secondRef);\nassert.notStrictEqual(result, existing);\nassert.notStrictEqual(result, added);\nassert.deepStrictEqual(existing, existingSnapshot);\nassert.deepStrictEqual(added, addedSnapshot);\n\nassert.deepStrictEqual(api.appendBatch([], []), []);\nconst emptyResult = api.appendBatch([], []);\nassert.notStrictEqual(emptyResult, api.appendBatch([], []));\nassert.deepStrictEqual(api.appendBatch([1, 2], []), [1, 2]);\nassert.deepStrictEqual(api.appendBatch([], [3, 4]), [3, 4]);\n\nconst sparseExisting = [];\nsparseExisting.length = 2;\nsparseExisting[1] = 'existing';\nconst sparseAdded = [];\nsparseAdded.length = 2;\nsparseAdded[1] = 'added';\nconst sparseResult = api.appendBatch(sparseExisting, sparseAdded);\nassert.deepStrictEqual(Array.from(sparseResult), [undefined, 'existing', undefined, 'added']);\nassert.strictEqual(sparseResult.length, 4);\nassert.strictEqual(sparseExisting.length, 2);\nassert.strictEqual(sparseAdded.length, 2);\n\nfor (const args of [\n  [null, []],\n  [[], null],\n  [{}, []],\n  [[], {}],\n  ['x', []],\n  [[], 'x']\n]) {\n  assert.throws(() => api.appendBatch(...args), TypeError);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "0925e5f947f1ca631d7e503b695385395fea4c6bf110bab13069c113ee423056"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "543fa661ad52f47f5b709ee7801caf18bc187659004547d8186b2b5d57318c8e",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ appendBatch }`. Both arguments must be arrays or the function throws `TypeError`. Return a new array containing every existing element followed by every added element, preserving order, duplicates, sparse-array iteration semantics, and element references. Empty arrays are valid. The returned array must not be either input array, and neither input array may be mutated.\n\n```javascript\n'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing;\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "543fa661ad52f47f5b709ee7801caf18bc187659004547d8186b2b5d57318c8e",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ appendBatch }`. Both arguments must be arrays or the function throws `TypeError`. Return a new array containing every existing element followed by every added element, preserving order, duplicates, sparse-array iteration semantics, and element references. Empty arrays are valid. The returned array must not be either input array, and neither input array may be mutated.\n\n```javascript\n'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing;\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-repair-0110",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing;\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n",
+          "label": "The result aliases and mutates the existing input array.",
+          "sha256": "e655176a6efe7f66acf847b66b1f5adca3c73e3512dc39bfb370e770432e7b8d"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction appendBatch(existing, added) {\n  if (!Array.isArray(existing) || !Array.isArray(added)) {\n    throw new TypeError('both arguments must be arrays');\n  }\n  const result = existing.slice();\n  result.push(...added);\n  return result;\n}\n\nmodule.exports = { appendBatch };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "608c689f7038b02b9efaedf9026edb902a9587e8f2076254b2ba7e54f85a5437"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:6\ntry { result = appendBatch([1], added); } catch (error) { throw new Error('valid 200000-item append failed: ' + error.name + ': ' + error.message); }\n                                                          ^\n\nError: valid 200000-item append failed: RangeError: Maximum call stack size exceeded\n    at Object.<anonymous> (/work/solution.test.js:6:65)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "e04125eb8bb864580f215d30b43a0656bc0be23904abaf3793d4a5233f485ff7",
+    "duration_ms": 506,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

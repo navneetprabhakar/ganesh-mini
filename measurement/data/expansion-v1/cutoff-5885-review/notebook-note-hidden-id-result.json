@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0158",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "aff2b77cdbcead6c258ead26d9e8133ea90d1bbd5b19419859b044f130eb91c9",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { NotebookIndex, type Note } from './solution';\nconst note: Note = {id:'n', folderId:'f', body:'body'};\nObject.defineProperty(note, 'id', {enumerable:false});\nconst index = new NotebookIndex();\nindex.addFolder({id:'f', label:'Folder', notes:[note]});\nif (index.notesIn('f')[0].id !== 'n') throw new Error('Required note ID lost during defensive copy');\n",
+        "sha256": "ceeaadde3a9156cbcca3ebd677a92c9faa7ba37cff993aac3b0bea41ebb8664f"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1b21ec06cb864973d1c6e377c07c755b598a24301986bed8f8a47f1404ada658",
+      "text": "Implement a complete TypeScript source file exporting `Note`, `Folder`, and a `NotebookIndex` class. The class must provide:\n\n- `addFolder(folder: Folder): void`\n- `deleteFolder(folderId: string): boolean`\n- `addNote(folderId: string, note: Note): void`\n- `deleteNote(noteId: string): boolean`\n- `listFolders(): Folder[]`\n- `notesIn(folderId: string): Note[]`\n\nA note has `id`, `folderId`, and `body`; a folder has `id`, `label`, and `notes`. IDs, labels, and note bodies must be nonblank and must not be normalized. Folder IDs and note IDs are globally unique. Initial notes supplied with a folder must refer to that folder. Adding a note requires its `folderId` to equal the destination ID. Duplicate or malformed data and unknown destinations must throw `RangeError`.\n\nDeletion returns false when its target is absent. Deleting a folder also deletes its notes. Preserve folder and note insertion order. All input objects must be defensively copied, and every query must return deep copies so callers cannot mutate stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1b21ec06cb864973d1c6e377c07c755b598a24301986bed8f8a47f1404ada658",
+      "text": "Implement a complete TypeScript source file exporting `Note`, `Folder`, and a `NotebookIndex` class. The class must provide:\n\n- `addFolder(folder: Folder): void`\n- `deleteFolder(folderId: string): boolean`\n- `addNote(folderId: string, note: Note): void`\n- `deleteNote(noteId: string): boolean`\n- `listFolders(): Folder[]`\n- `notesIn(folderId: string): Note[]`\n\nA note has `id`, `folderId`, and `body`; a folder has `id`, `label`, and `notes`. IDs, labels, and note bodies must be nonblank and must not be normalized. Folder IDs and note IDs are globally unique. Initial notes supplied with a folder must refer to that folder. Adding a note requires its `folderId` to equal the destination ID. Duplicate or malformed data and unknown destinations must throw `RangeError`.\n\nDeletion returns false when its target is absent. Deleting a folder also deletes its notes. Preserve folder and note insertion order. All input objects must be defensively copied, and every query must return deep copies so callers cannot mutate stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0158",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Note {\n  id: string;\n  folderId: string;\n  body: string;\n}\n\nexport interface Folder {\n  id: string;\n  label: string;\n  notes: Note[];\n}\n\nconst blank = (value: string): boolean => value.trim().length === 0;\nconst copyNote = (note: Note): Note => ({ ...note });\nconst copyFolder = (folder: Folder): Folder => ({\n  id: folder.id,\n  label: folder.label,\n  notes: folder.notes.map(copyNote),\n});\n\nexport class NotebookIndex {\n  private readonly folders: Folder[] = [];\n\n  addFolder(folder: Folder): void {\n    if (blank(folder.id) || blank(folder.label)) throw new RangeError(\"invalid folder\");\n    if (this.folders.some((item) => item.id === folder.id)) throw new RangeError(\"duplicate folder id\");\n    const knownNotes = new Set(this.folders.flatMap((item) => item.notes.map((note) => note.id)));\n    const localNotes = new Set<string>();\n    for (const note of folder.notes) {\n      if (blank(note.id) || blank(note.body) || note.folderId !== folder.id) throw new RangeError(\"invalid note\");\n      if (knownNotes.has(note.id) || localNotes.has(note.id)) throw new RangeError(\"duplicate note id\");\n      localNotes.add(note.id);\n    }\n    this.folders.push(copyFolder(folder));\n  }\n\n  deleteFolder(folderId: string): boolean {\n    const index = this.folders.findIndex((folder) => folder.id === folderId);\n    if (index < 0) return false;\n    this.folders.splice(index, 1);\n    return true;\n  }\n\n  addNote(folderId: string, note: Note): void {\n    const folder = this.folders.find((item) => item.id === folderId);\n    if (!folder) throw new RangeError(\"unknown folder\");\n    if (blank(note.id) || blank(note.body) || note.folderId !== folderId) throw new RangeError(\"invalid note\");\n    if (this.folders.some((item) => item.notes.some((existing) => existing.id === note.id))) {\n      throw new RangeError(\"duplicate note id\");\n    }\n    folder.notes.push(copyNote(note));\n  }\n\n  deleteNote(noteId: string): boolean {\n    for (const folder of this.folders) {\n      const index = folder.notes.findIndex((note) => note.id === noteId);\n      if (index >= 0) {\n        folder.notes.splice(index, 1);\n        return true;\n      }\n    }\n    return false;\n  }\n\n  listFolders(): Folder[] {\n    return this.folders.map(copyFolder);\n  }\n\n  notesIn(folderId: string): Note[] {\n    const folder = this.folders.find((item) => item.id === folderId);\n    return folder ? [...folder.notes] : [];\n  }\n}\n",
+          "label": "notesIn copies the array but leaks references to the stored note objects, allowing external mutation of internal state.",
+          "sha256": "772f63ef5a12d60c0d0cfb2cc9262f2c4bb55e192c301792305cd04b9cb1e267"
+        }
+      ],
+      "reference": {
+        "code": "export interface Note {\n  id: string;\n  folderId: string;\n  body: string;\n}\n\nexport interface Folder {\n  id: string;\n  label: string;\n  notes: Note[];\n}\n\nconst blank = (value: string): boolean => value.trim().length === 0;\nconst copyNote = (note: Note): Note => ({ ...note });\nconst copyFolder = (folder: Folder): Folder => ({\n  id: folder.id,\n  label: folder.label,\n  notes: folder.notes.map(copyNote),\n});\n\nexport class NotebookIndex {\n  private readonly folders: Folder[] = [];\n\n  addFolder(folder: Folder): void {\n    if (blank(folder.id) || blank(folder.label)) throw new RangeError(\"invalid folder\");\n    if (this.folders.some((item) => item.id === folder.id)) throw new RangeError(\"duplicate folder id\");\n    const knownNotes = new Set(this.folders.flatMap((item) => item.notes.map((note) => note.id)));\n    const localNotes = new Set<string>();\n    for (const note of folder.notes) {\n      if (blank(note.id) || blank(note.body) || note.folderId !== folder.id) throw new RangeError(\"invalid note\");\n      if (knownNotes.has(note.id) || localNotes.has(note.id)) throw new RangeError(\"duplicate note id\");\n      localNotes.add(note.id);\n    }\n    this.folders.push(copyFolder(folder));\n  }\n\n  deleteFolder(folderId: string): boolean {\n    const index = this.folders.findIndex((folder) => folder.id === folderId);\n    if (index < 0) return false;\n    this.folders.splice(index, 1);\n    return true;\n  }\n\n  addNote(folderId: string, note: Note): void {\n    const folder = this.folders.find((item) => item.id === folderId);\n    if (!folder) throw new RangeError(\"unknown folder\");\n    if (blank(note.id) || blank(note.body) || note.folderId !== folderId) throw new RangeError(\"invalid note\");\n    if (this.folders.some((item) => item.notes.some((existing) => existing.id === note.id))) {\n      throw new RangeError(\"duplicate note id\");\n    }\n    folder.notes.push(copyNote(note));\n  }\n\n  deleteNote(noteId: string): boolean {\n    for (const folder of this.folders) {\n      const index = folder.notes.findIndex((note) => note.id === noteId);\n      if (index >= 0) {\n        folder.notes.splice(index, 1);\n        return true;\n      }\n    }\n    return false;\n  }\n\n  listFolders(): Folder[] {\n    return this.folders.map(copyFolder);\n  }\n\n  notesIn(folderId: string): Note[] {\n    const folder = this.folders.find((item) => item.id === folderId);\n    return folder ? folder.notes.map(copyNote) : [];\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0485aeff4be55ee5ac85fb63a37da3863327084fd8a37a4819c5ec2e35a424e5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import * as S from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);\n}\nfunction throwsRange(fn: () => unknown, message: string): void {\n  try { fn(); } catch (error) {\n    if (error instanceof RangeError) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: expected RangeError`);\n}\n\nconst index = new S.NotebookIndex();\ndeepEqual(index.listFolders(), [], 'initial folders are empty');\ndeepEqual(index.notesIn('missing'), [], 'unknown folder has no notes');\n\nconst supplied = {\n  id: ' f1 ', label: ' Work ', notes: [\n    { id: 'n1', folderId: ' f1 ', body: ' first ' },\n    { id: 'n2', folderId: ' f1 ', body: 'second' }\n  ]\n};\nindex.addFolder(supplied as S.Folder);\nsupplied.label = 'changed';\nsupplied.notes[0].body = 'changed';\nsupplied.notes.push({ id: 'external', folderId: ' f1 ', body: 'external' });\n\nlet folders = index.listFolders();\nequal(folders.length, 1, 'one folder added');\nequal(folders[0].id, ' f1 ', 'folder id is not normalized');\nequal(folders[0].label, ' Work ', 'folder label is copied and not normalized');\ndeepEqual(index.notesIn(' f1 ').map((note) => note.id), ['n1', 'n2'], 'initial note order');\nequal(index.notesIn(' f1 ')[0].body, ' first ', 'note body is copied and not normalized');\n\nfolders[0].label = 'caller mutation';\nfolders[0].notes[0].body = 'caller mutation';\nfolders.push({ id: 'fake', label: 'fake', notes: [] });\nconst queriedNotes = index.notesIn(' f1 ');\nqueriedNotes[0].body = 'query mutation';\nqueriedNotes.push({ id: 'fake-note', folderId: ' f1 ', body: 'fake' });\nequal(index.listFolders()[0].label, ' Work ', 'folder query is a deep copy');\nequal(index.notesIn(' f1 ')[0].body, ' first ', 'note query is a deep copy');\nequal(index.notesIn(' f1 ').length, 2, 'query array mutation is isolated');\nassert(index.listFolders() !== index.listFolders(), 'folder arrays are newly allocated');\nassert(index.listFolders()[0] !== index.listFolders()[0], 'folder objects are newly allocated');\nassert(index.notesIn(' f1 ')[0] !== index.notesIn(' f1 ')[0], 'note objects are newly allocated');\n\nconst added = { id: 'n3', folderId: ' f1 ', body: 'third' };\nindex.addNote(' f1 ', added as S.Note);\nadded.body = 'changed';\ndeepEqual(index.notesIn(' f1 ').map((note) => note.id), ['n1', 'n2', 'n3'], 'added note order');\nequal(index.notesIn(' f1 ')[2].body, 'third', 'added note is copied');\n\nindex.addFolder({ id: 'f2', label: 'Second', notes: [] } as S.Folder);\ndeepEqual(index.listFolders().map((folder) => folder.id), [' f1 ', 'f2'], 'folder insertion order');\nthrowsRange(() => index.addFolder({ id: 'f2', label: 'duplicate', notes: [] } as S.Folder), 'duplicate folder id');\nthrowsRange(() => index.addFolder({ id: 'f3', label: 'Third', notes: [{ id: 'n3', folderId: 'f3', body: 'duplicate' }] } as S.Folder), 'globally duplicate note id');\nthrowsRange(() => index.addFolder({ id: 'f3', label: 'Third', notes: [{ id: 'n4', folderId: 'wrong', body: 'body' }] } as S.Folder), 'initial note folder mismatch');\nthrowsRange(() => index.addFolder({ id: ' ', label: 'x', notes: [] } as S.Folder), 'blank folder id');\nthrowsRange(() => index.addFolder({ id: 'f3', label: '\\t', notes: [] } as S.Folder), 'blank folder label');\nthrowsRange(() => index.addNote('missing', { id: 'n4', folderId: 'missing', body: 'body' } as S.Note), 'unknown destination');\nthrowsRange(() => index.addNote('f2', { id: 'n4', folderId: 'wrong', body: 'body' } as S.Note), 'added note folder mismatch');\nthrowsRange(() => index.addNote('f2', { id: ' ', folderId: 'f2', body: 'body' } as S.Note), 'blank note id');\nthrowsRange(() => index.addNote('f2', { id: 'n4', folderId: 'f2', body: '  ' } as S.Note), 'blank note body');\n\nequal(index.deleteNote('absent'), false, 'deleting absent note returns false');\nequal(index.deleteNote('n2'), true, 'deleting present note returns true');\ndeepEqual(index.notesIn(' f1 ').map((note) => note.id), ['n1', 'n3'], 'note deletion preserves remaining order');\nequal(index.deleteFolder('absent'), false, 'deleting absent folder returns false');\nequal(index.deleteFolder(' f1 '), true, 'deleting folder returns true');\ndeepEqual(index.listFolders().map((folder) => folder.id), ['f2'], 'folder is removed');\nequal(index.deleteNote('n1'), false, 'folder deletion also deletes its notes');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "0c1d7a1f34b996cdf2e7afb1a7e11f129f93d9db45d3cbfd897b6aae8828b540"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1b21ec06cb864973d1c6e377c07c755b598a24301986bed8f8a47f1404ada658",
+      "text": "Implement a complete TypeScript source file exporting `Note`, `Folder`, and a `NotebookIndex` class. The class must provide:\n\n- `addFolder(folder: Folder): void`\n- `deleteFolder(folderId: string): boolean`\n- `addNote(folderId: string, note: Note): void`\n- `deleteNote(noteId: string): boolean`\n- `listFolders(): Folder[]`\n- `notesIn(folderId: string): Note[]`\n\nA note has `id`, `folderId`, and `body`; a folder has `id`, `label`, and `notes`. IDs, labels, and note bodies must be nonblank and must not be normalized. Folder IDs and note IDs are globally unique. Initial notes supplied with a folder must refer to that folder. Adding a note requires its `folderId` to equal the destination ID. Duplicate or malformed data and unknown destinations must throw `RangeError`.\n\nDeletion returns false when its target is absent. Deleting a folder also deletes its notes. Preserve folder and note insertion order. All input objects must be defensively copied, and every query must return deep copies so callers cannot mutate stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1b21ec06cb864973d1c6e377c07c755b598a24301986bed8f8a47f1404ada658",
+      "text": "Implement a complete TypeScript source file exporting `Note`, `Folder`, and a `NotebookIndex` class. The class must provide:\n\n- `addFolder(folder: Folder): void`\n- `deleteFolder(folderId: string): boolean`\n- `addNote(folderId: string, note: Note): void`\n- `deleteNote(noteId: string): boolean`\n- `listFolders(): Folder[]`\n- `notesIn(folderId: string): Note[]`\n\nA note has `id`, `folderId`, and `body`; a folder has `id`, `label`, and `notes`. IDs, labels, and note bodies must be nonblank and must not be normalized. Folder IDs and note IDs are globally unique. Initial notes supplied with a folder must refer to that folder. Adding a note requires its `folderId` to equal the destination ID. Duplicate or malformed data and unknown destinations must throw `RangeError`.\n\nDeletion returns false when its target is absent. Deleting a folder also deletes its notes. Preserve folder and note insertion order. All input objects must be defensively copied, and every query must return deep copies so callers cannot mutate stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0158",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Note {\n  id: string;\n  folderId: string;\n  body: string;\n}\n\nexport interface Folder {\n  id: string;\n  label: string;\n  notes: Note[];\n}\n\nconst blank = (value: string): boolean => value.trim().length === 0;\nconst copyNote = (note: Note): Note => ({ ...note });\nconst copyFolder = (folder: Folder): Folder => ({\n  id: folder.id,\n  label: folder.label,\n  notes: folder.notes.map(copyNote),\n});\n\nexport class NotebookIndex {\n  private readonly folders: Folder[] = [];\n\n  addFolder(folder: Folder): void {\n    if (blank(folder.id) || blank(folder.label)) throw new RangeError(\"invalid folder\");\n    if (this.folders.some((item) => item.id === folder.id)) throw new RangeError(\"duplicate folder id\");\n    const knownNotes = new Set(this.folders.flatMap((item) => item.notes.map((note) => note.id)));\n    const localNotes = new Set<string>();\n    for (const note of folder.notes) {\n      if (blank(note.id) || blank(note.body) || note.folderId !== folder.id) throw new RangeError(\"invalid note\");\n      if (knownNotes.has(note.id) || localNotes.has(note.id)) throw new RangeError(\"duplicate note id\");\n      localNotes.add(note.id);\n    }\n    this.folders.push(copyFolder(folder));\n  }\n\n  deleteFolder(folderId: string): boolean {\n    const index = this.folders.findIndex((folder) => folder.id === folderId);\n    if (index < 0) return false;\n    this.folders.splice(index, 1);\n    return true;\n  }\n\n  addNote(folderId: string, note: Note): void {\n    const folder = this.folders.find((item) => item.id === folderId);\n    if (!folder) throw new RangeError(\"unknown folder\");\n    if (blank(note.id) || blank(note.body) || note.folderId !== folderId) throw new RangeError(\"invalid note\");\n    if (this.folders.some((item) => item.notes.some((existing) => existing.id === note.id))) {\n      throw new RangeError(\"duplicate note id\");\n    }\n    folder.notes.push(copyNote(note));\n  }\n\n  deleteNote(noteId: string): boolean {\n    for (const folder of this.folders) {\n      const index = folder.notes.findIndex((note) => note.id === noteId);\n      if (index >= 0) {\n        folder.notes.splice(index, 1);\n        return true;\n      }\n    }\n    return false;\n  }\n\n  listFolders(): Folder[] {\n    return this.folders.map(copyFolder);\n  }\n\n  notesIn(folderId: string): Note[] {\n    const folder = this.folders.find((item) => item.id === folderId);\n    return folder ? [...folder.notes] : [];\n  }\n}\n",
+          "label": "notesIn copies the array but leaks references to the stored note objects, allowing external mutation of internal state.",
+          "sha256": "772f63ef5a12d60c0d0cfb2cc9262f2c4bb55e192c301792305cd04b9cb1e267"
+        }
+      ],
+      "reference": {
+        "code": "export interface Note {\n  id: string;\n  folderId: string;\n  body: string;\n}\n\nexport interface Folder {\n  id: string;\n  label: string;\n  notes: Note[];\n}\n\nconst blank = (value: string): boolean => value.trim().length === 0;\nconst copyNote = (note: Note): Note => ({ ...note });\nconst copyFolder = (folder: Folder): Folder => ({\n  id: folder.id,\n  label: folder.label,\n  notes: folder.notes.map(copyNote),\n});\n\nexport class NotebookIndex {\n  private readonly folders: Folder[] = [];\n\n  addFolder(folder: Folder): void {\n    if (blank(folder.id) || blank(folder.label)) throw new RangeError(\"invalid folder\");\n    if (this.folders.some((item) => item.id === folder.id)) throw new RangeError(\"duplicate folder id\");\n    const knownNotes = new Set(this.folders.flatMap((item) => item.notes.map((note) => note.id)));\n    const localNotes = new Set<string>();\n    for (const note of folder.notes) {\n      if (blank(note.id) || blank(note.body) || note.folderId !== folder.id) throw new RangeError(\"invalid note\");\n      if (knownNotes.has(note.id) || localNotes.has(note.id)) throw new RangeError(\"duplicate note id\");\n      localNotes.add(note.id);\n    }\n    this.folders.push(copyFolder(folder));\n  }\n\n  deleteFolder(folderId: string): boolean {\n    const index = this.folders.findIndex((folder) => folder.id === folderId);\n    if (index < 0) return false;\n    this.folders.splice(index, 1);\n    return true;\n  }\n\n  addNote(folderId: string, note: Note): void {\n    const folder = this.folders.find((item) => item.id === folderId);\n    if (!folder) throw new RangeError(\"unknown folder\");\n    if (blank(note.id) || blank(note.body) || note.folderId !== folderId) throw new RangeError(\"invalid note\");\n    if (this.folders.some((item) => item.notes.some((existing) => existing.id === note.id))) {\n      throw new RangeError(\"duplicate note id\");\n    }\n    folder.notes.push(copyNote(note));\n  }\n\n  deleteNote(noteId: string): boolean {\n    for (const folder of this.folders) {\n      const index = folder.notes.findIndex((note) => note.id === noteId);\n      if (index >= 0) {\n        folder.notes.splice(index, 1);\n        return true;\n      }\n    }\n    return false;\n  }\n\n  listFolders(): Folder[] {\n    return this.folders.map(copyFolder);\n  }\n\n  notesIn(folderId: string): Note[] {\n    const folder = this.folders.find((item) => item.id === folderId);\n    return folder ? folder.notes.map(copyNote) : [];\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0485aeff4be55ee5ac85fb63a37da3863327084fd8a37a4819c5ec2e35a424e5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:9\n    throw new Error('Required note ID lost during defensive copy');\n    ^\n\nError: Required note ID lost during defensive copy\n    at Object.<anonymous> (/work/solution.test.js:9:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "deddc579908997152725f6ffadcecb7d9c32af1dec2b046e72bca6f0a3e85603",
+    "duration_ms": 2692,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

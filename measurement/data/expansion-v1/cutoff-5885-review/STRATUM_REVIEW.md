@@ -1,5 +1,23 @@
 # Quality follow-up decision
 
+Current checkpoint: **191 holds (188 additive plus historical three)**; 254
+unique outside-sample inspections. Batch 17 partial through position 245;
+continue 246. GCS verified through 189 holds / completed batch 16. Latest five
+inspections await backup. Scope v4 remains 10 groups / 14 strata / 3,085 review
+records, not rejections. No training seal or new VM. Older entries are historical.
+
+V4 report SHA-256: `73f184c662a13cb55e4464990feb5abe85c427bb191387317b9cab95194104e3`.
+Explicit follow-up decisions SHA-256:
+`7fdb307e645c71bcdbf7ce60e29fa0fb8dc6d07e091808ed0b62056e19eed639`.
+JS repair0088/0113 extend the test-accommodation evidence to JavaScript repair;
+that stratum is already reopened, so population scope does not increase.
+
+Latest: **178 holds (175 additive plus historical three)**; 234 unique outside-
+sample inspections. Batch 15 complete through position 225; continue 226.
+Scope v4: 10 groups / 14 strata / 3,085 review records, not rejections. GCS
+verified through 168 holds; batch 15/v4 pending. Frozen 300/partition unchanged.
+No training seal or new VM. Earlier checkpoints below are historical.
+
 Latest: **171 holds (168 additive plus historical three)**; 224 unique outside-
 sample inspections. Batch 15 partial through position 215; continue 216.
 GCS verified through 168 holds; later five inspections pending. All 97 tooling

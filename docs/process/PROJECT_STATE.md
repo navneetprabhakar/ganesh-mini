@@ -4,6 +4,29 @@ Last updated: 2026-09-06
 
 ## Current gate
 
+Current checkpoint: **191 holds (188 additive plus historical three)**; 254
+unique outside-sample inspections. Batch 17 partial through position 245;
+continue 246. GCS verified through 189 holds / completed batch 16. Latest five
+inspections await backup. Scope v4 remains 10 groups / 14 strata / 3,085 review
+records, not rejections. No training seal or new VM. Older entries are historical.
+
+Current checkpoint: **189 holds (186 additive plus historical three)**; 249
+unique outside-sample inspections. Batch 16 complete through position 240;
+continue 241. GCS verified through 178 holds / batch 15 / scope v4.
+Batch 16 awaits backup. No training seal or new VM. Older entries are historical.
+
+Current checkpoint: **184 holds (181 additive plus historical three)**; 244
+unique outside-sample inspections. Batch 16 partial through position 235;
+continue 236. GCS verified through 178 holds / batch 15 / scope v4.
+Latest six holds await the next backup. No training seal or new VM.
+All older entries below are historical checkpoints.
+
+Latest: **178 holds (175 additive plus historical three)**; 234 unique outside-
+sample inspections. Batch 15 complete through position 225; continue 226.
+Scope v4: 10 groups / 14 strata / 3,085 review records, not rejections. GCS
+verified through 168 holds; batch 15/v4 pending. Frozen 300/partition unchanged.
+No training seal or new VM. Earlier checkpoints below are historical.
+
 Latest: **171 holds (168 additive plus historical three)**; 224 unique outside-
 sample inspections. Batch 15 partial through position 215; continue 216.
 GCS verified through 168 holds; later five inspections pending. All 97 tooling

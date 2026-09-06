@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0176",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3abd789e908b32a70e8ad5e385bebc7a1a30f8495e55731fbdbf195acd7aad81",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { createMeterBank } = require('./solution');\nassert.throws(() => createMeterBank(new Array(1)), TypeError);\n",
+        "sha256": "f03f0c4c5cb4c58be93da44a1ab8568d5e950e30ab9299889a9ec7a808ffc00b"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "28b522406fffd9d2d126fd2414a1f2506625f18b1701335660f09ee46217d2e8",
+      "text": "Implement a CommonJS module exporting exactly `{ createMeterBank }`.\n\n`createMeterBank(initial)` accepts an array of `{ name, value, active }`. Names must be unique non-empty strings, values must be non-negative safe integers, and `active` must be boolean. Invalid shapes throw `TypeError`; duplicate names or invalid numeric ranges throw `RangeError`. The input must not be mutated.\n\nThe returned bank exposes:\n- `pulse(amount = 1)`: add the positive safe-integer amount to every active meter, in original order. Throw before mutation if the amount is invalid or any result would exceed `Number.MAX_SAFE_INTEGER`. Return an exported snapshot.\n- `setActive(name, active)`: update a known meter; validate the boolean and throw `RangeError` for an unknown name.\n- `reset(name)`: set a known meter's value to zero.\n- `exportState()`: return a deep-enough copy of all records in their current order.\n- `importState(records)`: atomically replace all meters after validating the entire array under the same rules. An empty array is valid.\n\nNo returned or imported object may alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "28b522406fffd9d2d126fd2414a1f2506625f18b1701335660f09ee46217d2e8",
+      "text": "Implement a CommonJS module exporting exactly `{ createMeterBank }`.\n\n`createMeterBank(initial)` accepts an array of `{ name, value, active }`. Names must be unique non-empty strings, values must be non-negative safe integers, and `active` must be boolean. Invalid shapes throw `TypeError`; duplicate names or invalid numeric ranges throw `RangeError`. The input must not be mutated.\n\nThe returned bank exposes:\n- `pulse(amount = 1)`: add the positive safe-integer amount to every active meter, in original order. Throw before mutation if the amount is invalid or any result would exceed `Number.MAX_SAFE_INTEGER`. Return an exported snapshot.\n- `setActive(name, active)`: update a known meter; validate the boolean and throw `RangeError` for an unknown name.\n- `reset(name)`: set a known meter's value to zero.\n- `exportState()`: return a deep-enough copy of all records in their current order.\n- `importState(records)`: atomically replace all meters after validating the entire array under the same rules. An empty array is valid.\n\nNo returned or imported object may alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0176",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction validate(records) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  const names = new Set();\n  return records.map((record) => {\n    if (record === null || typeof record !== 'object' || Array.isArray(record) ||\n        typeof record.name !== 'string' || record.name.length === 0 ||\n        typeof record.active !== 'boolean' || typeof record.value !== 'number') {\n      throw new TypeError('invalid meter');\n    }\n    if (!Number.isSafeInteger(record.value) || record.value < 0) {\n      throw new RangeError('invalid value');\n    }\n    if (names.has(record.name)) throw new RangeError('duplicate name');\n    names.add(record.name);\n    return { name: record.name, value: record.value, active: record.active };\n  });\n}\n\nfunction createMeterBank(initial) {\n  let meters = validate(initial);\n\n  function find(name) {\n    const meter = meters.find((item) => item.name === name);\n    if (!meter) throw new RangeError('unknown meter');\n    return meter;\n  }\n\n  function exportState() {\n    return meters.map((meter) => ({ ...meter }));\n  }\n\n  return {\n    pulse(amount = 1) {\n      if (typeof amount !== 'number') throw new TypeError('amount must be a number');\n      if (!Number.isSafeInteger(amount) || amount <= 0) {\n        throw new RangeError('invalid amount');\n      }\n      for (const meter of meters) {\n        if (meter.active && meter.value > Number.MAX_SAFE_INTEGER - amount) {\n          throw new RangeError('meter overflow');\n        }\n      }\n      for (const meter of meters) {\n        meter.value += amount;\n      }\n      return exportState();\n    },\n    setActive(name, active) {\n      if (typeof active !== 'boolean') throw new TypeError('active must be boolean');\n      find(name).active = active;\n    },\n    reset(name) {\n      find(name).value = 0;\n    },\n    exportState,\n    importState(records) {\n      meters = validate(records);\n    }\n  };\n}\n\nmodule.exports = { createMeterBank };\n",
+          "label": "pulse increments inactive meters",
+          "sha256": "33123f696c3d99af11ed30addea170822bd026ae8d076e00dc1331ca392296c5"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction validate(records) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  const names = new Set();\n  return records.map((record) => {\n    if (record === null || typeof record !== 'object' || Array.isArray(record) ||\n        typeof record.name !== 'string' || record.name.length === 0 ||\n        typeof record.active !== 'boolean' || typeof record.value !== 'number') {\n      throw new TypeError('invalid meter');\n    }\n    if (!Number.isSafeInteger(record.value) || record.value < 0) {\n      throw new RangeError('invalid value');\n    }\n    if (names.has(record.name)) throw new RangeError('duplicate name');\n    names.add(record.name);\n    return { name: record.name, value: record.value, active: record.active };\n  });\n}\n\nfunction createMeterBank(initial) {\n  let meters = validate(initial);\n\n  function find(name) {\n    const meter = meters.find((item) => item.name === name);\n    if (!meter) throw new RangeError('unknown meter');\n    return meter;\n  }\n\n  function exportState() {\n    return meters.map((meter) => ({ ...meter }));\n  }\n\n  return {\n    pulse(amount = 1) {\n      if (typeof amount !== 'number') throw new TypeError('amount must be a number');\n      if (!Number.isSafeInteger(amount) || amount <= 0) {\n        throw new RangeError('invalid amount');\n      }\n      for (const meter of meters) {\n        if (meter.active && meter.value > Number.MAX_SAFE_INTEGER - amount) {\n          throw new RangeError('meter overflow');\n        }\n      }\n      for (const meter of meters) {\n        if (meter.active) meter.value += amount;\n      }\n      return exportState();\n    },\n    setActive(name, active) {\n      if (typeof active !== 'boolean') throw new TypeError('active must be boolean');\n      find(name).active = active;\n    },\n    reset(name) {\n      find(name).value = 0;\n    },\n    exportState,\n    importState(records) {\n      meters = validate(records);\n    }\n  };\n}\n\nmodule.exports = { createMeterBank };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2756a555151b8e50dc60b80e59fd0db60980cd38eae162796a99618b8a46b1f7"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\nassert.deepEqual(Object.keys(api), ['createMeterBank']);\nconst { createMeterBank } = api;\n\nassert.throws(() => createMeterBank(null), TypeError);\nassert.throws(() => createMeterBank([null]), TypeError);\nassert.throws(() => createMeterBank([{ name: '', value: 0, active: true }]), TypeError);\nassert.throws(() => createMeterBank([{ name: 'x', value: '0', active: true }]), TypeError);\nassert.throws(() => createMeterBank([{ name: 'x', value: 0, active: 1 }]), TypeError);\nassert.throws(() => createMeterBank([{ name: 'x', value: -1, active: true }]), RangeError);\nassert.throws(() => createMeterBank([{ name: 'x', value: 1.5, active: true }]), RangeError);\nassert.throws(() => createMeterBank([{ name: 'x', value: Number.MAX_SAFE_INTEGER + 1, active: true }]), RangeError);\nassert.throws(() => createMeterBank([\n  { name: 'x', value: 0, active: true },\n  { name: 'x', value: 1, active: false }\n]), RangeError);\n\nconst source = [\n  { name: 'a', value: 2, active: true },\n  { name: 'b', value: 9, active: false }\n];\nconst sourceCopy = structuredClone(source);\nconst bank = createMeterBank(source);\nassert.deepEqual(source, sourceCopy);\nsource[0].value = 500;\nassert.deepEqual(bank.exportState(), sourceCopy);\n\nconst pulseResult = bank.pulse();\nassert.deepEqual(pulseResult, [\n  { name: 'a', value: 3, active: true },\n  { name: 'b', value: 9, active: false }\n]);\npulseResult[0].value = 700;\nassert.equal(bank.exportState()[0].value, 3);\nbank.setActive('b', true);\nassert.deepEqual(bank.pulse(2).map(x => x.value), [5, 11]);\nbank.reset('a');\nassert.equal(bank.exportState()[0].value, 0);\nassert.throws(() => bank.setActive('missing', true), RangeError);\nassert.throws(() => bank.reset('missing'), RangeError);\nassert.throws(() => bank.setActive('a', 1), TypeError);\n\nfor (const invalid of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {\n  const before = bank.exportState();\n  assert.throws(() => bank.pulse(invalid), RangeError);\n  assert.deepEqual(bank.exportState(), before);\n}\nassert.throws(() => bank.pulse('1'), TypeError);\n\nconst overflow = createMeterBank([\n  { name: 'safe', value: 4, active: true },\n  { name: 'limit', value: Number.MAX_SAFE_INTEGER, active: true },\n  { name: 'inactive', value: Number.MAX_SAFE_INTEGER, active: false }\n]);\nconst beforeOverflow = overflow.exportState();\nassert.throws(() => overflow.pulse(1), RangeError);\nassert.deepEqual(overflow.exportState(), beforeOverflow);\n\nconst imported = [\n  { name: 'z', value: 7, active: false },\n  { name: 'y', value: 0, active: true }\n];\nbank.importState(imported);\nimported[0].value = 99;\nassert.deepEqual(bank.exportState(), [\n  { name: 'z', value: 7, active: false },\n  { name: 'y', value: 0, active: true }\n]);\nconst beforeBadImport = bank.exportState();\nassert.throws(() => bank.importState([\n  { name: 'ok', value: 1, active: true },\n  { name: 'bad', value: -1, active: false }\n]), RangeError);\nassert.deepEqual(bank.exportState(), beforeBadImport);\nbank.importState([]);\nassert.deepEqual(bank.exportState(), []);\nconst e1 = bank.exportState();\nconst e2 = bank.exportState();\nassert.notStrictEqual(e1, e2);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "60e1d360ccfd9e8fe8b16622bd47baaccb5c6d2213ba04857ffee34545a36711"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "28b522406fffd9d2d126fd2414a1f2506625f18b1701335660f09ee46217d2e8",
+      "text": "Implement a CommonJS module exporting exactly `{ createMeterBank }`.\n\n`createMeterBank(initial)` accepts an array of `{ name, value, active }`. Names must be unique non-empty strings, values must be non-negative safe integers, and `active` must be boolean. Invalid shapes throw `TypeError`; duplicate names or invalid numeric ranges throw `RangeError`. The input must not be mutated.\n\nThe returned bank exposes:\n- `pulse(amount = 1)`: add the positive safe-integer amount to every active meter, in original order. Throw before mutation if the amount is invalid or any result would exceed `Number.MAX_SAFE_INTEGER`. Return an exported snapshot.\n- `setActive(name, active)`: update a known meter; validate the boolean and throw `RangeError` for an unknown name.\n- `reset(name)`: set a known meter's value to zero.\n- `exportState()`: return a deep-enough copy of all records in their current order.\n- `importState(records)`: atomically replace all meters after validating the entire array under the same rules. An empty array is valid.\n\nNo returned or imported object may alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "28b522406fffd9d2d126fd2414a1f2506625f18b1701335660f09ee46217d2e8",
+      "text": "Implement a CommonJS module exporting exactly `{ createMeterBank }`.\n\n`createMeterBank(initial)` accepts an array of `{ name, value, active }`. Names must be unique non-empty strings, values must be non-negative safe integers, and `active` must be boolean. Invalid shapes throw `TypeError`; duplicate names or invalid numeric ranges throw `RangeError`. The input must not be mutated.\n\nThe returned bank exposes:\n- `pulse(amount = 1)`: add the positive safe-integer amount to every active meter, in original order. Throw before mutation if the amount is invalid or any result would exceed `Number.MAX_SAFE_INTEGER`. Return an exported snapshot.\n- `setActive(name, active)`: update a known meter; validate the boolean and throw `RangeError` for an unknown name.\n- `reset(name)`: set a known meter's value to zero.\n- `exportState()`: return a deep-enough copy of all records in their current order.\n- `importState(records)`: atomically replace all meters after validating the entire array under the same rules. An empty array is valid.\n\nNo returned or imported object may alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0176",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction validate(records) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  const names = new Set();\n  return records.map((record) => {\n    if (record === null || typeof record !== 'object' || Array.isArray(record) ||\n        typeof record.name !== 'string' || record.name.length === 0 ||\n        typeof record.active !== 'boolean' || typeof record.value !== 'number') {\n      throw new TypeError('invalid meter');\n    }\n    if (!Number.isSafeInteger(record.value) || record.value < 0) {\n      throw new RangeError('invalid value');\n    }\n    if (names.has(record.name)) throw new RangeError('duplicate name');\n    names.add(record.name);\n    return { name: record.name, value: record.value, active: record.active };\n  });\n}\n\nfunction createMeterBank(initial) {\n  let meters = validate(initial);\n\n  function find(name) {\n    const meter = meters.find((item) => item.name === name);\n    if (!meter) throw new RangeError('unknown meter');\n    return meter;\n  }\n\n  function exportState() {\n    return meters.map((meter) => ({ ...meter }));\n  }\n\n  return {\n    pulse(amount = 1) {\n      if (typeof amount !== 'number') throw new TypeError('amount must be a number');\n      if (!Number.isSafeInteger(amount) || amount <= 0) {\n        throw new RangeError('invalid amount');\n      }\n      for (const meter of meters) {\n        if (meter.active && meter.value > Number.MAX_SAFE_INTEGER - amount) {\n          throw new RangeError('meter overflow');\n        }\n      }\n      for (const meter of meters) {\n        meter.value += amount;\n      }\n      return exportState();\n    },\n    setActive(name, active) {\n      if (typeof active !== 'boolean') throw new TypeError('active must be boolean');\n      find(name).active = active;\n    },\n    reset(name) {\n      find(name).value = 0;\n    },\n    exportState,\n    importState(records) {\n      meters = validate(records);\n    }\n  };\n}\n\nmodule.exports = { createMeterBank };\n",
+          "label": "pulse increments inactive meters",
+          "sha256": "33123f696c3d99af11ed30addea170822bd026ae8d076e00dc1331ca392296c5"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction validate(records) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  const names = new Set();\n  return records.map((record) => {\n    if (record === null || typeof record !== 'object' || Array.isArray(record) ||\n        typeof record.name !== 'string' || record.name.length === 0 ||\n        typeof record.active !== 'boolean' || typeof record.value !== 'number') {\n      throw new TypeError('invalid meter');\n    }\n    if (!Number.isSafeInteger(record.value) || record.value < 0) {\n      throw new RangeError('invalid value');\n    }\n    if (names.has(record.name)) throw new RangeError('duplicate name');\n    names.add(record.name);\n    return { name: record.name, value: record.value, active: record.active };\n  });\n}\n\nfunction createMeterBank(initial) {\n  let meters = validate(initial);\n\n  function find(name) {\n    const meter = meters.find((item) => item.name === name);\n    if (!meter) throw new RangeError('unknown meter');\n    return meter;\n  }\n\n  function exportState() {\n    return meters.map((meter) => ({ ...meter }));\n  }\n\n  return {\n    pulse(amount = 1) {\n      if (typeof amount !== 'number') throw new TypeError('amount must be a number');\n      if (!Number.isSafeInteger(amount) || amount <= 0) {\n        throw new RangeError('invalid amount');\n      }\n      for (const meter of meters) {\n        if (meter.active && meter.value > Number.MAX_SAFE_INTEGER - amount) {\n          throw new RangeError('meter overflow');\n        }\n      }\n      for (const meter of meters) {\n        if (meter.active) meter.value += amount;\n      }\n      return exportState();\n    },\n    setActive(name, active) {\n      if (typeof active !== 'boolean') throw new TypeError('active must be boolean');\n      find(name).active = active;\n    },\n    reset(name) {\n      find(name).value = 0;\n    },\n    exportState,\n    importState(records) {\n      meters = validate(records);\n    }\n  };\n}\n\nmodule.exports = { createMeterBank };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2756a555151b8e50dc60b80e59fd0db60980cd38eae162796a99618b8a46b1f7"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:3:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "e57ef28844dde09cb0dce7eed295429601b8e8115303ddc84859ddfb3d1d685a",
+    "duration_ms": 347,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

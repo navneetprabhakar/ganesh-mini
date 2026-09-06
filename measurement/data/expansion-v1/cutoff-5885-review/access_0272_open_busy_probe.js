@@ -1,0 +1,10 @@
+const assert = require('node:assert/strict');
+const { createAccessDialog } = require('./solution');
+let finish;
+const dialog = createAccessDialog(() => new Promise(resolve => { finish = resolve; }));
+dialog.open();
+const pending = dialog.submit({ user: 'u', secret: 's' });
+const opened = dialog.open();
+finish({ code: 401 });
+assert.equal(opened.busy, true, 'Opening changes visibility, not the busy state of an awaited checker');
+pending.catch(error => { console.error(error); process.exitCode = 1; });

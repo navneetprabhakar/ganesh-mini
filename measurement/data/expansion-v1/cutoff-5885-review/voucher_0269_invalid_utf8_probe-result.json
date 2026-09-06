@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0269",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "44f914d68a3d6edabb96ddd776e0cb76055b877242140dc8ca7652060bb0cc36",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst crypto = require('node:crypto');\nconst verifyVoucher = require('./solution');\nconst bytes = Buffer.concat([Buffer.from('{\"subject\":\"'), Buffer.from([0xff]), Buffer.from('\",\"expiresAt\":10}')]);\nconst body = bytes.toString('base64url');\nconst secret = 'probe-secret';\nconst signature = crypto.createHmac('sha256', secret).update(body).digest('base64url');\nassert.rejects(verifyVoucher(body + '.' + signature, secret, 0),\n  'Body is not UTF-8 JSON and must not be silently repaired').catch(error => { console.error(error); process.exitCode = 1; });\n",
+        "sha256": "ee1c3f7d41832bd2c5a2d4823c562a51d3746eb9b4068b17a5853672121cca48"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e0aebea3048e5ee6da318ae678c25e531cc733f7a4d619e2361025d8f38bf7e0",
+      "text": "Implement `verifyVoucher(token, secret, currentSecond)` using only Node.js standard-library APIs. A voucher is `<body>.<signature>`, where `body` is the base64url encoding of UTF-8 JSON and `signature` is the base64url HMAC-SHA256 of the body text using `secret`. `secret` must be a nonempty string and `currentSecond` a nonnegative safe integer. Verification must occur inside the returned Promise so every failure becomes a rejection. Reject malformed tokens, invalid signatures, JSON arrays, and payloads that lack a nonempty string `subject` or nonnegative safe-integer `expiresAt`. Use a constant-time comparison for equal-length signatures. A voucher is expired when `expiresAt` is less than or equal to `currentSecond`; reject it with an `Error` whose `code` is `VOUCHER_EXPIRED`. Resolve valid vouchers with the newly parsed payload object. Do not mutate or retain caller-owned mutable data. Export exactly the function with `module.exports = verifyVoucher`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e0aebea3048e5ee6da318ae678c25e531cc733f7a4d619e2361025d8f38bf7e0",
+      "text": "Implement `verifyVoucher(token, secret, currentSecond)` using only Node.js standard-library APIs. A voucher is `<body>.<signature>`, where `body` is the base64url encoding of UTF-8 JSON and `signature` is the base64url HMAC-SHA256 of the body text using `secret`. `secret` must be a nonempty string and `currentSecond` a nonnegative safe integer. Verification must occur inside the returned Promise so every failure becomes a rejection. Reject malformed tokens, invalid signatures, JSON arrays, and payloads that lack a nonempty string `subject` or nonnegative safe-integer `expiresAt`. Use a constant-time comparison for equal-length signatures. A voucher is expired when `expiresAt` is less than or equal to `currentSecond`; reject it with an `Error` whose `code` is `VOUCHER_EXPIRED`. Resolve valid vouchers with the newly parsed payload object. Do not mutate or retain caller-owned mutable data. Export exactly the function with `module.exports = verifyVoucher`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0269",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "const crypto = require('crypto');\n\nfunction verifyVoucher(token, secret, currentSecond) {\n  return Promise.resolve().then(() => {\n    if (typeof token !== 'string' || typeof secret !== 'string' || secret.length === 0 ||\n        !Number.isSafeInteger(currentSecond) || currentSecond < 0) {\n      throw new TypeError('Invalid verification input');\n    }\n\n    const parts = token.split('.');\n    if (parts.length !== 2 || !/^[A-Za-z0-9_-]+$/.test(parts[0]) ||\n        !/^[A-Za-z0-9_-]+$/.test(parts[1])) {\n      throw new Error('Malformed voucher');\n    }\n\n    const expected = crypto.createHmac('sha256', secret).update(parts[0]).digest();\n    const supplied = Buffer.from(parts[1], 'base64url');\n    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {\n      throw new Error('Invalid voucher signature');\n    }\n\n    let payload;\n    try {\n      payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));\n    } catch {\n      throw new Error('Malformed voucher payload');\n    }\n\n    if (payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n        typeof payload.subject !== 'string' || payload.subject.length === 0 ||\n        !Number.isSafeInteger(payload.expiresAt) || payload.expiresAt < 0) {\n      throw new Error('Invalid voucher payload');\n    }\n\n    if (payload.expiresAt < currentSecond) {\n      const error = new Error('Voucher expired');\n      error.code = 'VOUCHER_EXPIRED';\n      throw error;\n    }\n\n    return payload;\n  });\n}\n\nmodule.exports = verifyVoucher;\n",
+          "label": "Accepts a voucher at its exact expiration second because the boundary comparison excludes equality.",
+          "sha256": "efd775e29f8bfa03ff992e1cca6cfdc5a33f680cca473016222b854481a82c3f"
+        }
+      ],
+      "reference": {
+        "code": "const crypto = require('crypto');\n\nfunction verifyVoucher(token, secret, currentSecond) {\n  return Promise.resolve().then(() => {\n    if (typeof token !== 'string' || typeof secret !== 'string' || secret.length === 0 ||\n        !Number.isSafeInteger(currentSecond) || currentSecond < 0) {\n      throw new TypeError('Invalid verification input');\n    }\n\n    const parts = token.split('.');\n    if (parts.length !== 2 || !/^[A-Za-z0-9_-]+$/.test(parts[0]) ||\n        !/^[A-Za-z0-9_-]+$/.test(parts[1])) {\n      throw new Error('Malformed voucher');\n    }\n\n    const expected = crypto.createHmac('sha256', secret).update(parts[0]).digest();\n    const supplied = Buffer.from(parts[1], 'base64url');\n    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {\n      throw new Error('Invalid voucher signature');\n    }\n\n    let payload;\n    try {\n      payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));\n    } catch {\n      throw new Error('Malformed voucher payload');\n    }\n\n    if (payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n        typeof payload.subject !== 'string' || payload.subject.length === 0 ||\n        !Number.isSafeInteger(payload.expiresAt) || payload.expiresAt < 0) {\n      throw new Error('Invalid voucher payload');\n    }\n\n    if (payload.expiresAt <= currentSecond) {\n      const error = new Error('Voucher expired');\n      error.code = 'VOUCHER_EXPIRED';\n      throw error;\n    }\n\n    return payload;\n  });\n}\n\nmodule.exports = verifyVoucher;\n",
+        "label": "codex-teacher-reference",
+        "sha256": "09d18f436fd53018e0432a1a6a547a7c72eaeda1bec8d2f4fca40b62710dc7d8"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert/strict');\nconst crypto = require('node:crypto');\nconst verifyVoucher = require('./solution');\n\nassert.equal(typeof verifyVoucher, 'function');\n\nfunction signBody(body, secret) {\n  return crypto.createHmac('sha256', secret).update(body).digest('base64url');\n}\n\nfunction tokenFor(payload, secret) {\n  const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');\n  return `${body}.${signBody(body, secret)}`;\n}\n\nfunction tokenForBody(body, secret) {\n  return `${body}.${signBody(body, secret)}`;\n}\n\nfunction returnedPromise(...args) {\n  let result;\n  assert.doesNotThrow(() => { result = verifyVoucher(...args); });\n  assert.ok(result instanceof Promise, 'verifyVoucher must return a Promise');\n  return result;\n}\n\nasync function expectRejected(args, check) {\n  const promise = returnedPromise(...args);\n  await assert.rejects(promise, check);\n}\n\n(async () => {\n  const secret = 'correct horse battery staple';\n  const payload = {\n    subject: 'user-42',\n    expiresAt: 200,\n    permissions: ['read'],\n    metadata: { region: 'in' }\n  };\n  const token = tokenFor(payload, secret);\n\n  const first = await returnedPromise(token, secret, 199);\n  const second = await returnedPromise(token, secret, 0);\n  assert.deepEqual(first, payload);\n  assert.deepEqual(second, payload);\n  assert.notStrictEqual(first, second);\n  assert.notStrictEqual(first.permissions, second.permissions);\n  assert.notStrictEqual(first.metadata, second.metadata);\n\n  await expectRejected([tokenFor({ subject: 'u', expiresAt: 10 }, secret), secret, 10], (error) => {\n    assert.ok(error instanceof Error);\n    assert.equal(error.code, 'VOUCHER_EXPIRED');\n    return true;\n  });\n  await expectRejected([tokenFor({ subject: 'u', expiresAt: 9 }, secret), secret, 10], (error) => {\n    assert.equal(error.code, 'VOUCHER_EXPIRED');\n    return true;\n  });\n\n  const originalSignature = token.split('.')[1];\n  const wrongSignature = `${originalSignature[0] === 'A' ? 'B' : 'A'}${originalSignature.slice(1)}`;\n  await expectRejected([`${token.split('.')[0]}.${wrongSignature}`, secret, 0]);\n  await expectRejected([token, 'wrong secret', 0]);\n\n  const invalidPayloads = [\n    [], null, {}, { subject: '', expiresAt: 2 }, { subject: 3, expiresAt: 2 },\n    { subject: 'u', expiresAt: -1 }, { subject: 'u', expiresAt: 1.5 },\n    { subject: 'u', expiresAt: Number.MAX_SAFE_INTEGER + 1 },\n    { subject: 'u', expiresAt: '2' }\n  ];\n  for (const invalid of invalidPayloads) {\n    await expectRejected([tokenFor(invalid, secret), secret, 0]);\n  }\n\n  const invalidJsonBody = Buffer.from('{not json', 'utf8').toString('base64url');\n  await expectRejected([tokenForBody(invalidJsonBody, secret), secret, 0]);\n  await expectRejected([tokenForBody('*', secret), secret, 0]);\n  await expectRejected(['', secret, 0]);\n  await expectRejected(['abc', secret, 0]);\n  await expectRejected(['a.b.c', secret, 0]);\n  await expectRejected(['.', secret, 0]);\n  await expectRejected([null, secret, 0]);\n\n  for (const args of [\n    [token, '', 0], [token, null, 0], [token, secret, -1], [token, secret, 1.2],\n    [token, secret, Number.MAX_SAFE_INTEGER + 1], [token, secret, '0'],\n    [token, secret, NaN], [token, secret, Infinity]\n  ]) {\n    await expectRejected(args, TypeError);\n  }\n})().catch((error) => {\n  console.error(error);\n  process.exitCode = 1;\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "65ccf9104ee5f4ae608e1bda2ac8f510fb638935f63bc6b7d753264c26f3af46"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e0aebea3048e5ee6da318ae678c25e531cc733f7a4d619e2361025d8f38bf7e0",
+      "text": "Implement `verifyVoucher(token, secret, currentSecond)` using only Node.js standard-library APIs. A voucher is `<body>.<signature>`, where `body` is the base64url encoding of UTF-8 JSON and `signature` is the base64url HMAC-SHA256 of the body text using `secret`. `secret` must be a nonempty string and `currentSecond` a nonnegative safe integer. Verification must occur inside the returned Promise so every failure becomes a rejection. Reject malformed tokens, invalid signatures, JSON arrays, and payloads that lack a nonempty string `subject` or nonnegative safe-integer `expiresAt`. Use a constant-time comparison for equal-length signatures. A voucher is expired when `expiresAt` is less than or equal to `currentSecond`; reject it with an `Error` whose `code` is `VOUCHER_EXPIRED`. Resolve valid vouchers with the newly parsed payload object. Do not mutate or retain caller-owned mutable data. Export exactly the function with `module.exports = verifyVoucher`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e0aebea3048e5ee6da318ae678c25e531cc733f7a4d619e2361025d8f38bf7e0",
+      "text": "Implement `verifyVoucher(token, secret, currentSecond)` using only Node.js standard-library APIs. A voucher is `<body>.<signature>`, where `body` is the base64url encoding of UTF-8 JSON and `signature` is the base64url HMAC-SHA256 of the body text using `secret`. `secret` must be a nonempty string and `currentSecond` a nonnegative safe integer. Verification must occur inside the returned Promise so every failure becomes a rejection. Reject malformed tokens, invalid signatures, JSON arrays, and payloads that lack a nonempty string `subject` or nonnegative safe-integer `expiresAt`. Use a constant-time comparison for equal-length signatures. A voucher is expired when `expiresAt` is less than or equal to `currentSecond`; reject it with an `Error` whose `code` is `VOUCHER_EXPIRED`. Resolve valid vouchers with the newly parsed payload object. Do not mutate or retain caller-owned mutable data. Export exactly the function with `module.exports = verifyVoucher`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0269",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "const crypto = require('crypto');\n\nfunction verifyVoucher(token, secret, currentSecond) {\n  return Promise.resolve().then(() => {\n    if (typeof token !== 'string' || typeof secret !== 'string' || secret.length === 0 ||\n        !Number.isSafeInteger(currentSecond) || currentSecond < 0) {\n      throw new TypeError('Invalid verification input');\n    }\n\n    const parts = token.split('.');\n    if (parts.length !== 2 || !/^[A-Za-z0-9_-]+$/.test(parts[0]) ||\n        !/^[A-Za-z0-9_-]+$/.test(parts[1])) {\n      throw new Error('Malformed voucher');\n    }\n\n    const expected = crypto.createHmac('sha256', secret).update(parts[0]).digest();\n    const supplied = Buffer.from(parts[1], 'base64url');\n    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {\n      throw new Error('Invalid voucher signature');\n    }\n\n    let payload;\n    try {\n      payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));\n    } catch {\n      throw new Error('Malformed voucher payload');\n    }\n\n    if (payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n        typeof payload.subject !== 'string' || payload.subject.length === 0 ||\n        !Number.isSafeInteger(payload.expiresAt) || payload.expiresAt < 0) {\n      throw new Error('Invalid voucher payload');\n    }\n\n    if (payload.expiresAt < currentSecond) {\n      const error = new Error('Voucher expired');\n      error.code = 'VOUCHER_EXPIRED';\n      throw error;\n    }\n\n    return payload;\n  });\n}\n\nmodule.exports = verifyVoucher;\n",
+          "label": "Accepts a voucher at its exact expiration second because the boundary comparison excludes equality.",
+          "sha256": "efd775e29f8bfa03ff992e1cca6cfdc5a33f680cca473016222b854481a82c3f"
+        }
+      ],
+      "reference": {
+        "code": "const crypto = require('crypto');\n\nfunction verifyVoucher(token, secret, currentSecond) {\n  return Promise.resolve().then(() => {\n    if (typeof token !== 'string' || typeof secret !== 'string' || secret.length === 0 ||\n        !Number.isSafeInteger(currentSecond) || currentSecond < 0) {\n      throw new TypeError('Invalid verification input');\n    }\n\n    const parts = token.split('.');\n    if (parts.length !== 2 || !/^[A-Za-z0-9_-]+$/.test(parts[0]) ||\n        !/^[A-Za-z0-9_-]+$/.test(parts[1])) {\n      throw new Error('Malformed voucher');\n    }\n\n    const expected = crypto.createHmac('sha256', secret).update(parts[0]).digest();\n    const supplied = Buffer.from(parts[1], 'base64url');\n    if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {\n      throw new Error('Invalid voucher signature');\n    }\n\n    let payload;\n    try {\n      payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));\n    } catch {\n      throw new Error('Malformed voucher payload');\n    }\n\n    if (payload === null || typeof payload !== 'object' || Array.isArray(payload) ||\n        typeof payload.subject !== 'string' || payload.subject.length === 0 ||\n        !Number.isSafeInteger(payload.expiresAt) || payload.expiresAt < 0) {\n      throw new Error('Invalid voucher payload');\n    }\n\n    if (payload.expiresAt <= currentSecond) {\n      const error = new Error('Voucher expired');\n      error.code = 'VOUCHER_EXPIRED';\n      throw error;\n    }\n\n    return payload;\n  });\n}\n\nmodule.exports = verifyVoucher;\n",
+        "label": "codex-teacher-reference",
+        "sha256": "09d18f436fd53018e0432a1a6a547a7c72eaeda1bec8d2f4fca40b62710dc7d8"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "[AssertionError [ERR_ASSERTION]: Missing expected rejection: Body is not UTF-8 JSON and must not be silently repaired] {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: undefined,\n  operator: 'rejects',\n  diff: 'simple'\n}\n",
+    "stderr_sha256": "7c545a5a45ebddba9b1235ab2af243109ad2dd30c1b770623dc51ebac7519560",
+    "duration_ms": 378,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

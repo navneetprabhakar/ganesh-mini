@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0272",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a8bc569f8fa9f0729b2dace6c9060af16735ecd73d346dc0ab40ca7d741748b3",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { createAccessDialog } = require('./solution');\nlet finish;\nconst dialog = createAccessDialog(() => new Promise(resolve => { finish = resolve; }));\ndialog.open();\nconst pending = dialog.submit({ user: 'u', secret: 's' });\nconst opened = dialog.open();\nfinish({ code: 401 });\nassert.equal(opened.busy, true, 'Opening changes visibility, not the busy state of an awaited checker');\npending.catch(error => { console.error(error); process.exitCode = 1; });\n",
+        "sha256": "55ab6f9e71e4f33a42e148a3c64ceb8314f5afed868bdfbb0688b43580d40ecf"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4cb8fb5e32c03e7033c2ad3bc919ad110e04561912fb7b1bd801544665672c93",
+      "text": "Implement a CommonJS module exporting exactly `{ createAccessDialog }`.\n\n`createAccessDialog(checkCredentials)` requires a function and otherwise throws `TypeError`. It returns `{ open, close, getState, submit }`. State is `{ visible, busy, message }`, initially `{ false, false, null }`. `open()` and `close()` change visibility; `close()` also clears the message. Both return defensive state copies.\n\n`submit(credentials)` requires the dialog to be visible and not busy. Credentials must be a non-null object with non-empty string `user` and `secret` fields. Invalid credentials resolve to state with message `'invalid input'` without calling the checker. A valid submission sets `busy` while awaiting `checkCredentials` with a copied credentials object. A reply must have an integer `code`. Code 204 closes the dialog and sets message `'accepted'`; code 401 leaves it open with `'denied'`; code 409 leaves it open with `'retry later'`; any other code or malformed reply leaves it open with `'service error'`. Checker rejection also produces `'service error'`. `submit` must resolve, not reject.\n\nWhile busy, another `submit` must resolve immediately to the current state without invoking the checker. No input, reply, or returned state may alias mutable internal state. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4cb8fb5e32c03e7033c2ad3bc919ad110e04561912fb7b1bd801544665672c93",
+      "text": "Implement a CommonJS module exporting exactly `{ createAccessDialog }`.\n\n`createAccessDialog(checkCredentials)` requires a function and otherwise throws `TypeError`. It returns `{ open, close, getState, submit }`. State is `{ visible, busy, message }`, initially `{ false, false, null }`. `open()` and `close()` change visibility; `close()` also clears the message. Both return defensive state copies.\n\n`submit(credentials)` requires the dialog to be visible and not busy. Credentials must be a non-null object with non-empty string `user` and `secret` fields. Invalid credentials resolve to state with message `'invalid input'` without calling the checker. A valid submission sets `busy` while awaiting `checkCredentials` with a copied credentials object. A reply must have an integer `code`. Code 204 closes the dialog and sets message `'accepted'`; code 401 leaves it open with `'denied'`; code 409 leaves it open with `'retry later'`; any other code or malformed reply leaves it open with `'service error'`. Checker rejection also produces `'service error'`. `submit` must resolve, not reject.\n\nWhile busy, another `submit` must resolve immediately to the current state without invoking the checker. No input, reply, or returned state may alias mutable internal state. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0272",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createAccessDialog(checkCredentials) {\n  if (typeof checkCredentials !== 'function') {\n    throw new TypeError('checkCredentials must be a function');\n  }\n\n  let state = { visible: false, busy: false, message: null };\n  const copy = () => ({ ...state });\n\n  function open() {\n    state = { visible: true, busy: false, message: null };\n    return copy();\n  }\n\n  function close() {\n    state = { visible: false, busy: false, message: null };\n    return copy();\n  }\n\n  async function submit(credentials) {\n    if (!state.visible || state.busy) return copy();\n    if (\n      credentials === null ||\n      typeof credentials !== 'object' ||\n      typeof credentials.user !== 'string' ||\n      credentials.user.length === 0 ||\n      typeof credentials.secret !== 'string' ||\n      credentials.secret.length === 0\n    ) {\n      state = { visible: true, busy: false, message: 'invalid input' };\n      return copy();\n    }\n\n    state = { visible: true, busy: true, message: state.message };\n    try {\n      const reply = await checkCredentials({ user: credentials.user, secret: credentials.secret });\n      const code = reply !== null && typeof reply === 'object' && Number.isInteger(reply.code)\n        ? reply.code\n        : null;\n      if (code === 204) state = { visible: false, busy: false, message: 'accepted' };\n      else if (code === 401) state = { visible: true, busy: false, message: 'denied' };\n      else if (code === 409) state = { visible: true, busy: false, message: 'denied' };\n      else state = { visible: true, busy: false, message: 'service error' };\n    } catch (_) {\n      state = { visible: true, busy: false, message: 'service error' };\n    }\n    return copy();\n  }\n\n  return { open, close, getState: copy, submit };\n}\n\nmodule.exports = { createAccessDialog };\n",
+          "label": "Conflict replies are mislabeled as denied instead of retryable.",
+          "sha256": "f3cf0daa691d152202bad955d4dcfad49bb542794fadc10d18a921e50b51a4dc"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createAccessDialog(checkCredentials) {\n  if (typeof checkCredentials !== 'function') {\n    throw new TypeError('checkCredentials must be a function');\n  }\n\n  let state = { visible: false, busy: false, message: null };\n  const copy = () => ({ ...state });\n\n  function open() {\n    state = { visible: true, busy: false, message: null };\n    return copy();\n  }\n\n  function close() {\n    state = { visible: false, busy: false, message: null };\n    return copy();\n  }\n\n  async function submit(credentials) {\n    if (!state.visible || state.busy) return copy();\n    if (\n      credentials === null ||\n      typeof credentials !== 'object' ||\n      typeof credentials.user !== 'string' ||\n      credentials.user.length === 0 ||\n      typeof credentials.secret !== 'string' ||\n      credentials.secret.length === 0\n    ) {\n      state = { visible: true, busy: false, message: 'invalid input' };\n      return copy();\n    }\n\n    state = { visible: true, busy: true, message: state.message };\n    try {\n      const reply = await checkCredentials({ user: credentials.user, secret: credentials.secret });\n      const code = reply !== null && typeof reply === 'object' && Number.isInteger(reply.code)\n        ? reply.code\n        : null;\n      if (code === 204) state = { visible: false, busy: false, message: 'accepted' };\n      else if (code === 401) state = { visible: true, busy: false, message: 'denied' };\n      else if (code === 409) state = { visible: true, busy: false, message: 'retry later' };\n      else state = { visible: true, busy: false, message: 'service error' };\n    } catch (_) {\n      state = { visible: true, busy: false, message: 'service error' };\n    }\n    return copy();\n  }\n\n  return { open, close, getState: copy, submit };\n}\n\nmodule.exports = { createAccessDialog };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "78888f4825c78cd2c283e637765d97ad7b9b6381a45b6880535de42d254db3d1"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createAccessDialog']);\nconst { createAccessDialog } = api;\n\nasync function main() {\n  for (const value of [undefined, null, {}, 'check']) {\n    assert.throws(() => createAccessDialog(value), TypeError);\n  }\n\n  let calls = 0;\n  let resolveCheck;\n  let checkerCredentials;\n  const dialog = createAccessDialog((credentials) => {\n    calls += 1;\n    checkerCredentials = credentials;\n    return new Promise((resolve) => { resolveCheck = resolve; });\n  });\n\n  assert.deepStrictEqual(dialog.getState(), { visible: false, busy: false, message: null });\n  const opened = dialog.open();\n  assert.deepStrictEqual(opened, { visible: true, busy: false, message: null });\n  opened.visible = false;\n  assert.strictEqual(dialog.getState().visible, true);\n\n  const invalidInputs = [null, [], {}, { user: '', secret: 's' }, { user: 'u', secret: '' }, { user: 3, secret: 's' }];\n  for (const credentials of invalidInputs) {\n    const state = await dialog.submit(credentials);\n    assert.deepStrictEqual(state, { visible: true, busy: false, message: 'invalid input' });\n    state.message = 'changed';\n    assert.strictEqual(dialog.getState().message, 'invalid input');\n  }\n  assert.strictEqual(calls, 0);\n\n  const input = { user: 'forge', secret: 'token' };\n  const pending = dialog.submit(input);\n  assert.strictEqual(calls, 1);\n  assert.deepStrictEqual(dialog.getState(), { visible: true, busy: true, message: 'invalid input' });\n  assert.notStrictEqual(checkerCredentials, input);\n  assert.deepStrictEqual(checkerCredentials, input);\n  input.user = 'mutated';\n  assert.strictEqual(checkerCredentials.user, 'forge');\n\n  const busyState = await dialog.submit({ user: 'other', secret: 'other' });\n  assert.deepStrictEqual(busyState, dialog.getState());\n  assert.strictEqual(calls, 1);\n  resolveCheck({ code: 401 });\n  assert.deepStrictEqual(await pending, { visible: true, busy: false, message: 'denied' });\n\n  assert.deepStrictEqual(dialog.close(), { visible: false, busy: false, message: null });\n  assert.deepStrictEqual(dialog.open(), { visible: true, busy: false, message: null });\n\n  async function outcome(reply, expected) {\n    const d = createAccessDialog(async () => reply);\n    d.open();\n    assert.deepStrictEqual(await d.submit({ user: 'u', secret: 's' }), expected);\n  }\n\n  await outcome({ code: 204 }, { visible: false, busy: false, message: 'accepted' });\n  await outcome({ code: 409 }, { visible: true, busy: false, message: 'retry later' });\n  await outcome({ code: 500 }, { visible: true, busy: false, message: 'service error' });\n  await outcome({ code: 204.5 }, { visible: true, busy: false, message: 'service error' });\n  await outcome(null, { visible: true, busy: false, message: 'service error' });\n\n  const rejecting = createAccessDialog(async () => { throw new Error('offline'); });\n  rejecting.open();\n  assert.deepStrictEqual(await rejecting.submit({ user: 'u', secret: 's' }), {\n    visible: true, busy: false, message: 'service error'\n  });\n}\n\nmain().catch((error) => {\n  console.error(error);\n  process.exitCode = 1;\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "14d2c444477964b917b9ea31fa609ff60eac4f91dba2348ae3359f14f1485da8"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4cb8fb5e32c03e7033c2ad3bc919ad110e04561912fb7b1bd801544665672c93",
+      "text": "Implement a CommonJS module exporting exactly `{ createAccessDialog }`.\n\n`createAccessDialog(checkCredentials)` requires a function and otherwise throws `TypeError`. It returns `{ open, close, getState, submit }`. State is `{ visible, busy, message }`, initially `{ false, false, null }`. `open()` and `close()` change visibility; `close()` also clears the message. Both return defensive state copies.\n\n`submit(credentials)` requires the dialog to be visible and not busy. Credentials must be a non-null object with non-empty string `user` and `secret` fields. Invalid credentials resolve to state with message `'invalid input'` without calling the checker. A valid submission sets `busy` while awaiting `checkCredentials` with a copied credentials object. A reply must have an integer `code`. Code 204 closes the dialog and sets message `'accepted'`; code 401 leaves it open with `'denied'`; code 409 leaves it open with `'retry later'`; any other code or malformed reply leaves it open with `'service error'`. Checker rejection also produces `'service error'`. `submit` must resolve, not reject.\n\nWhile busy, another `submit` must resolve immediately to the current state without invoking the checker. No input, reply, or returned state may alias mutable internal state. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4cb8fb5e32c03e7033c2ad3bc919ad110e04561912fb7b1bd801544665672c93",
+      "text": "Implement a CommonJS module exporting exactly `{ createAccessDialog }`.\n\n`createAccessDialog(checkCredentials)` requires a function and otherwise throws `TypeError`. It returns `{ open, close, getState, submit }`. State is `{ visible, busy, message }`, initially `{ false, false, null }`. `open()` and `close()` change visibility; `close()` also clears the message. Both return defensive state copies.\n\n`submit(credentials)` requires the dialog to be visible and not busy. Credentials must be a non-null object with non-empty string `user` and `secret` fields. Invalid credentials resolve to state with message `'invalid input'` without calling the checker. A valid submission sets `busy` while awaiting `checkCredentials` with a copied credentials object. A reply must have an integer `code`. Code 204 closes the dialog and sets message `'accepted'`; code 401 leaves it open with `'denied'`; code 409 leaves it open with `'retry later'`; any other code or malformed reply leaves it open with `'service error'`. Checker rejection also produces `'service error'`. `submit` must resolve, not reject.\n\nWhile busy, another `submit` must resolve immediately to the current state without invoking the checker. No input, reply, or returned state may alias mutable internal state. Export with `module.exports` only.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0272",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createAccessDialog(checkCredentials) {\n  if (typeof checkCredentials !== 'function') {\n    throw new TypeError('checkCredentials must be a function');\n  }\n\n  let state = { visible: false, busy: false, message: null };\n  const copy = () => ({ ...state });\n\n  function open() {\n    state = { visible: true, busy: false, message: null };\n    return copy();\n  }\n\n  function close() {\n    state = { visible: false, busy: false, message: null };\n    return copy();\n  }\n\n  async function submit(credentials) {\n    if (!state.visible || state.busy) return copy();\n    if (\n      credentials === null ||\n      typeof credentials !== 'object' ||\n      typeof credentials.user !== 'string' ||\n      credentials.user.length === 0 ||\n      typeof credentials.secret !== 'string' ||\n      credentials.secret.length === 0\n    ) {\n      state = { visible: true, busy: false, message: 'invalid input' };\n      return copy();\n    }\n\n    state = { visible: true, busy: true, message: state.message };\n    try {\n      const reply = await checkCredentials({ user: credentials.user, secret: credentials.secret });\n      const code = reply !== null && typeof reply === 'object' && Number.isInteger(reply.code)\n        ? reply.code\n        : null;\n      if (code === 204) state = { visible: false, busy: false, message: 'accepted' };\n      else if (code === 401) state = { visible: true, busy: false, message: 'denied' };\n      else if (code === 409) state = { visible: true, busy: false, message: 'denied' };\n      else state = { visible: true, busy: false, message: 'service error' };\n    } catch (_) {\n      state = { visible: true, busy: false, message: 'service error' };\n    }\n    return copy();\n  }\n\n  return { open, close, getState: copy, submit };\n}\n\nmodule.exports = { createAccessDialog };\n",
+          "label": "Conflict replies are mislabeled as denied instead of retryable.",
+          "sha256": "f3cf0daa691d152202bad955d4dcfad49bb542794fadc10d18a921e50b51a4dc"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createAccessDialog(checkCredentials) {\n  if (typeof checkCredentials !== 'function') {\n    throw new TypeError('checkCredentials must be a function');\n  }\n\n  let state = { visible: false, busy: false, message: null };\n  const copy = () => ({ ...state });\n\n  function open() {\n    state = { visible: true, busy: false, message: null };\n    return copy();\n  }\n\n  function close() {\n    state = { visible: false, busy: false, message: null };\n    return copy();\n  }\n\n  async function submit(credentials) {\n    if (!state.visible || state.busy) return copy();\n    if (\n      credentials === null ||\n      typeof credentials !== 'object' ||\n      typeof credentials.user !== 'string' ||\n      credentials.user.length === 0 ||\n      typeof credentials.secret !== 'string' ||\n      credentials.secret.length === 0\n    ) {\n      state = { visible: true, busy: false, message: 'invalid input' };\n      return copy();\n    }\n\n    state = { visible: true, busy: true, message: state.message };\n    try {\n      const reply = await checkCredentials({ user: credentials.user, secret: credentials.secret });\n      const code = reply !== null && typeof reply === 'object' && Number.isInteger(reply.code)\n        ? reply.code\n        : null;\n      if (code === 204) state = { visible: false, busy: false, message: 'accepted' };\n      else if (code === 401) state = { visible: true, busy: false, message: 'denied' };\n      else if (code === 409) state = { visible: true, busy: false, message: 'retry later' };\n      else state = { visible: true, busy: false, message: 'service error' };\n    } catch (_) {\n      state = { visible: true, busy: false, message: 'service error' };\n    }\n    return copy();\n  }\n\n  return { open, close, getState: copy, submit };\n}\n\nmodule.exports = { createAccessDialog };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "78888f4825c78cd2c283e637765d97ad7b9b6381a45b6880535de42d254db3d1"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Opening changes visibility, not the busy state of an awaited checker\n\nfalse !== true\n\n    at Object.<anonymous> (/work/solution.test.js:9:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "01b7e5155176289270ca37013935c3f442d7926a4cf5ef0342cadf8eb16de7a7",
+    "duration_ms": 427,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

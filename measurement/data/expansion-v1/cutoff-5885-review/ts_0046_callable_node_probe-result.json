@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-repair-0046",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "sample",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/quality-sample.candidates.jsonl",
+  "candidate_set_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "f1d009de3b4dcd7cfc185d76ea8f6779c2f013331cd69d1a6ef2447063cf9a10",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { makeNode } from \"./solution\";\n\nconst node = Object.assign(() => undefined, { tag: \"section\" });\nlet calls = 0;\nconst returned = makeNode((tag) => {\n  calls++;\n  if (tag !== \"section\") throw new Error(\"Wrong factory argument\");\n  return node;\n});\nif (returned !== node || calls !== 1) throw new Error(\"Node identity/call count changed\");\n",
+        "sha256": "23800dd8f43827763c38af3ad01c338deaa920af0b596c6d1dac937724eeb470"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ac0c7926a55c223aeb7aaa76633f0549a5ad3b152c2977ed021f410a0cec0881",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same public API. The module must compile when JSX parsing is enabled, so it must not use angle-bracket type assertions. `makeNode(factory)` must call `factory` exactly once with `\"section\"`, return that exact object without cloning, and throw `TypeError(\"factory returned non-node\")` when the result lacks a string `tag` property. Extra properties are allowed.\n\n```ts\nexport interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = <NodeLike>factory(\"section\");\n  return node;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ac0c7926a55c223aeb7aaa76633f0549a5ad3b152c2977ed021f410a0cec0881",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same public API. The module must compile when JSX parsing is enabled, so it must not use angle-bracket type assertions. `makeNode(factory)` must call `factory` exactly once with `\"section\"`, return that exact object without cloning, and throw `TypeError(\"factory returned non-node\")` when the result lacks a string `tag` property. Extra properties are allowed.\n\n```ts\nexport interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = <NodeLike>factory(\"section\");\n  return node;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-repair-0046",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = <NodeLike>factory(\"section\");\n  return node;\n}\n",
+          "label": "An unchecked angle-bracket assertion is JSX-incompatible and allows malformed factory results.",
+          "sha256": "4e1646717b15ccb1ee6792f895ac29e5e777d89beaabc9a745b8dddbe4957fd9"
+        }
+      ],
+      "reference": {
+        "code": "export interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = factory(\"section\");\n  if (typeof node !== \"object\" || node === null || typeof (node as { tag?: unknown }).tag !== \"string\") {\n    throw new TypeError(\"factory returned non-node\");\n  }\n  return node as NodeLike;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "394ffdca44ab4e0d7d0165cb9835a8e545efcc69325c8de85a8dc31de1e4d7ea"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { makeNode } from \"./solution\";\nimport type { NodeLike } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction rejects(valueFactory: () => unknown, message: string): void {\n  let error: unknown;\n  try { makeNode(valueFactory); } catch (caught) { error = caught; }\n  assert(error instanceof TypeError && error.message === \"factory returned non-node\", message);\n}\n\nlet calls = 0;\nconst original = { tag: \"section\", extra: 42 };\nconst result: NodeLike = makeNode(tag => {\n  calls += 1;\n  assert(tag === \"section\", \"factory receives section\");\n  return original;\n});\nassert(calls === 1, \"factory called exactly once\");\nassert(result === original, \"exact factory object is returned\");\nassert((result as { extra?: number }).extra === 42, \"extra properties are retained\");\n\nconst emptyTag = { tag: \"\" };\nassert(makeNode(() => emptyTag) === emptyTag, \"empty string tag is valid\");\nfor (const invalid of [undefined, null, 3, \"section\", {}, { tag: 1 }, { tag: null }]) {\n  let invalidCalls = 0;\n  rejects(() => { invalidCalls += 1; return invalid; }, \"invalid node rejected\");\n  assert(invalidCalls === 1, \"invalid factory still called exactly once\");\n}\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "9177c8408f9af6f095bc5e64a8ee44e76dbf923db4c68f3f64eeebd6d8c8a4d3"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ac0c7926a55c223aeb7aaa76633f0549a5ad3b152c2977ed021f410a0cec0881",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same public API. The module must compile when JSX parsing is enabled, so it must not use angle-bracket type assertions. `makeNode(factory)` must call `factory` exactly once with `\"section\"`, return that exact object without cloning, and throw `TypeError(\"factory returned non-node\")` when the result lacks a string `tag` property. Extra properties are allowed.\n\n```ts\nexport interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = <NodeLike>factory(\"section\");\n  return node;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ac0c7926a55c223aeb7aaa76633f0549a5ad3b152c2977ed021f410a0cec0881",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same public API. The module must compile when JSX parsing is enabled, so it must not use angle-bracket type assertions. `makeNode(factory)` must call `factory` exactly once with `\"section\"`, return that exact object without cloning, and throw `TypeError(\"factory returned non-node\")` when the result lacks a string `tag` property. Extra properties are allowed.\n\n```ts\nexport interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = <NodeLike>factory(\"section\");\n  return node;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-repair-0046",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = <NodeLike>factory(\"section\");\n  return node;\n}\n",
+          "label": "An unchecked angle-bracket assertion is JSX-incompatible and allows malformed factory results.",
+          "sha256": "4e1646717b15ccb1ee6792f895ac29e5e777d89beaabc9a745b8dddbe4957fd9"
+        }
+      ],
+      "reference": {
+        "code": "export interface NodeLike {\n  tag: string;\n}\n\nexport function makeNode(factory: (tag: string) => unknown): NodeLike {\n  const node = factory(\"section\");\n  if (typeof node !== \"object\" || node === null || typeof (node as { tag?: unknown }).tag !== \"string\") {\n    throw new TypeError(\"factory returned non-node\");\n  }\n  return node as NodeLike;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "394ffdca44ab4e0d7d0165cb9835a8e545efcc69325c8de85a8dc31de1e4d7ea"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.js:7\n        throw new TypeError(\"factory returned non-node\");\n        ^\n\nTypeError: factory returned non-node\n    at makeNode (/work/solution.js:7:15)\n    at Object.<anonymous> (/work/solution.test.js:6:42)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "1bcecf7d7e3a8f1d57e8e0087937125794f6d40e545163b3f7972bf2aedcb0ea",
+    "duration_ms": 3575,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

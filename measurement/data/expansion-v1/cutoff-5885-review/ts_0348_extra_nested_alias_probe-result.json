@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0348",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "sample",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/quality-sample.candidates.jsonl",
+  "candidate_set_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "bbef3f2bc9fcbca7bf19690234982aa6ea4ccbab1fd2d5bb7e027bcefbcd3fe3",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { buildSectionRows } from \"./solution\";\n\nconst item = { sku: \"x\", label: \"X\", metadata: { value: 1 } };\nconst rows = buildSectionRows({ Section: [item] }, false);\nconst returned = rows[0].items[0] as typeof item;\nreturned.metadata.value = 2;\nif (item.metadata.value !== 1) throw new Error(\"Deep-copy promise violated by retained nested property\");\n",
+        "sha256": "f35f410bf99664bcddd406682ac901ddac75e772ddcfafd44a4afc15ee6c1528"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2a561911817512f6c31f0e4b5b6f1432274abefad6abc2de51489d659218656f",
+      "text": "Implement a pure section-row projection.\n\nExport `CatalogItem`, `SectionRow`, and `buildSectionRows`. A catalog item has `sku: string` and `label: string`. A row has `heading: string` and `items: CatalogItem[]`.\n\n`buildSectionRows(sections, busy)` accepts either null or a readonly record whose keys are headings and whose values are readonly item arrays. If `busy` is true, return exactly one row with heading `\"Loading\"` and an empty item array, regardless of `sections`. If not busy and `sections` is null, return an empty array. Otherwise return one row per own enumerable key, ordered by ascending heading using ordinary string comparison. Preserve item order within each section. The result must deeply copy the rows and item objects so mutations to it cannot affect the input. Empty headings and empty item arrays are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2a561911817512f6c31f0e4b5b6f1432274abefad6abc2de51489d659218656f",
+      "text": "Implement a pure section-row projection.\n\nExport `CatalogItem`, `SectionRow`, and `buildSectionRows`. A catalog item has `sku: string` and `label: string`. A row has `heading: string` and `items: CatalogItem[]`.\n\n`buildSectionRows(sections, busy)` accepts either null or a readonly record whose keys are headings and whose values are readonly item arrays. If `busy` is true, return exactly one row with heading `\"Loading\"` and an empty item array, regardless of `sections`. If not busy and `sections` is null, return an empty array. Otherwise return one row per own enumerable key, ordered by ascending heading using ordinary string comparison. Preserve item order within each section. The result must deeply copy the rows and item objects so mutations to it cannot affect the input. Empty headings and empty item arrays are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0348",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface CatalogItem {\n  sku: string;\n  label: string;\n}\n\nexport interface SectionRow {\n  heading: string;\n  items: CatalogItem[];\n}\n\nexport function buildSectionRows(\n  sections: Readonly<Record<string, readonly CatalogItem[]>> | null,\n  busy: boolean,\n): SectionRow[] {\n  if (busy) {\n    return [{ heading: \"Loading\", items: [] }];\n  }\n  if (sections === null) {\n    return [];\n  }\n\n  return Object.keys(sections)\n    .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)\n    .map((heading) => ({\n      heading,\n      items: [...sections[heading]],\n    }));\n}\n",
+          "label": "Copies each item array but still aliases the mutable item objects from the input.",
+          "sha256": "4dc48da1a6c48dafa574ec1d606f024fefc04cdf403a65fd42f953c01d8ad16d"
+        }
+      ],
+      "reference": {
+        "code": "export interface CatalogItem {\n  sku: string;\n  label: string;\n}\n\nexport interface SectionRow {\n  heading: string;\n  items: CatalogItem[];\n}\n\nexport function buildSectionRows(\n  sections: Readonly<Record<string, readonly CatalogItem[]>> | null,\n  busy: boolean,\n): SectionRow[] {\n  if (busy) {\n    return [{ heading: \"Loading\", items: [] }];\n  }\n  if (sections === null) {\n    return [];\n  }\n\n  return Object.keys(sections)\n    .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)\n    .map((heading) => ({\n      heading,\n      items: sections[heading].map((item) => ({ ...item })),\n    }));\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7923c26a3e82a95661fc4e6f5d343f36fb033a3c7dc43c8a7184ba6cd546f90a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { buildSectionRows } from \"./solution\";\nimport type { CatalogItem } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nconst loadingFromNull = buildSectionRows(null, true);\nassert(JSON.stringify(loadingFromNull) === JSON.stringify([{ heading: \"Loading\", items: [] }]), \"busy null input should return the loading row\");\n\nconst sections: Readonly<Record<string, readonly CatalogItem[]>> = {\n  beta: [{ sku: \"b1\", label: \"Beta one\" }, { sku: \"b2\", label: \"Beta two\" }],\n  Alpha: [{ sku: \"a1\", label: \"Alpha one\" }],\n  \"\": [],\n};\nconst before = JSON.stringify(sections);\nconst loading = buildSectionRows(sections, true);\nassert(JSON.stringify(loading) === JSON.stringify([{ heading: \"Loading\", items: [] }]), \"busy input should ignore sections\");\n\nassert(buildSectionRows(null, false).length === 0, \"non-busy null input should return an empty array\");\nconst rows = buildSectionRows(sections, false);\nassert(rows.map((row) => row.heading).join(\"|\") === \"|Alpha|beta\", \"rows should use own keys in ordinary ascending string order\");\nassert(rows[2].items.map((item) => item.sku).join(\",\") === \"b1,b2\", \"item order should be preserved\");\nassert(rows[0].items.length === 0, \"empty headings and item arrays should be retained\");\nassert(JSON.stringify(sections) === before, \"building rows must not mutate input\");\nassert(rows[1].items[0] !== sections.Alpha[0] && rows[2].items[0] !== sections.beta[0], \"item objects must be deeply copied\");\nrows[2].heading = \"changed\";\nrows[2].items[0].label = \"changed\";\nrows[2].items.push({ sku: \"new\", label: \"new\" });\nassert(JSON.stringify(sections) === before, \"mutating projected rows must not affect input\");\n\nconst again = buildSectionRows(sections, false);\nassert(again !== rows && again[1] !== rows[1] && again[1].items !== rows[1].items, \"each projection should allocate new rows and item arrays\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "41780643ab123b7457fc2db3bc0a912995ed1da08c67b36fea37e02077ac98d5"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2a561911817512f6c31f0e4b5b6f1432274abefad6abc2de51489d659218656f",
+      "text": "Implement a pure section-row projection.\n\nExport `CatalogItem`, `SectionRow`, and `buildSectionRows`. A catalog item has `sku: string` and `label: string`. A row has `heading: string` and `items: CatalogItem[]`.\n\n`buildSectionRows(sections, busy)` accepts either null or a readonly record whose keys are headings and whose values are readonly item arrays. If `busy` is true, return exactly one row with heading `\"Loading\"` and an empty item array, regardless of `sections`. If not busy and `sections` is null, return an empty array. Otherwise return one row per own enumerable key, ordered by ascending heading using ordinary string comparison. Preserve item order within each section. The result must deeply copy the rows and item objects so mutations to it cannot affect the input. Empty headings and empty item arrays are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2a561911817512f6c31f0e4b5b6f1432274abefad6abc2de51489d659218656f",
+      "text": "Implement a pure section-row projection.\n\nExport `CatalogItem`, `SectionRow`, and `buildSectionRows`. A catalog item has `sku: string` and `label: string`. A row has `heading: string` and `items: CatalogItem[]`.\n\n`buildSectionRows(sections, busy)` accepts either null or a readonly record whose keys are headings and whose values are readonly item arrays. If `busy` is true, return exactly one row with heading `\"Loading\"` and an empty item array, regardless of `sections`. If not busy and `sections` is null, return an empty array. Otherwise return one row per own enumerable key, ordered by ascending heading using ordinary string comparison. Preserve item order within each section. The result must deeply copy the rows and item objects so mutations to it cannot affect the input. Empty headings and empty item arrays are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0348",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface CatalogItem {\n  sku: string;\n  label: string;\n}\n\nexport interface SectionRow {\n  heading: string;\n  items: CatalogItem[];\n}\n\nexport function buildSectionRows(\n  sections: Readonly<Record<string, readonly CatalogItem[]>> | null,\n  busy: boolean,\n): SectionRow[] {\n  if (busy) {\n    return [{ heading: \"Loading\", items: [] }];\n  }\n  if (sections === null) {\n    return [];\n  }\n\n  return Object.keys(sections)\n    .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)\n    .map((heading) => ({\n      heading,\n      items: [...sections[heading]],\n    }));\n}\n",
+          "label": "Copies each item array but still aliases the mutable item objects from the input.",
+          "sha256": "4dc48da1a6c48dafa574ec1d606f024fefc04cdf403a65fd42f953c01d8ad16d"
+        }
+      ],
+      "reference": {
+        "code": "export interface CatalogItem {\n  sku: string;\n  label: string;\n}\n\nexport interface SectionRow {\n  heading: string;\n  items: CatalogItem[];\n}\n\nexport function buildSectionRows(\n  sections: Readonly<Record<string, readonly CatalogItem[]>> | null,\n  busy: boolean,\n): SectionRow[] {\n  if (busy) {\n    return [{ heading: \"Loading\", items: [] }];\n  }\n  if (sections === null) {\n    return [];\n  }\n\n  return Object.keys(sections)\n    .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)\n    .map((heading) => ({\n      heading,\n      items: sections[heading].map((item) => ({ ...item })),\n    }));\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7923c26a3e82a95661fc4e6f5d343f36fb033a3c7dc43c8a7184ba6cd546f90a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:9\n    throw new Error(\"Deep-copy promise violated by retained nested property\");\n    ^\n\nError: Deep-copy promise violated by retained nested property\n    at Object.<anonymous> (/work/solution.test.js:9:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "33b2e93976974f3bab4602f7b8579b9b7d7d4340fcff8217332af283b4377536",
+    "duration_ms": 3270,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

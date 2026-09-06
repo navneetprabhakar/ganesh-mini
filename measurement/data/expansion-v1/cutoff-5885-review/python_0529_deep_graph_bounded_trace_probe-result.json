@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0529",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "sample",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/quality-sample.candidates.jsonl",
+  "candidate_set_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "5ecc463561bbf1a024f1d87434a7fdb304557d2b20fd71a99f50f1c1471cd64c",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import Artifact, clone_exhibit\n\nroot = Artifact(\"0\")\nnode = root\nfor index in range(1, 1200):\n    child = Artifact(str(index))\n    node.children.append(child)\n    node = child\ntry:\n    copied = clone_exhibit(root)\nexcept RecursionError:\n    raise AssertionError(\"1200-node acyclic Artifact graph exceeded reference recursion depth\") from None\nnode = copied\nfor index in range(1200):\n    assert node.name == str(index)\n    if index < 1199:\n        node = node.children[0]\nassert copied is not root\n",
+        "sha256": "d7dc2c3251cf768951e822484745067c9f831a40e76a9b47349d1c427af8e2f1"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a88388d0d9f5c1ab9e37f8cc0ab651aec7ce35d036a5187cf063e7c03b8e8c9a",
+      "text": "Create `solution.py` defining `Artifact` and `clone_exhibit(root)`.\n\n`Artifact(name, tags=None)` must expose mutable attributes `name`, `tags`, `children`, and `featured`. `tags` is a new list initialized from the supplied iterable, `children` starts as an empty list, and `featured` starts as `None`.\n\n`clone_exhibit` must clone the directed graph reachable from `root` through `children` and `featured`. Return `None` for a `None` root. Every cloned node and tags list must be new, child order must be preserved, cycles must remain cycles, and multiple references to one original node must reference one corresponding clone. The original graph must not be mutated. Raise `TypeError` if a reachable value is not an `Artifact`, if `children` is not a list of artifacts, or if any tag is not a string. Names must be strings; otherwise raise `TypeError`. Empty graphs and empty lists are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a88388d0d9f5c1ab9e37f8cc0ab651aec7ce35d036a5187cf063e7c03b8e8c9a",
+      "text": "Create `solution.py` defining `Artifact` and `clone_exhibit(root)`.\n\n`Artifact(name, tags=None)` must expose mutable attributes `name`, `tags`, `children`, and `featured`. `tags` is a new list initialized from the supplied iterable, `children` starts as an empty list, and `featured` starts as `None`.\n\n`clone_exhibit` must clone the directed graph reachable from `root` through `children` and `featured`. Return `None` for a `None` root. Every cloned node and tags list must be new, child order must be preserved, cycles must remain cycles, and multiple references to one original node must reference one corresponding clone. The original graph must not be mutated. Raise `TypeError` if a reachable value is not an `Artifact`, if `children` is not a list of artifacts, or if any tag is not a string. Names must be strings; otherwise raise `TypeError`. Empty graphs and empty lists are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0529",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class Artifact:\n    def __init__(self, name, tags=None):\n        self.name = name\n        self.tags = list(tags) if tags is not None else []\n        self.children = []\n        self.featured = None\n\n\ndef clone_exhibit(root):\n    if root is None:\n        return None\n\n    memo = {}\n\n    def clone(node):\n        if not isinstance(node, Artifact):\n            raise TypeError(\"reachable values must be Artifact instances\")\n        if not isinstance(node.name, str):\n            raise TypeError(\"artifact names must be strings\")\n        if not isinstance(node.tags, list) or any(not isinstance(tag, str) for tag in node.tags):\n            raise TypeError(\"tags must be a list of strings\")\n        if not isinstance(node.children, list):\n            raise TypeError(\"children must be a list\")\n        if node in memo:\n            return memo[node]\n\n        copied = Artifact(node.name, node.tags)\n        copied.children = [clone(child) for child in node.children]\n        copied.featured = None if node.featured is None else clone(node.featured)\n        memo[node] = copied\n        return copied\n\n    return clone(root)\n",
+          "label": "Registers clones only after recursive traversal, causing infinite recursion for cyclic graphs.",
+          "sha256": "ee669d8ad7d8f8852bc5081c16c404d88d449e659f3b7ef3b983d70ab923ce73"
+        }
+      ],
+      "reference": {
+        "code": "class Artifact:\n    def __init__(self, name, tags=None):\n        self.name = name\n        self.tags = list(tags) if tags is not None else []\n        self.children = []\n        self.featured = None\n\n\ndef clone_exhibit(root):\n    if root is None:\n        return None\n\n    memo = {}\n\n    def clone(node):\n        if not isinstance(node, Artifact):\n            raise TypeError(\"reachable values must be Artifact instances\")\n        if not isinstance(node.name, str):\n            raise TypeError(\"artifact names must be strings\")\n        if not isinstance(node.tags, list) or any(not isinstance(tag, str) for tag in node.tags):\n            raise TypeError(\"tags must be a list of strings\")\n        if not isinstance(node.children, list):\n            raise TypeError(\"children must be a list\")\n        if node in memo:\n            return memo[node]\n\n        copied = Artifact(node.name, node.tags)\n        memo[node] = copied\n        copied.children = [clone(child) for child in node.children]\n        copied.featured = None if node.featured is None else clone(node.featured)\n        return copied\n\n    return clone(root)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c872d3feb4e673adf19aae04e693a926e48f8af8ad0670d237e7931ba6653084"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import Artifact, clone_exhibit\n\n\nclass CloneExhibitTests(unittest.TestCase):\n    def test_constructor_creates_independent_mutable_attributes(self):\n        source_tags = [\"old\", \"rare\"]\n        artifact = Artifact(\"vase\", source_tags)\n        self.assertEqual(artifact.name, \"vase\")\n        self.assertEqual(artifact.tags, source_tags)\n        self.assertIsNot(artifact.tags, source_tags)\n        self.assertEqual(artifact.children, [])\n        self.assertIsNone(artifact.featured)\n        artifact.name = \"urn\"\n        artifact.tags.append(\"new\")\n        artifact.children.append(artifact)\n        artifact.featured = artifact\n\n    def test_none_root(self):\n        self.assertIsNone(clone_exhibit(None))\n\n    def test_clones_cycles_shared_references_and_order(self):\n        root = Artifact(\"root\", (\"museum\",))\n        left = Artifact(\"left\", [\"blue\"])\n        right = Artifact(\"right\")\n        root.children = [left, right, left]\n        root.featured = right\n        left.children = [root]\n        left.featured = right\n        right.children = [right]\n        right.featured = left\n\n        clone = clone_exhibit(root)\n\n        self.assertIsNot(clone, root)\n        self.assertEqual(clone.name, \"root\")\n        self.assertEqual(clone.tags, [\"museum\"])\n        self.assertIsNot(clone.tags, root.tags)\n        self.assertEqual([node.name for node in clone.children], [\"left\", \"right\", \"left\"])\n        self.assertIs(clone.children[0], clone.children[2])\n        self.assertIs(clone.featured, clone.children[1])\n        self.assertIs(clone.children[0].children[0], clone)\n        self.assertIs(clone.children[0].featured, clone.children[1])\n        self.assertIs(clone.children[1].children[0], clone.children[1])\n        self.assertIs(clone.children[1].featured, clone.children[0])\n        self.assertIsNot(clone.children[0].tags, left.tags)\n\n        clone.children[0].tags.append(\"copy-only\")\n        self.assertEqual(left.tags, [\"blue\"])\n        self.assertEqual(root.children, [left, right, left])\n\n    def test_rejects_invalid_reachable_nodes_and_fields(self):\n        cases = []\n        bad_name = Artifact(\"ok\")\n        bad_name.name = 7\n        cases.append(bad_name)\n        bad_tags = Artifact(\"ok\")\n        bad_tags.tags = [\"valid\", 3]\n        cases.append(bad_tags)\n        bad_children_container = Artifact(\"ok\")\n        bad_children_container.children = ()\n        cases.append(bad_children_container)\n        bad_child = Artifact(\"ok\")\n        bad_child.children = [object()]\n        cases.append(bad_child)\n        bad_featured = Artifact(\"ok\")\n        bad_featured.featured = \"not an artifact\"\n        cases.append(bad_featured)\n\n        for root in cases:\n            with self.subTest(root=root):\n                with self.assertRaises(TypeError):\n                    clone_exhibit(root)\n\n    def test_validation_does_not_mutate_graph(self):\n        root = Artifact(\"root\", [\"tag\"])\n        child = Artifact(\"child\")\n        root.children = [child]\n        child.featured = 42\n        original_children = list(root.children)\n        original_tags = list(root.tags)\n        with self.assertRaises(TypeError):\n            clone_exhibit(root)\n        self.assertEqual(root.children, original_children)\n        self.assertEqual(root.tags, original_tags)\n        self.assertEqual(child.featured, 42)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "3a1b7e96627f6994ada2483a35b9b2fde2dcb0f311e4df165a2c1f9b8d8287f0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a88388d0d9f5c1ab9e37f8cc0ab651aec7ce35d036a5187cf063e7c03b8e8c9a",
+      "text": "Create `solution.py` defining `Artifact` and `clone_exhibit(root)`.\n\n`Artifact(name, tags=None)` must expose mutable attributes `name`, `tags`, `children`, and `featured`. `tags` is a new list initialized from the supplied iterable, `children` starts as an empty list, and `featured` starts as `None`.\n\n`clone_exhibit` must clone the directed graph reachable from `root` through `children` and `featured`. Return `None` for a `None` root. Every cloned node and tags list must be new, child order must be preserved, cycles must remain cycles, and multiple references to one original node must reference one corresponding clone. The original graph must not be mutated. Raise `TypeError` if a reachable value is not an `Artifact`, if `children` is not a list of artifacts, or if any tag is not a string. Names must be strings; otherwise raise `TypeError`. Empty graphs and empty lists are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a88388d0d9f5c1ab9e37f8cc0ab651aec7ce35d036a5187cf063e7c03b8e8c9a",
+      "text": "Create `solution.py` defining `Artifact` and `clone_exhibit(root)`.\n\n`Artifact(name, tags=None)` must expose mutable attributes `name`, `tags`, `children`, and `featured`. `tags` is a new list initialized from the supplied iterable, `children` starts as an empty list, and `featured` starts as `None`.\n\n`clone_exhibit` must clone the directed graph reachable from `root` through `children` and `featured`. Return `None` for a `None` root. Every cloned node and tags list must be new, child order must be preserved, cycles must remain cycles, and multiple references to one original node must reference one corresponding clone. The original graph must not be mutated. Raise `TypeError` if a reachable value is not an `Artifact`, if `children` is not a list of artifacts, or if any tag is not a string. Names must be strings; otherwise raise `TypeError`. Empty graphs and empty lists are valid.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0529",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class Artifact:\n    def __init__(self, name, tags=None):\n        self.name = name\n        self.tags = list(tags) if tags is not None else []\n        self.children = []\n        self.featured = None\n\n\ndef clone_exhibit(root):\n    if root is None:\n        return None\n\n    memo = {}\n\n    def clone(node):\n        if not isinstance(node, Artifact):\n            raise TypeError(\"reachable values must be Artifact instances\")\n        if not isinstance(node.name, str):\n            raise TypeError(\"artifact names must be strings\")\n        if not isinstance(node.tags, list) or any(not isinstance(tag, str) for tag in node.tags):\n            raise TypeError(\"tags must be a list of strings\")\n        if not isinstance(node.children, list):\n            raise TypeError(\"children must be a list\")\n        if node in memo:\n            return memo[node]\n\n        copied = Artifact(node.name, node.tags)\n        copied.children = [clone(child) for child in node.children]\n        copied.featured = None if node.featured is None else clone(node.featured)\n        memo[node] = copied\n        return copied\n\n    return clone(root)\n",
+          "label": "Registers clones only after recursive traversal, causing infinite recursion for cyclic graphs.",
+          "sha256": "ee669d8ad7d8f8852bc5081c16c404d88d449e659f3b7ef3b983d70ab923ce73"
+        }
+      ],
+      "reference": {
+        "code": "class Artifact:\n    def __init__(self, name, tags=None):\n        self.name = name\n        self.tags = list(tags) if tags is not None else []\n        self.children = []\n        self.featured = None\n\n\ndef clone_exhibit(root):\n    if root is None:\n        return None\n\n    memo = {}\n\n    def clone(node):\n        if not isinstance(node, Artifact):\n            raise TypeError(\"reachable values must be Artifact instances\")\n        if not isinstance(node.name, str):\n            raise TypeError(\"artifact names must be strings\")\n        if not isinstance(node.tags, list) or any(not isinstance(tag, str) for tag in node.tags):\n            raise TypeError(\"tags must be a list of strings\")\n        if not isinstance(node.children, list):\n            raise TypeError(\"children must be a list\")\n        if node in memo:\n            return memo[node]\n\n        copied = Artifact(node.name, node.tags)\n        memo[node] = copied\n        copied.children = [clone(child) for child in node.children]\n        copied.featured = None if node.featured is None else clone(node.featured)\n        return copied\n\n    return clone(root)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c872d3feb4e673adf19aae04e693a926e48f8af8ad0670d237e7931ba6653084"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 12, in <module>\n    raise AssertionError(\"1200-node acyclic Artifact graph exceeded reference recursion depth\") from None\nAssertionError: 1200-node acyclic Artifact graph exceeded reference recursion depth\n",
+    "stderr_sha256": "b010d6ab0d0f1a02eabb43904a231ed4270029a32c405037d5138f7a7ddbe7e6",
+    "duration_ms": 331,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

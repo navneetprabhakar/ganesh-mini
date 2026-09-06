@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0035",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4ec337098d3696a3d7d93e478ec1af92673a4e308de202e36c0fd1a900d2a6fe",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestBooleanAndNilMatchers(t *testing.T) {\n\tif err := Check(true, IsTrue()); err != nil {\n\t\tt.Fatalf(\"IsTrue rejected true: %v\", err)\n\t}\n\tif err := Check(false, IsFalse()); err != nil {\n\t\tt.Fatalf(\"IsFalse rejected false: %v\", err)\n\t}\n\tif err := Check(false, IsTrue()); err == nil || err.Error() == \"\" {\n\t\tt.Fatalf(\"IsTrue failure must contain explanation: %v\", err)\n\t}\n\tif err := Check(true, IsFalse()); err == nil || err.Error() == \"\" {\n\t\tt.Fatalf(\"IsFalse failure must contain explanation: %v\", err)\n\t}\n\tif err := Check(1, IsTrue()); err == nil {\n\t\tt.Fatal(\"IsTrue accepted a non-bool value\")\n\t}\n\n\tvar pointer *int\n\tvar slice []byte\n\tvar mapping map[string]int\n\tvar channel chan int\n\tvar function func()\n\tfor _, value := range []any{nil, pointer, slice, mapping, channel, function} {\n\t\tif err := Check(value, IsNil()); err != nil {\n\t\t\tt.Errorf(\"IsNil rejected %#v: %v\", value, err)\n\t\t}\n\t}\n\tzero := 0\n\tfor _, value := range []any{zero, \"\", []byte{}, &zero} {\n\t\tif err := Check(value, IsNil()); err == nil {\n\t\t\tt.Errorf(\"IsNil accepted non-nil %#v\", value)\n\t\t}\n\t}\n}\n\nfunc TestEqualUsesDeepEqualityWithoutMutation(t *testing.T) {\n\texpected := map[string][]int{\"numbers\": {1, 2, 3}}\n\tactual := map[string][]int{\"numbers\": {1, 2, 3}}\n\texpectedBefore := map[string][]int{\"numbers\": {1, 2, 3}}\n\tactualBefore := map[string][]int{\"numbers\": {1, 2, 3}}\n\tmatcher := Equal(expected)\n\tif err := Check(actual, matcher); err != nil {\n\t\tt.Fatalf(\"Equal rejected deeply equal values: %v\", err)\n\t}\n\tif !reflect.DeepEqual(expected, expectedBefore) || !reflect.DeepEqual(actual, actualBefore) {\n\t\tt.Fatal(\"Equal mutated expected or actual\")\n\t}\n\tif err := Check(map[string][]int{\"numbers\": {1, 2}}, matcher); err == nil {\n\t\tt.Fatal(\"Equal accepted different value\")\n\t}\n}\n\nfunc TestCheckMessagesNilMatcherAndNot(t *testing.T) {\n\tmatcher := Matcher(func(actual any) (bool, string) {\n\t\treturn false, \"base explanation\"\n\t})\n\tif err := Check(123, matcher, \"context\", \"ignored\"); err == nil || err.Error() != \"context: base explanation\" {\n\t\tt.Fatalf(\"prefixed Check error = %v\", err)\n\t}\n\tif err := Check(123, matcher, \"\", \"ignored\"); err == nil || err.Error() != \"base explanation\" {\n\t\tt.Fatalf(\"empty first message handling = %v\", err)\n\t}\n\tif err := Check(123, nil); err == nil {\n\t\tt.Fatal(\"nil matcher did not return an error\")\n\t}\n\n\tif err := Check(\"x\", Not(Equal(\"y\"))); err != nil {\n\t\tt.Fatalf(\"Not should succeed when nested matcher fails: %v\", err)\n\t}\n\tif err := Check(\"x\", Not(Equal(\"x\"))); err == nil || !strings.Contains(err.Error(), \"unexpected match\") {\n\t\tt.Fatalf(\"Not successful nested match error = %v\", err)\n\t}\n\tok, explanation := Not(Equal(10))(11)\n\tif !ok || explanation != \"\" {\n\t\tt.Fatalf(\"successful Not result = %v, %q\", ok, explanation)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "314fa8a22eadd8817ee1b22c747d2d29abfc2a8327d99eeded55b94848de3ff9"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport (\n    \"testing\"\n    \"unsafe\"\n)\n\nfunc TestReviewNilUnsafePointer0035(t *testing.T) {\n    var value unsafe.Pointer\n    matched, _ := IsNil()(value)\n    if !matched { t.Fatal(\"typed nil unsafe.Pointer was not recognized\") }\n}\n",
+        "sha256": "e835afb2724c2a4bac0f9e7776a7297c135aa160ab96dbf10c4ea10cd6822072"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "409b02df08b58a5bb72a58c93c53ef7993ca998b27fe73167e1c8b0d9481bc7c",
+      "text": "Implement a new lightweight matcher API in package `solution` using only the standard library.\n\nExport `type Matcher func(actual any) (bool, string)`, `Check(actual any, matcher Matcher, message ...string) error`, and matcher constructors `IsTrue() Matcher`, `IsFalse() Matcher`, `IsNil() Matcher`, `Equal(expected any) Matcher`, and `Not(m Matcher) Matcher`.\n\n`Check` returns nil on a match. On failure it returns an error containing the matcher's explanation; if the first optional message is non-empty, prefix the explanation with that message and `: `. Ignore additional messages. A nil matcher must return an error rather than panic. `IsNil` must recognize nil interfaces and typed nil values of nil-capable kinds. `Equal` must use deep equality. `Not` must invert success: if its matcher fails it succeeds with an empty explanation; if its matcher succeeds it fails with `unexpected match`. Matchers must not mutate actual or expected values. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "409b02df08b58a5bb72a58c93c53ef7993ca998b27fe73167e1c8b0d9481bc7c",
+      "text": "Implement a new lightweight matcher API in package `solution` using only the standard library.\n\nExport `type Matcher func(actual any) (bool, string)`, `Check(actual any, matcher Matcher, message ...string) error`, and matcher constructors `IsTrue() Matcher`, `IsFalse() Matcher`, `IsNil() Matcher`, `Equal(expected any) Matcher`, and `Not(m Matcher) Matcher`.\n\n`Check` returns nil on a match. On failure it returns an error containing the matcher's explanation; if the first optional message is non-empty, prefix the explanation with that message and `: `. Ignore additional messages. A nil matcher must return an error rather than panic. `IsNil` must recognize nil interfaces and typed nil values of nil-capable kinds. `Equal` must use deep equality. `Not` must invert success: if its matcher fails it succeeds with an empty explanation; if its matcher succeeds it fails with `unexpected match`. Matchers must not mutate actual or expected values. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0035",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"reflect\"\n)\n\ntype Matcher func(actual any) (bool, string)\n\nfunc Check(actual any, matcher Matcher, message ...string) error {\n\tif matcher == nil {\n\t\treturn errors.New(\"nil matcher\")\n\t}\n\tok, explanation := matcher(actual)\n\tif ok {\n\t\treturn nil\n\t}\n\tif len(message) > 0 && message[0] != \"\" {\n\t\texplanation = message[0] + \": \" + explanation\n\t}\n\treturn errors.New(explanation)\n}\n\nfunc IsTrue() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && v, fmt.Sprintf(\"expected true, got %v\", actual)\n\t}\n}\n\nfunc IsFalse() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && !v, fmt.Sprintf(\"expected false, got %v\", actual)\n\t}\n}\n\nfunc IsNil() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif actual == nil {\n\t\t\treturn true, \"\"\n\t\t}\n\t\tv := reflect.ValueOf(actual)\n\t\tswitch v.Kind() {\n\t\tcase reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:\n\t\t\tif v.IsNil() { return true, \"\" }\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected nil, got %v\", actual)\n\t}\n}\n\nfunc Equal(expected any) Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif reflect.DeepEqual(actual, expected) {\n\t\t\treturn true, \"\"\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected %v, got %v\", expected, actual)\n\t}\n}\n\nfunc Not(m Matcher) Matcher {\n\treturn m\n}\n",
+          "label": "Not returns the original matcher without inverting its result.",
+          "sha256": "be555e8742fc271d89b882366f594f14b6e4404c35157636dde3cc56df385a03"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"reflect\"\n)\n\ntype Matcher func(actual any) (bool, string)\n\nfunc Check(actual any, matcher Matcher, message ...string) error {\n\tif matcher == nil {\n\t\treturn errors.New(\"nil matcher\")\n\t}\n\tok, explanation := matcher(actual)\n\tif ok {\n\t\treturn nil\n\t}\n\tif len(message) > 0 && message[0] != \"\" {\n\t\texplanation = message[0] + \": \" + explanation\n\t}\n\treturn errors.New(explanation)\n}\n\nfunc IsTrue() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && v, fmt.Sprintf(\"expected true, got %v\", actual)\n\t}\n}\n\nfunc IsFalse() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && !v, fmt.Sprintf(\"expected false, got %v\", actual)\n\t}\n}\n\nfunc IsNil() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif actual == nil {\n\t\t\treturn true, \"\"\n\t\t}\n\t\tv := reflect.ValueOf(actual)\n\t\tswitch v.Kind() {\n\t\tcase reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:\n\t\t\tif v.IsNil() { return true, \"\" }\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected nil, got %v\", actual)\n\t}\n}\n\nfunc Equal(expected any) Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif reflect.DeepEqual(actual, expected) {\n\t\t\treturn true, \"\"\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected %v, got %v\", expected, actual)\n\t}\n}\n\nfunc Not(m Matcher) Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif m == nil {\n\t\t\treturn false, \"nil matcher\"\n\t\t}\n\t\tok, _ := m(actual)\n\t\tif ok {\n\t\t\treturn false, \"unexpected match\"\n\t\t}\n\t\treturn true, \"\"\n\t}\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "acb48581ae10e228a9b635f44fe9a01027a3d09794cc2ccee3abde8c650fe092"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestBooleanAndNilMatchers(t *testing.T) {\n\tif err := Check(true, IsTrue()); err != nil {\n\t\tt.Fatalf(\"IsTrue rejected true: %v\", err)\n\t}\n\tif err := Check(false, IsFalse()); err != nil {\n\t\tt.Fatalf(\"IsFalse rejected false: %v\", err)\n\t}\n\tif err := Check(false, IsTrue()); err == nil || err.Error() == \"\" {\n\t\tt.Fatalf(\"IsTrue failure must contain explanation: %v\", err)\n\t}\n\tif err := Check(true, IsFalse()); err == nil || err.Error() == \"\" {\n\t\tt.Fatalf(\"IsFalse failure must contain explanation: %v\", err)\n\t}\n\tif err := Check(1, IsTrue()); err == nil {\n\t\tt.Fatal(\"IsTrue accepted a non-bool value\")\n\t}\n\n\tvar pointer *int\n\tvar slice []byte\n\tvar mapping map[string]int\n\tvar channel chan int\n\tvar function func()\n\tfor _, value := range []any{nil, pointer, slice, mapping, channel, function} {\n\t\tif err := Check(value, IsNil()); err != nil {\n\t\t\tt.Errorf(\"IsNil rejected %#v: %v\", value, err)\n\t\t}\n\t}\n\tzero := 0\n\tfor _, value := range []any{zero, \"\", []byte{}, &zero} {\n\t\tif err := Check(value, IsNil()); err == nil {\n\t\t\tt.Errorf(\"IsNil accepted non-nil %#v\", value)\n\t\t}\n\t}\n}\n\nfunc TestEqualUsesDeepEqualityWithoutMutation(t *testing.T) {\n\texpected := map[string][]int{\"numbers\": {1, 2, 3}}\n\tactual := map[string][]int{\"numbers\": {1, 2, 3}}\n\texpectedBefore := map[string][]int{\"numbers\": {1, 2, 3}}\n\tactualBefore := map[string][]int{\"numbers\": {1, 2, 3}}\n\tmatcher := Equal(expected)\n\tif err := Check(actual, matcher); err != nil {\n\t\tt.Fatalf(\"Equal rejected deeply equal values: %v\", err)\n\t}\n\tif !reflect.DeepEqual(expected, expectedBefore) || !reflect.DeepEqual(actual, actualBefore) {\n\t\tt.Fatal(\"Equal mutated expected or actual\")\n\t}\n\tif err := Check(map[string][]int{\"numbers\": {1, 2}}, matcher); err == nil {\n\t\tt.Fatal(\"Equal accepted different value\")\n\t}\n}\n\nfunc TestCheckMessagesNilMatcherAndNot(t *testing.T) {\n\tmatcher := Matcher(func(actual any) (bool, string) {\n\t\treturn false, \"base explanation\"\n\t})\n\tif err := Check(123, matcher, \"context\", \"ignored\"); err == nil || err.Error() != \"context: base explanation\" {\n\t\tt.Fatalf(\"prefixed Check error = %v\", err)\n\t}\n\tif err := Check(123, matcher, \"\", \"ignored\"); err == nil || err.Error() != \"base explanation\" {\n\t\tt.Fatalf(\"empty first message handling = %v\", err)\n\t}\n\tif err := Check(123, nil); err == nil {\n\t\tt.Fatal(\"nil matcher did not return an error\")\n\t}\n\n\tif err := Check(\"x\", Not(Equal(\"y\"))); err != nil {\n\t\tt.Fatalf(\"Not should succeed when nested matcher fails: %v\", err)\n\t}\n\tif err := Check(\"x\", Not(Equal(\"x\"))); err == nil || !strings.Contains(err.Error(), \"unexpected match\") {\n\t\tt.Fatalf(\"Not successful nested match error = %v\", err)\n\t}\n\tok, explanation := Not(Equal(10))(11)\n\tif !ok || explanation != \"\" {\n\t\tt.Fatalf(\"successful Not result = %v, %q\", ok, explanation)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "314fa8a22eadd8817ee1b22c747d2d29abfc2a8327d99eeded55b94848de3ff9"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "409b02df08b58a5bb72a58c93c53ef7993ca998b27fe73167e1c8b0d9481bc7c",
+      "text": "Implement a new lightweight matcher API in package `solution` using only the standard library.\n\nExport `type Matcher func(actual any) (bool, string)`, `Check(actual any, matcher Matcher, message ...string) error`, and matcher constructors `IsTrue() Matcher`, `IsFalse() Matcher`, `IsNil() Matcher`, `Equal(expected any) Matcher`, and `Not(m Matcher) Matcher`.\n\n`Check` returns nil on a match. On failure it returns an error containing the matcher's explanation; if the first optional message is non-empty, prefix the explanation with that message and `: `. Ignore additional messages. A nil matcher must return an error rather than panic. `IsNil` must recognize nil interfaces and typed nil values of nil-capable kinds. `Equal` must use deep equality. `Not` must invert success: if its matcher fails it succeeds with an empty explanation; if its matcher succeeds it fails with `unexpected match`. Matchers must not mutate actual or expected values. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "409b02df08b58a5bb72a58c93c53ef7993ca998b27fe73167e1c8b0d9481bc7c",
+      "text": "Implement a new lightweight matcher API in package `solution` using only the standard library.\n\nExport `type Matcher func(actual any) (bool, string)`, `Check(actual any, matcher Matcher, message ...string) error`, and matcher constructors `IsTrue() Matcher`, `IsFalse() Matcher`, `IsNil() Matcher`, `Equal(expected any) Matcher`, and `Not(m Matcher) Matcher`.\n\n`Check` returns nil on a match. On failure it returns an error containing the matcher's explanation; if the first optional message is non-empty, prefix the explanation with that message and `: `. Ignore additional messages. A nil matcher must return an error rather than panic. `IsNil` must recognize nil interfaces and typed nil values of nil-capable kinds. `Equal` must use deep equality. `Not` must invert success: if its matcher fails it succeeds with an empty explanation; if its matcher succeeds it fails with `unexpected match`. Matchers must not mutate actual or expected values. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0035",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"reflect\"\n)\n\ntype Matcher func(actual any) (bool, string)\n\nfunc Check(actual any, matcher Matcher, message ...string) error {\n\tif matcher == nil {\n\t\treturn errors.New(\"nil matcher\")\n\t}\n\tok, explanation := matcher(actual)\n\tif ok {\n\t\treturn nil\n\t}\n\tif len(message) > 0 && message[0] != \"\" {\n\t\texplanation = message[0] + \": \" + explanation\n\t}\n\treturn errors.New(explanation)\n}\n\nfunc IsTrue() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && v, fmt.Sprintf(\"expected true, got %v\", actual)\n\t}\n}\n\nfunc IsFalse() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && !v, fmt.Sprintf(\"expected false, got %v\", actual)\n\t}\n}\n\nfunc IsNil() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif actual == nil {\n\t\t\treturn true, \"\"\n\t\t}\n\t\tv := reflect.ValueOf(actual)\n\t\tswitch v.Kind() {\n\t\tcase reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:\n\t\t\tif v.IsNil() { return true, \"\" }\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected nil, got %v\", actual)\n\t}\n}\n\nfunc Equal(expected any) Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif reflect.DeepEqual(actual, expected) {\n\t\t\treturn true, \"\"\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected %v, got %v\", expected, actual)\n\t}\n}\n\nfunc Not(m Matcher) Matcher {\n\treturn m\n}\n",
+          "label": "Not returns the original matcher without inverting its result.",
+          "sha256": "be555e8742fc271d89b882366f594f14b6e4404c35157636dde3cc56df385a03"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"reflect\"\n)\n\ntype Matcher func(actual any) (bool, string)\n\nfunc Check(actual any, matcher Matcher, message ...string) error {\n\tif matcher == nil {\n\t\treturn errors.New(\"nil matcher\")\n\t}\n\tok, explanation := matcher(actual)\n\tif ok {\n\t\treturn nil\n\t}\n\tif len(message) > 0 && message[0] != \"\" {\n\t\texplanation = message[0] + \": \" + explanation\n\t}\n\treturn errors.New(explanation)\n}\n\nfunc IsTrue() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && v, fmt.Sprintf(\"expected true, got %v\", actual)\n\t}\n}\n\nfunc IsFalse() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tv, ok := actual.(bool)\n\t\treturn ok && !v, fmt.Sprintf(\"expected false, got %v\", actual)\n\t}\n}\n\nfunc IsNil() Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif actual == nil {\n\t\t\treturn true, \"\"\n\t\t}\n\t\tv := reflect.ValueOf(actual)\n\t\tswitch v.Kind() {\n\t\tcase reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:\n\t\t\tif v.IsNil() { return true, \"\" }\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected nil, got %v\", actual)\n\t}\n}\n\nfunc Equal(expected any) Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif reflect.DeepEqual(actual, expected) {\n\t\t\treturn true, \"\"\n\t\t}\n\t\treturn false, fmt.Sprintf(\"expected %v, got %v\", expected, actual)\n\t}\n}\n\nfunc Not(m Matcher) Matcher {\n\treturn func(actual any) (bool, string) {\n\t\tif m == nil {\n\t\t\treturn false, \"nil matcher\"\n\t\t}\n\t\tok, _ := m(actual)\n\t\tif ok {\n\t\t\treturn false, \"unexpected match\"\n\t\t}\n\t\treturn true, \"\"\n\t}\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "acb48581ae10e228a9b635f44fe9a01027a3d09794cc2ccee3abde8c650fe092"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewNilUnsafePointer0035 (0.00s)\n    review_test.go:11: typed nil unsafe.Pointer was not recognized\nFAIL\nFAIL\tganesh.invalid/expansion\t0.020s\nFAIL\n",
+    "stdout_sha256": "2135e9fc288e48816f04ced3f85f6f3a9a1727a83791dcfec6443602050c4781",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 26674,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

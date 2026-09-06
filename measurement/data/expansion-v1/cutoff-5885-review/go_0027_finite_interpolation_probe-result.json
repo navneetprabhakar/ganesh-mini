@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0027",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3fca5e99057f8713a19a8bbe37827effe22c5ff22c04366cf98a656cb31dc0ac",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestInterpolateObservationExactAndInterpolated(t *testing.T) {\n\tobservations := []Observation{{Minute: 0, Value: -10}, {Minute: 10, Value: 10}, {Minute: 30, Value: 20}}\n\toriginal := append([]Observation(nil), observations...)\n\tcases := []struct {\n\t\tminute int\n\t\twant   float64\n\t}{\n\t\t{0, -10},\n\t\t{10, 10},\n\t\t{20, 15},\n\t\t{30, 20},\n\t}\n\tfor _, tc := range cases {\n\t\tgot, err := InterpolateObservation(observations, tc.minute)\n\t\tif err != nil || got != tc.want {\n\t\t\tt.Fatalf(\"minute %d = %v, %v; want %v, nil\", tc.minute, got, err, tc.want)\n\t\t}\n\t}\n\tif !reflect.DeepEqual(observations, original) {\n\t\tt.Fatalf(\"input mutated: %#v\", observations)\n\t}\n}\n\nfunc TestInterpolateObservationMinuteBoundaries(t *testing.T) {\n\tobservations := []Observation{{Minute: 0, Value: 1}, {Minute: 1439, Value: 3}}\n\tfor _, minute := range []int{0, 1439} {\n\t\tif _, err := InterpolateObservation(observations, minute); err != nil {\n\t\t\tt.Fatalf(\"valid boundary minute %d rejected: %v\", minute, err)\n\t\t}\n\t}\n\tfor _, minute := range []int{-1, 1440} {\n\t\tif got, err := InterpolateObservation(observations, minute); err == nil || got != 0 {\n\t\t\tt.Fatalf(\"invalid requested minute %d = %v, %v\", minute, got, err)\n\t\t}\n\t}\n}\n\nfunc TestInterpolateObservationRejectsInvalidInput(t *testing.T) {\n\tcases := []struct {\n\t\tname string\n\t\tin   []Observation\n\t\tat   int\n\t}{\n\t\t{\"nil\", nil, 0},\n\t\t{\"too few\", []Observation{{Minute: 1, Value: 2}}, 1},\n\t\t{\"minute below range\", []Observation{{Minute: -1, Value: 1}, {Minute: 2, Value: 2}}, 1},\n\t\t{\"minute above range\", []Observation{{Minute: 1, Value: 1}, {Minute: 1440, Value: 2}}, 1},\n\t\t{\"duplicate\", []Observation{{Minute: 1, Value: 1}, {Minute: 1, Value: 2}}, 1},\n\t\t{\"descending\", []Observation{{Minute: 2, Value: 1}, {Minute: 1, Value: 2}}, 1},\n\t\t{\"nan\", []Observation{{Minute: 1, Value: math.NaN()}, {Minute: 2, Value: 2}}, 1},\n\t\t{\"positive infinity\", []Observation{{Minute: 1, Value: 1}, {Minute: 2, Value: math.Inf(1)}}, 1},\n\t\t{\"negative infinity\", []Observation{{Minute: 1, Value: 1}, {Minute: 2, Value: math.Inf(-1)}}, 1},\n\t\t{\"before first\", []Observation{{Minute: 10, Value: 1}, {Minute: 20, Value: 2}}, 9},\n\t\t{\"after last\", []Observation{{Minute: 10, Value: 1}, {Minute: 20, Value: 2}}, 21},\n\t}\n\tfor _, tc := range cases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tgot, err := InterpolateObservation(tc.in, tc.at)\n\t\t\tif err == nil || got != 0 {\n\t\t\t\tt.Fatalf(\"got %v, %v; want zero and error\", got, err)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestInterpolateObservationValidatesPastExactMatch(t *testing.T) {\n\tin := []Observation{{Minute: 1, Value: 10}, {Minute: 2, Value: 20}, {Minute: 2, Value: 30}}\n\tif got, err := InterpolateObservation(in, 1); err == nil || got != 0 {\n\t\tt.Fatalf(\"exact early match bypassed complete validation: %v, %v\", got, err)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "ba3530e7f2783537f18854fc52cfd11ad6a31f92a82efe33a8858f8a9b2883d7"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport (\n    \"math\"\n    \"testing\"\n)\n\nfunc TestReviewFiniteMidpoint0027(t *testing.T) {\n    got, err := InterpolateObservation([]Observation{{Minute: 0, Value: -1e308}, {Minute: 2, Value: 1e308}}, 1)\n    if err != nil || math.IsNaN(got) || math.IsInf(got, 0) || got != 0 {\n        t.Fatalf(\"representable midpoint: got %v, error %v; want 0\", got, err)\n    }\n}\n",
+        "sha256": "749794ce1f224c29302ea3b058612924ca8aa48879c6deaab06c7e1b40389933"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "96baab03bcc8a98fb487b72346b5bd9403d39830360085dedf711aa2273691d6",
+      "text": "Implement linear interpolation over ordered daily observations in package `solution` with this exact API:\n\n`type Observation struct { Minute int; Value float64 }`\n`func InterpolateObservation([]Observation, int) (float64, error)`\n\nAn observation minute must be in the inclusive range 0 through 1439, and every value must be finite (neither NaN nor positive or negative infinity). At least two observations are required. Input observations must be strictly ordered by minute with no duplicates. The requested minute must also be in 0 through 1439 and must lie between the first and last observations, inclusive.\n\nReturn an exact stored value when the requested minute matches an observation. Otherwise, linearly interpolate between its two surrounding observations. Validate the complete input even if an exact match appears early. Do not reorder, mutate, or retain the input slice. On any invalid input, return zero and a non-nil error. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "96baab03bcc8a98fb487b72346b5bd9403d39830360085dedf711aa2273691d6",
+      "text": "Implement linear interpolation over ordered daily observations in package `solution` with this exact API:\n\n`type Observation struct { Minute int; Value float64 }`\n`func InterpolateObservation([]Observation, int) (float64, error)`\n\nAn observation minute must be in the inclusive range 0 through 1439, and every value must be finite (neither NaN nor positive or negative infinity). At least two observations are required. Input observations must be strictly ordered by minute with no duplicates. The requested minute must also be in 0 through 1439 and must lie between the first and last observations, inclusive.\n\nReturn an exact stored value when the requested minute matches an observation. Otherwise, linearly interpolate between its two surrounding observations. Validate the complete input even if an exact match appears early. Do not reorder, mutate, or retain the input slice. On any invalid input, return zero and a non-nil error. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0027",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Observation struct {\n\tMinute int\n\tValue  float64\n}\n\nfunc InterpolateObservation(observations []Observation, minute int) (float64, error) {\n\tif len(observations) < 2 {\n\t\treturn 0, errors.New(\"at least two observations are required\")\n\t}\n\tif minute < 0 || minute > 1439 {\n\t\treturn 0, errors.New(\"requested minute is out of range\")\n\t}\n\tfor i, observation := range observations {\n\t\tif observation.Minute < 0 || observation.Minute > 1439 {\n\t\t\treturn 0, errors.New(\"observation minute is out of range\")\n\t\t}\n\t\tif math.IsNaN(observation.Value) || math.IsInf(observation.Value, 0) {\n\t\t\treturn 0, errors.New(\"observation value is not finite\")\n\t\t}\n\t\tif i > 0 && observations[i-1].Minute >= observation.Minute {\n\t\t\treturn 0, errors.New(\"observations are not strictly ordered\")\n\t\t}\n\t}\n\tif minute < observations[0].Minute || minute > observations[len(observations)-1].Minute {\n\t\treturn 0, errors.New(\"requested minute is outside the observations\")\n\t}\n\tfor i, observation := range observations {\n\t\tif minute == observation.Minute {\n\t\t\treturn observation.Value, nil\n\t\t}\n\t\tif minute < observation.Minute {\n\t\t\tleft := observations[i-1]\n\t\t\tfraction := float64((minute - left.Minute) / (observation.Minute - left.Minute))\n\t\t\treturn left.Value + fraction*(observation.Value-left.Value), nil\n\t\t}\n\t}\n\treturn observations[len(observations)-1].Value, nil\n}\n",
+          "label": "The interpolation fraction is computed with integer division, causing every non-exact interior request to use the left value.",
+          "sha256": "2f48d767cbb5b0148f49c45ffc432cdbe59bdc33cdb77fcaa8bbc82515771d10"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Observation struct {\n\tMinute int\n\tValue  float64\n}\n\nfunc InterpolateObservation(observations []Observation, minute int) (float64, error) {\n\tif len(observations) < 2 {\n\t\treturn 0, errors.New(\"at least two observations are required\")\n\t}\n\tif minute < 0 || minute > 1439 {\n\t\treturn 0, errors.New(\"requested minute is out of range\")\n\t}\n\tfor i, observation := range observations {\n\t\tif observation.Minute < 0 || observation.Minute > 1439 {\n\t\t\treturn 0, errors.New(\"observation minute is out of range\")\n\t\t}\n\t\tif math.IsNaN(observation.Value) || math.IsInf(observation.Value, 0) {\n\t\t\treturn 0, errors.New(\"observation value is not finite\")\n\t\t}\n\t\tif i > 0 && observations[i-1].Minute >= observation.Minute {\n\t\t\treturn 0, errors.New(\"observations are not strictly ordered\")\n\t\t}\n\t}\n\tif minute < observations[0].Minute || minute > observations[len(observations)-1].Minute {\n\t\treturn 0, errors.New(\"requested minute is outside the observations\")\n\t}\n\tfor i, observation := range observations {\n\t\tif minute == observation.Minute {\n\t\t\treturn observation.Value, nil\n\t\t}\n\t\tif minute < observation.Minute {\n\t\t\tleft := observations[i-1]\n\t\t\tfraction := float64(minute-left.Minute) / float64(observation.Minute-left.Minute)\n\t\t\treturn left.Value + fraction*(observation.Value-left.Value), nil\n\t\t}\n\t}\n\treturn observations[len(observations)-1].Value, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "28f492a8bab7648a3127dfa2c529b0e0a999b815ddc1ea6bd75d282eecba0af0"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestInterpolateObservationExactAndInterpolated(t *testing.T) {\n\tobservations := []Observation{{Minute: 0, Value: -10}, {Minute: 10, Value: 10}, {Minute: 30, Value: 20}}\n\toriginal := append([]Observation(nil), observations...)\n\tcases := []struct {\n\t\tminute int\n\t\twant   float64\n\t}{\n\t\t{0, -10},\n\t\t{10, 10},\n\t\t{20, 15},\n\t\t{30, 20},\n\t}\n\tfor _, tc := range cases {\n\t\tgot, err := InterpolateObservation(observations, tc.minute)\n\t\tif err != nil || got != tc.want {\n\t\t\tt.Fatalf(\"minute %d = %v, %v; want %v, nil\", tc.minute, got, err, tc.want)\n\t\t}\n\t}\n\tif !reflect.DeepEqual(observations, original) {\n\t\tt.Fatalf(\"input mutated: %#v\", observations)\n\t}\n}\n\nfunc TestInterpolateObservationMinuteBoundaries(t *testing.T) {\n\tobservations := []Observation{{Minute: 0, Value: 1}, {Minute: 1439, Value: 3}}\n\tfor _, minute := range []int{0, 1439} {\n\t\tif _, err := InterpolateObservation(observations, minute); err != nil {\n\t\t\tt.Fatalf(\"valid boundary minute %d rejected: %v\", minute, err)\n\t\t}\n\t}\n\tfor _, minute := range []int{-1, 1440} {\n\t\tif got, err := InterpolateObservation(observations, minute); err == nil || got != 0 {\n\t\t\tt.Fatalf(\"invalid requested minute %d = %v, %v\", minute, got, err)\n\t\t}\n\t}\n}\n\nfunc TestInterpolateObservationRejectsInvalidInput(t *testing.T) {\n\tcases := []struct {\n\t\tname string\n\t\tin   []Observation\n\t\tat   int\n\t}{\n\t\t{\"nil\", nil, 0},\n\t\t{\"too few\", []Observation{{Minute: 1, Value: 2}}, 1},\n\t\t{\"minute below range\", []Observation{{Minute: -1, Value: 1}, {Minute: 2, Value: 2}}, 1},\n\t\t{\"minute above range\", []Observation{{Minute: 1, Value: 1}, {Minute: 1440, Value: 2}}, 1},\n\t\t{\"duplicate\", []Observation{{Minute: 1, Value: 1}, {Minute: 1, Value: 2}}, 1},\n\t\t{\"descending\", []Observation{{Minute: 2, Value: 1}, {Minute: 1, Value: 2}}, 1},\n\t\t{\"nan\", []Observation{{Minute: 1, Value: math.NaN()}, {Minute: 2, Value: 2}}, 1},\n\t\t{\"positive infinity\", []Observation{{Minute: 1, Value: 1}, {Minute: 2, Value: math.Inf(1)}}, 1},\n\t\t{\"negative infinity\", []Observation{{Minute: 1, Value: 1}, {Minute: 2, Value: math.Inf(-1)}}, 1},\n\t\t{\"before first\", []Observation{{Minute: 10, Value: 1}, {Minute: 20, Value: 2}}, 9},\n\t\t{\"after last\", []Observation{{Minute: 10, Value: 1}, {Minute: 20, Value: 2}}, 21},\n\t}\n\tfor _, tc := range cases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tgot, err := InterpolateObservation(tc.in, tc.at)\n\t\t\tif err == nil || got != 0 {\n\t\t\t\tt.Fatalf(\"got %v, %v; want zero and error\", got, err)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestInterpolateObservationValidatesPastExactMatch(t *testing.T) {\n\tin := []Observation{{Minute: 1, Value: 10}, {Minute: 2, Value: 20}, {Minute: 2, Value: 30}}\n\tif got, err := InterpolateObservation(in, 1); err == nil || got != 0 {\n\t\tt.Fatalf(\"exact early match bypassed complete validation: %v, %v\", got, err)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "ba3530e7f2783537f18854fc52cfd11ad6a31f92a82efe33a8858f8a9b2883d7"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "96baab03bcc8a98fb487b72346b5bd9403d39830360085dedf711aa2273691d6",
+      "text": "Implement linear interpolation over ordered daily observations in package `solution` with this exact API:\n\n`type Observation struct { Minute int; Value float64 }`\n`func InterpolateObservation([]Observation, int) (float64, error)`\n\nAn observation minute must be in the inclusive range 0 through 1439, and every value must be finite (neither NaN nor positive or negative infinity). At least two observations are required. Input observations must be strictly ordered by minute with no duplicates. The requested minute must also be in 0 through 1439 and must lie between the first and last observations, inclusive.\n\nReturn an exact stored value when the requested minute matches an observation. Otherwise, linearly interpolate between its two surrounding observations. Validate the complete input even if an exact match appears early. Do not reorder, mutate, or retain the input slice. On any invalid input, return zero and a non-nil error. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "96baab03bcc8a98fb487b72346b5bd9403d39830360085dedf711aa2273691d6",
+      "text": "Implement linear interpolation over ordered daily observations in package `solution` with this exact API:\n\n`type Observation struct { Minute int; Value float64 }`\n`func InterpolateObservation([]Observation, int) (float64, error)`\n\nAn observation minute must be in the inclusive range 0 through 1439, and every value must be finite (neither NaN nor positive or negative infinity). At least two observations are required. Input observations must be strictly ordered by minute with no duplicates. The requested minute must also be in 0 through 1439 and must lie between the first and last observations, inclusive.\n\nReturn an exact stored value when the requested minute matches an observation. Otherwise, linearly interpolate between its two surrounding observations. Validate the complete input even if an exact match appears early. Do not reorder, mutate, or retain the input slice. On any invalid input, return zero and a non-nil error. Return one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0027",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Observation struct {\n\tMinute int\n\tValue  float64\n}\n\nfunc InterpolateObservation(observations []Observation, minute int) (float64, error) {\n\tif len(observations) < 2 {\n\t\treturn 0, errors.New(\"at least two observations are required\")\n\t}\n\tif minute < 0 || minute > 1439 {\n\t\treturn 0, errors.New(\"requested minute is out of range\")\n\t}\n\tfor i, observation := range observations {\n\t\tif observation.Minute < 0 || observation.Minute > 1439 {\n\t\t\treturn 0, errors.New(\"observation minute is out of range\")\n\t\t}\n\t\tif math.IsNaN(observation.Value) || math.IsInf(observation.Value, 0) {\n\t\t\treturn 0, errors.New(\"observation value is not finite\")\n\t\t}\n\t\tif i > 0 && observations[i-1].Minute >= observation.Minute {\n\t\t\treturn 0, errors.New(\"observations are not strictly ordered\")\n\t\t}\n\t}\n\tif minute < observations[0].Minute || minute > observations[len(observations)-1].Minute {\n\t\treturn 0, errors.New(\"requested minute is outside the observations\")\n\t}\n\tfor i, observation := range observations {\n\t\tif minute == observation.Minute {\n\t\t\treturn observation.Value, nil\n\t\t}\n\t\tif minute < observation.Minute {\n\t\t\tleft := observations[i-1]\n\t\t\tfraction := float64((minute - left.Minute) / (observation.Minute - left.Minute))\n\t\t\treturn left.Value + fraction*(observation.Value-left.Value), nil\n\t\t}\n\t}\n\treturn observations[len(observations)-1].Value, nil\n}\n",
+          "label": "The interpolation fraction is computed with integer division, causing every non-exact interior request to use the left value.",
+          "sha256": "2f48d767cbb5b0148f49c45ffc432cdbe59bdc33cdb77fcaa8bbc82515771d10"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Observation struct {\n\tMinute int\n\tValue  float64\n}\n\nfunc InterpolateObservation(observations []Observation, minute int) (float64, error) {\n\tif len(observations) < 2 {\n\t\treturn 0, errors.New(\"at least two observations are required\")\n\t}\n\tif minute < 0 || minute > 1439 {\n\t\treturn 0, errors.New(\"requested minute is out of range\")\n\t}\n\tfor i, observation := range observations {\n\t\tif observation.Minute < 0 || observation.Minute > 1439 {\n\t\t\treturn 0, errors.New(\"observation minute is out of range\")\n\t\t}\n\t\tif math.IsNaN(observation.Value) || math.IsInf(observation.Value, 0) {\n\t\t\treturn 0, errors.New(\"observation value is not finite\")\n\t\t}\n\t\tif i > 0 && observations[i-1].Minute >= observation.Minute {\n\t\t\treturn 0, errors.New(\"observations are not strictly ordered\")\n\t\t}\n\t}\n\tif minute < observations[0].Minute || minute > observations[len(observations)-1].Minute {\n\t\treturn 0, errors.New(\"requested minute is outside the observations\")\n\t}\n\tfor i, observation := range observations {\n\t\tif minute == observation.Minute {\n\t\t\treturn observation.Value, nil\n\t\t}\n\t\tif minute < observation.Minute {\n\t\t\tleft := observations[i-1]\n\t\t\tfraction := float64(minute-left.Minute) / float64(observation.Minute-left.Minute)\n\t\t\treturn left.Value + fraction*(observation.Value-left.Value), nil\n\t\t}\n\t}\n\treturn observations[len(observations)-1].Value, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "28f492a8bab7648a3127dfa2c529b0e0a999b815ddc1ea6bd75d282eecba0af0"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewFiniteMidpoint0027 (0.00s)\n    review_test.go:11: representable midpoint: got +Inf, error <nil>; want 0\nFAIL\nFAIL\tganesh.invalid/expansion\t0.019s\nFAIL\n",
+    "stdout_sha256": "0cc5b2b410d460c606332806e4b6ba24352359ec89f6d689408ecb26aaeef46f",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 26919,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

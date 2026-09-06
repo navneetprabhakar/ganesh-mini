@@ -16,6 +16,26 @@ from scripts.data.admit_expansion import canonical_json
 ROOT = Path('datasets/cache/expansion-v1/cutoff-5885')
 KEYS = ('lane', 'source', 'task_type', 'rejection_history')
 GROUPS = {
+    'typescript_elementary_training_targets': [
+        'exp-v1-typescript-generation-0010', 'exp-v1-typescript-generation-0260'],
+    'rust_elementary_training_targets': [
+        'exp-v1-rust-generation-0149', 'exp-v1-rust-generation-0363',
+        'exp-v1-rust-generation-0662', 'exp-v1-rust-repair-0393',
+        'exp-v1-rust-repair-0466', 'exp-v1-rust-repair-0018',
+        'exp-v1-rust-repair-0040', 'exp-v1-rust-repair-0048',
+        'exp-v1-rust-repair-0503'],
+    'python_numeric_range_contracts': [
+        'exp-v1-python-generation-0058', 'exp-v1-python-generation-0269',
+        'exp-v1-python-generation-0759', 'exp-v1-python-generation-0767',
+        'exp-v1-python-repair-0138', 'exp-v1-python-repair-0166'],
+    'python_elementary_training_targets': [
+        'exp-v1-python-generation-0680', 'exp-v1-python-generation-0792',
+        'exp-v1-python-repair-0050', 'exp-v1-python-repair-0357',
+        'exp-v1-python-repair-0375'],
+    'javascript_elementary_training_targets': [
+        'exp-v1-javascript-repair-0111', 'exp-v1-javascript-repair-0227',
+        'exp-v1-javascript-repair-0229', 'exp-v1-javascript-repair-0231',
+        'exp-v1-javascript-repair-0239'],
     'java_elementary_training_targets': [
         'exp-v1-java-generation-0270', 'exp-v1-java-generation-0271',
         'exp-v1-java-repair-0014', 'exp-v1-java-repair-0130',

@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0119",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "sample",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/quality-sample.candidates.jsonl",
+  "candidate_set_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "095198de5d26272cc8f616c807fd5c53f763410d13b25a41ee2bad4e52f283d5",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{Archive, Document};\n\n#[test]\nfn publicly_constructed_document_must_respect_required_id() {\n    let mut archive = Archive::new();\n    assert!(archive.add(Document { id: 0, title: \"Title\".into(), pages: 1 }).is_err());\n    assert!(archive.documents().is_empty());\n}\n",
+        "sha256": "d8278a4fafdff7901c2e58f7f6cbfc35a43d3bcf9517108cb2c181b2067c51c2"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3dc2e358eae6ca63df9bc853b07d88d7ffba5d2ce3b13167f393f08cf70e2e28",
+      "text": "Implement an ordered document archive in `solution.rs` using only the Rust standard library.\n\nExpose these declarations:\n\n- `pub struct Document { pub id: u64, pub title: String, pub pages: u32 }`\n- `pub enum ArchiveError { ZeroId, EmptyTitle, ZeroPages, DuplicateId, NotFound }`\n- `pub struct Archive`\n- `Document::new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError>`\n- `Archive::new() -> Self`\n- `Archive::add(&mut self, document: Document) -> Result<(), ArchiveError>`\n- `Archive::remove(&mut self, id: u64) -> Result<Document, ArchiveError>`\n- `Archive::get(&self, id: u64) -> Option<&Document>`\n- `Archive::documents(&self) -> &[Document]`\n- `Archive::total_pages(&self) -> u64`\n\nA document requires a nonzero ID, a title containing at least one non-ASCII-whitespace character, and a nonzero page count. Preserve the title exactly. IDs are unique. Documents remain in insertion order. Removing an existing document returns it and preserves the relative order of all remaining documents. Adding a duplicate or removing a missing ID must not mutate the archive. `total_pages` must avoid narrow integer overflow by summing as `u64` and must not mutate anything. An empty archive is valid. Do not include a `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3dc2e358eae6ca63df9bc853b07d88d7ffba5d2ce3b13167f393f08cf70e2e28",
+      "text": "Implement an ordered document archive in `solution.rs` using only the Rust standard library.\n\nExpose these declarations:\n\n- `pub struct Document { pub id: u64, pub title: String, pub pages: u32 }`\n- `pub enum ArchiveError { ZeroId, EmptyTitle, ZeroPages, DuplicateId, NotFound }`\n- `pub struct Archive`\n- `Document::new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError>`\n- `Archive::new() -> Self`\n- `Archive::add(&mut self, document: Document) -> Result<(), ArchiveError>`\n- `Archive::remove(&mut self, id: u64) -> Result<Document, ArchiveError>`\n- `Archive::get(&self, id: u64) -> Option<&Document>`\n- `Archive::documents(&self) -> &[Document]`\n- `Archive::total_pages(&self) -> u64`\n\nA document requires a nonzero ID, a title containing at least one non-ASCII-whitespace character, and a nonzero page count. Preserve the title exactly. IDs are unique. Documents remain in insertion order. Removing an existing document returns it and preserves the relative order of all remaining documents. Adding a duplicate or removing a missing ID must not mutate the archive. `total_pages` must avoid narrow integer overflow by summing as `u64` and must not mutate anything. An empty archive is valid. Do not include a `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0119",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Document {\n    pub id: u64,\n    pub title: String,\n    pub pages: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ArchiveError {\n    ZeroId,\n    EmptyTitle,\n    ZeroPages,\n    DuplicateId,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct Archive {\n    documents: Vec<Document>,\n}\n\nimpl Document {\n    pub fn new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError> {\n        let title = title.into();\n        if id == 0 {\n            return Err(ArchiveError::ZeroId);\n        }\n        if title.trim_matches(|c: char| c.is_ascii_whitespace()).is_empty() {\n            return Err(ArchiveError::EmptyTitle);\n        }\n        if pages == 0 {\n            return Err(ArchiveError::ZeroPages);\n        }\n        Ok(Self { id, title, pages })\n    }\n}\n\nimpl Archive {\n    pub fn new() -> Self {\n        Self { documents: Vec::new() }\n    }\n\n    pub fn add(&mut self, document: Document) -> Result<(), ArchiveError> {\n        if self.documents.iter().any(|stored| stored.id == document.id) {\n            return Err(ArchiveError::DuplicateId);\n        }\n        self.documents.push(document);\n        Ok(())\n    }\n\n    pub fn remove(&mut self, id: u64) -> Result<Document, ArchiveError> {\n        let index = self.documents.iter().position(|document| document.id == id)\n            .ok_or(ArchiveError::NotFound)?;\n        Ok(self.documents.swap_remove(index))\n    }\n\n    pub fn get(&self, id: u64) -> Option<&Document> {\n        self.documents.iter().find(|document| document.id == id)\n    }\n\n    pub fn documents(&self) -> &[Document] {\n        &self.documents\n    }\n\n    pub fn total_pages(&self) -> u64 {\n        self.documents.iter().map(|document| u64::from(document.pages)).sum()\n    }\n}\n",
+          "label": "Uses swap removal, which changes the required insertion order of remaining documents.",
+          "sha256": "8ecd99463f99ee989e15ba3af8ca9b6a71dd55488a50aba5edb238132a88158d"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Document {\n    pub id: u64,\n    pub title: String,\n    pub pages: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ArchiveError {\n    ZeroId,\n    EmptyTitle,\n    ZeroPages,\n    DuplicateId,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct Archive {\n    documents: Vec<Document>,\n}\n\nimpl Document {\n    pub fn new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError> {\n        let title = title.into();\n        if id == 0 {\n            return Err(ArchiveError::ZeroId);\n        }\n        if title.trim_matches(|c: char| c.is_ascii_whitespace()).is_empty() {\n            return Err(ArchiveError::EmptyTitle);\n        }\n        if pages == 0 {\n            return Err(ArchiveError::ZeroPages);\n        }\n        Ok(Self { id, title, pages })\n    }\n}\n\nimpl Archive {\n    pub fn new() -> Self {\n        Self { documents: Vec::new() }\n    }\n\n    pub fn add(&mut self, document: Document) -> Result<(), ArchiveError> {\n        if self.documents.iter().any(|stored| stored.id == document.id) {\n            return Err(ArchiveError::DuplicateId);\n        }\n        self.documents.push(document);\n        Ok(())\n    }\n\n    pub fn remove(&mut self, id: u64) -> Result<Document, ArchiveError> {\n        let index = self.documents.iter().position(|document| document.id == id)\n            .ok_or(ArchiveError::NotFound)?;\n        Ok(self.documents.remove(index))\n    }\n\n    pub fn get(&self, id: u64) -> Option<&Document> {\n        self.documents.iter().find(|document| document.id == id)\n    }\n\n    pub fn documents(&self) -> &[Document] {\n        &self.documents\n    }\n\n    pub fn total_pages(&self) -> u64 {\n        self.documents.iter().map(|document| u64::from(document.pages)).sum()\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b4533ba3e32673ca0fbfdcee57a74f55e085bbb36796204f79ba22eebf938d87"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{Archive, ArchiveError, Document};\n\nfn document(id: u64, title: &str, pages: u32) -> Document {\n    match Document::new(id, title, pages) { Ok(v) => v, Err(_) => panic!(\"unexpected document error\") }\n}\n\n#[test]\nfn document_validation_preserves_valid_title_exactly() {\n    assert!(matches!(Document::new(0, \"title\", 1), Err(ArchiveError::ZeroId)));\n    assert!(matches!(Document::new(1, \"\", 1), Err(ArchiveError::EmptyTitle)));\n    assert!(matches!(Document::new(1, \" \\t\\r\\n\", 1), Err(ArchiveError::EmptyTitle)));\n    assert!(matches!(Document::new(1, \"title\", 0), Err(ArchiveError::ZeroPages)));\n\n    let doc = document(7, \"  preserved title  \", 2);\n    assert_eq!(doc.title, \"  preserved title  \");\n    let unicode_space = document(8, \"\\u{2003}\", 1);\n    assert_eq!(unicode_space.title, \"\\u{2003}\");\n}\n\n#[test]\nfn empty_archive_views_are_valid() {\n    let archive = Archive::new();\n    assert!(archive.documents().is_empty());\n    assert!(archive.get(1).is_none());\n    assert_eq!(archive.total_pages(), 0);\n}\n\n#[test]\nfn add_get_and_documents_preserve_insertion_order() {\n    let mut archive = Archive::new();\n    assert!(archive.add(document(20, \"twenty\", 3)).is_ok());\n    assert!(archive.add(document(10, \"ten\", 4)).is_ok());\n    assert_eq!(archive.documents().iter().map(|d| d.id).collect::<Vec<_>>(), vec![20, 10]);\n    assert_eq!(archive.get(10).map(|d| d.title.as_str()), Some(\"ten\"));\n    assert_eq!(archive.total_pages(), 7);\n}\n\n#[test]\nfn duplicate_add_does_not_mutate_archive() {\n    let mut archive = Archive::new();\n    archive.add(document(1, \"original\", 5)).unwrap_or_else(|_| panic!(\"unexpected error\"));\n    assert!(matches!(archive.add(document(1, \"replacement\", 99)), Err(ArchiveError::DuplicateId)));\n    assert_eq!(archive.documents().len(), 1);\n    assert_eq!(archive.documents()[0].title, \"original\");\n    assert_eq!(archive.total_pages(), 5);\n}\n\n#[test]\nfn removal_returns_document_and_preserves_relative_order() {\n    let mut archive = Archive::new();\n    for (id, title) in [(1, \"a\"), (2, \"b\"), (3, \"c\"), (4, \"d\")] {\n        archive.add(document(id, title, id as u32)).unwrap_or_else(|_| panic!(\"unexpected error\"));\n    }\n    let removed = match archive.remove(2) { Ok(v) => v, Err(_) => panic!(\"unexpected removal error\") };\n    assert_eq!((removed.id, removed.title.as_str(), removed.pages), (2, \"b\", 2));\n    assert_eq!(archive.documents().iter().map(|d| d.id).collect::<Vec<_>>(), vec![1, 3, 4]);\n    assert!(archive.get(2).is_none());\n    assert_eq!(archive.total_pages(), 8);\n}\n\n#[test]\nfn missing_removal_is_non_mutating() {\n    let mut archive = Archive::new();\n    archive.add(document(1, \"one\", 7)).unwrap_or_else(|_| panic!(\"unexpected error\"));\n    assert!(matches!(archive.remove(999), Err(ArchiveError::NotFound)));\n    assert_eq!(archive.documents().len(), 1);\n    assert_eq!(archive.documents()[0].id, 1);\n    assert_eq!(archive.total_pages(), 7);\n}\n\n#[test]\nfn total_pages_uses_u64_arithmetic() {\n    let mut archive = Archive::new();\n    archive.add(document(1, \"first\", u32::MAX)).unwrap_or_else(|_| panic!(\"unexpected error\"));\n    archive.add(document(2, \"second\", u32::MAX)).unwrap_or_else(|_| panic!(\"unexpected error\"));\n    assert_eq!(archive.total_pages(), 2 * u64::from(u32::MAX));\n    assert_eq!(archive.documents().len(), 2);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "3a31dbd42d5dc6b82605012d45abcbdd2e9cfca4ade9bbca1a7007d3e6da96bc"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3dc2e358eae6ca63df9bc853b07d88d7ffba5d2ce3b13167f393f08cf70e2e28",
+      "text": "Implement an ordered document archive in `solution.rs` using only the Rust standard library.\n\nExpose these declarations:\n\n- `pub struct Document { pub id: u64, pub title: String, pub pages: u32 }`\n- `pub enum ArchiveError { ZeroId, EmptyTitle, ZeroPages, DuplicateId, NotFound }`\n- `pub struct Archive`\n- `Document::new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError>`\n- `Archive::new() -> Self`\n- `Archive::add(&mut self, document: Document) -> Result<(), ArchiveError>`\n- `Archive::remove(&mut self, id: u64) -> Result<Document, ArchiveError>`\n- `Archive::get(&self, id: u64) -> Option<&Document>`\n- `Archive::documents(&self) -> &[Document]`\n- `Archive::total_pages(&self) -> u64`\n\nA document requires a nonzero ID, a title containing at least one non-ASCII-whitespace character, and a nonzero page count. Preserve the title exactly. IDs are unique. Documents remain in insertion order. Removing an existing document returns it and preserves the relative order of all remaining documents. Adding a duplicate or removing a missing ID must not mutate the archive. `total_pages` must avoid narrow integer overflow by summing as `u64` and must not mutate anything. An empty archive is valid. Do not include a `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3dc2e358eae6ca63df9bc853b07d88d7ffba5d2ce3b13167f393f08cf70e2e28",
+      "text": "Implement an ordered document archive in `solution.rs` using only the Rust standard library.\n\nExpose these declarations:\n\n- `pub struct Document { pub id: u64, pub title: String, pub pages: u32 }`\n- `pub enum ArchiveError { ZeroId, EmptyTitle, ZeroPages, DuplicateId, NotFound }`\n- `pub struct Archive`\n- `Document::new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError>`\n- `Archive::new() -> Self`\n- `Archive::add(&mut self, document: Document) -> Result<(), ArchiveError>`\n- `Archive::remove(&mut self, id: u64) -> Result<Document, ArchiveError>`\n- `Archive::get(&self, id: u64) -> Option<&Document>`\n- `Archive::documents(&self) -> &[Document]`\n- `Archive::total_pages(&self) -> u64`\n\nA document requires a nonzero ID, a title containing at least one non-ASCII-whitespace character, and a nonzero page count. Preserve the title exactly. IDs are unique. Documents remain in insertion order. Removing an existing document returns it and preserves the relative order of all remaining documents. Adding a duplicate or removing a missing ID must not mutate the archive. `total_pages` must avoid narrow integer overflow by summing as `u64` and must not mutate anything. An empty archive is valid. Do not include a `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0119",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Document {\n    pub id: u64,\n    pub title: String,\n    pub pages: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ArchiveError {\n    ZeroId,\n    EmptyTitle,\n    ZeroPages,\n    DuplicateId,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct Archive {\n    documents: Vec<Document>,\n}\n\nimpl Document {\n    pub fn new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError> {\n        let title = title.into();\n        if id == 0 {\n            return Err(ArchiveError::ZeroId);\n        }\n        if title.trim_matches(|c: char| c.is_ascii_whitespace()).is_empty() {\n            return Err(ArchiveError::EmptyTitle);\n        }\n        if pages == 0 {\n            return Err(ArchiveError::ZeroPages);\n        }\n        Ok(Self { id, title, pages })\n    }\n}\n\nimpl Archive {\n    pub fn new() -> Self {\n        Self { documents: Vec::new() }\n    }\n\n    pub fn add(&mut self, document: Document) -> Result<(), ArchiveError> {\n        if self.documents.iter().any(|stored| stored.id == document.id) {\n            return Err(ArchiveError::DuplicateId);\n        }\n        self.documents.push(document);\n        Ok(())\n    }\n\n    pub fn remove(&mut self, id: u64) -> Result<Document, ArchiveError> {\n        let index = self.documents.iter().position(|document| document.id == id)\n            .ok_or(ArchiveError::NotFound)?;\n        Ok(self.documents.swap_remove(index))\n    }\n\n    pub fn get(&self, id: u64) -> Option<&Document> {\n        self.documents.iter().find(|document| document.id == id)\n    }\n\n    pub fn documents(&self) -> &[Document] {\n        &self.documents\n    }\n\n    pub fn total_pages(&self) -> u64 {\n        self.documents.iter().map(|document| u64::from(document.pages)).sum()\n    }\n}\n",
+          "label": "Uses swap removal, which changes the required insertion order of remaining documents.",
+          "sha256": "8ecd99463f99ee989e15ba3af8ca9b6a71dd55488a50aba5edb238132a88158d"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Document {\n    pub id: u64,\n    pub title: String,\n    pub pages: u32,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ArchiveError {\n    ZeroId,\n    EmptyTitle,\n    ZeroPages,\n    DuplicateId,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default, PartialEq, Eq)]\npub struct Archive {\n    documents: Vec<Document>,\n}\n\nimpl Document {\n    pub fn new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError> {\n        let title = title.into();\n        if id == 0 {\n            return Err(ArchiveError::ZeroId);\n        }\n        if title.trim_matches(|c: char| c.is_ascii_whitespace()).is_empty() {\n            return Err(ArchiveError::EmptyTitle);\n        }\n        if pages == 0 {\n            return Err(ArchiveError::ZeroPages);\n        }\n        Ok(Self { id, title, pages })\n    }\n}\n\nimpl Archive {\n    pub fn new() -> Self {\n        Self { documents: Vec::new() }\n    }\n\n    pub fn add(&mut self, document: Document) -> Result<(), ArchiveError> {\n        if self.documents.iter().any(|stored| stored.id == document.id) {\n            return Err(ArchiveError::DuplicateId);\n        }\n        self.documents.push(document);\n        Ok(())\n    }\n\n    pub fn remove(&mut self, id: u64) -> Result<Document, ArchiveError> {\n        let index = self.documents.iter().position(|document| document.id == id)\n            .ok_or(ArchiveError::NotFound)?;\n        Ok(self.documents.remove(index))\n    }\n\n    pub fn get(&self, id: u64) -> Option<&Document> {\n        self.documents.iter().find(|document| document.id == id)\n    }\n\n    pub fn documents(&self) -> &[Document] {\n        &self.documents\n    }\n\n    pub fn total_pages(&self) -> u64 {\n        self.documents.iter().map(|document| u64::from(document.pages)).sum()\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b4533ba3e32673ca0fbfdcee57a74f55e085bbb36796204f79ba22eebf938d87"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest publicly_constructed_document_must_respect_required_id ... FAILED\n\nfailures:\n\n---- publicly_constructed_document_must_respect_required_id stdout ----\n\nthread 'publicly_constructed_document_must_respect_required_id' panicked at solution_test.rs:8:5:\nassertion failed: archive.add(Document { id: 0, title: \"Title\".into(), pages: 1 }).is_err()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    publicly_constructed_document_must_respect_required_id\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "d552a05a28d394ab129b9c613dd96c5f2f282ff8eb4679816aae08642cf63aef",
+    "stderr": "warning: variants `ZeroId`, `EmptyTitle`, `ZeroPages`, and `NotFound` are never constructed\n  --> solution.rs:10:5\n   |\n9  | pub enum ArchiveError {\n   |          ------------ variants in this enum\n10 |     ZeroId,\n   |     ^^^^^^\n11 |     EmptyTitle,\n   |     ^^^^^^^^^^\n12 |     ZeroPages,\n   |     ^^^^^^^^^\n13 |     DuplicateId,\n14 |     NotFound,\n   |     ^^^^^^^^\n   |\n   = note: `ArchiveError` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: associated function `new` is never used\n  --> solution.rs:23:12\n   |\n22 | impl Document {\n   | ------------- associated function in this implementation\n23 |     pub fn new(id: u64, title: impl Into<String>, pages: u32) -> Result<Self, ArchiveError> {\n   |            ^^^\n\nwarning: methods `remove`, `get`, and `total_pages` are never used\n  --> solution.rs:51:12\n   |\n38 | impl Archive {\n   | ------------ methods in this implementation\n...\n51 |     pub fn remove(&mut self, id: u64) -> Result<Document, ArchiveError> {\n   |            ^^^^^^\n...\n57 |     pub fn get(&self, id: u64) -> Option<&Document> {\n   |            ^^^\n...\n65 |     pub fn total_pages(&self) -> u64 {\n   |            ^^^^^^^^^^^\n\nwarning: 3 warnings emitted\n\n",
+    "stderr_sha256": "c24bfd6026b6d86eb0bb3558a9481c1df2c0574c7d830fe83e4d3bcbac7ff888",
+    "duration_ms": 1781,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

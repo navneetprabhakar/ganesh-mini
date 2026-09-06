@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0058",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "sample",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/quality-sample.candidates.jsonl",
+  "candidate_set_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "7e4710592ee09087ccc67e50ac768f25ee355560a5eb5b5c4cf88fc71bec9b1a",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import check_allocation\n\nvalue = 10 ** 400\nassert check_allocation([{\"id\": \"a\", \"m\": value}], [{\"source_id\": \"a\", \"m\": value}], \"m\") is None\n",
+        "sha256": "66a073f66be66973c7a78bc1aa37c3c5a663004ea6f3713ae90a0e80752e8e71"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "41817b04b2adbcf79e36fa518cad386cc56136be1621cb2ba50322e9c9a6b87e",
+      "text": "Create `solution.py` with this public API:\n\n```python\ndef check_allocation(original, fragments, metric):\n    ...\n```\n\nBoth data arguments must be lists of dictionaries. Every original record must have exactly `id` and the named metric; identifiers must be hashable and unique. Every fragment must have exactly `source_id` and the named metric. Metric values must be finite `int` or `float` values, excluding booleans. `metric` must be a non-empty string. Raise `TypeError` for invalid types or unhashable identifiers and `ValueError` for malformed records, duplicate original identifiers, or non-finite values.\n\nEach original identifier must occur in at least one fragment, and fragments may not name an unknown identifier. For every identifier, the absolute difference between its original metric and the sum of its fragments may be no greater than 0.1% of the absolute original value. When the original value is zero, the allowed absolute difference is `1e-12`. Raise `AssertionError` if coverage or totals violate these rules; otherwise return `None`. Equality at the tolerance boundary is valid. Preserve both inputs without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "41817b04b2adbcf79e36fa518cad386cc56136be1621cb2ba50322e9c9a6b87e",
+      "text": "Create `solution.py` with this public API:\n\n```python\ndef check_allocation(original, fragments, metric):\n    ...\n```\n\nBoth data arguments must be lists of dictionaries. Every original record must have exactly `id` and the named metric; identifiers must be hashable and unique. Every fragment must have exactly `source_id` and the named metric. Metric values must be finite `int` or `float` values, excluding booleans. `metric` must be a non-empty string. Raise `TypeError` for invalid types or unhashable identifiers and `ValueError` for malformed records, duplicate original identifiers, or non-finite values.\n\nEach original identifier must occur in at least one fragment, and fragments may not name an unknown identifier. For every identifier, the absolute difference between its original metric and the sum of its fragments may be no greater than 0.1% of the absolute original value. When the original value is zero, the allowed absolute difference is `1e-12`. Raise `AssertionError` if coverage or totals violate these rules; otherwise return `None`. Equality at the tolerance boundary is valid. Preserve both inputs without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0058",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef check_allocation(original, fragments, metric):\n    if not isinstance(metric, str):\n        raise TypeError(\"metric must be a string\")\n    if not metric:\n        raise ValueError(\"metric must not be empty\")\n    if not isinstance(original, list) or not isinstance(fragments, list):\n        raise TypeError(\"data arguments must be lists\")\n\n    totals = {}\n    for record in original:\n        if not isinstance(record, dict):\n            raise TypeError(\"original records must be dictionaries\")\n        if set(record) != {\"id\", metric}:\n            raise ValueError(\"malformed original record\")\n        identifier = record[\"id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        if identifier in totals:\n            raise ValueError(\"duplicate original identifier\")\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        totals[identifier] = [value, 0.0, False]\n\n    for record in fragments:\n        if not isinstance(record, dict):\n            raise TypeError(\"fragments must be dictionaries\")\n        if set(record) != {\"source_id\", metric}:\n            raise ValueError(\"malformed fragment\")\n        identifier = record[\"source_id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        if identifier not in totals:\n            raise AssertionError(\"fragment names an unknown identifier\")\n        totals[identifier][1] += value\n        totals[identifier][2] = True\n\n    for expected, actual, covered in totals.values():\n        if not covered:\n            raise AssertionError(\"an original identifier has no fragments\")\n        limit = abs(expected) * 0.001 if expected != 0 else 1e-12\n        if abs(expected - actual) >= limit:\n            raise AssertionError(\"fragment total is outside tolerance\")\n    return None\n",
+          "label": "Rejects totals exactly on the permitted tolerance boundary.",
+          "sha256": "10bc857c787ba9d0c26dae78fbc2dd38a0aadacf743e7b4c03a7f791883f992d"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef check_allocation(original, fragments, metric):\n    if not isinstance(metric, str):\n        raise TypeError(\"metric must be a string\")\n    if not metric:\n        raise ValueError(\"metric must not be empty\")\n    if not isinstance(original, list) or not isinstance(fragments, list):\n        raise TypeError(\"data arguments must be lists\")\n\n    totals = {}\n    for record in original:\n        if not isinstance(record, dict):\n            raise TypeError(\"original records must be dictionaries\")\n        if set(record) != {\"id\", metric}:\n            raise ValueError(\"malformed original record\")\n        identifier = record[\"id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        if identifier in totals:\n            raise ValueError(\"duplicate original identifier\")\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        totals[identifier] = [value, 0.0, False]\n\n    for record in fragments:\n        if not isinstance(record, dict):\n            raise TypeError(\"fragments must be dictionaries\")\n        if set(record) != {\"source_id\", metric}:\n            raise ValueError(\"malformed fragment\")\n        identifier = record[\"source_id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        if identifier not in totals:\n            raise AssertionError(\"fragment names an unknown identifier\")\n        totals[identifier][1] += value\n        totals[identifier][2] = True\n\n    for expected, actual, covered in totals.values():\n        if not covered:\n            raise AssertionError(\"an original identifier has no fragments\")\n        limit = abs(expected) * 0.001 if expected != 0 else 1e-12\n        if abs(expected - actual) > limit:\n            raise AssertionError(\"fragment total is outside tolerance\")\n    return None\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e72c0cbec7e5275c94b97759fc038563a0468365240578d0c46124a732860a46"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import check_allocation\n\n\nclass CheckAllocationTests(unittest.TestCase):\n    def test_valid_allocations_and_input_preservation(self):\n        original = [{\"id\": \"a\", \"spend\": 1000}, {\"id\": (\"b\", 1), \"spend\": -200.0}]\n        fragments = [\n            {\"source_id\": \"a\", \"spend\": 400},\n            {\"source_id\": (\"b\", 1), \"spend\": -200},\n            {\"source_id\": \"a\", \"spend\": 600.5},\n        ]\n        original_before = [dict(row) for row in original]\n        fragments_before = [dict(row) for row in fragments]\n        self.assertIsNone(check_allocation(original, fragments, \"spend\"))\n        self.assertEqual(original, original_before)\n        self.assertEqual(fragments, fragments_before)\n\n    def test_empty_inputs_are_valid(self):\n        self.assertIsNone(check_allocation([], [], \"units\"))\n\n    def test_equality_at_nonzero_tolerance_boundary(self):\n        self.assertIsNone(\n            check_allocation(\n                [{\"id\": 1, \"m\": 1000}],\n                [{\"source_id\": 1, \"m\": 1001}],\n                \"m\",\n            )\n        )\n        with self.assertRaises(AssertionError):\n            check_allocation(\n                [{\"id\": 1, \"m\": 1000}],\n                [{\"source_id\": 1, \"m\": 1001.0001}],\n                \"m\",\n            )\n\n    def test_zero_tolerance_boundary(self):\n        self.assertIsNone(\n            check_allocation(\n                [{\"id\": \"z\", \"m\": 0}],\n                [{\"source_id\": \"z\", \"m\": 1e-12}],\n                \"m\",\n            )\n        )\n        with self.assertRaises(AssertionError):\n            check_allocation(\n                [{\"id\": \"z\", \"m\": 0}],\n                [{\"source_id\": \"z\", \"m\": 1.0001e-12}],\n                \"m\",\n            )\n\n    def test_missing_coverage_unknown_source_and_bad_total(self):\n        with self.assertRaises(AssertionError):\n            check_allocation([{\"id\": \"a\", \"m\": 1}], [], \"m\")\n        with self.assertRaises(AssertionError):\n            check_allocation([], [{\"source_id\": \"a\", \"m\": 0}], \"m\")\n        with self.assertRaises(AssertionError):\n            check_allocation(\n                [{\"id\": \"a\", \"m\": 100}],\n                [{\"source_id\": \"a\", \"m\": 99}],\n                \"m\",\n            )\n\n    def test_top_level_record_and_metric_type_validation(self):\n        with self.assertRaises(TypeError):\n            check_allocation((), [], \"m\")\n        with self.assertRaises(TypeError):\n            check_allocation([], (), \"m\")\n        with self.assertRaises(TypeError):\n            check_allocation([[]], [], \"m\")\n        with self.assertRaises(TypeError):\n            check_allocation([], [[]], \"m\")\n        for bad_metric in (None, 3, True):\n            with self.subTest(metric=bad_metric):\n                with self.assertRaises(TypeError):\n                    check_allocation([], [], bad_metric)\n        with self.assertRaises(ValueError):\n            check_allocation([], [], \"\")\n\n    def test_malformed_records_and_duplicate_ids(self):\n        with self.assertRaises(ValueError):\n            check_allocation([{\"id\": \"a\"}], [], \"m\")\n        with self.assertRaises(ValueError):\n            check_allocation([{\"id\": \"a\", \"m\": 1, \"extra\": 2}], [], \"m\")\n        with self.assertRaises(ValueError):\n            check_allocation([], [{\"source_id\": \"a\"}], \"m\")\n        with self.assertRaises(ValueError):\n            check_allocation([], [{\"source_id\": \"a\", \"m\": 1, \"extra\": 2}], \"m\")\n        with self.assertRaises(ValueError):\n            check_allocation(\n                [{\"id\": \"a\", \"m\": 1}, {\"id\": \"a\", \"m\": 1}],\n                [{\"source_id\": \"a\", \"m\": 2}],\n                \"m\",\n            )\n\n    def test_unhashable_identifiers(self):\n        with self.assertRaises(TypeError):\n            check_allocation([{\"id\": [], \"m\": 1}], [], \"m\")\n        with self.assertRaises(TypeError):\n            check_allocation([], [{\"source_id\": {}, \"m\": 1}], \"m\")\n\n    def test_metric_values_reject_wrong_types_and_nonfinite_numbers(self):\n        for bad in (True, False, None, \"1\", complex(1, 0)):\n            with self.subTest(original_value=bad):\n                with self.assertRaises(TypeError):\n                    check_allocation([{\"id\": \"a\", \"m\": bad}], [], \"m\")\n            with self.subTest(fragment_value=bad):\n                with self.assertRaises(TypeError):\n                    check_allocation([], [{\"source_id\": \"a\", \"m\": bad}], \"m\")\n        for bad in (math.inf, -math.inf, math.nan):\n            with self.subTest(original_value=bad):\n                with self.assertRaises(ValueError):\n                    check_allocation([{\"id\": \"a\", \"m\": bad}], [], \"m\")\n            with self.subTest(fragment_value=bad):\n                with self.assertRaises(ValueError):\n                    check_allocation([], [{\"source_id\": \"a\", \"m\": bad}], \"m\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "f0794d341633a3a50f6f98d6012fa588a271a1e58e817338c62b048bb5355521"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "41817b04b2adbcf79e36fa518cad386cc56136be1621cb2ba50322e9c9a6b87e",
+      "text": "Create `solution.py` with this public API:\n\n```python\ndef check_allocation(original, fragments, metric):\n    ...\n```\n\nBoth data arguments must be lists of dictionaries. Every original record must have exactly `id` and the named metric; identifiers must be hashable and unique. Every fragment must have exactly `source_id` and the named metric. Metric values must be finite `int` or `float` values, excluding booleans. `metric` must be a non-empty string. Raise `TypeError` for invalid types or unhashable identifiers and `ValueError` for malformed records, duplicate original identifiers, or non-finite values.\n\nEach original identifier must occur in at least one fragment, and fragments may not name an unknown identifier. For every identifier, the absolute difference between its original metric and the sum of its fragments may be no greater than 0.1% of the absolute original value. When the original value is zero, the allowed absolute difference is `1e-12`. Raise `AssertionError` if coverage or totals violate these rules; otherwise return `None`. Equality at the tolerance boundary is valid. Preserve both inputs without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "41817b04b2adbcf79e36fa518cad386cc56136be1621cb2ba50322e9c9a6b87e",
+      "text": "Create `solution.py` with this public API:\n\n```python\ndef check_allocation(original, fragments, metric):\n    ...\n```\n\nBoth data arguments must be lists of dictionaries. Every original record must have exactly `id` and the named metric; identifiers must be hashable and unique. Every fragment must have exactly `source_id` and the named metric. Metric values must be finite `int` or `float` values, excluding booleans. `metric` must be a non-empty string. Raise `TypeError` for invalid types or unhashable identifiers and `ValueError` for malformed records, duplicate original identifiers, or non-finite values.\n\nEach original identifier must occur in at least one fragment, and fragments may not name an unknown identifier. For every identifier, the absolute difference between its original metric and the sum of its fragments may be no greater than 0.1% of the absolute original value. When the original value is zero, the allowed absolute difference is `1e-12`. Raise `AssertionError` if coverage or totals violate these rules; otherwise return `None`. Equality at the tolerance boundary is valid. Preserve both inputs without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0058",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef check_allocation(original, fragments, metric):\n    if not isinstance(metric, str):\n        raise TypeError(\"metric must be a string\")\n    if not metric:\n        raise ValueError(\"metric must not be empty\")\n    if not isinstance(original, list) or not isinstance(fragments, list):\n        raise TypeError(\"data arguments must be lists\")\n\n    totals = {}\n    for record in original:\n        if not isinstance(record, dict):\n            raise TypeError(\"original records must be dictionaries\")\n        if set(record) != {\"id\", metric}:\n            raise ValueError(\"malformed original record\")\n        identifier = record[\"id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        if identifier in totals:\n            raise ValueError(\"duplicate original identifier\")\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        totals[identifier] = [value, 0.0, False]\n\n    for record in fragments:\n        if not isinstance(record, dict):\n            raise TypeError(\"fragments must be dictionaries\")\n        if set(record) != {\"source_id\", metric}:\n            raise ValueError(\"malformed fragment\")\n        identifier = record[\"source_id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        if identifier not in totals:\n            raise AssertionError(\"fragment names an unknown identifier\")\n        totals[identifier][1] += value\n        totals[identifier][2] = True\n\n    for expected, actual, covered in totals.values():\n        if not covered:\n            raise AssertionError(\"an original identifier has no fragments\")\n        limit = abs(expected) * 0.001 if expected != 0 else 1e-12\n        if abs(expected - actual) >= limit:\n            raise AssertionError(\"fragment total is outside tolerance\")\n    return None\n",
+          "label": "Rejects totals exactly on the permitted tolerance boundary.",
+          "sha256": "10bc857c787ba9d0c26dae78fbc2dd38a0aadacf743e7b4c03a7f791883f992d"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef check_allocation(original, fragments, metric):\n    if not isinstance(metric, str):\n        raise TypeError(\"metric must be a string\")\n    if not metric:\n        raise ValueError(\"metric must not be empty\")\n    if not isinstance(original, list) or not isinstance(fragments, list):\n        raise TypeError(\"data arguments must be lists\")\n\n    totals = {}\n    for record in original:\n        if not isinstance(record, dict):\n            raise TypeError(\"original records must be dictionaries\")\n        if set(record) != {\"id\", metric}:\n            raise ValueError(\"malformed original record\")\n        identifier = record[\"id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        if identifier in totals:\n            raise ValueError(\"duplicate original identifier\")\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        totals[identifier] = [value, 0.0, False]\n\n    for record in fragments:\n        if not isinstance(record, dict):\n            raise TypeError(\"fragments must be dictionaries\")\n        if set(record) != {\"source_id\", metric}:\n            raise ValueError(\"malformed fragment\")\n        identifier = record[\"source_id\"]\n        try:\n            hash(identifier)\n        except TypeError as exc:\n            raise TypeError(\"identifiers must be hashable\") from exc\n        value = record[metric]\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"metric values must be numbers\")\n        if not math.isfinite(value):\n            raise ValueError(\"metric values must be finite\")\n        if identifier not in totals:\n            raise AssertionError(\"fragment names an unknown identifier\")\n        totals[identifier][1] += value\n        totals[identifier][2] = True\n\n    for expected, actual, covered in totals.values():\n        if not covered:\n            raise AssertionError(\"an original identifier has no fragments\")\n        limit = abs(expected) * 0.001 if expected != 0 else 1e-12\n        if abs(expected - actual) > limit:\n            raise AssertionError(\"fragment total is outside tolerance\")\n    return None\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e72c0cbec7e5275c94b97759fc038563a0468365240578d0c46124a732860a46"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 4, in <module>\n    assert check_allocation([{\"id\": \"a\", \"m\": value}], [{\"source_id\": \"a\", \"m\": value}], \"m\") is None\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 28, in check_allocation\n    if not math.isfinite(value):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n",
+    "stderr_sha256": "eb1bee79f19f5b51376d30146472becec5391c23594afb1b74b75f0b1de19b1a",
+    "duration_ms": 350,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

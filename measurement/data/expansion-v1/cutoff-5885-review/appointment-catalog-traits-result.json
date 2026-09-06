@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-rust-generation-0408",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9cf2d2738f89f26ca614f442b55af5068ff23fbb3692cd9206be8c0ea62ef339",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::AppointmentCatalog;\n\nfn require_eq<T: Eq>() {}\n\n#[test]\nfn catalog_implements_the_required_public_type_equality_trait() {\n    require_eq::<AppointmentCatalog>();\n}\n",
+        "sha256": "783662563def6746b96be4fd3432246300abdcc34f2649adaa48394e1537b2cd"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ab5ceafcd172170c4c060393f8e47a46a377654aef3c8f21e3e2d4f07edec78c",
+      "text": "Implement an in-memory appointment command service in `solution.rs` using only the standard library.\n\nExpose:\n\n- `pub struct Appointment { pub id: String, pub title: String, pub date: String, pub notes: String }`\n- `pub enum CatalogCommand { List, Create(Appointment), Replace(Appointment), Fetch { id: String } }`\n- `pub enum CatalogReply { Listed(Vec<Appointment>), Stored(Appointment), Found(Appointment) }`\n- `pub enum CatalogError { EmptyId, EmptyTitle, AlreadyExists, NotFound }`\n- `pub struct AppointmentCatalog`\n- `AppointmentCatalog::new() -> Self`\n- `AppointmentCatalog::execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError>`\n\nDerive `Debug`, `Clone`, `PartialEq`, and `Eq` for all public data types and implement `Default` for `AppointmentCatalog` consistently with `new`.\n\nIDs and titles are invalid only when empty; other strings may be empty. `Create` inserts only when the ID is absent. `Replace` changes the entire stored appointment only when the ID already exists. `Fetch` and `List` do not mutate state. `List` returns owned clones sorted by ascending ID. Failed commands must leave the catalog unchanged. Returned appointments must not alias internal storage, so callers may freely mutate their owned replies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ab5ceafcd172170c4c060393f8e47a46a377654aef3c8f21e3e2d4f07edec78c",
+      "text": "Implement an in-memory appointment command service in `solution.rs` using only the standard library.\n\nExpose:\n\n- `pub struct Appointment { pub id: String, pub title: String, pub date: String, pub notes: String }`\n- `pub enum CatalogCommand { List, Create(Appointment), Replace(Appointment), Fetch { id: String } }`\n- `pub enum CatalogReply { Listed(Vec<Appointment>), Stored(Appointment), Found(Appointment) }`\n- `pub enum CatalogError { EmptyId, EmptyTitle, AlreadyExists, NotFound }`\n- `pub struct AppointmentCatalog`\n- `AppointmentCatalog::new() -> Self`\n- `AppointmentCatalog::execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError>`\n\nDerive `Debug`, `Clone`, `PartialEq`, and `Eq` for all public data types and implement `Default` for `AppointmentCatalog` consistently with `new`.\n\nIDs and titles are invalid only when empty; other strings may be empty. `Create` inserts only when the ID is absent. `Replace` changes the entire stored appointment only when the ID already exists. `Fetch` and `List` do not mutate state. `List` returns owned clones sorted by ascending ID. Failed commands must leave the catalog unchanged. Returned appointments must not alias internal storage, so callers may freely mutate their owned replies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0408",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Appointment {\n    pub id: String,\n    pub title: String,\n    pub date: String,\n    pub notes: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogCommand {\n    List,\n    Create(Appointment),\n    Replace(Appointment),\n    Fetch { id: String },\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogReply {\n    Listed(Vec<Appointment>),\n    Stored(Appointment),\n    Found(Appointment),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogError {\n    EmptyId,\n    EmptyTitle,\n    AlreadyExists,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default)]\npub struct AppointmentCatalog {\n    entries: BTreeMap<String, Appointment>,\n}\n\nimpl AppointmentCatalog {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    fn validate(value: &Appointment) -> Result<(), CatalogError> {\n        if value.id.is_empty() {\n            return Err(CatalogError::EmptyId);\n        }\n        if value.title.is_empty() {\n            return Err(CatalogError::EmptyTitle);\n        }\n        Ok(())\n    }\n\n    pub fn execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError> {\n        match command {\n            CatalogCommand::List => Ok(CatalogReply::Listed(self.entries.values().cloned().collect())),\n            CatalogCommand::Fetch { id } => {\n                if id.is_empty() {\n                    return Err(CatalogError::EmptyId);\n                }\n                self.entries.get(&id).cloned().map(CatalogReply::Found).ok_or(CatalogError::NotFound)\n            }\n            CatalogCommand::Create(value) => {\n                Self::validate(&value)?;\n                if self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::AlreadyExists);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n            CatalogCommand::Replace(value) => {\n                Self::validate(&value)?;\n                if self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::NotFound);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n        }\n    }\n}\n",
+          "label": "Replace rejects existing IDs and inserts missing IDs, reversing its required existence check.",
+          "sha256": "c0b7f036b0445d55cee8004c3690c2517a922b04bf22c591d53bec8b0825850f"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Appointment {\n    pub id: String,\n    pub title: String,\n    pub date: String,\n    pub notes: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogCommand {\n    List,\n    Create(Appointment),\n    Replace(Appointment),\n    Fetch { id: String },\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogReply {\n    Listed(Vec<Appointment>),\n    Stored(Appointment),\n    Found(Appointment),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogError {\n    EmptyId,\n    EmptyTitle,\n    AlreadyExists,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default)]\npub struct AppointmentCatalog {\n    entries: BTreeMap<String, Appointment>,\n}\n\nimpl AppointmentCatalog {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    fn validate(value: &Appointment) -> Result<(), CatalogError> {\n        if value.id.is_empty() {\n            return Err(CatalogError::EmptyId);\n        }\n        if value.title.is_empty() {\n            return Err(CatalogError::EmptyTitle);\n        }\n        Ok(())\n    }\n\n    pub fn execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError> {\n        match command {\n            CatalogCommand::List => Ok(CatalogReply::Listed(self.entries.values().cloned().collect())),\n            CatalogCommand::Fetch { id } => {\n                if id.is_empty() {\n                    return Err(CatalogError::EmptyId);\n                }\n                self.entries.get(&id).cloned().map(CatalogReply::Found).ok_or(CatalogError::NotFound)\n            }\n            CatalogCommand::Create(value) => {\n                Self::validate(&value)?;\n                if self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::AlreadyExists);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n            CatalogCommand::Replace(value) => {\n                Self::validate(&value)?;\n                if !self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::NotFound);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n        }\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "84bc6d0ce796c30c79281f0272e3b0e458bceb962362126a6b87d3fbcc632bfe"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{Appointment, AppointmentCatalog, CatalogCommand, CatalogError, CatalogReply};\n\nfn appointment(id: &str, title: &str, date: &str, notes: &str) -> Appointment {\n    Appointment { id: id.to_string(), title: title.to_string(), date: date.to_string(), notes: notes.to_string() }\n}\n\nfn found(catalog: &mut AppointmentCatalog, id: &str) -> Appointment {\n    match catalog.execute(CatalogCommand::Fetch { id: id.to_string() }).unwrap() {\n        CatalogReply::Found(value) => value,\n        other => panic!(\"unexpected reply: {:?}\", other),\n    }\n}\n\n#[test]\nfn new_and_default_are_empty() {\n    for mut catalog in [AppointmentCatalog::new(), AppointmentCatalog::default()] {\n        assert_eq!(catalog.execute(CatalogCommand::List), Ok(CatalogReply::Listed(vec![])));\n    }\n}\n\n#[test]\nfn create_fetch_and_replace_entire_appointment() {\n    let mut catalog = AppointmentCatalog::new();\n    let first = appointment(\"a\", \"Initial\", \"2026-01-01\", \"old\");\n    assert_eq!(catalog.execute(CatalogCommand::Create(first.clone())), Ok(CatalogReply::Stored(first.clone())));\n    assert_eq!(found(&mut catalog, \"a\"), first);\n\n    let replacement = appointment(\"a\", \"Updated\", \"\", \"\");\n    assert_eq!(catalog.execute(CatalogCommand::Replace(replacement.clone())), Ok(CatalogReply::Stored(replacement.clone())));\n    assert_eq!(found(&mut catalog, \"a\"), replacement);\n}\n\n#[test]\nfn list_is_sorted_by_id_and_does_not_mutate_catalog() {\n    let mut catalog = AppointmentCatalog::new();\n    let b = appointment(\"b\", \"B\", \"\", \"\");\n    let a = appointment(\"a\", \"A\", \"\", \"\");\n    catalog.execute(CatalogCommand::Create(b.clone())).unwrap();\n    catalog.execute(CatalogCommand::Create(a.clone())).unwrap();\n\n    assert_eq!(catalog.execute(CatalogCommand::List), Ok(CatalogReply::Listed(vec![a.clone(), b.clone()])));\n    assert_eq!(catalog.execute(CatalogCommand::List), Ok(CatalogReply::Listed(vec![a, b])));\n}\n\n#[test]\nfn empty_id_or_title_is_rejected_atomically() {\n    let mut catalog = AppointmentCatalog::new();\n    let original = appointment(\"x\", \"Original\", \"date\", \"notes\");\n    catalog.execute(CatalogCommand::Create(original.clone())).unwrap();\n\n    assert_eq!(catalog.execute(CatalogCommand::Create(appointment(\"\", \"Title\", \"\", \"\"))), Err(CatalogError::EmptyId));\n    assert_eq!(catalog.execute(CatalogCommand::Create(appointment(\"y\", \"\", \"\", \"\"))), Err(CatalogError::EmptyTitle));\n    assert_eq!(catalog.execute(CatalogCommand::Replace(appointment(\"x\", \"\", \"changed\", \"changed\"))), Err(CatalogError::EmptyTitle));\n    assert_eq!(found(&mut catalog, \"x\"), original);\n}\n\n#[test]\nfn duplicate_create_and_missing_operations_leave_state_unchanged() {\n    let mut catalog = AppointmentCatalog::new();\n    let original = appointment(\"x\", \"Original\", \"date\", \"notes\");\n    catalog.execute(CatalogCommand::Create(original.clone())).unwrap();\n\n    assert_eq!(catalog.execute(CatalogCommand::Create(appointment(\"x\", \"Other\", \"\", \"\"))), Err(CatalogError::AlreadyExists));\n    assert_eq!(catalog.execute(CatalogCommand::Replace(appointment(\"missing\", \"Valid\", \"\", \"\"))), Err(CatalogError::NotFound));\n    assert_eq!(catalog.execute(CatalogCommand::Fetch { id: \"missing\".to_string() }), Err(CatalogError::NotFound));\n    assert_eq!(found(&mut catalog, \"x\"), original);\n}\n\n#[test]\nfn replies_are_owned_and_can_be_mutated_without_aliasing_storage() {\n    let mut catalog = AppointmentCatalog::new();\n    let original = appointment(\"x\", \"Original\", \"date\", \"notes\");\n    catalog.execute(CatalogCommand::Create(original.clone())).unwrap();\n\n    let mut fetched = found(&mut catalog, \"x\");\n    fetched.title.clear();\n    fetched.notes.push_str(\"changed\");\n\n    let mut listed = match catalog.execute(CatalogCommand::List).unwrap() {\n        CatalogReply::Listed(values) => values,\n        other => panic!(\"unexpected reply: {:?}\", other),\n    };\n    listed[0].id = \"different\".to_string();\n    assert_eq!(found(&mut catalog, \"x\"), original);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "95454b60ceaf7d23314cefc106dad814ca7a8e479848ace0659d29c9a8bd3487"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ab5ceafcd172170c4c060393f8e47a46a377654aef3c8f21e3e2d4f07edec78c",
+      "text": "Implement an in-memory appointment command service in `solution.rs` using only the standard library.\n\nExpose:\n\n- `pub struct Appointment { pub id: String, pub title: String, pub date: String, pub notes: String }`\n- `pub enum CatalogCommand { List, Create(Appointment), Replace(Appointment), Fetch { id: String } }`\n- `pub enum CatalogReply { Listed(Vec<Appointment>), Stored(Appointment), Found(Appointment) }`\n- `pub enum CatalogError { EmptyId, EmptyTitle, AlreadyExists, NotFound }`\n- `pub struct AppointmentCatalog`\n- `AppointmentCatalog::new() -> Self`\n- `AppointmentCatalog::execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError>`\n\nDerive `Debug`, `Clone`, `PartialEq`, and `Eq` for all public data types and implement `Default` for `AppointmentCatalog` consistently with `new`.\n\nIDs and titles are invalid only when empty; other strings may be empty. `Create` inserts only when the ID is absent. `Replace` changes the entire stored appointment only when the ID already exists. `Fetch` and `List` do not mutate state. `List` returns owned clones sorted by ascending ID. Failed commands must leave the catalog unchanged. Returned appointments must not alias internal storage, so callers may freely mutate their owned replies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ab5ceafcd172170c4c060393f8e47a46a377654aef3c8f21e3e2d4f07edec78c",
+      "text": "Implement an in-memory appointment command service in `solution.rs` using only the standard library.\n\nExpose:\n\n- `pub struct Appointment { pub id: String, pub title: String, pub date: String, pub notes: String }`\n- `pub enum CatalogCommand { List, Create(Appointment), Replace(Appointment), Fetch { id: String } }`\n- `pub enum CatalogReply { Listed(Vec<Appointment>), Stored(Appointment), Found(Appointment) }`\n- `pub enum CatalogError { EmptyId, EmptyTitle, AlreadyExists, NotFound }`\n- `pub struct AppointmentCatalog`\n- `AppointmentCatalog::new() -> Self`\n- `AppointmentCatalog::execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError>`\n\nDerive `Debug`, `Clone`, `PartialEq`, and `Eq` for all public data types and implement `Default` for `AppointmentCatalog` consistently with `new`.\n\nIDs and titles are invalid only when empty; other strings may be empty. `Create` inserts only when the ID is absent. `Replace` changes the entire stored appointment only when the ID already exists. `Fetch` and `List` do not mutate state. `List` returns owned clones sorted by ascending ID. Failed commands must leave the catalog unchanged. Returned appointments must not alias internal storage, so callers may freely mutate their owned replies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0408",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Appointment {\n    pub id: String,\n    pub title: String,\n    pub date: String,\n    pub notes: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogCommand {\n    List,\n    Create(Appointment),\n    Replace(Appointment),\n    Fetch { id: String },\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogReply {\n    Listed(Vec<Appointment>),\n    Stored(Appointment),\n    Found(Appointment),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogError {\n    EmptyId,\n    EmptyTitle,\n    AlreadyExists,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default)]\npub struct AppointmentCatalog {\n    entries: BTreeMap<String, Appointment>,\n}\n\nimpl AppointmentCatalog {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    fn validate(value: &Appointment) -> Result<(), CatalogError> {\n        if value.id.is_empty() {\n            return Err(CatalogError::EmptyId);\n        }\n        if value.title.is_empty() {\n            return Err(CatalogError::EmptyTitle);\n        }\n        Ok(())\n    }\n\n    pub fn execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError> {\n        match command {\n            CatalogCommand::List => Ok(CatalogReply::Listed(self.entries.values().cloned().collect())),\n            CatalogCommand::Fetch { id } => {\n                if id.is_empty() {\n                    return Err(CatalogError::EmptyId);\n                }\n                self.entries.get(&id).cloned().map(CatalogReply::Found).ok_or(CatalogError::NotFound)\n            }\n            CatalogCommand::Create(value) => {\n                Self::validate(&value)?;\n                if self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::AlreadyExists);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n            CatalogCommand::Replace(value) => {\n                Self::validate(&value)?;\n                if self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::NotFound);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n        }\n    }\n}\n",
+          "label": "Replace rejects existing IDs and inserts missing IDs, reversing its required existence check.",
+          "sha256": "c0b7f036b0445d55cee8004c3690c2517a922b04bf22c591d53bec8b0825850f"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Appointment {\n    pub id: String,\n    pub title: String,\n    pub date: String,\n    pub notes: String,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogCommand {\n    List,\n    Create(Appointment),\n    Replace(Appointment),\n    Fetch { id: String },\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogReply {\n    Listed(Vec<Appointment>),\n    Stored(Appointment),\n    Found(Appointment),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum CatalogError {\n    EmptyId,\n    EmptyTitle,\n    AlreadyExists,\n    NotFound,\n}\n\n#[derive(Debug, Clone, Default)]\npub struct AppointmentCatalog {\n    entries: BTreeMap<String, Appointment>,\n}\n\nimpl AppointmentCatalog {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    fn validate(value: &Appointment) -> Result<(), CatalogError> {\n        if value.id.is_empty() {\n            return Err(CatalogError::EmptyId);\n        }\n        if value.title.is_empty() {\n            return Err(CatalogError::EmptyTitle);\n        }\n        Ok(())\n    }\n\n    pub fn execute(&mut self, command: CatalogCommand) -> Result<CatalogReply, CatalogError> {\n        match command {\n            CatalogCommand::List => Ok(CatalogReply::Listed(self.entries.values().cloned().collect())),\n            CatalogCommand::Fetch { id } => {\n                if id.is_empty() {\n                    return Err(CatalogError::EmptyId);\n                }\n                self.entries.get(&id).cloned().map(CatalogReply::Found).ok_or(CatalogError::NotFound)\n            }\n            CatalogCommand::Create(value) => {\n                Self::validate(&value)?;\n                if self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::AlreadyExists);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n            CatalogCommand::Replace(value) => {\n                Self::validate(&value)?;\n                if !self.entries.contains_key(&value.id) {\n                    return Err(CatalogError::NotFound);\n                }\n                self.entries.insert(value.id.clone(), value.clone());\n                Ok(CatalogReply::Stored(value))\n            }\n        }\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "84bc6d0ce796c30c79281f0272e3b0e458bceb962362126a6b87d3fbcc632bfe"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "error[E0277]: the trait bound `AppointmentCatalog: Eq` is not satisfied\n  --> solution_test.rs:10:18\n   |\n10 |     require_eq::<AppointmentCatalog>();\n   |                  ^^^^^^^^^^^^^^^^^^ the trait `Eq` is not implemented for `AppointmentCatalog`\n   |\nnote: required by a bound in `require_eq`\n  --> solution_test.rs:6:18\n   |\n6  | fn require_eq<T: Eq>() {}\n   |                  ^^ required by this bound in `require_eq`\nhelp: consider annotating `AppointmentCatalog` with `#[derive(Eq)]`\n  --> solution.rs:35:1\n   |\n35 + #[derive(Eq)]\n36 | pub struct AppointmentCatalog {\n   |\n\nerror: aborting due to 1 previous error\n\nFor more information about this error, try `rustc --explain E0277`.\n",
+    "stderr_sha256": "475a4aed84af91e38cdb035fbb21b17e173f24291b8224da42126923ace2214f",
+    "duration_ms": 717,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

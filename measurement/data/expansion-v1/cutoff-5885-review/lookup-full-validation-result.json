@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0414",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "967630134b4366dd6f569a3c43333edca71f3912974b87248f183a157041d60b",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{lookup_setting, LookupError};\n\n#[test]\nfn conflicting_matches_do_not_skip_required_full_entry_validation() {\n    let entries = vec![\n        (\"key\".to_owned(), \"first\".to_owned()),\n        (\"KEY\".to_owned(), \"different\".to_owned()),\n        (\"\".to_owned(), \"malformed\".to_owned()),\n    ];\n    assert_eq!(lookup_setting(&entries, \"key\"),\n        Err(LookupError::MalformedEntry { index: 2 }));\n}\n",
+        "sha256": "96097afb9e279a545821b7bf1195b1eaf1b50b1d6482a24390c7899fa5effb3e"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ff7e586ef0f78c6ffe5ea1a6ef4073cce4a295ceeb4baecf7b9e8ce371fd5124",
+      "text": "Write a new implementation in `solution.rs` for canonical configuration lookup.\n\nExpose this exact API:\n\n```rust\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError { EmptyKey, MalformedEntry { index: usize }, ConflictingValues }\npub fn lookup_setting(entries: &[(String, String)], key: &str) -> Result<Option<String>, LookupError>;\n```\n\nTrim ASCII whitespace from the lookup key. Return `EmptyKey` if it becomes empty. Entry keys are malformed if they are empty after ASCII trimming or contain ASCII control characters; validate every entry in order even when an earlier entry matches, and report the first malformed index.\n\nCompare trimmed entry keys to the trimmed lookup key using ASCII case-insensitive comparison. Trim ASCII whitespace from matched values. The first match determines output ordering. Later matches with the same trimmed value are permitted; a later match with a different trimmed value returns `ConflictingValues`. Values may be empty. If no entry matches, return `Ok(None)`. Otherwise return an owned copy in `Some`. Do not mutate the entries or key.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ff7e586ef0f78c6ffe5ea1a6ef4073cce4a295ceeb4baecf7b9e8ce371fd5124",
+      "text": "Write a new implementation in `solution.rs` for canonical configuration lookup.\n\nExpose this exact API:\n\n```rust\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError { EmptyKey, MalformedEntry { index: usize }, ConflictingValues }\npub fn lookup_setting(entries: &[(String, String)], key: &str) -> Result<Option<String>, LookupError>;\n```\n\nTrim ASCII whitespace from the lookup key. Return `EmptyKey` if it becomes empty. Entry keys are malformed if they are empty after ASCII trimming or contain ASCII control characters; validate every entry in order even when an earlier entry matches, and report the first malformed index.\n\nCompare trimmed entry keys to the trimmed lookup key using ASCII case-insensitive comparison. Trim ASCII whitespace from matched values. The first match determines output ordering. Later matches with the same trimmed value are permitted; a later match with a different trimmed value returns `ConflictingValues`. Values may be empty. If no entry matches, return `Ok(None)`. Otherwise return an owned copy in `Some`. Do not mutate the entries or key.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0414",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError {\n    EmptyKey,\n    MalformedEntry { index: usize },\n    ConflictingValues,\n}\n\nfn trim_ascii(value: &str) -> &str {\n    value.trim_matches(|c: char| c.is_ascii_whitespace())\n}\n\npub fn lookup_setting(\n    entries: &[(String, String)],\n    key: &str,\n) -> Result<Option<String>, LookupError> {\n    let key = trim_ascii(key);\n    if key.is_empty() {\n        return Err(LookupError::EmptyKey);\n    }\n\n    let mut found: Option<String> = None;\n    for (index, (entry_key, entry_value)) in entries.iter().enumerate() {\n        let entry_key = trim_ascii(entry_key);\n        if entry_key.is_empty() || entry_key.chars().any(|c| c.is_ascii_control()) {\n            return Err(LookupError::MalformedEntry { index });\n        }\n        if entry_key == key {\n            let value = trim_ascii(entry_value);\n            match &found {\n                Some(previous) if previous != value => {\n                    return Err(LookupError::ConflictingValues);\n                }\n                None => found = Some(value.to_owned()),\n                _ => {}\n            }\n        }\n    }\n    Ok(found)\n}\n",
+          "label": "Matches configuration keys case-sensitively instead of using ASCII case-insensitive comparison.",
+          "sha256": "64fc7d0e10f3e85366fb74d3066b732d21f7a6d97ddb25bfdd286f9e6716cda7"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError {\n    EmptyKey,\n    MalformedEntry { index: usize },\n    ConflictingValues,\n}\n\nfn trim_ascii(value: &str) -> &str {\n    value.trim_matches(|c: char| c.is_ascii_whitespace())\n}\n\npub fn lookup_setting(\n    entries: &[(String, String)],\n    key: &str,\n) -> Result<Option<String>, LookupError> {\n    let key = trim_ascii(key);\n    if key.is_empty() {\n        return Err(LookupError::EmptyKey);\n    }\n\n    let mut found: Option<String> = None;\n    for (index, (entry_key, entry_value)) in entries.iter().enumerate() {\n        let entry_key = trim_ascii(entry_key);\n        if entry_key.is_empty() || entry_key.chars().any(|c| c.is_ascii_control()) {\n            return Err(LookupError::MalformedEntry { index });\n        }\n        if entry_key.eq_ignore_ascii_case(key) {\n            let value = trim_ascii(entry_value);\n            match &found {\n                Some(previous) if previous != value => {\n                    return Err(LookupError::ConflictingValues);\n                }\n                None => found = Some(value.to_owned()),\n                _ => {}\n            }\n        }\n    }\n    Ok(found)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fbc9d845901b84dccb0b79fc08537a565005edba6b996ca96e72ee3f2a5bb21d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::*;\n\nfn entries(values: &[(&str, &str)]) -> Vec<(String, String)> {\n    values\n        .iter()\n        .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))\n        .collect()\n}\n\n#[test]\nfn rejects_an_ascii_whitespace_only_lookup_key() {\n    assert_eq!(lookup_setting(&[], \" \\t\\r\\n\"), Err(LookupError::EmptyKey));\n}\n\n#[test]\nfn returns_none_when_no_trimmed_case_insensitive_key_matches() {\n    let data = entries(&[(\"host\", \"example\"), (\"port\", \"8080\")]);\n    assert_eq!(lookup_setting(&data, \" mode \"), Ok(None));\n}\n\n#[test]\nfn trims_key_and_matched_value_and_compares_ascii_case_insensitively() {\n    let data = entries(&[(\"  TiMeOuT  \", \" \\t30 seconds\\r\\n\")]);\n    assert_eq!(\n        lookup_setting(&data, \"\\n timeout \\t\"),\n        Ok(Some(\"30 seconds\".to_owned()))\n    );\n}\n\n#[test]\nfn permits_repeated_matches_with_identical_trimmed_values() {\n    let data = entries(&[\n        (\" Color \", \" blue \"),\n        (\"COLOR\", \"blue\"),\n        (\"color\", \"\\tblue\\n\"),\n    ]);\n    assert_eq!(lookup_setting(&data, \"color\"), Ok(Some(\"blue\".to_owned())));\n}\n\n#[test]\nfn permits_empty_matched_values_when_consistent() {\n    let data = entries(&[(\"key\", \"  \"), (\" KEY \", \"\\n\")]);\n    assert_eq!(lookup_setting(&data, \"key\"), Ok(Some(String::new())));\n}\n\n#[test]\nfn reports_conflicting_trimmed_values() {\n    let data = entries(&[(\"key\", \"same\"), (\"other\", \"ignored\"), (\"KEY\", \" different \")]);\n    assert_eq!(lookup_setting(&data, \"key\"), Err(LookupError::ConflictingValues));\n}\n\n#[test]\nfn validates_unmatched_entries_and_reports_first_malformed_index() {\n    let data = entries(&[\n        (\"target\", \"found\"),\n        (\"valid\", \"value\"),\n        (\"   \", \"bad\"),\n        (\"\", \"also bad\"),\n    ]);\n    assert_eq!(\n        lookup_setting(&data, \"target\"),\n        Err(LookupError::MalformedEntry { index: 2 })\n    );\n}\n\n#[test]\nfn an_ascii_control_character_makes_an_entry_key_malformed() {\n    let data = entries(&[(\"normal\", \"v\"), (\"bad\\u{7f}key\", \"x\")]);\n    assert_eq!(\n        lookup_setting(&data, \"absent\"),\n        Err(LookupError::MalformedEntry { index: 1 })\n    );\n\n    let tabbed = entries(&[(\"tab\\tkey\", \"v\")]);\n    assert_eq!(\n        lookup_setting(&tabbed, \"tab key\"),\n        Err(LookupError::MalformedEntry { index: 0 })\n    );\n}\n\n#[test]\nfn matching_is_ascii_only() {\n    let data = entries(&[(\"\u00c9COLE\", \"upper\"), (\"\u00e9cole\", \"lower\")]);\n    assert_eq!(lookup_setting(&data, \"\u00e9cole\"), Ok(Some(\"lower\".to_owned())));\n}\n\n#[test]\nfn inputs_are_not_mutated_and_output_is_owned() {\n    let data = entries(&[(\" Key \", \" value \")]);\n    let before = data.clone();\n    let key = String::from(\" key \");\n    let key_before = key.clone();\n\n    let mut output = lookup_setting(&data, &key).unwrap().unwrap();\n    output.push('!');\n\n    assert_eq!(data, before);\n    assert_eq!(key, key_before);\n    assert_eq!(data[0].1, \" value \");\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "c790849598f1044ea54a6da41832be2df637f2da3b175769e27e207ac416d9a3"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ff7e586ef0f78c6ffe5ea1a6ef4073cce4a295ceeb4baecf7b9e8ce371fd5124",
+      "text": "Write a new implementation in `solution.rs` for canonical configuration lookup.\n\nExpose this exact API:\n\n```rust\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError { EmptyKey, MalformedEntry { index: usize }, ConflictingValues }\npub fn lookup_setting(entries: &[(String, String)], key: &str) -> Result<Option<String>, LookupError>;\n```\n\nTrim ASCII whitespace from the lookup key. Return `EmptyKey` if it becomes empty. Entry keys are malformed if they are empty after ASCII trimming or contain ASCII control characters; validate every entry in order even when an earlier entry matches, and report the first malformed index.\n\nCompare trimmed entry keys to the trimmed lookup key using ASCII case-insensitive comparison. Trim ASCII whitespace from matched values. The first match determines output ordering. Later matches with the same trimmed value are permitted; a later match with a different trimmed value returns `ConflictingValues`. Values may be empty. If no entry matches, return `Ok(None)`. Otherwise return an owned copy in `Some`. Do not mutate the entries or key.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ff7e586ef0f78c6ffe5ea1a6ef4073cce4a295ceeb4baecf7b9e8ce371fd5124",
+      "text": "Write a new implementation in `solution.rs` for canonical configuration lookup.\n\nExpose this exact API:\n\n```rust\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError { EmptyKey, MalformedEntry { index: usize }, ConflictingValues }\npub fn lookup_setting(entries: &[(String, String)], key: &str) -> Result<Option<String>, LookupError>;\n```\n\nTrim ASCII whitespace from the lookup key. Return `EmptyKey` if it becomes empty. Entry keys are malformed if they are empty after ASCII trimming or contain ASCII control characters; validate every entry in order even when an earlier entry matches, and report the first malformed index.\n\nCompare trimmed entry keys to the trimmed lookup key using ASCII case-insensitive comparison. Trim ASCII whitespace from matched values. The first match determines output ordering. Later matches with the same trimmed value are permitted; a later match with a different trimmed value returns `ConflictingValues`. Values may be empty. If no entry matches, return `Ok(None)`. Otherwise return an owned copy in `Some`. Do not mutate the entries or key.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0414",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError {\n    EmptyKey,\n    MalformedEntry { index: usize },\n    ConflictingValues,\n}\n\nfn trim_ascii(value: &str) -> &str {\n    value.trim_matches(|c: char| c.is_ascii_whitespace())\n}\n\npub fn lookup_setting(\n    entries: &[(String, String)],\n    key: &str,\n) -> Result<Option<String>, LookupError> {\n    let key = trim_ascii(key);\n    if key.is_empty() {\n        return Err(LookupError::EmptyKey);\n    }\n\n    let mut found: Option<String> = None;\n    for (index, (entry_key, entry_value)) in entries.iter().enumerate() {\n        let entry_key = trim_ascii(entry_key);\n        if entry_key.is_empty() || entry_key.chars().any(|c| c.is_ascii_control()) {\n            return Err(LookupError::MalformedEntry { index });\n        }\n        if entry_key == key {\n            let value = trim_ascii(entry_value);\n            match &found {\n                Some(previous) if previous != value => {\n                    return Err(LookupError::ConflictingValues);\n                }\n                None => found = Some(value.to_owned()),\n                _ => {}\n            }\n        }\n    }\n    Ok(found)\n}\n",
+          "label": "Matches configuration keys case-sensitively instead of using ASCII case-insensitive comparison.",
+          "sha256": "64fc7d0e10f3e85366fb74d3066b732d21f7a6d97ddb25bfdd286f9e6716cda7"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LookupError {\n    EmptyKey,\n    MalformedEntry { index: usize },\n    ConflictingValues,\n}\n\nfn trim_ascii(value: &str) -> &str {\n    value.trim_matches(|c: char| c.is_ascii_whitespace())\n}\n\npub fn lookup_setting(\n    entries: &[(String, String)],\n    key: &str,\n) -> Result<Option<String>, LookupError> {\n    let key = trim_ascii(key);\n    if key.is_empty() {\n        return Err(LookupError::EmptyKey);\n    }\n\n    let mut found: Option<String> = None;\n    for (index, (entry_key, entry_value)) in entries.iter().enumerate() {\n        let entry_key = trim_ascii(entry_key);\n        if entry_key.is_empty() || entry_key.chars().any(|c| c.is_ascii_control()) {\n            return Err(LookupError::MalformedEntry { index });\n        }\n        if entry_key.eq_ignore_ascii_case(key) {\n            let value = trim_ascii(entry_value);\n            match &found {\n                Some(previous) if previous != value => {\n                    return Err(LookupError::ConflictingValues);\n                }\n                None => found = Some(value.to_owned()),\n                _ => {}\n            }\n        }\n    }\n    Ok(found)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fbc9d845901b84dccb0b79fc08537a565005edba6b996ca96e72ee3f2a5bb21d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest conflicting_matches_do_not_skip_required_full_entry_validation ... FAILED\n\nfailures:\n\n---- conflicting_matches_do_not_skip_required_full_entry_validation stdout ----\n\nthread 'conflicting_matches_do_not_skip_required_full_entry_validation' panicked at solution_test.rs:12:5:\nassertion `left == right` failed\n  left: Err(ConflictingValues)\n right: Err(MalformedEntry { index: 2 })\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    conflicting_matches_do_not_skip_required_full_entry_validation\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "24c3881cbef3da28a6c9b72be80cd8c09d60f968a6e2a107ee01ed87ae23081b",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1536,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

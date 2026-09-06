@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-repair-0030",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "1507fddcff8bd1ddd40dc51bc5b592e1b455a42bc179b2567a7750c642429920",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { collectDependencies } from './solution';\nlet result: string[];\ntry { result = collectDependencies({}, ['constructor']); }\ncatch (error) { throw new Error(`absent graph root constructor must be leaf, got ${error instanceof Error ? error.name : 'unknown'}`); }\nif (result.length !== 0) throw new Error('absent root not treated as leaf');\n",
+        "sha256": "0de4b622315b2372612d6c819596676f05145fedd1e394475e277239e2c6b635"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fb4f5170b80f729b547f08fee6c14b6e13451114314a4e0530d265731dc7ae78",
+      "text": "Repair the module below and return one complete source file. `collectDependencies` receives a dependency graph and an ordered list of roots. It must return every symbol transitively reachable from the roots, excluding symbols that occur in `roots`. A graph key with an empty list and a referenced symbol absent from the graph are both leaves. Cycles must terminate. Duplicate roots and edges must not duplicate output. Ordering must be deterministic depth-first discovery order: process roots in array order, process each dependency array in order, append a non-root symbol when first encountered, then visit its dependencies. Root names may be empty strings and must still follow these rules. The function must not mutate the graph, any dependency array, or roots.\n\nKnown-bad source:\n\n```typescript\nexport type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const found = new Set<string>();\n  const result: string[] = [];\n\n  for (const root of roots) {\n    for (const dependency of graph[root] ?? []) {\n      if (!rootSet.has(dependency) && !found.has(dependency)) {\n        found.add(dependency);\n        result.push(dependency);\n      }\n    }\n  }\n\n  return result;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fb4f5170b80f729b547f08fee6c14b6e13451114314a4e0530d265731dc7ae78",
+      "text": "Repair the module below and return one complete source file. `collectDependencies` receives a dependency graph and an ordered list of roots. It must return every symbol transitively reachable from the roots, excluding symbols that occur in `roots`. A graph key with an empty list and a referenced symbol absent from the graph are both leaves. Cycles must terminate. Duplicate roots and edges must not duplicate output. Ordering must be deterministic depth-first discovery order: process roots in array order, process each dependency array in order, append a non-root symbol when first encountered, then visit its dependencies. Root names may be empty strings and must still follow these rules. The function must not mutate the graph, any dependency array, or roots.\n\nKnown-bad source:\n\n```typescript\nexport type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const found = new Set<string>();\n  const result: string[] = [];\n\n  for (const root of roots) {\n    for (const dependency of graph[root] ?? []) {\n      if (!rootSet.has(dependency) && !found.has(dependency)) {\n        found.add(dependency);\n        result.push(dependency);\n      }\n    }\n  }\n\n  return result;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-repair-0030",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const found = new Set<string>();\n  const result: string[] = [];\n\n  for (const root of roots) {\n    for (const dependency of graph[root] ?? []) {\n      if (!rootSet.has(dependency) && !found.has(dependency)) {\n        found.add(dependency);\n        result.push(dependency);\n      }\n    }\n  }\n\n  return result;\n}\n",
+          "label": "Collects only direct dependencies and never traverses dependencies transitively.",
+          "sha256": "fee241b979ed6d46d497828b462998fc810e96aa3fd8222b7d6786c272dac1cb"
+        }
+      ],
+      "reference": {
+        "code": "export type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const visited = new Set<string>();\n  const result: string[] = [];\n\n  const visit = (symbol: string): void => {\n    if (visited.has(symbol)) return;\n    visited.add(symbol);\n    if (!rootSet.has(symbol)) result.push(symbol);\n    for (const dependency of graph[symbol] ?? []) visit(dependency);\n  };\n\n  for (const root of roots) {\n    if (!visited.has(root)) visited.add(root);\n    for (const dependency of graph[root] ?? []) visit(dependency);\n  }\n\n  return result;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "436f1affce75bb3feb8b05c84276d2766a8196292b6d95c6df1add70aafda1f2"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { collectDependencies } from './solution';\nimport type { DependencyGraph } from './solution';\n\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  const left = JSON.stringify(actual);\n  const right = JSON.stringify(expected);\n  if (left !== right) throw new Error(`${message}: expected ${right}, got ${left}`);\n}\n\nconst graph: DependencyGraph = {\n  app: ['ui', 'core', 'ui'],\n  ui: ['shared', 'theme'],\n  shared: ['core', 'missing'],\n  core: ['util'],\n  util: ['core'],\n  theme: [],\n};\nconst graphBefore = JSON.stringify(graph);\nconst roots = ['app'];\nconst rootsBefore = JSON.stringify(roots);\nequal(\n  collectDependencies(graph, roots),\n  ['ui', 'shared', 'core', 'util', 'missing', 'theme'],\n  'transitive depth-first discovery order with cycles and duplicates',\n);\nequal(JSON.stringify(graph), graphBefore, 'graph and dependency arrays are not mutated');\nequal(JSON.stringify(roots), rootsBefore, 'roots are not mutated');\n\nequal(collectDependencies(graph, []), [], 'empty roots');\nequal(collectDependencies(graph, ['unknown']), [], 'absent root is a leaf');\nequal(collectDependencies({ leaf: [] }, ['leaf']), [], 'empty dependency list is a leaf');\n\nconst multipleRoots: DependencyGraph = {\n  first: ['a', 'second', 'b'],\n  a: ['deep'],\n  deep: ['first'],\n  second: ['c'],\n  c: ['deep'],\n  b: ['c'],\n};\nequal(\n  collectDependencies(multipleRoots, ['first', 'second', 'first']),\n  ['a', 'deep', 'c', 'b'],\n  'roots are excluded but their dependencies remain traversable',\n);\n\nconst emptyNames: DependencyGraph = {\n  '': ['x', 'other'],\n  x: ['', 'leaf'],\n  other: [''],\n};\nequal(collectDependencies(emptyNames, ['', '']), ['x', 'leaf', 'other'], 'empty root name and duplicate roots');\n\nconst absentReferenced: DependencyGraph = { root: ['missing', 'missing', 'present'], present: ['missing'] };\nequal(collectDependencies(absentReferenced, ['root']), ['missing', 'present'], 'absent referenced symbols are included once as leaves');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "b22c1e1c2f6883af108cd10d61811d4a2ac8d78700a6ba896ca8c7a27c3fd0f3"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fb4f5170b80f729b547f08fee6c14b6e13451114314a4e0530d265731dc7ae78",
+      "text": "Repair the module below and return one complete source file. `collectDependencies` receives a dependency graph and an ordered list of roots. It must return every symbol transitively reachable from the roots, excluding symbols that occur in `roots`. A graph key with an empty list and a referenced symbol absent from the graph are both leaves. Cycles must terminate. Duplicate roots and edges must not duplicate output. Ordering must be deterministic depth-first discovery order: process roots in array order, process each dependency array in order, append a non-root symbol when first encountered, then visit its dependencies. Root names may be empty strings and must still follow these rules. The function must not mutate the graph, any dependency array, or roots.\n\nKnown-bad source:\n\n```typescript\nexport type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const found = new Set<string>();\n  const result: string[] = [];\n\n  for (const root of roots) {\n    for (const dependency of graph[root] ?? []) {\n      if (!rootSet.has(dependency) && !found.has(dependency)) {\n        found.add(dependency);\n        result.push(dependency);\n      }\n    }\n  }\n\n  return result;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fb4f5170b80f729b547f08fee6c14b6e13451114314a4e0530d265731dc7ae78",
+      "text": "Repair the module below and return one complete source file. `collectDependencies` receives a dependency graph and an ordered list of roots. It must return every symbol transitively reachable from the roots, excluding symbols that occur in `roots`. A graph key with an empty list and a referenced symbol absent from the graph are both leaves. Cycles must terminate. Duplicate roots and edges must not duplicate output. Ordering must be deterministic depth-first discovery order: process roots in array order, process each dependency array in order, append a non-root symbol when first encountered, then visit its dependencies. Root names may be empty strings and must still follow these rules. The function must not mutate the graph, any dependency array, or roots.\n\nKnown-bad source:\n\n```typescript\nexport type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const found = new Set<string>();\n  const result: string[] = [];\n\n  for (const root of roots) {\n    for (const dependency of graph[root] ?? []) {\n      if (!rootSet.has(dependency) && !found.has(dependency)) {\n        found.add(dependency);\n        result.push(dependency);\n      }\n    }\n  }\n\n  return result;\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-repair-0030",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const found = new Set<string>();\n  const result: string[] = [];\n\n  for (const root of roots) {\n    for (const dependency of graph[root] ?? []) {\n      if (!rootSet.has(dependency) && !found.has(dependency)) {\n        found.add(dependency);\n        result.push(dependency);\n      }\n    }\n  }\n\n  return result;\n}\n",
+          "label": "Collects only direct dependencies and never traverses dependencies transitively.",
+          "sha256": "fee241b979ed6d46d497828b462998fc810e96aa3fd8222b7d6786c272dac1cb"
+        }
+      ],
+      "reference": {
+        "code": "export type DependencyGraph = Readonly<Record<string, readonly string[]>>;\n\nexport function collectDependencies(\n  graph: DependencyGraph,\n  roots: readonly string[]\n): string[] {\n  const rootSet = new Set(roots);\n  const visited = new Set<string>();\n  const result: string[] = [];\n\n  const visit = (symbol: string): void => {\n    if (visited.has(symbol)) return;\n    visited.add(symbol);\n    if (!rootSet.has(symbol)) result.push(symbol);\n    for (const dependency of graph[symbol] ?? []) visit(dependency);\n  };\n\n  for (const root of roots) {\n    if (!visited.has(root)) visited.add(root);\n    for (const dependency of graph[root] ?? []) visit(dependency);\n  }\n\n  return result;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "436f1affce75bb3feb8b05c84276d2766a8196292b6d95c6df1add70aafda1f2"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:9\n    throw new Error(`absent graph root constructor must be leaf, got ${error instanceof Error ? error.name : 'unknown'}`);\n    ^\n\nError: absent graph root constructor must be leaf, got TypeError\n    at Object.<anonymous> (/work/solution.test.js:9:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3a3d1db47897cd3499927ddd60912b970bc7cf6155bc716220685b1a52f85a2c",
+    "duration_ms": 3345,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

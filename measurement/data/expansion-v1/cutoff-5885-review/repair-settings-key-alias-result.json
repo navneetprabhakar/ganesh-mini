@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0176",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "8b1066987ba6470447785cac9884c5818a7f13de9975783fbd8de8bc27e599a8",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import merge_settings\n\n\nclass Key:\n    def __init__(self):\n        self.metadata = []\n\n\nclass Probe(unittest.TestCase):\n    def test_overlay_key_is_detached(self):\n        key = Key()\n        result = merge_settings({}, {key: 1})\n        copied_key = next(iter(result))\n        self.assertIsNot(copied_key, key)\n        copied_key.metadata.append('changed')\n        self.assertEqual(key.metadata, [])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "2089167f1af06bb7b7517beab400de6d0f491e2a4ca5659eecbbc404630de41b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "907e2377869bd7bfed4e38134631d7b8f6662e9e33a411affe4a94acf2e799bf",
+      "text": "Repair the complete `solution.py` source below. Return a corrected complete source file.\n\n`merge_settings(base, overlay)` requires two dictionaries and returns a recursively merged deep copy. Neither input may be mutated or aliased by the result. Process keys in normal dictionary insertion order: existing base keys retain their positions, while overlay-only keys are appended in overlay order. When the same key maps to dictionaries on both sides, merge them recursively; otherwise the overlay value replaces the base value. Empty dictionaries are valid. Dictionary keys may be any hashable values.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = value\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "907e2377869bd7bfed4e38134631d7b8f6662e9e33a411affe4a94acf2e799bf",
+      "text": "Repair the complete `solution.py` source below. Return a corrected complete source file.\n\n`merge_settings(base, overlay)` requires two dictionaries and returns a recursively merged deep copy. Neither input may be mutated or aliased by the result. Process keys in normal dictionary insertion order: existing base keys retain their positions, while overlay-only keys are appended in overlay order. When the same key maps to dictionaries on both sides, merge them recursively; otherwise the overlay value replaces the base value. Empty dictionaries are valid. Dictionary keys may be any hashable values.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = value\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0176",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = value\n    return result\n",
+          "label": "Overlay replacement values are assigned by reference instead of being deep-copied, allowing later mutation to affect the result.",
+          "sha256": "53d0cec4e2c33cfa4b5fdd86639a58a8ab7a84ac821d7ec668b89f72b56c4a26"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = deepcopy(value)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cd20e991cd76f56588923dbe788c8d42fa84090d23c3a0b8b0bed299d40ce150"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import merge_settings\n\n\nclass MergeSettingsTests(unittest.TestCase):\n    def test_recursive_merge_and_replacement(self):\n        base = {\n            \"service\": {\"host\": \"old\", \"ports\": [80], \"nested\": {\"a\": 1}},\n            \"keep\": True,\n            \"replace\": {\"old\": 1},\n        }\n        overlay = {\n            \"service\": {\"host\": \"new\", \"nested\": {\"b\": 2}},\n            \"replace\": [\"new\"],\n            \"added\": {\"x\": 3},\n        }\n        self.assertEqual(merge_settings(base, overlay), {\n            \"service\": {\"host\": \"new\", \"ports\": [80], \"nested\": {\"a\": 1, \"b\": 2}},\n            \"keep\": True,\n            \"replace\": [\"new\"],\n            \"added\": {\"x\": 3},\n        })\n\n    def test_key_insertion_order_at_each_level(self):\n        base = {\"b\": 1, \"a\": {\"x\": 1, \"y\": 2}, \"c\": 3}\n        overlay = {\"a\": {\"y\": 9, \"z\": 10}, \"d\": 4, \"b\": 8}\n        result = merge_settings(base, overlay)\n        self.assertEqual(list(result), [\"b\", \"a\", \"c\", \"d\"])\n        self.assertEqual(list(result[\"a\"]), [\"x\", \"y\", \"z\"])\n        self.assertEqual(result[\"b\"], 8)\n\n    def test_empty_dictionaries(self):\n        self.assertEqual(merge_settings({}, {}), {})\n        self.assertEqual(merge_settings({\"x\": {}}, {\"x\": {}}), {\"x\": {}})\n        self.assertEqual(merge_settings({}, {\"x\": 1}), {\"x\": 1})\n        self.assertEqual(merge_settings({\"x\": 1}, {}), {\"x\": 1})\n\n    def test_arbitrary_hashable_keys(self):\n        key = (\"tuple\", 1)\n        result = merge_settings({key: {1: \"one\"}, None: \"base\"}, {key: {2: \"two\"}, 7: \"new\"})\n        self.assertEqual(result, {key: {1: \"one\", 2: \"two\"}, None: \"base\", 7: \"new\"})\n\n    def test_type_validation(self):\n        for base, overlay in (([], {}), ({}, []), (None, {}), ({}, None)):\n            with self.subTest(base=base, overlay=overlay):\n                with self.assertRaises(TypeError):\n                    merge_settings(base, overlay)\n\n    def test_result_does_not_alias_either_input(self):\n        base = {\"base_only\": [{\"x\": 1}], \"both\": {\"left\": [1]}}\n        overlay = {\"overlay_only\": [{\"y\": 2}], \"both\": {\"right\": [2]}}\n        result = merge_settings(base, overlay)\n\n        result[\"base_only\"][0][\"x\"] = 100\n        result[\"overlay_only\"][0][\"y\"] = 200\n        result[\"both\"][\"left\"].append(9)\n        result[\"both\"][\"right\"].append(9)\n        self.assertEqual(base, {\"base_only\": [{\"x\": 1}], \"both\": {\"left\": [1]}})\n        self.assertEqual(overlay, {\"overlay_only\": [{\"y\": 2}], \"both\": {\"right\": [2]}})\n\n        base[\"base_only\"][0][\"x\"] = -1\n        overlay[\"overlay_only\"][0][\"y\"] = -2\n        self.assertEqual(result[\"base_only\"][0][\"x\"], 100)\n        self.assertEqual(result[\"overlay_only\"][0][\"y\"], 200)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "609b0b167cefa9292901f47e48b0e6df19a497f7bc70762048f13a3a7b87464a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "907e2377869bd7bfed4e38134631d7b8f6662e9e33a411affe4a94acf2e799bf",
+      "text": "Repair the complete `solution.py` source below. Return a corrected complete source file.\n\n`merge_settings(base, overlay)` requires two dictionaries and returns a recursively merged deep copy. Neither input may be mutated or aliased by the result. Process keys in normal dictionary insertion order: existing base keys retain their positions, while overlay-only keys are appended in overlay order. When the same key maps to dictionaries on both sides, merge them recursively; otherwise the overlay value replaces the base value. Empty dictionaries are valid. Dictionary keys may be any hashable values.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = value\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "907e2377869bd7bfed4e38134631d7b8f6662e9e33a411affe4a94acf2e799bf",
+      "text": "Repair the complete `solution.py` source below. Return a corrected complete source file.\n\n`merge_settings(base, overlay)` requires two dictionaries and returns a recursively merged deep copy. Neither input may be mutated or aliased by the result. Process keys in normal dictionary insertion order: existing base keys retain their positions, while overlay-only keys are appended in overlay order. When the same key maps to dictionaries on both sides, merge them recursively; otherwise the overlay value replaces the base value. Empty dictionaries are valid. Dictionary keys may be any hashable values.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = value\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0176",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = value\n    return result\n",
+          "label": "Overlay replacement values are assigned by reference instead of being deep-copied, allowing later mutation to affect the result.",
+          "sha256": "53d0cec4e2c33cfa4b5fdd86639a58a8ab7a84ac821d7ec668b89f72b56c4a26"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef merge_settings(base, overlay):\n    if not isinstance(base, dict) or not isinstance(overlay, dict):\n        raise TypeError(\"base and overlay must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overlay.items():\n        if key in result and isinstance(result[key], dict) and isinstance(value, dict):\n            result[key] = merge_settings(result[key], value)\n        else:\n            result[key] = deepcopy(value)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cd20e991cd76f56588923dbe788c8d42fa84090d23c3a0b8b0bed299d40ce150"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_overlay_key_is_detached (__main__.Probe.test_overlay_key_is_detached)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_overlay_key_is_detached\n    self.assertIsNot(copied_key, key)\nAssertionError: unexpectedly identical: <__main__.Key object at 0x7ffffe87c9d0>\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "b894cb9cfc1234f40c203ba730a2db49479d2fea57c2644a5d4a61c4088bf686",
+    "duration_ms": 644,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

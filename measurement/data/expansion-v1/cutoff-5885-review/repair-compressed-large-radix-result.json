@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0180",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7e92bb647f1c5c633789932292fb65ee600e3e183a080788cb2daa00eb7adccf",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import compressed_estimate\n\n\nclass Probe(unittest.TestCase):\n    def test_level_zero_finite_large_integer_radix(self):\n        error = None\n        try:\n            result = compressed_estimate(0, 10**400)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n        self.assertEqual(result, 0.0)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "8152cacdd942b7c7a80590caf1105af547953fde2fe57a323fcc7fb766b6273c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "68959022557725dd5ee8a0a19c8052410b2b777b491f8c1fb6555c596d991a56",
+      "text": "Replace the following complete `solution.py` with a corrected complete source file.\n\nThe public function `compressed_estimate(level, radix=2)` decodes an exponential compact counter and returns `float(radix ** level - 1)`. `level` must be an integer but not a boolean in the inclusive range 0 through 63. `radix` must be a finite real number greater than 1, excluding booleans. Invalid input raises `ValueError`. The function has no mutation or aliasing side effects.\n\nKnown-bad source:\n```python\nimport math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "68959022557725dd5ee8a0a19c8052410b2b777b491f8c1fb6555c596d991a56",
+      "text": "Replace the following complete `solution.py` with a corrected complete source file.\n\nThe public function `compressed_estimate(level, radix=2)` decodes an exponential compact counter and returns `float(radix ** level - 1)`. `level` must be an integer but not a boolean in the inclusive range 0 through 63. `radix` must be a finite real number greater than 1, excluding booleans. Invalid input raises `ValueError`. The function has no mutation or aliasing side effects.\n\nKnown-bad source:\n```python\nimport math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0180",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level)\n",
+          "label": "The decoder omits the required subtraction of one, so every estimate is one too large.",
+          "sha256": "7b395eed9b87f5a450adab6ef78a01c1b05543ea1fa082fe1a5428e2ce593eaa"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level - 1)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5c43c19eb655396731492f5a4649c7449f25e439686d7572688b748385e37337"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\nfrom fractions import Fraction\n\nfrom solution import compressed_estimate\n\n\nclass CompressedEstimateTests(unittest.TestCase):\n    def test_default_radix_and_boundaries(self):\n        self.assertEqual(compressed_estimate(0), 0.0)\n        self.assertEqual(compressed_estimate(1), 1.0)\n        self.assertEqual(compressed_estimate(5), 31.0)\n        self.assertEqual(compressed_estimate(63), float(2 ** 63 - 1))\n        self.assertIsInstance(compressed_estimate(3), float)\n\n    def test_valid_real_radices(self):\n        self.assertTrue(math.isclose(compressed_estimate(3, 1.5), 2.375))\n        self.assertEqual(compressed_estimate(2, 3), 8.0)\n        self.assertEqual(compressed_estimate(2, Fraction(3, 2)), 1.25)\n\n    def test_rejects_invalid_level(self):\n        for level in (True, False, -1, 64, 1.0, '1', None):\n            with self.subTest(level=level):\n                with self.assertRaises(ValueError):\n                    compressed_estimate(level)\n\n    def test_rejects_invalid_radix(self):\n        for radix in (True, False, 1, 0, -2, float('inf'), float('-inf'), float('nan'), '2', None, 1 + 0j):\n            with self.subTest(radix=radix):\n                with self.assertRaises(ValueError):\n                    compressed_estimate(2, radix)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "0b62f880cf6194b1bf9433cb8b32799bd7d0842e4404e11dba9b480a86bec551"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "68959022557725dd5ee8a0a19c8052410b2b777b491f8c1fb6555c596d991a56",
+      "text": "Replace the following complete `solution.py` with a corrected complete source file.\n\nThe public function `compressed_estimate(level, radix=2)` decodes an exponential compact counter and returns `float(radix ** level - 1)`. `level` must be an integer but not a boolean in the inclusive range 0 through 63. `radix` must be a finite real number greater than 1, excluding booleans. Invalid input raises `ValueError`. The function has no mutation or aliasing side effects.\n\nKnown-bad source:\n```python\nimport math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "68959022557725dd5ee8a0a19c8052410b2b777b491f8c1fb6555c596d991a56",
+      "text": "Replace the following complete `solution.py` with a corrected complete source file.\n\nThe public function `compressed_estimate(level, radix=2)` decodes an exponential compact counter and returns `float(radix ** level - 1)`. `level` must be an integer but not a boolean in the inclusive range 0 through 63. `radix` must be a finite real number greater than 1, excluding booleans. Invalid input raises `ValueError`. The function has no mutation or aliasing side effects.\n\nKnown-bad source:\n```python\nimport math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0180",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level)\n",
+          "label": "The decoder omits the required subtraction of one, so every estimate is one too large.",
+          "sha256": "7b395eed9b87f5a450adab6ef78a01c1b05543ea1fa082fe1a5428e2ce593eaa"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef compressed_estimate(level, radix=2):\n    if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= 63:\n        raise ValueError(\"level must be an integer from 0 through 63\")\n    if (\n        isinstance(radix, bool)\n        or not isinstance(radix, Real)\n        or not math.isfinite(radix)\n        or radix <= 1\n    ):\n        raise ValueError(\"radix must be finite and greater than one\")\n    return float(radix ** level - 1)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5c43c19eb655396731492f5a4649c7449f25e439686d7572688b748385e37337"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_level_zero_finite_large_integer_radix (__main__.Probe.test_level_zero_finite_large_integer_radix)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 12, in test_level_zero_finite_large_integer_radix\n    self.assertIsNone(error)\nAssertionError: 'OverflowError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.012s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "ec03db7f97ca7ff251ccc69fc2e9d20eb3af1d6dab850209d8c56c063dd11416",
+    "duration_ms": 766,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0189",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3a1b7f27ca5d3e37fcbe053df35bcf108addab259ca6c055ddef50c0963537a3",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import collect_values\n\n\nclass Reader:\n    def __init__(self, value):\n        self.value = value\n        self.closes = 0\n\n    def read(self, key):\n        return self.value\n\n    def close(self):\n        self.closes += 1\n\n\nclass Session:\n    def __init__(self, reader):\n        self.reader = reader\n\n    def open(self):\n        return self.reader\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_reader_value(self):\n        value = []\n        for _ in range(600):\n            value = [value]\n        reader = Reader(value)\n        error = None\n        try:\n            collect_values(Session(reader), ['x'])\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertEqual(reader.closes, 1)\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "816f40eb0e976bd3459f174590c0f731e278509f315963eaf94a4304514c7cfd"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "143023adc77f88834863fd0e699ba952d6724f8a4168e153ef5b54112f46acc4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public function `collect_values(session, keys)` accepts a session object and a list or tuple of keys. It must call `session.open()` exactly once to obtain a reader, call `reader.read(key)` in input order, and return deep copies of the values in a new list. It must not mutate `keys` or retain aliases to mutable values returned by the reader.\n\n`keys` with a wrong container type raises `TypeError` before opening the session. An empty sequence is valid: the reader is still opened and closed once. The reader's `close()` must be called exactly once, after all successful reads or when any read raises. If a read raises and closing also raises, preserve the read exception. If only closing raises, propagate the close exception.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n            reader.close()\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "143023adc77f88834863fd0e699ba952d6724f8a4168e153ef5b54112f46acc4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public function `collect_values(session, keys)` accepts a session object and a list or tuple of keys. It must call `session.open()` exactly once to obtain a reader, call `reader.read(key)` in input order, and return deep copies of the values in a new list. It must not mutate `keys` or retain aliases to mutable values returned by the reader.\n\n`keys` with a wrong container type raises `TypeError` before opening the session. An empty sequence is valid: the reader is still opened and closed once. The reader's `close()` must be called exactly once, after all successful reads or when any read raises. If a read raises and closing also raises, preserve the read exception. If only closing raises, propagate the close exception.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n            reader.close()\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0189",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n            reader.close()\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n",
+          "label": "Closes the reader inside the loop, so subsequent reads use a prematurely closed resource.",
+          "sha256": "be0f9d272fd89186af7491250dcbfa6e558fea307a932290ba293acca17d1b44"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fa9304b09b1e5b623fa9fabf8c09fef1d460394a8fde660fe0af4231a535fcae"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import collect_values\n\n\nclass Reader:\n    def __init__(self, values, read_error_at=None, close_error=None):\n        self.values = values\n        self.read_error_at = read_error_at\n        self.close_error = close_error\n        self.read_calls = []\n        self.close_calls = 0\n\n    def read(self, key):\n        self.read_calls.append(key)\n        if key == self.read_error_at:\n            raise LookupError(\"read failed\")\n        return self.values[key]\n\n    def close(self):\n        self.close_calls += 1\n        if self.close_error is not None:\n            raise self.close_error\n\n\nclass Session:\n    def __init__(self, reader):\n        self.reader = reader\n        self.open_calls = 0\n\n    def open(self):\n        self.open_calls += 1\n        return self.reader\n\n\nclass CollectValuesTests(unittest.TestCase):\n    def test_reads_in_order_and_returns_independent_deep_copies(self):\n        shared = {\"nested\": [1, 2]}\n        reader = Reader({\"a\": shared, \"b\": shared})\n        session = Session(reader)\n        keys = [\"b\", \"a\"]\n        before = keys[:]\n        result = collect_values(session, keys)\n\n        self.assertEqual(result, [shared, shared])\n        self.assertEqual(reader.read_calls, [\"b\", \"a\"])\n        self.assertEqual(session.open_calls, 1)\n        self.assertEqual(reader.close_calls, 1)\n        self.assertEqual(keys, before)\n        self.assertIsNot(result[0], shared)\n        self.assertIsNot(result[1], shared)\n        self.assertIsNot(result[0], result[1])\n        self.assertIsNot(result[0][\"nested\"], result[1][\"nested\"])\n        shared[\"nested\"].append(3)\n        self.assertEqual(result[0], {\"nested\": [1, 2]})\n\n    def test_empty_still_opens_and_closes_once(self):\n        reader = Reader({})\n        session = Session(reader)\n        self.assertEqual(collect_values(session, ()), [])\n        self.assertEqual(session.open_calls, 1)\n        self.assertEqual(reader.read_calls, [])\n        self.assertEqual(reader.close_calls, 1)\n\n    def test_wrong_container_fails_before_open(self):\n        session = Session(Reader({}))\n        with self.assertRaises(TypeError):\n            collect_values(session, \"a\")\n        self.assertEqual(session.open_calls, 0)\n        self.assertEqual(session.reader.close_calls, 0)\n\n    def test_read_failure_closes_once_and_is_preserved(self):\n        reader = Reader({\"a\": 1}, read_error_at=\"bad\", close_error=RuntimeError(\"close failed\"))\n        session = Session(reader)\n        with self.assertRaisesRegex(LookupError, \"read failed\"):\n            collect_values(session, [\"a\", \"bad\", \"later\"])\n        self.assertEqual(reader.read_calls, [\"a\", \"bad\"])\n        self.assertEqual(reader.close_calls, 1)\n\n    def test_close_failure_propagates_when_reads_succeed(self):\n        close_error = RuntimeError(\"close only\")\n        reader = Reader({\"a\": 1}, close_error=close_error)\n        with self.assertRaises(RuntimeError) as caught:\n            collect_values(Session(reader), [\"a\"])\n        self.assertIs(caught.exception, close_error)\n        self.assertEqual(reader.close_calls, 1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "7f47318bec47b1e9932b8d5e58302eabe8339dc044413700e554d0c27da0116a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "143023adc77f88834863fd0e699ba952d6724f8a4168e153ef5b54112f46acc4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public function `collect_values(session, keys)` accepts a session object and a list or tuple of keys. It must call `session.open()` exactly once to obtain a reader, call `reader.read(key)` in input order, and return deep copies of the values in a new list. It must not mutate `keys` or retain aliases to mutable values returned by the reader.\n\n`keys` with a wrong container type raises `TypeError` before opening the session. An empty sequence is valid: the reader is still opened and closed once. The reader's `close()` must be called exactly once, after all successful reads or when any read raises. If a read raises and closing also raises, preserve the read exception. If only closing raises, propagate the close exception.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n            reader.close()\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "143023adc77f88834863fd0e699ba952d6724f8a4168e153ef5b54112f46acc4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public function `collect_values(session, keys)` accepts a session object and a list or tuple of keys. It must call `session.open()` exactly once to obtain a reader, call `reader.read(key)` in input order, and return deep copies of the values in a new list. It must not mutate `keys` or retain aliases to mutable values returned by the reader.\n\n`keys` with a wrong container type raises `TypeError` before opening the session. An empty sequence is valid: the reader is still opened and closed once. The reader's `close()` must be called exactly once, after all successful reads or when any read raises. If a read raises and closing also raises, preserve the read exception. If only closing raises, propagate the close exception.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n            reader.close()\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0189",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n            reader.close()\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n",
+          "label": "Closes the reader inside the loop, so subsequent reads use a prematurely closed resource.",
+          "sha256": "be0f9d272fd89186af7491250dcbfa6e558fea307a932290ba293acca17d1b44"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef collect_values(session, keys):\n    if not isinstance(keys, (list, tuple)):\n        raise TypeError(\"keys must be a list or tuple\")\n    reader = session.open()\n    active_error = None\n    try:\n        values = []\n        for key in keys:\n            values.append(deepcopy(reader.read(key)))\n        return values\n    except BaseException as error:\n        active_error = error\n        raise\n    finally:\n        try:\n            reader.close()\n        except BaseException:\n            if active_error is None:\n                raise\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fa9304b09b1e5b623fa9fabf8c09fef1d460394a8fde660fe0af4231a535fcae"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_reader_value (__main__.Probe.test_finite_reader_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 37, in test_finite_reader_value\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "3220e24cbec133b44530aac73ff1b720c3ccd18a9efb6faa98aa4c5c75c8e7b6",
+    "duration_ms": 506,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

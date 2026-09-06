@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-09-06 — Continue through training closure under the frozen gates
+
+Navneet requested: "keep going till we close training, you have my auth".
+Continue in-scope data review, admission preparation, bounded training and
+evaluation toward a documented training outcome. Do not stop at an ordinary
+review checkpoint. This does not waive quality, separation, execution-card,
+backup, or promotion requirements, and does not turn held records into final
+rejections. Historical cloud budgets and consumed execution cards remain
+historical; obtain a specific new GCloud compute scope/cost ceiling if needed
+before cloud launch. Existing campaign GCS evidence backups remain authorized.
+
 ## 2026-09-06 — Completed verification; flagged rows reviewed separately
 
 Navneet clarified that candidate-level failures do not make the completed VM

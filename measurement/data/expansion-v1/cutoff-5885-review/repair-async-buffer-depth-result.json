@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0204",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4296c53cdd6b59b402815615a66a9ca2a7c849dc2c18e0f7567670bb179627c8",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import AsyncBuffer\n\nclass Probe(unittest.IsolatedAsyncioTestCase):\n    async def test_finite_record(self):\n        value = []\n        for _ in range(600):\n            value = [value]\n        error = None\n        try:\n            await AsyncBuffer().stage({'value': value})\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "1ba34991f390700cd90b36cb6de5d2466200926f97c1b27a6fd80c04c3b74f1b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "650454873ce9ffd44641b6c6260809a3ae942a21bb6f2aedfb5f1ced9c006d89",
+      "text": "Repair the following complete `solution.py`. Return a corrected complete source file.\n\n`AsyncBuffer` models staged records. `stage(record)` is asynchronous, requires a dictionary without an `id` key, stores a deep copy, and returns `None`. Invalid records raise `ValueError` without mutation.\n\n`flush()` is asynchronous. It assigns increasing integer IDs, starting at 1, to staged records that do not yet have IDs. It returns a tuple containing deep copies of all currently staged records. Flushing does not commit or remove records, and repeated flushes preserve assigned IDs.\n\n`commit()` is asynchronous. It first performs the same ID assignment as `flush`, returns a tuple of deep copies of all staged records, and then clears the staging area. Committed results must remain independent of later mutations. `pending_count()` returns the number of staged records. Record order is insertion order.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "650454873ce9ffd44641b6c6260809a3ae942a21bb6f2aedfb5f1ced9c006d89",
+      "text": "Repair the following complete `solution.py`. Return a corrected complete source file.\n\n`AsyncBuffer` models staged records. `stage(record)` is asynchronous, requires a dictionary without an `id` key, stores a deep copy, and returns `None`. Invalid records raise `ValueError` without mutation.\n\n`flush()` is asynchronous. It assigns increasing integer IDs, starting at 1, to staged records that do not yet have IDs. It returns a tuple containing deep copies of all currently staged records. Flushing does not commit or remove records, and repeated flushes preserve assigned IDs.\n\n`commit()` is asynchronous. It first performs the same ID assignment as `flush`, returns a tuple of deep copies of all staged records, and then clears the staging area. Committed results must remain independent of later mutations. `pending_count()` returns the number of staged records. Record order is insertion order.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0204",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n",
+          "label": "Flush incorrectly clears staged records, causing a later commit to lose them.",
+          "sha256": "03aa4aca05ea9fd698d5b4c901c264b5bbf1aa8b5e2599079217dbc477e3c908"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3b2b1859e8fd917ba8e59bf37ee07978d3fd45169c1bcedaa48fe28b1a0d47e4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import asyncio\nimport unittest\n\nfrom solution import AsyncBuffer\n\n\nclass AsyncBufferTests(unittest.IsolatedAsyncioTestCase):\n    async def test_stage_deep_copies_and_returns_none(self):\n        buffer = AsyncBuffer()\n        record = {\"name\": \"a\", \"nested\": {\"items\": [1]}}\n        self.assertIsNone(await buffer.stage(record))\n        record[\"nested\"][\"items\"].append(2)\n        self.assertEqual(buffer.pending_count(), 1)\n        snapshot = await buffer.flush()\n        self.assertEqual(snapshot, ({\"name\": \"a\", \"nested\": {\"items\": [1]}, \"id\": 1},))\n        self.assertEqual(buffer.pending_count(), 1)\n\n    async def test_flush_does_not_clear_and_preserves_ids(self):\n        buffer = AsyncBuffer()\n        await buffer.stage({\"value\": \"first\"})\n        first = await buffer.flush()\n        second = await buffer.flush()\n        self.assertEqual(first, ({\"value\": \"first\", \"id\": 1},))\n        self.assertEqual(second, first)\n        self.assertIsNot(first[0], second[0])\n        self.assertEqual(buffer.pending_count(), 1)\n        await buffer.stage({\"value\": \"second\"})\n        third = await buffer.flush()\n        self.assertEqual(third, ({\"value\": \"first\", \"id\": 1}, {\"value\": \"second\", \"id\": 2}))\n\n    async def test_commit_assigns_ids_returns_copies_and_clears(self):\n        buffer = AsyncBuffer()\n        await buffer.stage({\"nested\": [1]})\n        committed = await buffer.commit()\n        self.assertEqual(committed, ({\"nested\": [1], \"id\": 1},))\n        self.assertEqual(buffer.pending_count(), 0)\n        committed[0][\"nested\"].append(2)\n        await buffer.stage({\"next\": True})\n        self.assertEqual(await buffer.commit(), ({\"next\": True, \"id\": 2},))\n        self.assertEqual(committed, ({\"nested\": [1, 2], \"id\": 1},))\n\n    async def test_empty_flush_and_commit(self):\n        buffer = AsyncBuffer()\n        self.assertEqual(await buffer.flush(), ())\n        self.assertEqual(await buffer.commit(), ())\n        self.assertEqual(buffer.pending_count(), 0)\n\n    async def test_invalid_stage_is_atomic(self):\n        buffer = AsyncBuffer()\n        await buffer.stage({\"valid\": 1})\n        for record in [None, [], {\"id\": 99}, \"record\"]:\n            with self.subTest(record=record), self.assertRaises(ValueError):\n                await buffer.stage(record)\n            self.assertEqual(buffer.pending_count(), 1)\n        self.assertEqual(await buffer.flush(), ({\"valid\": 1, \"id\": 1},))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "d44d9395cf6b556c453d5167c90f01c60e319841b38cb2bc7521b78321dd733d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "650454873ce9ffd44641b6c6260809a3ae942a21bb6f2aedfb5f1ced9c006d89",
+      "text": "Repair the following complete `solution.py`. Return a corrected complete source file.\n\n`AsyncBuffer` models staged records. `stage(record)` is asynchronous, requires a dictionary without an `id` key, stores a deep copy, and returns `None`. Invalid records raise `ValueError` without mutation.\n\n`flush()` is asynchronous. It assigns increasing integer IDs, starting at 1, to staged records that do not yet have IDs. It returns a tuple containing deep copies of all currently staged records. Flushing does not commit or remove records, and repeated flushes preserve assigned IDs.\n\n`commit()` is asynchronous. It first performs the same ID assignment as `flush`, returns a tuple of deep copies of all staged records, and then clears the staging area. Committed results must remain independent of later mutations. `pending_count()` returns the number of staged records. Record order is insertion order.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "650454873ce9ffd44641b6c6260809a3ae942a21bb6f2aedfb5f1ced9c006d89",
+      "text": "Repair the following complete `solution.py`. Return a corrected complete source file.\n\n`AsyncBuffer` models staged records. `stage(record)` is asynchronous, requires a dictionary without an `id` key, stores a deep copy, and returns `None`. Invalid records raise `ValueError` without mutation.\n\n`flush()` is asynchronous. It assigns increasing integer IDs, starting at 1, to staged records that do not yet have IDs. It returns a tuple containing deep copies of all currently staged records. Flushing does not commit or remove records, and repeated flushes preserve assigned IDs.\n\n`commit()` is asynchronous. It first performs the same ID assignment as `flush`, returns a tuple of deep copies of all staged records, and then clears the staging area. Committed results must remain independent of later mutations. `pending_count()` returns the number of staged records. Record order is insertion order.\n\nKnown-bad source:\n\n```python\nfrom copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0204",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n",
+          "label": "Flush incorrectly clears staged records, causing a later commit to lose them.",
+          "sha256": "03aa4aca05ea9fd698d5b4c901c264b5bbf1aa8b5e2599079217dbc477e3c908"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass AsyncBuffer:\n    def __init__(self):\n        self._pending = []\n        self._next_id = 1\n\n    async def stage(self, record):\n        if not isinstance(record, dict) or \"id\" in record:\n            raise ValueError(\"record must be a dictionary without id\")\n        self._pending.append(deepcopy(record))\n\n    def _assign_ids(self):\n        for record in self._pending:\n            if \"id\" not in record:\n                record[\"id\"] = self._next_id\n                self._next_id += 1\n\n    async def flush(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        return snapshot\n\n    async def commit(self):\n        self._assign_ids()\n        snapshot = tuple(deepcopy(record) for record in self._pending)\n        self._pending.clear()\n        return snapshot\n\n    def pending_count(self):\n        return len(self._pending)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3b2b1859e8fd917ba8e59bf37ee07978d3fd45169c1bcedaa48fe28b1a0d47e4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_record (__main__.Probe.test_finite_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.11/unittest/async_case.py\", line 90, in _callTestMethod\n    if self._callMaybeAsync(method) is not None:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/unittest/async_case.py\", line 112, in _callMaybeAsync\n    return self._asyncioRunner.run(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/asyncio/base_events.py\", line 654, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"test_solution.py\", line 14, in test_finite_record\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "b965af6229e7140a6f86a87badcfa980736551b92ad15fb05a06f5bfe58ea8db",
+    "duration_ms": 635,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

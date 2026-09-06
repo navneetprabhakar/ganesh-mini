@@ -2,12 +2,12 @@
 
 ## Quality review continuation — 2026-09-06
 
-Current checkpoint: **403 holds (400 additive plus historical three)**; 714
+Current checkpoint: **420 holds (417 additive plus historical three)**; 807
 unique outside-sample inspections. All 544 array queue positions inspected;
-Rust generation queue inspected through 165 of 684, continue 166.
-GCS verified through 403 holds / Rust batch 11 / 714 outside-sample inspections;
+Rust generation queue inspected through 258 of 684, continue 259.
+GCS verified through 420 holds / Rust batch 18 partial / 807 outside-sample inspections;
 scope v6 (11 groups, 14 strata, 3,085 review records).
-See RUST_STRATUM_REVIEW_11.md. Remaining strata and quality criteria are pending;
+See RUST_STRATUM_REVIEW_18.md (partial). Remaining strata and quality criteria are pending;
 inspection is not admission. All 97 data tooling tests pass.
 No training seal or new VM. Older entries are historical.
 

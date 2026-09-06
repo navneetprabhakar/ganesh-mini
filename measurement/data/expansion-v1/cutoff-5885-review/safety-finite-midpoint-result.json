@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0305",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3b2ee6ad984743bcce7af941ccebf3fd8675dbe197e0d0aa225a6e3024d0b36d",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import interval_midpoint\n\nclass Probe(unittest.TestCase):\n    def test_degenerate_finite_interval(self):\n        self.assertEqual(interval_midpoint(1e308, 1e308), 1e308)\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "2ec35f68b2160acf00c386180c0fc88a8cab2b7684199711d82edef7079aa37a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3cad686e556b76c0cc84157890c6c9e898f75652d1f1add2a0dcfbaf109444f2",
+      "text": "Create `solution.py` defining `Mode`, `SafetyRunner`, `inside_interval`, and `interval_midpoint`.\n\n`Mode` is an enum with `ACTIVE` and `RECOVERING`. `SafetyRunner` starts in `ACTIVE` mode with `finished == False` and `recovery == None`. Its method `tick(value, lower, upper, work, recovery_factory)` behaves as follows:\n\n- Validate that `lower`, `upper`, and `value` are finite real numbers excluding booleans, and that `lower <= upper`; otherwise raise `ValueError` without invoking collaborators.\n- If already finished, do nothing and return `None`.\n- In `ACTIVE`, if `inside_interval(value, lower, upper)` is true, call `work.step()` exactly once. If it returns a truthy value, set `finished` to true. Return that result.\n- In `ACTIVE`, if outside, call `recovery_factory(interval_midpoint(lower, upper))` exactly once, store its returned object, switch to `RECOVERING`, and return `None`. Do not step recovery during this tick.\n- In `RECOVERING`, call the stored recovery object's `step()` exactly once. If truthy, clear `recovery` and switch to `ACTIVE`. Return the step result. Do not run work during that tick.\n\n`inside_interval` includes both endpoints and uses the same numeric validation. `interval_midpoint` returns `(lower + upper) / 2` and validates its bounds. Exceptions from collaborators propagate. Do not copy `work` or recovery objects; stored recovery identity must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3cad686e556b76c0cc84157890c6c9e898f75652d1f1add2a0dcfbaf109444f2",
+      "text": "Create `solution.py` defining `Mode`, `SafetyRunner`, `inside_interval`, and `interval_midpoint`.\n\n`Mode` is an enum with `ACTIVE` and `RECOVERING`. `SafetyRunner` starts in `ACTIVE` mode with `finished == False` and `recovery == None`. Its method `tick(value, lower, upper, work, recovery_factory)` behaves as follows:\n\n- Validate that `lower`, `upper`, and `value` are finite real numbers excluding booleans, and that `lower <= upper`; otherwise raise `ValueError` without invoking collaborators.\n- If already finished, do nothing and return `None`.\n- In `ACTIVE`, if `inside_interval(value, lower, upper)` is true, call `work.step()` exactly once. If it returns a truthy value, set `finished` to true. Return that result.\n- In `ACTIVE`, if outside, call `recovery_factory(interval_midpoint(lower, upper))` exactly once, store its returned object, switch to `RECOVERING`, and return `None`. Do not step recovery during this tick.\n- In `RECOVERING`, call the stored recovery object's `step()` exactly once. If truthy, clear `recovery` and switch to `ACTIVE`. Return the step result. Do not run work during that tick.\n\n`inside_interval` includes both endpoints and uses the same numeric validation. `interval_midpoint` returns `(lower + upper) / 2` and validates its bounds. Exceptions from collaborators propagate. Do not copy `work` or recovery objects; stored recovery identity must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0305",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass Mode(Enum):\n    ACTIVE = \"active\"\n    RECOVERING = \"recovering\"\n\n\ndef _number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef inside_interval(value, lower, upper):\n    if not all(_number(item) for item in (value, lower, upper)) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return lower <= value <= upper\n\n\ndef interval_midpoint(lower, upper):\n    if not _number(lower) or not _number(upper) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return (lower + upper) / 2\n\n\nclass SafetyRunner:\n    def __init__(self):\n        self.mode = Mode.ACTIVE\n        self.finished = False\n        self.recovery = None\n\n    def tick(self, value, lower, upper, work, recovery_factory):\n        safe = inside_interval(value, lower, upper)\n        if self.finished:\n            return None\n        if self.mode is Mode.ACTIVE:\n            if safe:\n                result = work.step()\n                if result:\n                    self.finished = True\n                return result\n            self.recovery = recovery_factory(interval_midpoint(lower, upper))\n            self.mode = Mode.RECOVERING\n        result = self.recovery.step()\n        if result:\n            self.recovery = None\n            self.mode = Mode.ACTIVE\n        return result\n",
+          "label": "Steps a newly created recovery object immediately instead of waiting until the next tick.",
+          "sha256": "359cd51549a141442f968053c3fa4ffa3a15f60119555337281d6119cff98d82"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass Mode(Enum):\n    ACTIVE = \"active\"\n    RECOVERING = \"recovering\"\n\n\ndef _number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef inside_interval(value, lower, upper):\n    if not all(_number(item) for item in (value, lower, upper)) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return lower <= value <= upper\n\n\ndef interval_midpoint(lower, upper):\n    if not _number(lower) or not _number(upper) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return (lower + upper) / 2\n\n\nclass SafetyRunner:\n    def __init__(self):\n        self.mode = Mode.ACTIVE\n        self.finished = False\n        self.recovery = None\n\n    def tick(self, value, lower, upper, work, recovery_factory):\n        safe = inside_interval(value, lower, upper)\n        if self.finished:\n            return None\n        if self.mode is Mode.ACTIVE:\n            if safe:\n                result = work.step()\n                if result:\n                    self.finished = True\n                return result\n            self.recovery = recovery_factory(interval_midpoint(lower, upper))\n            self.mode = Mode.RECOVERING\n            return None\n        result = self.recovery.step()\n        if result:\n            self.recovery = None\n            self.mode = Mode.ACTIVE\n        return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "db2b1aef7442792919d6ee0ed277bbafdc187f49b060773ec1e77680a890e34f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import Mode, SafetyRunner, inside_interval, interval_midpoint\n\n\nclass Stepper:\n    def __init__(self, results):\n        self.results = iter(results)\n        self.calls = 0\n\n    def step(self):\n        self.calls += 1\n        return next(self.results)\n\n\nclass SafetyRunnerTests(unittest.TestCase):\n    def test_helpers_include_endpoints_and_validate(self):\n        self.assertTrue(inside_interval(1, 1, 2))\n        self.assertTrue(inside_interval(2, 1, 2))\n        self.assertFalse(inside_interval(3, 1, 2))\n        self.assertEqual(interval_midpoint(-2, 4), 1.0)\n        for args in [(True, 0, 1), (0, False, 1), (0, 0, True), (math.nan, 0, 1), (0, math.inf, 1), (0, 2, 1)]:\n            with self.subTest(args=args), self.assertRaises(ValueError):\n                inside_interval(*args)\n        for args in [(True, 1), (0, False), (math.nan, 1), (0, math.inf), (2, 1)]:\n            with self.subTest(args=args), self.assertRaises(ValueError):\n                interval_midpoint(*args)\n\n    def test_initial_state_active_work_and_finish(self):\n        runner = SafetyRunner()\n        work = Stepper([False, \"done\"])\n        factory_calls = []\n        factory = lambda midpoint: factory_calls.append(midpoint)\n        self.assertIs(runner.mode, Mode.ACTIVE)\n        self.assertFalse(runner.finished)\n        self.assertIsNone(runner.recovery)\n        self.assertIs(runner.tick(1, 0, 2, work, factory), False)\n        self.assertEqual(runner.tick(2, 0, 2, work, factory), \"done\")\n        self.assertTrue(runner.finished)\n        self.assertEqual(work.calls, 2)\n        self.assertEqual(factory_calls, [])\n        self.assertIsNone(runner.tick(1, 0, 2, work, factory))\n        self.assertEqual(work.calls, 2)\n\n    def test_recovery_transition_identity_and_no_work_same_tick(self):\n        runner = SafetyRunner()\n        work = Stepper([True])\n        recovery = Stepper([False, True])\n        calls = []\n\n        def factory(midpoint):\n            calls.append(midpoint)\n            return recovery\n\n        self.assertIsNone(runner.tick(5, 0, 4, work, factory))\n        self.assertIs(runner.mode, Mode.RECOVERING)\n        self.assertIs(runner.recovery, recovery)\n        self.assertEqual(calls, [2.0])\n        self.assertEqual(work.calls, 0)\n        self.assertIs(runner.tick(2, 0, 4, work, factory), False)\n        self.assertEqual(work.calls, 0)\n        self.assertIs(runner.tick(2, 0, 4, work, factory), True)\n        self.assertIs(runner.mode, Mode.ACTIVE)\n        self.assertIsNone(runner.recovery)\n        self.assertEqual(work.calls, 0)\n\n    def test_invalid_tick_never_invokes_collaborators_even_when_finished(self):\n        runner = SafetyRunner()\n        runner.finished = True\n        work = Stepper([True])\n        calls = []\n        with self.assertRaises(ValueError):\n            runner.tick(math.inf, 0, 1, work, lambda x: calls.append(x))\n        self.assertEqual(work.calls, 0)\n        self.assertEqual(calls, [])\n\n    def test_collaborator_exception_propagates(self):\n        runner = SafetyRunner()\n        error = RuntimeError(\"factory failed\")\n        def factory(_):\n            raise error\n        with self.assertRaises(RuntimeError) as caught:\n            runner.tick(3, 0, 1, Stepper([]), factory)\n        self.assertIs(caught.exception, error)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "7aa8fd599525b1b1f61853cb0e93342b7406782a5dba1e3957a2ad6f512dc830"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3cad686e556b76c0cc84157890c6c9e898f75652d1f1add2a0dcfbaf109444f2",
+      "text": "Create `solution.py` defining `Mode`, `SafetyRunner`, `inside_interval`, and `interval_midpoint`.\n\n`Mode` is an enum with `ACTIVE` and `RECOVERING`. `SafetyRunner` starts in `ACTIVE` mode with `finished == False` and `recovery == None`. Its method `tick(value, lower, upper, work, recovery_factory)` behaves as follows:\n\n- Validate that `lower`, `upper`, and `value` are finite real numbers excluding booleans, and that `lower <= upper`; otherwise raise `ValueError` without invoking collaborators.\n- If already finished, do nothing and return `None`.\n- In `ACTIVE`, if `inside_interval(value, lower, upper)` is true, call `work.step()` exactly once. If it returns a truthy value, set `finished` to true. Return that result.\n- In `ACTIVE`, if outside, call `recovery_factory(interval_midpoint(lower, upper))` exactly once, store its returned object, switch to `RECOVERING`, and return `None`. Do not step recovery during this tick.\n- In `RECOVERING`, call the stored recovery object's `step()` exactly once. If truthy, clear `recovery` and switch to `ACTIVE`. Return the step result. Do not run work during that tick.\n\n`inside_interval` includes both endpoints and uses the same numeric validation. `interval_midpoint` returns `(lower + upper) / 2` and validates its bounds. Exceptions from collaborators propagate. Do not copy `work` or recovery objects; stored recovery identity must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3cad686e556b76c0cc84157890c6c9e898f75652d1f1add2a0dcfbaf109444f2",
+      "text": "Create `solution.py` defining `Mode`, `SafetyRunner`, `inside_interval`, and `interval_midpoint`.\n\n`Mode` is an enum with `ACTIVE` and `RECOVERING`. `SafetyRunner` starts in `ACTIVE` mode with `finished == False` and `recovery == None`. Its method `tick(value, lower, upper, work, recovery_factory)` behaves as follows:\n\n- Validate that `lower`, `upper`, and `value` are finite real numbers excluding booleans, and that `lower <= upper`; otherwise raise `ValueError` without invoking collaborators.\n- If already finished, do nothing and return `None`.\n- In `ACTIVE`, if `inside_interval(value, lower, upper)` is true, call `work.step()` exactly once. If it returns a truthy value, set `finished` to true. Return that result.\n- In `ACTIVE`, if outside, call `recovery_factory(interval_midpoint(lower, upper))` exactly once, store its returned object, switch to `RECOVERING`, and return `None`. Do not step recovery during this tick.\n- In `RECOVERING`, call the stored recovery object's `step()` exactly once. If truthy, clear `recovery` and switch to `ACTIVE`. Return the step result. Do not run work during that tick.\n\n`inside_interval` includes both endpoints and uses the same numeric validation. `interval_midpoint` returns `(lower + upper) / 2` and validates its bounds. Exceptions from collaborators propagate. Do not copy `work` or recovery objects; stored recovery identity must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0305",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass Mode(Enum):\n    ACTIVE = \"active\"\n    RECOVERING = \"recovering\"\n\n\ndef _number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef inside_interval(value, lower, upper):\n    if not all(_number(item) for item in (value, lower, upper)) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return lower <= value <= upper\n\n\ndef interval_midpoint(lower, upper):\n    if not _number(lower) or not _number(upper) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return (lower + upper) / 2\n\n\nclass SafetyRunner:\n    def __init__(self):\n        self.mode = Mode.ACTIVE\n        self.finished = False\n        self.recovery = None\n\n    def tick(self, value, lower, upper, work, recovery_factory):\n        safe = inside_interval(value, lower, upper)\n        if self.finished:\n            return None\n        if self.mode is Mode.ACTIVE:\n            if safe:\n                result = work.step()\n                if result:\n                    self.finished = True\n                return result\n            self.recovery = recovery_factory(interval_midpoint(lower, upper))\n            self.mode = Mode.RECOVERING\n        result = self.recovery.step()\n        if result:\n            self.recovery = None\n            self.mode = Mode.ACTIVE\n        return result\n",
+          "label": "Steps a newly created recovery object immediately instead of waiting until the next tick.",
+          "sha256": "359cd51549a141442f968053c3fa4ffa3a15f60119555337281d6119cff98d82"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass Mode(Enum):\n    ACTIVE = \"active\"\n    RECOVERING = \"recovering\"\n\n\ndef _number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef inside_interval(value, lower, upper):\n    if not all(_number(item) for item in (value, lower, upper)) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return lower <= value <= upper\n\n\ndef interval_midpoint(lower, upper):\n    if not _number(lower) or not _number(upper) or lower > upper:\n        raise ValueError(\"invalid interval\")\n    return (lower + upper) / 2\n\n\nclass SafetyRunner:\n    def __init__(self):\n        self.mode = Mode.ACTIVE\n        self.finished = False\n        self.recovery = None\n\n    def tick(self, value, lower, upper, work, recovery_factory):\n        safe = inside_interval(value, lower, upper)\n        if self.finished:\n            return None\n        if self.mode is Mode.ACTIVE:\n            if safe:\n                result = work.step()\n                if result:\n                    self.finished = True\n                return result\n            self.recovery = recovery_factory(interval_midpoint(lower, upper))\n            self.mode = Mode.RECOVERING\n            return None\n        result = self.recovery.step()\n        if result:\n            self.recovery = None\n            self.mode = Mode.ACTIVE\n        return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "db2b1aef7442792919d6ee0ed277bbafdc187f49b060773ec1e77680a890e34f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_degenerate_finite_interval (__main__.Probe.test_degenerate_finite_interval)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 6, in test_degenerate_finite_interval\n    self.assertEqual(interval_midpoint(1e308, 1e308), 1e308)\nAssertionError: inf != 1e+308\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "2523d7256d73c340e070f39abadf5ece46269b011072f33ac658d5a4e1c3578d",
+    "duration_ms": 476,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

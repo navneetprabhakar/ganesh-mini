@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0245",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "050b11263a8ee445afe2cc2a4f3b957294ef402a495eeb1f8f7c70d41021df50",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import apply_revision, rollback_revision\n\n\nclass RevisionSharedModelsTests(unittest.TestCase):\n    def test_apply_preserves_unrelated_model_sharing_source_list(self):\n        fields = [{'name': 'title', 'kind': 'text'}]\n        result = apply_revision({'Article': fields, 'Other': fields})\n        self.assertEqual(result['Other'], fields)\n\n    def test_rollback_preserves_unrelated_model_sharing_source_list(self):\n        fields = [{'name': 'reviewers', 'kind': 'references', 'optional': True}]\n        result = rollback_revision({'Article': fields, 'Other': fields})\n        self.assertEqual(result['Other'], fields)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "99bd7d74fcd136951b7c05a9cad07b87eba731c28ae6ffd33f3da3e7a72cec43"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8bd46f50ae8855fdadb97d3ad4945cc6c2df99e682e8766c9a07f7e3881ecc05",
+      "text": "In solution.py, implement `apply_revision(schema)` and `rollback_revision(schema)`. A schema is a mapping from model-name strings to lists of field-descriptor dictionaries. Both functions must return a fully independent deep copy and never mutate or alias any nested input object. `apply_revision` appends `{'name': 'reviewers', 'kind': 'references', 'optional': True}` to the `Article` model. It raises `ValueError` if `Article` is missing, its value is not a list, or a descriptor named `reviewers` already exists. `rollback_revision` removes that field, but raises `ValueError` if it is absent or its descriptor does not exactly match the specified descriptor. Reject a non-mapping schema and malformed non-dictionary descriptors with `ValueError`; preserve all unrelated models, fields, and ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8bd46f50ae8855fdadb97d3ad4945cc6c2df99e682e8766c9a07f7e3881ecc05",
+      "text": "In solution.py, implement `apply_revision(schema)` and `rollback_revision(schema)`. A schema is a mapping from model-name strings to lists of field-descriptor dictionaries. Both functions must return a fully independent deep copy and never mutate or alias any nested input object. `apply_revision` appends `{'name': 'reviewers', 'kind': 'references', 'optional': True}` to the `Article` model. It raises `ValueError` if `Article` is missing, its value is not a list, or a descriptor named `reviewers` already exists. `rollback_revision` removes that field, but raises `ValueError` if it is absent or its descriptor does not exactly match the specified descriptor. Reject a non-mapping schema and malformed non-dictionary descriptors with `ValueError`; preserve all unrelated models, fields, and ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0245",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nfrom collections.abc import Mapping\nfrom typing import Any, Dict\n\n\n_FIELD = {\"name\": \"reviewers\", \"kind\": \"references\", \"optional\": True}\n\n\ndef _copy_and_validate(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    if not isinstance(schema, Mapping):\n        raise ValueError(\"schema must be a mapping\")\n    cloned = dict(schema)\n    if any(not isinstance(name, str) for name in cloned):\n        raise ValueError(\"model names must be strings\")\n    for fields in cloned.values():\n        if not isinstance(fields, list) or any(not isinstance(field, dict) for field in fields):\n            raise ValueError(\"model fields must be lists of dictionaries\")\n    return cloned\n\n\ndef apply_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    if any(field.get(\"name\") == \"reviewers\" for field in result[\"Article\"]):\n        raise ValueError(\"reviewers already exists\")\n    result[\"Article\"].append(copy.deepcopy(_FIELD))\n    return result\n\n\ndef rollback_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    matches = [index for index, field in enumerate(result[\"Article\"])\n               if field.get(\"name\") == \"reviewers\"]\n    if len(matches) != 1 or result[\"Article\"][matches[0]] != _FIELD:\n        raise ValueError(\"matching reviewers field is required\")\n    del result[\"Article\"][matches[0]]\n    return result\n",
+          "label": "Uses a shallow schema copy, so applying or rolling back the revision mutates nested input lists.",
+          "sha256": "a3798664e21ab3d2a0a83ff7be9703c02ec009077fb711c708acd331a46a5d2e"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nfrom collections.abc import Mapping\nfrom typing import Any, Dict\n\n\n_FIELD = {\"name\": \"reviewers\", \"kind\": \"references\", \"optional\": True}\n\n\ndef _copy_and_validate(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    if not isinstance(schema, Mapping):\n        raise ValueError(\"schema must be a mapping\")\n    cloned = copy.deepcopy(dict(schema))\n    if any(not isinstance(name, str) for name in cloned):\n        raise ValueError(\"model names must be strings\")\n    for fields in cloned.values():\n        if not isinstance(fields, list) or any(not isinstance(field, dict) for field in fields):\n            raise ValueError(\"model fields must be lists of dictionaries\")\n    return cloned\n\n\ndef apply_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    if any(field.get(\"name\") == \"reviewers\" for field in result[\"Article\"]):\n        raise ValueError(\"reviewers already exists\")\n    result[\"Article\"].append(copy.deepcopy(_FIELD))\n    return result\n\n\ndef rollback_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    matches = [index for index, field in enumerate(result[\"Article\"])\n               if field.get(\"name\") == \"reviewers\"]\n    if len(matches) != 1 or result[\"Article\"][matches[0]] != _FIELD:\n        raise ValueError(\"matching reviewers field is required\")\n    del result[\"Article\"][matches[0]]\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eadcff728fc44abca377c9fe5d98e9ea4a8e1c634ac0cad4694f72db589797a3"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import apply_revision, rollback_revision\n\n\nEXPECTED = {\"name\": \"reviewers\", \"kind\": \"references\", \"optional\": True}\n\n\nclass RevisionTests(unittest.TestCase):\n    def test_apply_appends_field_and_preserves_order(self):\n        schema = {\n            \"Article\": [{\"name\": \"title\", \"kind\": \"text\"}],\n            \"User\": [{\"name\": \"email\", \"kind\": \"text\"}],\n        }\n        result = apply_revision(schema)\n        self.assertEqual(list(result), [\"Article\", \"User\"])\n        self.assertEqual(result[\"Article\"], [schema[\"Article\"][0], EXPECTED])\n        self.assertEqual(result[\"User\"], schema[\"User\"])\n\n    def test_apply_is_a_fully_independent_deep_copy(self):\n        schema = {\n            \"Article\": [{\"name\": \"title\", \"kind\": \"text\", \"meta\": {\"tags\": [\"a\"]}}],\n            \"Other\": [{\"name\": \"value\", \"kind\": \"text\", \"meta\": {\"x\": [1]}}],\n        }\n        result = apply_revision(schema)\n        self.assertIsNot(result, schema)\n        self.assertIsNot(result[\"Article\"], schema[\"Article\"])\n        self.assertIsNot(result[\"Article\"][0], schema[\"Article\"][0])\n        self.assertIsNot(result[\"Other\"][0][\"meta\"][\"x\"], schema[\"Other\"][0][\"meta\"][\"x\"])\n        result[\"Other\"][0][\"meta\"][\"x\"].append(2)\n        self.assertEqual(schema[\"Other\"][0][\"meta\"][\"x\"], [1])\n        schema[\"Article\"][0][\"meta\"][\"tags\"].append(\"b\")\n        self.assertEqual(result[\"Article\"][0][\"meta\"][\"tags\"], [\"a\"])\n\n    def test_rollback_removes_only_exact_revision_field(self):\n        schema = {\n            \"Article\": [{\"name\": \"title\", \"kind\": \"text\"}, EXPECTED.copy(), {\"name\": \"body\", \"kind\": \"text\"}],\n            \"User\": [{\"name\": \"id\", \"kind\": \"integer\"}],\n        }\n        before = {name: [field.copy() for field in fields] for name, fields in schema.items()}\n        result = rollback_revision(schema)\n        self.assertEqual(result, {\n            \"Article\": [{\"name\": \"title\", \"kind\": \"text\"}, {\"name\": \"body\", \"kind\": \"text\"}],\n            \"User\": [{\"name\": \"id\", \"kind\": \"integer\"}],\n        })\n        self.assertEqual(schema, before)\n        self.assertIsNot(result[\"User\"], schema[\"User\"])\n        self.assertIsNot(result[\"User\"][0], schema[\"User\"][0])\n\n    def test_apply_rejects_missing_bad_article_or_existing_name(self):\n        invalid = [\n            {\"Other\": []},\n            {\"Article\": ()},\n            {\"Article\": [{\"name\": \"reviewers\", \"kind\": \"anything\"}]},\n        ]\n        for schema in invalid:\n            with self.subTest(schema=schema):\n                with self.assertRaises(ValueError):\n                    apply_revision(schema)\n\n    def test_rollback_requires_exact_descriptor(self):\n        invalid = [\n            {\"Article\": []},\n            {\"Article\": [{\"name\": \"reviewers\", \"kind\": \"references\", \"optional\": False}]},\n            {\"Article\": [{\"name\": \"reviewers\", \"kind\": \"references\", \"optional\": True, \"extra\": 1}]},\n            {\"Other\": []},\n            {\"Article\": ()},\n        ]\n        for schema in invalid:\n            with self.subTest(schema=schema):\n                with self.assertRaises(ValueError):\n                    rollback_revision(schema)\n\n    def test_rejects_non_mapping_and_non_dictionary_descriptors(self):\n        for function in (apply_revision, rollback_revision):\n            with self.subTest(function=function.__name__):\n                with self.assertRaises(ValueError):\n                    function([])\n                with self.assertRaises(ValueError):\n                    function({\"Article\": [\"not a descriptor\"]})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "fca3999a88a2373a945aaf09fbfc1e3dccf00034222e48d20a16ef75b0a77162"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8bd46f50ae8855fdadb97d3ad4945cc6c2df99e682e8766c9a07f7e3881ecc05",
+      "text": "In solution.py, implement `apply_revision(schema)` and `rollback_revision(schema)`. A schema is a mapping from model-name strings to lists of field-descriptor dictionaries. Both functions must return a fully independent deep copy and never mutate or alias any nested input object. `apply_revision` appends `{'name': 'reviewers', 'kind': 'references', 'optional': True}` to the `Article` model. It raises `ValueError` if `Article` is missing, its value is not a list, or a descriptor named `reviewers` already exists. `rollback_revision` removes that field, but raises `ValueError` if it is absent or its descriptor does not exactly match the specified descriptor. Reject a non-mapping schema and malformed non-dictionary descriptors with `ValueError`; preserve all unrelated models, fields, and ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8bd46f50ae8855fdadb97d3ad4945cc6c2df99e682e8766c9a07f7e3881ecc05",
+      "text": "In solution.py, implement `apply_revision(schema)` and `rollback_revision(schema)`. A schema is a mapping from model-name strings to lists of field-descriptor dictionaries. Both functions must return a fully independent deep copy and never mutate or alias any nested input object. `apply_revision` appends `{'name': 'reviewers', 'kind': 'references', 'optional': True}` to the `Article` model. It raises `ValueError` if `Article` is missing, its value is not a list, or a descriptor named `reviewers` already exists. `rollback_revision` removes that field, but raises `ValueError` if it is absent or its descriptor does not exactly match the specified descriptor. Reject a non-mapping schema and malformed non-dictionary descriptors with `ValueError`; preserve all unrelated models, fields, and ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0245",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nfrom collections.abc import Mapping\nfrom typing import Any, Dict\n\n\n_FIELD = {\"name\": \"reviewers\", \"kind\": \"references\", \"optional\": True}\n\n\ndef _copy_and_validate(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    if not isinstance(schema, Mapping):\n        raise ValueError(\"schema must be a mapping\")\n    cloned = dict(schema)\n    if any(not isinstance(name, str) for name in cloned):\n        raise ValueError(\"model names must be strings\")\n    for fields in cloned.values():\n        if not isinstance(fields, list) or any(not isinstance(field, dict) for field in fields):\n            raise ValueError(\"model fields must be lists of dictionaries\")\n    return cloned\n\n\ndef apply_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    if any(field.get(\"name\") == \"reviewers\" for field in result[\"Article\"]):\n        raise ValueError(\"reviewers already exists\")\n    result[\"Article\"].append(copy.deepcopy(_FIELD))\n    return result\n\n\ndef rollback_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    matches = [index for index, field in enumerate(result[\"Article\"])\n               if field.get(\"name\") == \"reviewers\"]\n    if len(matches) != 1 or result[\"Article\"][matches[0]] != _FIELD:\n        raise ValueError(\"matching reviewers field is required\")\n    del result[\"Article\"][matches[0]]\n    return result\n",
+          "label": "Uses a shallow schema copy, so applying or rolling back the revision mutates nested input lists.",
+          "sha256": "a3798664e21ab3d2a0a83ff7be9703c02ec009077fb711c708acd331a46a5d2e"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nfrom collections.abc import Mapping\nfrom typing import Any, Dict\n\n\n_FIELD = {\"name\": \"reviewers\", \"kind\": \"references\", \"optional\": True}\n\n\ndef _copy_and_validate(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    if not isinstance(schema, Mapping):\n        raise ValueError(\"schema must be a mapping\")\n    cloned = copy.deepcopy(dict(schema))\n    if any(not isinstance(name, str) for name in cloned):\n        raise ValueError(\"model names must be strings\")\n    for fields in cloned.values():\n        if not isinstance(fields, list) or any(not isinstance(field, dict) for field in fields):\n            raise ValueError(\"model fields must be lists of dictionaries\")\n    return cloned\n\n\ndef apply_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    if any(field.get(\"name\") == \"reviewers\" for field in result[\"Article\"]):\n        raise ValueError(\"reviewers already exists\")\n    result[\"Article\"].append(copy.deepcopy(_FIELD))\n    return result\n\n\ndef rollback_revision(schema: Mapping[str, Any]) -> Dict[str, Any]:\n    result = _copy_and_validate(schema)\n    if \"Article\" not in result:\n        raise ValueError(\"Article model is missing\")\n    matches = [index for index, field in enumerate(result[\"Article\"])\n               if field.get(\"name\") == \"reviewers\"]\n    if len(matches) != 1 or result[\"Article\"][matches[0]] != _FIELD:\n        raise ValueError(\"matching reviewers field is required\")\n    del result[\"Article\"][matches[0]]\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eadcff728fc44abca377c9fe5d98e9ea4a8e1c634ac0cad4694f72db589797a3"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "FF\n======================================================================\nFAIL: test_apply_preserves_unrelated_model_sharing_source_list (__main__.RevisionSharedModelsTests.test_apply_preserves_unrelated_model_sharing_source_list)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_apply_preserves_unrelated_model_sharing_source_list\n    self.assertEqual(result['Other'], fields)\nAssertionError: Lists differ: [{'na[24 chars]ext'}, {'name': 'reviewers', 'kind': 'referenc[18 chars]rue}] != [{'na[24 chars]ext'}]\n\nFirst list contains 1 additional elements.\nFirst extra element 1:\n{'name': 'reviewers', 'kind': 'references', 'optional': True}\n\n- [{'kind': 'text', 'name': 'title'},\n?                                   ^\n\n+ [{'kind': 'text', 'name': 'title'}]\n?                                   ^\n\n-  {'kind': 'references', 'name': 'reviewers', 'optional': True}]\n\n======================================================================\nFAIL: test_rollback_preserves_unrelated_model_sharing_source_list (__main__.RevisionSharedModelsTests.test_rollback_preserves_unrelated_model_sharing_source_list)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 14, in test_rollback_preserves_unrelated_model_sharing_source_list\n    self.assertEqual(result['Other'], fields)\nAssertionError: Lists differ: [] != [{'name': 'reviewers', 'kind': 'references', 'optional': True}]\n\nSecond list contains 1 additional elements.\nFirst extra element 0:\n{'name': 'reviewers', 'kind': 'references', 'optional': True}\n\n- []\n+ [{'kind': 'references', 'name': 'reviewers', 'optional': True}]\n\n----------------------------------------------------------------------\nRan 2 tests in 0.003s\n\nFAILED (failures=2)\n",
+    "stderr_sha256": "cf605fe691bb4ee9a0deb941ff8d2886c29db2e0d31cf9adb43b12ab283b9cb6",
+    "duration_ms": 429,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

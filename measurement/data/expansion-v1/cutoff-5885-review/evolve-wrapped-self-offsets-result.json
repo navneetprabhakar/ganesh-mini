@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0324",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7853bc8c4d5284e4266dc06c248911bfc3f9aa56ff3e3c5ad94acdc77e91e098",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import evolve\n\nclass Probe(unittest.TestCase):\n    def test_each_direction_counts_even_when_it_maps_to_self(self):\n        # In a 1x2 board the live cell sees itself twice vertically.\n        # Its other six offsets land on the dead cell, so it survives.\n        self.assertEqual(evolve([[1, 0]], 1, True), [[1, 0]])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "0e263a473ac6cba80d0b998d7fd073c709ab27d1fff2bf0fbd2e954476378c8b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b78c47e4b6793c17d004783d23431b772cfe521304e266f492754cbc9898525e",
+      "text": "Create `solution.py` with `evolve(board, steps=1, wrap=False)` for a deterministic cellular simulation.\n\n`board` must be a nonempty rectangular iterable of nonempty rows containing only the integers `0` and `1`; booleans are invalid. `steps` must be a nonnegative integer excluding booleans, and `wrap` must be a boolean. Invalid input raises `ValueError`.\n\nFor each step, a cell counts its eight surrounding neighbors. A live cell remains live with two or three live neighbors; otherwise it dies. A dead cell becomes live with exactly three live neighbors. With `wrap=False`, positions outside the rectangle are dead. With `wrap=True`, both dimensions wrap around; each of the eight directional offsets counts separately, even when a dimension has size one and multiple offsets map to the same stored cell.\n\nReturn a newly allocated list of lists. For `steps == 0`, return a deep copy. Never mutate or retain aliases to `board`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b78c47e4b6793c17d004783d23431b772cfe521304e266f492754cbc9898525e",
+      "text": "Create `solution.py` with `evolve(board, steps=1, wrap=False)` for a deterministic cellular simulation.\n\n`board` must be a nonempty rectangular iterable of nonempty rows containing only the integers `0` and `1`; booleans are invalid. `steps` must be a nonnegative integer excluding booleans, and `wrap` must be a boolean. Invalid input raises `ValueError`.\n\nFor each step, a cell counts its eight surrounding neighbors. A live cell remains live with two or three live neighbors; otherwise it dies. A dead cell becomes live with exactly three live neighbors. With `wrap=False`, positions outside the rectangle are dead. With `wrap=True`, both dimensions wrap around; each of the eight directional offsets counts separately, even when a dimension has size one and multiple offsets map to the same stored cell.\n\nReturn a newly allocated list of lists. For `steps == 0`, return a deep copy. Never mutate or retain aliases to `board`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0324",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def _copy_board(board):\n    try:\n        rows = [list(row) for row in board]\n    except TypeError as exc:\n        raise ValueError(\"board must be an iterable of rows\") from exc\n    if not rows or not rows[0]:\n        raise ValueError(\"board must be nonempty\")\n    width = len(rows[0])\n    if any(len(row) != width for row in rows):\n        raise ValueError(\"board must be rectangular\")\n    if any(\n        isinstance(cell, bool)\n        or not isinstance(cell, int)\n        or cell not in (0, 1)\n        for row in rows\n        for cell in row\n    ):\n        raise ValueError(\"cells must be 0 or 1\")\n    return [row[:] for row in rows]\n\n\ndef evolve(board, steps=1, wrap=False):\n    current = _copy_board(board)\n    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:\n        raise ValueError(\"steps must be a nonnegative integer\")\n    if not isinstance(wrap, bool):\n        raise ValueError(\"wrap must be boolean\")\n\n    height = len(current)\n    width = len(current[0])\n\n    for _ in range(steps):\n        following = [[0] * width for _ in range(height)]\n        for row in range(height):\n            for column in range(width):\n                neighbors = 0\n                for dr in (-1, 0, 1):\n                    for dc in (-1, 0, 1):\n                        if dr == 0 and dc == 0:\n                            continue\n                        nr = row + dr\n                        nc = column + dc\n                        if wrap:\n                            nr %= height\n                            nc %= width\n                            neighbors += current[nr][nc]\n                        elif 0 <= nr < height and 0 <= nc < width:\n                            neighbors += current[nr][nc]\n                following[row][column] = int(\n                    neighbors == 3\n                    or (current[row][column] == 1 and neighbors == 2)\n                )\n        current = following\n\n    return current\n",
+          "label": "Counts a wrapped directional offset as a neighbor when it maps back to the cell being evolved, causing degenerate one-row or one-column boards to count the cell itself.",
+          "sha256": "b7a9ce3928a5969d74eb0dcdec515b61dba23fe04d41d64d03974238ddda6afb"
+        }
+      ],
+      "reference": {
+        "code": "def _copy_board(board):\n    try:\n        rows = [list(row) for row in board]\n    except TypeError as exc:\n        raise ValueError(\"board must be an iterable of rows\") from exc\n    if not rows or not rows[0]:\n        raise ValueError(\"board must be nonempty\")\n    width = len(rows[0])\n    if any(len(row) != width for row in rows):\n        raise ValueError(\"board must be rectangular\")\n    if any(\n        isinstance(cell, bool)\n        or not isinstance(cell, int)\n        or cell not in (0, 1)\n        for row in rows\n        for cell in row\n    ):\n        raise ValueError(\"cells must be 0 or 1\")\n    return [row[:] for row in rows]\n\n\ndef evolve(board, steps=1, wrap=False):\n    current = _copy_board(board)\n    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:\n        raise ValueError(\"steps must be a nonnegative integer\")\n    if not isinstance(wrap, bool):\n        raise ValueError(\"wrap must be boolean\")\n\n    height = len(current)\n    width = len(current[0])\n\n    for _ in range(steps):\n        following = [[0] * width for _ in range(height)]\n        for row in range(height):\n            for column in range(width):\n                neighbors = 0\n                for dr in (-1, 0, 1):\n                    for dc in (-1, 0, 1):\n                        if dr == 0 and dc == 0:\n                            continue\n                        nr = row + dr\n                        nc = column + dc\n                        if wrap:\n                            nr %= height\n                            nc %= width\n                            if nr == row and nc == column:\n                                continue\n                            neighbors += current[nr][nc]\n                        elif 0 <= nr < height and 0 <= nc < width:\n                            neighbors += current[nr][nc]\n                following[row][column] = int(\n                    neighbors == 3\n                    or (current[row][column] == 1 and neighbors == 2)\n                )\n        current = following\n\n    return current\n",
+        "label": "codex-teacher-reference",
+        "sha256": "93cdf10b787dbfe4c0249516418d997cabd9a5260edd6fd1e1588efbecd0cb37"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import evolve\n\n\nclass EvolveTests(unittest.TestCase):\n    def test_blinker_and_input_nonmutation(self):\n        board = [[0, 0, 0], [1, 1, 1], [0, 0, 0]]\n        original = [row[:] for row in board]\n        self.assertEqual(evolve(board), [[0, 1, 0], [0, 1, 0], [0, 1, 0]])\n        self.assertEqual(evolve(board, 2), board)\n        self.assertEqual(board, original)\n\n    def test_zero_steps_returns_deep_copy(self):\n        board = [[1, 0], [0, 1]]\n        result = evolve(board, 0)\n        self.assertEqual(result, board)\n        self.assertIsNot(result, board)\n        self.assertIsNot(result[0], board[0])\n        result[0][0] = 0\n        self.assertEqual(board[0][0], 1)\n\n    def test_wrapping_counts_each_direction_separately(self):\n        self.assertEqual(evolve([[1]], 1, True), [[0]])\n        self.assertEqual(evolve([[1, 0]], 1, True), [[0, 0]])\n        self.assertEqual(evolve([[1, 1]], 1, True), [[0, 0]])\n\n    def test_accepts_iterables_and_returns_lists(self):\n        board = (iter((0, 1, 0)), iter((0, 1, 0)), iter((0, 1, 0)))\n        result = evolve(board, 1, False)\n        self.assertEqual(result, [[0, 0, 0], [1, 1, 1], [0, 0, 0]])\n        self.assertIsInstance(result, list)\n        self.assertTrue(all(isinstance(row, list) for row in result))\n\n    def test_invalid_inputs(self):\n        invalid_boards = ([], [[]], [[1, 0], [1]], [[1, 2]], [[True]], [[0, 1], \"01\"])\n        for board in invalid_boards:\n            with self.subTest(board=board):\n                with self.assertRaises(ValueError):\n                    evolve(board)\n        for steps in (-1, True, 1.5):\n            with self.subTest(steps=steps):\n                with self.assertRaises(ValueError):\n                    evolve([[0]], steps)\n        for wrap in (0, 1, None, \"yes\"):\n            with self.subTest(wrap=wrap):\n                with self.assertRaises(ValueError):\n                    evolve([[0]], wrap=wrap)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "46edb0d0d7b9c87de533cfb5a9a1aa0f39213cd56030cd5690cd3232d0110ae5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b78c47e4b6793c17d004783d23431b772cfe521304e266f492754cbc9898525e",
+      "text": "Create `solution.py` with `evolve(board, steps=1, wrap=False)` for a deterministic cellular simulation.\n\n`board` must be a nonempty rectangular iterable of nonempty rows containing only the integers `0` and `1`; booleans are invalid. `steps` must be a nonnegative integer excluding booleans, and `wrap` must be a boolean. Invalid input raises `ValueError`.\n\nFor each step, a cell counts its eight surrounding neighbors. A live cell remains live with two or three live neighbors; otherwise it dies. A dead cell becomes live with exactly three live neighbors. With `wrap=False`, positions outside the rectangle are dead. With `wrap=True`, both dimensions wrap around; each of the eight directional offsets counts separately, even when a dimension has size one and multiple offsets map to the same stored cell.\n\nReturn a newly allocated list of lists. For `steps == 0`, return a deep copy. Never mutate or retain aliases to `board`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b78c47e4b6793c17d004783d23431b772cfe521304e266f492754cbc9898525e",
+      "text": "Create `solution.py` with `evolve(board, steps=1, wrap=False)` for a deterministic cellular simulation.\n\n`board` must be a nonempty rectangular iterable of nonempty rows containing only the integers `0` and `1`; booleans are invalid. `steps` must be a nonnegative integer excluding booleans, and `wrap` must be a boolean. Invalid input raises `ValueError`.\n\nFor each step, a cell counts its eight surrounding neighbors. A live cell remains live with two or three live neighbors; otherwise it dies. A dead cell becomes live with exactly three live neighbors. With `wrap=False`, positions outside the rectangle are dead. With `wrap=True`, both dimensions wrap around; each of the eight directional offsets counts separately, even when a dimension has size one and multiple offsets map to the same stored cell.\n\nReturn a newly allocated list of lists. For `steps == 0`, return a deep copy. Never mutate or retain aliases to `board`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0324",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def _copy_board(board):\n    try:\n        rows = [list(row) for row in board]\n    except TypeError as exc:\n        raise ValueError(\"board must be an iterable of rows\") from exc\n    if not rows or not rows[0]:\n        raise ValueError(\"board must be nonempty\")\n    width = len(rows[0])\n    if any(len(row) != width for row in rows):\n        raise ValueError(\"board must be rectangular\")\n    if any(\n        isinstance(cell, bool)\n        or not isinstance(cell, int)\n        or cell not in (0, 1)\n        for row in rows\n        for cell in row\n    ):\n        raise ValueError(\"cells must be 0 or 1\")\n    return [row[:] for row in rows]\n\n\ndef evolve(board, steps=1, wrap=False):\n    current = _copy_board(board)\n    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:\n        raise ValueError(\"steps must be a nonnegative integer\")\n    if not isinstance(wrap, bool):\n        raise ValueError(\"wrap must be boolean\")\n\n    height = len(current)\n    width = len(current[0])\n\n    for _ in range(steps):\n        following = [[0] * width for _ in range(height)]\n        for row in range(height):\n            for column in range(width):\n                neighbors = 0\n                for dr in (-1, 0, 1):\n                    for dc in (-1, 0, 1):\n                        if dr == 0 and dc == 0:\n                            continue\n                        nr = row + dr\n                        nc = column + dc\n                        if wrap:\n                            nr %= height\n                            nc %= width\n                            neighbors += current[nr][nc]\n                        elif 0 <= nr < height and 0 <= nc < width:\n                            neighbors += current[nr][nc]\n                following[row][column] = int(\n                    neighbors == 3\n                    or (current[row][column] == 1 and neighbors == 2)\n                )\n        current = following\n\n    return current\n",
+          "label": "Counts a wrapped directional offset as a neighbor when it maps back to the cell being evolved, causing degenerate one-row or one-column boards to count the cell itself.",
+          "sha256": "b7a9ce3928a5969d74eb0dcdec515b61dba23fe04d41d64d03974238ddda6afb"
+        }
+      ],
+      "reference": {
+        "code": "def _copy_board(board):\n    try:\n        rows = [list(row) for row in board]\n    except TypeError as exc:\n        raise ValueError(\"board must be an iterable of rows\") from exc\n    if not rows or not rows[0]:\n        raise ValueError(\"board must be nonempty\")\n    width = len(rows[0])\n    if any(len(row) != width for row in rows):\n        raise ValueError(\"board must be rectangular\")\n    if any(\n        isinstance(cell, bool)\n        or not isinstance(cell, int)\n        or cell not in (0, 1)\n        for row in rows\n        for cell in row\n    ):\n        raise ValueError(\"cells must be 0 or 1\")\n    return [row[:] for row in rows]\n\n\ndef evolve(board, steps=1, wrap=False):\n    current = _copy_board(board)\n    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:\n        raise ValueError(\"steps must be a nonnegative integer\")\n    if not isinstance(wrap, bool):\n        raise ValueError(\"wrap must be boolean\")\n\n    height = len(current)\n    width = len(current[0])\n\n    for _ in range(steps):\n        following = [[0] * width for _ in range(height)]\n        for row in range(height):\n            for column in range(width):\n                neighbors = 0\n                for dr in (-1, 0, 1):\n                    for dc in (-1, 0, 1):\n                        if dr == 0 and dc == 0:\n                            continue\n                        nr = row + dr\n                        nc = column + dc\n                        if wrap:\n                            nr %= height\n                            nc %= width\n                            if nr == row and nc == column:\n                                continue\n                            neighbors += current[nr][nc]\n                        elif 0 <= nr < height and 0 <= nc < width:\n                            neighbors += current[nr][nc]\n                following[row][column] = int(\n                    neighbors == 3\n                    or (current[row][column] == 1 and neighbors == 2)\n                )\n        current = following\n\n    return current\n",
+        "label": "codex-teacher-reference",
+        "sha256": "93cdf10b787dbfe4c0249516418d997cabd9a5260edd6fd1e1588efbecd0cb37"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_each_direction_counts_even_when_it_maps_to_self (__main__.Probe.test_each_direction_counts_even_when_it_maps_to_self)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_each_direction_counts_even_when_it_maps_to_self\n    self.assertEqual(evolve([[1, 0]], 1, True), [[1, 0]])\nAssertionError: Lists differ: [[0, 0]] != [[1, 0]]\n\nFirst differing element 0:\n[0, 0]\n[1, 0]\n\n- [[0, 0]]\n?   ^\n\n+ [[1, 0]]\n?   ^\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "76e435172cf5c5bc9f37d39b81f69196c6ca044f0baf5e9550d0ba55d5884b4d",
+    "duration_ms": 490,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

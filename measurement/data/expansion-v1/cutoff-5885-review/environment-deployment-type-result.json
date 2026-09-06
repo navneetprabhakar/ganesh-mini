@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0249",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7ac84a7fd2dd411075cefc7f2b82608db068ef64b3f032f299010a27925b36ee",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import build_environment\n\n\nclass EnvironmentDeploymentTypeTests(unittest.TestCase):\n    def test_malformed_deployment_raises_value_error_before_loader(self):\n        calls = []\n        config = dict(view_root='v', deployment=[], diagnostics={}, datastore={}, route_modules=[])\n        with self.assertRaises(ValueError):\n            build_environment(config, lambda names: calls.append(names) or [])\n        self.assertEqual(calls, [])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "f24e36ea247922a9d8bd523172fefc7f6ae48c8ba12e262c546d99c90ecdc380"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e490d872caacaf87fac32947e2595f26da8c085be38e72424b07183a75edd437",
+      "text": "Create `solution.py` with the top-level function `build_environment(config, load_routes)`.\n\n`config` must be a dictionary containing exactly these required keys, though additional keys are allowed: `view_root` (non-empty string), `deployment` (one of `development`, `staging`, or `production`), `diagnostics` (dictionary), `datastore` (dictionary), and `route_modules` (list of non-empty strings). `route_modules` may be empty but may not contain duplicates. `load_routes` must be callable. Raise `ValueError` for malformed input.\n\nAfter all configuration validation succeeds, call `load_routes` exactly once with a new list containing the route module names in their original order. It must return a list of two-item tuples whose first item is a non-empty string path and whose second item is callable. Duplicate paths are invalid.\n\nReturn a dictionary containing deep-copied `view_root`, `deployment`, `diagnostics`, and `datastore` values plus a `routes` key holding the validated routes in loader order. Neither the argument passed to the loader nor any mutable object in the returned dictionary may alias mutable data in `config` or the loader's returned list. Do not mutate either source.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e490d872caacaf87fac32947e2595f26da8c085be38e72424b07183a75edd437",
+      "text": "Create `solution.py` with the top-level function `build_environment(config, load_routes)`.\n\n`config` must be a dictionary containing exactly these required keys, though additional keys are allowed: `view_root` (non-empty string), `deployment` (one of `development`, `staging`, or `production`), `diagnostics` (dictionary), `datastore` (dictionary), and `route_modules` (list of non-empty strings). `route_modules` may be empty but may not contain duplicates. `load_routes` must be callable. Raise `ValueError` for malformed input.\n\nAfter all configuration validation succeeds, call `load_routes` exactly once with a new list containing the route module names in their original order. It must return a list of two-item tuples whose first item is a non-empty string path and whose second item is callable. Duplicate paths are invalid.\n\nReturn a dictionary containing deep-copied `view_root`, `deployment`, `diagnostics`, and `datastore` values plus a `routes` key holding the validated routes in loader order. Neither the argument passed to the loader nor any mutable object in the returned dictionary may alias mutable data in `config` or the loader's returned list. Do not mutate either source.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0249",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom typing import Any, Callable\n\n\ndef build_environment(config: dict[str, Any], load_routes: Callable[[list[str]], list[tuple[str, Callable[..., Any]]]]) -> dict[str, Any]:\n    if not isinstance(config, dict):\n        raise ValueError(\"config must be a dictionary\")\n    required = {\"view_root\", \"deployment\", \"diagnostics\", \"datastore\", \"route_modules\"}\n    if not required.issubset(config):\n        raise ValueError(\"config is missing required keys\")\n    if not isinstance(config[\"view_root\"], str) or not config[\"view_root\"]:\n        raise ValueError(\"view_root must be non-empty\")\n    if config[\"deployment\"] not in {\"development\", \"staging\", \"production\"}:\n        raise ValueError(\"invalid deployment\")\n    if not isinstance(config[\"diagnostics\"], dict) or not isinstance(config[\"datastore\"], dict):\n        raise ValueError(\"diagnostics and datastore must be dictionaries\")\n    modules = config[\"route_modules\"]\n    if not isinstance(modules, list):\n        raise ValueError(\"route_modules must be a list\")\n    if any(not isinstance(module, str) or not module for module in modules):\n        raise ValueError(\"route module names must be non-empty strings\")\n    if len(set(modules)) != len(modules):\n        raise ValueError(\"route modules must be unique\")\n    if not callable(load_routes):\n        raise ValueError(\"load_routes must be callable\")\n\n    loaded = load_routes(sorted(modules))\n    if not isinstance(loaded, list):\n        raise ValueError(\"loader must return a list\")\n    paths: set[str] = set()\n    for route in loaded:\n        if not isinstance(route, tuple) or len(route) != 2:\n            raise ValueError(\"each route must be a two-item tuple\")\n        path, handler = route\n        if not isinstance(path, str) or not path or not callable(handler):\n            raise ValueError(\"invalid route\")\n        if path in paths:\n            raise ValueError(\"route paths must be unique\")\n        paths.add(path)\n\n    return {\n        \"view_root\": deepcopy(config[\"view_root\"]),\n        \"deployment\": deepcopy(config[\"deployment\"]),\n        \"diagnostics\": deepcopy(config[\"diagnostics\"]),\n        \"datastore\": deepcopy(config[\"datastore\"]),\n        \"routes\": deepcopy(loaded),\n    }\n",
+          "label": "Route module names are sorted before loading instead of preserving their configured order.",
+          "sha256": "419274b59419b043fbd7998c5cf23ba7f05c64ce7de5f4dd256e5f5f6d80c966"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom typing import Any, Callable\n\n\ndef build_environment(config: dict[str, Any], load_routes: Callable[[list[str]], list[tuple[str, Callable[..., Any]]]]) -> dict[str, Any]:\n    if not isinstance(config, dict):\n        raise ValueError(\"config must be a dictionary\")\n    required = {\"view_root\", \"deployment\", \"diagnostics\", \"datastore\", \"route_modules\"}\n    if not required.issubset(config):\n        raise ValueError(\"config is missing required keys\")\n    if not isinstance(config[\"view_root\"], str) or not config[\"view_root\"]:\n        raise ValueError(\"view_root must be non-empty\")\n    if config[\"deployment\"] not in {\"development\", \"staging\", \"production\"}:\n        raise ValueError(\"invalid deployment\")\n    if not isinstance(config[\"diagnostics\"], dict) or not isinstance(config[\"datastore\"], dict):\n        raise ValueError(\"diagnostics and datastore must be dictionaries\")\n    modules = config[\"route_modules\"]\n    if not isinstance(modules, list):\n        raise ValueError(\"route_modules must be a list\")\n    if any(not isinstance(module, str) or not module for module in modules):\n        raise ValueError(\"route module names must be non-empty strings\")\n    if len(set(modules)) != len(modules):\n        raise ValueError(\"route modules must be unique\")\n    if not callable(load_routes):\n        raise ValueError(\"load_routes must be callable\")\n\n    loaded = load_routes(list(modules))\n    if not isinstance(loaded, list):\n        raise ValueError(\"loader must return a list\")\n    paths: set[str] = set()\n    for route in loaded:\n        if not isinstance(route, tuple) or len(route) != 2:\n            raise ValueError(\"each route must be a two-item tuple\")\n        path, handler = route\n        if not isinstance(path, str) or not path or not callable(handler):\n            raise ValueError(\"invalid route\")\n        if path in paths:\n            raise ValueError(\"route paths must be unique\")\n        paths.add(path)\n\n    return {\n        \"view_root\": deepcopy(config[\"view_root\"]),\n        \"deployment\": deepcopy(config[\"deployment\"]),\n        \"diagnostics\": deepcopy(config[\"diagnostics\"]),\n        \"datastore\": deepcopy(config[\"datastore\"]),\n        \"routes\": deepcopy(loaded),\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "58ecdaf0b472f2ab034407892c0b77336874ed62f63ce1146c3218cd0c3fdb59"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import build_environment\n\n\ndef handler_a():\n    return \"a\"\n\n\ndef handler_b():\n    return \"b\"\n\n\nclass BuildEnvironmentTests(unittest.TestCase):\n    def test_builds_ordered_independent_environment(self):\n        config = {\n            \"view_root\": \"/views\",\n            \"deployment\": \"staging\",\n            \"diagnostics\": {\"levels\": [\"warn\"]},\n            \"datastore\": {\"nodes\": [{\"host\": \"db\"}]},\n            \"route_modules\": [\"users\", \"health\"],\n            \"extra\": {\"ignored\": True},\n        }\n        loader_args = []\n        loader_result = [(\"/users\", handler_a), (\"/health\", handler_b)]\n\n        def loader(names):\n            loader_args.append(names)\n            self.assertIsNot(names, config[\"route_modules\"])\n            return loader_result\n\n        result = build_environment(config, loader)\n        self.assertEqual(loader_args, [[\"users\", \"health\"]])\n        self.assertEqual(result, {\n            \"view_root\": \"/views\", \"deployment\": \"staging\",\n            \"diagnostics\": {\"levels\": [\"warn\"]},\n            \"datastore\": {\"nodes\": [{\"host\": \"db\"}]},\n            \"routes\": [(\"/users\", handler_a), (\"/health\", handler_b)],\n        })\n        result[\"diagnostics\"][\"levels\"].append(\"debug\")\n        result[\"datastore\"][\"nodes\"][0][\"host\"] = \"changed\"\n        result[\"routes\"].append((\"/extra\", handler_a))\n        self.assertEqual(config[\"diagnostics\"], {\"levels\": [\"warn\"]})\n        self.assertEqual(config[\"datastore\"], {\"nodes\": [{\"host\": \"db\"}]})\n        self.assertEqual(loader_result, [(\"/users\", handler_a), (\"/health\", handler_b)])\n\n    def test_empty_routes(self):\n        config = {\"view_root\": \"v\", \"deployment\": \"development\",\n                  \"diagnostics\": {}, \"datastore\": {}, \"route_modules\": []}\n        calls = []\n        result = build_environment(config, lambda names: calls.append(names) or [])\n        self.assertEqual(calls, [[]])\n        self.assertEqual(result[\"routes\"], [])\n\n    def test_bad_config_never_calls_loader(self):\n        base = {\"view_root\": \"v\", \"deployment\": \"production\",\n                \"diagnostics\": {}, \"datastore\": {}, \"route_modules\": [\"m\"]}\n        variants = [None, {}, {**base, \"view_root\": \"\"},\n                    {**base, \"deployment\": \"test\"},\n                    {**base, \"diagnostics\": []}, {**base, \"datastore\": []},\n                    {**base, \"route_modules\": \"m\"},\n                    {**base, \"route_modules\": [\"\"]},\n                    {**base, \"route_modules\": [\"m\", \"m\"]}]\n        for bad in variants:\n            calls = []\n            with self.subTest(bad=bad):\n                with self.assertRaises(ValueError):\n                    build_environment(bad, lambda names: calls.append(names) or [])\n                self.assertEqual(calls, [])\n        with self.assertRaises(ValueError):\n            build_environment(base, 7)\n\n    def test_bad_loader_results(self):\n        config = {\"view_root\": \"v\", \"deployment\": \"production\",\n                  \"diagnostics\": {}, \"datastore\": {}, \"route_modules\": [\"m\"]}\n        bad_results = [None, (), [(\"/x\", handler_a, 1)],\n                       [(\"\", handler_a)], [(\"/x\", 3)],\n                       [(\"/x\", handler_a), (\"/x\", handler_b)]]\n        for bad in bad_results:\n            calls = []\n            with self.subTest(bad=bad):\n                with self.assertRaises(ValueError):\n                    build_environment(config, lambda names, b=bad: calls.append(names) or b)\n                self.assertEqual(len(calls), 1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "e294ce88888fd7106d0e9438689c5e5f03618ae554f01afb3803c895ef62a1ff"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e490d872caacaf87fac32947e2595f26da8c085be38e72424b07183a75edd437",
+      "text": "Create `solution.py` with the top-level function `build_environment(config, load_routes)`.\n\n`config` must be a dictionary containing exactly these required keys, though additional keys are allowed: `view_root` (non-empty string), `deployment` (one of `development`, `staging`, or `production`), `diagnostics` (dictionary), `datastore` (dictionary), and `route_modules` (list of non-empty strings). `route_modules` may be empty but may not contain duplicates. `load_routes` must be callable. Raise `ValueError` for malformed input.\n\nAfter all configuration validation succeeds, call `load_routes` exactly once with a new list containing the route module names in their original order. It must return a list of two-item tuples whose first item is a non-empty string path and whose second item is callable. Duplicate paths are invalid.\n\nReturn a dictionary containing deep-copied `view_root`, `deployment`, `diagnostics`, and `datastore` values plus a `routes` key holding the validated routes in loader order. Neither the argument passed to the loader nor any mutable object in the returned dictionary may alias mutable data in `config` or the loader's returned list. Do not mutate either source.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e490d872caacaf87fac32947e2595f26da8c085be38e72424b07183a75edd437",
+      "text": "Create `solution.py` with the top-level function `build_environment(config, load_routes)`.\n\n`config` must be a dictionary containing exactly these required keys, though additional keys are allowed: `view_root` (non-empty string), `deployment` (one of `development`, `staging`, or `production`), `diagnostics` (dictionary), `datastore` (dictionary), and `route_modules` (list of non-empty strings). `route_modules` may be empty but may not contain duplicates. `load_routes` must be callable. Raise `ValueError` for malformed input.\n\nAfter all configuration validation succeeds, call `load_routes` exactly once with a new list containing the route module names in their original order. It must return a list of two-item tuples whose first item is a non-empty string path and whose second item is callable. Duplicate paths are invalid.\n\nReturn a dictionary containing deep-copied `view_root`, `deployment`, `diagnostics`, and `datastore` values plus a `routes` key holding the validated routes in loader order. Neither the argument passed to the loader nor any mutable object in the returned dictionary may alias mutable data in `config` or the loader's returned list. Do not mutate either source.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0249",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom typing import Any, Callable\n\n\ndef build_environment(config: dict[str, Any], load_routes: Callable[[list[str]], list[tuple[str, Callable[..., Any]]]]) -> dict[str, Any]:\n    if not isinstance(config, dict):\n        raise ValueError(\"config must be a dictionary\")\n    required = {\"view_root\", \"deployment\", \"diagnostics\", \"datastore\", \"route_modules\"}\n    if not required.issubset(config):\n        raise ValueError(\"config is missing required keys\")\n    if not isinstance(config[\"view_root\"], str) or not config[\"view_root\"]:\n        raise ValueError(\"view_root must be non-empty\")\n    if config[\"deployment\"] not in {\"development\", \"staging\", \"production\"}:\n        raise ValueError(\"invalid deployment\")\n    if not isinstance(config[\"diagnostics\"], dict) or not isinstance(config[\"datastore\"], dict):\n        raise ValueError(\"diagnostics and datastore must be dictionaries\")\n    modules = config[\"route_modules\"]\n    if not isinstance(modules, list):\n        raise ValueError(\"route_modules must be a list\")\n    if any(not isinstance(module, str) or not module for module in modules):\n        raise ValueError(\"route module names must be non-empty strings\")\n    if len(set(modules)) != len(modules):\n        raise ValueError(\"route modules must be unique\")\n    if not callable(load_routes):\n        raise ValueError(\"load_routes must be callable\")\n\n    loaded = load_routes(sorted(modules))\n    if not isinstance(loaded, list):\n        raise ValueError(\"loader must return a list\")\n    paths: set[str] = set()\n    for route in loaded:\n        if not isinstance(route, tuple) or len(route) != 2:\n            raise ValueError(\"each route must be a two-item tuple\")\n        path, handler = route\n        if not isinstance(path, str) or not path or not callable(handler):\n            raise ValueError(\"invalid route\")\n        if path in paths:\n            raise ValueError(\"route paths must be unique\")\n        paths.add(path)\n\n    return {\n        \"view_root\": deepcopy(config[\"view_root\"]),\n        \"deployment\": deepcopy(config[\"deployment\"]),\n        \"diagnostics\": deepcopy(config[\"diagnostics\"]),\n        \"datastore\": deepcopy(config[\"datastore\"]),\n        \"routes\": deepcopy(loaded),\n    }\n",
+          "label": "Route module names are sorted before loading instead of preserving their configured order.",
+          "sha256": "419274b59419b043fbd7998c5cf23ba7f05c64ce7de5f4dd256e5f5f6d80c966"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom typing import Any, Callable\n\n\ndef build_environment(config: dict[str, Any], load_routes: Callable[[list[str]], list[tuple[str, Callable[..., Any]]]]) -> dict[str, Any]:\n    if not isinstance(config, dict):\n        raise ValueError(\"config must be a dictionary\")\n    required = {\"view_root\", \"deployment\", \"diagnostics\", \"datastore\", \"route_modules\"}\n    if not required.issubset(config):\n        raise ValueError(\"config is missing required keys\")\n    if not isinstance(config[\"view_root\"], str) or not config[\"view_root\"]:\n        raise ValueError(\"view_root must be non-empty\")\n    if config[\"deployment\"] not in {\"development\", \"staging\", \"production\"}:\n        raise ValueError(\"invalid deployment\")\n    if not isinstance(config[\"diagnostics\"], dict) or not isinstance(config[\"datastore\"], dict):\n        raise ValueError(\"diagnostics and datastore must be dictionaries\")\n    modules = config[\"route_modules\"]\n    if not isinstance(modules, list):\n        raise ValueError(\"route_modules must be a list\")\n    if any(not isinstance(module, str) or not module for module in modules):\n        raise ValueError(\"route module names must be non-empty strings\")\n    if len(set(modules)) != len(modules):\n        raise ValueError(\"route modules must be unique\")\n    if not callable(load_routes):\n        raise ValueError(\"load_routes must be callable\")\n\n    loaded = load_routes(list(modules))\n    if not isinstance(loaded, list):\n        raise ValueError(\"loader must return a list\")\n    paths: set[str] = set()\n    for route in loaded:\n        if not isinstance(route, tuple) or len(route) != 2:\n            raise ValueError(\"each route must be a two-item tuple\")\n        path, handler = route\n        if not isinstance(path, str) or not path or not callable(handler):\n            raise ValueError(\"invalid route\")\n        if path in paths:\n            raise ValueError(\"route paths must be unique\")\n        paths.add(path)\n\n    return {\n        \"view_root\": deepcopy(config[\"view_root\"]),\n        \"deployment\": deepcopy(config[\"deployment\"]),\n        \"diagnostics\": deepcopy(config[\"diagnostics\"]),\n        \"datastore\": deepcopy(config[\"datastore\"]),\n        \"routes\": deepcopy(loaded),\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "58ecdaf0b472f2ab034407892c0b77336874ed62f63ce1146c3218cd0c3fdb59"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_malformed_deployment_raises_value_error_before_loader (__main__.EnvironmentDeploymentTypeTests.test_malformed_deployment_raises_value_error_before_loader)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_malformed_deployment_raises_value_error_before_loader\n    build_environment(config, lambda names: calls.append(names) or [])\n  File \"/work/solution.py\", line 13, in build_environment\n    if config[\"deployment\"] not in {\"development\", \"staging\", \"production\"}:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "19b0ebc2ca62b36e5b3510876d40ffe47cdd2e44cb1fc3e49addef41d7c43fd0",
+    "duration_ms": 403,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

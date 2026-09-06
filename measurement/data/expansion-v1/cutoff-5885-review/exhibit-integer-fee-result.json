@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0195",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9a2b8c0a2d96533910350106422d6cfe15a32d9c1c7ac3c8a09eea4faddcf474",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import compile_exhibits, ExhibitKind, ViewingMode\n\n\nclass ExhibitIntegerFeeTests(unittest.TestCase):\n    def test_preserve_numeric_fee_value(self):\n        fee = 2 ** 53 + 1\n        item = dict(code='x', label='X', creator='A', fees={'list': fee, 'current': 1})\n        result = compile_exhibits([[item]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        self.assertEqual(result[0].list_fee, fee)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "a78a5434ac11cf452b1e2b7ea9b9f2f1f0a9451baa08b3afb53e92a02d9e9f99"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "158947882c71d81488531eb29692313db5f634b6871c49e6c5973581954823e9",
+      "text": "Create `solution.py` defining enums `ExhibitKind` (`PHYSICAL`, `DIGITAL`), `ViewingMode` (`ONSITE`, `REMOTE`), a frozen dataclass `Exhibit`, and `compile_exhibits(pages, kind, viewing_mode)`.\n\n`Exhibit` must expose `kind`, `viewing_mode`, `catalog_id`, `label`, `creator`, `list_fee`, `current_fee`, `reference`, and `raw`. `pages` must be a finite iterable of pages, where each page is a list of dictionaries. Process pages in order and stop at the first empty page, ignoring later pages. Each item requires string fields `code`, `label`, and `creator`, plus a `fees` dictionary containing numeric, non-boolean `list` and `current` values. Construct `catalog_id` as `\"archive:\" + code` and `reference` as `\"/exhibits/\" + code`. Preserve item order and duplicates.\n\n`kind` and `viewing_mode` must be instances of their respective enums. Invalid container or field types raise `TypeError`; missing fields raise `ValueError`. The caller's data must not be mutated. `raw` must be a deep copy of the complete source item, with no mutable aliases shared with the input. An empty page iterable returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "158947882c71d81488531eb29692313db5f634b6871c49e6c5973581954823e9",
+      "text": "Create `solution.py` defining enums `ExhibitKind` (`PHYSICAL`, `DIGITAL`), `ViewingMode` (`ONSITE`, `REMOTE`), a frozen dataclass `Exhibit`, and `compile_exhibits(pages, kind, viewing_mode)`.\n\n`Exhibit` must expose `kind`, `viewing_mode`, `catalog_id`, `label`, `creator`, `list_fee`, `current_fee`, `reference`, and `raw`. `pages` must be a finite iterable of pages, where each page is a list of dictionaries. Process pages in order and stop at the first empty page, ignoring later pages. Each item requires string fields `code`, `label`, and `creator`, plus a `fees` dictionary containing numeric, non-boolean `list` and `current` values. Construct `catalog_id` as `\"archive:\" + code` and `reference` as `\"/exhibits/\" + code`. Preserve item order and duplicates.\n\n`kind` and `viewing_mode` must be instances of their respective enums. Invalid container or field types raise `TypeError`; missing fields raise `ValueError`. The caller's data must not be mutated. `raw` must be a deep copy of the complete source item, with no mutable aliases shared with the input. An empty page iterable returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0195",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass ExhibitKind(Enum):\n    PHYSICAL = \"physical\"\n    DIGITAL = \"digital\"\n\n\nclass ViewingMode(Enum):\n    ONSITE = \"onsite\"\n    REMOTE = \"remote\"\n\n\n@dataclass(frozen=True)\nclass Exhibit:\n    kind: ExhibitKind\n    viewing_mode: ViewingMode\n    catalog_id: str\n    label: str\n    creator: str\n    list_fee: float\n    current_fee: float\n    reference: str\n    raw: dict\n\n\ndef compile_exhibits(pages, kind, viewing_mode):\n    if not isinstance(kind, ExhibitKind):\n        raise TypeError(\"kind must be an ExhibitKind\")\n    if not isinstance(viewing_mode, ViewingMode):\n        raise TypeError(\"viewing_mode must be a ViewingMode\")\n    try:\n        iterator = iter(pages)\n    except TypeError as exc:\n        raise TypeError(\"pages must be iterable\") from exc\n\n    result = []\n    for page in iterator:\n        if not isinstance(page, list):\n            raise TypeError(\"each page must be a list\")\n        if not page:\n            break\n        for item in page:\n            if not isinstance(item, dict):\n                raise TypeError(\"each item must be a dictionary\")\n            for field in (\"code\", \"label\", \"creator\", \"fees\"):\n                if field not in item:\n                    raise ValueError(\"missing field: \" + field)\n            for field in (\"code\", \"label\", \"creator\"):\n                if not isinstance(item[field], str):\n                    raise TypeError(field + \" must be a string\")\n            fees = item[\"fees\"]\n            if not isinstance(fees, dict):\n                raise TypeError(\"fees must be a dictionary\")\n            for field in (\"list\", \"current\"):\n                if field not in fees:\n                    raise ValueError(\"missing fee: \" + field)\n                if isinstance(fees[field], bool) or not isinstance(fees[field], Real):\n                    raise TypeError(\"fees must be numeric\")\n            code = item[\"code\"]\n            result.append(Exhibit(\n                kind, viewing_mode, \"archive:\" + code, item[\"label\"],\n                item[\"creator\"], float(fees[\"list\"]), float(fees[\"current\"]),\n                \"/exhibits/\" + code, item\n            ))\n    return result\n",
+          "label": "Each Exhibit.raw aliases the caller's original item instead of holding an independent deep copy.",
+          "sha256": "1c25672a887f7f0722c94afe0c5d8e8720bd8163226fcf28a08bb2c6e3a9c45d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass ExhibitKind(Enum):\n    PHYSICAL = \"physical\"\n    DIGITAL = \"digital\"\n\n\nclass ViewingMode(Enum):\n    ONSITE = \"onsite\"\n    REMOTE = \"remote\"\n\n\n@dataclass(frozen=True)\nclass Exhibit:\n    kind: ExhibitKind\n    viewing_mode: ViewingMode\n    catalog_id: str\n    label: str\n    creator: str\n    list_fee: float\n    current_fee: float\n    reference: str\n    raw: dict\n\n\ndef compile_exhibits(pages, kind, viewing_mode):\n    if not isinstance(kind, ExhibitKind):\n        raise TypeError(\"kind must be an ExhibitKind\")\n    if not isinstance(viewing_mode, ViewingMode):\n        raise TypeError(\"viewing_mode must be a ViewingMode\")\n    try:\n        iterator = iter(pages)\n    except TypeError as exc:\n        raise TypeError(\"pages must be iterable\") from exc\n\n    result = []\n    for page in iterator:\n        if not isinstance(page, list):\n            raise TypeError(\"each page must be a list\")\n        if not page:\n            break\n        for item in page:\n            if not isinstance(item, dict):\n                raise TypeError(\"each item must be a dictionary\")\n            for field in (\"code\", \"label\", \"creator\", \"fees\"):\n                if field not in item:\n                    raise ValueError(\"missing field: \" + field)\n            for field in (\"code\", \"label\", \"creator\"):\n                if not isinstance(item[field], str):\n                    raise TypeError(field + \" must be a string\")\n            fees = item[\"fees\"]\n            if not isinstance(fees, dict):\n                raise TypeError(\"fees must be a dictionary\")\n            for field in (\"list\", \"current\"):\n                if field not in fees:\n                    raise ValueError(\"missing fee: \" + field)\n                if isinstance(fees[field], bool) or not isinstance(fees[field], Real):\n                    raise TypeError(\"fees must be numeric\")\n            code = item[\"code\"]\n            result.append(Exhibit(\n                kind, viewing_mode, \"archive:\" + code, item[\"label\"],\n                item[\"creator\"], float(fees[\"list\"]), float(fees[\"current\"]),\n                \"/exhibits/\" + code, deepcopy(item)\n            ))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6b42127c545e52e61b1abf23117daba4eedc048408818aa119882289970c403d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport unittest\nfrom dataclasses import FrozenInstanceError, is_dataclass\n\nfrom solution import Exhibit, ExhibitKind, ViewingMode, compile_exhibits\n\n\nclass CompileExhibitsTests(unittest.TestCase):\n    def item(self, code=\"x\", **extra):\n        value = {\n            \"code\": code,\n            \"label\": \"Label \" + code,\n            \"creator\": \"Creator\",\n            \"fees\": {\"list\": 12, \"current\": 7.5},\n        }\n        value.update(extra)\n        return value\n\n    def test_enums_and_frozen_dataclass(self):\n        self.assertEqual({x.name for x in ExhibitKind}, {\"PHYSICAL\", \"DIGITAL\"})\n        self.assertEqual({x.name for x in ViewingMode}, {\"ONSITE\", \"REMOTE\"})\n        self.assertTrue(is_dataclass(Exhibit))\n        result = compile_exhibits([[self.item()]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        with self.assertRaises(FrozenInstanceError):\n            result[0].label = \"changed\"\n\n    def test_order_duplicates_fields_and_stop_at_empty_page(self):\n        first = self.item(\"a\", metadata={\"tags\": [\"old\"]})\n        duplicate = self.item(\"a\")\n        ignored = self.item(\"later\")\n        pages = [[first, duplicate], [], [ignored]]\n        original = copy.deepcopy(pages)\n        result = compile_exhibits(pages, ExhibitKind.DIGITAL, ViewingMode.REMOTE)\n        self.assertEqual([x.catalog_id for x in result], [\"archive:a\", \"archive:a\"])\n        self.assertEqual(result[0].reference, \"/exhibits/a\")\n        self.assertEqual(result[0].label, \"Label a\")\n        self.assertEqual(result[0].creator, \"Creator\")\n        self.assertEqual(result[0].list_fee, 12)\n        self.assertEqual(result[0].current_fee, 7.5)\n        self.assertIs(result[0].kind, ExhibitKind.DIGITAL)\n        self.assertIs(result[0].viewing_mode, ViewingMode.REMOTE)\n        self.assertEqual(pages, original)\n\n    def test_raw_is_complete_deep_copy(self):\n        source = self.item(\"a\", metadata={\"tags\": [\"one\"]})\n        result = compile_exhibits([[source]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        self.assertEqual(result[0].raw, source)\n        self.assertIsNot(result[0].raw, source)\n        self.assertIsNot(result[0].raw[\"metadata\"], source[\"metadata\"])\n        source[\"metadata\"][\"tags\"].append(\"input\")\n        self.assertEqual(result[0].raw[\"metadata\"][\"tags\"], [\"one\"])\n        result[0].raw[\"fees\"][\"list\"] = 99\n        self.assertEqual(source[\"fees\"][\"list\"], 12)\n\n    def test_empty_iterable_and_generator(self):\n        self.assertEqual(compile_exhibits([], ExhibitKind.PHYSICAL, ViewingMode.REMOTE), [])\n        pages = (page for page in [[self.item(\"g\")]])\n        self.assertEqual(len(compile_exhibits(pages, ExhibitKind.PHYSICAL, ViewingMode.REMOTE)), 1)\n\n    def test_invalid_types_and_missing_fields(self):\n        with self.assertRaises(TypeError):\n            compile_exhibits(3, ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        with self.assertRaises(TypeError):\n            compile_exhibits([{}], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        with self.assertRaises(TypeError):\n            compile_exhibits([[[]]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        with self.assertRaises(TypeError):\n            compile_exhibits([], \"PHYSICAL\", ViewingMode.ONSITE)\n        with self.assertRaises(TypeError):\n            compile_exhibits([], ExhibitKind.PHYSICAL, \"ONSITE\")\n        for field in (\"code\", \"label\", \"creator\", \"fees\"):\n            value = self.item()\n            del value[field]\n            with self.subTest(field=field):\n                with self.assertRaises(ValueError):\n                    compile_exhibits([[value]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        for field, value in ((\"code\", 1), (\"label\", None), (\"creator\", []), (\"fees\", [])):\n            item = self.item()\n            item[field] = value\n            with self.subTest(field=field):\n                with self.assertRaises(TypeError):\n                    compile_exhibits([[item]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        for fee, value in ((\"list\", True), (\"current\", \"7\")):\n            item = self.item()\n            item[\"fees\"][fee] = value\n            with self.subTest(fee=fee):\n                with self.assertRaises(TypeError):\n                    compile_exhibits([[item]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n        item = self.item()\n        del item[\"fees\"][\"current\"]\n        with self.assertRaises(ValueError):\n            compile_exhibits([[item]], ExhibitKind.PHYSICAL, ViewingMode.ONSITE)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "8b7835ec5b5d8e797a51ea02d71059a1d1e4c47529d6ab1d2e91e300a3f897af"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "158947882c71d81488531eb29692313db5f634b6871c49e6c5973581954823e9",
+      "text": "Create `solution.py` defining enums `ExhibitKind` (`PHYSICAL`, `DIGITAL`), `ViewingMode` (`ONSITE`, `REMOTE`), a frozen dataclass `Exhibit`, and `compile_exhibits(pages, kind, viewing_mode)`.\n\n`Exhibit` must expose `kind`, `viewing_mode`, `catalog_id`, `label`, `creator`, `list_fee`, `current_fee`, `reference`, and `raw`. `pages` must be a finite iterable of pages, where each page is a list of dictionaries. Process pages in order and stop at the first empty page, ignoring later pages. Each item requires string fields `code`, `label`, and `creator`, plus a `fees` dictionary containing numeric, non-boolean `list` and `current` values. Construct `catalog_id` as `\"archive:\" + code` and `reference` as `\"/exhibits/\" + code`. Preserve item order and duplicates.\n\n`kind` and `viewing_mode` must be instances of their respective enums. Invalid container or field types raise `TypeError`; missing fields raise `ValueError`. The caller's data must not be mutated. `raw` must be a deep copy of the complete source item, with no mutable aliases shared with the input. An empty page iterable returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "158947882c71d81488531eb29692313db5f634b6871c49e6c5973581954823e9",
+      "text": "Create `solution.py` defining enums `ExhibitKind` (`PHYSICAL`, `DIGITAL`), `ViewingMode` (`ONSITE`, `REMOTE`), a frozen dataclass `Exhibit`, and `compile_exhibits(pages, kind, viewing_mode)`.\n\n`Exhibit` must expose `kind`, `viewing_mode`, `catalog_id`, `label`, `creator`, `list_fee`, `current_fee`, `reference`, and `raw`. `pages` must be a finite iterable of pages, where each page is a list of dictionaries. Process pages in order and stop at the first empty page, ignoring later pages. Each item requires string fields `code`, `label`, and `creator`, plus a `fees` dictionary containing numeric, non-boolean `list` and `current` values. Construct `catalog_id` as `\"archive:\" + code` and `reference` as `\"/exhibits/\" + code`. Preserve item order and duplicates.\n\n`kind` and `viewing_mode` must be instances of their respective enums. Invalid container or field types raise `TypeError`; missing fields raise `ValueError`. The caller's data must not be mutated. `raw` must be a deep copy of the complete source item, with no mutable aliases shared with the input. An empty page iterable returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0195",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass ExhibitKind(Enum):\n    PHYSICAL = \"physical\"\n    DIGITAL = \"digital\"\n\n\nclass ViewingMode(Enum):\n    ONSITE = \"onsite\"\n    REMOTE = \"remote\"\n\n\n@dataclass(frozen=True)\nclass Exhibit:\n    kind: ExhibitKind\n    viewing_mode: ViewingMode\n    catalog_id: str\n    label: str\n    creator: str\n    list_fee: float\n    current_fee: float\n    reference: str\n    raw: dict\n\n\ndef compile_exhibits(pages, kind, viewing_mode):\n    if not isinstance(kind, ExhibitKind):\n        raise TypeError(\"kind must be an ExhibitKind\")\n    if not isinstance(viewing_mode, ViewingMode):\n        raise TypeError(\"viewing_mode must be a ViewingMode\")\n    try:\n        iterator = iter(pages)\n    except TypeError as exc:\n        raise TypeError(\"pages must be iterable\") from exc\n\n    result = []\n    for page in iterator:\n        if not isinstance(page, list):\n            raise TypeError(\"each page must be a list\")\n        if not page:\n            break\n        for item in page:\n            if not isinstance(item, dict):\n                raise TypeError(\"each item must be a dictionary\")\n            for field in (\"code\", \"label\", \"creator\", \"fees\"):\n                if field not in item:\n                    raise ValueError(\"missing field: \" + field)\n            for field in (\"code\", \"label\", \"creator\"):\n                if not isinstance(item[field], str):\n                    raise TypeError(field + \" must be a string\")\n            fees = item[\"fees\"]\n            if not isinstance(fees, dict):\n                raise TypeError(\"fees must be a dictionary\")\n            for field in (\"list\", \"current\"):\n                if field not in fees:\n                    raise ValueError(\"missing fee: \" + field)\n                if isinstance(fees[field], bool) or not isinstance(fees[field], Real):\n                    raise TypeError(\"fees must be numeric\")\n            code = item[\"code\"]\n            result.append(Exhibit(\n                kind, viewing_mode, \"archive:\" + code, item[\"label\"],\n                item[\"creator\"], float(fees[\"list\"]), float(fees[\"current\"]),\n                \"/exhibits/\" + code, item\n            ))\n    return result\n",
+          "label": "Each Exhibit.raw aliases the caller's original item instead of holding an independent deep copy.",
+          "sha256": "1c25672a887f7f0722c94afe0c5d8e8720bd8163226fcf28a08bb2c6e3a9c45d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom dataclasses import dataclass\nfrom enum import Enum\nfrom numbers import Real\n\n\nclass ExhibitKind(Enum):\n    PHYSICAL = \"physical\"\n    DIGITAL = \"digital\"\n\n\nclass ViewingMode(Enum):\n    ONSITE = \"onsite\"\n    REMOTE = \"remote\"\n\n\n@dataclass(frozen=True)\nclass Exhibit:\n    kind: ExhibitKind\n    viewing_mode: ViewingMode\n    catalog_id: str\n    label: str\n    creator: str\n    list_fee: float\n    current_fee: float\n    reference: str\n    raw: dict\n\n\ndef compile_exhibits(pages, kind, viewing_mode):\n    if not isinstance(kind, ExhibitKind):\n        raise TypeError(\"kind must be an ExhibitKind\")\n    if not isinstance(viewing_mode, ViewingMode):\n        raise TypeError(\"viewing_mode must be a ViewingMode\")\n    try:\n        iterator = iter(pages)\n    except TypeError as exc:\n        raise TypeError(\"pages must be iterable\") from exc\n\n    result = []\n    for page in iterator:\n        if not isinstance(page, list):\n            raise TypeError(\"each page must be a list\")\n        if not page:\n            break\n        for item in page:\n            if not isinstance(item, dict):\n                raise TypeError(\"each item must be a dictionary\")\n            for field in (\"code\", \"label\", \"creator\", \"fees\"):\n                if field not in item:\n                    raise ValueError(\"missing field: \" + field)\n            for field in (\"code\", \"label\", \"creator\"):\n                if not isinstance(item[field], str):\n                    raise TypeError(field + \" must be a string\")\n            fees = item[\"fees\"]\n            if not isinstance(fees, dict):\n                raise TypeError(\"fees must be a dictionary\")\n            for field in (\"list\", \"current\"):\n                if field not in fees:\n                    raise ValueError(\"missing fee: \" + field)\n                if isinstance(fees[field], bool) or not isinstance(fees[field], Real):\n                    raise TypeError(\"fees must be numeric\")\n            code = item[\"code\"]\n            result.append(Exhibit(\n                kind, viewing_mode, \"archive:\" + code, item[\"label\"],\n                item[\"creator\"], float(fees[\"list\"]), float(fees[\"current\"]),\n                \"/exhibits/\" + code, deepcopy(item)\n            ))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6b42127c545e52e61b1abf23117daba4eedc048408818aa119882289970c403d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_preserve_numeric_fee_value (__main__.ExhibitIntegerFeeTests.test_preserve_numeric_fee_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_preserve_numeric_fee_value\n    self.assertEqual(result[0].list_fee, fee)\nAssertionError: 9007199254740992.0 != 9007199254740993\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "6f151e43bad62ba048b84d36daf46eea0290f70e5eb4545e7211d5fce0594294",
+    "duration_ms": 416,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0197",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "85b603e093ed8573729dca9c6b89afe38106bf45ca61714ebcdff0b5d01965d2",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import RegionAccumulator\n\n\nclass RegionSingleCellPrecisionTests(unittest.TestCase):\n    def test_small_cell_not_lost_to_unrelated_prefix(self):\n        accumulator = RegionAccumulator([[1e16, 1.0]])\n        self.assertEqual(accumulator.rectangle_total(0, 1, 1, 2), 1.0)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "97591a8947db4beb47cea7693a0d74d2c845a57791b856629198e0a24f41772b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2b6e67774dce9782f736071d36ebaa57dd1a1c1219db486c6951ee8a878c30ce",
+      "text": "Create `solution.py` defining `RegionAccumulator(grid)`. `grid` must be a rectangular list of row lists containing finite real numbers; booleans are invalid. An empty grid is valid, as are nonempty grids with zero columns. Ragged rows raise `ValueError`. The constructor must precompute a two-dimensional prefix table without modifying or retaining aliases to `grid`.\n\nProvide `rectangle_total(top, left, bottom, right)`, `rectangle_mean(top, left, bottom, right)`, and `prefix_snapshot()`. Rectangle coordinates are integer, non-boolean, half-open bounds. Require `top <= bottom` and `left <= right`; otherwise raise `ValueError`. Clamp every rectangle to the grid, treating outside cells as absent. `rectangle_total` returns the sum of intersecting cells, or numeric zero for an empty intersection. `rectangle_mean` divides by the number of intersecting cells and returns `0.0` for an empty intersection. `prefix_snapshot` returns an immutable tuple of tuples, including its zero border. Repeated calls must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2b6e67774dce9782f736071d36ebaa57dd1a1c1219db486c6951ee8a878c30ce",
+      "text": "Create `solution.py` defining `RegionAccumulator(grid)`. `grid` must be a rectangular list of row lists containing finite real numbers; booleans are invalid. An empty grid is valid, as are nonempty grids with zero columns. Ragged rows raise `ValueError`. The constructor must precompute a two-dimensional prefix table without modifying or retaining aliases to `grid`.\n\nProvide `rectangle_total(top, left, bottom, right)`, `rectangle_mean(top, left, bottom, right)`, and `prefix_snapshot()`. Rectangle coordinates are integer, non-boolean, half-open bounds. Require `top <= bottom` and `left <= right`; otherwise raise `ValueError`. Clamp every rectangle to the grid, treating outside cells as absent. `rectangle_total` returns the sum of intersecting cells, or numeric zero for an empty intersection. `rectangle_mean` divides by the number of intersecting cells and returns `0.0` for an empty intersection. `prefix_snapshot` returns an immutable tuple of tuples, including its zero border. Repeated calls must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0197",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\nclass RegionAccumulator:\n    def __init__(self, grid):\n        if not isinstance(grid, list):\n            raise TypeError(\"grid must be a list\")\n        width = None\n        for row in grid:\n            if not isinstance(row, list):\n                raise TypeError(\"rows must be lists\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"grid must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, Real):\n                    raise TypeError(\"cells must be real numbers\")\n                if not math.isfinite(value):\n                    raise ValueError(\"cells must be finite\")\n        self._height = len(grid)\n        self._width = 0 if width is None else width\n        table = [[0 for _ in range(self._width + 1)] for _ in range(self._height + 1)]\n        for y, row in enumerate(grid, 1):\n            running = 0\n            for x, value in enumerate(row, 1):\n                running += value\n                table[y][x] = table[y - 1][x] + running\n        self._prefix = tuple(tuple(row) for row in table)\n\n    def _clipped(self, top, left, bottom, right):\n        values = (top, left, bottom, right)\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in values):\n            raise TypeError(\"coordinates must be integers\")\n        if top > bottom or left > right:\n            raise ValueError(\"rectangle bounds are reversed\")\n        return (max(0, min(self._height, top)),\n                max(0, min(self._width, left)),\n                max(0, min(self._height, bottom)),\n                max(0, min(self._width, right)))\n\n    def rectangle_total(self, top, left, bottom, right):\n        top, left, bottom, right = self._clipped(top, left, bottom, right)\n        if top >= bottom or left >= right:\n            return 0\n        p = self._prefix\n        return p[bottom][right] - p[top][right] - p[bottom][left] + p[top][left]\n\n    def rectangle_mean(self, top, left, bottom, right):\n        clipped = self._clipped(top, left, bottom, right)\n        top2, left2, bottom2, right2 = clipped\n        count = max(0, bottom - top) * max(0, right - left)\n        if count == 0:\n            return 0.0\n        return self.rectangle_total(*clipped) / count\n\n    def prefix_snapshot(self):\n        return self._prefix\n",
+          "label": "The mean uses the requested rectangle's area rather than the clamped intersection area.",
+          "sha256": "9dcda88bae01aa95dfaf00421012874b3d0605287b4ccb011e6ccf43c679582b"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\nclass RegionAccumulator:\n    def __init__(self, grid):\n        if not isinstance(grid, list):\n            raise TypeError(\"grid must be a list\")\n        width = None\n        for row in grid:\n            if not isinstance(row, list):\n                raise TypeError(\"rows must be lists\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"grid must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, Real):\n                    raise TypeError(\"cells must be real numbers\")\n                if not math.isfinite(value):\n                    raise ValueError(\"cells must be finite\")\n        self._height = len(grid)\n        self._width = 0 if width is None else width\n        table = [[0 for _ in range(self._width + 1)] for _ in range(self._height + 1)]\n        for y, row in enumerate(grid, 1):\n            running = 0\n            for x, value in enumerate(row, 1):\n                running += value\n                table[y][x] = table[y - 1][x] + running\n        self._prefix = tuple(tuple(row) for row in table)\n\n    def _clipped(self, top, left, bottom, right):\n        values = (top, left, bottom, right)\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in values):\n            raise TypeError(\"coordinates must be integers\")\n        if top > bottom or left > right:\n            raise ValueError(\"rectangle bounds are reversed\")\n        return (max(0, min(self._height, top)),\n                max(0, min(self._width, left)),\n                max(0, min(self._height, bottom)),\n                max(0, min(self._width, right)))\n\n    def rectangle_total(self, top, left, bottom, right):\n        top, left, bottom, right = self._clipped(top, left, bottom, right)\n        if top >= bottom or left >= right:\n            return 0\n        p = self._prefix\n        return p[bottom][right] - p[top][right] - p[bottom][left] + p[top][left]\n\n    def rectangle_mean(self, top, left, bottom, right):\n        clipped = self._clipped(top, left, bottom, right)\n        top2, left2, bottom2, right2 = clipped\n        count = max(0, bottom2 - top2) * max(0, right2 - left2)\n        if count == 0:\n            return 0.0\n        return self.rectangle_total(*clipped) / count\n\n    def prefix_snapshot(self):\n        return self._prefix\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2efe6dbca1fa1e1309e87466d48d9bc76ca8847e139d6d9bf511f253e83ec720"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import RegionAccumulator\n\n\nclass RegionAccumulatorTests(unittest.TestCase):\n    def test_prefix_snapshot_and_basic_rectangles(self):\n        grid = [[1, 2, 3], [4, 5, 6]]\n        accumulator = RegionAccumulator(grid)\n        self.assertEqual(accumulator.prefix_snapshot(), (\n            (0, 0, 0, 0),\n            (0, 1, 3, 6),\n            (0, 5, 12, 21),\n        ))\n        self.assertEqual(accumulator.rectangle_total(0, 0, 2, 3), 21)\n        self.assertEqual(accumulator.rectangle_total(0, 1, 2, 3), 16)\n        self.assertEqual(accumulator.rectangle_mean(0, 1, 2, 3), 4.0)\n\n    def test_clamping_and_empty_intersections(self):\n        accumulator = RegionAccumulator([[1, 2], [3, 4]])\n        self.assertEqual(accumulator.rectangle_total(-10, -5, 1, 1), 1)\n        self.assertEqual(accumulator.rectangle_total(1, 1, 99, 99), 4)\n        self.assertEqual(accumulator.rectangle_total(-8, 0, -2, 2), 0)\n        self.assertEqual(accumulator.rectangle_total(5, 5, 8, 9), 0)\n        self.assertEqual(accumulator.rectangle_total(1, 0, 1, 2), 0)\n        self.assertEqual(accumulator.rectangle_mean(1, 0, 1, 2), 0.0)\n        self.assertEqual(accumulator.rectangle_mean(-10, -10, 10, 10), 2.5)\n\n    def test_empty_shapes_and_immutable_snapshot(self):\n        self.assertEqual(RegionAccumulator([]).prefix_snapshot(), ((0,),))\n        zero_columns = RegionAccumulator([[], []])\n        self.assertEqual(zero_columns.prefix_snapshot(), ((0,), (0,), (0,)))\n        self.assertEqual(zero_columns.rectangle_total(-1, -1, 8, 8), 0)\n        snapshot = zero_columns.prefix_snapshot()\n        self.assertIsInstance(snapshot, tuple)\n        self.assertTrue(all(isinstance(row, tuple) for row in snapshot))\n\n    def test_input_is_not_retained_or_modified(self):\n        grid = [[1, 2], [3, 4]]\n        accumulator = RegionAccumulator(grid)\n        grid[0][0] = 1000\n        grid.append([8, 9])\n        self.assertEqual(accumulator.rectangle_total(0, 0, 2, 2), 10)\n        first = accumulator.prefix_snapshot()\n        second = accumulator.prefix_snapshot()\n        self.assertEqual(first, second)\n\n    def test_grid_validation(self):\n        for grid in (None, (), \"grid\"):\n            with self.subTest(grid=grid):\n                with self.assertRaises(TypeError):\n                    RegionAccumulator(grid)\n        with self.assertRaises(TypeError):\n            RegionAccumulator([(1, 2)])\n        with self.assertRaises(ValueError):\n            RegionAccumulator([[1], [2, 3]])\n        for value in (True, \"1\", None):\n            with self.subTest(value=value):\n                with self.assertRaises(TypeError):\n                    RegionAccumulator([[value]])\n        for value in (float(\"inf\"), float(\"-inf\"), float(\"nan\")):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    RegionAccumulator([[value]])\n\n    def test_coordinate_validation(self):\n        accumulator = RegionAccumulator([[1]])\n        for coordinates in ((True, 0, 1, 1), (0, 0.0, 1, 1), (0, 0, \"1\", 1), (0, 0, 1, None)):\n            with self.subTest(coordinates=coordinates):\n                with self.assertRaises(TypeError):\n                    accumulator.rectangle_total(*coordinates)\n        with self.assertRaises(ValueError):\n            accumulator.rectangle_total(2, 0, 1, 1)\n        with self.assertRaises(ValueError):\n            accumulator.rectangle_mean(0, 3, 1, 2)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "e2b1f69f7c39953a104a964b252effde9ad5a52a1066d4f1b4b02e8b81d8dce2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2b6e67774dce9782f736071d36ebaa57dd1a1c1219db486c6951ee8a878c30ce",
+      "text": "Create `solution.py` defining `RegionAccumulator(grid)`. `grid` must be a rectangular list of row lists containing finite real numbers; booleans are invalid. An empty grid is valid, as are nonempty grids with zero columns. Ragged rows raise `ValueError`. The constructor must precompute a two-dimensional prefix table without modifying or retaining aliases to `grid`.\n\nProvide `rectangle_total(top, left, bottom, right)`, `rectangle_mean(top, left, bottom, right)`, and `prefix_snapshot()`. Rectangle coordinates are integer, non-boolean, half-open bounds. Require `top <= bottom` and `left <= right`; otherwise raise `ValueError`. Clamp every rectangle to the grid, treating outside cells as absent. `rectangle_total` returns the sum of intersecting cells, or numeric zero for an empty intersection. `rectangle_mean` divides by the number of intersecting cells and returns `0.0` for an empty intersection. `prefix_snapshot` returns an immutable tuple of tuples, including its zero border. Repeated calls must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2b6e67774dce9782f736071d36ebaa57dd1a1c1219db486c6951ee8a878c30ce",
+      "text": "Create `solution.py` defining `RegionAccumulator(grid)`. `grid` must be a rectangular list of row lists containing finite real numbers; booleans are invalid. An empty grid is valid, as are nonempty grids with zero columns. Ragged rows raise `ValueError`. The constructor must precompute a two-dimensional prefix table without modifying or retaining aliases to `grid`.\n\nProvide `rectangle_total(top, left, bottom, right)`, `rectangle_mean(top, left, bottom, right)`, and `prefix_snapshot()`. Rectangle coordinates are integer, non-boolean, half-open bounds. Require `top <= bottom` and `left <= right`; otherwise raise `ValueError`. Clamp every rectangle to the grid, treating outside cells as absent. `rectangle_total` returns the sum of intersecting cells, or numeric zero for an empty intersection. `rectangle_mean` divides by the number of intersecting cells and returns `0.0` for an empty intersection. `prefix_snapshot` returns an immutable tuple of tuples, including its zero border. Repeated calls must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0197",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\nclass RegionAccumulator:\n    def __init__(self, grid):\n        if not isinstance(grid, list):\n            raise TypeError(\"grid must be a list\")\n        width = None\n        for row in grid:\n            if not isinstance(row, list):\n                raise TypeError(\"rows must be lists\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"grid must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, Real):\n                    raise TypeError(\"cells must be real numbers\")\n                if not math.isfinite(value):\n                    raise ValueError(\"cells must be finite\")\n        self._height = len(grid)\n        self._width = 0 if width is None else width\n        table = [[0 for _ in range(self._width + 1)] for _ in range(self._height + 1)]\n        for y, row in enumerate(grid, 1):\n            running = 0\n            for x, value in enumerate(row, 1):\n                running += value\n                table[y][x] = table[y - 1][x] + running\n        self._prefix = tuple(tuple(row) for row in table)\n\n    def _clipped(self, top, left, bottom, right):\n        values = (top, left, bottom, right)\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in values):\n            raise TypeError(\"coordinates must be integers\")\n        if top > bottom or left > right:\n            raise ValueError(\"rectangle bounds are reversed\")\n        return (max(0, min(self._height, top)),\n                max(0, min(self._width, left)),\n                max(0, min(self._height, bottom)),\n                max(0, min(self._width, right)))\n\n    def rectangle_total(self, top, left, bottom, right):\n        top, left, bottom, right = self._clipped(top, left, bottom, right)\n        if top >= bottom or left >= right:\n            return 0\n        p = self._prefix\n        return p[bottom][right] - p[top][right] - p[bottom][left] + p[top][left]\n\n    def rectangle_mean(self, top, left, bottom, right):\n        clipped = self._clipped(top, left, bottom, right)\n        top2, left2, bottom2, right2 = clipped\n        count = max(0, bottom - top) * max(0, right - left)\n        if count == 0:\n            return 0.0\n        return self.rectangle_total(*clipped) / count\n\n    def prefix_snapshot(self):\n        return self._prefix\n",
+          "label": "The mean uses the requested rectangle's area rather than the clamped intersection area.",
+          "sha256": "9dcda88bae01aa95dfaf00421012874b3d0605287b4ccb011e6ccf43c679582b"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\nclass RegionAccumulator:\n    def __init__(self, grid):\n        if not isinstance(grid, list):\n            raise TypeError(\"grid must be a list\")\n        width = None\n        for row in grid:\n            if not isinstance(row, list):\n                raise TypeError(\"rows must be lists\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"grid must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, Real):\n                    raise TypeError(\"cells must be real numbers\")\n                if not math.isfinite(value):\n                    raise ValueError(\"cells must be finite\")\n        self._height = len(grid)\n        self._width = 0 if width is None else width\n        table = [[0 for _ in range(self._width + 1)] for _ in range(self._height + 1)]\n        for y, row in enumerate(grid, 1):\n            running = 0\n            for x, value in enumerate(row, 1):\n                running += value\n                table[y][x] = table[y - 1][x] + running\n        self._prefix = tuple(tuple(row) for row in table)\n\n    def _clipped(self, top, left, bottom, right):\n        values = (top, left, bottom, right)\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in values):\n            raise TypeError(\"coordinates must be integers\")\n        if top > bottom or left > right:\n            raise ValueError(\"rectangle bounds are reversed\")\n        return (max(0, min(self._height, top)),\n                max(0, min(self._width, left)),\n                max(0, min(self._height, bottom)),\n                max(0, min(self._width, right)))\n\n    def rectangle_total(self, top, left, bottom, right):\n        top, left, bottom, right = self._clipped(top, left, bottom, right)\n        if top >= bottom or left >= right:\n            return 0\n        p = self._prefix\n        return p[bottom][right] - p[top][right] - p[bottom][left] + p[top][left]\n\n    def rectangle_mean(self, top, left, bottom, right):\n        clipped = self._clipped(top, left, bottom, right)\n        top2, left2, bottom2, right2 = clipped\n        count = max(0, bottom2 - top2) * max(0, right2 - left2)\n        if count == 0:\n            return 0.0\n        return self.rectangle_total(*clipped) / count\n\n    def prefix_snapshot(self):\n        return self._prefix\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2efe6dbca1fa1e1309e87466d48d9bc76ca8847e139d6d9bf511f253e83ec720"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_small_cell_not_lost_to_unrelated_prefix (__main__.RegionSingleCellPrecisionTests.test_small_cell_not_lost_to_unrelated_prefix)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_small_cell_not_lost_to_unrelated_prefix\n    self.assertEqual(accumulator.rectangle_total(0, 1, 1, 2), 1.0)\nAssertionError: 0.0 != 1.0\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "4e8b5d5b8c3289b923c80f98c83a9879808fd43830cf6b84d6d671b1571dd735",
+    "duration_ms": 498,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

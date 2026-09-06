@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0252",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5a9a48322a3fda6945f635a5f09a52db48bfbdc0a4b41ed121f59d0d68a43bdc",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import ReleaseIndex, ReleaseDetail\n\n\nclass ReleaseStateTypeTests(unittest.TestCase):\n    def test_malformed_state_raises_value_error(self):\n        releases = [dict(slug='s', headline='H', body='', published_at=0, state=[])]\n        for renderer in (lambda: ReleaseIndex().render(releases), lambda: ReleaseDetail().render(releases, 's')):\n            with self.subTest(renderer=renderer), self.assertRaises(ValueError):\n                renderer()\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "94178ab6f3322c59f19067355227aa5f23a03d2bef46fd2de25413412f275cec"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ba194c7a185f6f7c9730f157b56267f63d3067273704ccd0206ec5a2f45481da",
+      "text": "Create `solution.py` defining the classes `ReleaseIndex` and `ReleaseDetail`.\n\nEvery release is a dictionary containing a unique non-empty string `slug`, non-empty string `headline`, string `body`, integer `published_at` (booleans invalid), and `state`, which must be either `public` or `draft`. Both classes must validate the complete input list and raise `ValueError` for malformed releases or duplicate slugs.\n\n`ReleaseIndex.render(releases)` returns deep copies of public releases sorted by descending `published_at`, with slug ascending as the tie-breaker. Empty input returns an empty list.\n\n`ReleaseDetail.render(releases, slug)` requires a non-empty string slug. It returns a deep copy of the matching public release. It raises `KeyError(slug)` if the slug is absent or belongs to a draft.\n\nNeither method may mutate the input or return mutable aliases to it. Each class must have a docstring that clearly describes its purpose.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ba194c7a185f6f7c9730f157b56267f63d3067273704ccd0206ec5a2f45481da",
+      "text": "Create `solution.py` defining the classes `ReleaseIndex` and `ReleaseDetail`.\n\nEvery release is a dictionary containing a unique non-empty string `slug`, non-empty string `headline`, string `body`, integer `published_at` (booleans invalid), and `state`, which must be either `public` or `draft`. Both classes must validate the complete input list and raise `ValueError` for malformed releases or duplicate slugs.\n\n`ReleaseIndex.render(releases)` returns deep copies of public releases sorted by descending `published_at`, with slug ascending as the tie-breaker. Empty input returns an empty list.\n\n`ReleaseDetail.render(releases, slug)` requires a non-empty string slug. It returns a deep copy of the matching public release. It raises `KeyError(slug)` if the slug is absent or belongs to a draft.\n\nNeither method may mutate the input or return mutable aliases to it. Each class must have a docstring that clearly describes its purpose.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0252",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom typing import Any\n\n\ndef _validate(releases: list[dict[str, Any]]) -> None:\n    if not isinstance(releases, list):\n        raise ValueError(\"releases must be a list\")\n    seen: set[str] = set()\n    for release in releases:\n        if not isinstance(release, dict):\n            raise ValueError(\"each release must be a dictionary\")\n        required = {\"slug\", \"headline\", \"body\", \"published_at\", \"state\"}\n        if not required.issubset(release):\n            raise ValueError(\"release is missing required fields\")\n        if not isinstance(release[\"slug\"], str) or not release[\"slug\"]:\n            raise ValueError(\"slug must be a non-empty string\")\n        if release[\"slug\"] in seen:\n            raise ValueError(\"slugs must be unique\")\n        seen.add(release[\"slug\"])\n        if not isinstance(release[\"headline\"], str) or not release[\"headline\"]:\n            raise ValueError(\"headline must be a non-empty string\")\n        if not isinstance(release[\"body\"], str):\n            raise ValueError(\"body must be a string\")\n        if not isinstance(release[\"published_at\"], int) or isinstance(release[\"published_at\"], bool):\n            raise ValueError(\"published_at must be an integer\")\n        if release[\"state\"] not in {\"public\", \"draft\"}:\n            raise ValueError(\"invalid state\")\n\n\nclass ReleaseIndex:\n    \"\"\"Validate releases and produce a newest-first snapshot of public entries.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]]) -> list[dict[str, Any]]:\n        _validate(releases)\n        public = (release for release in releases if release[\"state\"] == \"public\")\n        ordered = sorted(public, key=lambda release: (-release[\"published_at\"], release[\"slug\"]))\n        return deepcopy(ordered)\n\n\nclass ReleaseDetail:\n    \"\"\"Validate releases and return one isolated public entry selected by slug.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]], slug: str) -> dict[str, Any]:\n        _validate(releases)\n        if not isinstance(slug, str) or not slug:\n            raise ValueError(\"slug must be a non-empty string\")\n        for release in releases:\n            if release[\"slug\"] == slug:\n                return deepcopy(release)\n        raise KeyError(slug)\n",
+          "label": "The detail view exposes draft releases instead of treating them as unavailable.",
+          "sha256": "561216972193c6d2440ba6368a46ab7e568189fe5bbb7d369b7cb7b1365a831d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom typing import Any\n\n\ndef _validate(releases: list[dict[str, Any]]) -> None:\n    if not isinstance(releases, list):\n        raise ValueError(\"releases must be a list\")\n    seen: set[str] = set()\n    for release in releases:\n        if not isinstance(release, dict):\n            raise ValueError(\"each release must be a dictionary\")\n        required = {\"slug\", \"headline\", \"body\", \"published_at\", \"state\"}\n        if not required.issubset(release):\n            raise ValueError(\"release is missing required fields\")\n        if not isinstance(release[\"slug\"], str) or not release[\"slug\"]:\n            raise ValueError(\"slug must be a non-empty string\")\n        if release[\"slug\"] in seen:\n            raise ValueError(\"slugs must be unique\")\n        seen.add(release[\"slug\"])\n        if not isinstance(release[\"headline\"], str) or not release[\"headline\"]:\n            raise ValueError(\"headline must be a non-empty string\")\n        if not isinstance(release[\"body\"], str):\n            raise ValueError(\"body must be a string\")\n        if not isinstance(release[\"published_at\"], int) or isinstance(release[\"published_at\"], bool):\n            raise ValueError(\"published_at must be an integer\")\n        if release[\"state\"] not in {\"public\", \"draft\"}:\n            raise ValueError(\"invalid state\")\n\n\nclass ReleaseIndex:\n    \"\"\"Validate releases and produce a newest-first snapshot of public entries.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]]) -> list[dict[str, Any]]:\n        _validate(releases)\n        public = (release for release in releases if release[\"state\"] == \"public\")\n        ordered = sorted(public, key=lambda release: (-release[\"published_at\"], release[\"slug\"]))\n        return deepcopy(ordered)\n\n\nclass ReleaseDetail:\n    \"\"\"Validate releases and return one isolated public entry selected by slug.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]], slug: str) -> dict[str, Any]:\n        _validate(releases)\n        if not isinstance(slug, str) or not slug:\n            raise ValueError(\"slug must be a non-empty string\")\n        for release in releases:\n            if release[\"slug\"] == slug and release[\"state\"] == \"public\":\n                return deepcopy(release)\n        raise KeyError(slug)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "66da3d55c2fb42b6840a755e075c0a2f5ea348b14298095a6970e03542c81cad"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import ReleaseIndex, ReleaseDetail\n\n\nclass ReleaseTests(unittest.TestCase):\n    def setUp(self):\n        self.releases = [\n            {\"slug\": \"zeta\", \"headline\": \"Z\", \"body\": \"body\", \"published_at\": 20,\n             \"state\": \"public\", \"meta\": {\"tags\": [\"z\"]}},\n            {\"slug\": \"alpha\", \"headline\": \"A\", \"body\": \"a\", \"published_at\": 20,\n             \"state\": \"public\", \"meta\": {\"tags\": [\"a\"]}},\n            {\"slug\": \"draft\", \"headline\": \"D\", \"body\": \"d\", \"published_at\": 30,\n             \"state\": \"draft\"},\n            {\"slug\": \"old\", \"headline\": \"O\", \"body\": \"o\", \"published_at\": 10,\n             \"state\": \"public\"},\n        ]\n\n    def test_index_sort_filter_and_deep_copy(self):\n        result = ReleaseIndex().render(self.releases)\n        self.assertEqual([r[\"slug\"] for r in result], [\"alpha\", \"zeta\", \"old\"])\n        result[0][\"meta\"][\"tags\"].append(\"changed\")\n        self.assertEqual(self.releases[1][\"meta\"][\"tags\"], [\"a\"])\n        self.assertEqual(ReleaseIndex().render([]), [])\n\n    def test_detail_public_draft_and_missing(self):\n        result = ReleaseDetail().render(self.releases, \"zeta\")\n        self.assertEqual(result[\"headline\"], \"Z\")\n        result[\"meta\"][\"tags\"].append(\"changed\")\n        self.assertEqual(self.releases[0][\"meta\"][\"tags\"], [\"z\"])\n        for slug in (\"draft\", \"missing\"):\n            with self.subTest(slug=slug):\n                with self.assertRaises(KeyError) as caught:\n                    ReleaseDetail().render(self.releases, slug)\n                self.assertEqual(caught.exception.args, (slug,))\n\n    def test_docstrings_describe_releases(self):\n        for cls in (ReleaseIndex, ReleaseDetail):\n            self.assertIsInstance(cls.__doc__, str)\n            self.assertIn(\"release\", cls.__doc__.lower())\n\n    def test_malformed_and_duplicate_releases(self):\n        valid = {\"slug\": \"s\", \"headline\": \"h\", \"body\": \"\", \"published_at\": 0, \"state\": \"public\"}\n        malformed = [\n            \"bad\", {**valid, \"slug\": \"\"}, {**valid, \"headline\": \"\"},\n            {**valid, \"body\": 1}, {**valid, \"published_at\": True},\n            {**valid, \"state\": \"private\"},\n        ]\n        for item in malformed:\n            for renderer in (lambda rs: ReleaseIndex().render(rs),\n                             lambda rs: ReleaseDetail().render(rs, \"s\")):\n                with self.assertRaises(ValueError):\n                    renderer([item])\n        duplicates = [valid, {**valid, \"headline\": \"other\"}]\n        with self.assertRaises(ValueError):\n            ReleaseIndex().render(duplicates)\n        with self.assertRaises(ValueError):\n            ReleaseDetail().render(duplicates, \"s\")\n        for slug in (\"\", None):\n            with self.assertRaises(ValueError):\n                ReleaseDetail().render([valid], slug)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "3550563baa1554896ab6c08392582e90ed2a49e4e801887e4b532011ee27dd9a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ba194c7a185f6f7c9730f157b56267f63d3067273704ccd0206ec5a2f45481da",
+      "text": "Create `solution.py` defining the classes `ReleaseIndex` and `ReleaseDetail`.\n\nEvery release is a dictionary containing a unique non-empty string `slug`, non-empty string `headline`, string `body`, integer `published_at` (booleans invalid), and `state`, which must be either `public` or `draft`. Both classes must validate the complete input list and raise `ValueError` for malformed releases or duplicate slugs.\n\n`ReleaseIndex.render(releases)` returns deep copies of public releases sorted by descending `published_at`, with slug ascending as the tie-breaker. Empty input returns an empty list.\n\n`ReleaseDetail.render(releases, slug)` requires a non-empty string slug. It returns a deep copy of the matching public release. It raises `KeyError(slug)` if the slug is absent or belongs to a draft.\n\nNeither method may mutate the input or return mutable aliases to it. Each class must have a docstring that clearly describes its purpose.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ba194c7a185f6f7c9730f157b56267f63d3067273704ccd0206ec5a2f45481da",
+      "text": "Create `solution.py` defining the classes `ReleaseIndex` and `ReleaseDetail`.\n\nEvery release is a dictionary containing a unique non-empty string `slug`, non-empty string `headline`, string `body`, integer `published_at` (booleans invalid), and `state`, which must be either `public` or `draft`. Both classes must validate the complete input list and raise `ValueError` for malformed releases or duplicate slugs.\n\n`ReleaseIndex.render(releases)` returns deep copies of public releases sorted by descending `published_at`, with slug ascending as the tie-breaker. Empty input returns an empty list.\n\n`ReleaseDetail.render(releases, slug)` requires a non-empty string slug. It returns a deep copy of the matching public release. It raises `KeyError(slug)` if the slug is absent or belongs to a draft.\n\nNeither method may mutate the input or return mutable aliases to it. Each class must have a docstring that clearly describes its purpose.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0252",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom typing import Any\n\n\ndef _validate(releases: list[dict[str, Any]]) -> None:\n    if not isinstance(releases, list):\n        raise ValueError(\"releases must be a list\")\n    seen: set[str] = set()\n    for release in releases:\n        if not isinstance(release, dict):\n            raise ValueError(\"each release must be a dictionary\")\n        required = {\"slug\", \"headline\", \"body\", \"published_at\", \"state\"}\n        if not required.issubset(release):\n            raise ValueError(\"release is missing required fields\")\n        if not isinstance(release[\"slug\"], str) or not release[\"slug\"]:\n            raise ValueError(\"slug must be a non-empty string\")\n        if release[\"slug\"] in seen:\n            raise ValueError(\"slugs must be unique\")\n        seen.add(release[\"slug\"])\n        if not isinstance(release[\"headline\"], str) or not release[\"headline\"]:\n            raise ValueError(\"headline must be a non-empty string\")\n        if not isinstance(release[\"body\"], str):\n            raise ValueError(\"body must be a string\")\n        if not isinstance(release[\"published_at\"], int) or isinstance(release[\"published_at\"], bool):\n            raise ValueError(\"published_at must be an integer\")\n        if release[\"state\"] not in {\"public\", \"draft\"}:\n            raise ValueError(\"invalid state\")\n\n\nclass ReleaseIndex:\n    \"\"\"Validate releases and produce a newest-first snapshot of public entries.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]]) -> list[dict[str, Any]]:\n        _validate(releases)\n        public = (release for release in releases if release[\"state\"] == \"public\")\n        ordered = sorted(public, key=lambda release: (-release[\"published_at\"], release[\"slug\"]))\n        return deepcopy(ordered)\n\n\nclass ReleaseDetail:\n    \"\"\"Validate releases and return one isolated public entry selected by slug.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]], slug: str) -> dict[str, Any]:\n        _validate(releases)\n        if not isinstance(slug, str) or not slug:\n            raise ValueError(\"slug must be a non-empty string\")\n        for release in releases:\n            if release[\"slug\"] == slug:\n                return deepcopy(release)\n        raise KeyError(slug)\n",
+          "label": "The detail view exposes draft releases instead of treating them as unavailable.",
+          "sha256": "561216972193c6d2440ba6368a46ab7e568189fe5bbb7d369b7cb7b1365a831d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom typing import Any\n\n\ndef _validate(releases: list[dict[str, Any]]) -> None:\n    if not isinstance(releases, list):\n        raise ValueError(\"releases must be a list\")\n    seen: set[str] = set()\n    for release in releases:\n        if not isinstance(release, dict):\n            raise ValueError(\"each release must be a dictionary\")\n        required = {\"slug\", \"headline\", \"body\", \"published_at\", \"state\"}\n        if not required.issubset(release):\n            raise ValueError(\"release is missing required fields\")\n        if not isinstance(release[\"slug\"], str) or not release[\"slug\"]:\n            raise ValueError(\"slug must be a non-empty string\")\n        if release[\"slug\"] in seen:\n            raise ValueError(\"slugs must be unique\")\n        seen.add(release[\"slug\"])\n        if not isinstance(release[\"headline\"], str) or not release[\"headline\"]:\n            raise ValueError(\"headline must be a non-empty string\")\n        if not isinstance(release[\"body\"], str):\n            raise ValueError(\"body must be a string\")\n        if not isinstance(release[\"published_at\"], int) or isinstance(release[\"published_at\"], bool):\n            raise ValueError(\"published_at must be an integer\")\n        if release[\"state\"] not in {\"public\", \"draft\"}:\n            raise ValueError(\"invalid state\")\n\n\nclass ReleaseIndex:\n    \"\"\"Validate releases and produce a newest-first snapshot of public entries.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]]) -> list[dict[str, Any]]:\n        _validate(releases)\n        public = (release for release in releases if release[\"state\"] == \"public\")\n        ordered = sorted(public, key=lambda release: (-release[\"published_at\"], release[\"slug\"]))\n        return deepcopy(ordered)\n\n\nclass ReleaseDetail:\n    \"\"\"Validate releases and return one isolated public entry selected by slug.\"\"\"\n\n    def render(self, releases: list[dict[str, Any]], slug: str) -> dict[str, Any]:\n        _validate(releases)\n        if not isinstance(slug, str) or not slug:\n            raise ValueError(\"slug must be a non-empty string\")\n        for release in releases:\n            if release[\"slug\"] == slug and release[\"state\"] == \"public\":\n                return deepcopy(release)\n        raise KeyError(slug)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "66da3d55c2fb42b6840a755e075c0a2f5ea348b14298095a6970e03542c81cad"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "EE\n======================================================================\nERROR: test_malformed_state_raises_value_error (__main__.ReleaseStateTypeTests.test_malformed_state_raises_value_error) (renderer=<function ReleaseStateTypeTests.test_malformed_state_raises_value_error.<locals>.<lambda> at 0x7ffffecb5bc0>)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_malformed_state_raises_value_error\n    renderer()\n  File \"test_solution.py\", line 8, in <lambda>\n    for renderer in (lambda: ReleaseIndex().render(releases), lambda: ReleaseDetail().render(releases, 's')):\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 34, in render\n    _validate(releases)\n  File \"/work/solution.py\", line 26, in _validate\n    if release[\"state\"] not in {\"public\", \"draft\"}:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n======================================================================\nERROR: test_malformed_state_raises_value_error (__main__.ReleaseStateTypeTests.test_malformed_state_raises_value_error) (renderer=<function ReleaseStateTypeTests.test_malformed_state_raises_value_error.<locals>.<lambda> at 0x7ffffe88dbc0>)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_malformed_state_raises_value_error\n    renderer()\n  File \"test_solution.py\", line 8, in <lambda>\n    for renderer in (lambda: ReleaseIndex().render(releases), lambda: ReleaseDetail().render(releases, 's')):\n                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 44, in render\n    _validate(releases)\n  File \"/work/solution.py\", line 26, in _validate\n    if release[\"state\"] not in {\"public\", \"draft\"}:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=2)\n",
+    "stderr_sha256": "e4b68e9872e6dd29aa5991ae7ea8f745238292908b332184c5af90930355949b",
+    "duration_ms": 403,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0297",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "ebf9f3c0f1078cca46c00c63171680b584985862be2e0435b25de7fe3c1369a2",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import advance_shipments\n\nclass Probe(unittest.TestCase):\n    def test_one_transition_per_occurrence(self):\n        item = dict(status='draft', packages=2, holds=0)\n        result = advance_shipments([item, item])\n        self.assertEqual([row['status'] for row in result], ['queued', 'queued'])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "13b8fe774a87ea3a8e2d3818212bf41869d6ea270ad220f0a74f3795b26f0cda"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5cac2126f039264ee14f2e14598996ea2500d47f86bcaea20d5ab184e7dd5ca3",
+      "text": "Implement a new function `advance_shipments(shipments)` in `solution.py`.\n\nEach shipment must be a dictionary with exactly `status`, `packages`, and `holds`. `status` is one of `\"draft\"`, `\"queued\"`, `\"dispatch\"`, `\"inspection\"`, or `\"closed\"`; `packages` and `holds` are non-boolean non-negative integers.\n\nApply one transition independently to each shipment, preserving input order:\n- `draft` becomes `closed` when it has zero packages, otherwise `queued`.\n- `queued` remains `queued` while holds are positive; otherwise it becomes `dispatch` when it has at least two packages, or `inspection` when it has exactly one.\n- `dispatch` becomes `inspection` when holds are positive, otherwise remains `dispatch`.\n- `inspection` becomes `closed` only when holds are zero.\n- `closed` remains unchanged.\n\nThe input must be a non-string iterable. An empty iterable returns an empty list. Validate every shipment before computing any transition; malformed input raises `TypeError` or `ValueError`. The input and its dictionaries must never be mutated, and the returned dictionaries must not alias the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5cac2126f039264ee14f2e14598996ea2500d47f86bcaea20d5ab184e7dd5ca3",
+      "text": "Implement a new function `advance_shipments(shipments)` in `solution.py`.\n\nEach shipment must be a dictionary with exactly `status`, `packages`, and `holds`. `status` is one of `\"draft\"`, `\"queued\"`, `\"dispatch\"`, `\"inspection\"`, or `\"closed\"`; `packages` and `holds` are non-boolean non-negative integers.\n\nApply one transition independently to each shipment, preserving input order:\n- `draft` becomes `closed` when it has zero packages, otherwise `queued`.\n- `queued` remains `queued` while holds are positive; otherwise it becomes `dispatch` when it has at least two packages, or `inspection` when it has exactly one.\n- `dispatch` becomes `inspection` when holds are positive, otherwise remains `dispatch`.\n- `inspection` becomes `closed` only when holds are zero.\n- `closed` remains unchanged.\n\nThe input must be a non-string iterable. An empty iterable returns an empty list. Validate every shipment before computing any transition; malformed input raises `TypeError` or `ValueError`. The input and its dictionaries must never be mutated, and the returned dictionaries must not alias the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0297",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\n_STATUSES = {\"draft\", \"queued\", \"dispatch\", \"inspection\", \"closed\"}\n\n\ndef advance_shipments(shipments):\n    if isinstance(shipments, (str, bytes)):\n        raise TypeError(\"shipments must be an iterable\")\n    try:\n        items = list(shipments)\n    except TypeError as exc:\n        raise TypeError(\"shipments must be iterable\") from exc\n\n    for item in items:\n        if not isinstance(item, dict):\n            raise TypeError(\"each shipment must be a dictionary\")\n        if set(item) != {\"status\", \"packages\", \"holds\"}:\n            raise ValueError(\"invalid shipment fields\")\n        if item[\"status\"] not in _STATUSES:\n            raise ValueError(\"invalid status\")\n        for field in (\"packages\", \"holds\"):\n            value = item[field]\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(f\"{field} must be an integer\")\n            if value < 0:\n                raise ValueError(f\"{field} must be non-negative\")\n\n    result = deepcopy(items)\n    for item in result:\n        status = item[\"status\"]\n        packages = item[\"packages\"]\n        holds = item[\"holds\"]\n        if status == \"draft\":\n            item[\"status\"] = \"closed\" if packages == 0 else \"queued\"\n        elif status == \"queued\" and holds == 0:\n            item[\"status\"] = \"dispatch\" if packages > 2 else \"inspection\"\n        elif status == \"dispatch\" and holds > 0:\n            item[\"status\"] = \"inspection\"\n        elif status == \"inspection\" and holds == 0:\n            item[\"status\"] = \"closed\"\n    return result\n",
+          "label": "Uses a strict package threshold, sending a queued shipment with exactly two packages to inspection instead of dispatch.",
+          "sha256": "92daba8c0628b3e04df9946c116afc9ed36b133778dd6fddfe1d9aebc4f6ccda"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\n_STATUSES = {\"draft\", \"queued\", \"dispatch\", \"inspection\", \"closed\"}\n\n\ndef advance_shipments(shipments):\n    if isinstance(shipments, (str, bytes)):\n        raise TypeError(\"shipments must be an iterable\")\n    try:\n        items = list(shipments)\n    except TypeError as exc:\n        raise TypeError(\"shipments must be iterable\") from exc\n\n    for item in items:\n        if not isinstance(item, dict):\n            raise TypeError(\"each shipment must be a dictionary\")\n        if set(item) != {\"status\", \"packages\", \"holds\"}:\n            raise ValueError(\"invalid shipment fields\")\n        if item[\"status\"] not in _STATUSES:\n            raise ValueError(\"invalid status\")\n        for field in (\"packages\", \"holds\"):\n            value = item[field]\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(f\"{field} must be an integer\")\n            if value < 0:\n                raise ValueError(f\"{field} must be non-negative\")\n\n    result = deepcopy(items)\n    for item in result:\n        status = item[\"status\"]\n        packages = item[\"packages\"]\n        holds = item[\"holds\"]\n        if status == \"draft\":\n            item[\"status\"] = \"closed\" if packages == 0 else \"queued\"\n        elif status == \"queued\" and holds == 0:\n            item[\"status\"] = \"dispatch\" if packages >= 2 else \"inspection\"\n        elif status == \"dispatch\" and holds > 0:\n            item[\"status\"] = \"inspection\"\n        elif status == \"inspection\" and holds == 0:\n            item[\"status\"] = \"closed\"\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "af0fbf6a3375b909af638d8134f644de84dd342b4fc44e94d2d3185abb4fcd68"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import advance_shipments\n\n\nclass AdvanceShipmentsTests(unittest.TestCase):\n    def test_all_transition_branches_and_order(self):\n        shipments = [\n            {\"status\": \"draft\", \"packages\": 0, \"holds\": 8},\n            {\"status\": \"draft\", \"packages\": 3, \"holds\": 0},\n            {\"status\": \"queued\", \"packages\": 3, \"holds\": 1},\n            {\"status\": \"queued\", \"packages\": 2, \"holds\": 0},\n            {\"status\": \"queued\", \"packages\": 1, \"holds\": 0},\n            {\"status\": \"dispatch\", \"packages\": 2, \"holds\": 4},\n            {\"status\": \"dispatch\", \"packages\": 2, \"holds\": 0},\n            {\"status\": \"inspection\", \"packages\": 1, \"holds\": 0},\n            {\"status\": \"inspection\", \"packages\": 1, \"holds\": 2},\n            {\"status\": \"closed\", \"packages\": 9, \"holds\": 9},\n        ]\n        expected_statuses = [\n            \"closed\", \"queued\", \"queued\", \"dispatch\", \"inspection\",\n            \"inspection\", \"dispatch\", \"closed\", \"inspection\", \"closed\",\n        ]\n        result = advance_shipments(shipments)\n        self.assertEqual([item[\"status\"] for item in result], expected_statuses)\n        self.assertEqual([item[\"packages\"] for item in result], [0, 3, 3, 2, 1, 2, 2, 1, 1, 9])\n        self.assertEqual([item[\"holds\"] for item in result], [8, 0, 1, 0, 0, 4, 0, 0, 2, 9])\n\n    def test_empty_and_generator_inputs(self):\n        self.assertEqual(advance_shipments([]), [])\n        source = ({\"status\": \"draft\", \"packages\": n, \"holds\": 0} for n in [0, 1])\n        self.assertEqual(advance_shipments(source), [\n            {\"status\": \"closed\", \"packages\": 0, \"holds\": 0},\n            {\"status\": \"queued\", \"packages\": 1, \"holds\": 0},\n        ])\n\n    def test_input_is_not_mutated_and_results_do_not_alias(self):\n        shipment = {\"status\": \"queued\", \"packages\": 2, \"holds\": 0}\n        original = shipment.copy()\n        result = advance_shipments([shipment])\n        self.assertEqual(shipment, original)\n        self.assertIsNot(result[0], shipment)\n        result[0][\"status\"] = \"closed\"\n        result[0][\"packages\"] = 99\n        self.assertEqual(shipment, original)\n\n    def test_malformed_shipments(self):\n        valid = {\"status\": \"draft\", \"packages\": 1, \"holds\": 0}\n        invalid_values = [\n            \"not an iterable of shipments\",\n            b\"bad\",\n            None,\n            [None],\n            [{\"status\": \"draft\", \"packages\": 1}],\n            [{\"status\": \"draft\", \"packages\": 1, \"holds\": 0, \"extra\": 1}],\n            [{\"status\": \"lost\", \"packages\": 1, \"holds\": 0}],\n            [{\"status\": 3, \"packages\": 1, \"holds\": 0}],\n            [{\"status\": \"draft\", \"packages\": True, \"holds\": 0}],\n            [{\"status\": \"draft\", \"packages\": 1.0, \"holds\": 0}],\n            [{\"status\": \"draft\", \"packages\": -1, \"holds\": 0}],\n            [{\"status\": \"draft\", \"packages\": 1, \"holds\": False}],\n            [{\"status\": \"draft\", \"packages\": 1, \"holds\": -1}],\n            [valid, {\"status\": \"draft\", \"packages\": 1, \"holds\": \"0\"}],\n        ]\n        for value in invalid_values:\n            with self.subTest(value=value):\n                with self.assertRaises((TypeError, ValueError)):\n                    advance_shipments(value)\n        self.assertEqual(valid, {\"status\": \"draft\", \"packages\": 1, \"holds\": 0})\n\n    def test_all_entries_are_validated_before_transitioning(self):\n        first = {\"status\": \"draft\", \"packages\": 1, \"holds\": 0}\n        data = [first, {\"status\": \"queued\", \"packages\": -1, \"holds\": 0}]\n        with self.assertRaises((TypeError, ValueError)):\n            advance_shipments(data)\n        self.assertEqual(first, {\"status\": \"draft\", \"packages\": 1, \"holds\": 0})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "dbf6f716fa46e8f4bff129006e0a51ab0b258fdff38461e7d38dc493a51eac1a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5cac2126f039264ee14f2e14598996ea2500d47f86bcaea20d5ab184e7dd5ca3",
+      "text": "Implement a new function `advance_shipments(shipments)` in `solution.py`.\n\nEach shipment must be a dictionary with exactly `status`, `packages`, and `holds`. `status` is one of `\"draft\"`, `\"queued\"`, `\"dispatch\"`, `\"inspection\"`, or `\"closed\"`; `packages` and `holds` are non-boolean non-negative integers.\n\nApply one transition independently to each shipment, preserving input order:\n- `draft` becomes `closed` when it has zero packages, otherwise `queued`.\n- `queued` remains `queued` while holds are positive; otherwise it becomes `dispatch` when it has at least two packages, or `inspection` when it has exactly one.\n- `dispatch` becomes `inspection` when holds are positive, otherwise remains `dispatch`.\n- `inspection` becomes `closed` only when holds are zero.\n- `closed` remains unchanged.\n\nThe input must be a non-string iterable. An empty iterable returns an empty list. Validate every shipment before computing any transition; malformed input raises `TypeError` or `ValueError`. The input and its dictionaries must never be mutated, and the returned dictionaries must not alias the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5cac2126f039264ee14f2e14598996ea2500d47f86bcaea20d5ab184e7dd5ca3",
+      "text": "Implement a new function `advance_shipments(shipments)` in `solution.py`.\n\nEach shipment must be a dictionary with exactly `status`, `packages`, and `holds`. `status` is one of `\"draft\"`, `\"queued\"`, `\"dispatch\"`, `\"inspection\"`, or `\"closed\"`; `packages` and `holds` are non-boolean non-negative integers.\n\nApply one transition independently to each shipment, preserving input order:\n- `draft` becomes `closed` when it has zero packages, otherwise `queued`.\n- `queued` remains `queued` while holds are positive; otherwise it becomes `dispatch` when it has at least two packages, or `inspection` when it has exactly one.\n- `dispatch` becomes `inspection` when holds are positive, otherwise remains `dispatch`.\n- `inspection` becomes `closed` only when holds are zero.\n- `closed` remains unchanged.\n\nThe input must be a non-string iterable. An empty iterable returns an empty list. Validate every shipment before computing any transition; malformed input raises `TypeError` or `ValueError`. The input and its dictionaries must never be mutated, and the returned dictionaries must not alias the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0297",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\n_STATUSES = {\"draft\", \"queued\", \"dispatch\", \"inspection\", \"closed\"}\n\n\ndef advance_shipments(shipments):\n    if isinstance(shipments, (str, bytes)):\n        raise TypeError(\"shipments must be an iterable\")\n    try:\n        items = list(shipments)\n    except TypeError as exc:\n        raise TypeError(\"shipments must be iterable\") from exc\n\n    for item in items:\n        if not isinstance(item, dict):\n            raise TypeError(\"each shipment must be a dictionary\")\n        if set(item) != {\"status\", \"packages\", \"holds\"}:\n            raise ValueError(\"invalid shipment fields\")\n        if item[\"status\"] not in _STATUSES:\n            raise ValueError(\"invalid status\")\n        for field in (\"packages\", \"holds\"):\n            value = item[field]\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(f\"{field} must be an integer\")\n            if value < 0:\n                raise ValueError(f\"{field} must be non-negative\")\n\n    result = deepcopy(items)\n    for item in result:\n        status = item[\"status\"]\n        packages = item[\"packages\"]\n        holds = item[\"holds\"]\n        if status == \"draft\":\n            item[\"status\"] = \"closed\" if packages == 0 else \"queued\"\n        elif status == \"queued\" and holds == 0:\n            item[\"status\"] = \"dispatch\" if packages > 2 else \"inspection\"\n        elif status == \"dispatch\" and holds > 0:\n            item[\"status\"] = \"inspection\"\n        elif status == \"inspection\" and holds == 0:\n            item[\"status\"] = \"closed\"\n    return result\n",
+          "label": "Uses a strict package threshold, sending a queued shipment with exactly two packages to inspection instead of dispatch.",
+          "sha256": "92daba8c0628b3e04df9946c116afc9ed36b133778dd6fddfe1d9aebc4f6ccda"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\n_STATUSES = {\"draft\", \"queued\", \"dispatch\", \"inspection\", \"closed\"}\n\n\ndef advance_shipments(shipments):\n    if isinstance(shipments, (str, bytes)):\n        raise TypeError(\"shipments must be an iterable\")\n    try:\n        items = list(shipments)\n    except TypeError as exc:\n        raise TypeError(\"shipments must be iterable\") from exc\n\n    for item in items:\n        if not isinstance(item, dict):\n            raise TypeError(\"each shipment must be a dictionary\")\n        if set(item) != {\"status\", \"packages\", \"holds\"}:\n            raise ValueError(\"invalid shipment fields\")\n        if item[\"status\"] not in _STATUSES:\n            raise ValueError(\"invalid status\")\n        for field in (\"packages\", \"holds\"):\n            value = item[field]\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(f\"{field} must be an integer\")\n            if value < 0:\n                raise ValueError(f\"{field} must be non-negative\")\n\n    result = deepcopy(items)\n    for item in result:\n        status = item[\"status\"]\n        packages = item[\"packages\"]\n        holds = item[\"holds\"]\n        if status == \"draft\":\n            item[\"status\"] = \"closed\" if packages == 0 else \"queued\"\n        elif status == \"queued\" and holds == 0:\n            item[\"status\"] = \"dispatch\" if packages >= 2 else \"inspection\"\n        elif status == \"dispatch\" and holds > 0:\n            item[\"status\"] = \"inspection\"\n        elif status == \"inspection\" and holds == 0:\n            item[\"status\"] = \"closed\"\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "af0fbf6a3375b909af638d8134f644de84dd342b4fc44e94d2d3185abb4fcd68"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_one_transition_per_occurrence (__main__.Probe.test_one_transition_per_occurrence)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_one_transition_per_occurrence\n    self.assertEqual([row['status'] for row in result], ['queued', 'queued'])\nAssertionError: Lists differ: ['dispatch', 'dispatch'] != ['queued', 'queued']\n\nFirst differing element 0:\n'dispatch'\n'queued'\n\n- ['dispatch', 'dispatch']\n+ ['queued', 'queued']\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "ea72e7969382a8a70b07c39030eaf9ab203f60f85d0ded7456edeca2011e4d73",
+    "duration_ms": 443,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

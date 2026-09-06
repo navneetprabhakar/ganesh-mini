@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0296",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "454758efbfb838f9f5495433492fe65000c8de97b17bf3a9835c9b2d0ea602ac",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import CommandInbox\n\nclass Probe(unittest.TestCase):\n    def test_accepted_function_payload_is_not_isolated(self):\n        def payload():\n            return None\n        payload.items = [1]\n        inbox = CommandInbox(['u'])\n        result = inbox.submit('u', {'action': 'store', 'payload': payload})\n        result['result'].items.append(2)\n        self.assertEqual(inbox.stored()[0].items, [1])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "5869d3f11dd8e487a68eeafb61e4be8d346fbbff4b559adc0111e03b58d78aa3"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6012cb9e670d6f6718ac5b92f489594b031fc8da4814134549da23c035085285",
+      "text": "Implement a new class `CommandInbox` in `solution.py` for processing authenticated in-memory requests.\n\nPublic API:\n- `CommandInbox(users)`: `users` is an iterable of non-empty string user IDs. Duplicate IDs are allowed and collapse to one user. A string passed as the iterable itself is invalid.\n- `submit(user_id, request)`: reject an unknown user with `PermissionError`. `request` must be a dictionary with exactly `action` and `payload`. Supported actions are `\"store\"` and `\"echo\"`. For `store`, append the payload to internal storage; for `echo`, do not store it. Return `{\"ok\": True, \"result\": payload}`. Unknown actions raise `ValueError`; malformed requests raise `TypeError` or `ValueError`. Failed submissions must not be audited.\n- `stored()`: return stored payloads in submission order.\n- `audit()`: return successful requests in submission order, each as `{\"user_id\": ..., \"request\": ...}`.\n\nPayloads may be any Python value, including `None`. All accepted payloads and requests must be deep-copied. Mutating input objects or values returned by any method must never change internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6012cb9e670d6f6718ac5b92f489594b031fc8da4814134549da23c035085285",
+      "text": "Implement a new class `CommandInbox` in `solution.py` for processing authenticated in-memory requests.\n\nPublic API:\n- `CommandInbox(users)`: `users` is an iterable of non-empty string user IDs. Duplicate IDs are allowed and collapse to one user. A string passed as the iterable itself is invalid.\n- `submit(user_id, request)`: reject an unknown user with `PermissionError`. `request` must be a dictionary with exactly `action` and `payload`. Supported actions are `\"store\"` and `\"echo\"`. For `store`, append the payload to internal storage; for `echo`, do not store it. Return `{\"ok\": True, \"result\": payload}`. Unknown actions raise `ValueError`; malformed requests raise `TypeError` or `ValueError`. Failed submissions must not be audited.\n- `stored()`: return stored payloads in submission order.\n- `audit()`: return successful requests in submission order, each as `{\"user_id\": ..., \"request\": ...}`.\n\nPayloads may be any Python value, including `None`. All accepted payloads and requests must be deep-copied. Mutating input objects or values returned by any method must never change internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0296",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass CommandInbox:\n    def __init__(self, users):\n        if isinstance(users, (str, bytes)):\n            raise TypeError(\"users must be an iterable of user IDs\")\n        try:\n            values = list(users)\n        except TypeError as exc:\n            raise TypeError(\"users must be iterable\") from exc\n        if any(not isinstance(user, str) or not user for user in values):\n            raise ValueError(\"user IDs must be non-empty strings\")\n        self._users = set(values)\n        self._stored = []\n        self._audit = []\n\n    def submit(self, user_id, request):\n        if user_id not in self._users:\n            raise PermissionError(\"unknown user\")\n        if not isinstance(request, dict):\n            raise TypeError(\"request must be a dictionary\")\n        if set(request) != {\"action\", \"payload\"}:\n            raise ValueError(\"request must contain exactly action and payload\")\n        action = request[\"action\"]\n        if action not in {\"store\", \"echo\"}:\n            raise ValueError(\"unknown action\")\n        request_copy = request\n        if action == \"store\":\n            self._stored.append(deepcopy(request_copy[\"payload\"]))\n        self._audit.append({\"user_id\": user_id, \"request\": request_copy})\n        return {\"ok\": True, \"result\": deepcopy(request_copy[\"payload\"])}\n\n    def stored(self):\n        return deepcopy(self._stored)\n\n    def audit(self):\n        return deepcopy(self._audit)\n",
+          "label": "Stores the caller's request dictionary by alias, so later caller mutations alter the audit log.",
+          "sha256": "fecb56b0f287c29885e708122ebdb363317c0bdb5018199b8feb6eeaaadf666b"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass CommandInbox:\n    def __init__(self, users):\n        if isinstance(users, (str, bytes)):\n            raise TypeError(\"users must be an iterable of user IDs\")\n        try:\n            values = list(users)\n        except TypeError as exc:\n            raise TypeError(\"users must be iterable\") from exc\n        if any(not isinstance(user, str) or not user for user in values):\n            raise ValueError(\"user IDs must be non-empty strings\")\n        self._users = set(values)\n        self._stored = []\n        self._audit = []\n\n    def submit(self, user_id, request):\n        if user_id not in self._users:\n            raise PermissionError(\"unknown user\")\n        if not isinstance(request, dict):\n            raise TypeError(\"request must be a dictionary\")\n        if set(request) != {\"action\", \"payload\"}:\n            raise ValueError(\"request must contain exactly action and payload\")\n        action = request[\"action\"]\n        if action not in {\"store\", \"echo\"}:\n            raise ValueError(\"unknown action\")\n        request_copy = deepcopy(request)\n        if action == \"store\":\n            self._stored.append(deepcopy(request_copy[\"payload\"]))\n        self._audit.append({\"user_id\": user_id, \"request\": request_copy})\n        return {\"ok\": True, \"result\": deepcopy(request_copy[\"payload\"])}\n\n    def stored(self):\n        return deepcopy(self._stored)\n\n    def audit(self):\n        return deepcopy(self._audit)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8bc1f2290ac6250796e023ea22720256e6bd73268a468b1ebb217cc4166f18b6"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import CommandInbox\n\n\nclass CommandInboxTests(unittest.TestCase):\n    def test_users_duplicates_store_and_echo(self):\n        inbox = CommandInbox([\"u1\", \"u1\", \"u2\"])\n        self.assertEqual(inbox.submit(\"u1\", {\"action\": \"store\", \"payload\": 3}),\n                         {\"ok\": True, \"result\": 3})\n        self.assertEqual(inbox.submit(\"u2\", {\"action\": \"echo\", \"payload\": None}),\n                         {\"ok\": True, \"result\": None})\n        self.assertEqual(inbox.stored(), [3])\n        self.assertEqual(inbox.audit(), [\n            {\"user_id\": \"u1\", \"request\": {\"action\": \"store\", \"payload\": 3}},\n            {\"user_id\": \"u2\", \"request\": {\"action\": \"echo\", \"payload\": None}},\n        ])\n\n    def test_deep_copy_of_inputs_results_and_method_outputs(self):\n        inbox = CommandInbox([\"alice\"])\n        payload = {\"items\": [[1], {\"x\": 2}]}\n        request = {\"action\": \"store\", \"payload\": payload}\n        result = inbox.submit(\"alice\", request)\n\n        payload[\"items\"][0].append(99)\n        request[\"action\"] = \"echo\"\n        result[\"result\"][\"items\"][1][\"x\"] = 500\n\n        self.assertEqual(inbox.stored(), [{\"items\": [[1], {\"x\": 2}]}])\n        self.assertEqual(inbox.audit(), [{\n            \"user_id\": \"alice\",\n            \"request\": {\"action\": \"store\", \"payload\": {\"items\": [[1], {\"x\": 2}]}},\n        }])\n\n        stored = inbox.stored()\n        audit = inbox.audit()\n        stored[0][\"items\"][0].append(7)\n        audit[0][\"request\"][\"payload\"][\"items\"].clear()\n        audit.append({})\n        self.assertEqual(inbox.stored(), [{\"items\": [[1], {\"x\": 2}]}])\n        self.assertEqual(len(inbox.audit()), 1)\n        self.assertEqual(inbox.audit()[0][\"request\"][\"payload\"][\"items\"], [[1], {\"x\": 2}])\n\n    def test_failed_submissions_are_not_audited_or_stored(self):\n        inbox = CommandInbox([\"known\"])\n        failures = [\n            (\"missing\", {\"action\": \"store\", \"payload\": 1}, PermissionError),\n            (\"known\", {\"action\": \"delete\", \"payload\": 1}, ValueError),\n            (\"known\", {\"action\": \"store\"}, (TypeError, ValueError)),\n            (\"known\", {\"action\": \"store\", \"payload\": 1, \"extra\": 2}, (TypeError, ValueError)),\n            (\"known\", [\"store\", 1], (TypeError, ValueError)),\n            (\"known\", None, (TypeError, ValueError)),\n        ]\n        for user, request, error in failures:\n            with self.subTest(user=user, request=request):\n                with self.assertRaises(error):\n                    inbox.submit(user, request)\n                self.assertEqual(inbox.stored(), [])\n                self.assertEqual(inbox.audit(), [])\n\n    def test_empty_users_and_unknown_user(self):\n        inbox = CommandInbox([])\n        with self.assertRaises(PermissionError):\n            inbox.submit(\"any\", {\"action\": \"echo\", \"payload\": \"x\"})\n        self.assertEqual(inbox.audit(), [])\n\n    def test_constructor_validation(self):\n        invalid = [\"alice\", b\"alice\", None, [\"ok\", \"\"], [\"ok\", 3]]\n        for users in invalid:\n            with self.subTest(users=users):\n                with self.assertRaises((TypeError, ValueError)):\n                    CommandInbox(users)\n\n    def test_generator_of_users_is_supported(self):\n        inbox = CommandInbox(user for user in [\"a\", \"b\"])\n        self.assertEqual(inbox.submit(\"b\", {\"action\": \"echo\", \"payload\": [1]}),\n                         {\"ok\": True, \"result\": [1]})\n        self.assertEqual(inbox.stored(), [])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "34c4f485ee5e1eff7b70162ac33a01ea1ab548413e979aed31f201619b79f399"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6012cb9e670d6f6718ac5b92f489594b031fc8da4814134549da23c035085285",
+      "text": "Implement a new class `CommandInbox` in `solution.py` for processing authenticated in-memory requests.\n\nPublic API:\n- `CommandInbox(users)`: `users` is an iterable of non-empty string user IDs. Duplicate IDs are allowed and collapse to one user. A string passed as the iterable itself is invalid.\n- `submit(user_id, request)`: reject an unknown user with `PermissionError`. `request` must be a dictionary with exactly `action` and `payload`. Supported actions are `\"store\"` and `\"echo\"`. For `store`, append the payload to internal storage; for `echo`, do not store it. Return `{\"ok\": True, \"result\": payload}`. Unknown actions raise `ValueError`; malformed requests raise `TypeError` or `ValueError`. Failed submissions must not be audited.\n- `stored()`: return stored payloads in submission order.\n- `audit()`: return successful requests in submission order, each as `{\"user_id\": ..., \"request\": ...}`.\n\nPayloads may be any Python value, including `None`. All accepted payloads and requests must be deep-copied. Mutating input objects or values returned by any method must never change internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6012cb9e670d6f6718ac5b92f489594b031fc8da4814134549da23c035085285",
+      "text": "Implement a new class `CommandInbox` in `solution.py` for processing authenticated in-memory requests.\n\nPublic API:\n- `CommandInbox(users)`: `users` is an iterable of non-empty string user IDs. Duplicate IDs are allowed and collapse to one user. A string passed as the iterable itself is invalid.\n- `submit(user_id, request)`: reject an unknown user with `PermissionError`. `request` must be a dictionary with exactly `action` and `payload`. Supported actions are `\"store\"` and `\"echo\"`. For `store`, append the payload to internal storage; for `echo`, do not store it. Return `{\"ok\": True, \"result\": payload}`. Unknown actions raise `ValueError`; malformed requests raise `TypeError` or `ValueError`. Failed submissions must not be audited.\n- `stored()`: return stored payloads in submission order.\n- `audit()`: return successful requests in submission order, each as `{\"user_id\": ..., \"request\": ...}`.\n\nPayloads may be any Python value, including `None`. All accepted payloads and requests must be deep-copied. Mutating input objects or values returned by any method must never change internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0296",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass CommandInbox:\n    def __init__(self, users):\n        if isinstance(users, (str, bytes)):\n            raise TypeError(\"users must be an iterable of user IDs\")\n        try:\n            values = list(users)\n        except TypeError as exc:\n            raise TypeError(\"users must be iterable\") from exc\n        if any(not isinstance(user, str) or not user for user in values):\n            raise ValueError(\"user IDs must be non-empty strings\")\n        self._users = set(values)\n        self._stored = []\n        self._audit = []\n\n    def submit(self, user_id, request):\n        if user_id not in self._users:\n            raise PermissionError(\"unknown user\")\n        if not isinstance(request, dict):\n            raise TypeError(\"request must be a dictionary\")\n        if set(request) != {\"action\", \"payload\"}:\n            raise ValueError(\"request must contain exactly action and payload\")\n        action = request[\"action\"]\n        if action not in {\"store\", \"echo\"}:\n            raise ValueError(\"unknown action\")\n        request_copy = request\n        if action == \"store\":\n            self._stored.append(deepcopy(request_copy[\"payload\"]))\n        self._audit.append({\"user_id\": user_id, \"request\": request_copy})\n        return {\"ok\": True, \"result\": deepcopy(request_copy[\"payload\"])}\n\n    def stored(self):\n        return deepcopy(self._stored)\n\n    def audit(self):\n        return deepcopy(self._audit)\n",
+          "label": "Stores the caller's request dictionary by alias, so later caller mutations alter the audit log.",
+          "sha256": "fecb56b0f287c29885e708122ebdb363317c0bdb5018199b8feb6eeaaadf666b"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass CommandInbox:\n    def __init__(self, users):\n        if isinstance(users, (str, bytes)):\n            raise TypeError(\"users must be an iterable of user IDs\")\n        try:\n            values = list(users)\n        except TypeError as exc:\n            raise TypeError(\"users must be iterable\") from exc\n        if any(not isinstance(user, str) or not user for user in values):\n            raise ValueError(\"user IDs must be non-empty strings\")\n        self._users = set(values)\n        self._stored = []\n        self._audit = []\n\n    def submit(self, user_id, request):\n        if user_id not in self._users:\n            raise PermissionError(\"unknown user\")\n        if not isinstance(request, dict):\n            raise TypeError(\"request must be a dictionary\")\n        if set(request) != {\"action\", \"payload\"}:\n            raise ValueError(\"request must contain exactly action and payload\")\n        action = request[\"action\"]\n        if action not in {\"store\", \"echo\"}:\n            raise ValueError(\"unknown action\")\n        request_copy = deepcopy(request)\n        if action == \"store\":\n            self._stored.append(deepcopy(request_copy[\"payload\"]))\n        self._audit.append({\"user_id\": user_id, \"request\": request_copy})\n        return {\"ok\": True, \"result\": deepcopy(request_copy[\"payload\"])}\n\n    def stored(self):\n        return deepcopy(self._stored)\n\n    def audit(self):\n        return deepcopy(self._audit)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8bc1f2290ac6250796e023ea22720256e6bd73268a468b1ebb217cc4166f18b6"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_accepted_function_payload_is_not_isolated (__main__.Probe.test_accepted_function_payload_is_not_isolated)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 12, in test_accepted_function_payload_is_not_isolated\n    self.assertEqual(inbox.stored()[0].items, [1])\nAssertionError: Lists differ: [1, 2] != [1]\n\nFirst list contains 1 additional elements.\nFirst extra element 1:\n2\n\n- [1, 2]\n+ [1]\n\n----------------------------------------------------------------------\nRan 1 test in 0.008s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "53ec21b5f1487aecc804c33d1263d12cb26714fccbc41ad6e9c570c2cd82e4b6",
+    "duration_ms": 743,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

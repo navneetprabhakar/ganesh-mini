@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0183",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "91fd241b2700a4c226885be4ab5a8b474dc86b51f8a297124622fcb9dd092d7f",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import GridRoom\n\n\nclass GridLeadingZeroTests(unittest.TestCase):\n    def test_valid_decimal_coordinate(self):\n        room = GridRoom(2, 2)\n        participant = room.join('user', {})\n        self.assertEqual(room.execute(participant, 'place ' + '0' * 5000 + '1 0'), (1, 0))\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "2b0723cb1704af6cfca1e7b9e66734c4cb0a742818af718237e658ce2ea9c08d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2f3e504b1026e35ea406a2d93dd0ccedce11728e29b09d4050c069f5607244e0",
+      "text": "Create `solution.py` with a new class `GridRoom` that maintains an in-memory rectangular play area without networking or randomness.\n\n`GridRoom(width, height)` requires positive, non-boolean integers. `join(name, appearance)` assigns the next integer participant ID beginning at 1. The name must be a non-empty string and appearance must be a dictionary. Store a deep copy of appearance. Assign position `((id * 3) % width, (id * 5) % height)` and color `((id * 53) % 200, (id * 97) % 200, (id * 149) % 200)`, whose RGB sum is always below 600. Return the ID.\n\n`execute(participant_id, command)` supports exactly `whoami`, `roster`, and `place x y`. Unknown participants raise `KeyError`. Malformed or unknown commands raise `ValueError`. `place` requires decimal integers satisfying `0 <= x < width` and `0 <= y < height`, updates the position, and returns the new `(x, y)` tuple. `whoami` returns the ID. `roster` returns the same result as `snapshot()`.\n\n`leave(participant_id)` removes a participant and returns `True`, or returns `False` if absent. `snapshot()` returns a list of participant dictionaries ordered by ascending ID. All returned state and accepted mutable input must be deeply copied.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2f3e504b1026e35ea406a2d93dd0ccedce11728e29b09d4050c069f5607244e0",
+      "text": "Create `solution.py` with a new class `GridRoom` that maintains an in-memory rectangular play area without networking or randomness.\n\n`GridRoom(width, height)` requires positive, non-boolean integers. `join(name, appearance)` assigns the next integer participant ID beginning at 1. The name must be a non-empty string and appearance must be a dictionary. Store a deep copy of appearance. Assign position `((id * 3) % width, (id * 5) % height)` and color `((id * 53) % 200, (id * 97) % 200, (id * 149) % 200)`, whose RGB sum is always below 600. Return the ID.\n\n`execute(participant_id, command)` supports exactly `whoami`, `roster`, and `place x y`. Unknown participants raise `KeyError`. Malformed or unknown commands raise `ValueError`. `place` requires decimal integers satisfying `0 <= x < width` and `0 <= y < height`, updates the position, and returns the new `(x, y)` tuple. `whoami` returns the ID. `roster` returns the same result as `snapshot()`.\n\n`leave(participant_id)` removes a participant and returns `True`, or returns `False` if absent. `snapshot()` returns a list of participant dictionaries ordered by ascending ID. All returned state and accepted mutable input must be deeply copied.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0183",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport re\n\n\nclass GridRoom:\n    def __init__(self, width, height):\n        if isinstance(width, bool) or not isinstance(width, int) or width < 1:\n            raise ValueError(\"width must be a positive integer\")\n        if isinstance(height, bool) or not isinstance(height, int) or height < 1:\n            raise ValueError(\"height must be a positive integer\")\n        self._width = width\n        self._height = height\n        self._next_id = 1\n        self._participants = {}\n\n    def join(self, name, appearance):\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(appearance, dict):\n            raise TypeError(\"appearance must be a dictionary\")\n        participant_id = self._next_id\n        self._next_id += 1\n        self._participants[participant_id] = {\n            \"id\": participant_id,\n            \"name\": name,\n            \"appearance\": deepcopy(appearance),\n            \"position\": ((participant_id * 3) % self._width, (participant_id * 5) % self._height),\n            \"color\": ((participant_id * 53) % 200, (participant_id * 97) % 200, (participant_id * 149) % 200),\n        }\n        return participant_id\n\n    def execute(self, participant_id, command):\n        if participant_id not in self._participants:\n            raise KeyError(participant_id)\n        if not isinstance(command, str):\n            raise ValueError(\"command must be a string\")\n        if command == \"whoami\":\n            return participant_id\n        if command == \"roster\":\n            return self.snapshot()\n        match = re.fullmatch(r\"place ([0-9]+) ([0-9]+)\", command)\n        if match is not None:\n            x = int(match.group(1), 10)\n            y = int(match.group(2), 10)\n            if not (0 <= x <= self._width and 0 <= y <= self._height):\n                raise ValueError(\"coordinates are outside the room\")\n            self._participants[participant_id][\"position\"] = (x, y)\n            return x, y\n        raise ValueError(\"unknown or malformed command\")\n\n    def leave(self, participant_id):\n        return self._participants.pop(participant_id, None) is not None\n\n    def snapshot(self):\n        return [deepcopy(self._participants[item_id]) for item_id in sorted(self._participants)]\n",
+          "label": "The movement boundary check incorrectly accepts coordinates equal to the room width or height.",
+          "sha256": "623ea153b508a0ffcc7242ea07563226a314fe599feea156e308db5eb490e28b"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport re\n\n\nclass GridRoom:\n    def __init__(self, width, height):\n        if isinstance(width, bool) or not isinstance(width, int) or width < 1:\n            raise ValueError(\"width must be a positive integer\")\n        if isinstance(height, bool) or not isinstance(height, int) or height < 1:\n            raise ValueError(\"height must be a positive integer\")\n        self._width = width\n        self._height = height\n        self._next_id = 1\n        self._participants = {}\n\n    def join(self, name, appearance):\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(appearance, dict):\n            raise TypeError(\"appearance must be a dictionary\")\n        participant_id = self._next_id\n        self._next_id += 1\n        self._participants[participant_id] = {\n            \"id\": participant_id,\n            \"name\": name,\n            \"appearance\": deepcopy(appearance),\n            \"position\": ((participant_id * 3) % self._width, (participant_id * 5) % self._height),\n            \"color\": ((participant_id * 53) % 200, (participant_id * 97) % 200, (participant_id * 149) % 200),\n        }\n        return participant_id\n\n    def execute(self, participant_id, command):\n        if participant_id not in self._participants:\n            raise KeyError(participant_id)\n        if not isinstance(command, str):\n            raise ValueError(\"command must be a string\")\n        if command == \"whoami\":\n            return participant_id\n        if command == \"roster\":\n            return self.snapshot()\n        match = re.fullmatch(r\"place ([0-9]+) ([0-9]+)\", command)\n        if match is not None:\n            x = int(match.group(1), 10)\n            y = int(match.group(2), 10)\n            if not (0 <= x < self._width and 0 <= y < self._height):\n                raise ValueError(\"coordinates are outside the room\")\n            self._participants[participant_id][\"position\"] = (x, y)\n            return x, y\n        raise ValueError(\"unknown or malformed command\")\n\n    def leave(self, participant_id):\n        return self._participants.pop(participant_id, None) is not None\n\n    def snapshot(self):\n        return [deepcopy(self._participants[item_id]) for item_id in sorted(self._participants)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4f0c7047b985f430b6b347b2f8d6bb62fc33df8234f6d3f84b6bd22134d319f0"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import GridRoom\n\n\nclass GridRoomTests(unittest.TestCase):\n    def test_join_formulas_snapshot_and_order(self):\n        room = GridRoom(10, 8)\n        appearance = {'hat': {'colors': ['red']}}\n        self.assertEqual(room.join('alice', appearance), 1)\n        appearance['hat']['colors'].append('blue')\n        self.assertEqual(room.join('bob', {'shape': 'round'}), 2)\n        snapshot = room.snapshot()\n        self.assertEqual([p['id'] for p in snapshot], [1, 2])\n        self.assertEqual(snapshot[0]['name'], 'alice')\n        self.assertEqual(snapshot[0]['appearance'], {'hat': {'colors': ['red']}})\n        self.assertEqual(snapshot[0]['position'], (3, 5))\n        self.assertEqual(snapshot[0]['color'], (53, 97, 149))\n        self.assertEqual(snapshot[1]['position'], (6, 2))\n        self.assertEqual(snapshot[1]['color'], (106, 194, 98))\n        self.assertTrue(all(sum(p['color']) < 600 for p in snapshot))\n\n    def test_execute_commands(self):\n        room = GridRoom(4, 3)\n        participant = room.join('alice', {})\n        self.assertEqual(room.execute(participant, 'whoami'), participant)\n        self.assertEqual(room.execute(participant, 'place 0 0'), (0, 0))\n        self.assertEqual(room.execute(participant, 'place 3 2'), (3, 2))\n        self.assertEqual(room.execute(participant, 'roster'), room.snapshot())\n        self.assertEqual(room.snapshot()[0]['position'], (3, 2))\n\n    def test_command_validation_and_unknown_participant(self):\n        room = GridRoom(5, 5)\n        participant = room.join('alice', {})\n        for command in ('', 'jump', 'place', 'place 1', 'place 1 2 3',\n                        'place 1.0 2', 'place +1 2', 'place -1 2',\n                        'place 5 0', 'place 0 5', 'WHOAMI', ' whoami'):\n            with self.subTest(command=command):\n                with self.assertRaises(ValueError):\n                    room.execute(participant, command)\n        with self.assertRaises(ValueError):\n            room.execute(participant, None)\n        with self.assertRaises(KeyError):\n            room.execute(999, 'whoami')\n\n    def test_leave_and_ids_are_not_reused(self):\n        room = GridRoom(3, 3)\n        first = room.join('a', {})\n        second = room.join('b', {})\n        self.assertTrue(room.leave(first))\n        self.assertFalse(room.leave(first))\n        self.assertEqual(room.join('c', {}), 3)\n        self.assertEqual([p['id'] for p in room.snapshot()], [second, 3])\n        with self.assertRaises(KeyError):\n            room.execute(first, 'whoami')\n\n    def test_deep_copy_of_returned_state(self):\n        room = GridRoom(6, 6)\n        room.join('alice', {'items': [{'value': 1}]})\n        first = room.snapshot()\n        first[0]['appearance']['items'][0]['value'] = 99\n        first[0]['position'] = (0, 0)\n        first.clear()\n        roster = room.execute(1, 'roster')\n        roster[0]['appearance']['items'].append({'value': 2})\n        self.assertEqual(room.snapshot()[0]['appearance'], {'items': [{'value': 1}]})\n\n    def test_validation(self):\n        for width, height in ((0, 1), (1, 0), (-1, 2), (True, 2), (2, False), (2.0, 2)):\n            with self.subTest(width=width, height=height):\n                with self.assertRaises((TypeError, ValueError)):\n                    GridRoom(width, height)\n        room = GridRoom(2, 2)\n        for name, appearance in (('', {}), (1, {}), ('a', []), ('a', None)):\n            with self.subTest(name=name, appearance=appearance):\n                with self.assertRaises((TypeError, ValueError)):\n                    room.join(name, appearance)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "ea62151753710726a59e3dd8f114689a02d0acb9a3f2b9cc3e7e6d1f844b1a6e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2f3e504b1026e35ea406a2d93dd0ccedce11728e29b09d4050c069f5607244e0",
+      "text": "Create `solution.py` with a new class `GridRoom` that maintains an in-memory rectangular play area without networking or randomness.\n\n`GridRoom(width, height)` requires positive, non-boolean integers. `join(name, appearance)` assigns the next integer participant ID beginning at 1. The name must be a non-empty string and appearance must be a dictionary. Store a deep copy of appearance. Assign position `((id * 3) % width, (id * 5) % height)` and color `((id * 53) % 200, (id * 97) % 200, (id * 149) % 200)`, whose RGB sum is always below 600. Return the ID.\n\n`execute(participant_id, command)` supports exactly `whoami`, `roster`, and `place x y`. Unknown participants raise `KeyError`. Malformed or unknown commands raise `ValueError`. `place` requires decimal integers satisfying `0 <= x < width` and `0 <= y < height`, updates the position, and returns the new `(x, y)` tuple. `whoami` returns the ID. `roster` returns the same result as `snapshot()`.\n\n`leave(participant_id)` removes a participant and returns `True`, or returns `False` if absent. `snapshot()` returns a list of participant dictionaries ordered by ascending ID. All returned state and accepted mutable input must be deeply copied.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2f3e504b1026e35ea406a2d93dd0ccedce11728e29b09d4050c069f5607244e0",
+      "text": "Create `solution.py` with a new class `GridRoom` that maintains an in-memory rectangular play area without networking or randomness.\n\n`GridRoom(width, height)` requires positive, non-boolean integers. `join(name, appearance)` assigns the next integer participant ID beginning at 1. The name must be a non-empty string and appearance must be a dictionary. Store a deep copy of appearance. Assign position `((id * 3) % width, (id * 5) % height)` and color `((id * 53) % 200, (id * 97) % 200, (id * 149) % 200)`, whose RGB sum is always below 600. Return the ID.\n\n`execute(participant_id, command)` supports exactly `whoami`, `roster`, and `place x y`. Unknown participants raise `KeyError`. Malformed or unknown commands raise `ValueError`. `place` requires decimal integers satisfying `0 <= x < width` and `0 <= y < height`, updates the position, and returns the new `(x, y)` tuple. `whoami` returns the ID. `roster` returns the same result as `snapshot()`.\n\n`leave(participant_id)` removes a participant and returns `True`, or returns `False` if absent. `snapshot()` returns a list of participant dictionaries ordered by ascending ID. All returned state and accepted mutable input must be deeply copied.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0183",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport re\n\n\nclass GridRoom:\n    def __init__(self, width, height):\n        if isinstance(width, bool) or not isinstance(width, int) or width < 1:\n            raise ValueError(\"width must be a positive integer\")\n        if isinstance(height, bool) or not isinstance(height, int) or height < 1:\n            raise ValueError(\"height must be a positive integer\")\n        self._width = width\n        self._height = height\n        self._next_id = 1\n        self._participants = {}\n\n    def join(self, name, appearance):\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(appearance, dict):\n            raise TypeError(\"appearance must be a dictionary\")\n        participant_id = self._next_id\n        self._next_id += 1\n        self._participants[participant_id] = {\n            \"id\": participant_id,\n            \"name\": name,\n            \"appearance\": deepcopy(appearance),\n            \"position\": ((participant_id * 3) % self._width, (participant_id * 5) % self._height),\n            \"color\": ((participant_id * 53) % 200, (participant_id * 97) % 200, (participant_id * 149) % 200),\n        }\n        return participant_id\n\n    def execute(self, participant_id, command):\n        if participant_id not in self._participants:\n            raise KeyError(participant_id)\n        if not isinstance(command, str):\n            raise ValueError(\"command must be a string\")\n        if command == \"whoami\":\n            return participant_id\n        if command == \"roster\":\n            return self.snapshot()\n        match = re.fullmatch(r\"place ([0-9]+) ([0-9]+)\", command)\n        if match is not None:\n            x = int(match.group(1), 10)\n            y = int(match.group(2), 10)\n            if not (0 <= x <= self._width and 0 <= y <= self._height):\n                raise ValueError(\"coordinates are outside the room\")\n            self._participants[participant_id][\"position\"] = (x, y)\n            return x, y\n        raise ValueError(\"unknown or malformed command\")\n\n    def leave(self, participant_id):\n        return self._participants.pop(participant_id, None) is not None\n\n    def snapshot(self):\n        return [deepcopy(self._participants[item_id]) for item_id in sorted(self._participants)]\n",
+          "label": "The movement boundary check incorrectly accepts coordinates equal to the room width or height.",
+          "sha256": "623ea153b508a0ffcc7242ea07563226a314fe599feea156e308db5eb490e28b"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport re\n\n\nclass GridRoom:\n    def __init__(self, width, height):\n        if isinstance(width, bool) or not isinstance(width, int) or width < 1:\n            raise ValueError(\"width must be a positive integer\")\n        if isinstance(height, bool) or not isinstance(height, int) or height < 1:\n            raise ValueError(\"height must be a positive integer\")\n        self._width = width\n        self._height = height\n        self._next_id = 1\n        self._participants = {}\n\n    def join(self, name, appearance):\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"name must be a non-empty string\")\n        if not isinstance(appearance, dict):\n            raise TypeError(\"appearance must be a dictionary\")\n        participant_id = self._next_id\n        self._next_id += 1\n        self._participants[participant_id] = {\n            \"id\": participant_id,\n            \"name\": name,\n            \"appearance\": deepcopy(appearance),\n            \"position\": ((participant_id * 3) % self._width, (participant_id * 5) % self._height),\n            \"color\": ((participant_id * 53) % 200, (participant_id * 97) % 200, (participant_id * 149) % 200),\n        }\n        return participant_id\n\n    def execute(self, participant_id, command):\n        if participant_id not in self._participants:\n            raise KeyError(participant_id)\n        if not isinstance(command, str):\n            raise ValueError(\"command must be a string\")\n        if command == \"whoami\":\n            return participant_id\n        if command == \"roster\":\n            return self.snapshot()\n        match = re.fullmatch(r\"place ([0-9]+) ([0-9]+)\", command)\n        if match is not None:\n            x = int(match.group(1), 10)\n            y = int(match.group(2), 10)\n            if not (0 <= x < self._width and 0 <= y < self._height):\n                raise ValueError(\"coordinates are outside the room\")\n            self._participants[participant_id][\"position\"] = (x, y)\n            return x, y\n        raise ValueError(\"unknown or malformed command\")\n\n    def leave(self, participant_id):\n        return self._participants.pop(participant_id, None) is not None\n\n    def snapshot(self):\n        return [deepcopy(self._participants[item_id]) for item_id in sorted(self._participants)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4f0c7047b985f430b6b347b2f8d6bb62fc33df8234f6d3f84b6bd22134d319f0"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_valid_decimal_coordinate (__main__.GridLeadingZeroTests.test_valid_decimal_coordinate)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_valid_decimal_coordinate\n    self.assertEqual(room.execute(participant, 'place ' + '0' * 5000 + '1 0'), (1, 0))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 43, in execute\n    x = int(match.group(1), 10)\n        ^^^^^^^^^^^^^^^^^^^^^^^\nValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5001 digits; use sys.set_int_max_str_digits() to increase the limit\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "8dcb17eb2e5869e1836d8a71dd8049918d45c9adb706a1480d8a34522b72e2cc",
+    "duration_ms": 448,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

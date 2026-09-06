@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0267",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9562eec27ecf978a5d94b939a8e74beb8dac27113e1332ea336256476a1b7319",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import parse_inventory\n\nclass Probe(unittest.TestCase):\n    def test_leading_zero_price(self):\n        source = 'sku,price_cents,zone,stock\\nx,' + '0'*5000 + '1,z,2\\n'\n        self.assertEqual(parse_inventory(source), [dict(sku='x', price_cents=1, zone='z', stock=2)])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "6ca0a316ff45f25438224347d010a22429f72927b52a6b050145430baa880080"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1d5b741f5c9fffb884c6ae59db0b27cf325611716567931f32d461122be4e6b8",
+      "text": "Create `solution.py` with a top-level function `parse_inventory(csv_text)`.\n\nThe input is a string containing CSV with exactly these headers in this order: `sku,price_cents,zone,stock`. A whitespace-only string means no inventory and returns `[]`. Each data row must contain exactly four columns. Normalize `sku` by stripping surrounding whitespace, normalize `zone` by stripping and collapsing internal whitespace, and convert `price_cents` and `stock` to base-10 integers. Both integers must be nonnegative, and `sku` and `zone` must be nonempty. Blank records may be ignored. Quoted CSV fields must work according to normal CSV rules.\n\nReturn records in input order as newly allocated dictionaries with keys in header order. Preserve duplicate SKUs as separate records. Raise `ValueError` for a nonstring input, incorrect headers, malformed rows, invalid integers, or invalid normalized fields. Do not retain aliases to any parsed intermediate data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1d5b741f5c9fffb884c6ae59db0b27cf325611716567931f32d461122be4e6b8",
+      "text": "Create `solution.py` with a top-level function `parse_inventory(csv_text)`.\n\nThe input is a string containing CSV with exactly these headers in this order: `sku,price_cents,zone,stock`. A whitespace-only string means no inventory and returns `[]`. Each data row must contain exactly four columns. Normalize `sku` by stripping surrounding whitespace, normalize `zone` by stripping and collapsing internal whitespace, and convert `price_cents` and `stock` to base-10 integers. Both integers must be nonnegative, and `sku` and `zone` must be nonempty. Blank records may be ignored. Quoted CSV fields must work according to normal CSV rules.\n\nReturn records in input order as newly allocated dictionaries with keys in header order. Preserve duplicate SKUs as separate records. Raise `ValueError` for a nonstring input, incorrect headers, malformed rows, invalid integers, or invalid normalized fields. Do not retain aliases to any parsed intermediate data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0267",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import csv\nimport io\n\n\n_HEADERS = [\"sku\", \"price_cents\", \"zone\", \"stock\"]\n\n\ndef parse_inventory(csv_text):\n    if not isinstance(csv_text, str):\n        raise ValueError(\"csv_text must be a string\")\n    if csv_text == \"\":\n        raise ValueError(\"incorrect headers\")\n    if not csv_text.strip():\n        return []\n\n    try:\n        rows = csv.reader(io.StringIO(csv_text), strict=True)\n        header = next(rows)\n    except (csv.Error, StopIteration) as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    if header != _HEADERS:\n        raise ValueError(\"incorrect headers\")\n\n    result = []\n    try:\n        for row in rows:\n            if not row or all(not field.strip() for field in row):\n                continue\n            if len(row) != 4:\n                raise ValueError(\"each row must have four columns\")\n            sku = row[0].strip()\n            zone = row[2].strip()\n            if not sku or not zone:\n                raise ValueError(\"sku and zone must be nonempty\")\n            try:\n                price = int(row[1].strip(), 10)\n                stock = int(row[3].strip(), 10)\n            except ValueError as exc:\n                raise ValueError(\"price and stock must be integers\") from exc\n            if price < 0 or stock < 0:\n                raise ValueError(\"price and stock must be nonnegative\")\n            result.append({\n                \"sku\": sku,\n                \"price_cents\": price,\n                \"zone\": zone,\n                \"stock\": stock,\n            })\n    except csv.Error as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    return result\n",
+          "label": "Zone normalization strips only surrounding whitespace instead of collapsing internal whitespace.",
+          "sha256": "0d7be37707bf84b2e2cb4e5f1fb2617d231458bc185a6d97a559e00f502194fa"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport io\n\n\n_HEADERS = [\"sku\", \"price_cents\", \"zone\", \"stock\"]\n\n\ndef parse_inventory(csv_text):\n    if not isinstance(csv_text, str):\n        raise ValueError(\"csv_text must be a string\")\n    if csv_text == \"\":\n        raise ValueError(\"incorrect headers\")\n    if not csv_text.strip():\n        return []\n\n    try:\n        rows = csv.reader(io.StringIO(csv_text), strict=True)\n        header = next(rows)\n    except (csv.Error, StopIteration) as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    if header != _HEADERS:\n        raise ValueError(\"incorrect headers\")\n\n    result = []\n    try:\n        for row in rows:\n            if not row or all(not field.strip() for field in row):\n                continue\n            if len(row) != 4:\n                raise ValueError(\"each row must have four columns\")\n            sku = row[0].strip()\n            zone = \" \".join(row[2].split())\n            if not sku or not zone:\n                raise ValueError(\"sku and zone must be nonempty\")\n            try:\n                price = int(row[1].strip(), 10)\n                stock = int(row[3].strip(), 10)\n            except ValueError as exc:\n                raise ValueError(\"price and stock must be integers\") from exc\n            if price < 0 or stock < 0:\n                raise ValueError(\"price and stock must be nonnegative\")\n            result.append({\n                \"sku\": sku,\n                \"price_cents\": price,\n                \"zone\": zone,\n                \"stock\": stock,\n            })\n    except csv.Error as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "12d198168bf8e7b258045de1de3d5c6470d7d56c4e66b3c882745d51777aef73"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import parse_inventory\n\n\nclass InventoryTests(unittest.TestCase):\n    def test_parses_normalizes_quotes_and_preserves_duplicates(self):\n        text = (\n            'sku,price_cents,zone,stock\\n'\n            ' A-1 ,00125,\" North   East \",7\\n'\n            'A-1,0,\"South, Annex\",0\\n'\n        )\n        result = parse_inventory(text)\n        self.assertEqual(result, [\n            {'sku': 'A-1', 'price_cents': 125, 'zone': 'North East', 'stock': 7},\n            {'sku': 'A-1', 'price_cents': 0, 'zone': 'South, Annex', 'stock': 0},\n        ])\n        self.assertEqual(list(result[0]), ['sku', 'price_cents', 'zone', 'stock'])\n        self.assertIsNot(result[0], result[1])\n\n    def test_empty_inventory_and_blank_records(self):\n        self.assertEqual(parse_inventory('  \\n\\t '), [])\n        text = 'sku,price_cents,zone,stock\\n\\nX,10,Main,2\\n\\n'\n        self.assertEqual(parse_inventory(text), [\n            {'sku': 'X', 'price_cents': 10, 'zone': 'Main', 'stock': 2}\n        ])\n\n    def test_returns_fresh_containers(self):\n        first = parse_inventory('sku,price_cents,zone,stock\\nX,1,Z,2\\n')\n        second = parse_inventory('sku,price_cents,zone,stock\\nX,1,Z,2\\n')\n        self.assertIsNot(first, second)\n        self.assertIsNot(first[0], second[0])\n\n    def test_rejects_invalid_input_headers_rows_and_fields(self):\n        cases = [\n            None,\n            '',\n            'price_cents,sku,zone,stock\\n',\n            'sku,price_cents,zone,stock,extra\\n',\n            'sku,price_cents,zone,stock\\nA,1,Z\\n',\n            'sku,price_cents,zone,stock\\nA,1,Z,2,extra\\n',\n            'sku,price_cents,zone,stock\\n,1,Z,2\\n',\n            'sku,price_cents,zone,stock\\nA,1,   ,2\\n',\n            'sku,price_cents,zone,stock\\nA,1.5,Z,2\\n',\n            'sku,price_cents,zone,stock\\nA,1,Z,nope\\n',\n            'sku,price_cents,zone,stock\\nA,-1,Z,2\\n',\n            'sku,price_cents,zone,stock\\nA,1,Z,-2\\n',\n        ]\n        for value in cases:\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    parse_inventory(value)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "394a1630a3767d6188713758540cf3ceb9003fb801dc2e4fcaee71dd7790355b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1d5b741f5c9fffb884c6ae59db0b27cf325611716567931f32d461122be4e6b8",
+      "text": "Create `solution.py` with a top-level function `parse_inventory(csv_text)`.\n\nThe input is a string containing CSV with exactly these headers in this order: `sku,price_cents,zone,stock`. A whitespace-only string means no inventory and returns `[]`. Each data row must contain exactly four columns. Normalize `sku` by stripping surrounding whitespace, normalize `zone` by stripping and collapsing internal whitespace, and convert `price_cents` and `stock` to base-10 integers. Both integers must be nonnegative, and `sku` and `zone` must be nonempty. Blank records may be ignored. Quoted CSV fields must work according to normal CSV rules.\n\nReturn records in input order as newly allocated dictionaries with keys in header order. Preserve duplicate SKUs as separate records. Raise `ValueError` for a nonstring input, incorrect headers, malformed rows, invalid integers, or invalid normalized fields. Do not retain aliases to any parsed intermediate data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1d5b741f5c9fffb884c6ae59db0b27cf325611716567931f32d461122be4e6b8",
+      "text": "Create `solution.py` with a top-level function `parse_inventory(csv_text)`.\n\nThe input is a string containing CSV with exactly these headers in this order: `sku,price_cents,zone,stock`. A whitespace-only string means no inventory and returns `[]`. Each data row must contain exactly four columns. Normalize `sku` by stripping surrounding whitespace, normalize `zone` by stripping and collapsing internal whitespace, and convert `price_cents` and `stock` to base-10 integers. Both integers must be nonnegative, and `sku` and `zone` must be nonempty. Blank records may be ignored. Quoted CSV fields must work according to normal CSV rules.\n\nReturn records in input order as newly allocated dictionaries with keys in header order. Preserve duplicate SKUs as separate records. Raise `ValueError` for a nonstring input, incorrect headers, malformed rows, invalid integers, or invalid normalized fields. Do not retain aliases to any parsed intermediate data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0267",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import csv\nimport io\n\n\n_HEADERS = [\"sku\", \"price_cents\", \"zone\", \"stock\"]\n\n\ndef parse_inventory(csv_text):\n    if not isinstance(csv_text, str):\n        raise ValueError(\"csv_text must be a string\")\n    if csv_text == \"\":\n        raise ValueError(\"incorrect headers\")\n    if not csv_text.strip():\n        return []\n\n    try:\n        rows = csv.reader(io.StringIO(csv_text), strict=True)\n        header = next(rows)\n    except (csv.Error, StopIteration) as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    if header != _HEADERS:\n        raise ValueError(\"incorrect headers\")\n\n    result = []\n    try:\n        for row in rows:\n            if not row or all(not field.strip() for field in row):\n                continue\n            if len(row) != 4:\n                raise ValueError(\"each row must have four columns\")\n            sku = row[0].strip()\n            zone = row[2].strip()\n            if not sku or not zone:\n                raise ValueError(\"sku and zone must be nonempty\")\n            try:\n                price = int(row[1].strip(), 10)\n                stock = int(row[3].strip(), 10)\n            except ValueError as exc:\n                raise ValueError(\"price and stock must be integers\") from exc\n            if price < 0 or stock < 0:\n                raise ValueError(\"price and stock must be nonnegative\")\n            result.append({\n                \"sku\": sku,\n                \"price_cents\": price,\n                \"zone\": zone,\n                \"stock\": stock,\n            })\n    except csv.Error as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    return result\n",
+          "label": "Zone normalization strips only surrounding whitespace instead of collapsing internal whitespace.",
+          "sha256": "0d7be37707bf84b2e2cb4e5f1fb2617d231458bc185a6d97a559e00f502194fa"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport io\n\n\n_HEADERS = [\"sku\", \"price_cents\", \"zone\", \"stock\"]\n\n\ndef parse_inventory(csv_text):\n    if not isinstance(csv_text, str):\n        raise ValueError(\"csv_text must be a string\")\n    if csv_text == \"\":\n        raise ValueError(\"incorrect headers\")\n    if not csv_text.strip():\n        return []\n\n    try:\n        rows = csv.reader(io.StringIO(csv_text), strict=True)\n        header = next(rows)\n    except (csv.Error, StopIteration) as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    if header != _HEADERS:\n        raise ValueError(\"incorrect headers\")\n\n    result = []\n    try:\n        for row in rows:\n            if not row or all(not field.strip() for field in row):\n                continue\n            if len(row) != 4:\n                raise ValueError(\"each row must have four columns\")\n            sku = row[0].strip()\n            zone = \" \".join(row[2].split())\n            if not sku or not zone:\n                raise ValueError(\"sku and zone must be nonempty\")\n            try:\n                price = int(row[1].strip(), 10)\n                stock = int(row[3].strip(), 10)\n            except ValueError as exc:\n                raise ValueError(\"price and stock must be integers\") from exc\n            if price < 0 or stock < 0:\n                raise ValueError(\"price and stock must be nonnegative\")\n            result.append({\n                \"sku\": sku,\n                \"price_cents\": price,\n                \"zone\": zone,\n                \"stock\": stock,\n            })\n    except csv.Error as exc:\n        raise ValueError(\"invalid CSV\") from exc\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "12d198168bf8e7b258045de1de3d5c6470d7d56c4e66b3c882745d51777aef73"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_leading_zero_price (__main__.Probe.test_leading_zero_price)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/work/solution.py\", line 36, in parse_inventory\n    price = int(row[1].strip(), 10)\n            ^^^^^^^^^^^^^^^^^^^^^^^\nValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5001 digits; use sys.set_int_max_str_digits() to increase the limit\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_leading_zero_price\n    self.assertEqual(parse_inventory(source), [dict(sku='x', price_cents=1, zone='z', stock=2)])\n                     ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 39, in parse_inventory\n    raise ValueError(\"price and stock must be integers\") from exc\nValueError: price and stock must be integers\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "aaa781da7331b2d6bdb8ee2fccfd830735ecf0fe2ceca553b5b14cce1fda06e7",
+    "duration_ms": 648,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

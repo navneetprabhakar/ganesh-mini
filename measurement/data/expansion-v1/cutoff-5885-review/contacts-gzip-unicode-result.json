@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0191",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e161ca1560908c19fd7a87cfb36436cb23c4b3c16300083734c1c6c9521d7405",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import gzip\nimport json\nimport unittest\nfrom solution import decode_contacts\n\n\nclass ContactsGzipUnicodeTests(unittest.TestCase):\n    def test_malformed_deflate_counts_one_error(self):\n        bad = bytes.fromhex('1f8b08000000000000ff07') + b'\\x00' * 8\n        self.assertEqual(decode_contacts([bad]), {'anchors': [], 'errors': 1})\n\n    def test_unicode_separator_inside_json_string_is_not_ndjson_delimiter(self):\n        raw = json.dumps({'label': 'a\\u2028b', 'target': '/x'}, ensure_ascii=False)\n        packed = gzip.compress(raw.encode('utf-8'), mtime=0)\n        self.assertEqual(decode_contacts([packed]), {'anchors': ['<a href=\"/x\">a\\u2028b</a>'], 'errors': 0})\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "f50aa935a1f2a4ada928b535752fe9789872293c7eda7b3afa9d1807455c4ce5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b6ff17e983aa757f625f9e5d948c735ab260c782f7a0e8abe868e7b7f8aea5e8",
+      "text": "Create `solution.py` using only the standard library. Define `decode_contacts(chunks)`. Each element of `chunks` must be `bytes` containing one gzip stream whose decompressed UTF-8 text consists of newline-delimited JSON. Each valid line must be an object with string fields `label` and `target`; extra fields are allowed. Return `{'anchors': [...], 'errors': n}`. Each anchor is `<a href=\"TARGET\">LABEL</a>`, with both values escaped for HTML attribute/text use including quotes. Preserve chunk and line order. Blank lines are ignored. A malformed gzip stream contributes one error and processing continues. Invalid UTF-8 makes that entire stream one error with no lines emitted. A non-object, invalid JSON, or missing/wrong field contributes one error. Empty input returns no anchors and zero errors. If `chunks` is not iterable or an element is not bytes, raise `ValueError`. Do not mutate or alias inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b6ff17e983aa757f625f9e5d948c735ab260c782f7a0e8abe868e7b7f8aea5e8",
+      "text": "Create `solution.py` using only the standard library. Define `decode_contacts(chunks)`. Each element of `chunks` must be `bytes` containing one gzip stream whose decompressed UTF-8 text consists of newline-delimited JSON. Each valid line must be an object with string fields `label` and `target`; extra fields are allowed. Return `{'anchors': [...], 'errors': n}`. Each anchor is `<a href=\"TARGET\">LABEL</a>`, with both values escaped for HTML attribute/text use including quotes. Preserve chunk and line order. Blank lines are ignored. A malformed gzip stream contributes one error and processing continues. Invalid UTF-8 makes that entire stream one error with no lines emitted. A non-object, invalid JSON, or missing/wrong field contributes one error. Empty input returns no anchors and zero errors. If `chunks` is not iterable or an element is not bytes, raise `ValueError`. Do not mutate or alias inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0191",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import gzip\nimport html\nimport json\n\n\ndef decode_contacts(chunks):\n    if isinstance(chunks, (str, bytes, bytearray)):\n        raise ValueError('chunks must be an iterable of bytes')\n    try:\n        values = list(chunks)\n    except TypeError:\n        raise ValueError('chunks must be iterable') from None\n    if any(not isinstance(chunk, bytes) for chunk in values):\n        raise ValueError('each chunk must be bytes')\n    anchors = []\n    errors = 0\n    for chunk in values:\n        try:\n            text = gzip.decompress(chunk).decode('utf-8')\n        except (OSError, EOFError, UnicodeDecodeError):\n            errors += 1\n            continue\n        for line in text.splitlines():\n            if not line.strip():\n                continue\n            try:\n                item = json.loads(line)\n                if not isinstance(item, dict) or not isinstance(item.get('label'), str) or not isinstance(item.get('target'), str):\n                    raise ValueError\n            except (json.JSONDecodeError, ValueError):\n                errors += 1\n                continue\n            target = html.escape(item['target'], quote=False)\n            label = html.escape(item['label'], quote=True)\n            anchors.append('<a href=\"' + target + '\">' + label + '</a>')\n    return {'anchors': anchors, 'errors': errors}\n",
+          "label": "Fails to escape quotes in attribute values, allowing malformed or unsafe anchor markup.",
+          "sha256": "29023029bcbd436b95f5814237500c2d4a90ff25e12e31feefcf81be07c06bfc"
+        }
+      ],
+      "reference": {
+        "code": "import gzip\nimport html\nimport json\n\n\ndef decode_contacts(chunks):\n    if isinstance(chunks, (str, bytes, bytearray)):\n        raise ValueError('chunks must be an iterable of bytes')\n    try:\n        values = list(chunks)\n    except TypeError:\n        raise ValueError('chunks must be iterable') from None\n    if any(not isinstance(chunk, bytes) for chunk in values):\n        raise ValueError('each chunk must be bytes')\n    anchors = []\n    errors = 0\n    for chunk in values:\n        try:\n            text = gzip.decompress(chunk).decode('utf-8')\n        except (OSError, EOFError, UnicodeDecodeError):\n            errors += 1\n            continue\n        for line in text.splitlines():\n            if not line.strip():\n                continue\n            try:\n                item = json.loads(line)\n                if not isinstance(item, dict) or not isinstance(item.get('label'), str) or not isinstance(item.get('target'), str):\n                    raise ValueError\n            except (json.JSONDecodeError, ValueError):\n                errors += 1\n                continue\n            target = html.escape(item['target'], quote=True)\n            label = html.escape(item['label'], quote=True)\n            anchors.append('<a href=\"' + target + '\">' + label + '</a>')\n    return {'anchors': anchors, 'errors': errors}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e88ea7207b5b8286b7ed4dbeebdbcb56d635500a61aadab252e60e36a7e06526"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import gzip\nimport json\nimport unittest\n\nfrom solution import decode_contacts\n\n\ndef packed(text):\n    return gzip.compress(text.encode('utf-8'), mtime=0)\n\n\nclass DecodeContactsTests(unittest.TestCase):\n    def test_valid_lines_order_extra_fields_and_html_escaping(self):\n        first = packed(\n            json.dumps({'label': 'A & <B> \"Q\" \\'S\\'', 'target': '/x?a=1&b=\"2\"', 'extra': 7})\n            + '\\n\\n'\n            + json.dumps({'label': '', 'target': ''})\n            + '\\n'\n        )\n        second = packed(json.dumps({'label': 'Last', 'target': '/last'}))\n        chunks = [first, second]\n        snapshot = chunks[:]\n        self.assertEqual(decode_contacts(chunks), {\n            'anchors': [\n                '<a href=\"/x?a=1&amp;b=&quot;2&quot;\">A &amp; &lt;B&gt; &quot;Q&quot; &#x27;S&#x27;</a>',\n                '<a href=\"\"></a>',\n                '<a href=\"/last\">Last</a>',\n            ],\n            'errors': 0,\n        })\n        self.assertEqual(chunks, snapshot)\n\n    def test_line_errors_do_not_discard_other_lines(self):\n        text = '\\n'.join([\n            json.dumps({'label': 'ok', 'target': '/ok'}),\n            '{bad json',\n            json.dumps(['not', 'object']),\n            json.dumps({'label': 'missing'}),\n            json.dumps({'label': 4, 'target': '/wrong'}),\n            json.dumps({'label': 'also ok', 'target': '/two'}),\n        ])\n        self.assertEqual(decode_contacts([packed(text)]), {\n            'anchors': ['<a href=\"/ok\">ok</a>', '<a href=\"/two\">also ok</a>'],\n            'errors': 4,\n        })\n\n    def test_bad_gzip_and_invalid_utf8_each_count_once(self):\n        invalid_utf8 = gzip.compress(b'{\"label\":\"before\",\"target\":\"/x\"}\\n\\xff', mtime=0)\n        valid = packed('{\"label\":\"good\",\"target\":\"/g\"}\\n')\n        self.assertEqual(\n            decode_contacts([b'not gzip', invalid_utf8, valid]),\n            {'anchors': ['<a href=\"/g\">good</a>'], 'errors': 2},\n        )\n\n    def test_empty_and_general_iterable(self):\n        self.assertEqual(decode_contacts([]), {'anchors': [], 'errors': 0})\n        self.assertEqual(\n            decode_contacts(iter([packed('{\"label\":\"x\",\"target\":\"y\"}')])),\n            {'anchors': ['<a href=\"y\">x</a>'], 'errors': 0},\n        )\n\n    def test_invalid_container_or_element(self):\n        for value in (None, 4, [b'', 'not bytes'], bytearray(b'abc'), b'abc'):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    decode_contacts(value)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "23980b5dec4c4d52fd26b105f6202c787d629aeb5b22bad5bd1ae5d25f9657a1"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b6ff17e983aa757f625f9e5d948c735ab260c782f7a0e8abe868e7b7f8aea5e8",
+      "text": "Create `solution.py` using only the standard library. Define `decode_contacts(chunks)`. Each element of `chunks` must be `bytes` containing one gzip stream whose decompressed UTF-8 text consists of newline-delimited JSON. Each valid line must be an object with string fields `label` and `target`; extra fields are allowed. Return `{'anchors': [...], 'errors': n}`. Each anchor is `<a href=\"TARGET\">LABEL</a>`, with both values escaped for HTML attribute/text use including quotes. Preserve chunk and line order. Blank lines are ignored. A malformed gzip stream contributes one error and processing continues. Invalid UTF-8 makes that entire stream one error with no lines emitted. A non-object, invalid JSON, or missing/wrong field contributes one error. Empty input returns no anchors and zero errors. If `chunks` is not iterable or an element is not bytes, raise `ValueError`. Do not mutate or alias inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b6ff17e983aa757f625f9e5d948c735ab260c782f7a0e8abe868e7b7f8aea5e8",
+      "text": "Create `solution.py` using only the standard library. Define `decode_contacts(chunks)`. Each element of `chunks` must be `bytes` containing one gzip stream whose decompressed UTF-8 text consists of newline-delimited JSON. Each valid line must be an object with string fields `label` and `target`; extra fields are allowed. Return `{'anchors': [...], 'errors': n}`. Each anchor is `<a href=\"TARGET\">LABEL</a>`, with both values escaped for HTML attribute/text use including quotes. Preserve chunk and line order. Blank lines are ignored. A malformed gzip stream contributes one error and processing continues. Invalid UTF-8 makes that entire stream one error with no lines emitted. A non-object, invalid JSON, or missing/wrong field contributes one error. Empty input returns no anchors and zero errors. If `chunks` is not iterable or an element is not bytes, raise `ValueError`. Do not mutate or alias inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0191",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import gzip\nimport html\nimport json\n\n\ndef decode_contacts(chunks):\n    if isinstance(chunks, (str, bytes, bytearray)):\n        raise ValueError('chunks must be an iterable of bytes')\n    try:\n        values = list(chunks)\n    except TypeError:\n        raise ValueError('chunks must be iterable') from None\n    if any(not isinstance(chunk, bytes) for chunk in values):\n        raise ValueError('each chunk must be bytes')\n    anchors = []\n    errors = 0\n    for chunk in values:\n        try:\n            text = gzip.decompress(chunk).decode('utf-8')\n        except (OSError, EOFError, UnicodeDecodeError):\n            errors += 1\n            continue\n        for line in text.splitlines():\n            if not line.strip():\n                continue\n            try:\n                item = json.loads(line)\n                if not isinstance(item, dict) or not isinstance(item.get('label'), str) or not isinstance(item.get('target'), str):\n                    raise ValueError\n            except (json.JSONDecodeError, ValueError):\n                errors += 1\n                continue\n            target = html.escape(item['target'], quote=False)\n            label = html.escape(item['label'], quote=True)\n            anchors.append('<a href=\"' + target + '\">' + label + '</a>')\n    return {'anchors': anchors, 'errors': errors}\n",
+          "label": "Fails to escape quotes in attribute values, allowing malformed or unsafe anchor markup.",
+          "sha256": "29023029bcbd436b95f5814237500c2d4a90ff25e12e31feefcf81be07c06bfc"
+        }
+      ],
+      "reference": {
+        "code": "import gzip\nimport html\nimport json\n\n\ndef decode_contacts(chunks):\n    if isinstance(chunks, (str, bytes, bytearray)):\n        raise ValueError('chunks must be an iterable of bytes')\n    try:\n        values = list(chunks)\n    except TypeError:\n        raise ValueError('chunks must be iterable') from None\n    if any(not isinstance(chunk, bytes) for chunk in values):\n        raise ValueError('each chunk must be bytes')\n    anchors = []\n    errors = 0\n    for chunk in values:\n        try:\n            text = gzip.decompress(chunk).decode('utf-8')\n        except (OSError, EOFError, UnicodeDecodeError):\n            errors += 1\n            continue\n        for line in text.splitlines():\n            if not line.strip():\n                continue\n            try:\n                item = json.loads(line)\n                if not isinstance(item, dict) or not isinstance(item.get('label'), str) or not isinstance(item.get('target'), str):\n                    raise ValueError\n            except (json.JSONDecodeError, ValueError):\n                errors += 1\n                continue\n            target = html.escape(item['target'], quote=True)\n            label = html.escape(item['label'], quote=True)\n            anchors.append('<a href=\"' + target + '\">' + label + '</a>')\n    return {'anchors': anchors, 'errors': errors}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e88ea7207b5b8286b7ed4dbeebdbcb56d635500a61aadab252e60e36a7e06526"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "EF\n======================================================================\nERROR: test_malformed_deflate_counts_one_error (__main__.ContactsGzipUnicodeTests.test_malformed_deflate_counts_one_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_malformed_deflate_counts_one_error\n    self.assertEqual(decode_contacts([bad]), {'anchors': [], 'errors': 1})\n                     ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 19, in decode_contacts\n    text = gzip.decompress(chunk).decode('utf-8')\n           ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/gzip.py\", line 606, in decompress\n    decompressed = do.decompress(data[fp.tell():])\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nzlib.error: Error -3 while decompressing data: invalid block type\n\n======================================================================\nFAIL: test_unicode_separator_inside_json_string_is_not_ndjson_delimiter (__main__.ContactsGzipUnicodeTests.test_unicode_separator_inside_json_string_is_not_ndjson_delimiter)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_unicode_separator_inside_json_string_is_not_ndjson_delimiter\n    self.assertEqual(decode_contacts([packed]), {'anchors': ['<a href=\"/x\">a\\u2028b</a>'], 'errors': 0})\nAssertionError: {'anchors': [], 'errors': 2} != {'anchors': ['<a href=\"/x\">a\\u2028b</a>'], 'errors': 0}\n- {'anchors': [], 'errors': 2}\n+ {'anchors': ['<a href=\"/x\">a\\u2028b</a>'], 'errors': 0}\n\n----------------------------------------------------------------------\nRan 2 tests in 0.006s\n\nFAILED (failures=1, errors=1)\n",
+    "stderr_sha256": "a1313b7e68101149a5d79e70ff64265bcc260bbc637ba703da863ad13bacee87",
+    "duration_ms": 398,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

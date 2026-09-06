@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0242",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "71b40abba81063d79229e0040b711fc23372ae58ce134109f59c2012bbed90fe",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import summarize_tokens\n\n\nclass TokensExactSentinelTests(unittest.TestCase):\n    def test_sentinel_is_exact_not_numeric_whitespace_rule(self):\n        with self.assertRaises(ValueError):\n            summarize_tokens(['1', ' STOP'])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "e0f66e440839e560cf6b09158f7077ac87d7cba74d3d8d08a2483989770dd1bf"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "41a82fdf0ffac36c1d74c25a273a81de30e35f63944c41ea8bf54008c31aec23",
+      "text": "In solution.py, implement `summarize_tokens(tokens)`. The argument must be a non-string sequence of strings containing one or more positive base-10 integers followed by the exact sentinel `STOP`. Return `(count, average)`, where `average` is an exact `fractions.Fraction`. Surrounding whitespace on numeric tokens is allowed. Zero, negative numbers, non-integers, a missing sentinel, a sentinel before any number, or any token after the sentinel must raise `ValueError`. Do not mutate the supplied sequence.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "41a82fdf0ffac36c1d74c25a273a81de30e35f63944c41ea8bf54008c31aec23",
+      "text": "In solution.py, implement `summarize_tokens(tokens)`. The argument must be a non-string sequence of strings containing one or more positive base-10 integers followed by the exact sentinel `STOP`. Return `(count, average)`, where `average` is an exact `fractions.Fraction`. Surrounding whitespace on numeric tokens is allowed. Zero, negative numbers, non-integers, a missing sentinel, a sentinel before any number, or any token after the sentinel must raise `ValueError`. Do not mutate the supplied sequence.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0242",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Sequence\nfrom fractions import Fraction\nfrom typing import Tuple\n\n\ndef summarize_tokens(tokens: Sequence[str]) -> Tuple[int, Fraction]:\n    if isinstance(tokens, (str, bytes)) or not isinstance(tokens, Sequence):\n        raise ValueError(\"tokens must be a sequence of strings\")\n\n    total = 0\n    count = 0\n    stopped = False\n\n    for token in tokens:\n        if not isinstance(token, str):\n            raise ValueError(\"every token must be a string\")\n        if stopped:\n            raise ValueError(\"tokens are not allowed after STOP\")\n\n        stripped = token.strip()\n        if stripped == \"STOP\":\n            if count == 0:\n                raise ValueError(\"at least one value is required\")\n            stopped = True\n            continue\n\n        try:\n            value = int(stripped, 10)\n        except ValueError as exc:\n            raise ValueError(\"invalid integer token\") from exc\n        if value <= 0:\n            raise ValueError(\"values must be positive\")\n        total += value\n        count += 1\n\n    if not stopped:\n        raise ValueError(\"STOP is required\")\n    return count, total / count\n",
+          "label": "Returns an inexact float instead of the required Fraction average.",
+          "sha256": "95223beffb89b7af1ab204945a5094eecc33c32fbd023e5b2d45dbf7929d242d"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Sequence\nfrom fractions import Fraction\nfrom typing import Tuple\n\n\ndef summarize_tokens(tokens: Sequence[str]) -> Tuple[int, Fraction]:\n    if isinstance(tokens, (str, bytes)) or not isinstance(tokens, Sequence):\n        raise ValueError(\"tokens must be a sequence of strings\")\n\n    total = 0\n    count = 0\n    stopped = False\n\n    for token in tokens:\n        if not isinstance(token, str):\n            raise ValueError(\"every token must be a string\")\n        if stopped:\n            raise ValueError(\"tokens are not allowed after STOP\")\n\n        stripped = token.strip()\n        if stripped == \"STOP\":\n            if count == 0:\n                raise ValueError(\"at least one value is required\")\n            stopped = True\n            continue\n\n        try:\n            value = int(stripped, 10)\n        except ValueError as exc:\n            raise ValueError(\"invalid integer token\") from exc\n        if value <= 0:\n            raise ValueError(\"values must be positive\")\n        total += value\n        count += 1\n\n    if not stopped:\n        raise ValueError(\"STOP is required\")\n    return count, Fraction(total, count)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1f807d6fdf6d1e9ba751d590e3175d81384d13f0f9016701ca3f61009ef0841c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom fractions import Fraction\n\nfrom solution import summarize_tokens\n\n\nclass SummarizeTokensTests(unittest.TestCase):\n    def test_returns_count_and_exact_fraction(self):\n        result = summarize_tokens([\"1\", \"2\", \"4\", \"STOP\"])\n        self.assertEqual(result, (3, Fraction(7, 3)))\n        self.assertIsInstance(result[1], Fraction)\n\n    def test_allows_surrounding_numeric_whitespace(self):\n        self.assertEqual(summarize_tokens((\"  10\", \"20\\t\", \" STOP\")), (2, Fraction(15, 1)))\n\n    def test_single_number(self):\n        self.assertEqual(summarize_tokens([\"7\", \"STOP\"]), (1, Fraction(7, 1)))\n\n    def test_does_not_mutate_input(self):\n        tokens = [\"2\", \"8\", \"STOP\"]\n        before = tokens.copy()\n        summarize_tokens(tokens)\n        self.assertEqual(tokens, before)\n\n    def test_rejects_bad_container_or_non_string_tokens(self):\n        for tokens in (\"1 STOP\", 123, None, [\"1\", 2, \"STOP\"], [True, \"STOP\"]):\n            with self.subTest(tokens=tokens):\n                with self.assertRaises(ValueError):\n                    summarize_tokens(tokens)\n\n    def test_rejects_missing_or_misplaced_sentinel(self):\n        invalid = [[], [\"1\"], [\"STOP\"], [\"STOP\", \"1\"], [\"1\", \"STOP\", \"2\"], [\"1\", \"STOP\", \"STOP\"]]\n        for tokens in invalid:\n            with self.subTest(tokens=tokens):\n                with self.assertRaises(ValueError):\n                    summarize_tokens(tokens)\n\n    def test_rejects_non_positive_or_non_integer_numeric_tokens(self):\n        invalid = [\n            [\"0\", \"STOP\"],\n            [\"-1\", \"STOP\"],\n            [\"1.5\", \"STOP\"],\n            [\"one\", \"STOP\"],\n            [\"\", \"STOP\"],\n            [\"   \", \"STOP\"],\n            [\"1e2\", \"STOP\"],\n        ]\n        for tokens in invalid:\n            with self.subTest(tokens=tokens):\n                with self.assertRaises(ValueError):\n                    summarize_tokens(tokens)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "748b65453b2d1c6f979c833dea77da497e0f4cc9cc970c058fe5082b9a997ef4"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "41a82fdf0ffac36c1d74c25a273a81de30e35f63944c41ea8bf54008c31aec23",
+      "text": "In solution.py, implement `summarize_tokens(tokens)`. The argument must be a non-string sequence of strings containing one or more positive base-10 integers followed by the exact sentinel `STOP`. Return `(count, average)`, where `average` is an exact `fractions.Fraction`. Surrounding whitespace on numeric tokens is allowed. Zero, negative numbers, non-integers, a missing sentinel, a sentinel before any number, or any token after the sentinel must raise `ValueError`. Do not mutate the supplied sequence.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "41a82fdf0ffac36c1d74c25a273a81de30e35f63944c41ea8bf54008c31aec23",
+      "text": "In solution.py, implement `summarize_tokens(tokens)`. The argument must be a non-string sequence of strings containing one or more positive base-10 integers followed by the exact sentinel `STOP`. Return `(count, average)`, where `average` is an exact `fractions.Fraction`. Surrounding whitespace on numeric tokens is allowed. Zero, negative numbers, non-integers, a missing sentinel, a sentinel before any number, or any token after the sentinel must raise `ValueError`. Do not mutate the supplied sequence.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0242",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Sequence\nfrom fractions import Fraction\nfrom typing import Tuple\n\n\ndef summarize_tokens(tokens: Sequence[str]) -> Tuple[int, Fraction]:\n    if isinstance(tokens, (str, bytes)) or not isinstance(tokens, Sequence):\n        raise ValueError(\"tokens must be a sequence of strings\")\n\n    total = 0\n    count = 0\n    stopped = False\n\n    for token in tokens:\n        if not isinstance(token, str):\n            raise ValueError(\"every token must be a string\")\n        if stopped:\n            raise ValueError(\"tokens are not allowed after STOP\")\n\n        stripped = token.strip()\n        if stripped == \"STOP\":\n            if count == 0:\n                raise ValueError(\"at least one value is required\")\n            stopped = True\n            continue\n\n        try:\n            value = int(stripped, 10)\n        except ValueError as exc:\n            raise ValueError(\"invalid integer token\") from exc\n        if value <= 0:\n            raise ValueError(\"values must be positive\")\n        total += value\n        count += 1\n\n    if not stopped:\n        raise ValueError(\"STOP is required\")\n    return count, total / count\n",
+          "label": "Returns an inexact float instead of the required Fraction average.",
+          "sha256": "95223beffb89b7af1ab204945a5094eecc33c32fbd023e5b2d45dbf7929d242d"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Sequence\nfrom fractions import Fraction\nfrom typing import Tuple\n\n\ndef summarize_tokens(tokens: Sequence[str]) -> Tuple[int, Fraction]:\n    if isinstance(tokens, (str, bytes)) or not isinstance(tokens, Sequence):\n        raise ValueError(\"tokens must be a sequence of strings\")\n\n    total = 0\n    count = 0\n    stopped = False\n\n    for token in tokens:\n        if not isinstance(token, str):\n            raise ValueError(\"every token must be a string\")\n        if stopped:\n            raise ValueError(\"tokens are not allowed after STOP\")\n\n        stripped = token.strip()\n        if stripped == \"STOP\":\n            if count == 0:\n                raise ValueError(\"at least one value is required\")\n            stopped = True\n            continue\n\n        try:\n            value = int(stripped, 10)\n        except ValueError as exc:\n            raise ValueError(\"invalid integer token\") from exc\n        if value <= 0:\n            raise ValueError(\"values must be positive\")\n        total += value\n        count += 1\n\n    if not stopped:\n        raise ValueError(\"STOP is required\")\n    return count, Fraction(total, count)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1f807d6fdf6d1e9ba751d590e3175d81384d13f0f9016701ca3f61009ef0841c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_sentinel_is_exact_not_numeric_whitespace_rule (__main__.TokensExactSentinelTests.test_sentinel_is_exact_not_numeric_whitespace_rule)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_sentinel_is_exact_not_numeric_whitespace_rule\n    with self.assertRaises(ValueError):\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "dc3f68f285674d8425a73df8c0b686925364308b2c63bc237ee17b07e0ee1cab",
+    "duration_ms": 406,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

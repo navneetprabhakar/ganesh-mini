@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0265",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9428b88977205b284dfd41e1d94ecf31197dc273fff3695b5bbe7cb8835b441f",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import run_weighted_round\n\nclass Probe(unittest.TestCase):\n    def test_finite_gradient_clips_to_one(self):\n        self.assertEqual(run_weighted_round([0], [[[1e200]]], 1, 1, 1), [-1.0])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "83b0ccb13740cbc69f261f05a96307f5421027c11152dc4eba24011f7465205e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a6a31c14692c0278746114f2e45febe6e673fdca7648925abc0e1a123f9655c7",
+      "text": "Create `solution.py` with a top-level function `run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm)`.\n\n`server_weights` is a sequence of finite numbers. `client_gradients` is a sequence of clients, where each client is a sequence of gradient vectors having the same length as `server_weights`. For each gradient vector, clip its Euclidean norm to at most `clip_norm`, then apply it to that client's private weight copy using `weight -= client_rate * gradient`. A client's update is the difference between its final private weights and the original server weights. Average client updates using each client's number of gradient vectors as its weight, then apply `server_rate * average_update` to the server weights.\n\nEmpty clients contribute no weight. If every client is empty, return a new list equal to `server_weights`. Empty model vectors are valid. Reject booleans, nonnumeric or nonfinite values, mismatched gradient lengths, negative learning rates, and nonpositive `clip_norm` with `ValueError`. Do not mutate or alias any caller-owned sequence; the returned list must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a6a31c14692c0278746114f2e45febe6e673fdca7648925abc0e1a123f9655c7",
+      "text": "Create `solution.py` with a top-level function `run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm)`.\n\n`server_weights` is a sequence of finite numbers. `client_gradients` is a sequence of clients, where each client is a sequence of gradient vectors having the same length as `server_weights`. For each gradient vector, clip its Euclidean norm to at most `clip_norm`, then apply it to that client's private weight copy using `weight -= client_rate * gradient`. A client's update is the difference between its final private weights and the original server weights. Average client updates using each client's number of gradient vectors as its weight, then apply `server_rate * average_update` to the server weights.\n\nEmpty clients contribute no weight. If every client is empty, return a new list equal to `server_weights`. Empty model vectors are valid. Reject booleans, nonnumeric or nonfinite values, mismatched gradient lengths, negative learning rates, and nonpositive `clip_norm` with `ValueError`. Do not mutate or alias any caller-owned sequence; the returned list must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0265",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef _finite_number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm):\n    try:\n        weights = list(server_weights)\n        clients = list(client_gradients)\n    except TypeError as exc:\n        raise ValueError(\"weights and clients must be sequences\") from exc\n\n    if any(not _finite_number(value) for value in weights):\n        raise ValueError(\"server weights must be finite numbers\")\n    if not _finite_number(client_rate) or client_rate < 0:\n        raise ValueError(\"client_rate must be finite and nonnegative\")\n    if not _finite_number(server_rate) or server_rate < 0:\n        raise ValueError(\"server_rate must be finite and nonnegative\")\n    if not _finite_number(clip_norm) or clip_norm <= 0:\n        raise ValueError(\"clip_norm must be finite and positive\")\n\n    weighted_delta = [0.0] * len(weights)\n    total_examples = 0\n\n    for client in clients:\n        try:\n            gradients = list(client)\n        except TypeError as exc:\n            raise ValueError(\"each client must be a sequence\") from exc\n        local = [float(value) for value in weights]\n        for gradient in gradients:\n            try:\n                vector = list(gradient)\n            except TypeError as exc:\n                raise ValueError(\"each gradient must be a sequence\") from exc\n            if len(vector) != len(weights) or any(not _finite_number(value) for value in vector):\n                raise ValueError(\"invalid gradient vector\")\n            norm = math.sqrt(sum(float(value) ** 2 for value in vector))\n            scale = min(1.0, clip_norm / norm) if norm else 1.0\n            for index, value in enumerate(vector):\n                local[index] -= client_rate * float(value) * scale\n        count = len(gradients)\n        if count:\n            for index, value in enumerate(local):\n                weighted_delta[index] += value - float(weights[index])\n            total_examples += count\n\n    if not total_examples:\n        return list(weights)\n    return [\n        float(value) + server_rate * weighted_delta[index] / total_examples\n        for index, value in enumerate(weights)\n    ]\n",
+          "label": "Client deltas are not multiplied by their example counts, so aggregation is not the required weighted average.",
+          "sha256": "56f76468fc7ddcc637151ce8db4c59e9a462b20a2ff019a253afc621dbcae850"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef _finite_number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm):\n    try:\n        weights = list(server_weights)\n        clients = list(client_gradients)\n    except TypeError as exc:\n        raise ValueError(\"weights and clients must be sequences\") from exc\n\n    if any(not _finite_number(value) for value in weights):\n        raise ValueError(\"server weights must be finite numbers\")\n    if not _finite_number(client_rate) or client_rate < 0:\n        raise ValueError(\"client_rate must be finite and nonnegative\")\n    if not _finite_number(server_rate) or server_rate < 0:\n        raise ValueError(\"server_rate must be finite and nonnegative\")\n    if not _finite_number(clip_norm) or clip_norm <= 0:\n        raise ValueError(\"clip_norm must be finite and positive\")\n\n    weighted_delta = [0.0] * len(weights)\n    total_examples = 0\n\n    for client in clients:\n        try:\n            gradients = list(client)\n        except TypeError as exc:\n            raise ValueError(\"each client must be a sequence\") from exc\n        local = [float(value) for value in weights]\n        for gradient in gradients:\n            try:\n                vector = list(gradient)\n            except TypeError as exc:\n                raise ValueError(\"each gradient must be a sequence\") from exc\n            if len(vector) != len(weights) or any(not _finite_number(value) for value in vector):\n                raise ValueError(\"invalid gradient vector\")\n            norm = math.sqrt(sum(float(value) ** 2 for value in vector))\n            scale = min(1.0, clip_norm / norm) if norm else 1.0\n            for index, value in enumerate(vector):\n                local[index] -= client_rate * float(value) * scale\n        count = len(gradients)\n        if count:\n            for index, value in enumerate(local):\n                weighted_delta[index] += count * (value - float(weights[index]))\n            total_examples += count\n\n    if not total_examples:\n        return list(weights)\n    return [\n        float(value) + server_rate * weighted_delta[index] / total_examples\n        for index, value in enumerate(weights)\n    ]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8cc74043cf1a119d6d4f38b43019a78de899e33610d367cb4cf2894d05644966"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import run_weighted_round\n\n\nclass WeightedRoundTests(unittest.TestCase):\n    def test_weighted_clipped_round(self):\n        server = [10.0, 20.0]\n        clients = [\n            [[3.0, 4.0], [0.0, 10.0]],\n            [[-3.0, 0.0]],\n            [],\n        ]\n        result = run_weighted_round(server, clients, 0.1, 2.0, 5.0)\n        self.assertEqual(len(result), 2)\n        self.assertTrue(math.isclose(result[0], 9.8, rel_tol=1e-12, abs_tol=1e-12))\n        self.assertTrue(math.isclose(result[1], 18.8, rel_tol=1e-12, abs_tol=1e-12))\n\n    def test_empty_clients_empty_model_and_new_results(self):\n        server = [1, 2]\n        result = run_weighted_round(server, [[], []], 0, 0, 1)\n        self.assertEqual(result, server)\n        self.assertIsNot(result, server)\n        empty = []\n        empty_result = run_weighted_round(empty, [[[], []]], 1, 1, 3)\n        self.assertEqual(empty_result, [])\n        self.assertIsNot(empty_result, empty)\n\n    def test_inputs_are_not_mutated_or_aliased(self):\n        server = [4.0]\n        gradient = [2.0]\n        clients = [[gradient]]\n        result = run_weighted_round(server, clients, 0.5, 1.0, 10.0)\n        self.assertEqual(result, [3.0])\n        self.assertEqual(server, [4.0])\n        self.assertEqual(clients, [[[2.0]]])\n        self.assertIsNot(result, server)\n        result[0] = 99\n        self.assertEqual(server, [4.0])\n\n    def test_rejects_bad_numbers_and_shapes(self):\n        invalid_calls = [\n            (([True], [], 1, 1, 1),),\n            (([float('inf')], [], 1, 1, 1),),\n            (([0], [[[1, 2]]], 1, 1, 1),),\n            (([0], [[[False]]], 1, 1, 1),),\n            (([0], [[[float('nan')]]], 1, 1, 1),),\n            (([0], [[]], -0.1, 1, 1),),\n            (([0], [[]], 1, -0.1, 1),),\n            (([0], [[]], 1, 1, 0),),\n            (([0], [[]], 1, 1, float('inf')),),\n            (([0], [[]], True, 1, 1),),\n            (([0], [[]], 1, 1, 'x'),),\n        ]\n        for wrapped in invalid_calls:\n            with self.subTest(args=wrapped[0]):\n                with self.assertRaises(ValueError):\n                    run_weighted_round(*wrapped[0])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "b1cda3510f81c5e80b0f2754ef4c07f9bc6c20470f65a751c74cc0a780b3cce5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a6a31c14692c0278746114f2e45febe6e673fdca7648925abc0e1a123f9655c7",
+      "text": "Create `solution.py` with a top-level function `run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm)`.\n\n`server_weights` is a sequence of finite numbers. `client_gradients` is a sequence of clients, where each client is a sequence of gradient vectors having the same length as `server_weights`. For each gradient vector, clip its Euclidean norm to at most `clip_norm`, then apply it to that client's private weight copy using `weight -= client_rate * gradient`. A client's update is the difference between its final private weights and the original server weights. Average client updates using each client's number of gradient vectors as its weight, then apply `server_rate * average_update` to the server weights.\n\nEmpty clients contribute no weight. If every client is empty, return a new list equal to `server_weights`. Empty model vectors are valid. Reject booleans, nonnumeric or nonfinite values, mismatched gradient lengths, negative learning rates, and nonpositive `clip_norm` with `ValueError`. Do not mutate or alias any caller-owned sequence; the returned list must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a6a31c14692c0278746114f2e45febe6e673fdca7648925abc0e1a123f9655c7",
+      "text": "Create `solution.py` with a top-level function `run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm)`.\n\n`server_weights` is a sequence of finite numbers. `client_gradients` is a sequence of clients, where each client is a sequence of gradient vectors having the same length as `server_weights`. For each gradient vector, clip its Euclidean norm to at most `clip_norm`, then apply it to that client's private weight copy using `weight -= client_rate * gradient`. A client's update is the difference between its final private weights and the original server weights. Average client updates using each client's number of gradient vectors as its weight, then apply `server_rate * average_update` to the server weights.\n\nEmpty clients contribute no weight. If every client is empty, return a new list equal to `server_weights`. Empty model vectors are valid. Reject booleans, nonnumeric or nonfinite values, mismatched gradient lengths, negative learning rates, and nonpositive `clip_norm` with `ValueError`. Do not mutate or alias any caller-owned sequence; the returned list must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0265",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef _finite_number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm):\n    try:\n        weights = list(server_weights)\n        clients = list(client_gradients)\n    except TypeError as exc:\n        raise ValueError(\"weights and clients must be sequences\") from exc\n\n    if any(not _finite_number(value) for value in weights):\n        raise ValueError(\"server weights must be finite numbers\")\n    if not _finite_number(client_rate) or client_rate < 0:\n        raise ValueError(\"client_rate must be finite and nonnegative\")\n    if not _finite_number(server_rate) or server_rate < 0:\n        raise ValueError(\"server_rate must be finite and nonnegative\")\n    if not _finite_number(clip_norm) or clip_norm <= 0:\n        raise ValueError(\"clip_norm must be finite and positive\")\n\n    weighted_delta = [0.0] * len(weights)\n    total_examples = 0\n\n    for client in clients:\n        try:\n            gradients = list(client)\n        except TypeError as exc:\n            raise ValueError(\"each client must be a sequence\") from exc\n        local = [float(value) for value in weights]\n        for gradient in gradients:\n            try:\n                vector = list(gradient)\n            except TypeError as exc:\n                raise ValueError(\"each gradient must be a sequence\") from exc\n            if len(vector) != len(weights) or any(not _finite_number(value) for value in vector):\n                raise ValueError(\"invalid gradient vector\")\n            norm = math.sqrt(sum(float(value) ** 2 for value in vector))\n            scale = min(1.0, clip_norm / norm) if norm else 1.0\n            for index, value in enumerate(vector):\n                local[index] -= client_rate * float(value) * scale\n        count = len(gradients)\n        if count:\n            for index, value in enumerate(local):\n                weighted_delta[index] += value - float(weights[index])\n            total_examples += count\n\n    if not total_examples:\n        return list(weights)\n    return [\n        float(value) + server_rate * weighted_delta[index] / total_examples\n        for index, value in enumerate(weights)\n    ]\n",
+          "label": "Client deltas are not multiplied by their example counts, so aggregation is not the required weighted average.",
+          "sha256": "56f76468fc7ddcc637151ce8db4c59e9a462b20a2ff019a253afc621dbcae850"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef _finite_number(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef run_weighted_round(server_weights, client_gradients, client_rate, server_rate, clip_norm):\n    try:\n        weights = list(server_weights)\n        clients = list(client_gradients)\n    except TypeError as exc:\n        raise ValueError(\"weights and clients must be sequences\") from exc\n\n    if any(not _finite_number(value) for value in weights):\n        raise ValueError(\"server weights must be finite numbers\")\n    if not _finite_number(client_rate) or client_rate < 0:\n        raise ValueError(\"client_rate must be finite and nonnegative\")\n    if not _finite_number(server_rate) or server_rate < 0:\n        raise ValueError(\"server_rate must be finite and nonnegative\")\n    if not _finite_number(clip_norm) or clip_norm <= 0:\n        raise ValueError(\"clip_norm must be finite and positive\")\n\n    weighted_delta = [0.0] * len(weights)\n    total_examples = 0\n\n    for client in clients:\n        try:\n            gradients = list(client)\n        except TypeError as exc:\n            raise ValueError(\"each client must be a sequence\") from exc\n        local = [float(value) for value in weights]\n        for gradient in gradients:\n            try:\n                vector = list(gradient)\n            except TypeError as exc:\n                raise ValueError(\"each gradient must be a sequence\") from exc\n            if len(vector) != len(weights) or any(not _finite_number(value) for value in vector):\n                raise ValueError(\"invalid gradient vector\")\n            norm = math.sqrt(sum(float(value) ** 2 for value in vector))\n            scale = min(1.0, clip_norm / norm) if norm else 1.0\n            for index, value in enumerate(vector):\n                local[index] -= client_rate * float(value) * scale\n        count = len(gradients)\n        if count:\n            for index, value in enumerate(local):\n                weighted_delta[index] += count * (value - float(weights[index]))\n            total_examples += count\n\n    if not total_examples:\n        return list(weights)\n    return [\n        float(value) + server_rate * weighted_delta[index] / total_examples\n        for index, value in enumerate(weights)\n    ]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8cc74043cf1a119d6d4f38b43019a78de899e33610d367cb4cf2894d05644966"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_finite_gradient_clips_to_one (__main__.Probe.test_finite_gradient_clips_to_one)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 6, in test_finite_gradient_clips_to_one\n    self.assertEqual(run_weighted_round([0], [[[1e200]]], 1, 1, 1), [-1.0])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 41, in run_weighted_round\n    norm = math.sqrt(sum(float(value) ** 2 for value in vector))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 41, in <genexpr>\n    norm = math.sqrt(sum(float(value) ** 2 for value in vector))\n                         ~~~~~~~~~~~~~^^~~\nOverflowError: (34, 'Numerical result out of range')\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "c9f0e270fa9a3b6eaf01c66a060e934f3784183dad1c07777b3322c86a8ad215",
+    "duration_ms": 628,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

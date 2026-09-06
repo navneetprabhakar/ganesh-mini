@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0184",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f0a364d3b94b91b5a7bd153869c655b6f6b7a42f7a173d2ab0062c08adef5dc1",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import DocumentIndex\n\n\nclass DocumentDuplicateCodeTests(unittest.TestCase):\n    def test_identical_title_does_not_relax_unique_codes(self):\n        index = DocumentIndex()\n        index.add('Title', 'CODE', {'version': 1})\n        with self.assertRaises((ValueError, TypeError)):\n            index.add('Title', 'CODE', {'version': 2})\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "eda9928a4954b0d26109c220b4270a24f9e782c2ef192d9508b277a02c54bbd6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "74864806df5dfd1164fe53f6d941dc12d42ac5c1eb57dba8cff4a570957105b7",
+      "text": "Create `solution.py` with a new class `DocumentIndex`.\n\n`add(title, code, notes=None)` stores a document and returns its record. `title` must be a non-empty string. `code` must be a non-empty ASCII string containing only letters, digits, `_`, or `-`, and codes must be unique. `notes` must be a dictionary or `None`.\n\nGenerate a handle by Unicode-normalizing the title to ASCII, lowercasing it, replacing each run of non-alphanumeric characters with `-`, and trimming outer hyphens. Use `document` if nothing remains. If that handle exists, try `base-code`; if that also exists, try `base-code-2`, `base-code-3`, and so forth until unique.\n\nEach record has `title`, `code`, `handle`, and `notes`. `link(code)` returns `https://archive.invalid/items/` followed by the code, or raises `KeyError`. `entries()` returns records in creation order. Inputs and outputs containing mutable data must be deeply copied, and caller mutation must not affect stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "74864806df5dfd1164fe53f6d941dc12d42ac5c1eb57dba8cff4a570957105b7",
+      "text": "Create `solution.py` with a new class `DocumentIndex`.\n\n`add(title, code, notes=None)` stores a document and returns its record. `title` must be a non-empty string. `code` must be a non-empty ASCII string containing only letters, digits, `_`, or `-`, and codes must be unique. `notes` must be a dictionary or `None`.\n\nGenerate a handle by Unicode-normalizing the title to ASCII, lowercasing it, replacing each run of non-alphanumeric characters with `-`, and trimming outer hyphens. Use `document` if nothing remains. If that handle exists, try `base-code`; if that also exists, try `base-code-2`, `base-code-3`, and so forth until unique.\n\nEach record has `title`, `code`, `handle`, and `notes`. `link(code)` returns `https://archive.invalid/items/` followed by the code, or raises `KeyError`. `entries()` returns records in creation order. Inputs and outputs containing mutable data must be deeply copied, and caller mutation must not affect stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0184",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport re\nimport unicodedata\n\n\nclass DocumentIndex:\n    def __init__(self):\n        self._by_code = {}\n        self._handles = set()\n        self._order = []\n\n    @staticmethod\n    def _base_handle(title):\n        ascii_title = unicodedata.normalize(\"NFKD\", title).encode(\"ascii\", \"ignore\").decode(\"ascii\")\n        return re.sub(r\"[^a-z0-9]+\", \"-\", ascii_title.lower()).strip(\"-\") or \"document\"\n\n    def add(self, title, code, notes=None):\n        if not isinstance(title, str) or not title:\n            raise ValueError(\"title must be a non-empty string\")\n        if not isinstance(code, str) or not code or re.fullmatch(r\"[A-Za-z0-9_-]+\", code) is None:\n            raise ValueError(\"code has an invalid format\")\n        if code in self._by_code and self._by_code[code][\"title\"] != title:\n            raise ValueError(\"code already exists\")\n        if notes is not None and not isinstance(notes, dict):\n            raise TypeError(\"notes must be a dictionary or None\")\n\n        base = self._base_handle(title)\n        handle = base\n        if handle in self._handles:\n            handle = f\"{base}-{code}\"\n\n        record = {\n            \"title\": title,\n            \"code\": code,\n            \"handle\": handle,\n            \"notes\": deepcopy(notes) if notes is not None else {},\n        }\n        self._by_code[code] = record\n        self._handles.add(handle)\n        self._order.append(code)\n        return deepcopy(record)\n\n    def link(self, code):\n        if code not in self._by_code:\n            raise KeyError(code)\n        return f\"https://archive.invalid/items/{code}\"\n\n    def entries(self):\n        return [deepcopy(self._by_code[code]) for code in self._order]\n",
+          "label": "Handle collision resolution tries only one fallback and can still assign a handle that already exists.",
+          "sha256": "3509cddb14bff757c0f165b2b206f95fc7fa480c2ec4b87eb77bc2b72eab4a74"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport re\nimport unicodedata\n\n\nclass DocumentIndex:\n    def __init__(self):\n        self._by_code = {}\n        self._handles = set()\n        self._order = []\n\n    @staticmethod\n    def _base_handle(title):\n        ascii_title = unicodedata.normalize(\"NFKD\", title).encode(\"ascii\", \"ignore\").decode(\"ascii\")\n        return re.sub(r\"[^a-z0-9]+\", \"-\", ascii_title.lower()).strip(\"-\") or \"document\"\n\n    def add(self, title, code, notes=None):\n        if not isinstance(title, str) or not title:\n            raise ValueError(\"title must be a non-empty string\")\n        if not isinstance(code, str) or not code or re.fullmatch(r\"[A-Za-z0-9_-]+\", code) is None:\n            raise ValueError(\"code has an invalid format\")\n        if code in self._by_code and self._by_code[code][\"title\"] != title:\n            raise ValueError(\"code already exists\")\n        if notes is not None and not isinstance(notes, dict):\n            raise TypeError(\"notes must be a dictionary or None\")\n\n        base = self._base_handle(title)\n        handle = base\n        if handle in self._handles:\n            handle = f\"{base}-{code}\"\n            suffix = 2\n            while handle in self._handles:\n                handle = f\"{base}-{code}-{suffix}\"\n                suffix += 1\n\n        record = {\n            \"title\": title,\n            \"code\": code,\n            \"handle\": handle,\n            \"notes\": deepcopy(notes) if notes is not None else {},\n        }\n        self._by_code[code] = record\n        self._handles.add(handle)\n        self._order.append(code)\n        return deepcopy(record)\n\n    def link(self, code):\n        if code not in self._by_code:\n            raise KeyError(code)\n        return f\"https://archive.invalid/items/{code}\"\n\n    def entries(self):\n        return [deepcopy(self._by_code[code]) for code in self._order]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cc04e8d2bd83f86f4a75282a211ae16aa77d5aa7935c67eb4c2061cc932a0beb"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import DocumentIndex\n\n\nclass DocumentIndexTests(unittest.TestCase):\n    def test_add_entries_link_and_normalization(self):\n        index = DocumentIndex()\n        first = index.add('Caf\u00e9 D\u00e9j\u00e0 Vu!', 'DOC_1', {'tags': ['film']})\n        second = index.add('Another Document', 'x-2')\n        self.assertEqual(first, {\n            'title': 'Caf\u00e9 D\u00e9j\u00e0 Vu!', 'code': 'DOC_1',\n            'handle': 'cafe-deja-vu', 'notes': {'tags': ['film']}\n        })\n        self.assertEqual(second['handle'], 'another-document')\n        self.assertEqual(index.link('DOC_1'), 'https://archive.invalid/items/DOC_1')\n        self.assertEqual([entry['code'] for entry in index.entries()], ['DOC_1', 'x-2'])\n        with self.assertRaises(KeyError):\n            index.link('missing')\n\n    def test_empty_fallback_and_handle_collisions(self):\n        index = DocumentIndex()\n        self.assertEqual(index.add('!!!', 'A')['handle'], 'document')\n        self.assertEqual(index.add('Document', 'B')['handle'], 'document-B')\n        self.assertEqual(index.add('document', 'C')['handle'], 'document-C')\n        self.assertEqual(index.add('DOCUMENT', 'C2')['handle'], 'document-C2')\n        self.assertEqual(index.add('Document', 'B2')['handle'], 'document-B2')\n        self.assertEqual(index.add('Document', 'B')['handle'], 'document-B-2')\n\n    def test_code_uniqueness_and_validation(self):\n        index = DocumentIndex()\n        index.add('Valid', 'Abc_9-x')\n        invalid = [\n            ('', 'A', None), (1, 'A', None), ('Title', '', None),\n            ('Title', 'with space', None), ('Title', '\u00e9', None),\n            ('Title', 'a/b', None), ('Title', 12, None),\n            ('Title', 'NEW', []),\n        ]\n        for args in invalid:\n            with self.subTest(args=args):\n                with self.assertRaises((TypeError, ValueError)):\n                    index.add(*args)\n        with self.assertRaises((TypeError, ValueError)):\n            index.add('Duplicate', 'Abc_9-x')\n\n    def test_mutable_inputs_and_outputs_are_deep_copied(self):\n        notes = {'nested': [{'value': 1}]}\n        index = DocumentIndex()\n        record = index.add('Title', 'CODE', notes)\n        notes['nested'][0]['value'] = 2\n        record['notes']['nested'].append({'value': 3})\n        record['handle'] = 'changed'\n        entries = index.entries()\n        self.assertEqual(entries[0]['notes'], {'nested': [{'value': 1}]})\n        self.assertEqual(entries[0]['handle'], 'title')\n        entries[0]['notes']['nested'][0]['value'] = 9\n        entries.clear()\n        self.assertEqual(index.entries()[0]['notes'], {'nested': [{'value': 1}]})\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "e888c74d9c8845bb430f9b5d34e592fb6f5c32a080b2c6e863b1e5447c573cd9"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "74864806df5dfd1164fe53f6d941dc12d42ac5c1eb57dba8cff4a570957105b7",
+      "text": "Create `solution.py` with a new class `DocumentIndex`.\n\n`add(title, code, notes=None)` stores a document and returns its record. `title` must be a non-empty string. `code` must be a non-empty ASCII string containing only letters, digits, `_`, or `-`, and codes must be unique. `notes` must be a dictionary or `None`.\n\nGenerate a handle by Unicode-normalizing the title to ASCII, lowercasing it, replacing each run of non-alphanumeric characters with `-`, and trimming outer hyphens. Use `document` if nothing remains. If that handle exists, try `base-code`; if that also exists, try `base-code-2`, `base-code-3`, and so forth until unique.\n\nEach record has `title`, `code`, `handle`, and `notes`. `link(code)` returns `https://archive.invalid/items/` followed by the code, or raises `KeyError`. `entries()` returns records in creation order. Inputs and outputs containing mutable data must be deeply copied, and caller mutation must not affect stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "74864806df5dfd1164fe53f6d941dc12d42ac5c1eb57dba8cff4a570957105b7",
+      "text": "Create `solution.py` with a new class `DocumentIndex`.\n\n`add(title, code, notes=None)` stores a document and returns its record. `title` must be a non-empty string. `code` must be a non-empty ASCII string containing only letters, digits, `_`, or `-`, and codes must be unique. `notes` must be a dictionary or `None`.\n\nGenerate a handle by Unicode-normalizing the title to ASCII, lowercasing it, replacing each run of non-alphanumeric characters with `-`, and trimming outer hyphens. Use `document` if nothing remains. If that handle exists, try `base-code`; if that also exists, try `base-code-2`, `base-code-3`, and so forth until unique.\n\nEach record has `title`, `code`, `handle`, and `notes`. `link(code)` returns `https://archive.invalid/items/` followed by the code, or raises `KeyError`. `entries()` returns records in creation order. Inputs and outputs containing mutable data must be deeply copied, and caller mutation must not affect stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0184",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport re\nimport unicodedata\n\n\nclass DocumentIndex:\n    def __init__(self):\n        self._by_code = {}\n        self._handles = set()\n        self._order = []\n\n    @staticmethod\n    def _base_handle(title):\n        ascii_title = unicodedata.normalize(\"NFKD\", title).encode(\"ascii\", \"ignore\").decode(\"ascii\")\n        return re.sub(r\"[^a-z0-9]+\", \"-\", ascii_title.lower()).strip(\"-\") or \"document\"\n\n    def add(self, title, code, notes=None):\n        if not isinstance(title, str) or not title:\n            raise ValueError(\"title must be a non-empty string\")\n        if not isinstance(code, str) or not code or re.fullmatch(r\"[A-Za-z0-9_-]+\", code) is None:\n            raise ValueError(\"code has an invalid format\")\n        if code in self._by_code and self._by_code[code][\"title\"] != title:\n            raise ValueError(\"code already exists\")\n        if notes is not None and not isinstance(notes, dict):\n            raise TypeError(\"notes must be a dictionary or None\")\n\n        base = self._base_handle(title)\n        handle = base\n        if handle in self._handles:\n            handle = f\"{base}-{code}\"\n\n        record = {\n            \"title\": title,\n            \"code\": code,\n            \"handle\": handle,\n            \"notes\": deepcopy(notes) if notes is not None else {},\n        }\n        self._by_code[code] = record\n        self._handles.add(handle)\n        self._order.append(code)\n        return deepcopy(record)\n\n    def link(self, code):\n        if code not in self._by_code:\n            raise KeyError(code)\n        return f\"https://archive.invalid/items/{code}\"\n\n    def entries(self):\n        return [deepcopy(self._by_code[code]) for code in self._order]\n",
+          "label": "Handle collision resolution tries only one fallback and can still assign a handle that already exists.",
+          "sha256": "3509cddb14bff757c0f165b2b206f95fc7fa480c2ec4b87eb77bc2b72eab4a74"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport re\nimport unicodedata\n\n\nclass DocumentIndex:\n    def __init__(self):\n        self._by_code = {}\n        self._handles = set()\n        self._order = []\n\n    @staticmethod\n    def _base_handle(title):\n        ascii_title = unicodedata.normalize(\"NFKD\", title).encode(\"ascii\", \"ignore\").decode(\"ascii\")\n        return re.sub(r\"[^a-z0-9]+\", \"-\", ascii_title.lower()).strip(\"-\") or \"document\"\n\n    def add(self, title, code, notes=None):\n        if not isinstance(title, str) or not title:\n            raise ValueError(\"title must be a non-empty string\")\n        if not isinstance(code, str) or not code or re.fullmatch(r\"[A-Za-z0-9_-]+\", code) is None:\n            raise ValueError(\"code has an invalid format\")\n        if code in self._by_code and self._by_code[code][\"title\"] != title:\n            raise ValueError(\"code already exists\")\n        if notes is not None and not isinstance(notes, dict):\n            raise TypeError(\"notes must be a dictionary or None\")\n\n        base = self._base_handle(title)\n        handle = base\n        if handle in self._handles:\n            handle = f\"{base}-{code}\"\n            suffix = 2\n            while handle in self._handles:\n                handle = f\"{base}-{code}-{suffix}\"\n                suffix += 1\n\n        record = {\n            \"title\": title,\n            \"code\": code,\n            \"handle\": handle,\n            \"notes\": deepcopy(notes) if notes is not None else {},\n        }\n        self._by_code[code] = record\n        self._handles.add(handle)\n        self._order.append(code)\n        return deepcopy(record)\n\n    def link(self, code):\n        if code not in self._by_code:\n            raise KeyError(code)\n        return f\"https://archive.invalid/items/{code}\"\n\n    def entries(self):\n        return [deepcopy(self._by_code[code]) for code in self._order]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cc04e8d2bd83f86f4a75282a211ae16aa77d5aa7935c67eb4c2061cc932a0beb"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_identical_title_does_not_relax_unique_codes (__main__.DocumentDuplicateCodeTests.test_identical_title_does_not_relax_unique_codes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_identical_title_does_not_relax_unique_codes\n    with self.assertRaises((ValueError, TypeError)):\nAssertionError: (<class 'ValueError'>, <class 'TypeError'>) not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "4160ea9396ab5c9831cb21251dca8fee981a32f116a54d1757a581bdbfc7d6dc",
+    "duration_ms": 404,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

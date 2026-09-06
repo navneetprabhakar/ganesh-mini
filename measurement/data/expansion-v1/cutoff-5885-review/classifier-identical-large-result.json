@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0321",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "ab270cc3012225e18a4d0bb3d7c7390100a60fa6a56ebf5e4d4d0e85377d727d",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import fit_centroid_classifier\n\nclass Probe(unittest.TestCase):\n    def test_identical_finite_points_tie_zero(self):\n        predict = fit_centroid_classifier([[1e308, 0], [1e308, 0]], [0, 1])\n        self.assertEqual(predict([[1e308, 0]]), [0])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "c524080aacd87f7b6521111b241df2d9324baca75f6e2de7046a64683ea8eb06"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ccac6eb208af6ccc8b09356dc58c51992089a31d4b2ae0d9eea79de7b9baca7b",
+      "text": "Create `solution.py` with `fit_centroid_classifier(samples, labels)`.\n\n`samples` must be a nonempty iterable of rows, each containing exactly two finite numeric values; booleans are invalid. `labels` must contain the same number of values, and each label must be exactly `0` or `1` (booleans are invalid). Both classes must occur. Invalid input raises `ValueError`.\n\nThe function must standardize each feature using the population mean and population standard deviation over all samples. A zero-deviation feature is divided by `1`. It then computes one standardized centroid per class.\n\nReturn a function `predict(points)`. It validates rows by the same rules and returns labels based on the smaller squared Euclidean distance to the centroids; an exact distance tie predicts `0`. Empty `points` returns `[]`. Materialize input iterables only once. Do not mutate or retain aliases to any supplied row or collection; later caller mutations must not change predictions.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ccac6eb208af6ccc8b09356dc58c51992089a31d4b2ae0d9eea79de7b9baca7b",
+      "text": "Create `solution.py` with `fit_centroid_classifier(samples, labels)`.\n\n`samples` must be a nonempty iterable of rows, each containing exactly two finite numeric values; booleans are invalid. `labels` must contain the same number of values, and each label must be exactly `0` or `1` (booleans are invalid). Both classes must occur. Invalid input raises `ValueError`.\n\nThe function must standardize each feature using the population mean and population standard deviation over all samples. A zero-deviation feature is divided by `1`. It then computes one standardized centroid per class.\n\nReturn a function `predict(points)`. It validates rows by the same rules and returns labels based on the smaller squared Euclidean distance to the centroids; an exact distance tie predicts `0`. Empty `points` returns `[]`. Materialize input iterables only once. Do not mutate or retain aliases to any supplied row or collection; later caller mutations must not change predictions.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0321",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _rows(values):\n    try:\n        materialized = list(values)\n    except TypeError as exc:\n        raise ValueError(\"rows must be iterable\") from exc\n    result = []\n    for row in materialized:\n        try:\n            cells = list(row)\n        except TypeError as exc:\n            raise ValueError(\"each row must be iterable\") from exc\n        if len(cells) != 2:\n            raise ValueError(\"each row must have two values\")\n        clean = []\n        for value in cells:\n            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):\n                raise ValueError(\"features must be finite numbers\")\n            clean.append(float(value))\n        result.append(tuple(clean))\n    return result\n\n\ndef fit_centroid_classifier(samples, labels):\n    rows = _rows(samples)\n    if not rows:\n        raise ValueError(\"samples must not be empty\")\n    try:\n        ys = list(labels)\n    except TypeError as exc:\n        raise ValueError(\"labels must be iterable\") from exc\n    if len(ys) != len(rows):\n        raise ValueError(\"length mismatch\")\n    if any(isinstance(y, bool) or y not in (0, 1) for y in ys):\n        raise ValueError(\"labels must be 0 or 1\")\n    if set(ys) != {0, 1}:\n        raise ValueError(\"both classes are required\")\n\n    means = tuple(sum(row[i] for row in rows) / len(rows) for i in range(2))\n    deviations = []\n    for i in range(2):\n        variance = sum((row[i] - means[i]) ** 2 for row in rows) / len(rows)\n        deviations.append(math.sqrt(variance) or 1.0)\n    scales = tuple(deviations)\n    standardized = [tuple((row[i] - means[i]) / scales[i] for i in range(2)) for row in rows]\n    centroids = {}\n    for label in (0, 1):\n        group = [row for row, y in zip(standardized, ys) if y == label]\n        centroids[label] = tuple(sum(row[i] for row in group) / len(group) for i in range(2))\n\n    def predict(points):\n        query = _rows(points)\n        output = []\n        for row in query:\n            point = tuple((row[i] - means[i]) / scales[i] for i in range(2))\n            d0 = sum((point[i] - centroids[0][i]) ** 2 for i in range(2))\n            d1 = sum((point[i] - centroids[1][i]) ** 2 for i in range(2))\n            output.append(0 if d0 < d1 else 1)\n        return output\n\n    return predict\n",
+          "label": "Predicts class 1 instead of class 0 when the two centroid distances are exactly tied.",
+          "sha256": "3dbafcc7df5fbcfb62bc31c2ff9cd516891008e89c3de1f4cf118195795ca2f7"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _rows(values):\n    try:\n        materialized = list(values)\n    except TypeError as exc:\n        raise ValueError(\"rows must be iterable\") from exc\n    result = []\n    for row in materialized:\n        try:\n            cells = list(row)\n        except TypeError as exc:\n            raise ValueError(\"each row must be iterable\") from exc\n        if len(cells) != 2:\n            raise ValueError(\"each row must have two values\")\n        clean = []\n        for value in cells:\n            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):\n                raise ValueError(\"features must be finite numbers\")\n            clean.append(float(value))\n        result.append(tuple(clean))\n    return result\n\n\ndef fit_centroid_classifier(samples, labels):\n    rows = _rows(samples)\n    if not rows:\n        raise ValueError(\"samples must not be empty\")\n    try:\n        ys = list(labels)\n    except TypeError as exc:\n        raise ValueError(\"labels must be iterable\") from exc\n    if len(ys) != len(rows):\n        raise ValueError(\"length mismatch\")\n    if any(isinstance(y, bool) or y not in (0, 1) for y in ys):\n        raise ValueError(\"labels must be 0 or 1\")\n    if set(ys) != {0, 1}:\n        raise ValueError(\"both classes are required\")\n\n    means = tuple(sum(row[i] for row in rows) / len(rows) for i in range(2))\n    deviations = []\n    for i in range(2):\n        variance = sum((row[i] - means[i]) ** 2 for row in rows) / len(rows)\n        deviations.append(math.sqrt(variance) or 1.0)\n    scales = tuple(deviations)\n    standardized = [tuple((row[i] - means[i]) / scales[i] for i in range(2)) for row in rows]\n    centroids = {}\n    for label in (0, 1):\n        group = [row for row, y in zip(standardized, ys) if y == label]\n        centroids[label] = tuple(sum(row[i] for row in group) / len(group) for i in range(2))\n\n    def predict(points):\n        query = _rows(points)\n        output = []\n        for row in query:\n            point = tuple((row[i] - means[i]) / scales[i] for i in range(2))\n            d0 = sum((point[i] - centroids[0][i]) ** 2 for i in range(2))\n            d1 = sum((point[i] - centroids[1][i]) ** 2 for i in range(2))\n            output.append(0 if d0 <= d1 else 1)\n        return output\n\n    return predict\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e58c323490dd9d72b503fa5e0726a525ade13697f6e5b85172a19f5e032bec5d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import fit_centroid_classifier\n\n\nclass OneShot:\n    def __init__(self, values):\n        self.values = values\n        self.used = False\n\n    def __iter__(self):\n        if self.used:\n            raise AssertionError(\"iterable consumed more than once\")\n        self.used = True\n        return iter(self.values)\n\n\nclass CentroidClassifierTests(unittest.TestCase):\n    def test_predictions_ties_and_one_shot_inputs(self):\n        samples = OneShot([[0, 0], [2, 0], [8, 10], [10, 10]])\n        labels = OneShot([0, 0, 1, 1])\n        predict = fit_centroid_classifier(samples, labels)\n        points = OneShot([[1, 0], [9, 10], [5, 5]])\n        self.assertEqual(predict(points), [0, 1, 0])\n        self.assertEqual(predict([]), [])\n\n    def test_zero_deviation_feature(self):\n        predict = fit_centroid_classifier([(4, 0), (4, 10)], [0, 1])\n        self.assertEqual(predict([(4, 1), (4, 9), (4, 5)]), [0, 1, 0])\n\n    def test_training_data_is_detached(self):\n        rows = [[0.0, 0.0], [10.0, 10.0]]\n        labels = [0, 1]\n        predict = fit_centroid_classifier(rows, labels)\n        rows[0][:] = [1000.0, 1000.0]\n        rows.append([-1000.0, -1000.0])\n        labels[:] = [1, 0]\n        self.assertEqual(predict([[0, 0], [10, 10], [5, 5]]), [0, 1, 0])\n\n    def test_invalid_training_inputs(self):\n        invalid_cases = [\n            ([], []),\n            ([[1, 2]], []),\n            ([[1, 2]], [0]),\n            ([[1, 2], [3, 4]], [0, 0]),\n            ([[1]], [0]),\n            ([[1, 2, 3]], [0]),\n            ([[True, 2], [3, 4]], [0, 1]),\n            ([[math.inf, 2], [3, 4]], [0, 1]),\n            ([[1, 2], [3, 4]], [False, 1]),\n            ([[1, 2], [3, 4]], [0, 2]),\n        ]\n        for samples, labels in invalid_cases:\n            with self.subTest(samples=samples, labels=labels):\n                with self.assertRaises(ValueError):\n                    fit_centroid_classifier(samples, labels)\n\n    def test_predict_validates_all_rows(self):\n        predict = fit_centroid_classifier([[0, 0], [1, 1]], [0, 1])\n        for points in ([[1]], [[1, 2, 3]], [[False, 0]], [[math.nan, 0]], [\"ab\"]):\n            with self.subTest(points=points):\n                with self.assertRaises(ValueError):\n                    predict(points)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "eed65203350901a3166ab79e96d161c3137acdd53b622b993c38e03ab3f58b1b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ccac6eb208af6ccc8b09356dc58c51992089a31d4b2ae0d9eea79de7b9baca7b",
+      "text": "Create `solution.py` with `fit_centroid_classifier(samples, labels)`.\n\n`samples` must be a nonempty iterable of rows, each containing exactly two finite numeric values; booleans are invalid. `labels` must contain the same number of values, and each label must be exactly `0` or `1` (booleans are invalid). Both classes must occur. Invalid input raises `ValueError`.\n\nThe function must standardize each feature using the population mean and population standard deviation over all samples. A zero-deviation feature is divided by `1`. It then computes one standardized centroid per class.\n\nReturn a function `predict(points)`. It validates rows by the same rules and returns labels based on the smaller squared Euclidean distance to the centroids; an exact distance tie predicts `0`. Empty `points` returns `[]`. Materialize input iterables only once. Do not mutate or retain aliases to any supplied row or collection; later caller mutations must not change predictions.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ccac6eb208af6ccc8b09356dc58c51992089a31d4b2ae0d9eea79de7b9baca7b",
+      "text": "Create `solution.py` with `fit_centroid_classifier(samples, labels)`.\n\n`samples` must be a nonempty iterable of rows, each containing exactly two finite numeric values; booleans are invalid. `labels` must contain the same number of values, and each label must be exactly `0` or `1` (booleans are invalid). Both classes must occur. Invalid input raises `ValueError`.\n\nThe function must standardize each feature using the population mean and population standard deviation over all samples. A zero-deviation feature is divided by `1`. It then computes one standardized centroid per class.\n\nReturn a function `predict(points)`. It validates rows by the same rules and returns labels based on the smaller squared Euclidean distance to the centroids; an exact distance tie predicts `0`. Empty `points` returns `[]`. Materialize input iterables only once. Do not mutate or retain aliases to any supplied row or collection; later caller mutations must not change predictions.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0321",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _rows(values):\n    try:\n        materialized = list(values)\n    except TypeError as exc:\n        raise ValueError(\"rows must be iterable\") from exc\n    result = []\n    for row in materialized:\n        try:\n            cells = list(row)\n        except TypeError as exc:\n            raise ValueError(\"each row must be iterable\") from exc\n        if len(cells) != 2:\n            raise ValueError(\"each row must have two values\")\n        clean = []\n        for value in cells:\n            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):\n                raise ValueError(\"features must be finite numbers\")\n            clean.append(float(value))\n        result.append(tuple(clean))\n    return result\n\n\ndef fit_centroid_classifier(samples, labels):\n    rows = _rows(samples)\n    if not rows:\n        raise ValueError(\"samples must not be empty\")\n    try:\n        ys = list(labels)\n    except TypeError as exc:\n        raise ValueError(\"labels must be iterable\") from exc\n    if len(ys) != len(rows):\n        raise ValueError(\"length mismatch\")\n    if any(isinstance(y, bool) or y not in (0, 1) for y in ys):\n        raise ValueError(\"labels must be 0 or 1\")\n    if set(ys) != {0, 1}:\n        raise ValueError(\"both classes are required\")\n\n    means = tuple(sum(row[i] for row in rows) / len(rows) for i in range(2))\n    deviations = []\n    for i in range(2):\n        variance = sum((row[i] - means[i]) ** 2 for row in rows) / len(rows)\n        deviations.append(math.sqrt(variance) or 1.0)\n    scales = tuple(deviations)\n    standardized = [tuple((row[i] - means[i]) / scales[i] for i in range(2)) for row in rows]\n    centroids = {}\n    for label in (0, 1):\n        group = [row for row, y in zip(standardized, ys) if y == label]\n        centroids[label] = tuple(sum(row[i] for row in group) / len(group) for i in range(2))\n\n    def predict(points):\n        query = _rows(points)\n        output = []\n        for row in query:\n            point = tuple((row[i] - means[i]) / scales[i] for i in range(2))\n            d0 = sum((point[i] - centroids[0][i]) ** 2 for i in range(2))\n            d1 = sum((point[i] - centroids[1][i]) ** 2 for i in range(2))\n            output.append(0 if d0 < d1 else 1)\n        return output\n\n    return predict\n",
+          "label": "Predicts class 1 instead of class 0 when the two centroid distances are exactly tied.",
+          "sha256": "3dbafcc7df5fbcfb62bc31c2ff9cd516891008e89c3de1f4cf118195795ca2f7"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _rows(values):\n    try:\n        materialized = list(values)\n    except TypeError as exc:\n        raise ValueError(\"rows must be iterable\") from exc\n    result = []\n    for row in materialized:\n        try:\n            cells = list(row)\n        except TypeError as exc:\n            raise ValueError(\"each row must be iterable\") from exc\n        if len(cells) != 2:\n            raise ValueError(\"each row must have two values\")\n        clean = []\n        for value in cells:\n            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):\n                raise ValueError(\"features must be finite numbers\")\n            clean.append(float(value))\n        result.append(tuple(clean))\n    return result\n\n\ndef fit_centroid_classifier(samples, labels):\n    rows = _rows(samples)\n    if not rows:\n        raise ValueError(\"samples must not be empty\")\n    try:\n        ys = list(labels)\n    except TypeError as exc:\n        raise ValueError(\"labels must be iterable\") from exc\n    if len(ys) != len(rows):\n        raise ValueError(\"length mismatch\")\n    if any(isinstance(y, bool) or y not in (0, 1) for y in ys):\n        raise ValueError(\"labels must be 0 or 1\")\n    if set(ys) != {0, 1}:\n        raise ValueError(\"both classes are required\")\n\n    means = tuple(sum(row[i] for row in rows) / len(rows) for i in range(2))\n    deviations = []\n    for i in range(2):\n        variance = sum((row[i] - means[i]) ** 2 for row in rows) / len(rows)\n        deviations.append(math.sqrt(variance) or 1.0)\n    scales = tuple(deviations)\n    standardized = [tuple((row[i] - means[i]) / scales[i] for i in range(2)) for row in rows]\n    centroids = {}\n    for label in (0, 1):\n        group = [row for row, y in zip(standardized, ys) if y == label]\n        centroids[label] = tuple(sum(row[i] for row in group) / len(group) for i in range(2))\n\n    def predict(points):\n        query = _rows(points)\n        output = []\n        for row in query:\n            point = tuple((row[i] - means[i]) / scales[i] for i in range(2))\n            d0 = sum((point[i] - centroids[0][i]) ** 2 for i in range(2))\n            d1 = sum((point[i] - centroids[1][i]) ** 2 for i in range(2))\n            output.append(0 if d0 <= d1 else 1)\n        return output\n\n    return predict\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e58c323490dd9d72b503fa5e0726a525ade13697f6e5b85172a19f5e032bec5d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_identical_finite_points_tie_zero (__main__.Probe.test_identical_finite_points_tie_zero)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_identical_finite_points_tie_zero\n    self.assertEqual(predict([[1e308, 0]]), [0])\nAssertionError: Lists differ: [1] != [0]\n\nFirst differing element 0:\n1\n0\n\n- [1]\n+ [0]\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "07f30b7a8a17bcbe8f70f8e19206bb320f2cd801b42bbe4b00ede8f520daa415",
+    "duration_ms": 433,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

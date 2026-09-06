@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0189",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "24281b0775d4616b1d0bdfb5dfc65bef4d1edf0af43243ea6d0dd262cb0cb01f",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import collect_entries\n\n\nclass CatalogNestedNextTests(unittest.TestCase):\n    def test_next_link_inside_article_is_still_pagination(self):\n        pages = {\n            'root': '<article data-title=\"Root\"><a class=\"detail\" href=\"/r\"></a><a rel=\"next\" href=\"next\">Next</a></article>',\n            'next': '<article data-title=\"Next\"><a class=\"detail\" href=\"/n\"></a></article>',\n        }\n        self.assertEqual([item['title'] for item in collect_entries(pages, 'root')], ['Root', 'Next'])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "29e1fdeb4ffe2793382393a50606ed8f82e573c785c79a469fc9faaab45e13e0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6e13aa86eda490922960f7e5fcac952ff7f263f447dba6066f7e68fc8c275dea",
+      "text": "Create `solution.py` using only the standard library. Define `collect_entries(pages, start)`. `pages` is a mapping from string page identifiers to HTML strings, and `start` is a string identifier. A catalog entry is an `<article data-title=\"...\">` containing exactly one `<a class=\"detail\" href=\"...\">` and optionally one `<meta name=\"summary\" content=\"...\">`. A pagination edge is `<a rel=\"next\" href=\"...\">`. Traverse pages depth-first by following next links in document order; process a page at most once. Return dictionaries with keys `title`, `link`, and `summary` in encounter order. HTML entities must be decoded by the parser. Missing pages and malformed entries are skipped; a missing summary becomes `''`. Duplicate entries are retained. Raise `ValueError` if `pages`, its keys/values, or `start` have invalid types. Empty input or an absent start returns `[]`. Returned dictionaries must be newly allocated and share no mutable objects with the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6e13aa86eda490922960f7e5fcac952ff7f263f447dba6066f7e68fc8c275dea",
+      "text": "Create `solution.py` using only the standard library. Define `collect_entries(pages, start)`. `pages` is a mapping from string page identifiers to HTML strings, and `start` is a string identifier. A catalog entry is an `<article data-title=\"...\">` containing exactly one `<a class=\"detail\" href=\"...\">` and optionally one `<meta name=\"summary\" content=\"...\">`. A pagination edge is `<a rel=\"next\" href=\"...\">`. Traverse pages depth-first by following next links in document order; process a page at most once. Return dictionaries with keys `title`, `link`, and `summary` in encounter order. HTML entities must be decoded by the parser. Missing pages and malformed entries are skipped; a missing summary becomes `''`. Duplicate entries are retained. Raise `ValueError` if `pages`, its keys/values, or `start` have invalid types. Empty input or an absent start returns `[]`. Returned dictionaries must be newly allocated and share no mutable objects with the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0189",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom html.parser import HTMLParser\n\n\nclass _CatalogParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.entries = []\n        self.next_links = []\n        self.current = None\n        self.depth = 0\n\n    def handle_starttag(self, tag, attrs):\n        data = dict(attrs)\n        if tag == 'article' and self.current is None and 'data-title' in data:\n            self.current = {'title': data['data-title'], 'links': [], 'summaries': []}\n            self.depth = 1\n            return\n        if self.current is not None:\n            if tag == 'article':\n                self.depth += 1\n            if tag == 'a' and data.get('class') == 'detail' and 'href' in data:\n                self.current['links'].append(data['href'])\n            if tag == 'meta' and data.get('name') == 'summary' and 'content' in data:\n                self.current['summaries'].append(data['content'])\n        elif tag == 'a' and data.get('rel') == 'next' and 'href' in data:\n            self.next_links.append(data['href'])\n\n    def handle_endtag(self, tag):\n        if self.current is not None and tag == 'article':\n            self.depth -= 1\n            if self.depth == 0:\n                item = self.current\n                self.current = None\n                if len(item['links']) == 1 and len(item['summaries']) <= 1:\n                    self.entries.append({'title': item['title'], 'link': item['links'][0], 'summary': item['summaries'][0] if item['summaries'] else ''})\n\n\ndef collect_entries(pages, start):\n    if not isinstance(pages, Mapping) or not isinstance(start, str):\n        raise ValueError('invalid arguments')\n    if any(not isinstance(key, str) or not isinstance(value, str) for key, value in pages.items()):\n        raise ValueError('pages must map strings to strings')\n    result = []\n    seen = set()\n\n    def visit(page_id):\n        if page_id in seen or page_id not in pages:\n            return\n        seen.add(page_id)\n        parser = _CatalogParser()\n        parser.feed(pages[page_id])\n        parser.close()\n        for target in parser.next_links:\n            visit(target)\n        result.extend(dict(item) for item in parser.entries)\n\n    visit(start)\n    return result\n",
+          "label": "Appends a page's entries after traversing its links, producing postorder instead of required encounter order.",
+          "sha256": "f2a4f21fcb412d1ae3fb9b9d1e91d3cc40abdb707e8582cd5b296ed9effbf602"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom html.parser import HTMLParser\n\n\nclass _CatalogParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.entries = []\n        self.next_links = []\n        self.current = None\n        self.depth = 0\n\n    def handle_starttag(self, tag, attrs):\n        data = dict(attrs)\n        if tag == 'article' and self.current is None and 'data-title' in data:\n            self.current = {'title': data['data-title'], 'links': [], 'summaries': []}\n            self.depth = 1\n            return\n        if self.current is not None:\n            if tag == 'article':\n                self.depth += 1\n            if tag == 'a' and data.get('class') == 'detail' and 'href' in data:\n                self.current['links'].append(data['href'])\n            if tag == 'meta' and data.get('name') == 'summary' and 'content' in data:\n                self.current['summaries'].append(data['content'])\n        elif tag == 'a' and data.get('rel') == 'next' and 'href' in data:\n            self.next_links.append(data['href'])\n\n    def handle_endtag(self, tag):\n        if self.current is not None and tag == 'article':\n            self.depth -= 1\n            if self.depth == 0:\n                item = self.current\n                self.current = None\n                if len(item['links']) == 1 and len(item['summaries']) <= 1:\n                    self.entries.append({'title': item['title'], 'link': item['links'][0], 'summary': item['summaries'][0] if item['summaries'] else ''})\n\n\ndef collect_entries(pages, start):\n    if not isinstance(pages, Mapping) or not isinstance(start, str):\n        raise ValueError('invalid arguments')\n    if any(not isinstance(key, str) or not isinstance(value, str) for key, value in pages.items()):\n        raise ValueError('pages must map strings to strings')\n    result = []\n    seen = set()\n\n    def visit(page_id):\n        if page_id in seen or page_id not in pages:\n            return\n        seen.add(page_id)\n        parser = _CatalogParser()\n        parser.feed(pages[page_id])\n        parser.close()\n        result.extend(dict(item) for item in parser.entries)\n        for target in parser.next_links:\n            visit(target)\n\n    visit(start)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0c89091e289249d567c34c39b0f826bc2ba450e2f2eae3fed9f8d9399ef259bc"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import OrderedDict\n\nfrom solution import collect_entries\n\n\nclass CollectEntriesTests(unittest.TestCase):\n    def test_depth_first_traversal_entities_duplicates_and_order(self):\n        pages = OrderedDict([\n            ('root', '''\n                <article data-title=\"A &amp; B\">\n                  <a class=\"detail\" href=\"/a?x=1&amp;y=2\">first</a>\n                  <meta name=\"summary\" content=\"one &quot;quoted&quot; summary\">\n                </article>\n                <a rel=\"next\" href=\"left\">left</a>\n                <article data-title=\"No Summary\"><a class=\"detail\" href=\"/n\"></a></article>\n                <a rel=\"next\" href=\"right\">right</a>\n            '''),\n            ('left', '''\n                <article data-title=\"Duplicate\"><a class=\"detail\" href=\"/d\"></a></article>\n                <a rel=\"next\" href=\"deep\">deep</a>\n                <a rel=\"next\" href=\"root\">cycle</a>\n            '''),\n            ('deep', '<article data-title=\"Deep\"><a class=\"detail\" href=\"/deep\"></a></article>'),\n            ('right', '<article data-title=\"Duplicate\"><a class=\"detail\" href=\"/d\"></a></article>'),\n        ])\n        snapshot = pages.copy()\n        self.assertEqual(collect_entries(pages, 'root'), [\n            {'title': 'A & B', 'link': '/a?x=1&y=2', 'summary': 'one \"quoted\" summary'},\n            {'title': 'No Summary', 'link': '/n', 'summary': ''},\n            {'title': 'Duplicate', 'link': '/d', 'summary': ''},\n            {'title': 'Deep', 'link': '/deep', 'summary': ''},\n            {'title': 'Duplicate', 'link': '/d', 'summary': ''},\n        ])\n        self.assertEqual(pages, snapshot)\n\n    def test_malformed_articles_are_skipped(self):\n        pages = {'p': '''\n            <article data-title=\"missing link\"></article>\n            <article data-title=\"two links\">\n              <a class=\"detail\" href=\"/1\"></a><a class=\"detail\" href=\"/2\"></a>\n            </article>\n            <article data-title=\"two summaries\">\n              <a class=\"detail\" href=\"/3\"></a>\n              <meta name=\"summary\" content=\"a\"><meta name=\"summary\" content=\"b\">\n            </article>\n            <article><a class=\"detail\" href=\"/4\"></a></article>\n            <article data-title=\"valid\"><a class=\"detail\" href=\"/ok\"></a></article>\n        '''}\n        self.assertEqual(\n            collect_entries(pages, 'p'),\n            [{'title': 'valid', 'link': '/ok', 'summary': ''}],\n        )\n\n    def test_missing_pages_empty_input_and_fresh_results(self):\n        self.assertEqual(collect_entries({}, 'start'), [])\n        self.assertEqual(collect_entries({'other': ''}, 'start'), [])\n        pages = {'p': '<article data-title=\"T\"><a class=\"detail\" href=\"L\"></a></article>'}\n        first = collect_entries(pages, 'p')\n        second = collect_entries(pages, 'p')\n        self.assertEqual(first, second)\n        self.assertIsNot(first, second)\n        self.assertIsNot(first[0], second[0])\n\n    def test_missing_linked_page_is_skipped(self):\n        pages = {'p': '<a rel=\"next\" href=\"missing\"></a><article data-title=\"T\"><a class=\"detail\" href=\"L\"></a></article>'}\n        self.assertEqual(collect_entries(pages, 'p'), [{'title': 'T', 'link': 'L', 'summary': ''}])\n\n    def test_invalid_types(self):\n        invalid_calls = [\n            lambda: collect_entries([], 'x'),\n            lambda: collect_entries({1: '<p></p>'}, 'x'),\n            lambda: collect_entries({'x': b'<p></p>'}, 'x'),\n            lambda: collect_entries({'x': ''}, 1),\n        ]\n        for call in invalid_calls:\n            with self.assertRaises(ValueError):\n                call()\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "414325b18556d7ddb0152971836483fadac3b3c225e394f6ff2ad9b4e5ec6ee0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6e13aa86eda490922960f7e5fcac952ff7f263f447dba6066f7e68fc8c275dea",
+      "text": "Create `solution.py` using only the standard library. Define `collect_entries(pages, start)`. `pages` is a mapping from string page identifiers to HTML strings, and `start` is a string identifier. A catalog entry is an `<article data-title=\"...\">` containing exactly one `<a class=\"detail\" href=\"...\">` and optionally one `<meta name=\"summary\" content=\"...\">`. A pagination edge is `<a rel=\"next\" href=\"...\">`. Traverse pages depth-first by following next links in document order; process a page at most once. Return dictionaries with keys `title`, `link`, and `summary` in encounter order. HTML entities must be decoded by the parser. Missing pages and malformed entries are skipped; a missing summary becomes `''`. Duplicate entries are retained. Raise `ValueError` if `pages`, its keys/values, or `start` have invalid types. Empty input or an absent start returns `[]`. Returned dictionaries must be newly allocated and share no mutable objects with the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6e13aa86eda490922960f7e5fcac952ff7f263f447dba6066f7e68fc8c275dea",
+      "text": "Create `solution.py` using only the standard library. Define `collect_entries(pages, start)`. `pages` is a mapping from string page identifiers to HTML strings, and `start` is a string identifier. A catalog entry is an `<article data-title=\"...\">` containing exactly one `<a class=\"detail\" href=\"...\">` and optionally one `<meta name=\"summary\" content=\"...\">`. A pagination edge is `<a rel=\"next\" href=\"...\">`. Traverse pages depth-first by following next links in document order; process a page at most once. Return dictionaries with keys `title`, `link`, and `summary` in encounter order. HTML entities must be decoded by the parser. Missing pages and malformed entries are skipped; a missing summary becomes `''`. Duplicate entries are retained. Raise `ValueError` if `pages`, its keys/values, or `start` have invalid types. Empty input or an absent start returns `[]`. Returned dictionaries must be newly allocated and share no mutable objects with the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0189",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom html.parser import HTMLParser\n\n\nclass _CatalogParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.entries = []\n        self.next_links = []\n        self.current = None\n        self.depth = 0\n\n    def handle_starttag(self, tag, attrs):\n        data = dict(attrs)\n        if tag == 'article' and self.current is None and 'data-title' in data:\n            self.current = {'title': data['data-title'], 'links': [], 'summaries': []}\n            self.depth = 1\n            return\n        if self.current is not None:\n            if tag == 'article':\n                self.depth += 1\n            if tag == 'a' and data.get('class') == 'detail' and 'href' in data:\n                self.current['links'].append(data['href'])\n            if tag == 'meta' and data.get('name') == 'summary' and 'content' in data:\n                self.current['summaries'].append(data['content'])\n        elif tag == 'a' and data.get('rel') == 'next' and 'href' in data:\n            self.next_links.append(data['href'])\n\n    def handle_endtag(self, tag):\n        if self.current is not None and tag == 'article':\n            self.depth -= 1\n            if self.depth == 0:\n                item = self.current\n                self.current = None\n                if len(item['links']) == 1 and len(item['summaries']) <= 1:\n                    self.entries.append({'title': item['title'], 'link': item['links'][0], 'summary': item['summaries'][0] if item['summaries'] else ''})\n\n\ndef collect_entries(pages, start):\n    if not isinstance(pages, Mapping) or not isinstance(start, str):\n        raise ValueError('invalid arguments')\n    if any(not isinstance(key, str) or not isinstance(value, str) for key, value in pages.items()):\n        raise ValueError('pages must map strings to strings')\n    result = []\n    seen = set()\n\n    def visit(page_id):\n        if page_id in seen or page_id not in pages:\n            return\n        seen.add(page_id)\n        parser = _CatalogParser()\n        parser.feed(pages[page_id])\n        parser.close()\n        for target in parser.next_links:\n            visit(target)\n        result.extend(dict(item) for item in parser.entries)\n\n    visit(start)\n    return result\n",
+          "label": "Appends a page's entries after traversing its links, producing postorder instead of required encounter order.",
+          "sha256": "f2a4f21fcb412d1ae3fb9b9d1e91d3cc40abdb707e8582cd5b296ed9effbf602"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom html.parser import HTMLParser\n\n\nclass _CatalogParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.entries = []\n        self.next_links = []\n        self.current = None\n        self.depth = 0\n\n    def handle_starttag(self, tag, attrs):\n        data = dict(attrs)\n        if tag == 'article' and self.current is None and 'data-title' in data:\n            self.current = {'title': data['data-title'], 'links': [], 'summaries': []}\n            self.depth = 1\n            return\n        if self.current is not None:\n            if tag == 'article':\n                self.depth += 1\n            if tag == 'a' and data.get('class') == 'detail' and 'href' in data:\n                self.current['links'].append(data['href'])\n            if tag == 'meta' and data.get('name') == 'summary' and 'content' in data:\n                self.current['summaries'].append(data['content'])\n        elif tag == 'a' and data.get('rel') == 'next' and 'href' in data:\n            self.next_links.append(data['href'])\n\n    def handle_endtag(self, tag):\n        if self.current is not None and tag == 'article':\n            self.depth -= 1\n            if self.depth == 0:\n                item = self.current\n                self.current = None\n                if len(item['links']) == 1 and len(item['summaries']) <= 1:\n                    self.entries.append({'title': item['title'], 'link': item['links'][0], 'summary': item['summaries'][0] if item['summaries'] else ''})\n\n\ndef collect_entries(pages, start):\n    if not isinstance(pages, Mapping) or not isinstance(start, str):\n        raise ValueError('invalid arguments')\n    if any(not isinstance(key, str) or not isinstance(value, str) for key, value in pages.items()):\n        raise ValueError('pages must map strings to strings')\n    result = []\n    seen = set()\n\n    def visit(page_id):\n        if page_id in seen or page_id not in pages:\n            return\n        seen.add(page_id)\n        parser = _CatalogParser()\n        parser.feed(pages[page_id])\n        parser.close()\n        result.extend(dict(item) for item in parser.entries)\n        for target in parser.next_links:\n            visit(target)\n\n    visit(start)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0c89091e289249d567c34c39b0f826bc2ba450e2f2eae3fed9f8d9399ef259bc"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_next_link_inside_article_is_still_pagination (__main__.CatalogNestedNextTests.test_next_link_inside_article_is_still_pagination)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_next_link_inside_article_is_still_pagination\n    self.assertEqual([item['title'] for item in collect_entries(pages, 'root')], ['Root', 'Next'])\nAssertionError: Lists differ: ['Root'] != ['Root', 'Next']\n\nSecond list contains 1 additional elements.\nFirst extra element 1:\n'Next'\n\n- ['Root']\n+ ['Root', 'Next']\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "f7e9a18c1065aea9aa48ebdf4a362667518a96d2b696b0107b94af946b0531b1",
+    "duration_ms": 401,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

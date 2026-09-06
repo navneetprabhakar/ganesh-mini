@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0190",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "68edf6c05d22de47705beb5174447a6fde4fd718e9a2ca6c700e92067f36ae92",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import classify_grids\n\n\nclass CorrelationFiniteCancellationTests(unittest.TestCase):\n    def test_representable_correlation_after_cancellation(self):\n        result = classify_grids([[[1e308, 1e308, 1]]], [[[2, -2, 1]]], [0])\n        self.assertEqual(result, {'indices': [0], 'scores': [[1.0]]})\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "4f1c317ef735af53a27378e7ff7c17d7d8611c73906f10f8fce27370e1ba523c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8bff73b9b4b46095d8d8ce6bfacf0ee09cdce884e730789c57d776aea5f18ccb",
+      "text": "Create `solution.py` using only the standard library. Define `classify_grids(grids, kernels, biases)`. Each grid is a non-empty rectangular sequence of numeric rows. Each kernel is a non-empty rectangular numeric matrix no larger than the grid. `biases` must contain one finite number per kernel. For every grid and kernel, compute valid 2D cross-correlation (do not reverse the kernel), add its bias, replace negative values with zero, and take the maximum activation as that class's score. The predicted class is the lowest index having the greatest score. Return `{'indices': [...], 'scores': [...]}`, where each score row contains floats in kernel order. Empty `grids` returns two empty lists, but kernels must still be non-empty and valid. Reject booleans, non-finite numbers, ragged matrices, size mismatches, and malformed arguments with `ValueError`. Do not mutate inputs; the returned lists must not alias them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8bff73b9b4b46095d8d8ce6bfacf0ee09cdce884e730789c57d776aea5f18ccb",
+      "text": "Create `solution.py` using only the standard library. Define `classify_grids(grids, kernels, biases)`. Each grid is a non-empty rectangular sequence of numeric rows. Each kernel is a non-empty rectangular numeric matrix no larger than the grid. `biases` must contain one finite number per kernel. For every grid and kernel, compute valid 2D cross-correlation (do not reverse the kernel), add its bias, replace negative values with zero, and take the maximum activation as that class's score. The predicted class is the lowest index having the greatest score. Return `{'indices': [...], 'scores': [...]}`, where each score row contains floats in kernel order. Empty `grids` returns two empty lists, but kernels must still be non-empty and valid. Reject booleans, non-finite numbers, ragged matrices, size mismatches, and malformed arguments with `ValueError`. Do not mutate inputs; the returned lists must not alias them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0190",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _matrix(value, name):\n    if isinstance(value, (str, bytes)):\n        raise ValueError(name + ' must be a matrix')\n    try:\n        rows = list(value)\n    except TypeError:\n        raise ValueError(name + ' must be a matrix') from None\n    if not rows:\n        raise ValueError(name + ' must not be empty')\n    output = []\n    width = None\n    for row in rows:\n        if isinstance(row, (str, bytes)):\n            raise ValueError(name + ' has an invalid row')\n        try:\n            values = list(row)\n        except TypeError:\n            raise ValueError(name + ' has an invalid row') from None\n        if not values or (width is not None and len(values) != width):\n            raise ValueError(name + ' must be rectangular')\n        width = len(values)\n        if any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) for x in values):\n            raise ValueError(name + ' contains an invalid number')\n        output.append([float(x) for x in values])\n    return output\n\n\ndef classify_grids(grids, kernels, biases):\n    try:\n        raw_kernels = list(kernels)\n        raw_biases = list(biases)\n        raw_grids = list(grids)\n    except TypeError:\n        raise ValueError('arguments must be iterable') from None\n    if not raw_kernels or len(raw_kernels) != len(raw_biases):\n        raise ValueError('kernel and bias counts must match')\n    checked_kernels = [_matrix(k, 'kernel') for k in raw_kernels]\n    if any(isinstance(b, bool) or not isinstance(b, (int, float)) or not math.isfinite(b) for b in raw_biases):\n        raise ValueError('invalid bias')\n    checked_grids = [_matrix(g, 'grid') for g in raw_grids]\n    all_scores = []\n    indices = []\n    for grid in checked_grids:\n        scores = []\n        for kernel, bias in zip(checked_kernels, raw_biases):\n            gh, gw, kh, kw = len(grid), len(grid[0]), len(kernel), len(kernel[0])\n            if kh > gh or kw > gw:\n                raise ValueError('kernel is larger than grid')\n            best = 0.0\n            for y in range(gh - kh + 1):\n                for x in range(gw - kw + 1):\n                    value = float(bias) + sum(grid[y + dy][x + dx] * kernel[kh - 1 - dy][kw - 1 - dx] for dy in range(kh) for dx in range(kw))\n                    best = max(best, value, 0.0)\n            scores.append(float(best))\n        all_scores.append(scores)\n        indices.append(max(range(len(scores)), key=lambda i: (scores[i], -i)))\n    return {'indices': indices, 'scores': all_scores}\n",
+          "label": "Reverses kernels and computes convolution instead of the specified cross-correlation.",
+          "sha256": "4c2816b0114d5960cdf4a9610e47974da82e0d3216970979f27277cadcf8a613"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _matrix(value, name):\n    if isinstance(value, (str, bytes)):\n        raise ValueError(name + ' must be a matrix')\n    try:\n        rows = list(value)\n    except TypeError:\n        raise ValueError(name + ' must be a matrix') from None\n    if not rows:\n        raise ValueError(name + ' must not be empty')\n    output = []\n    width = None\n    for row in rows:\n        if isinstance(row, (str, bytes)):\n            raise ValueError(name + ' has an invalid row')\n        try:\n            values = list(row)\n        except TypeError:\n            raise ValueError(name + ' has an invalid row') from None\n        if not values or (width is not None and len(values) != width):\n            raise ValueError(name + ' must be rectangular')\n        width = len(values)\n        if any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) for x in values):\n            raise ValueError(name + ' contains an invalid number')\n        output.append([float(x) for x in values])\n    return output\n\n\ndef classify_grids(grids, kernels, biases):\n    try:\n        raw_kernels = list(kernels)\n        raw_biases = list(biases)\n        raw_grids = list(grids)\n    except TypeError:\n        raise ValueError('arguments must be iterable') from None\n    if not raw_kernels or len(raw_kernels) != len(raw_biases):\n        raise ValueError('kernel and bias counts must match')\n    checked_kernels = [_matrix(k, 'kernel') for k in raw_kernels]\n    if any(isinstance(b, bool) or not isinstance(b, (int, float)) or not math.isfinite(b) for b in raw_biases):\n        raise ValueError('invalid bias')\n    checked_grids = [_matrix(g, 'grid') for g in raw_grids]\n    all_scores = []\n    indices = []\n    for grid in checked_grids:\n        scores = []\n        for kernel, bias in zip(checked_kernels, raw_biases):\n            gh, gw, kh, kw = len(grid), len(grid[0]), len(kernel), len(kernel[0])\n            if kh > gh or kw > gw:\n                raise ValueError('kernel is larger than grid')\n            best = 0.0\n            for y in range(gh - kh + 1):\n                for x in range(gw - kw + 1):\n                    value = float(bias) + sum(grid[y + dy][x + dx] * kernel[dy][dx] for dy in range(kh) for dx in range(kw))\n                    best = max(best, value, 0.0)\n            scores.append(float(best))\n        all_scores.append(scores)\n        indices.append(max(range(len(scores)), key=lambda i: (scores[i], -i)))\n    return {'indices': indices, 'scores': all_scores}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "978c37c4c460e9fd383a46c90c0388e5cf406f1a472a7a2e086d59ede07fcc68"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import classify_grids\n\n\nclass ClassifyGridsTests(unittest.TestCase):\n    def test_cross_correlation_relu_scores_and_predictions(self):\n        grids = [\n            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],\n            [[-1, -2], [-3, -4]],\n        ]\n        kernels = [\n            [[1]],\n            [[1, 0], [0, -1]],\n        ]\n        biases = [0, 1]\n        grids_snapshot = [[row[:] for row in grid] for grid in grids]\n        kernels_snapshot = [[row[:] for row in kernel] for kernel in kernels]\n        result = classify_grids(grids, kernels, biases)\n        self.assertEqual(result, {'indices': [0, 1], 'scores': [[9.0, 0.0], [0.0, 4.0]]})\n        self.assertEqual(grids, grids_snapshot)\n        self.assertEqual(kernels, kernels_snapshot)\n        self.assertEqual(biases, [0, 1])\n\n    def test_kernel_is_not_reversed(self):\n        result = classify_grids([[[1, 2], [3, 4]]], [[[1, 2], [3, 4]]], [0])\n        self.assertEqual(result, {'indices': [0], 'scores': [[30.0]]})\n\n    def test_relu_and_lowest_index_tie_break(self):\n        result = classify_grids([[[1]]], [[[-1]], [[-2]], [[1]]], [-1, -1, -1])\n        self.assertEqual(result, {'indices': [0], 'scores': [[0.0, 0.0, 0.0]]})\n\n    def test_empty_grids(self):\n        self.assertEqual(classify_grids([], [[[1]]], [0]), {'indices': [], 'scores': []})\n\n    def test_invalid_arguments(self):\n        bad_calls = [\n            lambda: classify_grids([[]], [[[1]]], [0]),\n            lambda: classify_grids([[[1], [2, 3]]], [[[1]]], [0]),\n            lambda: classify_grids([[[True]]], [[[1]]], [0]),\n            lambda: classify_grids([[[math.inf]]], [[[1]]], [0]),\n            lambda: classify_grids([[[1]]], [], []),\n            lambda: classify_grids([[[1]]], [[]], [0]),\n            lambda: classify_grids([[[1]]], [[[1, 2]]], [0]),\n            lambda: classify_grids([[[1]]], [[[True]]], [0]),\n            lambda: classify_grids([[[1]]], [[[1]]], []),\n            lambda: classify_grids([[[1]]], [[[1]]], [math.nan]),\n            lambda: classify_grids([[[1]]], [[[1]]], [False]),\n            lambda: classify_grids('bad', [[[1]]], [0]),\n        ]\n        for call in bad_calls:\n            with self.subTest(call=call):\n                with self.assertRaises(ValueError):\n                    call()\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "9b84485ecbbe6f53f6bdc28a7c52faa23a5c2dc855547d3720caa16506084a51"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8bff73b9b4b46095d8d8ce6bfacf0ee09cdce884e730789c57d776aea5f18ccb",
+      "text": "Create `solution.py` using only the standard library. Define `classify_grids(grids, kernels, biases)`. Each grid is a non-empty rectangular sequence of numeric rows. Each kernel is a non-empty rectangular numeric matrix no larger than the grid. `biases` must contain one finite number per kernel. For every grid and kernel, compute valid 2D cross-correlation (do not reverse the kernel), add its bias, replace negative values with zero, and take the maximum activation as that class's score. The predicted class is the lowest index having the greatest score. Return `{'indices': [...], 'scores': [...]}`, where each score row contains floats in kernel order. Empty `grids` returns two empty lists, but kernels must still be non-empty and valid. Reject booleans, non-finite numbers, ragged matrices, size mismatches, and malformed arguments with `ValueError`. Do not mutate inputs; the returned lists must not alias them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8bff73b9b4b46095d8d8ce6bfacf0ee09cdce884e730789c57d776aea5f18ccb",
+      "text": "Create `solution.py` using only the standard library. Define `classify_grids(grids, kernels, biases)`. Each grid is a non-empty rectangular sequence of numeric rows. Each kernel is a non-empty rectangular numeric matrix no larger than the grid. `biases` must contain one finite number per kernel. For every grid and kernel, compute valid 2D cross-correlation (do not reverse the kernel), add its bias, replace negative values with zero, and take the maximum activation as that class's score. The predicted class is the lowest index having the greatest score. Return `{'indices': [...], 'scores': [...]}`, where each score row contains floats in kernel order. Empty `grids` returns two empty lists, but kernels must still be non-empty and valid. Reject booleans, non-finite numbers, ragged matrices, size mismatches, and malformed arguments with `ValueError`. Do not mutate inputs; the returned lists must not alias them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0190",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _matrix(value, name):\n    if isinstance(value, (str, bytes)):\n        raise ValueError(name + ' must be a matrix')\n    try:\n        rows = list(value)\n    except TypeError:\n        raise ValueError(name + ' must be a matrix') from None\n    if not rows:\n        raise ValueError(name + ' must not be empty')\n    output = []\n    width = None\n    for row in rows:\n        if isinstance(row, (str, bytes)):\n            raise ValueError(name + ' has an invalid row')\n        try:\n            values = list(row)\n        except TypeError:\n            raise ValueError(name + ' has an invalid row') from None\n        if not values or (width is not None and len(values) != width):\n            raise ValueError(name + ' must be rectangular')\n        width = len(values)\n        if any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) for x in values):\n            raise ValueError(name + ' contains an invalid number')\n        output.append([float(x) for x in values])\n    return output\n\n\ndef classify_grids(grids, kernels, biases):\n    try:\n        raw_kernels = list(kernels)\n        raw_biases = list(biases)\n        raw_grids = list(grids)\n    except TypeError:\n        raise ValueError('arguments must be iterable') from None\n    if not raw_kernels or len(raw_kernels) != len(raw_biases):\n        raise ValueError('kernel and bias counts must match')\n    checked_kernels = [_matrix(k, 'kernel') for k in raw_kernels]\n    if any(isinstance(b, bool) or not isinstance(b, (int, float)) or not math.isfinite(b) for b in raw_biases):\n        raise ValueError('invalid bias')\n    checked_grids = [_matrix(g, 'grid') for g in raw_grids]\n    all_scores = []\n    indices = []\n    for grid in checked_grids:\n        scores = []\n        for kernel, bias in zip(checked_kernels, raw_biases):\n            gh, gw, kh, kw = len(grid), len(grid[0]), len(kernel), len(kernel[0])\n            if kh > gh or kw > gw:\n                raise ValueError('kernel is larger than grid')\n            best = 0.0\n            for y in range(gh - kh + 1):\n                for x in range(gw - kw + 1):\n                    value = float(bias) + sum(grid[y + dy][x + dx] * kernel[kh - 1 - dy][kw - 1 - dx] for dy in range(kh) for dx in range(kw))\n                    best = max(best, value, 0.0)\n            scores.append(float(best))\n        all_scores.append(scores)\n        indices.append(max(range(len(scores)), key=lambda i: (scores[i], -i)))\n    return {'indices': indices, 'scores': all_scores}\n",
+          "label": "Reverses kernels and computes convolution instead of the specified cross-correlation.",
+          "sha256": "4c2816b0114d5960cdf4a9610e47974da82e0d3216970979f27277cadcf8a613"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _matrix(value, name):\n    if isinstance(value, (str, bytes)):\n        raise ValueError(name + ' must be a matrix')\n    try:\n        rows = list(value)\n    except TypeError:\n        raise ValueError(name + ' must be a matrix') from None\n    if not rows:\n        raise ValueError(name + ' must not be empty')\n    output = []\n    width = None\n    for row in rows:\n        if isinstance(row, (str, bytes)):\n            raise ValueError(name + ' has an invalid row')\n        try:\n            values = list(row)\n        except TypeError:\n            raise ValueError(name + ' has an invalid row') from None\n        if not values or (width is not None and len(values) != width):\n            raise ValueError(name + ' must be rectangular')\n        width = len(values)\n        if any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) for x in values):\n            raise ValueError(name + ' contains an invalid number')\n        output.append([float(x) for x in values])\n    return output\n\n\ndef classify_grids(grids, kernels, biases):\n    try:\n        raw_kernels = list(kernels)\n        raw_biases = list(biases)\n        raw_grids = list(grids)\n    except TypeError:\n        raise ValueError('arguments must be iterable') from None\n    if not raw_kernels or len(raw_kernels) != len(raw_biases):\n        raise ValueError('kernel and bias counts must match')\n    checked_kernels = [_matrix(k, 'kernel') for k in raw_kernels]\n    if any(isinstance(b, bool) or not isinstance(b, (int, float)) or not math.isfinite(b) for b in raw_biases):\n        raise ValueError('invalid bias')\n    checked_grids = [_matrix(g, 'grid') for g in raw_grids]\n    all_scores = []\n    indices = []\n    for grid in checked_grids:\n        scores = []\n        for kernel, bias in zip(checked_kernels, raw_biases):\n            gh, gw, kh, kw = len(grid), len(grid[0]), len(kernel), len(kernel[0])\n            if kh > gh or kw > gw:\n                raise ValueError('kernel is larger than grid')\n            best = 0.0\n            for y in range(gh - kh + 1):\n                for x in range(gw - kw + 1):\n                    value = float(bias) + sum(grid[y + dy][x + dx] * kernel[dy][dx] for dy in range(kh) for dx in range(kw))\n                    best = max(best, value, 0.0)\n            scores.append(float(best))\n        all_scores.append(scores)\n        indices.append(max(range(len(scores)), key=lambda i: (scores[i], -i)))\n    return {'indices': indices, 'scores': all_scores}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "978c37c4c460e9fd383a46c90c0388e5cf406f1a472a7a2e086d59ede07fcc68"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_representable_correlation_after_cancellation (__main__.CorrelationFiniteCancellationTests.test_representable_correlation_after_cancellation)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_representable_correlation_after_cancellation\n    self.assertEqual(result, {'indices': [0], 'scores': [[1.0]]})\nAssertionError: {'indices': [0], 'scores': [[0.0]]} != {'indices': [0], 'scores': [[1.0]]}\n- {'indices': [0], 'scores': [[0.0]]}\n?                              ^\n\n+ {'indices': [0], 'scores': [[1.0]]}\n?                              ^\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "b563bd2836764c194923c39f843fe6cb4ffcbebf9be028b1df708c467bb0517a",
+    "duration_ms": 389,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

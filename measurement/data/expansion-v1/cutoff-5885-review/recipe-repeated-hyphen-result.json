@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0399",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "24f839845ad5637c73cf7736dc648be9887d8b60c01dceac99733d9bde1b91dd",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import RecipeShelf\n\nrecipe = {\"slug\": \"a--b\", \"title\": \"Dish\", \"tags\": []}\nshelf = RecipeShelf([recipe])\nassert shelf.detail(\"a--b\") == recipe\n",
+        "sha256": "e5864b8b56390838f8c2dcd13eba5f8c2feafd2eef753621e47ab63780f9e599"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9644fdf70f8fed6169e9c6100e70b36bc2e973bc1e9bc942a0da511ff6d34585",
+      "text": "Implement `solution.py` with a mutable `RecipeShelf` class.\n\nPublic API:\n- `RecipeShelf(recipes=())`, where every recipe is a mapping with exactly `slug`, `title`, and `tags`.\n- `add(recipe)` adds one recipe.\n- `edit(slug, *, title=None, tags=None)` updates supplied fields and returns the updated recipe.\n- `detail(slug)` returns one recipe.\n- `list_all()` returns all recipes ordered by slug.\n- `resolve(path)` returns `(\"page\", payload)` for `/`, `/recipes`, and `/recipes/<slug>`, and returns `(\"redirect\", \"/recipes\")` for `/start`. Unknown paths raise `KeyError`.\n\nValidation:\n- Slugs must be non-empty lowercase strings containing only ASCII letters, digits, and hyphens.\n- Titles must be non-empty strings after trimming.\n- Tags must be an iterable of non-empty strings; trim each tag and preserve its order.\n- Duplicate slugs raise `ValueError`; unknown slugs raise `KeyError`.\n- Empty shelves are valid.\n- `/recipes` resolves to the same value shape as `list_all`; `/` has payload `{\"message\": \"Recipe shelf\"}`.\n- All stored recipes and all returned payloads must be deeply independent from caller-owned and previously returned objects. No public operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9644fdf70f8fed6169e9c6100e70b36bc2e973bc1e9bc942a0da511ff6d34585",
+      "text": "Implement `solution.py` with a mutable `RecipeShelf` class.\n\nPublic API:\n- `RecipeShelf(recipes=())`, where every recipe is a mapping with exactly `slug`, `title`, and `tags`.\n- `add(recipe)` adds one recipe.\n- `edit(slug, *, title=None, tags=None)` updates supplied fields and returns the updated recipe.\n- `detail(slug)` returns one recipe.\n- `list_all()` returns all recipes ordered by slug.\n- `resolve(path)` returns `(\"page\", payload)` for `/`, `/recipes`, and `/recipes/<slug>`, and returns `(\"redirect\", \"/recipes\")` for `/start`. Unknown paths raise `KeyError`.\n\nValidation:\n- Slugs must be non-empty lowercase strings containing only ASCII letters, digits, and hyphens.\n- Titles must be non-empty strings after trimming.\n- Tags must be an iterable of non-empty strings; trim each tag and preserve its order.\n- Duplicate slugs raise `ValueError`; unknown slugs raise `KeyError`.\n- Empty shelves are valid.\n- `/recipes` resolves to the same value shape as `list_all`; `/` has payload `{\"message\": \"Recipe shelf\"}`.\n- All stored recipes and all returned payloads must be deeply independent from caller-owned and previously returned objects. No public operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0399",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport re\n\n\n_SLUG = re.compile(r\"[a-z0-9]+(?:-[a-z0-9]+)*\\Z\")\n\n\nclass RecipeShelf:\n    def __init__(self, recipes=()):\n        self._recipes = {}\n        for recipe in recipes:\n            self.add(recipe)\n\n    @staticmethod\n    def _normalize(recipe):\n        if not isinstance(recipe, dict) or set(recipe) != {\"slug\", \"title\", \"tags\"}:\n            raise ValueError(\"recipe must contain exactly slug, title, and tags\")\n        slug = recipe[\"slug\"]\n        if not isinstance(slug, str) or not _SLUG.fullmatch(slug):\n            raise ValueError(\"invalid slug\")\n        title = recipe[\"title\"]\n        if not isinstance(title, str) or not title.strip():\n            raise ValueError(\"invalid title\")\n        try:\n            tags = list(recipe[\"tags\"])\n        except TypeError:\n            raise TypeError(\"tags must be iterable\") from None\n        if any(not isinstance(tag, str) or not tag.strip() for tag in tags):\n            raise ValueError(\"invalid tag\")\n        return {\"slug\": slug, \"title\": title.strip(), \"tags\": [tag.strip() for tag in tags]}\n\n    def add(self, recipe):\n        normalized = self._normalize(recipe)\n        if normalized[\"slug\"] in self._recipes:\n            raise ValueError(\"duplicate slug\")\n        self._recipes[normalized[\"slug\"]] = normalized\n\n    def edit(self, slug, *, title=None, tags=None):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        candidate = copy.deepcopy(self._recipes[slug])\n        if title is not None:\n            candidate[\"title\"] = title\n        if tags is not None:\n            candidate[\"tags\"] = list(tags)\n        normalized = self._normalize(candidate)\n        self._recipes[slug] = normalized\n        return copy.deepcopy(normalized)\n\n    def detail(self, slug):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        return copy.deepcopy(self._recipes[slug])\n\n    def list_all(self):\n        return [copy.deepcopy(self._recipes[slug]) for slug in sorted(self._recipes)]\n\n    def resolve(self, path):\n        if path == \"/\":\n            return \"page\", {\"message\": \"Recipe shelf\"}\n        if path == \"/start\":\n            return \"redirect\", \"/recipes\"\n        if path == \"/recipes\":\n            return \"page\", self.list_all()\n        prefix = \"/recipes/\"\n        if path.startswith(prefix) and path[len(prefix):] and \"/\" not in path[len(prefix):]:\n            return \"page\", self.detail(path[len(prefix):])\n        raise KeyError(path)\n",
+          "label": "Recipe validation accepts only concrete dictionaries, incorrectly rejecting other mapping implementations.",
+          "sha256": "55ed7368ada1898c24379fcb5b95254e1b10d21a7a97fd9b256fb89e7d7ec66f"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport re\nfrom collections.abc import Mapping\n\n\n_SLUG = re.compile(r\"[a-z0-9]+(?:-[a-z0-9]+)*\\Z\")\n\n\nclass RecipeShelf:\n    def __init__(self, recipes=()):\n        self._recipes = {}\n        for recipe in recipes:\n            self.add(recipe)\n\n    @staticmethod\n    def _normalize(recipe):\n        if not isinstance(recipe, Mapping) or set(recipe) != {\"slug\", \"title\", \"tags\"}:\n            raise ValueError(\"recipe must contain exactly slug, title, and tags\")\n        slug = recipe[\"slug\"]\n        if not isinstance(slug, str) or not _SLUG.fullmatch(slug):\n            raise ValueError(\"invalid slug\")\n        title = recipe[\"title\"]\n        if not isinstance(title, str) or not title.strip():\n            raise ValueError(\"invalid title\")\n        try:\n            tags = list(recipe[\"tags\"])\n        except TypeError:\n            raise TypeError(\"tags must be iterable\") from None\n        if any(not isinstance(tag, str) or not tag.strip() for tag in tags):\n            raise ValueError(\"invalid tag\")\n        return {\"slug\": slug, \"title\": title.strip(), \"tags\": [tag.strip() for tag in tags]}\n\n    def add(self, recipe):\n        normalized = self._normalize(recipe)\n        if normalized[\"slug\"] in self._recipes:\n            raise ValueError(\"duplicate slug\")\n        self._recipes[normalized[\"slug\"]] = normalized\n\n    def edit(self, slug, *, title=None, tags=None):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        candidate = copy.deepcopy(self._recipes[slug])\n        if title is not None:\n            candidate[\"title\"] = title\n        if tags is not None:\n            candidate[\"tags\"] = list(tags)\n        normalized = self._normalize(candidate)\n        self._recipes[slug] = normalized\n        return copy.deepcopy(normalized)\n\n    def detail(self, slug):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        return copy.deepcopy(self._recipes[slug])\n\n    def list_all(self):\n        return [copy.deepcopy(self._recipes[slug]) for slug in sorted(self._recipes)]\n\n    def resolve(self, path):\n        if path == \"/\":\n            return \"page\", {\"message\": \"Recipe shelf\"}\n        if path == \"/start\":\n            return \"redirect\", \"/recipes\"\n        if path == \"/recipes\":\n            return \"page\", self.list_all()\n        prefix = \"/recipes/\"\n        if path.startswith(prefix) and path[len(prefix):] and \"/\" not in path[len(prefix):]:\n            return \"page\", self.detail(path[len(prefix):])\n        raise KeyError(path)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "36f1f6dd199a2c0a2b990b4064a023078292ab3e4bbdbc19aca6f901a6961a34"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import UserDict\n\nfrom solution import RecipeShelf\n\n\nclass RecipeShelfTests(unittest.TestCase):\n    def test_empty_routes_and_add_edit_list(self):\n        shelf = RecipeShelf()\n        self.assertEqual(shelf.list_all(), [])\n        self.assertEqual(shelf.resolve(\"/\"), (\"page\", {\"message\": \"Recipe shelf\"}))\n        self.assertEqual(shelf.resolve(\"/recipes\"), (\"page\", []))\n        self.assertEqual(shelf.resolve(\"/start\"), (\"redirect\", \"/recipes\"))\n        shelf.add({\"slug\": \"z-soup\", \"title\": \"  Soup  \", \"tags\": [\" hot \", \"easy\"]})\n        shelf.add({\"slug\": \"apple2\", \"title\": \"Apple\", \"tags\": ()})\n        self.assertEqual(shelf.list_all(), [\n            {\"slug\": \"apple2\", \"title\": \"Apple\", \"tags\": []},\n            {\"slug\": \"z-soup\", \"title\": \"Soup\", \"tags\": [\"hot\", \"easy\"]},\n        ])\n        self.assertEqual(shelf.edit(\"z-soup\", title=\" New soup \"),\n                         {\"slug\": \"z-soup\", \"title\": \"New soup\", \"tags\": [\"hot\", \"easy\"]})\n        self.assertEqual(shelf.edit(\"z-soup\", tags=(x for x in [\" one \", \"two\"])),\n                         {\"slug\": \"z-soup\", \"title\": \"New soup\", \"tags\": [\"one\", \"two\"]})\n\n    def test_constructor_accepts_mappings_and_copies_nested_input(self):\n        tags = [\"first\"]\n        recipe = UserDict({\"slug\": \"dish-1\", \"title\": \" Dish \", \"tags\": tags})\n        shelf = RecipeShelf([recipe])\n        tags.append(\"later\")\n        recipe[\"title\"] = \"Changed\"\n        self.assertEqual(shelf.detail(\"dish-1\"),\n                         {\"slug\": \"dish-1\", \"title\": \"Dish\", \"tags\": [\"first\"]})\n\n    def test_every_returned_payload_is_deeply_independent(self):\n        shelf = RecipeShelf([{\"slug\": \"dish\", \"title\": \"Dish\", \"tags\": [\"a\"]}])\n        detail = shelf.detail(\"dish\")\n        listing = shelf.list_all()\n        resolved = shelf.resolve(\"/recipes/dish\")\n        detail[\"tags\"].append(\"bad\")\n        listing[0][\"title\"] = \"Bad\"\n        resolved[1][\"tags\"][0] = \"bad\"\n        self.assertEqual(shelf.detail(\"dish\"),\n                         {\"slug\": \"dish\", \"title\": \"Dish\", \"tags\": [\"a\"]})\n        self.assertIsNot(shelf.detail(\"dish\")[\"tags\"], shelf.detail(\"dish\")[\"tags\"])\n\n    def test_duplicates_unknowns_and_paths(self):\n        shelf = RecipeShelf([{\"slug\": \"a\", \"title\": \"A\", \"tags\": []}])\n        with self.assertRaises(ValueError):\n            shelf.add({\"slug\": \"a\", \"title\": \"Again\", \"tags\": []})\n        with self.assertRaises(KeyError):\n            shelf.detail(\"missing\")\n        with self.assertRaises(KeyError):\n            shelf.edit(\"missing\", title=\"X\")\n        for path in (\"\", \"/unknown\", \"/recipes/a/extra\", \"/recipes/\"):\n            with self.assertRaises(KeyError):\n                shelf.resolve(path)\n\n    def test_validation_and_failed_edit_does_not_change_state(self):\n        valid = {\"slug\": \"good-2\", \"title\": \"Good\", \"tags\": [\"x\"]}\n        for slug in (\"\", \"Upper\", \"under_score\", \"\u00e9\", \"- bad\"):\n            bad = dict(valid, slug=slug)\n            with self.assertRaises((TypeError, ValueError)):\n                RecipeShelf([bad])\n        for title in (\"\", \"   \", 3):\n            with self.assertRaises((TypeError, ValueError)):\n                RecipeShelf([dict(valid, title=title)])\n        for tags in ([\"\"], [\"  \"], [1], 3):\n            with self.assertRaises((TypeError, ValueError)):\n                RecipeShelf([dict(valid, tags=tags)])\n        with self.assertRaises(ValueError):\n            RecipeShelf([dict(valid, extra=True)])\n        shelf = RecipeShelf([valid])\n        with self.assertRaises(ValueError):\n            shelf.edit(\"good-2\", tags=[\"ok\", \" \"])\n        self.assertEqual(shelf.detail(\"good-2\"), valid)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "87a1e7eb8969890bcc239e25035be772941e18c9548f66b85cdf9806b844072e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9644fdf70f8fed6169e9c6100e70b36bc2e973bc1e9bc942a0da511ff6d34585",
+      "text": "Implement `solution.py` with a mutable `RecipeShelf` class.\n\nPublic API:\n- `RecipeShelf(recipes=())`, where every recipe is a mapping with exactly `slug`, `title`, and `tags`.\n- `add(recipe)` adds one recipe.\n- `edit(slug, *, title=None, tags=None)` updates supplied fields and returns the updated recipe.\n- `detail(slug)` returns one recipe.\n- `list_all()` returns all recipes ordered by slug.\n- `resolve(path)` returns `(\"page\", payload)` for `/`, `/recipes`, and `/recipes/<slug>`, and returns `(\"redirect\", \"/recipes\")` for `/start`. Unknown paths raise `KeyError`.\n\nValidation:\n- Slugs must be non-empty lowercase strings containing only ASCII letters, digits, and hyphens.\n- Titles must be non-empty strings after trimming.\n- Tags must be an iterable of non-empty strings; trim each tag and preserve its order.\n- Duplicate slugs raise `ValueError`; unknown slugs raise `KeyError`.\n- Empty shelves are valid.\n- `/recipes` resolves to the same value shape as `list_all`; `/` has payload `{\"message\": \"Recipe shelf\"}`.\n- All stored recipes and all returned payloads must be deeply independent from caller-owned and previously returned objects. No public operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9644fdf70f8fed6169e9c6100e70b36bc2e973bc1e9bc942a0da511ff6d34585",
+      "text": "Implement `solution.py` with a mutable `RecipeShelf` class.\n\nPublic API:\n- `RecipeShelf(recipes=())`, where every recipe is a mapping with exactly `slug`, `title`, and `tags`.\n- `add(recipe)` adds one recipe.\n- `edit(slug, *, title=None, tags=None)` updates supplied fields and returns the updated recipe.\n- `detail(slug)` returns one recipe.\n- `list_all()` returns all recipes ordered by slug.\n- `resolve(path)` returns `(\"page\", payload)` for `/`, `/recipes`, and `/recipes/<slug>`, and returns `(\"redirect\", \"/recipes\")` for `/start`. Unknown paths raise `KeyError`.\n\nValidation:\n- Slugs must be non-empty lowercase strings containing only ASCII letters, digits, and hyphens.\n- Titles must be non-empty strings after trimming.\n- Tags must be an iterable of non-empty strings; trim each tag and preserve its order.\n- Duplicate slugs raise `ValueError`; unknown slugs raise `KeyError`.\n- Empty shelves are valid.\n- `/recipes` resolves to the same value shape as `list_all`; `/` has payload `{\"message\": \"Recipe shelf\"}`.\n- All stored recipes and all returned payloads must be deeply independent from caller-owned and previously returned objects. No public operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0399",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport re\n\n\n_SLUG = re.compile(r\"[a-z0-9]+(?:-[a-z0-9]+)*\\Z\")\n\n\nclass RecipeShelf:\n    def __init__(self, recipes=()):\n        self._recipes = {}\n        for recipe in recipes:\n            self.add(recipe)\n\n    @staticmethod\n    def _normalize(recipe):\n        if not isinstance(recipe, dict) or set(recipe) != {\"slug\", \"title\", \"tags\"}:\n            raise ValueError(\"recipe must contain exactly slug, title, and tags\")\n        slug = recipe[\"slug\"]\n        if not isinstance(slug, str) or not _SLUG.fullmatch(slug):\n            raise ValueError(\"invalid slug\")\n        title = recipe[\"title\"]\n        if not isinstance(title, str) or not title.strip():\n            raise ValueError(\"invalid title\")\n        try:\n            tags = list(recipe[\"tags\"])\n        except TypeError:\n            raise TypeError(\"tags must be iterable\") from None\n        if any(not isinstance(tag, str) or not tag.strip() for tag in tags):\n            raise ValueError(\"invalid tag\")\n        return {\"slug\": slug, \"title\": title.strip(), \"tags\": [tag.strip() for tag in tags]}\n\n    def add(self, recipe):\n        normalized = self._normalize(recipe)\n        if normalized[\"slug\"] in self._recipes:\n            raise ValueError(\"duplicate slug\")\n        self._recipes[normalized[\"slug\"]] = normalized\n\n    def edit(self, slug, *, title=None, tags=None):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        candidate = copy.deepcopy(self._recipes[slug])\n        if title is not None:\n            candidate[\"title\"] = title\n        if tags is not None:\n            candidate[\"tags\"] = list(tags)\n        normalized = self._normalize(candidate)\n        self._recipes[slug] = normalized\n        return copy.deepcopy(normalized)\n\n    def detail(self, slug):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        return copy.deepcopy(self._recipes[slug])\n\n    def list_all(self):\n        return [copy.deepcopy(self._recipes[slug]) for slug in sorted(self._recipes)]\n\n    def resolve(self, path):\n        if path == \"/\":\n            return \"page\", {\"message\": \"Recipe shelf\"}\n        if path == \"/start\":\n            return \"redirect\", \"/recipes\"\n        if path == \"/recipes\":\n            return \"page\", self.list_all()\n        prefix = \"/recipes/\"\n        if path.startswith(prefix) and path[len(prefix):] and \"/\" not in path[len(prefix):]:\n            return \"page\", self.detail(path[len(prefix):])\n        raise KeyError(path)\n",
+          "label": "Recipe validation accepts only concrete dictionaries, incorrectly rejecting other mapping implementations.",
+          "sha256": "55ed7368ada1898c24379fcb5b95254e1b10d21a7a97fd9b256fb89e7d7ec66f"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport re\nfrom collections.abc import Mapping\n\n\n_SLUG = re.compile(r\"[a-z0-9]+(?:-[a-z0-9]+)*\\Z\")\n\n\nclass RecipeShelf:\n    def __init__(self, recipes=()):\n        self._recipes = {}\n        for recipe in recipes:\n            self.add(recipe)\n\n    @staticmethod\n    def _normalize(recipe):\n        if not isinstance(recipe, Mapping) or set(recipe) != {\"slug\", \"title\", \"tags\"}:\n            raise ValueError(\"recipe must contain exactly slug, title, and tags\")\n        slug = recipe[\"slug\"]\n        if not isinstance(slug, str) or not _SLUG.fullmatch(slug):\n            raise ValueError(\"invalid slug\")\n        title = recipe[\"title\"]\n        if not isinstance(title, str) or not title.strip():\n            raise ValueError(\"invalid title\")\n        try:\n            tags = list(recipe[\"tags\"])\n        except TypeError:\n            raise TypeError(\"tags must be iterable\") from None\n        if any(not isinstance(tag, str) or not tag.strip() for tag in tags):\n            raise ValueError(\"invalid tag\")\n        return {\"slug\": slug, \"title\": title.strip(), \"tags\": [tag.strip() for tag in tags]}\n\n    def add(self, recipe):\n        normalized = self._normalize(recipe)\n        if normalized[\"slug\"] in self._recipes:\n            raise ValueError(\"duplicate slug\")\n        self._recipes[normalized[\"slug\"]] = normalized\n\n    def edit(self, slug, *, title=None, tags=None):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        candidate = copy.deepcopy(self._recipes[slug])\n        if title is not None:\n            candidate[\"title\"] = title\n        if tags is not None:\n            candidate[\"tags\"] = list(tags)\n        normalized = self._normalize(candidate)\n        self._recipes[slug] = normalized\n        return copy.deepcopy(normalized)\n\n    def detail(self, slug):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        return copy.deepcopy(self._recipes[slug])\n\n    def list_all(self):\n        return [copy.deepcopy(self._recipes[slug]) for slug in sorted(self._recipes)]\n\n    def resolve(self, path):\n        if path == \"/\":\n            return \"page\", {\"message\": \"Recipe shelf\"}\n        if path == \"/start\":\n            return \"redirect\", \"/recipes\"\n        if path == \"/recipes\":\n            return \"page\", self.list_all()\n        prefix = \"/recipes/\"\n        if path.startswith(prefix) and path[len(prefix):] and \"/\" not in path[len(prefix):]:\n            return \"page\", self.detail(path[len(prefix):])\n        raise KeyError(path)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "36f1f6dd199a2c0a2b990b4064a023078292ab3e4bbdbc19aca6f901a6961a34"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 4, in <module>\n    shelf = RecipeShelf([recipe])\n            ^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 13, in __init__\n    self.add(recipe)\n  File \"/work/solution.py\", line 34, in add\n    normalized = self._normalize(recipe)\n                 ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 21, in _normalize\n    raise ValueError(\"invalid slug\")\nValueError: invalid slug\n",
+    "stderr_sha256": "f62f5f991dd1f9b53fb0896e05baaf728fa969b0fbcee71b69e37e43edcb1d38",
+    "duration_ms": 357,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

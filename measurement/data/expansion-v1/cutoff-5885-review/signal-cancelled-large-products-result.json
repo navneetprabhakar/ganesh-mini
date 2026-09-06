@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0425",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bbe0902186eee6c8b45f3f86db3d8efaa4dcbb283ed8be1da6cdb663e79e0fc3",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import SignalGate\n\ngate = SignalGate([1e308, -1e308], \"balanced\")\nactual = gate.evaluate([200.0, 200.0])\nassert actual == 0.5, f\"equal opposite terms must cancel: {actual!r}\"\n",
+        "sha256": "13cc0c3204bdc02ec8c79c9faac03b6c6015caac6ed4a95813b96c2628aa32c9"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d0697270cc6b077036e90f7226b77cc448a63aa3307344f8db8c1d174b492bd7",
+      "text": "Implement a class `SignalGate(coefficients, tag)` in `solution.py`.\n\n`coefficients` must be a non-empty list or tuple of finite, non-boolean numeric values. `tag` must be a string. The constructor must copy the coefficient sequence.\n\n`evaluate(samples)` requires exactly one finite numeric sample per coefficient. Normalize each sample by dividing it by 100, calculate the weighted sum, and return the logistic value `1 / (1 + exp(-sum))`. The implementation must remain numerically stable for extremely large positive or negative sums. Store the returned value as the latest output.\n\n`apply_adjustments(deltas)` adds each finite numeric delta to its corresponding coefficient. The lengths must match, and validation must complete before any coefficient is changed.\n\nProvide `get_coefficients()`, `get_output()`, and `get_tag()`. `get_coefficients()` must return a new list so callers cannot mutate internal state. Before the first evaluation, `get_output()` returns `None`. Reject malformed values with `TypeError` or `ValueError`; failed operations must leave the object unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d0697270cc6b077036e90f7226b77cc448a63aa3307344f8db8c1d174b492bd7",
+      "text": "Implement a class `SignalGate(coefficients, tag)` in `solution.py`.\n\n`coefficients` must be a non-empty list or tuple of finite, non-boolean numeric values. `tag` must be a string. The constructor must copy the coefficient sequence.\n\n`evaluate(samples)` requires exactly one finite numeric sample per coefficient. Normalize each sample by dividing it by 100, calculate the weighted sum, and return the logistic value `1 / (1 + exp(-sum))`. The implementation must remain numerically stable for extremely large positive or negative sums. Store the returned value as the latest output.\n\n`apply_adjustments(deltas)` adds each finite numeric delta to its corresponding coefficient. The lengths must match, and validation must complete before any coefficient is changed.\n\nProvide `get_coefficients()`, `get_output()`, and `get_tag()`. `get_coefficients()` must return a new list so callers cannot mutate internal state. Before the first evaluation, `get_output()` returns `None`. Reject malformed values with `TypeError` or `ValueError`; failed operations must leave the object unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0425",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\nclass SignalGate:\n    def __init__(self, coefficients, tag):\n        if not isinstance(coefficients, (list, tuple)) or not coefficients:\n            raise ValueError(\"coefficients must be a non-empty sequence\")\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        self._coefficients = [self._number(v, \"coefficient\") for v in coefficients]\n        self._tag = tag\n        self._output = None\n\n    @staticmethod\n    def _number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        value = float(value)\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n        return value\n\n    def evaluate(self, samples):\n        if not isinstance(samples, (list, tuple)):\n            raise TypeError(\"samples must be a sequence\")\n        if len(samples) != len(self._coefficients):\n            raise ValueError(\"sample count does not match coefficient count\")\n        values = [self._number(v, \"sample\") for v in samples]\n        total = sum(weight * (sample / 100.0)\n                    for weight, sample in zip(self._coefficients, values))\n        if total >= 0:\n            factor = math.exp(-total)\n            output = 1.0 / (1.0 + factor)\n        else:\n            factor = math.exp(total)\n            output = factor / (1.0 + factor)\n        self._output = output\n        return output\n\n    def apply_adjustments(self, deltas):\n        if not isinstance(deltas, (list, tuple)):\n            raise TypeError(\"deltas must be a sequence\")\n        if len(deltas) != len(self._coefficients):\n            raise ValueError(\"delta count does not match coefficient count\")\n        values = [self._number(v, \"delta\") for v in deltas]\n        self._coefficients = [old + delta\n                              for old, delta in zip(self._coefficients, values)]\n\n    def get_coefficients(self):\n        return self._coefficients\n\n    def get_output(self):\n        return self._output\n\n    def get_tag(self):\n        return self._tag\n",
+          "label": "get_coefficients returns an alias to mutable internal state.",
+          "sha256": "ebc598da9ec51a3e4966032b7e034494bc42d7eb8112bb04e6a1067a129575ee"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\nclass SignalGate:\n    def __init__(self, coefficients, tag):\n        if not isinstance(coefficients, (list, tuple)) or not coefficients:\n            raise ValueError(\"coefficients must be a non-empty sequence\")\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        self._coefficients = [self._number(v, \"coefficient\") for v in coefficients]\n        self._tag = tag\n        self._output = None\n\n    @staticmethod\n    def _number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        value = float(value)\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n        return value\n\n    def evaluate(self, samples):\n        if not isinstance(samples, (list, tuple)):\n            raise TypeError(\"samples must be a sequence\")\n        if len(samples) != len(self._coefficients):\n            raise ValueError(\"sample count does not match coefficient count\")\n        values = [self._number(v, \"sample\") for v in samples]\n        total = sum(weight * (sample / 100.0)\n                    for weight, sample in zip(self._coefficients, values))\n        if total >= 0:\n            factor = math.exp(-total)\n            output = 1.0 / (1.0 + factor)\n        else:\n            factor = math.exp(total)\n            output = factor / (1.0 + factor)\n        self._output = output\n        return output\n\n    def apply_adjustments(self, deltas):\n        if not isinstance(deltas, (list, tuple)):\n            raise TypeError(\"deltas must be a sequence\")\n        if len(deltas) != len(self._coefficients):\n            raise ValueError(\"delta count does not match coefficient count\")\n        values = [self._number(v, \"delta\") for v in deltas]\n        self._coefficients = [old + delta\n                              for old, delta in zip(self._coefficients, values)]\n\n    def get_coefficients(self):\n        return list(self._coefficients)\n\n    def get_output(self):\n        return self._output\n\n    def get_tag(self):\n        return self._tag\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0c06d44266042e69ec4626168dc4ce84649ed0f63a2f5a43f6b50747190879f6"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import SignalGate\n\n\nclass SignalGateTests(unittest.TestCase):\n    def test_evaluate_accessors_and_copying(self):\n        coefficients = [2, -1.0]\n        gate = SignalGate(coefficients, \"alpha\")\n        coefficients[0] = 100\n        self.assertEqual(gate.get_coefficients(), [2, -1.0])\n        self.assertEqual(gate.get_tag(), \"alpha\")\n        self.assertIsNone(gate.get_output())\n        expected = 1.0 / (1.0 + math.exp(-1.5))\n        actual = gate.evaluate([100, 50])\n        self.assertAlmostEqual(actual, expected)\n        self.assertEqual(gate.get_output(), actual)\n        returned = gate.get_coefficients()\n        returned[0] = 999\n        self.assertEqual(gate.get_coefficients(), [2, -1.0])\n\n    def test_stable_at_extreme_sums(self):\n        positive = SignalGate([1e308], \"p\")\n        negative = SignalGate([-1e308], \"n\")\n        self.assertEqual(positive.evaluate([100]), 1.0)\n        self.assertEqual(negative.evaluate([100]), 0.0)\n\n    def test_adjustments_are_applied_after_complete_validation(self):\n        gate = SignalGate([1.0, 2.0], \"x\")\n        gate.apply_adjustments([0.5, -3])\n        self.assertEqual(gate.get_coefficients(), [1.5, -1.0])\n        before = gate.get_coefficients()\n        for deltas in ([10], [1, float(\"inf\")], [1, True], [1, \"bad\"]):\n            with self.subTest(deltas=deltas):\n                with self.assertRaises((TypeError, ValueError)):\n                    gate.apply_adjustments(deltas)\n                self.assertEqual(gate.get_coefficients(), before)\n\n    def test_failed_evaluation_preserves_latest_output(self):\n        gate = SignalGate([1, 2], \"x\")\n        output = gate.evaluate([10, 20])\n        for samples in ([10], [10, float(\"nan\")], [10, True], [10, \"20\"]):\n            with self.subTest(samples=samples):\n                with self.assertRaises((TypeError, ValueError)):\n                    gate.evaluate(samples)\n                self.assertEqual(gate.get_output(), output)\n\n    def test_invalid_constructor_arguments(self):\n        bad_coefficients = ([], (), None, {\"x\": 1}, [True], [1, \"2\"],\n                            [float(\"nan\")], [float(\"inf\")])\n        for coefficients in bad_coefficients:\n            with self.subTest(coefficients=coefficients):\n                with self.assertRaises((TypeError, ValueError)):\n                    SignalGate(coefficients, \"tag\")\n        for tag in (None, 1, True):\n            with self.subTest(tag=tag):\n                with self.assertRaises((TypeError, ValueError)):\n                    SignalGate([1], tag)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "ed29acd2d5d57d4b1d45eb6ca1c82355eb2690e04c6dc9870ceb18144b9377f2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d0697270cc6b077036e90f7226b77cc448a63aa3307344f8db8c1d174b492bd7",
+      "text": "Implement a class `SignalGate(coefficients, tag)` in `solution.py`.\n\n`coefficients` must be a non-empty list or tuple of finite, non-boolean numeric values. `tag` must be a string. The constructor must copy the coefficient sequence.\n\n`evaluate(samples)` requires exactly one finite numeric sample per coefficient. Normalize each sample by dividing it by 100, calculate the weighted sum, and return the logistic value `1 / (1 + exp(-sum))`. The implementation must remain numerically stable for extremely large positive or negative sums. Store the returned value as the latest output.\n\n`apply_adjustments(deltas)` adds each finite numeric delta to its corresponding coefficient. The lengths must match, and validation must complete before any coefficient is changed.\n\nProvide `get_coefficients()`, `get_output()`, and `get_tag()`. `get_coefficients()` must return a new list so callers cannot mutate internal state. Before the first evaluation, `get_output()` returns `None`. Reject malformed values with `TypeError` or `ValueError`; failed operations must leave the object unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d0697270cc6b077036e90f7226b77cc448a63aa3307344f8db8c1d174b492bd7",
+      "text": "Implement a class `SignalGate(coefficients, tag)` in `solution.py`.\n\n`coefficients` must be a non-empty list or tuple of finite, non-boolean numeric values. `tag` must be a string. The constructor must copy the coefficient sequence.\n\n`evaluate(samples)` requires exactly one finite numeric sample per coefficient. Normalize each sample by dividing it by 100, calculate the weighted sum, and return the logistic value `1 / (1 + exp(-sum))`. The implementation must remain numerically stable for extremely large positive or negative sums. Store the returned value as the latest output.\n\n`apply_adjustments(deltas)` adds each finite numeric delta to its corresponding coefficient. The lengths must match, and validation must complete before any coefficient is changed.\n\nProvide `get_coefficients()`, `get_output()`, and `get_tag()`. `get_coefficients()` must return a new list so callers cannot mutate internal state. Before the first evaluation, `get_output()` returns `None`. Reject malformed values with `TypeError` or `ValueError`; failed operations must leave the object unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0425",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\nclass SignalGate:\n    def __init__(self, coefficients, tag):\n        if not isinstance(coefficients, (list, tuple)) or not coefficients:\n            raise ValueError(\"coefficients must be a non-empty sequence\")\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        self._coefficients = [self._number(v, \"coefficient\") for v in coefficients]\n        self._tag = tag\n        self._output = None\n\n    @staticmethod\n    def _number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        value = float(value)\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n        return value\n\n    def evaluate(self, samples):\n        if not isinstance(samples, (list, tuple)):\n            raise TypeError(\"samples must be a sequence\")\n        if len(samples) != len(self._coefficients):\n            raise ValueError(\"sample count does not match coefficient count\")\n        values = [self._number(v, \"sample\") for v in samples]\n        total = sum(weight * (sample / 100.0)\n                    for weight, sample in zip(self._coefficients, values))\n        if total >= 0:\n            factor = math.exp(-total)\n            output = 1.0 / (1.0 + factor)\n        else:\n            factor = math.exp(total)\n            output = factor / (1.0 + factor)\n        self._output = output\n        return output\n\n    def apply_adjustments(self, deltas):\n        if not isinstance(deltas, (list, tuple)):\n            raise TypeError(\"deltas must be a sequence\")\n        if len(deltas) != len(self._coefficients):\n            raise ValueError(\"delta count does not match coefficient count\")\n        values = [self._number(v, \"delta\") for v in deltas]\n        self._coefficients = [old + delta\n                              for old, delta in zip(self._coefficients, values)]\n\n    def get_coefficients(self):\n        return self._coefficients\n\n    def get_output(self):\n        return self._output\n\n    def get_tag(self):\n        return self._tag\n",
+          "label": "get_coefficients returns an alias to mutable internal state.",
+          "sha256": "ebc598da9ec51a3e4966032b7e034494bc42d7eb8112bb04e6a1067a129575ee"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\nclass SignalGate:\n    def __init__(self, coefficients, tag):\n        if not isinstance(coefficients, (list, tuple)) or not coefficients:\n            raise ValueError(\"coefficients must be a non-empty sequence\")\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        self._coefficients = [self._number(v, \"coefficient\") for v in coefficients]\n        self._tag = tag\n        self._output = None\n\n    @staticmethod\n    def _number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        value = float(value)\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n        return value\n\n    def evaluate(self, samples):\n        if not isinstance(samples, (list, tuple)):\n            raise TypeError(\"samples must be a sequence\")\n        if len(samples) != len(self._coefficients):\n            raise ValueError(\"sample count does not match coefficient count\")\n        values = [self._number(v, \"sample\") for v in samples]\n        total = sum(weight * (sample / 100.0)\n                    for weight, sample in zip(self._coefficients, values))\n        if total >= 0:\n            factor = math.exp(-total)\n            output = 1.0 / (1.0 + factor)\n        else:\n            factor = math.exp(total)\n            output = factor / (1.0 + factor)\n        self._output = output\n        return output\n\n    def apply_adjustments(self, deltas):\n        if not isinstance(deltas, (list, tuple)):\n            raise TypeError(\"deltas must be a sequence\")\n        if len(deltas) != len(self._coefficients):\n            raise ValueError(\"delta count does not match coefficient count\")\n        values = [self._number(v, \"delta\") for v in deltas]\n        self._coefficients = [old + delta\n                              for old, delta in zip(self._coefficients, values)]\n\n    def get_coefficients(self):\n        return list(self._coefficients)\n\n    def get_output(self):\n        return self._output\n\n    def get_tag(self):\n        return self._tag\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0c06d44266042e69ec4626168dc4ce84649ed0f63a2f5a43f6b50747190879f6"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 5, in <module>\n    assert actual == 0.5, f\"equal opposite terms must cancel: {actual!r}\"\n           ^^^^^^^^^^^^^\nAssertionError: equal opposite terms must cancel: nan\n",
+    "stderr_sha256": "b35231972d7e87811b3fb15ba2eae5c7680481bc99e4a160ec4794da6de15435",
+    "duration_ms": 321,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

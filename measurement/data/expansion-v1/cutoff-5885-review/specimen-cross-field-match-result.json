@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0416",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "2ca77589a35c6a5fd1d8e660c44b5b66dbb40864855ef993df0ddcb698a1fe55",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import query_specimens\n\nrecord = {\"id\": 1, \"name\": \"alpha\", \"collector\": \"beta\", \"notes\": \"gamma\", \"habitat\": \"h\", \"year\": 2020}\nactual = query_specimens([record], text=\"alpha\\nbeta\")\nassert actual == {\"items\": [], \"total\": 0, \"pages\": 0}, repr(actual)\n",
+        "sha256": "de742075b67050bbb723628e06dd9757e723cf0db8a9a1befbcce7e11d932752"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48f7cee789bfa16f908b456b96ad3e09350a2d4d56331a706a754a9dffc1ef3f",
+      "text": "Create `solution.py` with `query_specimens(records, text=\"\", habitat=None, page=1, page_size=4)`.\n\nEach record must be a dictionary containing `id`, `name`, `collector`, `notes`, `habitat`, and integer `year`. Malformed records raise `ValueError`. `page` and `page_size` must be positive integers, with booleans rejected, otherwise raise `ValueError`.\n\nMatch `text` case-insensitively as a substring of `name`, `collector`, or `notes`. An empty text matches everything. When `habitat` is not `None`, require an exact habitat match. Duplicate IDs are collapsed by keeping the first matching record. Sort results by descending year, then ascending string form of ID. Return `{\"items\": ..., \"total\": ..., \"pages\": ...}` where `items` is the requested page, `pages` is zero when there are no matches, and an out-of-range page has an empty `items` list. Returned records must be deep copies and input records must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48f7cee789bfa16f908b456b96ad3e09350a2d4d56331a706a754a9dffc1ef3f",
+      "text": "Create `solution.py` with `query_specimens(records, text=\"\", habitat=None, page=1, page_size=4)`.\n\nEach record must be a dictionary containing `id`, `name`, `collector`, `notes`, `habitat`, and integer `year`. Malformed records raise `ValueError`. `page` and `page_size` must be positive integers, with booleans rejected, otherwise raise `ValueError`.\n\nMatch `text` case-insensitively as a substring of `name`, `collector`, or `notes`. An empty text matches everything. When `habitat` is not `None`, require an exact habitat match. Duplicate IDs are collapsed by keeping the first matching record. Sort results by descending year, then ascending string form of ID. Return `{\"items\": ..., \"total\": ..., \"pages\": ...}` where `items` is the requested page, `pages` is zero when there are no matches, and an out-of-range page has an empty `items` list. Returned records must be deep copies and input records must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0416",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\n_FIELDS = (\"id\", \"name\", \"collector\", \"notes\", \"habitat\", \"year\")\n\n\ndef query_specimens(records, text=\"\", habitat=None, page=1, page_size=4):\n    if not isinstance(page, int) or isinstance(page, bool) or page < 1:\n        raise ValueError(\"page must be a positive integer\")\n    if not isinstance(page_size, int) or isinstance(page_size, bool) or page_size < 1:\n        raise ValueError(\"page_size must be a positive integer\")\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n\n    needle = text.casefold()\n    selected = []\n    seen = set()\n    for record in records:\n        if not isinstance(record, dict) or any(key not in record for key in _FIELDS):\n            raise ValueError(\"malformed record\")\n        if not isinstance(record[\"year\"], int) or isinstance(record[\"year\"], bool):\n            raise ValueError(\"malformed year\")\n        try:\n            duplicate = record[\"id\"] in seen\n        except TypeError as exc:\n            raise ValueError(\"id must be hashable\") from exc\n        fields = (record[\"name\"], record[\"collector\"], record[\"notes\"])\n        if any(not isinstance(value, str) for value in fields):\n            raise ValueError(\"search fields must be strings\")\n        matches = needle in \"\\n\".join(fields).casefold()\n        if matches and (habitat is None or record[\"habitat\"] == habitat) and not duplicate:\n            seen.add(record[\"id\"])\n            selected.append(record)\n\n    selected.sort(key=lambda item: (item[\"year\"], str(item[\"id\"])))\n    total = len(selected)\n    pages = (total + page_size - 1) // page_size if total else 0\n    start = (page - 1) * page_size\n    return {\"items\": deepcopy(selected[start:start + page_size]), \"total\": total, \"pages\": pages}\n",
+          "label": "Results are sorted by ascending year instead of descending year.",
+          "sha256": "fc6a080d453c811880b55c99a600a7d8737e898086686caa7c985117b067bb43"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\n_FIELDS = (\"id\", \"name\", \"collector\", \"notes\", \"habitat\", \"year\")\n\n\ndef query_specimens(records, text=\"\", habitat=None, page=1, page_size=4):\n    if not isinstance(page, int) or isinstance(page, bool) or page < 1:\n        raise ValueError(\"page must be a positive integer\")\n    if not isinstance(page_size, int) or isinstance(page_size, bool) or page_size < 1:\n        raise ValueError(\"page_size must be a positive integer\")\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n\n    needle = text.casefold()\n    selected = []\n    seen = set()\n    for record in records:\n        if not isinstance(record, dict) or any(key not in record for key in _FIELDS):\n            raise ValueError(\"malformed record\")\n        if not isinstance(record[\"year\"], int) or isinstance(record[\"year\"], bool):\n            raise ValueError(\"malformed year\")\n        try:\n            duplicate = record[\"id\"] in seen\n        except TypeError as exc:\n            raise ValueError(\"id must be hashable\") from exc\n        fields = (record[\"name\"], record[\"collector\"], record[\"notes\"])\n        if any(not isinstance(value, str) for value in fields):\n            raise ValueError(\"search fields must be strings\")\n        matches = needle in \"\\n\".join(fields).casefold()\n        if matches and (habitat is None or record[\"habitat\"] == habitat) and not duplicate:\n            seen.add(record[\"id\"])\n            selected.append(record)\n\n    selected.sort(key=lambda item: (-item[\"year\"], str(item[\"id\"])))\n    total = len(selected)\n    pages = (total + page_size - 1) // page_size if total else 0\n    start = (page - 1) * page_size\n    return {\"items\": deepcopy(selected[start:start + page_size]), \"total\": total, \"pages\": pages}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fd071fa36781d5c0627b90e4bd710f17f1621ae5f058531e6749ff3b445bb4d0"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom copy import deepcopy\nfrom solution import query_specimens\n\n\nclass QuerySpecimensTests(unittest.TestCase):\n    def setUp(self):\n        self.records = [\n            {\"id\": 2, \"name\": \"River Fern\", \"collector\": \"Mira\", \"notes\": \"Green\", \"habitat\": \"wet\", \"year\": 2020},\n            {\"id\": \"10\", \"name\": \"Stonecap\", \"collector\": \"FERN team\", \"notes\": \"rare\", \"habitat\": \"dry\", \"year\": 2022},\n            {\"id\": 1, \"name\": \"Fern Moss\", \"collector\": \"Oren\", \"notes\": \"old\", \"habitat\": \"wet\", \"year\": 2022},\n            {\"id\": 2, \"name\": \"Duplicate Fern\", \"collector\": \"Zed\", \"notes\": \"later duplicate\", \"habitat\": \"wet\", \"year\": 2030},\n            {\"id\": 3, \"name\": \"Lichen\", \"collector\": \"Ivy\", \"notes\": \"contains FERN spores\", \"habitat\": \"wet\", \"year\": 2019},\n        ]\n\n    def test_filter_deduplicate_sort_and_paginate(self):\n        original = deepcopy(self.records)\n        result = query_specimens(self.records, text=\"fErN\", page=1, page_size=2)\n        self.assertEqual(result[\"total\"], 4)\n        self.assertEqual(result[\"pages\"], 2)\n        self.assertEqual([item[\"id\"] for item in result[\"items\"]], [1, \"10\"])\n\n        second = query_specimens(self.records, text=\"fern\", page=2, page_size=2)\n        self.assertEqual([item[\"id\"] for item in second[\"items\"]], [2, 3])\n        self.assertEqual(second[\"items\"][0][\"year\"], 2020)\n        self.assertEqual(self.records, original)\n\n    def test_habitat_empty_results_and_out_of_range(self):\n        wet = query_specimens(self.records, habitat=\"wet\", page_size=10)\n        self.assertEqual([item[\"id\"] for item in wet[\"items\"]], [1, 2, 3])\n        self.assertEqual(wet[\"total\"], 3)\n        self.assertEqual(wet[\"pages\"], 1)\n\n        none = query_specimens(self.records, text=\"not present\")\n        self.assertEqual(none, {\"items\": [], \"total\": 0, \"pages\": 0})\n\n        beyond = query_specimens(self.records, page=9, page_size=2)\n        self.assertEqual(beyond[\"items\"], [])\n        self.assertEqual(beyond[\"total\"], 4)\n        self.assertEqual(beyond[\"pages\"], 2)\n        self.assertEqual(query_specimens([], page=1), {\"items\": [], \"total\": 0, \"pages\": 0})\n\n    def test_returned_records_are_deep_copies(self):\n        records = [{\"id\": 1, \"name\": \"A\", \"collector\": \"B\", \"notes\": \"C\", \"habitat\": {\"zone\": [1]}, \"year\": 2000}]\n        result = query_specimens(records)\n        result[\"items\"][0][\"habitat\"][\"zone\"].append(2)\n        self.assertEqual(records[0][\"habitat\"], {\"zone\": [1]})\n\n    def test_invalid_paging_and_malformed_records(self):\n        for page, page_size in [(0, 1), (-1, 1), (1, 0), (1, -2), (True, 1), (1, False), (1.5, 1), (1, \"4\")]:\n            with self.subTest(page=page, page_size=page_size):\n                with self.assertRaises(ValueError):\n                    query_specimens([], page=page, page_size=page_size)\n\n        valid = {\"id\": 1, \"name\": \"n\", \"collector\": \"c\", \"notes\": \"x\", \"habitat\": \"h\", \"year\": 2000}\n        malformed = [\n            None,\n            {\"id\": 1},\n            dict(valid, name=3),\n            dict(valid, collector=None),\n            dict(valid, notes=[]),\n            dict(valid, year=\"2000\"),\n            dict(valid, year=True),\n        ]\n        for record in malformed:\n            with self.subTest(record=record):\n                with self.assertRaises(ValueError):\n                    query_specimens([record])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "4ba68b3ee733464627a46e069ab8478c2993a3215e5587d79de7651867bb809a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48f7cee789bfa16f908b456b96ad3e09350a2d4d56331a706a754a9dffc1ef3f",
+      "text": "Create `solution.py` with `query_specimens(records, text=\"\", habitat=None, page=1, page_size=4)`.\n\nEach record must be a dictionary containing `id`, `name`, `collector`, `notes`, `habitat`, and integer `year`. Malformed records raise `ValueError`. `page` and `page_size` must be positive integers, with booleans rejected, otherwise raise `ValueError`.\n\nMatch `text` case-insensitively as a substring of `name`, `collector`, or `notes`. An empty text matches everything. When `habitat` is not `None`, require an exact habitat match. Duplicate IDs are collapsed by keeping the first matching record. Sort results by descending year, then ascending string form of ID. Return `{\"items\": ..., \"total\": ..., \"pages\": ...}` where `items` is the requested page, `pages` is zero when there are no matches, and an out-of-range page has an empty `items` list. Returned records must be deep copies and input records must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48f7cee789bfa16f908b456b96ad3e09350a2d4d56331a706a754a9dffc1ef3f",
+      "text": "Create `solution.py` with `query_specimens(records, text=\"\", habitat=None, page=1, page_size=4)`.\n\nEach record must be a dictionary containing `id`, `name`, `collector`, `notes`, `habitat`, and integer `year`. Malformed records raise `ValueError`. `page` and `page_size` must be positive integers, with booleans rejected, otherwise raise `ValueError`.\n\nMatch `text` case-insensitively as a substring of `name`, `collector`, or `notes`. An empty text matches everything. When `habitat` is not `None`, require an exact habitat match. Duplicate IDs are collapsed by keeping the first matching record. Sort results by descending year, then ascending string form of ID. Return `{\"items\": ..., \"total\": ..., \"pages\": ...}` where `items` is the requested page, `pages` is zero when there are no matches, and an out-of-range page has an empty `items` list. Returned records must be deep copies and input records must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0416",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\n_FIELDS = (\"id\", \"name\", \"collector\", \"notes\", \"habitat\", \"year\")\n\n\ndef query_specimens(records, text=\"\", habitat=None, page=1, page_size=4):\n    if not isinstance(page, int) or isinstance(page, bool) or page < 1:\n        raise ValueError(\"page must be a positive integer\")\n    if not isinstance(page_size, int) or isinstance(page_size, bool) or page_size < 1:\n        raise ValueError(\"page_size must be a positive integer\")\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n\n    needle = text.casefold()\n    selected = []\n    seen = set()\n    for record in records:\n        if not isinstance(record, dict) or any(key not in record for key in _FIELDS):\n            raise ValueError(\"malformed record\")\n        if not isinstance(record[\"year\"], int) or isinstance(record[\"year\"], bool):\n            raise ValueError(\"malformed year\")\n        try:\n            duplicate = record[\"id\"] in seen\n        except TypeError as exc:\n            raise ValueError(\"id must be hashable\") from exc\n        fields = (record[\"name\"], record[\"collector\"], record[\"notes\"])\n        if any(not isinstance(value, str) for value in fields):\n            raise ValueError(\"search fields must be strings\")\n        matches = needle in \"\\n\".join(fields).casefold()\n        if matches and (habitat is None or record[\"habitat\"] == habitat) and not duplicate:\n            seen.add(record[\"id\"])\n            selected.append(record)\n\n    selected.sort(key=lambda item: (item[\"year\"], str(item[\"id\"])))\n    total = len(selected)\n    pages = (total + page_size - 1) // page_size if total else 0\n    start = (page - 1) * page_size\n    return {\"items\": deepcopy(selected[start:start + page_size]), \"total\": total, \"pages\": pages}\n",
+          "label": "Results are sorted by ascending year instead of descending year.",
+          "sha256": "fc6a080d453c811880b55c99a600a7d8737e898086686caa7c985117b067bb43"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\n_FIELDS = (\"id\", \"name\", \"collector\", \"notes\", \"habitat\", \"year\")\n\n\ndef query_specimens(records, text=\"\", habitat=None, page=1, page_size=4):\n    if not isinstance(page, int) or isinstance(page, bool) or page < 1:\n        raise ValueError(\"page must be a positive integer\")\n    if not isinstance(page_size, int) or isinstance(page_size, bool) or page_size < 1:\n        raise ValueError(\"page_size must be a positive integer\")\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n\n    needle = text.casefold()\n    selected = []\n    seen = set()\n    for record in records:\n        if not isinstance(record, dict) or any(key not in record for key in _FIELDS):\n            raise ValueError(\"malformed record\")\n        if not isinstance(record[\"year\"], int) or isinstance(record[\"year\"], bool):\n            raise ValueError(\"malformed year\")\n        try:\n            duplicate = record[\"id\"] in seen\n        except TypeError as exc:\n            raise ValueError(\"id must be hashable\") from exc\n        fields = (record[\"name\"], record[\"collector\"], record[\"notes\"])\n        if any(not isinstance(value, str) for value in fields):\n            raise ValueError(\"search fields must be strings\")\n        matches = needle in \"\\n\".join(fields).casefold()\n        if matches and (habitat is None or record[\"habitat\"] == habitat) and not duplicate:\n            seen.add(record[\"id\"])\n            selected.append(record)\n\n    selected.sort(key=lambda item: (-item[\"year\"], str(item[\"id\"])))\n    total = len(selected)\n    pages = (total + page_size - 1) // page_size if total else 0\n    start = (page - 1) * page_size\n    return {\"items\": deepcopy(selected[start:start + page_size]), \"total\": total, \"pages\": pages}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fd071fa36781d5c0627b90e4bd710f17f1621ae5f058531e6749ff3b445bb4d0"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 5, in <module>\n    assert actual == {\"items\": [], \"total\": 0, \"pages\": 0}, repr(actual)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'items': [{'id': 1, 'name': 'alpha', 'collector': 'beta', 'notes': 'gamma', 'habitat': 'h', 'year': 2020}], 'total': 1, 'pages': 1}\n",
+    "stderr_sha256": "bb8cfa4f59025f6b89a5fbdab0f9a841f3870bea616b04c6cfcf07087a4ccee3",
+    "duration_ms": 391,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

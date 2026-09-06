@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0409",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "030976690efca30e12a5abd9e8bddd9d8ba3258a9805286b9b98b606002e456a",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import RecordBoard\n\nclass Records:\n    def __getitem__(self, index):\n        if index == 0:\n            return {\"label\": \"one\"}\n        raise IndexError(index)\n\nassert list(Records()) == [{\"label\": \"one\"}]\nactual = RecordBoard(Records()).rows()\nassert actual == [{\"label\": \"one\", \"icon\": None, \"marked\": False}], repr(actual)\n",
+        "sha256": "b23ca8a10d84c1ff1fed6d1420d8691b940018d4124ef68a129f93cb4f49fcb0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6e579706f4d0d3fd388a124b1a853947a0ba68336f38b139691cb2c33aae8ec4",
+      "text": "In solution.py, implement a new class `RecordBoard` for managing labeled records.\n\nPublic API:\n- `RecordBoard(records=None)`: `records` is an optional iterable of mappings. Each mapping must contain a non-empty string `label` and may contain `icon`, whose value must be a string or `None`. Unknown keys are ignored. Preserve input order and deep-copy accepted values so later mutation of the input cannot affect the board.\n- `add(label, icon=None) -> int`: validate values as above, append an unmarked record, and return its zero-based index.\n- `set_marked(index, marked=True) -> None`: `index` must be an integer but not a boolean and must identify an existing record. `marked` must be a boolean. Raise `TypeError` for wrong types and `IndexError` for an out-of-range index.\n- `rows() -> list[dict]`: return records in insertion order as dictionaries containing exactly `label`, `icon`, and `marked`. The result must be a deep copy: mutating it must not change the board.\n- `marked_indices() -> tuple[int, ...]`: return marked indices in ascending order.\n\nAn omitted or empty `records` iterable creates an empty board. A malformed record raises `TypeError`, `KeyError`, or `ValueError` as appropriate without retaining that record.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6e579706f4d0d3fd388a124b1a853947a0ba68336f38b139691cb2c33aae8ec4",
+      "text": "In solution.py, implement a new class `RecordBoard` for managing labeled records.\n\nPublic API:\n- `RecordBoard(records=None)`: `records` is an optional iterable of mappings. Each mapping must contain a non-empty string `label` and may contain `icon`, whose value must be a string or `None`. Unknown keys are ignored. Preserve input order and deep-copy accepted values so later mutation of the input cannot affect the board.\n- `add(label, icon=None) -> int`: validate values as above, append an unmarked record, and return its zero-based index.\n- `set_marked(index, marked=True) -> None`: `index` must be an integer but not a boolean and must identify an existing record. `marked` must be a boolean. Raise `TypeError` for wrong types and `IndexError` for an out-of-range index.\n- `rows() -> list[dict]`: return records in insertion order as dictionaries containing exactly `label`, `icon`, and `marked`. The result must be a deep copy: mutating it must not change the board.\n- `marked_indices() -> tuple[int, ...]`: return marked indices in ascending order.\n\nAn omitted or empty `records` iterable creates an empty board. A malformed record raises `TypeError`, `KeyError`, or `ValueError` as appropriate without retaining that record.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0409",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\nclass RecordBoard:\n    def __init__(self, records=None):\n        self._records = []\n        if records is None:\n            return\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be an iterable of mappings\")\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"label\" not in record:\n                raise KeyError(\"label\")\n            label = record[\"label\"]\n            icon = record.get(\"icon\")\n            self._validate(label, icon)\n            self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n\n    @staticmethod\n    def _validate(label, icon):\n        if not isinstance(label, str):\n            raise TypeError(\"label must be a string\")\n        if not label:\n            raise ValueError(\"label must not be empty\")\n        if icon is not None and not isinstance(icon, str):\n            raise TypeError(\"icon must be a string or None\")\n\n    def add(self, label, icon=None):\n        self._validate(label, icon)\n        self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n        return len(self._records) - 1\n\n    def set_marked(self, index, marked=True):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if not isinstance(marked, bool):\n            raise TypeError(\"marked must be a boolean\")\n        if index < 0 or index >= len(self._records):\n            raise IndexError(\"record index out of range\")\n        self._records[index][\"marked\"] = marked\n\n    def rows(self):\n        return list(self._records)\n\n    def marked_indices(self):\n        return tuple(i for i, record in enumerate(self._records) if record[\"marked\"])\n",
+          "label": "rows returns dictionaries aliased to the board's internal mutable state instead of a deep copy",
+          "sha256": "d7a3e1d62c8768ae12c63c5e3dc087430bb974cfe3e3042a5355b9dacbebceba"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\nclass RecordBoard:\n    def __init__(self, records=None):\n        self._records = []\n        if records is None:\n            return\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be an iterable of mappings\")\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"label\" not in record:\n                raise KeyError(\"label\")\n            label = record[\"label\"]\n            icon = record.get(\"icon\")\n            self._validate(label, icon)\n            self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n\n    @staticmethod\n    def _validate(label, icon):\n        if not isinstance(label, str):\n            raise TypeError(\"label must be a string\")\n        if not label:\n            raise ValueError(\"label must not be empty\")\n        if icon is not None and not isinstance(icon, str):\n            raise TypeError(\"icon must be a string or None\")\n\n    def add(self, label, icon=None):\n        self._validate(label, icon)\n        self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n        return len(self._records) - 1\n\n    def set_marked(self, index, marked=True):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if not isinstance(marked, bool):\n            raise TypeError(\"marked must be a boolean\")\n        if index < 0 or index >= len(self._records):\n            raise IndexError(\"record index out of range\")\n        self._records[index][\"marked\"] = marked\n\n    def rows(self):\n        return deepcopy(self._records)\n\n    def marked_indices(self):\n        return tuple(i for i, record in enumerate(self._records) if record[\"marked\"])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "65db5f9a61f2e51ee451eee10546b05c23a914774bb8d51dd0796579651ce102"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import RecordBoard\n\n\nclass RecordBoardTests(unittest.TestCase):\n    def test_empty_boards(self):\n        self.assertEqual(RecordBoard().rows(), [])\n        self.assertEqual(RecordBoard([]).marked_indices(), ())\n        self.assertEqual(RecordBoard(iter(())).rows(), [])\n\n    def test_constructor_preserves_order_ignores_unknown_keys_and_copies(self):\n        first = {\"label\": \"alpha\", \"icon\": \"A\", \"ignored\": [1]}\n        second = {\"label\": \"beta\"}\n        source = [first, second]\n        board = RecordBoard(source)\n        first[\"label\"] = \"changed\"\n        first[\"icon\"] = \"changed\"\n        source.clear()\n        self.assertEqual(board.rows(), [\n            {\"label\": \"alpha\", \"icon\": \"A\", \"marked\": False},\n            {\"label\": \"beta\", \"icon\": None, \"marked\": False},\n        ])\n\n    def test_add_mark_and_return_values(self):\n        board = RecordBoard()\n        self.assertEqual(board.add(\"one\"), 0)\n        self.assertEqual(board.add(\"two\", \"icon\"), 1)\n        self.assertIsNone(board.set_marked(1))\n        self.assertEqual(board.marked_indices(), (1,))\n        board.set_marked(0, True)\n        board.set_marked(1, False)\n        self.assertEqual(board.marked_indices(), (0,))\n\n    def test_rows_is_an_independent_deep_copy_with_exact_fields(self):\n        board = RecordBoard([{\"label\": \"x\", \"icon\": None, \"extra\": 3}])\n        rows = board.rows()\n        self.assertEqual(set(rows[0]), {\"label\", \"icon\", \"marked\"})\n        rows[0][\"label\"] = \"mutated\"\n        rows[0][\"marked\"] = True\n        rows.append({\"label\": \"new\", \"icon\": None, \"marked\": False})\n        self.assertEqual(board.rows(), [{\"label\": \"x\", \"icon\": None, \"marked\": False}])\n\n    def test_invalid_add_does_not_modify_board(self):\n        board = RecordBoard([{\"label\": \"valid\"}])\n        for args, error in [\n            ((None,), TypeError),\n            ((1,), TypeError),\n            ((\"\",), ValueError),\n            ((\"x\", 4), TypeError),\n        ]:\n            with self.subTest(args=args):\n                with self.assertRaises(error):\n                    board.add(*args)\n                self.assertEqual(board.rows(), [{\"label\": \"valid\", \"icon\": None, \"marked\": False}])\n\n    def test_invalid_constructor_records(self):\n        cases = [\n            ([1], TypeError),\n            ([{}], KeyError),\n            ([{\"label\": \"\"}], ValueError),\n            ([{\"label\": False}], TypeError),\n            ([{\"label\": \"x\", \"icon\": 2}], TypeError),\n        ]\n        for records, error in cases:\n            with self.subTest(records=records):\n                with self.assertRaises(error):\n                    RecordBoard(records)\n\n    def test_set_marked_validation_and_failed_operation_stability(self):\n        board = RecordBoard([{\"label\": \"x\"}])\n        for index, marked, error in [\n            (True, True, TypeError),\n            (0.0, True, TypeError),\n            (-1, True, IndexError),\n            (1, True, IndexError),\n            (0, 1, TypeError),\n            (0, None, TypeError),\n        ]:\n            with self.subTest(index=index, marked=marked):\n                with self.assertRaises(error):\n                    board.set_marked(index, marked)\n                self.assertEqual(board.marked_indices(), ())\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "b7e1cda16ebd63b6e0f8255c3193db321d764a90e07572b58d4ac87b069dc605"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6e579706f4d0d3fd388a124b1a853947a0ba68336f38b139691cb2c33aae8ec4",
+      "text": "In solution.py, implement a new class `RecordBoard` for managing labeled records.\n\nPublic API:\n- `RecordBoard(records=None)`: `records` is an optional iterable of mappings. Each mapping must contain a non-empty string `label` and may contain `icon`, whose value must be a string or `None`. Unknown keys are ignored. Preserve input order and deep-copy accepted values so later mutation of the input cannot affect the board.\n- `add(label, icon=None) -> int`: validate values as above, append an unmarked record, and return its zero-based index.\n- `set_marked(index, marked=True) -> None`: `index` must be an integer but not a boolean and must identify an existing record. `marked` must be a boolean. Raise `TypeError` for wrong types and `IndexError` for an out-of-range index.\n- `rows() -> list[dict]`: return records in insertion order as dictionaries containing exactly `label`, `icon`, and `marked`. The result must be a deep copy: mutating it must not change the board.\n- `marked_indices() -> tuple[int, ...]`: return marked indices in ascending order.\n\nAn omitted or empty `records` iterable creates an empty board. A malformed record raises `TypeError`, `KeyError`, or `ValueError` as appropriate without retaining that record.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6e579706f4d0d3fd388a124b1a853947a0ba68336f38b139691cb2c33aae8ec4",
+      "text": "In solution.py, implement a new class `RecordBoard` for managing labeled records.\n\nPublic API:\n- `RecordBoard(records=None)`: `records` is an optional iterable of mappings. Each mapping must contain a non-empty string `label` and may contain `icon`, whose value must be a string or `None`. Unknown keys are ignored. Preserve input order and deep-copy accepted values so later mutation of the input cannot affect the board.\n- `add(label, icon=None) -> int`: validate values as above, append an unmarked record, and return its zero-based index.\n- `set_marked(index, marked=True) -> None`: `index` must be an integer but not a boolean and must identify an existing record. `marked` must be a boolean. Raise `TypeError` for wrong types and `IndexError` for an out-of-range index.\n- `rows() -> list[dict]`: return records in insertion order as dictionaries containing exactly `label`, `icon`, and `marked`. The result must be a deep copy: mutating it must not change the board.\n- `marked_indices() -> tuple[int, ...]`: return marked indices in ascending order.\n\nAn omitted or empty `records` iterable creates an empty board. A malformed record raises `TypeError`, `KeyError`, or `ValueError` as appropriate without retaining that record.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0409",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\nclass RecordBoard:\n    def __init__(self, records=None):\n        self._records = []\n        if records is None:\n            return\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be an iterable of mappings\")\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"label\" not in record:\n                raise KeyError(\"label\")\n            label = record[\"label\"]\n            icon = record.get(\"icon\")\n            self._validate(label, icon)\n            self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n\n    @staticmethod\n    def _validate(label, icon):\n        if not isinstance(label, str):\n            raise TypeError(\"label must be a string\")\n        if not label:\n            raise ValueError(\"label must not be empty\")\n        if icon is not None and not isinstance(icon, str):\n            raise TypeError(\"icon must be a string or None\")\n\n    def add(self, label, icon=None):\n        self._validate(label, icon)\n        self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n        return len(self._records) - 1\n\n    def set_marked(self, index, marked=True):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if not isinstance(marked, bool):\n            raise TypeError(\"marked must be a boolean\")\n        if index < 0 or index >= len(self._records):\n            raise IndexError(\"record index out of range\")\n        self._records[index][\"marked\"] = marked\n\n    def rows(self):\n        return list(self._records)\n\n    def marked_indices(self):\n        return tuple(i for i, record in enumerate(self._records) if record[\"marked\"])\n",
+          "label": "rows returns dictionaries aliased to the board's internal mutable state instead of a deep copy",
+          "sha256": "d7a3e1d62c8768ae12c63c5e3dc087430bb974cfe3e3042a5355b9dacbebceba"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\nclass RecordBoard:\n    def __init__(self, records=None):\n        self._records = []\n        if records is None:\n            return\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be an iterable of mappings\")\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"label\" not in record:\n                raise KeyError(\"label\")\n            label = record[\"label\"]\n            icon = record.get(\"icon\")\n            self._validate(label, icon)\n            self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n\n    @staticmethod\n    def _validate(label, icon):\n        if not isinstance(label, str):\n            raise TypeError(\"label must be a string\")\n        if not label:\n            raise ValueError(\"label must not be empty\")\n        if icon is not None and not isinstance(icon, str):\n            raise TypeError(\"icon must be a string or None\")\n\n    def add(self, label, icon=None):\n        self._validate(label, icon)\n        self._records.append({\"label\": deepcopy(label), \"icon\": deepcopy(icon), \"marked\": False})\n        return len(self._records) - 1\n\n    def set_marked(self, index, marked=True):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if not isinstance(marked, bool):\n            raise TypeError(\"marked must be a boolean\")\n        if index < 0 or index >= len(self._records):\n            raise IndexError(\"record index out of range\")\n        self._records[index][\"marked\"] = marked\n\n    def rows(self):\n        return deepcopy(self._records)\n\n    def marked_indices(self):\n        return tuple(i for i, record in enumerate(self._records) if record[\"marked\"])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "65db5f9a61f2e51ee451eee10546b05c23a914774bb8d51dd0796579651ce102"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 10, in <module>\n    actual = RecordBoard(Records()).rows()\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 11, in __init__\n    raise TypeError(\"records must be an iterable of mappings\")\nTypeError: records must be an iterable of mappings\n",
+    "stderr_sha256": "b5bf82cf3d5e16b84134c7409ccc808071465950aba06b24ef204206e836d230",
+    "duration_ms": 356,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

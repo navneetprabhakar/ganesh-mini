@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0394",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "10d20571d1a3aa64669a76faca2625074f7b6bcb05778b9b4faab4624a04dd19",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import DeviceCatalog\n\ncaught = None\ntry:\n    DeviceCatalog([]).await_tag(\"missing\", [], 10 ** 30)\nexcept Exception as error:\n    caught = error\nassert isinstance(caught, TimeoutError), f\"valid check limit raised {type(caught).__name__}: {caught}\"\n",
+        "sha256": "591399a66c6d3aba68d375e2bb2bb3b2ad11ad83709484bb4ede09241b52b862"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f562034d24dec3d0280c5ab2661f58cc8f2ffa54b064c94d421ef1c26499cc0a",
+      "text": "Create `solution.py` defining `DeviceCatalog(records)`. Each record must be a mapping containing a nonempty string `tag`; duplicate tags are invalid. The constructor deep-copies all records. `locate(tag)` returns a fresh deep copy of the matching record or raises `ValueError` when absent. `await_tag(tag, snapshots, max_checks)` first checks the current catalog without consuming a snapshot. If absent, it examines at most `max_checks` snapshots in order; each snapshot is a complete replacement collection of records and receives the same validation as constructor input. It returns a fresh deep copy as soon as the tag appears. If it remains absent, raise `TimeoutError`. `max_checks` must be a nonnegative integer other than `bool`; zero checks only the current catalog. No input or returned mutable object may alias catalog state. Invalid tags raise `TypeError` or `ValueError`. A failed replacement validation must leave the previous catalog state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f562034d24dec3d0280c5ab2661f58cc8f2ffa54b064c94d421ef1c26499cc0a",
+      "text": "Create `solution.py` defining `DeviceCatalog(records)`. Each record must be a mapping containing a nonempty string `tag`; duplicate tags are invalid. The constructor deep-copies all records. `locate(tag)` returns a fresh deep copy of the matching record or raises `ValueError` when absent. `await_tag(tag, snapshots, max_checks)` first checks the current catalog without consuming a snapshot. If absent, it examines at most `max_checks` snapshots in order; each snapshot is a complete replacement collection of records and receives the same validation as constructor input. It returns a fresh deep copy as soon as the tag appears. If it remains absent, raise `TimeoutError`. `max_checks` must be a nonnegative integer other than `bool`; zero checks only the current catalog. No input or returned mutable object may alias catalog state. Invalid tags raise `TypeError` or `ValueError`. A failed replacement validation must leave the previous catalog state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0394",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom copy import deepcopy\nfrom itertools import islice\n\n\nclass DeviceCatalog:\n    def __init__(self, records):\n        self._records = {}\n        self._replace(records)\n\n    @staticmethod\n    def _tag(tag):\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        if not tag:\n            raise ValueError(\"tag cannot be empty\")\n        return tag\n\n    def _replace(self, records):\n        if isinstance(records, (str, bytes)):\n            raise TypeError(\"records must be an iterable of mappings\")\n        new_records = {}\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"tag\" not in record:\n                raise ValueError(\"record is missing tag\")\n            tag = self._tag(record[\"tag\"])\n            if tag in new_records:\n                raise ValueError(\"duplicate tag\")\n            new_records[tag] = deepcopy(dict(record))\n        self._records = new_records\n\n    def locate(self, tag):\n        tag = self._tag(tag)\n        if tag not in self._records:\n            raise ValueError(\"device not found\")\n        return deepcopy(self._records[tag])\n\n    def await_tag(self, tag, snapshots, max_checks):\n        tag = self._tag(tag)\n        if isinstance(max_checks, bool) or not isinstance(max_checks, int):\n            raise TypeError(\"max_checks must be an integer\")\n        if max_checks < 0:\n            raise ValueError(\"max_checks cannot be negative\")\n        if tag in self._records:\n            return deepcopy(self._records[tag])\n        for snapshot in islice(snapshots, max_checks + 1):\n            self._replace(snapshot)\n            if tag in self._records:\n                return deepcopy(self._records[tag])\n        raise TimeoutError(\"device did not appear\")\n",
+          "label": "await_tag examines one snapshot beyond max_checks and can return a device that appeared too late.",
+          "sha256": "6ee55edbb12992d4a23132272005cf817c9536cd3f78b6f40801f649438fa34d"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom copy import deepcopy\nfrom itertools import islice\n\n\nclass DeviceCatalog:\n    def __init__(self, records):\n        self._records = {}\n        self._replace(records)\n\n    @staticmethod\n    def _tag(tag):\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        if not tag:\n            raise ValueError(\"tag cannot be empty\")\n        return tag\n\n    def _replace(self, records):\n        if isinstance(records, (str, bytes)):\n            raise TypeError(\"records must be an iterable of mappings\")\n        new_records = {}\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"tag\" not in record:\n                raise ValueError(\"record is missing tag\")\n            tag = self._tag(record[\"tag\"])\n            if tag in new_records:\n                raise ValueError(\"duplicate tag\")\n            new_records[tag] = deepcopy(dict(record))\n        self._records = new_records\n\n    def locate(self, tag):\n        tag = self._tag(tag)\n        if tag not in self._records:\n            raise ValueError(\"device not found\")\n        return deepcopy(self._records[tag])\n\n    def await_tag(self, tag, snapshots, max_checks):\n        tag = self._tag(tag)\n        if isinstance(max_checks, bool) or not isinstance(max_checks, int):\n            raise TypeError(\"max_checks must be an integer\")\n        if max_checks < 0:\n            raise ValueError(\"max_checks cannot be negative\")\n        if tag in self._records:\n            return deepcopy(self._records[tag])\n        for snapshot in islice(snapshots, max_checks):\n            self._replace(snapshot)\n            if tag in self._records:\n                return deepcopy(self._records[tag])\n        raise TimeoutError(\"device did not appear\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ba543f6ff8a3b7443c9ad31eceb92d11ec9e11d7caced81706842a9f9726c64a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import DeviceCatalog\n\n\nclass DeviceCatalogTests(unittest.TestCase):\n    def test_constructor_and_locate_deep_copy(self):\n        record = {\"tag\": \"alpha\", \"config\": {\"ports\": [1]}}\n        catalog = DeviceCatalog([record])\n        record[\"config\"][\"ports\"].append(2)\n        found = catalog.locate(\"alpha\")\n        self.assertEqual(found, {\"tag\": \"alpha\", \"config\": {\"ports\": [1]}})\n        found[\"config\"][\"ports\"].append(3)\n        self.assertEqual(catalog.locate(\"alpha\")[\"config\"][\"ports\"], [1])\n        with self.assertRaises(ValueError):\n            catalog.locate(\"missing\")\n\n    def test_await_current_does_not_consume_snapshot(self):\n        catalog = DeviceCatalog([{\"tag\": \"here\"}])\n        consumed = []\n        def snapshots():\n            consumed.append(True)\n            yield [{\"tag\": \"later\"}]\n        self.assertEqual(catalog.await_tag(\"here\", snapshots(), 1), {\"tag\": \"here\"})\n        self.assertEqual(consumed, [])\n\n    def test_await_replacements_limit_and_state(self):\n        catalog = DeviceCatalog([{\"tag\": \"old\"}])\n        snapshots = iter([[{\"tag\": \"one\"}], [{\"tag\": \"target\", \"data\": [1]}], [{\"tag\": \"unused\"}]])\n        found = catalog.await_tag(\"target\", snapshots, 2)\n        self.assertEqual(found, {\"tag\": \"target\", \"data\": [1]})\n        found[\"data\"].append(2)\n        self.assertEqual(catalog.locate(\"target\")[\"data\"], [1])\n        with self.assertRaises(ValueError):\n            catalog.locate(\"old\")\n        self.assertEqual(next(snapshots), [{\"tag\": \"unused\"}])\n\n    def test_zero_checks_and_timeout(self):\n        catalog = DeviceCatalog([])\n        snapshots = iter([[{\"tag\": \"x\"}]])\n        with self.assertRaises(TimeoutError):\n            catalog.await_tag(\"x\", snapshots, 0)\n        self.assertEqual(next(snapshots), [{\"tag\": \"x\"}])\n        with self.assertRaises(TimeoutError):\n            catalog.await_tag(\"x\", [], 3)\n\n    def test_failed_replacement_is_atomic(self):\n        catalog = DeviceCatalog([{\"tag\": \"stable\", \"value\": {\"x\": 1}}])\n        with self.assertRaises(ValueError):\n            catalog.await_tag(\"wanted\", [[{\"tag\": \"dup\"}, {\"tag\": \"dup\"}]], 1)\n        self.assertEqual(catalog.locate(\"stable\"), {\"tag\": \"stable\", \"value\": {\"x\": 1}})\n\n    def test_validation(self):\n        for records in ([[{\"value\": 1}]], [[{\"tag\": \"\"}]], [[{\"tag\": \"x\"}, {\"tag\": \"x\"}]]):\n            with self.assertRaises((TypeError, ValueError)):\n                DeviceCatalog(records)\n        with self.assertRaises(TypeError):\n            DeviceCatalog([{\"tag\": 1}])\n        catalog = DeviceCatalog([])\n        for tag in (\"\", \"   \"):\n            with self.assertRaises(ValueError):\n                catalog.locate(tag)\n        with self.assertRaises(TypeError):\n            catalog.locate(1)\n        for checks in (True, 1.5):\n            with self.assertRaises(TypeError):\n                catalog.await_tag(\"x\", [], checks)\n        with self.assertRaises(ValueError):\n            catalog.await_tag(\"x\", [], -1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "9e17bf7fe0d5f13e1f63e2ac6d8292dea14873a7e98d9ff2d9c984b6a797f87e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f562034d24dec3d0280c5ab2661f58cc8f2ffa54b064c94d421ef1c26499cc0a",
+      "text": "Create `solution.py` defining `DeviceCatalog(records)`. Each record must be a mapping containing a nonempty string `tag`; duplicate tags are invalid. The constructor deep-copies all records. `locate(tag)` returns a fresh deep copy of the matching record or raises `ValueError` when absent. `await_tag(tag, snapshots, max_checks)` first checks the current catalog without consuming a snapshot. If absent, it examines at most `max_checks` snapshots in order; each snapshot is a complete replacement collection of records and receives the same validation as constructor input. It returns a fresh deep copy as soon as the tag appears. If it remains absent, raise `TimeoutError`. `max_checks` must be a nonnegative integer other than `bool`; zero checks only the current catalog. No input or returned mutable object may alias catalog state. Invalid tags raise `TypeError` or `ValueError`. A failed replacement validation must leave the previous catalog state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f562034d24dec3d0280c5ab2661f58cc8f2ffa54b064c94d421ef1c26499cc0a",
+      "text": "Create `solution.py` defining `DeviceCatalog(records)`. Each record must be a mapping containing a nonempty string `tag`; duplicate tags are invalid. The constructor deep-copies all records. `locate(tag)` returns a fresh deep copy of the matching record or raises `ValueError` when absent. `await_tag(tag, snapshots, max_checks)` first checks the current catalog without consuming a snapshot. If absent, it examines at most `max_checks` snapshots in order; each snapshot is a complete replacement collection of records and receives the same validation as constructor input. It returns a fresh deep copy as soon as the tag appears. If it remains absent, raise `TimeoutError`. `max_checks` must be a nonnegative integer other than `bool`; zero checks only the current catalog. No input or returned mutable object may alias catalog state. Invalid tags raise `TypeError` or `ValueError`. A failed replacement validation must leave the previous catalog state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0394",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom copy import deepcopy\nfrom itertools import islice\n\n\nclass DeviceCatalog:\n    def __init__(self, records):\n        self._records = {}\n        self._replace(records)\n\n    @staticmethod\n    def _tag(tag):\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        if not tag:\n            raise ValueError(\"tag cannot be empty\")\n        return tag\n\n    def _replace(self, records):\n        if isinstance(records, (str, bytes)):\n            raise TypeError(\"records must be an iterable of mappings\")\n        new_records = {}\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"tag\" not in record:\n                raise ValueError(\"record is missing tag\")\n            tag = self._tag(record[\"tag\"])\n            if tag in new_records:\n                raise ValueError(\"duplicate tag\")\n            new_records[tag] = deepcopy(dict(record))\n        self._records = new_records\n\n    def locate(self, tag):\n        tag = self._tag(tag)\n        if tag not in self._records:\n            raise ValueError(\"device not found\")\n        return deepcopy(self._records[tag])\n\n    def await_tag(self, tag, snapshots, max_checks):\n        tag = self._tag(tag)\n        if isinstance(max_checks, bool) or not isinstance(max_checks, int):\n            raise TypeError(\"max_checks must be an integer\")\n        if max_checks < 0:\n            raise ValueError(\"max_checks cannot be negative\")\n        if tag in self._records:\n            return deepcopy(self._records[tag])\n        for snapshot in islice(snapshots, max_checks + 1):\n            self._replace(snapshot)\n            if tag in self._records:\n                return deepcopy(self._records[tag])\n        raise TimeoutError(\"device did not appear\")\n",
+          "label": "await_tag examines one snapshot beyond max_checks and can return a device that appeared too late.",
+          "sha256": "6ee55edbb12992d4a23132272005cf817c9536cd3f78b6f40801f649438fa34d"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom copy import deepcopy\nfrom itertools import islice\n\n\nclass DeviceCatalog:\n    def __init__(self, records):\n        self._records = {}\n        self._replace(records)\n\n    @staticmethod\n    def _tag(tag):\n        if not isinstance(tag, str):\n            raise TypeError(\"tag must be a string\")\n        if not tag:\n            raise ValueError(\"tag cannot be empty\")\n        return tag\n\n    def _replace(self, records):\n        if isinstance(records, (str, bytes)):\n            raise TypeError(\"records must be an iterable of mappings\")\n        new_records = {}\n        for record in records:\n            if not isinstance(record, Mapping):\n                raise TypeError(\"each record must be a mapping\")\n            if \"tag\" not in record:\n                raise ValueError(\"record is missing tag\")\n            tag = self._tag(record[\"tag\"])\n            if tag in new_records:\n                raise ValueError(\"duplicate tag\")\n            new_records[tag] = deepcopy(dict(record))\n        self._records = new_records\n\n    def locate(self, tag):\n        tag = self._tag(tag)\n        if tag not in self._records:\n            raise ValueError(\"device not found\")\n        return deepcopy(self._records[tag])\n\n    def await_tag(self, tag, snapshots, max_checks):\n        tag = self._tag(tag)\n        if isinstance(max_checks, bool) or not isinstance(max_checks, int):\n            raise TypeError(\"max_checks must be an integer\")\n        if max_checks < 0:\n            raise ValueError(\"max_checks cannot be negative\")\n        if tag in self._records:\n            return deepcopy(self._records[tag])\n        for snapshot in islice(snapshots, max_checks):\n            self._replace(snapshot)\n            if tag in self._records:\n                return deepcopy(self._records[tag])\n        raise TimeoutError(\"device did not appear\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ba543f6ff8a3b7443c9ad31eceb92d11ec9e11d7caced81706842a9f9726c64a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 8, in <module>\n    assert isinstance(caught, TimeoutError), f\"valid check limit raised {type(caught).__name__}: {caught}\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: valid check limit raised ValueError: Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.\n",
+    "stderr_sha256": "e2ec4f9328dc98b86d986c2c4516aa777c29f80565fbff5055cc76803ccf1526",
+    "duration_ms": 323,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

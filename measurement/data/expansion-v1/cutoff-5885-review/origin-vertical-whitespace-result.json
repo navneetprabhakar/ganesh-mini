@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0401",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "00e15a141839ec34e0417835915720a1c245e1d5cf4c58d67dafd3bffbe4ee24",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import analyze_origins\n\n# Vertical tab is whitespace after the prefix, not one of the specified endings.\nactual = analyze_origins(\"Origin:\\vAlpha\")\nassert actual == ([\"Alpha\"], {\"alpha\": 1}, (\"alpha\", 1)), repr(actual)\n",
+        "sha256": "eea478857e90c9bec4f6be1e4f2b15a66a8d25f71f8f1ca8363cf771815c5943"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8e392f5e7f99d4ef4a2fb19c8f8b47cec7588e752a59ab61ae92821ec9610f5d",
+      "text": "Implement `analyze_origins(text)` in `solution.py`.\n\nThe input must be a string containing zero or more lines. A qualifying line has, after optional leading spaces, the exact case-sensitive prefix `Origin:` followed by whitespace and a token. That token is the identifier; later text on the line is ignored. Lines missing the token are ignored.\n\nReturn a three-tuple:\n1. A list of identifiers in encounter order, preserving their original spelling.\n2. A dictionary counting identifiers case-insensitively. Its keys are lowercase identifiers and retain first-encounter insertion order.\n3. Either `(identifier, count)` for the most frequent lowercase identifier, or `None` when no identifiers exist.\n\nFor a frequency tie, choose the identifier whose first occurrence came earliest. Line endings may be `\\n`, `\\r\\n`, or `\\r`. Empty input is valid. Non-string input raises `TypeError`. Do not mutate any input or alias the returned list and dictionary.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8e392f5e7f99d4ef4a2fb19c8f8b47cec7588e752a59ab61ae92821ec9610f5d",
+      "text": "Implement `analyze_origins(text)` in `solution.py`.\n\nThe input must be a string containing zero or more lines. A qualifying line has, after optional leading spaces, the exact case-sensitive prefix `Origin:` followed by whitespace and a token. That token is the identifier; later text on the line is ignored. Lines missing the token are ignored.\n\nReturn a three-tuple:\n1. A list of identifiers in encounter order, preserving their original spelling.\n2. A dictionary counting identifiers case-insensitively. Its keys are lowercase identifiers and retain first-encounter insertion order.\n3. Either `(identifier, count)` for the most frequent lowercase identifier, or `None` when no identifiers exist.\n\nFor a frequency tie, choose the identifier whose first occurrence came earliest. Line endings may be `\\n`, `\\r\\n`, or `\\r`. Empty input is valid. Non-string input raises `TypeError`. Do not mutate any input or alias the returned list and dictionary.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0401",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def analyze_origins(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    extracted = []\n    counts = {}\n    for line in text.splitlines():\n        stripped = line.lstrip(\" \")\n        if not stripped.startswith(\"Origin:\"):\n            continue\n        remainder = stripped[len(\"Origin:\"):]\n        if not remainder or not remainder[0].isspace():\n            continue\n        pieces = remainder.split()\n        if not pieces:\n            continue\n        original = pieces[0]\n        key = original.lower()\n        extracted.append(original)\n        counts[key] = counts.get(key, 0) + 1\n\n    if not counts:\n        leader = None\n    else:\n        key = max(counts, key=lambda item: (counts[item], item))\n        leader = (key, counts[key])\n    return list(extracted), dict(counts), leader\n",
+          "label": "Frequency ties are broken lexicographically instead of by earliest occurrence.",
+          "sha256": "3ecea132ff0c5f76cbfd3efaff862d1519a819ec4808cc627017862e4b14f228"
+        }
+      ],
+      "reference": {
+        "code": "def analyze_origins(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    extracted = []\n    counts = {}\n    first_seen = {}\n    for line in text.splitlines():\n        stripped = line.lstrip(\" \")\n        if not stripped.startswith(\"Origin:\"):\n            continue\n        remainder = stripped[len(\"Origin:\"):]\n        if not remainder or not remainder[0].isspace():\n            continue\n        pieces = remainder.split()\n        if not pieces:\n            continue\n        original = pieces[0]\n        key = original.lower()\n        extracted.append(original)\n        if key not in counts:\n            first_seen[key] = len(extracted) - 1\n            counts[key] = 0\n        counts[key] += 1\n\n    if not counts:\n        leader = None\n    else:\n        key = max(counts, key=lambda item: (counts[item], -first_seen[item]))\n        leader = (key, counts[key])\n    return list(extracted), dict(counts), leader\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e1d3954e3fcfb99180b32b0177c43340f3ae4b0c46f5acef660b02ca468e0b5b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import analyze_origins\n\n\nclass AnalyzeOriginsTests(unittest.TestCase):\n    def test_empty_and_nonmatching_input(self):\n        self.assertEqual(analyze_origins(\"\"), ([], {}, None))\n        self.assertEqual(analyze_origins(\"Origin:\\norigin: x\\n Origin:no-space\"),\n                         ([], {}, None))\n\n    def test_mixed_line_endings_counts_spelling_and_tie_break(self):\n        text = \"  Origin: Alpha ignored text\\rOrigin: beta\\r\\n Origin: ALPHA\\nOrigin: BETA later\"\n        identifiers, counts, winner = analyze_origins(text)\n        self.assertEqual(identifiers, [\"Alpha\", \"beta\", \"ALPHA\", \"BETA\"])\n        self.assertEqual(counts, {\"alpha\": 2, \"beta\": 2})\n        self.assertEqual(list(counts), [\"alpha\", \"beta\"])\n        self.assertEqual(winner, (\"alpha\", 2))\n\n    def test_token_ends_at_whitespace_and_prefix_is_exact(self):\n        result = analyze_origins(\"Origin:\\tOne\\tcomment\\n Origin: two words\\n\\tOrigin: hidden\")\n        self.assertEqual(result, ([\"One\", \"two\"], {\"one\": 1, \"two\": 1}, (\"one\", 1)))\n\n    def test_clear_most_frequent_value(self):\n        result = analyze_origins(\"Origin: X\\nOrigin: y\\nOrigin: Y\\nOrigin: y\")\n        self.assertEqual(result, ([\"X\", \"y\", \"Y\", \"y\"], {\"x\": 1, \"y\": 3}, (\"y\", 3)))\n\n    def test_non_string_rejected(self):\n        for value in (None, b\"Origin: x\", 3, [\"Origin: x\"]):\n            with self.assertRaises(TypeError):\n                analyze_origins(value)\n\n    def test_returned_containers_are_not_aliased_between_calls(self):\n        first = analyze_origins(\"Origin: A\")\n        first[0].append(\"bad\")\n        first[1][\"a\"] = 99\n        second = analyze_origins(\"Origin: A\")\n        self.assertEqual(second, ([\"A\"], {\"a\": 1}, (\"a\", 1)))\n        self.assertIsNot(second[0], second[1])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "4cf80397bd3f582a722426f2ab45008aa7c901166f85925b91d9618616d44581"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8e392f5e7f99d4ef4a2fb19c8f8b47cec7588e752a59ab61ae92821ec9610f5d",
+      "text": "Implement `analyze_origins(text)` in `solution.py`.\n\nThe input must be a string containing zero or more lines. A qualifying line has, after optional leading spaces, the exact case-sensitive prefix `Origin:` followed by whitespace and a token. That token is the identifier; later text on the line is ignored. Lines missing the token are ignored.\n\nReturn a three-tuple:\n1. A list of identifiers in encounter order, preserving their original spelling.\n2. A dictionary counting identifiers case-insensitively. Its keys are lowercase identifiers and retain first-encounter insertion order.\n3. Either `(identifier, count)` for the most frequent lowercase identifier, or `None` when no identifiers exist.\n\nFor a frequency tie, choose the identifier whose first occurrence came earliest. Line endings may be `\\n`, `\\r\\n`, or `\\r`. Empty input is valid. Non-string input raises `TypeError`. Do not mutate any input or alias the returned list and dictionary.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8e392f5e7f99d4ef4a2fb19c8f8b47cec7588e752a59ab61ae92821ec9610f5d",
+      "text": "Implement `analyze_origins(text)` in `solution.py`.\n\nThe input must be a string containing zero or more lines. A qualifying line has, after optional leading spaces, the exact case-sensitive prefix `Origin:` followed by whitespace and a token. That token is the identifier; later text on the line is ignored. Lines missing the token are ignored.\n\nReturn a three-tuple:\n1. A list of identifiers in encounter order, preserving their original spelling.\n2. A dictionary counting identifiers case-insensitively. Its keys are lowercase identifiers and retain first-encounter insertion order.\n3. Either `(identifier, count)` for the most frequent lowercase identifier, or `None` when no identifiers exist.\n\nFor a frequency tie, choose the identifier whose first occurrence came earliest. Line endings may be `\\n`, `\\r\\n`, or `\\r`. Empty input is valid. Non-string input raises `TypeError`. Do not mutate any input or alias the returned list and dictionary.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0401",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def analyze_origins(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    extracted = []\n    counts = {}\n    for line in text.splitlines():\n        stripped = line.lstrip(\" \")\n        if not stripped.startswith(\"Origin:\"):\n            continue\n        remainder = stripped[len(\"Origin:\"):]\n        if not remainder or not remainder[0].isspace():\n            continue\n        pieces = remainder.split()\n        if not pieces:\n            continue\n        original = pieces[0]\n        key = original.lower()\n        extracted.append(original)\n        counts[key] = counts.get(key, 0) + 1\n\n    if not counts:\n        leader = None\n    else:\n        key = max(counts, key=lambda item: (counts[item], item))\n        leader = (key, counts[key])\n    return list(extracted), dict(counts), leader\n",
+          "label": "Frequency ties are broken lexicographically instead of by earliest occurrence.",
+          "sha256": "3ecea132ff0c5f76cbfd3efaff862d1519a819ec4808cc627017862e4b14f228"
+        }
+      ],
+      "reference": {
+        "code": "def analyze_origins(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    extracted = []\n    counts = {}\n    first_seen = {}\n    for line in text.splitlines():\n        stripped = line.lstrip(\" \")\n        if not stripped.startswith(\"Origin:\"):\n            continue\n        remainder = stripped[len(\"Origin:\"):]\n        if not remainder or not remainder[0].isspace():\n            continue\n        pieces = remainder.split()\n        if not pieces:\n            continue\n        original = pieces[0]\n        key = original.lower()\n        extracted.append(original)\n        if key not in counts:\n            first_seen[key] = len(extracted) - 1\n            counts[key] = 0\n        counts[key] += 1\n\n    if not counts:\n        leader = None\n    else:\n        key = max(counts, key=lambda item: (counts[item], -first_seen[item]))\n        leader = (key, counts[key])\n    return list(extracted), dict(counts), leader\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e1d3954e3fcfb99180b32b0177c43340f3ae4b0c46f5acef660b02ca468e0b5b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 5, in <module>\n    assert actual == ([\"Alpha\"], {\"alpha\": 1}, (\"alpha\", 1)), repr(actual)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ([], {}, None)\n",
+    "stderr_sha256": "42f23e9e3c73509bb24978ab911d6a08885d05e41f3a4966ddcccfee400e4e27",
+    "duration_ms": 328,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

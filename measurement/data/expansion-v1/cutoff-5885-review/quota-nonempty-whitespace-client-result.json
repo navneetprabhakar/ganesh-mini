@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0393",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b7d2052afa827da49cf756854097d05e54537cf962c03a802252cc19ea8574f6",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import QuotaLedger\n\nledger = QuotaLedger(1, 2)\n# Prompt requires a nonempty string client, not a nonblank client.\nassert ledger.observe(\" \", 1, \"query\") == \"accepted\"\n",
+        "sha256": "3791be68a695f1613d11d3696a2e4771e5f5a9c1feb6daea2e8e45b40da2952f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1b6149140a3020ca784d0b4facbb3a25a77c6d6512e09d11e3fca4d6bd04de31",
+      "text": "Create `solution.py` defining class `QuotaLedger`. Its constructor is `QuotaLedger(soft_limit, hard_limit)`, where both limits are non-boolean integers satisfying `0 <= soft_limit < hard_limit`. Method `observe(client, window, query)` requires a nonempty string client and a string query. It maintains an independent count for each client; a client's count and stored queries reset when that client's `window` value changes. Each call increments the count, including calls with blank queries. A stripped nonempty query is stored in arrival order. Return `\"invalid\"` for a blank query, otherwise return `\"accepted\"` when count is at most `soft_limit`, `\"throttled\"` when above `soft_limit` but at most `hard_limit`, and `\"forbidden\"` when above `hard_limit`. Method `clear()` removes all state. Method `snapshot()` returns a deep copy mapping each client to a dictionary containing `window`, `count`, and a list `queries`. Mutating any part of a snapshot must not affect the ledger or another snapshot. Empty state returns `{}`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1b6149140a3020ca784d0b4facbb3a25a77c6d6512e09d11e3fca4d6bd04de31",
+      "text": "Create `solution.py` defining class `QuotaLedger`. Its constructor is `QuotaLedger(soft_limit, hard_limit)`, where both limits are non-boolean integers satisfying `0 <= soft_limit < hard_limit`. Method `observe(client, window, query)` requires a nonempty string client and a string query. It maintains an independent count for each client; a client's count and stored queries reset when that client's `window` value changes. Each call increments the count, including calls with blank queries. A stripped nonempty query is stored in arrival order. Return `\"invalid\"` for a blank query, otherwise return `\"accepted\"` when count is at most `soft_limit`, `\"throttled\"` when above `soft_limit` but at most `hard_limit`, and `\"forbidden\"` when above `hard_limit`. Method `clear()` removes all state. Method `snapshot()` returns a deep copy mapping each client to a dictionary containing `window`, `count`, and a list `queries`. Mutating any part of a snapshot must not affect the ledger or another snapshot. Empty state returns `{}`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0393",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass QuotaLedger:\n    def __init__(self, soft_limit, hard_limit):\n        for value in (soft_limit, hard_limit):\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(\"limits must be integers\")\n        if soft_limit < 0 or soft_limit >= hard_limit:\n            raise ValueError(\"limits must satisfy 0 <= soft < hard\")\n        self.soft_limit = soft_limit\n        self.hard_limit = hard_limit\n        self._clients = {}\n\n    def observe(self, client, window, query):\n        if not isinstance(client, str):\n            raise TypeError(\"client must be a string\")\n        if not client.strip():\n            raise ValueError(\"client cannot be empty\")\n        if not isinstance(query, str):\n            raise TypeError(\"query must be a string\")\n\n        record = self._clients.get(client)\n        if record is None or record[\"window\"] != window:\n            record = {\"window\": deepcopy(window), \"count\": 0, \"queries\": []}\n            self._clients[client] = record\n        record[\"count\"] += 1\n        cleaned = query.strip()\n        if cleaned:\n            record[\"queries\"].append(cleaned)\n        else:\n            return \"invalid\"\n        if record[\"count\"] > self.hard_limit:\n            return \"forbidden\"\n        if record[\"count\"] > self.soft_limit:\n            return \"throttled\"\n        return \"accepted\"\n\n    def clear(self):\n        self._clients.clear()\n\n    def snapshot(self):\n        return dict(self._clients)\n",
+          "label": "snapshot returns a shallow outer copy whose nested records and query lists still alias internal ledger state.",
+          "sha256": "972f800d5f97105736f4219786957eadce23a3c3be9bb320a272ebacfaec0111"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass QuotaLedger:\n    def __init__(self, soft_limit, hard_limit):\n        for value in (soft_limit, hard_limit):\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(\"limits must be integers\")\n        if soft_limit < 0 or soft_limit >= hard_limit:\n            raise ValueError(\"limits must satisfy 0 <= soft < hard\")\n        self.soft_limit = soft_limit\n        self.hard_limit = hard_limit\n        self._clients = {}\n\n    def observe(self, client, window, query):\n        if not isinstance(client, str):\n            raise TypeError(\"client must be a string\")\n        if not client.strip():\n            raise ValueError(\"client cannot be empty\")\n        if not isinstance(query, str):\n            raise TypeError(\"query must be a string\")\n\n        record = self._clients.get(client)\n        if record is None or record[\"window\"] != window:\n            record = {\"window\": deepcopy(window), \"count\": 0, \"queries\": []}\n            self._clients[client] = record\n        record[\"count\"] += 1\n        cleaned = query.strip()\n        if cleaned:\n            record[\"queries\"].append(cleaned)\n        else:\n            return \"invalid\"\n        if record[\"count\"] > self.hard_limit:\n            return \"forbidden\"\n        if record[\"count\"] > self.soft_limit:\n            return \"throttled\"\n        return \"accepted\"\n\n    def clear(self):\n        self._clients.clear()\n\n    def snapshot(self):\n        return deepcopy(self._clients)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eec9aae259c2cb5ad884633ea6753034c745dfbce4482188a3ce98b3853dd8ef"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import QuotaLedger\n\n\nclass QuotaLedgerTests(unittest.TestCase):\n    def test_status_boundaries_queries_and_client_independence(self):\n        ledger = QuotaLedger(2, 4)\n        self.assertEqual(ledger.observe(\"a\", \"w1\", \" first \"), \"accepted\")\n        self.assertEqual(ledger.observe(\"a\", \"w1\", \"second\"), \"accepted\")\n        self.assertEqual(ledger.observe(\"a\", \"w1\", \"third\"), \"throttled\")\n        self.assertEqual(ledger.observe(\"a\", \"w1\", \"fourth\"), \"throttled\")\n        self.assertEqual(ledger.observe(\"a\", \"w1\", \"fifth\"), \"forbidden\")\n        self.assertEqual(ledger.observe(\"b\", \"w1\", \"one\"), \"accepted\")\n        snap = ledger.snapshot()\n        self.assertEqual(snap[\"a\"][\"count\"], 5)\n        self.assertEqual(snap[\"a\"][\"queries\"], [\"first\", \"second\", \"third\", \"fourth\", \"fifth\"])\n        self.assertEqual(snap[\"b\"][\"count\"], 1)\n\n    def test_blank_query_counts_but_is_not_stored(self):\n        ledger = QuotaLedger(0, 1)\n        self.assertEqual(ledger.observe(\"c\", 1, \"  \\t\"), \"invalid\")\n        self.assertEqual(ledger.snapshot()[\"c\"], {\"window\": 1, \"count\": 1, \"queries\": []})\n        self.assertEqual(ledger.observe(\"c\", 1, \"x\"), \"forbidden\")\n\n    def test_window_change_resets_one_client(self):\n        ledger = QuotaLedger(1, 2)\n        ledger.observe(\"a\", \"old\", \"q1\")\n        ledger.observe(\"a\", \"old\", \"q2\")\n        ledger.observe(\"b\", \"old\", \"b1\")\n        self.assertEqual(ledger.observe(\"a\", \"new\", \"fresh\"), \"accepted\")\n        snap = ledger.snapshot()\n        self.assertEqual(snap[\"a\"], {\"window\": \"new\", \"count\": 1, \"queries\": [\"fresh\"]})\n        self.assertEqual(snap[\"b\"][\"queries\"], [\"b1\"])\n\n    def test_snapshot_deep_independence_and_clear(self):\n        ledger = QuotaLedger(1, 2)\n        ledger.observe(\"a\", (\"window\", 1), \"q\")\n        first = ledger.snapshot()\n        first[\"a\"][\"queries\"].append(\"changed\")\n        first[\"a\"][\"count\"] = 99\n        first[\"new\"] = {}\n        second = ledger.snapshot()\n        self.assertEqual(second[\"a\"][\"queries\"], [\"q\"])\n        self.assertEqual(second[\"a\"][\"count\"], 1)\n        self.assertNotIn(\"new\", second)\n        ledger.clear()\n        self.assertEqual(ledger.snapshot(), {})\n\n    def test_validation(self):\n        for limits in ((True, 2), (0, False), (1.0, 2), (0, \"2\")):\n            with self.assertRaises(TypeError):\n                QuotaLedger(*limits)\n        for limits in ((-1, 2), (1, 1), (3, 2)):\n            with self.assertRaises(ValueError):\n                QuotaLedger(*limits)\n        ledger = QuotaLedger(0, 1)\n        for client in (\"\", \"   \"):\n            with self.assertRaises(ValueError):\n                ledger.observe(client, 1, \"q\")\n        with self.assertRaises(TypeError):\n            ledger.observe(3, 1, \"q\")\n        with self.assertRaises(TypeError):\n            ledger.observe(\"c\", 1, None)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "2b0bf2ab6bdbb549f694785a3965fd182ade592e5819019ba6ea149a3fc8f144"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1b6149140a3020ca784d0b4facbb3a25a77c6d6512e09d11e3fca4d6bd04de31",
+      "text": "Create `solution.py` defining class `QuotaLedger`. Its constructor is `QuotaLedger(soft_limit, hard_limit)`, where both limits are non-boolean integers satisfying `0 <= soft_limit < hard_limit`. Method `observe(client, window, query)` requires a nonempty string client and a string query. It maintains an independent count for each client; a client's count and stored queries reset when that client's `window` value changes. Each call increments the count, including calls with blank queries. A stripped nonempty query is stored in arrival order. Return `\"invalid\"` for a blank query, otherwise return `\"accepted\"` when count is at most `soft_limit`, `\"throttled\"` when above `soft_limit` but at most `hard_limit`, and `\"forbidden\"` when above `hard_limit`. Method `clear()` removes all state. Method `snapshot()` returns a deep copy mapping each client to a dictionary containing `window`, `count`, and a list `queries`. Mutating any part of a snapshot must not affect the ledger or another snapshot. Empty state returns `{}`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1b6149140a3020ca784d0b4facbb3a25a77c6d6512e09d11e3fca4d6bd04de31",
+      "text": "Create `solution.py` defining class `QuotaLedger`. Its constructor is `QuotaLedger(soft_limit, hard_limit)`, where both limits are non-boolean integers satisfying `0 <= soft_limit < hard_limit`. Method `observe(client, window, query)` requires a nonempty string client and a string query. It maintains an independent count for each client; a client's count and stored queries reset when that client's `window` value changes. Each call increments the count, including calls with blank queries. A stripped nonempty query is stored in arrival order. Return `\"invalid\"` for a blank query, otherwise return `\"accepted\"` when count is at most `soft_limit`, `\"throttled\"` when above `soft_limit` but at most `hard_limit`, and `\"forbidden\"` when above `hard_limit`. Method `clear()` removes all state. Method `snapshot()` returns a deep copy mapping each client to a dictionary containing `window`, `count`, and a list `queries`. Mutating any part of a snapshot must not affect the ledger or another snapshot. Empty state returns `{}`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0393",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass QuotaLedger:\n    def __init__(self, soft_limit, hard_limit):\n        for value in (soft_limit, hard_limit):\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(\"limits must be integers\")\n        if soft_limit < 0 or soft_limit >= hard_limit:\n            raise ValueError(\"limits must satisfy 0 <= soft < hard\")\n        self.soft_limit = soft_limit\n        self.hard_limit = hard_limit\n        self._clients = {}\n\n    def observe(self, client, window, query):\n        if not isinstance(client, str):\n            raise TypeError(\"client must be a string\")\n        if not client.strip():\n            raise ValueError(\"client cannot be empty\")\n        if not isinstance(query, str):\n            raise TypeError(\"query must be a string\")\n\n        record = self._clients.get(client)\n        if record is None or record[\"window\"] != window:\n            record = {\"window\": deepcopy(window), \"count\": 0, \"queries\": []}\n            self._clients[client] = record\n        record[\"count\"] += 1\n        cleaned = query.strip()\n        if cleaned:\n            record[\"queries\"].append(cleaned)\n        else:\n            return \"invalid\"\n        if record[\"count\"] > self.hard_limit:\n            return \"forbidden\"\n        if record[\"count\"] > self.soft_limit:\n            return \"throttled\"\n        return \"accepted\"\n\n    def clear(self):\n        self._clients.clear()\n\n    def snapshot(self):\n        return dict(self._clients)\n",
+          "label": "snapshot returns a shallow outer copy whose nested records and query lists still alias internal ledger state.",
+          "sha256": "972f800d5f97105736f4219786957eadce23a3c3be9bb320a272ebacfaec0111"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass QuotaLedger:\n    def __init__(self, soft_limit, hard_limit):\n        for value in (soft_limit, hard_limit):\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(\"limits must be integers\")\n        if soft_limit < 0 or soft_limit >= hard_limit:\n            raise ValueError(\"limits must satisfy 0 <= soft < hard\")\n        self.soft_limit = soft_limit\n        self.hard_limit = hard_limit\n        self._clients = {}\n\n    def observe(self, client, window, query):\n        if not isinstance(client, str):\n            raise TypeError(\"client must be a string\")\n        if not client.strip():\n            raise ValueError(\"client cannot be empty\")\n        if not isinstance(query, str):\n            raise TypeError(\"query must be a string\")\n\n        record = self._clients.get(client)\n        if record is None or record[\"window\"] != window:\n            record = {\"window\": deepcopy(window), \"count\": 0, \"queries\": []}\n            self._clients[client] = record\n        record[\"count\"] += 1\n        cleaned = query.strip()\n        if cleaned:\n            record[\"queries\"].append(cleaned)\n        else:\n            return \"invalid\"\n        if record[\"count\"] > self.hard_limit:\n            return \"forbidden\"\n        if record[\"count\"] > self.soft_limit:\n            return \"throttled\"\n        return \"accepted\"\n\n    def clear(self):\n        self._clients.clear()\n\n    def snapshot(self):\n        return deepcopy(self._clients)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eec9aae259c2cb5ad884633ea6753034c745dfbce4482188a3ce98b3853dd8ef"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 5, in <module>\n    assert ledger.observe(\" \", 1, \"query\") == \"accepted\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 19, in observe\n    raise ValueError(\"client cannot be empty\")\nValueError: client cannot be empty\n",
+    "stderr_sha256": "f29977bf221178830c99db9845e125f24ce5d1148783fb64dfe17d0eef6325ad",
+    "duration_ms": 411,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

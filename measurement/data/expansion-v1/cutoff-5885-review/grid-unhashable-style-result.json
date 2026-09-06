@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0398",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "217a15d79a41f3dbb6f580dfd5146b09a4a0531ddb9cb38a986fc17a5ef11f28",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import encode_grid, FormatError\n\ncaught = None\ntry:\n    encode_grid([], [\"name\"], [])\nexcept Exception as error:\n    caught = error\nassert isinstance(caught, FormatError), f\"invalid style raised {type(caught).__name__}\"\n",
+        "sha256": "3992966dde093a5231838d9a00f4be7cad0349a9293f0f236df95526ee09d3ef"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c7cfc208e64133e395ae30b260c9d908c7e5038b65b4add05988d604745b4685",
+      "text": "Implement `solution.py` with `encode_grid(records, columns, style)`.\n\n- `records` is an iterable of objects or mappings.\n- `columns` is a non-empty iterable of non-empty strings. Each string names an attribute or mapping key.\n- `style` is exactly `\"aligned\"`, `\"csv\"`, or `\"html\"`; otherwise raise `FormatError`.\n- Define `FormatError` as a subclass of `ValueError`.\n- Values are converted with `str`; `None` becomes an empty string.\n- A missing attribute or key raises `KeyError` naming the column.\n- `aligned` output uses left-aligned columns whose widths include headings and values, with columns separated by `\" | \"`. It contains a heading line, a dash separator line, and data lines.\n- `csv` output follows normal CSV quoting rules and uses `\\n` line endings.\n- `html` output is one `<table>` containing a heading row and body rows. Escape headings and values for HTML.\n- Empty `records` still produces headings.\n- Preserve record order and column order.\n- Do not mutate the supplied records, mappings, or column collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c7cfc208e64133e395ae30b260c9d908c7e5038b65b4add05988d604745b4685",
+      "text": "Implement `solution.py` with `encode_grid(records, columns, style)`.\n\n- `records` is an iterable of objects or mappings.\n- `columns` is a non-empty iterable of non-empty strings. Each string names an attribute or mapping key.\n- `style` is exactly `\"aligned\"`, `\"csv\"`, or `\"html\"`; otherwise raise `FormatError`.\n- Define `FormatError` as a subclass of `ValueError`.\n- Values are converted with `str`; `None` becomes an empty string.\n- A missing attribute or key raises `KeyError` naming the column.\n- `aligned` output uses left-aligned columns whose widths include headings and values, with columns separated by `\" | \"`. It contains a heading line, a dash separator line, and data lines.\n- `csv` output follows normal CSV quoting rules and uses `\\n` line endings.\n- `html` output is one `<table>` containing a heading row and body rows. Escape headings and values for HTML.\n- Empty `records` still produces headings.\n- Preserve record order and column order.\n- Do not mutate the supplied records, mappings, or column collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0398",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import html\nfrom collections.abc import Mapping\n\n\nclass FormatError(ValueError):\n    pass\n\n\ndef _cell(record, column):\n    try:\n        value = record[column] if isinstance(record, Mapping) else getattr(record, column)\n    except (KeyError, AttributeError):\n        raise KeyError(column) from None\n    return \"\" if value is None else str(value)\n\n\ndef encode_grid(records, columns, style):\n    columns = list(columns)\n    if not columns:\n        raise ValueError(\"columns must not be empty\")\n    if any(not isinstance(column, str) or not column for column in columns):\n        raise ValueError(\"columns must contain non-empty strings\")\n    if style not in {\"aligned\", \"csv\", \"html\"}:\n        raise FormatError(style)\n\n    rows = [[_cell(record, column) for column in columns] for record in records]\n\n    if style == \"csv\":\n        return \"\\n\".join([\",\".join(columns)] + [\",\".join(row) for row in rows]) + \"\\n\"\n\n    if style == \"html\":\n        heading = \"\".join(f\"<th>{html.escape(column)}</th>\" for column in columns)\n        body = \"\".join(\n            \"<tr>\" + \"\".join(f\"<td>{html.escape(value)}</td>\" for value in row) + \"</tr>\"\n            for row in rows\n        )\n        return f\"<table><thead><tr>{heading}</tr></thead><tbody>{body}</tbody></table>\"\n\n    widths = [\n        max([len(columns[index])] + [len(row[index]) for row in rows])\n        for index in range(len(columns))\n    ]\n    line = lambda row: \" | \".join(value.ljust(widths[index]) for index, value in enumerate(row))\n    separator = \" | \".join(\"-\" * width for width in widths)\n    return \"\\n\".join([line(columns), separator] + [line(row) for row in rows])\n",
+          "label": "CSV cells are joined without CSV escaping, so commas, quotes, and newlines produce malformed output.",
+          "sha256": "83b413d83403c61c7a20339d7bb7833257eb426fb89fdf984c6b81fa035ece39"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport html\nimport io\nfrom collections.abc import Mapping\n\n\nclass FormatError(ValueError):\n    pass\n\n\ndef _cell(record, column):\n    try:\n        value = record[column] if isinstance(record, Mapping) else getattr(record, column)\n    except (KeyError, AttributeError):\n        raise KeyError(column) from None\n    return \"\" if value is None else str(value)\n\n\ndef encode_grid(records, columns, style):\n    columns = list(columns)\n    if not columns:\n        raise ValueError(\"columns must not be empty\")\n    if any(not isinstance(column, str) or not column for column in columns):\n        raise ValueError(\"columns must contain non-empty strings\")\n    if style not in {\"aligned\", \"csv\", \"html\"}:\n        raise FormatError(style)\n\n    rows = [[_cell(record, column) for column in columns] for record in records]\n\n    if style == \"csv\":\n        stream = io.StringIO(newline=\"\")\n        writer = csv.writer(stream, lineterminator=\"\\n\")\n        writer.writerow(columns)\n        writer.writerows(rows)\n        return stream.getvalue()\n\n    if style == \"html\":\n        heading = \"\".join(f\"<th>{html.escape(column)}</th>\" for column in columns)\n        body = \"\".join(\n            \"<tr>\" + \"\".join(f\"<td>{html.escape(value)}</td>\" for value in row) + \"</tr>\"\n            for row in rows\n        )\n        return f\"<table><thead><tr>{heading}</tr></thead><tbody>{body}</tbody></table>\"\n\n    widths = [\n        max([len(columns[index])] + [len(row[index]) for row in rows])\n        for index in range(len(columns))\n    ]\n    line = lambda row: \" | \".join(value.ljust(widths[index]) for index, value in enumerate(row))\n    separator = \" | \".join(\"-\" * width for width in widths)\n    return \"\\n\".join([line(columns), separator] + [line(row) for row in rows])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8686c2af200cb44a0e28a4f21b527299be1e3089ac503bb131f0860ff54e04da"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import csv\nimport io\nimport unittest\nfrom collections import UserDict\nfrom html.parser import HTMLParser\n\nfrom solution import FormatError, encode_grid\n\n\nclass Collector(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.events = []\n\n    def handle_starttag(self, tag, attrs):\n        self.events.append((\"start\", tag))\n\n    def handle_endtag(self, tag):\n        self.events.append((\"end\", tag))\n\n    def handle_data(self, data):\n        if data.strip():\n            self.events.append((\"data\", data))\n\n\nclass Row:\n    def __init__(self, name, note):\n        self.name = name\n        self.note = note\n\n\nclass EncodeGridTests(unittest.TestCase):\n    def test_aligned_mixed_records_none_and_widths(self):\n        records = [UserDict({\"name\": \"Al\", \"note\": None}), Row(\"Beatrice\", \"ok\")]\n        self.assertEqual(\n            encode_grid(records, [\"name\", \"note\"], \"aligned\"),\n            \"name     | note\\n-------- | ----\\nAl       |     \\nBeatrice | ok  \",\n        )\n\n    def test_empty_records_still_have_aligned_headings(self):\n        self.assertEqual(encode_grid([], [\"x\", \"long\"], \"aligned\"),\n                         \"x | long\\n- | ----\")\n\n    def test_csv_quoting_order_and_lf_endings(self):\n        output = encode_grid([\n            {\"a\": \"x,y\", \"b\": 'say \"hi\"'},\n            {\"a\": \"line\\nbreak\", \"b\": None},\n        ], (c for c in [\"a\", \"b\"]), \"csv\")\n        self.assertEqual(output, 'a,b\\n\"x,y\",\"say \"\"hi\"\"\"\\n\"line\\nbreak\",\\n')\n        self.assertEqual(list(csv.reader(io.StringIO(output))), [\n            [\"a\", \"b\"], [\"x,y\", 'say \"hi\"'], [\"line\\nbreak\", \"\"]\n        ])\n        self.assertNotIn(\"\\r\", output)\n\n    def test_html_escapes_content_and_forms_one_table(self):\n        output = encode_grid([{\"<key>\": \"<&\\\"'\"}], [\"<key>\"], \"html\")\n        parser = Collector()\n        parser.feed(output)\n        self.assertEqual(sum(event == (\"start\", \"table\") for event in parser.events), 1)\n        data = [value for kind, value in parser.events if kind == \"data\"]\n        self.assertEqual(data, [\"<key>\", \"<&\\\"'\"])\n        self.assertIn(\"&lt;key&gt;\", output)\n        self.assertIn(\"&lt;&amp;\", output)\n        self.assertNotIn(\"<key>\", output)\n\n    def test_missing_column_and_invalid_style(self):\n        with self.assertRaises(KeyError) as caught:\n            encode_grid([{\"a\": 1}], [\"a\", \"missing\"], \"csv\")\n        self.assertEqual(caught.exception.args, (\"missing\",))\n        for style in (\"CSV\", \"\", None, 1):\n            with self.assertRaises(FormatError):\n                encode_grid([], [\"a\"], style)\n        self.assertTrue(issubclass(FormatError, ValueError))\n\n    def test_column_validation_and_non_mutation(self):\n        for columns in ([], [\"\"], [\"ok\", 3]):\n            with self.assertRaises((TypeError, ValueError)):\n                encode_grid([], columns, \"csv\")\n        record = {\"a\": [1, 2]}\n        columns = [\"a\"]\n        before = record[\"a\"][:]\n        encode_grid([record], columns, \"csv\")\n        self.assertEqual(record[\"a\"], before)\n        self.assertEqual(columns, [\"a\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "980b91e04ca17bde943d2e490f0c4c27b9dc4051bdc39bf3b1c3163a67f36fb1"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c7cfc208e64133e395ae30b260c9d908c7e5038b65b4add05988d604745b4685",
+      "text": "Implement `solution.py` with `encode_grid(records, columns, style)`.\n\n- `records` is an iterable of objects or mappings.\n- `columns` is a non-empty iterable of non-empty strings. Each string names an attribute or mapping key.\n- `style` is exactly `\"aligned\"`, `\"csv\"`, or `\"html\"`; otherwise raise `FormatError`.\n- Define `FormatError` as a subclass of `ValueError`.\n- Values are converted with `str`; `None` becomes an empty string.\n- A missing attribute or key raises `KeyError` naming the column.\n- `aligned` output uses left-aligned columns whose widths include headings and values, with columns separated by `\" | \"`. It contains a heading line, a dash separator line, and data lines.\n- `csv` output follows normal CSV quoting rules and uses `\\n` line endings.\n- `html` output is one `<table>` containing a heading row and body rows. Escape headings and values for HTML.\n- Empty `records` still produces headings.\n- Preserve record order and column order.\n- Do not mutate the supplied records, mappings, or column collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c7cfc208e64133e395ae30b260c9d908c7e5038b65b4add05988d604745b4685",
+      "text": "Implement `solution.py` with `encode_grid(records, columns, style)`.\n\n- `records` is an iterable of objects or mappings.\n- `columns` is a non-empty iterable of non-empty strings. Each string names an attribute or mapping key.\n- `style` is exactly `\"aligned\"`, `\"csv\"`, or `\"html\"`; otherwise raise `FormatError`.\n- Define `FormatError` as a subclass of `ValueError`.\n- Values are converted with `str`; `None` becomes an empty string.\n- A missing attribute or key raises `KeyError` naming the column.\n- `aligned` output uses left-aligned columns whose widths include headings and values, with columns separated by `\" | \"`. It contains a heading line, a dash separator line, and data lines.\n- `csv` output follows normal CSV quoting rules and uses `\\n` line endings.\n- `html` output is one `<table>` containing a heading row and body rows. Escape headings and values for HTML.\n- Empty `records` still produces headings.\n- Preserve record order and column order.\n- Do not mutate the supplied records, mappings, or column collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0398",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import html\nfrom collections.abc import Mapping\n\n\nclass FormatError(ValueError):\n    pass\n\n\ndef _cell(record, column):\n    try:\n        value = record[column] if isinstance(record, Mapping) else getattr(record, column)\n    except (KeyError, AttributeError):\n        raise KeyError(column) from None\n    return \"\" if value is None else str(value)\n\n\ndef encode_grid(records, columns, style):\n    columns = list(columns)\n    if not columns:\n        raise ValueError(\"columns must not be empty\")\n    if any(not isinstance(column, str) or not column for column in columns):\n        raise ValueError(\"columns must contain non-empty strings\")\n    if style not in {\"aligned\", \"csv\", \"html\"}:\n        raise FormatError(style)\n\n    rows = [[_cell(record, column) for column in columns] for record in records]\n\n    if style == \"csv\":\n        return \"\\n\".join([\",\".join(columns)] + [\",\".join(row) for row in rows]) + \"\\n\"\n\n    if style == \"html\":\n        heading = \"\".join(f\"<th>{html.escape(column)}</th>\" for column in columns)\n        body = \"\".join(\n            \"<tr>\" + \"\".join(f\"<td>{html.escape(value)}</td>\" for value in row) + \"</tr>\"\n            for row in rows\n        )\n        return f\"<table><thead><tr>{heading}</tr></thead><tbody>{body}</tbody></table>\"\n\n    widths = [\n        max([len(columns[index])] + [len(row[index]) for row in rows])\n        for index in range(len(columns))\n    ]\n    line = lambda row: \" | \".join(value.ljust(widths[index]) for index, value in enumerate(row))\n    separator = \" | \".join(\"-\" * width for width in widths)\n    return \"\\n\".join([line(columns), separator] + [line(row) for row in rows])\n",
+          "label": "CSV cells are joined without CSV escaping, so commas, quotes, and newlines produce malformed output.",
+          "sha256": "83b413d83403c61c7a20339d7bb7833257eb426fb89fdf984c6b81fa035ece39"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport html\nimport io\nfrom collections.abc import Mapping\n\n\nclass FormatError(ValueError):\n    pass\n\n\ndef _cell(record, column):\n    try:\n        value = record[column] if isinstance(record, Mapping) else getattr(record, column)\n    except (KeyError, AttributeError):\n        raise KeyError(column) from None\n    return \"\" if value is None else str(value)\n\n\ndef encode_grid(records, columns, style):\n    columns = list(columns)\n    if not columns:\n        raise ValueError(\"columns must not be empty\")\n    if any(not isinstance(column, str) or not column for column in columns):\n        raise ValueError(\"columns must contain non-empty strings\")\n    if style not in {\"aligned\", \"csv\", \"html\"}:\n        raise FormatError(style)\n\n    rows = [[_cell(record, column) for column in columns] for record in records]\n\n    if style == \"csv\":\n        stream = io.StringIO(newline=\"\")\n        writer = csv.writer(stream, lineterminator=\"\\n\")\n        writer.writerow(columns)\n        writer.writerows(rows)\n        return stream.getvalue()\n\n    if style == \"html\":\n        heading = \"\".join(f\"<th>{html.escape(column)}</th>\" for column in columns)\n        body = \"\".join(\n            \"<tr>\" + \"\".join(f\"<td>{html.escape(value)}</td>\" for value in row) + \"</tr>\"\n            for row in rows\n        )\n        return f\"<table><thead><tr>{heading}</tr></thead><tbody>{body}</tbody></table>\"\n\n    widths = [\n        max([len(columns[index])] + [len(row[index]) for row in rows])\n        for index in range(len(columns))\n    ]\n    line = lambda row: \" | \".join(value.ljust(widths[index]) for index, value in enumerate(row))\n    separator = \" | \".join(\"-\" * width for width in widths)\n    return \"\\n\".join([line(columns), separator] + [line(row) for row in rows])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8686c2af200cb44a0e28a4f21b527299be1e3089ac503bb131f0860ff54e04da"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 8, in <module>\n    assert isinstance(caught, FormatError), f\"invalid style raised {type(caught).__name__}\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: invalid style raised TypeError\n",
+    "stderr_sha256": "44f1639a577cc25f019c526e1fb8c43c24e29269ea4ed7d1cd67a5f362ec19bb",
+    "duration_ms": 443,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

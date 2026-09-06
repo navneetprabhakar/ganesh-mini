@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0133",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "001f7a5e4245bb8e664d489f74364def16276ca5bb674f1691e5cf6250f330c0",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestRegistryLifecycleAndOrdering(t *testing.T) {\n\tr := NewRegistry()\n\tif got := r.List(\"\"); got == nil || len(got) != 0 {\n\t\tt.Fatalf(\"List(empty) = %#v, want non-nil empty slice\", got)\n\t}\n\tfor _, tc := range []struct{ name, scope, release string }{\n\t\t{\"zeta\", \"prod\", \"v1\"},\n\t\t{\"alpha\", \"prod\", \"v2\"},\n\t\t{\"alpha\", \"dev\", \"v3\"},\n\t} {\n\t\tgot, err := r.Create(tc.name, tc.scope, tc.release)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Create(%q,%q,%q): %v\", tc.name, tc.scope, tc.release, err)\n\t\t}\n\t\twant := Component{Name: tc.name, Scope: tc.scope, Release: tc.release, Quota: 64}\n\t\tif got != want {\n\t\t\tt.Fatalf(\"Create result = %#v, want %#v\", got, want)\n\t\t}\n\t}\n\n\tgot := r.List(\"prod\")\n\tif len(got) != 2 || got[0].Name != \"alpha\" || got[1].Name != \"zeta\" {\n\t\tt.Fatalf(\"List(prod) = %#v\", got)\n\t}\n\tgot[0] = Component{Name: \"corrupted\"}\n\tagain := r.List(\"prod\")\n\tif len(again) != 2 || again[0].Name != \"alpha\" || again[0].Quota != 64 {\n\t\tt.Fatalf(\"returned list aliases registry: %#v\", again)\n\t}\n\n\tcomponent, err := r.Get(\"zeta\", \"prod\")\n\tif err != nil || component != (Component{Name: \"zeta\", Scope: \"prod\", Release: \"v1\", Quota: 64}) {\n\t\tt.Fatalf(\"Get = %#v, %v\", component, err)\n\t}\n\tif err := r.Delete(\"zeta\", \"prod\"); err != nil {\n\t\tt.Fatalf(\"Delete existing: %v\", err)\n\t}\n\tif _, err := r.Get(\"zeta\", \"prod\"); err == nil {\n\t\tt.Fatal(\"Get after Delete succeeded\")\n\t}\n\tif err := r.Delete(\"zeta\", \"prod\"); err == nil {\n\t\tt.Fatal(\"Delete missing component succeeded\")\n\t}\n}\n\nfunc TestRegistryRejectsInvalidAndDuplicateCreates(t *testing.T) {\n\tr := NewRegistry()\n\tfor _, tc := range []struct{ name, scope, release string }{\n\t\t{\"\", \"s\", \"v\"}, {\"n\", \"\", \"v\"}, {\"n\", \"s\", \"\"},\n\t} {\n\t\tif _, err := r.Create(tc.name, tc.scope, tc.release); err == nil {\n\t\t\tt.Fatalf(\"Create(%q,%q,%q) succeeded\", tc.name, tc.scope, tc.release)\n\t\t}\n\t}\n\tif _, err := r.Create(\"n\", \"s\", \"v1\"); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif _, err := r.Create(\"n\", \"s\", \"v2\"); err == nil {\n\t\tt.Fatal(\"duplicate (scope,name) succeeded\")\n\t}\n\tif _, err := r.Create(\"n\", \"other\", \"v2\"); err != nil {\n\t\tt.Fatalf(\"same name in different scope rejected: %v\", err)\n\t}\n\tfor _, ids := range [][2]string{{\"\", \"s\"}, {\"n\", \"\"}, {\"\", \"\"}} {\n\t\tif _, err := r.Get(ids[0], ids[1]); err == nil {\n\t\t\tt.Fatalf(\"Get(%q,%q) succeeded\", ids[0], ids[1])\n\t\t}\n\t\tif err := r.Delete(ids[0], ids[1]); err == nil {\n\t\t\tt.Fatalf(\"Delete(%q,%q) succeeded\", ids[0], ids[1])\n\t\t}\n\t}\n\tif got := r.List(\"missing\"); got == nil || len(got) != 0 {\n\t\tt.Fatalf(\"List(missing) = %#v\", got)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "9966d6f7d714186412deb9dfca3a9e3ac1313f7264324745ab1dc24ddd5b98f8"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewComponentTuple0133(t *testing.T) {\n\tr := NewRegistry()\n\tif _, err := r.Create(\"b\\x00c\", \"a\", \"v1\"); err != nil { t.Fatal(err) }\n\tif _, err := r.Create(\"c\", \"a\\x00b\", \"v2\"); err != nil {\n\t\tt.Fatalf(\"distinct scope/name tuple rejected: %v\", err)\n\t}\n}\n",
+        "sha256": "42d599a5ef389dd5aefb863f5149a59186807b25e2ca1f86d38aa6f9c3e4c8a7"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "278f1bd5158f697c67b03559b158b46ca65fbb400a22f0ca9998661e272ae767",
+      "text": "Implement an in-memory component registry in Go using package `solution`.\n\nExport:\n- `type Component struct { Name string; Scope string; Release string; Quota int }`\n- `type Registry`\n- `func NewRegistry() *Registry`\n- `func (r *Registry) Create(name, scope, release string) (Component, error)`\n- `func (r *Registry) List(scope string) []Component`\n- `func (r *Registry) Get(name, scope string) (Component, error)`\n- `func (r *Registry) Delete(name, scope string) error`\n\n`Create` must reject empty fields and duplicate `(scope, name)` pairs. New components have `Quota` set to 64. `List` returns only components in the requested non-empty scope, ordered lexicographically by name; an empty scope returns a non-nil empty slice. `Get` and `Delete` return errors for empty identifiers or missing components. Results must be detached values, and modifying a returned slice must not affect the registry. Implement a new complete source file without filesystem, network, clock, or external-package dependencies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "278f1bd5158f697c67b03559b158b46ca65fbb400a22f0ca9998661e272ae767",
+      "text": "Implement an in-memory component registry in Go using package `solution`.\n\nExport:\n- `type Component struct { Name string; Scope string; Release string; Quota int }`\n- `type Registry`\n- `func NewRegistry() *Registry`\n- `func (r *Registry) Create(name, scope, release string) (Component, error)`\n- `func (r *Registry) List(scope string) []Component`\n- `func (r *Registry) Get(name, scope string) (Component, error)`\n- `func (r *Registry) Delete(name, scope string) error`\n\n`Create` must reject empty fields and duplicate `(scope, name)` pairs. New components have `Quota` set to 64. `List` returns only components in the requested non-empty scope, ordered lexicographically by name; an empty scope returns a non-nil empty slice. `Get` and `Delete` return errors for empty identifiers or missing components. Results must be detached values, and modifying a returned slice must not affect the registry. Implement a new complete source file without filesystem, network, clock, or external-package dependencies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0133",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"errors\"\n\ntype Component struct {\n\tName    string\n\tScope   string\n\tRelease string\n\tQuota   int\n}\n\ntype Registry struct {\n\titems map[string]Component\n}\n\nfunc NewRegistry() *Registry {\n\treturn &Registry{items: make(map[string]Component)}\n}\n\nfunc componentKey(name, scope string) string { return scope + \"\\x00\" + name }\n\nfunc (r *Registry) Create(name, scope, release string) (Component, error) {\n\tif name == \"\" || scope == \"\" || release == \"\" {\n\t\treturn Component{}, errors.New(\"all fields are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; ok {\n\t\treturn Component{}, errors.New(\"component already exists\")\n\t}\n\tc := Component{Name: name, Scope: scope, Release: release, Quota: 64}\n\tr.items[k] = c\n\treturn c, nil\n}\n\nfunc (r *Registry) List(scope string) []Component {\n\tout := make([]Component, 0)\n\tif scope == \"\" {\n\t\treturn out\n\t}\n\tfor _, c := range r.items {\n\t\tif c.Scope == scope {\n\t\t\tout = append(out, c)\n\t\t}\n\t}\n\treturn out\n}\n\nfunc (r *Registry) Get(name, scope string) (Component, error) {\n\tif name == \"\" || scope == \"\" {\n\t\treturn Component{}, errors.New(\"name and scope are required\")\n\t}\n\tc, ok := r.items[componentKey(name, scope)]\n\tif !ok {\n\t\treturn Component{}, errors.New(\"component not found\")\n\t}\n\treturn c, nil\n}\n\nfunc (r *Registry) Delete(name, scope string) error {\n\tif name == \"\" || scope == \"\" {\n\t\treturn errors.New(\"name and scope are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; !ok {\n\t\treturn errors.New(\"component not found\")\n\t}\n\tdelete(r.items, k)\n\treturn nil\n}\n",
+          "label": "List returns map iteration order instead of sorting components by name.",
+          "sha256": "5f4fd2a07a4dd4e5c01a747ae8b6531466445d4fe91c681e177bdfdd49daf009"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n)\n\ntype Component struct {\n\tName    string\n\tScope   string\n\tRelease string\n\tQuota   int\n}\n\ntype Registry struct {\n\titems map[string]Component\n}\n\nfunc NewRegistry() *Registry {\n\treturn &Registry{items: make(map[string]Component)}\n}\n\nfunc componentKey(name, scope string) string { return scope + \"\\x00\" + name }\n\nfunc (r *Registry) Create(name, scope, release string) (Component, error) {\n\tif name == \"\" || scope == \"\" || release == \"\" {\n\t\treturn Component{}, errors.New(\"all fields are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; ok {\n\t\treturn Component{}, errors.New(\"component already exists\")\n\t}\n\tc := Component{Name: name, Scope: scope, Release: release, Quota: 64}\n\tr.items[k] = c\n\treturn c, nil\n}\n\nfunc (r *Registry) List(scope string) []Component {\n\tout := make([]Component, 0)\n\tif scope == \"\" {\n\t\treturn out\n\t}\n\tfor _, c := range r.items {\n\t\tif c.Scope == scope {\n\t\t\tout = append(out, c)\n\t\t}\n\t}\n\tsort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })\n\treturn out\n}\n\nfunc (r *Registry) Get(name, scope string) (Component, error) {\n\tif name == \"\" || scope == \"\" {\n\t\treturn Component{}, errors.New(\"name and scope are required\")\n\t}\n\tc, ok := r.items[componentKey(name, scope)]\n\tif !ok {\n\t\treturn Component{}, errors.New(\"component not found\")\n\t}\n\treturn c, nil\n}\n\nfunc (r *Registry) Delete(name, scope string) error {\n\tif name == \"\" || scope == \"\" {\n\t\treturn errors.New(\"name and scope are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; !ok {\n\t\treturn errors.New(\"component not found\")\n\t}\n\tdelete(r.items, k)\n\treturn nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "67228f131faedcf77df5cd2c87877fb8406244865f7b08de3ea12615c470314e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestRegistryLifecycleAndOrdering(t *testing.T) {\n\tr := NewRegistry()\n\tif got := r.List(\"\"); got == nil || len(got) != 0 {\n\t\tt.Fatalf(\"List(empty) = %#v, want non-nil empty slice\", got)\n\t}\n\tfor _, tc := range []struct{ name, scope, release string }{\n\t\t{\"zeta\", \"prod\", \"v1\"},\n\t\t{\"alpha\", \"prod\", \"v2\"},\n\t\t{\"alpha\", \"dev\", \"v3\"},\n\t} {\n\t\tgot, err := r.Create(tc.name, tc.scope, tc.release)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Create(%q,%q,%q): %v\", tc.name, tc.scope, tc.release, err)\n\t\t}\n\t\twant := Component{Name: tc.name, Scope: tc.scope, Release: tc.release, Quota: 64}\n\t\tif got != want {\n\t\t\tt.Fatalf(\"Create result = %#v, want %#v\", got, want)\n\t\t}\n\t}\n\n\tgot := r.List(\"prod\")\n\tif len(got) != 2 || got[0].Name != \"alpha\" || got[1].Name != \"zeta\" {\n\t\tt.Fatalf(\"List(prod) = %#v\", got)\n\t}\n\tgot[0] = Component{Name: \"corrupted\"}\n\tagain := r.List(\"prod\")\n\tif len(again) != 2 || again[0].Name != \"alpha\" || again[0].Quota != 64 {\n\t\tt.Fatalf(\"returned list aliases registry: %#v\", again)\n\t}\n\n\tcomponent, err := r.Get(\"zeta\", \"prod\")\n\tif err != nil || component != (Component{Name: \"zeta\", Scope: \"prod\", Release: \"v1\", Quota: 64}) {\n\t\tt.Fatalf(\"Get = %#v, %v\", component, err)\n\t}\n\tif err := r.Delete(\"zeta\", \"prod\"); err != nil {\n\t\tt.Fatalf(\"Delete existing: %v\", err)\n\t}\n\tif _, err := r.Get(\"zeta\", \"prod\"); err == nil {\n\t\tt.Fatal(\"Get after Delete succeeded\")\n\t}\n\tif err := r.Delete(\"zeta\", \"prod\"); err == nil {\n\t\tt.Fatal(\"Delete missing component succeeded\")\n\t}\n}\n\nfunc TestRegistryRejectsInvalidAndDuplicateCreates(t *testing.T) {\n\tr := NewRegistry()\n\tfor _, tc := range []struct{ name, scope, release string }{\n\t\t{\"\", \"s\", \"v\"}, {\"n\", \"\", \"v\"}, {\"n\", \"s\", \"\"},\n\t} {\n\t\tif _, err := r.Create(tc.name, tc.scope, tc.release); err == nil {\n\t\t\tt.Fatalf(\"Create(%q,%q,%q) succeeded\", tc.name, tc.scope, tc.release)\n\t\t}\n\t}\n\tif _, err := r.Create(\"n\", \"s\", \"v1\"); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif _, err := r.Create(\"n\", \"s\", \"v2\"); err == nil {\n\t\tt.Fatal(\"duplicate (scope,name) succeeded\")\n\t}\n\tif _, err := r.Create(\"n\", \"other\", \"v2\"); err != nil {\n\t\tt.Fatalf(\"same name in different scope rejected: %v\", err)\n\t}\n\tfor _, ids := range [][2]string{{\"\", \"s\"}, {\"n\", \"\"}, {\"\", \"\"}} {\n\t\tif _, err := r.Get(ids[0], ids[1]); err == nil {\n\t\t\tt.Fatalf(\"Get(%q,%q) succeeded\", ids[0], ids[1])\n\t\t}\n\t\tif err := r.Delete(ids[0], ids[1]); err == nil {\n\t\t\tt.Fatalf(\"Delete(%q,%q) succeeded\", ids[0], ids[1])\n\t\t}\n\t}\n\tif got := r.List(\"missing\"); got == nil || len(got) != 0 {\n\t\tt.Fatalf(\"List(missing) = %#v\", got)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "9966d6f7d714186412deb9dfca3a9e3ac1313f7264324745ab1dc24ddd5b98f8"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "278f1bd5158f697c67b03559b158b46ca65fbb400a22f0ca9998661e272ae767",
+      "text": "Implement an in-memory component registry in Go using package `solution`.\n\nExport:\n- `type Component struct { Name string; Scope string; Release string; Quota int }`\n- `type Registry`\n- `func NewRegistry() *Registry`\n- `func (r *Registry) Create(name, scope, release string) (Component, error)`\n- `func (r *Registry) List(scope string) []Component`\n- `func (r *Registry) Get(name, scope string) (Component, error)`\n- `func (r *Registry) Delete(name, scope string) error`\n\n`Create` must reject empty fields and duplicate `(scope, name)` pairs. New components have `Quota` set to 64. `List` returns only components in the requested non-empty scope, ordered lexicographically by name; an empty scope returns a non-nil empty slice. `Get` and `Delete` return errors for empty identifiers or missing components. Results must be detached values, and modifying a returned slice must not affect the registry. Implement a new complete source file without filesystem, network, clock, or external-package dependencies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "278f1bd5158f697c67b03559b158b46ca65fbb400a22f0ca9998661e272ae767",
+      "text": "Implement an in-memory component registry in Go using package `solution`.\n\nExport:\n- `type Component struct { Name string; Scope string; Release string; Quota int }`\n- `type Registry`\n- `func NewRegistry() *Registry`\n- `func (r *Registry) Create(name, scope, release string) (Component, error)`\n- `func (r *Registry) List(scope string) []Component`\n- `func (r *Registry) Get(name, scope string) (Component, error)`\n- `func (r *Registry) Delete(name, scope string) error`\n\n`Create` must reject empty fields and duplicate `(scope, name)` pairs. New components have `Quota` set to 64. `List` returns only components in the requested non-empty scope, ordered lexicographically by name; an empty scope returns a non-nil empty slice. `Get` and `Delete` return errors for empty identifiers or missing components. Results must be detached values, and modifying a returned slice must not affect the registry. Implement a new complete source file without filesystem, network, clock, or external-package dependencies.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0133",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"errors\"\n\ntype Component struct {\n\tName    string\n\tScope   string\n\tRelease string\n\tQuota   int\n}\n\ntype Registry struct {\n\titems map[string]Component\n}\n\nfunc NewRegistry() *Registry {\n\treturn &Registry{items: make(map[string]Component)}\n}\n\nfunc componentKey(name, scope string) string { return scope + \"\\x00\" + name }\n\nfunc (r *Registry) Create(name, scope, release string) (Component, error) {\n\tif name == \"\" || scope == \"\" || release == \"\" {\n\t\treturn Component{}, errors.New(\"all fields are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; ok {\n\t\treturn Component{}, errors.New(\"component already exists\")\n\t}\n\tc := Component{Name: name, Scope: scope, Release: release, Quota: 64}\n\tr.items[k] = c\n\treturn c, nil\n}\n\nfunc (r *Registry) List(scope string) []Component {\n\tout := make([]Component, 0)\n\tif scope == \"\" {\n\t\treturn out\n\t}\n\tfor _, c := range r.items {\n\t\tif c.Scope == scope {\n\t\t\tout = append(out, c)\n\t\t}\n\t}\n\treturn out\n}\n\nfunc (r *Registry) Get(name, scope string) (Component, error) {\n\tif name == \"\" || scope == \"\" {\n\t\treturn Component{}, errors.New(\"name and scope are required\")\n\t}\n\tc, ok := r.items[componentKey(name, scope)]\n\tif !ok {\n\t\treturn Component{}, errors.New(\"component not found\")\n\t}\n\treturn c, nil\n}\n\nfunc (r *Registry) Delete(name, scope string) error {\n\tif name == \"\" || scope == \"\" {\n\t\treturn errors.New(\"name and scope are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; !ok {\n\t\treturn errors.New(\"component not found\")\n\t}\n\tdelete(r.items, k)\n\treturn nil\n}\n",
+          "label": "List returns map iteration order instead of sorting components by name.",
+          "sha256": "5f4fd2a07a4dd4e5c01a747ae8b6531466445d4fe91c681e177bdfdd49daf009"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n)\n\ntype Component struct {\n\tName    string\n\tScope   string\n\tRelease string\n\tQuota   int\n}\n\ntype Registry struct {\n\titems map[string]Component\n}\n\nfunc NewRegistry() *Registry {\n\treturn &Registry{items: make(map[string]Component)}\n}\n\nfunc componentKey(name, scope string) string { return scope + \"\\x00\" + name }\n\nfunc (r *Registry) Create(name, scope, release string) (Component, error) {\n\tif name == \"\" || scope == \"\" || release == \"\" {\n\t\treturn Component{}, errors.New(\"all fields are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; ok {\n\t\treturn Component{}, errors.New(\"component already exists\")\n\t}\n\tc := Component{Name: name, Scope: scope, Release: release, Quota: 64}\n\tr.items[k] = c\n\treturn c, nil\n}\n\nfunc (r *Registry) List(scope string) []Component {\n\tout := make([]Component, 0)\n\tif scope == \"\" {\n\t\treturn out\n\t}\n\tfor _, c := range r.items {\n\t\tif c.Scope == scope {\n\t\t\tout = append(out, c)\n\t\t}\n\t}\n\tsort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })\n\treturn out\n}\n\nfunc (r *Registry) Get(name, scope string) (Component, error) {\n\tif name == \"\" || scope == \"\" {\n\t\treturn Component{}, errors.New(\"name and scope are required\")\n\t}\n\tc, ok := r.items[componentKey(name, scope)]\n\tif !ok {\n\t\treturn Component{}, errors.New(\"component not found\")\n\t}\n\treturn c, nil\n}\n\nfunc (r *Registry) Delete(name, scope string) error {\n\tif name == \"\" || scope == \"\" {\n\t\treturn errors.New(\"name and scope are required\")\n\t}\n\tk := componentKey(name, scope)\n\tif _, ok := r.items[k]; !ok {\n\t\treturn errors.New(\"component not found\")\n\t}\n\tdelete(r.items, k)\n\treturn nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "67228f131faedcf77df5cd2c87877fb8406244865f7b08de3ea12615c470314e"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewComponentTuple0133 (0.00s)\n    review_test.go:9: distinct scope/name tuple rejected: component already exists\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "cfaffd5317914724d814b9cd3bf0b22fa274ba26820089401cd93fcdc944a560",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 26494,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

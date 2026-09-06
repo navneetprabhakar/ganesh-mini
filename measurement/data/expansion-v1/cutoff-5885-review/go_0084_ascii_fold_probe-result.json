@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0084",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4880da15d57b6cae3153e1410178ca61728e95848149fcf63cb1c0381b20bc29",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestInspectFieldMatchesOrderTypesAndEligibility(t *testing.T) {\n\tdestination := `package dst\n\ntype Destination struct {\n\tID, DisplayName string\n\tCount int\n\tPayload map[string][]int\n\tMismatch []byte\n\tprivate string\n\tEmbedded\n\t\u00c9xtra string\n}\ntype Embedded struct{}\n`\n\tsource := `package src\n\ntype Source struct {\n\tid string\n\tId string\n\tdisplayname string\n\tDISPLAYNAME string\n\tCOUNT int\n\tPayload map[string][]int\n\tMismatch string\n\tEmbedded\n}\n`\n\tgot, err := InspectFieldMatches(destination, \"Destination\", source, \"Source\")\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n\twant := []FieldMatch{\n\t\t{Destination: \"ID\", Source: \"Id\"},\n\t\t{Destination: \"DisplayName\", Source: \"DISPLAYNAME\"},\n\t\t{Destination: \"Count\", Source: \"COUNT\"},\n\t\t{Destination: \"Payload\", Source: \"Payload\"},\n\t}\n\tif !reflect.DeepEqual(got, want) {\n\t\tt.Fatalf(\"matches = %#v, want %#v\", got, want)\n\t}\n}\n\nfunc TestInspectFieldMatchesAmbiguousSourceName(t *testing.T) {\n\tdestination := `package p; type D struct { Code int; Name string }`\n\tsource := `package p; type S struct { Code int; CODE int; NAME string }`\n\tgot, err := InspectFieldMatches(destination, \"D\", source, \"S\")\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n\twant := []FieldMatch{{Destination: \"Name\", Source: \"NAME\"}}\n\tif !reflect.DeepEqual(got, want) {\n\t\tt.Fatalf(\"matches = %#v, want %#v\", got, want)\n\t}\n}\n\nfunc TestInspectFieldMatchesEmptyStructs(t *testing.T) {\n\tgot, err := InspectFieldMatches(\n\t\t`package p; type D struct{}`,\n\t\t\"D\",\n\t\t`package q; type S struct{}`,\n\t\t\"S\",\n\t)\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n\tif got == nil || len(got) != 0 {\n\t\tt.Fatalf(\"got %#v; want non-nil empty slice\", got)\n\t}\n}\n\nfunc TestInspectFieldMatchesRejectsBadSourcesAndTypes(t *testing.T) {\n\tcases := []struct {\n\t\tdst, dstName, src, srcName string\n\t}{\n\t\t{`package p; type D struct {`, \"D\", `package q; type S struct{}`, \"S\"},\n\t\t{`package p; type D struct{}`, \"D\", `package q; type S struct {`, \"S\"},\n\t\t{`package p; type Other struct{}`, \"D\", `package q; type S struct{}`, \"S\"},\n\t\t{`package p; type D struct{}`, \"D\", `package q; type Other struct{}`, \"S\"},\n\t\t{`package p; type D int`, \"D\", `package q; type S struct{}`, \"S\"},\n\t\t{`package p; type D struct{}`, \"D\", `package q; type S string`, \"S\"},\n\t}\n\tfor i, tc := range cases {\n\t\tif got, err := InspectFieldMatches(tc.dst, tc.dstName, tc.src, tc.srcName); err == nil {\n\t\t\tt.Fatalf(\"case %d: expected error, got %#v\", i, got)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "89fea6b701a32bad4ac7875ccd9de25299dd5841c73d137f4bc4e7ffcbfd0e67"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewASCIIOnlyFold0084(t *testing.T) {\n    result, err := InspectFieldMatches(\"package p; type D struct { A\u212a int }\", \"D\", \"package p; type S struct { AK int }\", \"S\")\n    if err != nil { t.Fatal(err) }\n    if len(result) != 0 { t.Fatalf(\"ASCII-only lowercase must not fold Kelvin sign: %+v\", result) }\n}\n",
+        "sha256": "b932a7ba01548fb9880530f9150d45c5ea14d8b4c51a82d83ed6799e1cf5d693"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "080bab2c76e72435702004e7df92370d69e029659bea30006a5666b3618b3dc7",
+      "text": "Implement Go-struct field matching from source text in one standard-library-only Go file using package `solution`.\n\nExport `type FieldMatch struct { Destination, Source string }` and `func InspectFieldMatches(destinationSource, destinationType, sourceSource, sourceType string) ([]FieldMatch, error)`.\n\nParse each source string as a complete Go file and locate the named struct type. Return an error for malformed source, a missing name, or a named type that is not a struct. Consider only explicitly named fields whose names begin with uppercase ASCII `A` through `Z`; ignore embedded and unexported fields. Match names case-insensitively using ASCII lowercase and only when their rendered Go type expressions are identical. If multiple eligible source fields have the same case-insensitive name, that name is ambiguous and none may match it. Preserve destination declaration order, including the order of names in a multi-name field declaration. Empty structs return a non-nil empty slice. Do not modify or retain the source strings.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "080bab2c76e72435702004e7df92370d69e029659bea30006a5666b3618b3dc7",
+      "text": "Implement Go-struct field matching from source text in one standard-library-only Go file using package `solution`.\n\nExport `type FieldMatch struct { Destination, Source string }` and `func InspectFieldMatches(destinationSource, destinationType, sourceSource, sourceType string) ([]FieldMatch, error)`.\n\nParse each source string as a complete Go file and locate the named struct type. Return an error for malformed source, a missing name, or a named type that is not a struct. Consider only explicitly named fields whose names begin with uppercase ASCII `A` through `Z`; ignore embedded and unexported fields. Match names case-insensitively using ASCII lowercase and only when their rendered Go type expressions are identical. If multiple eligible source fields have the same case-insensitive name, that name is ambiguous and none may match it. Preserve destination declaration order, including the order of names in a multi-name field declaration. Empty structs return a non-nil empty slice. Do not modify or retain the source strings.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0084",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"go/ast\"\n\t\"go/format\"\n\t\"go/parser\"\n\t\"go/token\"\n\t\"strings\"\n)\n\ntype FieldMatch struct{ Destination, Source string }\ntype fieldInfo struct{ name, typ string }\n\nfunc findStruct(src, name string) (*ast.StructType, error) {\n\tf, err := parser.ParseFile(token.NewFileSet(), \"input.go\", src, 0)\n\tif err != nil { return nil, err }\n\tfor _, d := range f.Decls {\n\t\tg, ok := d.(*ast.GenDecl); if !ok { continue }\n\t\tfor _, s := range g.Specs {\n\t\t\tt, ok := s.(*ast.TypeSpec); if !ok || t.Name.Name != name { continue }\n\t\t\tst, ok := t.Type.(*ast.StructType); if !ok { return nil, fmt.Errorf(\"%s is not a struct\", name) }\n\t\t\treturn st, nil\n\t\t}\n\t}\n\treturn nil, fmt.Errorf(\"struct %s not found\", name)\n}\n\nfunc rendered(e ast.Expr) string { var b bytes.Buffer; _ = format.Node(&b, token.NewFileSet(), e); return b.String() }\nfunc eligible(s string) bool { return len(s) > 0 && s[0] >= 'A' && s[0] <= 'Z' }\n\nfunc InspectFieldMatches(dstSrc, dstName, srcSrc, srcName string) ([]FieldMatch, error) {\n\tdst, err := findStruct(dstSrc, dstName); if err != nil { return nil, err }\n\tsrc, err := findStruct(srcSrc, srcName); if err != nil { return nil, err }\n\tindex := map[string][]fieldInfo{}\n\tfor _, f := range src.Fields.List {\n\t\tfor _, n := range f.Names { if eligible(n.Name) { k := strings.ToLower(n.Name); index[k] = append(index[k], fieldInfo{n.Name, rendered(f.Type)}) } }\n\t}\n\tout := make([]FieldMatch, 0)\n\tfor _, f := range dst.Fields.List {\n\t\tfor _, n := range f.Names {\n\t\t\tif !eligible(n.Name) { continue }\n\t\t\tc := index[strings.ToLower(n.Name)]\n\t\t\tif len(c) > 0 && c[0].typ == rendered(f.Type) { out = append(out, FieldMatch{n.Name, c[0].name}) }\n\t\t}\n\t}\n\treturn out, nil\n}\n",
+          "label": "Ambiguous case-insensitive source names are resolved to the first candidate instead of being skipped.",
+          "sha256": "3803f1d050f03c0a557e0d6a5a63806745adb7174cc36b00c22413f7541ff1b5"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"go/ast\"\n\t\"go/format\"\n\t\"go/parser\"\n\t\"go/token\"\n\t\"strings\"\n)\n\ntype FieldMatch struct{ Destination, Source string }\ntype fieldInfo struct{ name, typ string }\n\nfunc findStruct(src, name string) (*ast.StructType, error) {\n\tf, err := parser.ParseFile(token.NewFileSet(), \"input.go\", src, 0)\n\tif err != nil { return nil, err }\n\tfor _, d := range f.Decls {\n\t\tg, ok := d.(*ast.GenDecl); if !ok { continue }\n\t\tfor _, s := range g.Specs {\n\t\t\tt, ok := s.(*ast.TypeSpec); if !ok || t.Name.Name != name { continue }\n\t\t\tst, ok := t.Type.(*ast.StructType); if !ok { return nil, fmt.Errorf(\"%s is not a struct\", name) }\n\t\t\treturn st, nil\n\t\t}\n\t}\n\treturn nil, fmt.Errorf(\"struct %s not found\", name)\n}\n\nfunc rendered(e ast.Expr) string { var b bytes.Buffer; _ = format.Node(&b, token.NewFileSet(), e); return b.String() }\nfunc eligible(s string) bool { return len(s) > 0 && s[0] >= 'A' && s[0] <= 'Z' }\n\nfunc InspectFieldMatches(dstSrc, dstName, srcSrc, srcName string) ([]FieldMatch, error) {\n\tdst, err := findStruct(dstSrc, dstName); if err != nil { return nil, err }\n\tsrc, err := findStruct(srcSrc, srcName); if err != nil { return nil, err }\n\tindex := map[string][]fieldInfo{}\n\tfor _, f := range src.Fields.List {\n\t\tfor _, n := range f.Names { if eligible(n.Name) { k := strings.ToLower(n.Name); index[k] = append(index[k], fieldInfo{n.Name, rendered(f.Type)}) } }\n\t}\n\tout := make([]FieldMatch, 0)\n\tfor _, f := range dst.Fields.List {\n\t\tfor _, n := range f.Names {\n\t\t\tif !eligible(n.Name) { continue }\n\t\t\tc := index[strings.ToLower(n.Name)]\n\t\t\tif len(c) == 1 && c[0].typ == rendered(f.Type) { out = append(out, FieldMatch{n.Name, c[0].name}) }\n\t\t}\n\t}\n\treturn out, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c5f9a2c7f066d21033ebc8cdb20dfbfdce3c6d98be36a1dad6f2a55def4364d8"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestInspectFieldMatchesOrderTypesAndEligibility(t *testing.T) {\n\tdestination := `package dst\n\ntype Destination struct {\n\tID, DisplayName string\n\tCount int\n\tPayload map[string][]int\n\tMismatch []byte\n\tprivate string\n\tEmbedded\n\t\u00c9xtra string\n}\ntype Embedded struct{}\n`\n\tsource := `package src\n\ntype Source struct {\n\tid string\n\tId string\n\tdisplayname string\n\tDISPLAYNAME string\n\tCOUNT int\n\tPayload map[string][]int\n\tMismatch string\n\tEmbedded\n}\n`\n\tgot, err := InspectFieldMatches(destination, \"Destination\", source, \"Source\")\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n\twant := []FieldMatch{\n\t\t{Destination: \"ID\", Source: \"Id\"},\n\t\t{Destination: \"DisplayName\", Source: \"DISPLAYNAME\"},\n\t\t{Destination: \"Count\", Source: \"COUNT\"},\n\t\t{Destination: \"Payload\", Source: \"Payload\"},\n\t}\n\tif !reflect.DeepEqual(got, want) {\n\t\tt.Fatalf(\"matches = %#v, want %#v\", got, want)\n\t}\n}\n\nfunc TestInspectFieldMatchesAmbiguousSourceName(t *testing.T) {\n\tdestination := `package p; type D struct { Code int; Name string }`\n\tsource := `package p; type S struct { Code int; CODE int; NAME string }`\n\tgot, err := InspectFieldMatches(destination, \"D\", source, \"S\")\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n\twant := []FieldMatch{{Destination: \"Name\", Source: \"NAME\"}}\n\tif !reflect.DeepEqual(got, want) {\n\t\tt.Fatalf(\"matches = %#v, want %#v\", got, want)\n\t}\n}\n\nfunc TestInspectFieldMatchesEmptyStructs(t *testing.T) {\n\tgot, err := InspectFieldMatches(\n\t\t`package p; type D struct{}`,\n\t\t\"D\",\n\t\t`package q; type S struct{}`,\n\t\t\"S\",\n\t)\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n\tif got == nil || len(got) != 0 {\n\t\tt.Fatalf(\"got %#v; want non-nil empty slice\", got)\n\t}\n}\n\nfunc TestInspectFieldMatchesRejectsBadSourcesAndTypes(t *testing.T) {\n\tcases := []struct {\n\t\tdst, dstName, src, srcName string\n\t}{\n\t\t{`package p; type D struct {`, \"D\", `package q; type S struct{}`, \"S\"},\n\t\t{`package p; type D struct{}`, \"D\", `package q; type S struct {`, \"S\"},\n\t\t{`package p; type Other struct{}`, \"D\", `package q; type S struct{}`, \"S\"},\n\t\t{`package p; type D struct{}`, \"D\", `package q; type Other struct{}`, \"S\"},\n\t\t{`package p; type D int`, \"D\", `package q; type S struct{}`, \"S\"},\n\t\t{`package p; type D struct{}`, \"D\", `package q; type S string`, \"S\"},\n\t}\n\tfor i, tc := range cases {\n\t\tif got, err := InspectFieldMatches(tc.dst, tc.dstName, tc.src, tc.srcName); err == nil {\n\t\t\tt.Fatalf(\"case %d: expected error, got %#v\", i, got)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "89fea6b701a32bad4ac7875ccd9de25299dd5841c73d137f4bc4e7ffcbfd0e67"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "080bab2c76e72435702004e7df92370d69e029659bea30006a5666b3618b3dc7",
+      "text": "Implement Go-struct field matching from source text in one standard-library-only Go file using package `solution`.\n\nExport `type FieldMatch struct { Destination, Source string }` and `func InspectFieldMatches(destinationSource, destinationType, sourceSource, sourceType string) ([]FieldMatch, error)`.\n\nParse each source string as a complete Go file and locate the named struct type. Return an error for malformed source, a missing name, or a named type that is not a struct. Consider only explicitly named fields whose names begin with uppercase ASCII `A` through `Z`; ignore embedded and unexported fields. Match names case-insensitively using ASCII lowercase and only when their rendered Go type expressions are identical. If multiple eligible source fields have the same case-insensitive name, that name is ambiguous and none may match it. Preserve destination declaration order, including the order of names in a multi-name field declaration. Empty structs return a non-nil empty slice. Do not modify or retain the source strings.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "080bab2c76e72435702004e7df92370d69e029659bea30006a5666b3618b3dc7",
+      "text": "Implement Go-struct field matching from source text in one standard-library-only Go file using package `solution`.\n\nExport `type FieldMatch struct { Destination, Source string }` and `func InspectFieldMatches(destinationSource, destinationType, sourceSource, sourceType string) ([]FieldMatch, error)`.\n\nParse each source string as a complete Go file and locate the named struct type. Return an error for malformed source, a missing name, or a named type that is not a struct. Consider only explicitly named fields whose names begin with uppercase ASCII `A` through `Z`; ignore embedded and unexported fields. Match names case-insensitively using ASCII lowercase and only when their rendered Go type expressions are identical. If multiple eligible source fields have the same case-insensitive name, that name is ambiguous and none may match it. Preserve destination declaration order, including the order of names in a multi-name field declaration. Empty structs return a non-nil empty slice. Do not modify or retain the source strings.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0084",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"go/ast\"\n\t\"go/format\"\n\t\"go/parser\"\n\t\"go/token\"\n\t\"strings\"\n)\n\ntype FieldMatch struct{ Destination, Source string }\ntype fieldInfo struct{ name, typ string }\n\nfunc findStruct(src, name string) (*ast.StructType, error) {\n\tf, err := parser.ParseFile(token.NewFileSet(), \"input.go\", src, 0)\n\tif err != nil { return nil, err }\n\tfor _, d := range f.Decls {\n\t\tg, ok := d.(*ast.GenDecl); if !ok { continue }\n\t\tfor _, s := range g.Specs {\n\t\t\tt, ok := s.(*ast.TypeSpec); if !ok || t.Name.Name != name { continue }\n\t\t\tst, ok := t.Type.(*ast.StructType); if !ok { return nil, fmt.Errorf(\"%s is not a struct\", name) }\n\t\t\treturn st, nil\n\t\t}\n\t}\n\treturn nil, fmt.Errorf(\"struct %s not found\", name)\n}\n\nfunc rendered(e ast.Expr) string { var b bytes.Buffer; _ = format.Node(&b, token.NewFileSet(), e); return b.String() }\nfunc eligible(s string) bool { return len(s) > 0 && s[0] >= 'A' && s[0] <= 'Z' }\n\nfunc InspectFieldMatches(dstSrc, dstName, srcSrc, srcName string) ([]FieldMatch, error) {\n\tdst, err := findStruct(dstSrc, dstName); if err != nil { return nil, err }\n\tsrc, err := findStruct(srcSrc, srcName); if err != nil { return nil, err }\n\tindex := map[string][]fieldInfo{}\n\tfor _, f := range src.Fields.List {\n\t\tfor _, n := range f.Names { if eligible(n.Name) { k := strings.ToLower(n.Name); index[k] = append(index[k], fieldInfo{n.Name, rendered(f.Type)}) } }\n\t}\n\tout := make([]FieldMatch, 0)\n\tfor _, f := range dst.Fields.List {\n\t\tfor _, n := range f.Names {\n\t\t\tif !eligible(n.Name) { continue }\n\t\t\tc := index[strings.ToLower(n.Name)]\n\t\t\tif len(c) > 0 && c[0].typ == rendered(f.Type) { out = append(out, FieldMatch{n.Name, c[0].name}) }\n\t\t}\n\t}\n\treturn out, nil\n}\n",
+          "label": "Ambiguous case-insensitive source names are resolved to the first candidate instead of being skipped.",
+          "sha256": "3803f1d050f03c0a557e0d6a5a63806745adb7174cc36b00c22413f7541ff1b5"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"go/ast\"\n\t\"go/format\"\n\t\"go/parser\"\n\t\"go/token\"\n\t\"strings\"\n)\n\ntype FieldMatch struct{ Destination, Source string }\ntype fieldInfo struct{ name, typ string }\n\nfunc findStruct(src, name string) (*ast.StructType, error) {\n\tf, err := parser.ParseFile(token.NewFileSet(), \"input.go\", src, 0)\n\tif err != nil { return nil, err }\n\tfor _, d := range f.Decls {\n\t\tg, ok := d.(*ast.GenDecl); if !ok { continue }\n\t\tfor _, s := range g.Specs {\n\t\t\tt, ok := s.(*ast.TypeSpec); if !ok || t.Name.Name != name { continue }\n\t\t\tst, ok := t.Type.(*ast.StructType); if !ok { return nil, fmt.Errorf(\"%s is not a struct\", name) }\n\t\t\treturn st, nil\n\t\t}\n\t}\n\treturn nil, fmt.Errorf(\"struct %s not found\", name)\n}\n\nfunc rendered(e ast.Expr) string { var b bytes.Buffer; _ = format.Node(&b, token.NewFileSet(), e); return b.String() }\nfunc eligible(s string) bool { return len(s) > 0 && s[0] >= 'A' && s[0] <= 'Z' }\n\nfunc InspectFieldMatches(dstSrc, dstName, srcSrc, srcName string) ([]FieldMatch, error) {\n\tdst, err := findStruct(dstSrc, dstName); if err != nil { return nil, err }\n\tsrc, err := findStruct(srcSrc, srcName); if err != nil { return nil, err }\n\tindex := map[string][]fieldInfo{}\n\tfor _, f := range src.Fields.List {\n\t\tfor _, n := range f.Names { if eligible(n.Name) { k := strings.ToLower(n.Name); index[k] = append(index[k], fieldInfo{n.Name, rendered(f.Type)}) } }\n\t}\n\tout := make([]FieldMatch, 0)\n\tfor _, f := range dst.Fields.List {\n\t\tfor _, n := range f.Names {\n\t\t\tif !eligible(n.Name) { continue }\n\t\t\tc := index[strings.ToLower(n.Name)]\n\t\t\tif len(c) == 1 && c[0].typ == rendered(f.Type) { out = append(out, FieldMatch{n.Name, c[0].name}) }\n\t\t}\n\t}\n\treturn out, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c5f9a2c7f066d21033ebc8cdb20dfbfdce3c6d98be36a1dad6f2a55def4364d8"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewASCIIOnlyFold0084 (0.01s)\n    review_test.go:8: ASCII-only lowercase must not fold Kelvin sign: [{Destination:A\u212a Source:AK}]\nFAIL\nFAIL\tganesh.invalid/expansion\t0.022s\nFAIL\n",
+    "stdout_sha256": "e68eb51ed39acd46f834e3b89b589e4b52e1671e5127f3bb0fd75196ecb3cf92",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 29981,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

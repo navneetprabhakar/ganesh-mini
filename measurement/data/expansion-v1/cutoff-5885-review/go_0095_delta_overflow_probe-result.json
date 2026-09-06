@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0095",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "179863828385f6d0259eb99b885c38820d13b3d8c6844f45620e3dc9cb03e573",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"sync\"\n\t\"testing\"\n)\n\nfunc TestChronoIDLayoutAndSequence(t *testing.T) {\n\tg, err := NewChronoID(513, 1000)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tfor sequence := uint64(0); sequence < 3; sequence++ {\n\t\tgot, err := g.Next(1007)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Next failed: %v\", err)\n\t\t}\n\t\twant := (uint64(7) << 22) | (uint64(513) << 12) | sequence\n\t\tif got != want {\n\t\t\tt.Fatalf(\"ID = %d, want %d\", got, want)\n\t\t}\n\t}\n\tgot, err := g.Next(1008)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\twant := (uint64(8) << 22) | (uint64(513) << 12)\n\tif got != want {\n\t\tt.Fatalf(\"new millisecond ID = %d, want %d\", got, want)\n\t}\n}\n\nfunc TestChronoIDConstructorAndNilReceiverErrors(t *testing.T) {\n\tif _, err := NewChronoID(1023, -50); err != nil {\n\t\tt.Fatalf(\"maximum node should be valid: %v\", err)\n\t}\n\tif _, err := NewChronoID(1024, 0); err == nil {\n\t\tt.Fatal(\"node 1024 should be rejected\")\n\t}\n\tvar g *ChronoID\n\tif _, err := g.Next(0); err == nil {\n\t\tt.Fatal(\"nil receiver should return an error\")\n\t}\n}\n\nfunc TestChronoIDTimestampBoundsAndFailureAtomicity(t *testing.T) {\n\tconst maxDelta = int64((1 << 41) - 1)\n\tg, err := NewChronoID(1, 10)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif _, err := g.Next(9); err == nil {\n\t\tt.Fatal(\"timestamp before epoch accepted\")\n\t}\n\tfirst, err := g.Next(10)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif first != uint64(1)<<12 {\n\t\tt.Fatalf(\"first ID = %d\", first)\n\t}\n\tif _, err := g.Next(9); err == nil {\n\t\tt.Fatal(\"regressing timestamp accepted\")\n\t}\n\tsecond, err := g.Next(10)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif second != first+1 {\n\t\tt.Fatalf(\"failed call changed sequence state: first=%d second=%d\", first, second)\n\t}\n\n\tboundary, err := g.Next(10 + maxDelta)\n\tif err != nil {\n\t\tt.Fatalf(\"maximum delta rejected: %v\", err)\n\t}\n\twantBoundary := (uint64(maxDelta) << 22) | (uint64(1) << 12)\n\tif boundary != wantBoundary {\n\t\tt.Fatalf(\"boundary ID = %d, want %d\", boundary, wantBoundary)\n\t}\n\tif _, err := g.Next(10 + maxDelta + 1); err == nil {\n\t\tt.Fatal(\"delta above 41 bits accepted\")\n\t}\n\tnext, err := g.Next(10 + maxDelta)\n\tif err != nil {\n\t\tt.Fatalf(\"valid request after overflow error failed: %v\", err)\n\t}\n\tif next != boundary+1 {\n\t\tt.Fatalf(\"overflow error changed state: boundary=%d next=%d\", boundary, next)\n\t}\n}\n\nfunc TestChronoIDSequenceExhaustionAndRecovery(t *testing.T) {\n\tg, err := NewChronoID(0, 0)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tfor sequence := uint64(0); sequence <= 4095; sequence++ {\n\t\tgot, err := g.Next(3)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"sequence %d failed: %v\", sequence, err)\n\t\t}\n\t\twant := (uint64(3) << 22) | sequence\n\t\tif got != want {\n\t\t\tt.Fatalf(\"sequence %d produced %d, want %d\", sequence, got, want)\n\t\t}\n\t}\n\tif _, err := g.Next(3); err == nil {\n\t\tt.Fatal(\"4097th request in a millisecond succeeded\")\n\t}\n\tgot, err := g.Next(4)\n\tif err != nil {\n\t\tt.Fatalf(\"next millisecond failed: %v\", err)\n\t}\n\tif want := uint64(4) << 22; got != want {\n\t\tt.Fatalf(\"sequence did not reset: got %d, want %d\", got, want)\n\t}\n}\n\nfunc TestChronoIDConcurrentCallsAreUniqueAndContiguous(t *testing.T) {\n\tconst count = 256\n\tg, err := NewChronoID(7, 100)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tids := make(chan uint64, count)\n\terrs := make(chan error, count)\n\tvar wg sync.WaitGroup\n\tfor i := 0; i < count; i++ {\n\t\twg.Add(1)\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\tid, err := g.Next(105)\n\t\t\tif err != nil {\n\t\t\t\terrs <- err\n\t\t\t\treturn\n\t\t\t}\n\t\t\tids <- id\n\t\t}()\n\t}\n\twg.Wait()\n\tclose(ids)\n\tclose(errs)\n\tfor err := range errs {\n\t\tt.Fatalf(\"concurrent Next failed: %v\", err)\n\t}\n\tseen := make(map[uint64]bool, count)\n\tbase := (uint64(5) << 22) | (uint64(7) << 12)\n\tfor id := range ids {\n\t\tif id < base || id >= base+count {\n\t\t\tt.Fatalf(\"ID outside contiguous range: %d\", id)\n\t\t}\n\t\tif seen[id] {\n\t\t\tt.Fatalf(\"duplicate ID: %d\", id)\n\t\t}\n\t\tseen[id] = true\n\t}\n\tif len(seen) != count {\n\t\tt.Fatalf(\"got %d unique IDs, want %d\", len(seen), count)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "c557e257cf86e2f0434895c7840fac4946709a428052b2de16469aa12608e32e"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewDeltaOverflow0095(t *testing.T) {\n\tconst minimum int64 = -1 << 63\n\tconst maximum int64 = 1<<63 - 1\n\tg, err := NewChronoID(0, minimum)\n\tif err != nil { t.Fatal(err) }\n\tif id, err := g.Next(maximum); err == nil {\n\t\tt.Fatalf(\"delta greater than 41 bits accepted: id=%d\", id)\n\t}\n\tif id, err := g.Next(minimum); err != nil || id != 0 {\n\t\tt.Fatalf(\"valid first timestamp after rejection: id=%d err=%v\", id, err)\n\t}\n}\n",
+        "sha256": "d7e4a6565d6971cc75e8edeb64dcd6f83e505f1657442506e4efc5f28d51f1a5"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2f7bf5287781a5534abc28810d82ad1a362684773c16c930bdd183720612fcce",
+      "text": "Implement a deterministic, concurrency-safe 64-bit identifier sequencer. It must not read the clock; callers supply timestamps.\n\nExport:\n\n```go\ntype ChronoID struct { /* private fields allowed */ }\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error)\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error)\n```\n\nUse 41 bits for milliseconds since `epochMS`, 10 bits for the node, and 12 bits for a per-millisecond sequence. Reject node values above 1023. Reject timestamps before the epoch, timestamp deltas above `2^41-1`, and timestamps earlier than the last successful timestamp. At a new millisecond the first sequence is zero. At the same millisecond sequences increase through 4095; the next request fails. Any failed request must leave generator state unchanged. The ID layout is `(delta << 22) | (node << 12) | sequence`. A nil receiver must return an error.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2f7bf5287781a5534abc28810d82ad1a362684773c16c930bdd183720612fcce",
+      "text": "Implement a deterministic, concurrency-safe 64-bit identifier sequencer. It must not read the clock; callers supply timestamps.\n\nExport:\n\n```go\ntype ChronoID struct { /* private fields allowed */ }\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error)\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error)\n```\n\nUse 41 bits for milliseconds since `epochMS`, 10 bits for the node, and 12 bits for a per-millisecond sequence. Reject node values above 1023. Reject timestamps before the epoch, timestamp deltas above `2^41-1`, and timestamps earlier than the last successful timestamp. At a new millisecond the first sequence is zero. At the same millisecond sequences increase through 4095; the next request fails. Any failed request must leave generator state unchanged. The ID layout is `(delta << 22) | (node << 12) | sequence`. A nil receiver must return an error.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0095",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sync\"\n)\n\ntype ChronoID struct {\n\tmu        sync.Mutex\n\tnode      uint64\n\tepochMS   int64\n\tlastDelta int64\n\tsequence  uint64\n}\n\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error) {\n\tif node > 1023 {\n\t\treturn nil, errors.New(\"node exceeds 10 bits\")\n\t}\n\treturn &ChronoID{node: uint64(node), epochMS: epochMS, lastDelta: -1}, nil\n}\n\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error) {\n\tif g == nil {\n\t\treturn 0, errors.New(\"nil generator\")\n\t}\n\tg.mu.Lock()\n\tdefer g.mu.Unlock()\n\tif timestampMS < g.epochMS {\n\t\treturn 0, errors.New(\"timestamp precedes epoch\")\n\t}\n\tdelta := timestampMS - g.epochMS\n\tif delta > (int64(1)<<41)-1 {\n\t\treturn 0, errors.New(\"timestamp exceeds 41 bits\")\n\t}\n\tif delta < g.lastDelta {\n\t\treturn 0, errors.New(\"timestamp moved backward\")\n\t}\n\tnextSequence := uint64(1)\n\tif delta == g.lastDelta {\n\t\tif g.sequence == 4095 {\n\t\t\treturn 0, errors.New(\"sequence exhausted\")\n\t\t}\n\t\tnextSequence = g.sequence + 1\n\t}\n\tg.lastDelta = delta\n\tg.sequence = nextSequence\n\treturn (uint64(delta) << 22) | (g.node << 12) | nextSequence, nil\n}\n",
+          "label": "The first identifier in every millisecond uses sequence 1 instead of sequence 0.",
+          "sha256": "8580d50227f17a993b7df644c19031b20d16c2ac90df88a87b39507053bccc68"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sync\"\n)\n\ntype ChronoID struct {\n\tmu        sync.Mutex\n\tnode      uint64\n\tepochMS   int64\n\tlastDelta int64\n\tsequence  uint64\n}\n\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error) {\n\tif node > 1023 {\n\t\treturn nil, errors.New(\"node exceeds 10 bits\")\n\t}\n\treturn &ChronoID{node: uint64(node), epochMS: epochMS, lastDelta: -1}, nil\n}\n\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error) {\n\tif g == nil {\n\t\treturn 0, errors.New(\"nil generator\")\n\t}\n\tg.mu.Lock()\n\tdefer g.mu.Unlock()\n\tif timestampMS < g.epochMS {\n\t\treturn 0, errors.New(\"timestamp precedes epoch\")\n\t}\n\tdelta := timestampMS - g.epochMS\n\tif delta > (int64(1)<<41)-1 {\n\t\treturn 0, errors.New(\"timestamp exceeds 41 bits\")\n\t}\n\tif delta < g.lastDelta {\n\t\treturn 0, errors.New(\"timestamp moved backward\")\n\t}\n\tnextSequence := uint64(0)\n\tif delta == g.lastDelta {\n\t\tif g.sequence == 4095 {\n\t\t\treturn 0, errors.New(\"sequence exhausted\")\n\t\t}\n\t\tnextSequence = g.sequence + 1\n\t}\n\tg.lastDelta = delta\n\tg.sequence = nextSequence\n\treturn (uint64(delta) << 22) | (g.node << 12) | nextSequence, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2a90c42f289d23776b99bc269be123dbc93c957f0707c06f92e6ae06b8a4f55e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"sync\"\n\t\"testing\"\n)\n\nfunc TestChronoIDLayoutAndSequence(t *testing.T) {\n\tg, err := NewChronoID(513, 1000)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tfor sequence := uint64(0); sequence < 3; sequence++ {\n\t\tgot, err := g.Next(1007)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Next failed: %v\", err)\n\t\t}\n\t\twant := (uint64(7) << 22) | (uint64(513) << 12) | sequence\n\t\tif got != want {\n\t\t\tt.Fatalf(\"ID = %d, want %d\", got, want)\n\t\t}\n\t}\n\tgot, err := g.Next(1008)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\twant := (uint64(8) << 22) | (uint64(513) << 12)\n\tif got != want {\n\t\tt.Fatalf(\"new millisecond ID = %d, want %d\", got, want)\n\t}\n}\n\nfunc TestChronoIDConstructorAndNilReceiverErrors(t *testing.T) {\n\tif _, err := NewChronoID(1023, -50); err != nil {\n\t\tt.Fatalf(\"maximum node should be valid: %v\", err)\n\t}\n\tif _, err := NewChronoID(1024, 0); err == nil {\n\t\tt.Fatal(\"node 1024 should be rejected\")\n\t}\n\tvar g *ChronoID\n\tif _, err := g.Next(0); err == nil {\n\t\tt.Fatal(\"nil receiver should return an error\")\n\t}\n}\n\nfunc TestChronoIDTimestampBoundsAndFailureAtomicity(t *testing.T) {\n\tconst maxDelta = int64((1 << 41) - 1)\n\tg, err := NewChronoID(1, 10)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif _, err := g.Next(9); err == nil {\n\t\tt.Fatal(\"timestamp before epoch accepted\")\n\t}\n\tfirst, err := g.Next(10)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif first != uint64(1)<<12 {\n\t\tt.Fatalf(\"first ID = %d\", first)\n\t}\n\tif _, err := g.Next(9); err == nil {\n\t\tt.Fatal(\"regressing timestamp accepted\")\n\t}\n\tsecond, err := g.Next(10)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif second != first+1 {\n\t\tt.Fatalf(\"failed call changed sequence state: first=%d second=%d\", first, second)\n\t}\n\n\tboundary, err := g.Next(10 + maxDelta)\n\tif err != nil {\n\t\tt.Fatalf(\"maximum delta rejected: %v\", err)\n\t}\n\twantBoundary := (uint64(maxDelta) << 22) | (uint64(1) << 12)\n\tif boundary != wantBoundary {\n\t\tt.Fatalf(\"boundary ID = %d, want %d\", boundary, wantBoundary)\n\t}\n\tif _, err := g.Next(10 + maxDelta + 1); err == nil {\n\t\tt.Fatal(\"delta above 41 bits accepted\")\n\t}\n\tnext, err := g.Next(10 + maxDelta)\n\tif err != nil {\n\t\tt.Fatalf(\"valid request after overflow error failed: %v\", err)\n\t}\n\tif next != boundary+1 {\n\t\tt.Fatalf(\"overflow error changed state: boundary=%d next=%d\", boundary, next)\n\t}\n}\n\nfunc TestChronoIDSequenceExhaustionAndRecovery(t *testing.T) {\n\tg, err := NewChronoID(0, 0)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tfor sequence := uint64(0); sequence <= 4095; sequence++ {\n\t\tgot, err := g.Next(3)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"sequence %d failed: %v\", sequence, err)\n\t\t}\n\t\twant := (uint64(3) << 22) | sequence\n\t\tif got != want {\n\t\t\tt.Fatalf(\"sequence %d produced %d, want %d\", sequence, got, want)\n\t\t}\n\t}\n\tif _, err := g.Next(3); err == nil {\n\t\tt.Fatal(\"4097th request in a millisecond succeeded\")\n\t}\n\tgot, err := g.Next(4)\n\tif err != nil {\n\t\tt.Fatalf(\"next millisecond failed: %v\", err)\n\t}\n\tif want := uint64(4) << 22; got != want {\n\t\tt.Fatalf(\"sequence did not reset: got %d, want %d\", got, want)\n\t}\n}\n\nfunc TestChronoIDConcurrentCallsAreUniqueAndContiguous(t *testing.T) {\n\tconst count = 256\n\tg, err := NewChronoID(7, 100)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tids := make(chan uint64, count)\n\terrs := make(chan error, count)\n\tvar wg sync.WaitGroup\n\tfor i := 0; i < count; i++ {\n\t\twg.Add(1)\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\tid, err := g.Next(105)\n\t\t\tif err != nil {\n\t\t\t\terrs <- err\n\t\t\t\treturn\n\t\t\t}\n\t\t\tids <- id\n\t\t}()\n\t}\n\twg.Wait()\n\tclose(ids)\n\tclose(errs)\n\tfor err := range errs {\n\t\tt.Fatalf(\"concurrent Next failed: %v\", err)\n\t}\n\tseen := make(map[uint64]bool, count)\n\tbase := (uint64(5) << 22) | (uint64(7) << 12)\n\tfor id := range ids {\n\t\tif id < base || id >= base+count {\n\t\t\tt.Fatalf(\"ID outside contiguous range: %d\", id)\n\t\t}\n\t\tif seen[id] {\n\t\t\tt.Fatalf(\"duplicate ID: %d\", id)\n\t\t}\n\t\tseen[id] = true\n\t}\n\tif len(seen) != count {\n\t\tt.Fatalf(\"got %d unique IDs, want %d\", len(seen), count)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "c557e257cf86e2f0434895c7840fac4946709a428052b2de16469aa12608e32e"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2f7bf5287781a5534abc28810d82ad1a362684773c16c930bdd183720612fcce",
+      "text": "Implement a deterministic, concurrency-safe 64-bit identifier sequencer. It must not read the clock; callers supply timestamps.\n\nExport:\n\n```go\ntype ChronoID struct { /* private fields allowed */ }\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error)\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error)\n```\n\nUse 41 bits for milliseconds since `epochMS`, 10 bits for the node, and 12 bits for a per-millisecond sequence. Reject node values above 1023. Reject timestamps before the epoch, timestamp deltas above `2^41-1`, and timestamps earlier than the last successful timestamp. At a new millisecond the first sequence is zero. At the same millisecond sequences increase through 4095; the next request fails. Any failed request must leave generator state unchanged. The ID layout is `(delta << 22) | (node << 12) | sequence`. A nil receiver must return an error.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2f7bf5287781a5534abc28810d82ad1a362684773c16c930bdd183720612fcce",
+      "text": "Implement a deterministic, concurrency-safe 64-bit identifier sequencer. It must not read the clock; callers supply timestamps.\n\nExport:\n\n```go\ntype ChronoID struct { /* private fields allowed */ }\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error)\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error)\n```\n\nUse 41 bits for milliseconds since `epochMS`, 10 bits for the node, and 12 bits for a per-millisecond sequence. Reject node values above 1023. Reject timestamps before the epoch, timestamp deltas above `2^41-1`, and timestamps earlier than the last successful timestamp. At a new millisecond the first sequence is zero. At the same millisecond sequences increase through 4095; the next request fails. Any failed request must leave generator state unchanged. The ID layout is `(delta << 22) | (node << 12) | sequence`. A nil receiver must return an error.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0095",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sync\"\n)\n\ntype ChronoID struct {\n\tmu        sync.Mutex\n\tnode      uint64\n\tepochMS   int64\n\tlastDelta int64\n\tsequence  uint64\n}\n\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error) {\n\tif node > 1023 {\n\t\treturn nil, errors.New(\"node exceeds 10 bits\")\n\t}\n\treturn &ChronoID{node: uint64(node), epochMS: epochMS, lastDelta: -1}, nil\n}\n\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error) {\n\tif g == nil {\n\t\treturn 0, errors.New(\"nil generator\")\n\t}\n\tg.mu.Lock()\n\tdefer g.mu.Unlock()\n\tif timestampMS < g.epochMS {\n\t\treturn 0, errors.New(\"timestamp precedes epoch\")\n\t}\n\tdelta := timestampMS - g.epochMS\n\tif delta > (int64(1)<<41)-1 {\n\t\treturn 0, errors.New(\"timestamp exceeds 41 bits\")\n\t}\n\tif delta < g.lastDelta {\n\t\treturn 0, errors.New(\"timestamp moved backward\")\n\t}\n\tnextSequence := uint64(1)\n\tif delta == g.lastDelta {\n\t\tif g.sequence == 4095 {\n\t\t\treturn 0, errors.New(\"sequence exhausted\")\n\t\t}\n\t\tnextSequence = g.sequence + 1\n\t}\n\tg.lastDelta = delta\n\tg.sequence = nextSequence\n\treturn (uint64(delta) << 22) | (g.node << 12) | nextSequence, nil\n}\n",
+          "label": "The first identifier in every millisecond uses sequence 1 instead of sequence 0.",
+          "sha256": "8580d50227f17a993b7df644c19031b20d16c2ac90df88a87b39507053bccc68"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sync\"\n)\n\ntype ChronoID struct {\n\tmu        sync.Mutex\n\tnode      uint64\n\tepochMS   int64\n\tlastDelta int64\n\tsequence  uint64\n}\n\nfunc NewChronoID(node uint16, epochMS int64) (*ChronoID, error) {\n\tif node > 1023 {\n\t\treturn nil, errors.New(\"node exceeds 10 bits\")\n\t}\n\treturn &ChronoID{node: uint64(node), epochMS: epochMS, lastDelta: -1}, nil\n}\n\nfunc (g *ChronoID) Next(timestampMS int64) (uint64, error) {\n\tif g == nil {\n\t\treturn 0, errors.New(\"nil generator\")\n\t}\n\tg.mu.Lock()\n\tdefer g.mu.Unlock()\n\tif timestampMS < g.epochMS {\n\t\treturn 0, errors.New(\"timestamp precedes epoch\")\n\t}\n\tdelta := timestampMS - g.epochMS\n\tif delta > (int64(1)<<41)-1 {\n\t\treturn 0, errors.New(\"timestamp exceeds 41 bits\")\n\t}\n\tif delta < g.lastDelta {\n\t\treturn 0, errors.New(\"timestamp moved backward\")\n\t}\n\tnextSequence := uint64(0)\n\tif delta == g.lastDelta {\n\t\tif g.sequence == 4095 {\n\t\t\treturn 0, errors.New(\"sequence exhausted\")\n\t\t}\n\t\tnextSequence = g.sequence + 1\n\t}\n\tg.lastDelta = delta\n\tg.sequence = nextSequence\n\treturn (uint64(delta) << 22) | (g.node << 12) | nextSequence, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2a90c42f289d23776b99bc269be123dbc93c957f0707c06f92e6ae06b8a4f55e"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewDeltaOverflow0095 (0.00s)\n    review_test.go:11: delta greater than 41 bits accepted: id=18446744073705357313\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "1e7d902588c355c4c2dab9ea23d778154c1f1fab2652461b6e2ebc9e00232dd0",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 26690,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

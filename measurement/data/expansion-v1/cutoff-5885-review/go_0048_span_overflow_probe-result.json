@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-repair-0048",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "750c4daa922b861fd2013145a76364da01755ac8c61c1fa092e4c0cb950392b5",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestClosestSpanNormalAndUnsorted(t *testing.T) {\n\tlow, high, ok := ClosestSpan([]int{10, 3, 20, 8})\n\tif !ok || low != 8 || high != 10 {\n\t\tt.Fatalf(\"ClosestSpan returned (%d, %d, %v), want (8, 10, true)\", low, high, ok)\n\t}\n}\n\nfunc TestClosestSpanChoosesLexicographicallySmallestTie(t *testing.T) {\n\tlow, high, ok := ClosestSpan([]int{8, 10, 4, 6})\n\tif !ok || low != 4 || high != 6 {\n\t\tt.Fatalf(\"ClosestSpan tie returned (%d, %d, %v), want (4, 6, true)\", low, high, ok)\n\t}\n}\n\nfunc TestClosestSpanDuplicateTieUsesSmallestPair(t *testing.T) {\n\tlow, high, ok := ClosestSpan([]int{2, 2, 1, 1})\n\tif !ok || low != 1 || high != 1 {\n\t\tt.Fatalf(\"duplicate tie returned (%d, %d, %v), want (1, 1, true)\", low, high, ok)\n\t}\n}\n\nfunc TestClosestSpanFewerThanTwoValues(t *testing.T) {\n\tfor _, values := range [][]int{nil, {}, {42}} {\n\t\tlow, high, ok := ClosestSpan(values)\n\t\tif low != 0 || high != 0 || ok {\n\t\t\tt.Fatalf(\"ClosestSpan(%v) = (%d, %d, %v), want (0, 0, false)\", values, low, high, ok)\n\t\t}\n\t}\n}\n\nfunc TestClosestSpanDoesNotMutateInput(t *testing.T) {\n\tfor _, input := range [][]int{{3, 1, 2}, {1, 2, 3}} {\n\t\toriginal := append([]int(nil), input...)\n\t\t_, _, _ = ClosestSpan(input)\n\t\tif !reflect.DeepEqual(input, original) {\n\t\t\tt.Fatalf(\"input mutated: got %v, want %v\", input, original)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "c31b5db8baeba086b2f71600f5c32dc3dabdcd4d4611d5b25906eb147a5e875e"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewSpanOverflow0048(t *testing.T) {\n    minInt := -int(^uint(0)>>1) - 1\n    low, high, ok := ClosestSpan([]int{minInt, 0, 1})\n    if !ok || low != 0 || high != 1 { t.Fatalf(\"got (%d,%d,%v), want (0,1,true)\", low, high, ok) }\n}\n",
+        "sha256": "fe79901e87ebbd1113c70ef1271f86eea62e602edc48391a92c1f3ea36740e54"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9e74c345b7189df709173547e1520dc4d19f541fb8d69e29534a7636585ed71f",
+      "text": "The following complete `solution` package should implement `ClosestSpan(values)`. When fewer than two integers are supplied, it must return `(0, 0, false)`. Otherwise it must return `(low, high, true)` for two distinct input positions whose absolute difference is smallest, with `low <= high`. Duplicate values are allowed and therefore can produce a zero-width span. If several different spans have the same minimum width, choose the lexicographically smallest `(low, high)` pair. The function must not mutate or alias the input, including when the input is already sorted.\n\nThe implementation contains one semantic bug. Return a corrected complete source file using only the standard library.\n\n```go\npackage solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width <= bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9e74c345b7189df709173547e1520dc4d19f541fb8d69e29534a7636585ed71f",
+      "text": "The following complete `solution` package should implement `ClosestSpan(values)`. When fewer than two integers are supplied, it must return `(0, 0, false)`. Otherwise it must return `(low, high, true)` for two distinct input positions whose absolute difference is smallest, with `low <= high`. Duplicate values are allowed and therefore can produce a zero-width span. If several different spans have the same minimum width, choose the lexicographically smallest `(low, high)` pair. The function must not mutate or alias the input, including when the input is already sorted.\n\nThe implementation contains one semantic bug. Return a corrected complete source file using only the standard library.\n\n```go\npackage solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width <= bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-repair-0048",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width <= bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n",
+          "label": "Equal-width candidates replace the earlier lexicographically smaller span.",
+          "sha256": "04b748ff5fb840bd9bb8f691cc0b590b18c1b1494740d86a9bdaf12045c45f93"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width < bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3ce1f3020a7f2827e65ce864fbd79c0226aeae322db0012c769af26785e9d364"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestClosestSpanNormalAndUnsorted(t *testing.T) {\n\tlow, high, ok := ClosestSpan([]int{10, 3, 20, 8})\n\tif !ok || low != 8 || high != 10 {\n\t\tt.Fatalf(\"ClosestSpan returned (%d, %d, %v), want (8, 10, true)\", low, high, ok)\n\t}\n}\n\nfunc TestClosestSpanChoosesLexicographicallySmallestTie(t *testing.T) {\n\tlow, high, ok := ClosestSpan([]int{8, 10, 4, 6})\n\tif !ok || low != 4 || high != 6 {\n\t\tt.Fatalf(\"ClosestSpan tie returned (%d, %d, %v), want (4, 6, true)\", low, high, ok)\n\t}\n}\n\nfunc TestClosestSpanDuplicateTieUsesSmallestPair(t *testing.T) {\n\tlow, high, ok := ClosestSpan([]int{2, 2, 1, 1})\n\tif !ok || low != 1 || high != 1 {\n\t\tt.Fatalf(\"duplicate tie returned (%d, %d, %v), want (1, 1, true)\", low, high, ok)\n\t}\n}\n\nfunc TestClosestSpanFewerThanTwoValues(t *testing.T) {\n\tfor _, values := range [][]int{nil, {}, {42}} {\n\t\tlow, high, ok := ClosestSpan(values)\n\t\tif low != 0 || high != 0 || ok {\n\t\t\tt.Fatalf(\"ClosestSpan(%v) = (%d, %d, %v), want (0, 0, false)\", values, low, high, ok)\n\t\t}\n\t}\n}\n\nfunc TestClosestSpanDoesNotMutateInput(t *testing.T) {\n\tfor _, input := range [][]int{{3, 1, 2}, {1, 2, 3}} {\n\t\toriginal := append([]int(nil), input...)\n\t\t_, _, _ = ClosestSpan(input)\n\t\tif !reflect.DeepEqual(input, original) {\n\t\t\tt.Fatalf(\"input mutated: got %v, want %v\", input, original)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "c31b5db8baeba086b2f71600f5c32dc3dabdcd4d4611d5b25906eb147a5e875e"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9e74c345b7189df709173547e1520dc4d19f541fb8d69e29534a7636585ed71f",
+      "text": "The following complete `solution` package should implement `ClosestSpan(values)`. When fewer than two integers are supplied, it must return `(0, 0, false)`. Otherwise it must return `(low, high, true)` for two distinct input positions whose absolute difference is smallest, with `low <= high`. Duplicate values are allowed and therefore can produce a zero-width span. If several different spans have the same minimum width, choose the lexicographically smallest `(low, high)` pair. The function must not mutate or alias the input, including when the input is already sorted.\n\nThe implementation contains one semantic bug. Return a corrected complete source file using only the standard library.\n\n```go\npackage solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width <= bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9e74c345b7189df709173547e1520dc4d19f541fb8d69e29534a7636585ed71f",
+      "text": "The following complete `solution` package should implement `ClosestSpan(values)`. When fewer than two integers are supplied, it must return `(0, 0, false)`. Otherwise it must return `(low, high, true)` for two distinct input positions whose absolute difference is smallest, with `low <= high`. Duplicate values are allowed and therefore can produce a zero-width span. If several different spans have the same minimum width, choose the lexicographically smallest `(low, high)` pair. The function must not mutate or alias the input, including when the input is already sorted.\n\nThe implementation contains one semantic bug. Return a corrected complete source file using only the standard library.\n\n```go\npackage solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width <= bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-repair-0048",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width <= bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n",
+          "label": "Equal-width candidates replace the earlier lexicographically smaller span.",
+          "sha256": "04b748ff5fb840bd9bb8f691cc0b590b18c1b1494740d86a9bdaf12045c45f93"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport \"sort\"\n\nfunc ClosestSpan(values []int) (low, high int, ok bool) {\n\tif len(values) < 2 {\n\t\treturn 0, 0, false\n\t}\n\tordered := append([]int(nil), values...)\n\tsort.Ints(ordered)\n\tbestLow, bestHigh := ordered[0], ordered[1]\n\tbestWidth := bestHigh - bestLow\n\tfor i := 2; i < len(ordered); i++ {\n\t\tcandidateLow, candidateHigh := ordered[i-1], ordered[i]\n\t\twidth := candidateHigh - candidateLow\n\t\tif width < bestWidth {\n\t\t\tbestLow, bestHigh = candidateLow, candidateHigh\n\t\t\tbestWidth = width\n\t\t}\n\t}\n\treturn bestLow, bestHigh, true\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3ce1f3020a7f2827e65ce864fbd79c0226aeae322db0012c769af26785e9d364"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewSpanOverflow0048 (0.00s)\n    review_test.go:8: got (-9223372036854775808,0,true), want (0,1,true)\nFAIL\nFAIL\tganesh.invalid/expansion\t0.019s\nFAIL\n",
+    "stdout_sha256": "137fff68f1c6dec674c14560211816c933aacdc5c5be3d2add21576c969eeba9",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 28355,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

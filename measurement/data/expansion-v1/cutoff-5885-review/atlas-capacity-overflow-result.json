@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0704",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a31e3ea788faae40f14f0db4a78c0354ac049f306ae5ef7757d4084b51f3761d",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\n#[test]\nfn capacity_overflow_is_reported_not_panicked() {\n    let tiles = [solution::Tile { width: 1, height: 1, pixels: vec![7] }];\n    assert!(matches!(solution::build_atlas(&tiles, usize::MAX), Err(solution::AtlasError::Overflow)));\n}\n",
+        "sha256": "4cf2c797045105978d8df1be973fa8e1600833d0f190038523341fe26eedd81b"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "be581397e6f26704505cd7cefaabd4ec5bf509585ff2b88ddb5b5acd2ab1a7c8",
+      "text": "Implement an in-memory grayscale tile atlas in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct Tile { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub struct Atlas { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub enum AtlasError { EmptyInput, ZeroColumns, InvalidPixels { index: usize }, DimensionMismatch { index: usize }, Overflow }`\n- `pub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError>`\n\nTiles are placed row-major into a grid with the requested number of columns. The final row may be partially occupied; unused cells must contain zero-valued pixels. Every tile must have the same dimensions as the first, and each pixel buffer must contain exactly `width * height` bytes. Validate arithmetic with checked operations and report `Overflow` rather than panicking. Empty tile dimensions are valid when their buffer is also empty. Empty input and zero columns have their dedicated errors, with zero columns checked before tile validation. Report the lowest invalid tile index. Do not mutate or retain aliases to the input. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "be581397e6f26704505cd7cefaabd4ec5bf509585ff2b88ddb5b5acd2ab1a7c8",
+      "text": "Implement an in-memory grayscale tile atlas in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct Tile { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub struct Atlas { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub enum AtlasError { EmptyInput, ZeroColumns, InvalidPixels { index: usize }, DimensionMismatch { index: usize }, Overflow }`\n- `pub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError>`\n\nTiles are placed row-major into a grid with the requested number of columns. The final row may be partially occupied; unused cells must contain zero-valued pixels. Every tile must have the same dimensions as the first, and each pixel buffer must contain exactly `width * height` bytes. Validate arithmetic with checked operations and report `Overflow` rather than panicking. Empty tile dimensions are valid when their buffer is also empty. Empty input and zero columns have their dedicated errors, with zero columns checked before tile validation. Report the lowest invalid tile index. Do not mutate or retain aliases to the input. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0704",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Tile {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Atlas {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum AtlasError {\n    EmptyInput,\n    ZeroColumns,\n    InvalidPixels { index: usize },\n    DimensionMismatch { index: usize },\n    Overflow,\n}\n\npub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError> {\n    if columns == 0 {\n        return Err(AtlasError::ZeroColumns);\n    }\n    let first = tiles.first().ok_or(AtlasError::EmptyInput)?;\n    for (index, tile) in tiles.iter().enumerate() {\n        let expected = tile.width.checked_mul(tile.height).ok_or(AtlasError::Overflow)?;\n        if tile.pixels.len() != expected {\n            return Err(AtlasError::InvalidPixels { index });\n        }\n        if tile.width != first.width || tile.height != first.height {\n            return Err(AtlasError::DimensionMismatch { index });\n        }\n    }\n    let rows = tiles.len() / columns;\n    let width = first.width.checked_mul(columns).ok_or(AtlasError::Overflow)?;\n    let height = first.height.checked_mul(rows).ok_or(AtlasError::Overflow)?;\n    let len = width.checked_mul(height).ok_or(AtlasError::Overflow)?;\n    let mut pixels = vec![0; len];\n    for (index, tile) in tiles.iter().enumerate() {\n        let cell_x = index % columns;\n        let cell_y = index / columns;\n        for y in 0..tile.height {\n            let src = y * tile.width;\n            let dst = (cell_y * tile.height + y) * width + cell_x * tile.width;\n            pixels[dst..dst + tile.width].copy_from_slice(&tile.pixels[src..src + tile.width]);\n        }\n    }\n    Ok(Atlas { width, height, pixels })\n}\n",
+          "label": "The atlas row count is rounded down, so a partial final row is omitted and copying its tiles can panic.",
+          "sha256": "608fd397fe151343e4db6912b317669d1edf1f3c7095e4cccb61be767a1a4016"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Tile {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Atlas {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum AtlasError {\n    EmptyInput,\n    ZeroColumns,\n    InvalidPixels { index: usize },\n    DimensionMismatch { index: usize },\n    Overflow,\n}\n\npub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError> {\n    if columns == 0 {\n        return Err(AtlasError::ZeroColumns);\n    }\n    let first = tiles.first().ok_or(AtlasError::EmptyInput)?;\n    for (index, tile) in tiles.iter().enumerate() {\n        let expected = tile.width.checked_mul(tile.height).ok_or(AtlasError::Overflow)?;\n        if tile.pixels.len() != expected {\n            return Err(AtlasError::InvalidPixels { index });\n        }\n        if tile.width != first.width || tile.height != first.height {\n            return Err(AtlasError::DimensionMismatch { index });\n        }\n    }\n    let rows = tiles.len().checked_add(columns - 1).ok_or(AtlasError::Overflow)? / columns;\n    let width = first.width.checked_mul(columns).ok_or(AtlasError::Overflow)?;\n    let height = first.height.checked_mul(rows).ok_or(AtlasError::Overflow)?;\n    let len = width.checked_mul(height).ok_or(AtlasError::Overflow)?;\n    let mut pixels = vec![0; len];\n    for (index, tile) in tiles.iter().enumerate() {\n        let cell_x = index % columns;\n        let cell_y = index / columns;\n        for y in 0..tile.height {\n            let src = y * tile.width;\n            let dst = (cell_y * tile.height + y) * width + cell_x * tile.width;\n            pixels[dst..dst + tile.width].copy_from_slice(&tile.pixels[src..src + tile.width]);\n        }\n    }\n    Ok(Atlas { width, height, pixels })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "032a5ddecdb994baf3f53e709a36ef90962db01ff62ecd74dca05a9e90df8c47"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{build_atlas, AtlasError, Tile};\n\nfn tile(width: usize, height: usize, pixels: &[u8]) -> Tile {\n    Tile { width, height, pixels: pixels.to_vec() }\n}\n\n#[test]\nfn places_tiles_row_major_and_zero_fills_unused_cells() {\n    let tiles = vec![\n        tile(2, 1, &[1, 2]),\n        tile(2, 1, &[3, 4]),\n        tile(2, 1, &[5, 6]),\n    ];\n    let atlas = build_atlas(&tiles, 2).unwrap();\n\n    assert_eq!(atlas.width, 4);\n    assert_eq!(atlas.height, 2);\n    assert_eq!(atlas.pixels, vec![1, 2, 3, 4, 5, 6, 0, 0]);\n    assert_eq!(tiles[0].pixels, vec![1, 2]);\n    assert_eq!(tiles[1].pixels, vec![3, 4]);\n    assert_eq!(tiles[2].pixels, vec![5, 6]);\n}\n\n#[test]\nfn reports_dedicated_argument_errors_in_required_order() {\n    assert!(matches!(build_atlas(&[], 3), Err(AtlasError::EmptyInput)));\n\n    let invalid = vec![tile(2, 2, &[])];\n    assert!(matches!(build_atlas(&invalid, 0), Err(AtlasError::ZeroColumns)));\n}\n\n#[test]\nfn reports_lowest_invalid_buffer_and_dimension_indices() {\n    let bad_pixels = vec![\n        tile(1, 1, &[7]),\n        tile(1, 1, &[]),\n        tile(1, 1, &[]),\n    ];\n    assert!(matches!(\n        build_atlas(&bad_pixels, 1),\n        Err(AtlasError::InvalidPixels { index: 1 })\n    ));\n\n    let bad_dimensions = vec![\n        tile(1, 1, &[7]),\n        tile(1, 1, &[8]),\n        tile(2, 1, &[9, 10]),\n    ];\n    assert!(matches!(\n        build_atlas(&bad_dimensions, 2),\n        Err(AtlasError::DimensionMismatch { index: 2 })\n    ));\n}\n\n#[test]\nfn accepts_empty_tile_dimensions_with_empty_buffers() {\n    let tiles = vec![tile(0, 0, &[]), tile(0, 0, &[])];\n    let atlas = build_atlas(&tiles, 3).unwrap();\n    assert_eq!(atlas.width, 0);\n    assert_eq!(atlas.height, 0);\n    assert!(atlas.pixels.is_empty());\n}\n\n#[test]\nfn arithmetic_overflow_is_an_error_not_a_panic() {\n    let tiles = vec![Tile { width: usize::MAX, height: 2, pixels: Vec::new() }];\n    assert!(matches!(build_atlas(&tiles, 1), Err(AtlasError::Overflow)));\n\n    let zero_area = vec![Tile { width: usize::MAX, height: 0, pixels: Vec::new() }];\n    assert!(matches!(build_atlas(&zero_area, 2), Err(AtlasError::Overflow)));\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "fb189ca76a93faf3cfe0d50ec67b10db14fc5809665b1c418b5c380bab605e23"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "be581397e6f26704505cd7cefaabd4ec5bf509585ff2b88ddb5b5acd2ab1a7c8",
+      "text": "Implement an in-memory grayscale tile atlas in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct Tile { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub struct Atlas { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub enum AtlasError { EmptyInput, ZeroColumns, InvalidPixels { index: usize }, DimensionMismatch { index: usize }, Overflow }`\n- `pub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError>`\n\nTiles are placed row-major into a grid with the requested number of columns. The final row may be partially occupied; unused cells must contain zero-valued pixels. Every tile must have the same dimensions as the first, and each pixel buffer must contain exactly `width * height` bytes. Validate arithmetic with checked operations and report `Overflow` rather than panicking. Empty tile dimensions are valid when their buffer is also empty. Empty input and zero columns have their dedicated errors, with zero columns checked before tile validation. Report the lowest invalid tile index. Do not mutate or retain aliases to the input. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "be581397e6f26704505cd7cefaabd4ec5bf509585ff2b88ddb5b5acd2ab1a7c8",
+      "text": "Implement an in-memory grayscale tile atlas in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct Tile { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub struct Atlas { pub width: usize, pub height: usize, pub pixels: Vec<u8> }`\n- `pub enum AtlasError { EmptyInput, ZeroColumns, InvalidPixels { index: usize }, DimensionMismatch { index: usize }, Overflow }`\n- `pub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError>`\n\nTiles are placed row-major into a grid with the requested number of columns. The final row may be partially occupied; unused cells must contain zero-valued pixels. Every tile must have the same dimensions as the first, and each pixel buffer must contain exactly `width * height` bytes. Validate arithmetic with checked operations and report `Overflow` rather than panicking. Empty tile dimensions are valid when their buffer is also empty. Empty input and zero columns have their dedicated errors, with zero columns checked before tile validation. Report the lowest invalid tile index. Do not mutate or retain aliases to the input. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0704",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Tile {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Atlas {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum AtlasError {\n    EmptyInput,\n    ZeroColumns,\n    InvalidPixels { index: usize },\n    DimensionMismatch { index: usize },\n    Overflow,\n}\n\npub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError> {\n    if columns == 0 {\n        return Err(AtlasError::ZeroColumns);\n    }\n    let first = tiles.first().ok_or(AtlasError::EmptyInput)?;\n    for (index, tile) in tiles.iter().enumerate() {\n        let expected = tile.width.checked_mul(tile.height).ok_or(AtlasError::Overflow)?;\n        if tile.pixels.len() != expected {\n            return Err(AtlasError::InvalidPixels { index });\n        }\n        if tile.width != first.width || tile.height != first.height {\n            return Err(AtlasError::DimensionMismatch { index });\n        }\n    }\n    let rows = tiles.len() / columns;\n    let width = first.width.checked_mul(columns).ok_or(AtlasError::Overflow)?;\n    let height = first.height.checked_mul(rows).ok_or(AtlasError::Overflow)?;\n    let len = width.checked_mul(height).ok_or(AtlasError::Overflow)?;\n    let mut pixels = vec![0; len];\n    for (index, tile) in tiles.iter().enumerate() {\n        let cell_x = index % columns;\n        let cell_y = index / columns;\n        for y in 0..tile.height {\n            let src = y * tile.width;\n            let dst = (cell_y * tile.height + y) * width + cell_x * tile.width;\n            pixels[dst..dst + tile.width].copy_from_slice(&tile.pixels[src..src + tile.width]);\n        }\n    }\n    Ok(Atlas { width, height, pixels })\n}\n",
+          "label": "The atlas row count is rounded down, so a partial final row is omitted and copying its tiles can panic.",
+          "sha256": "608fd397fe151343e4db6912b317669d1edf1f3c7095e4cccb61be767a1a4016"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Tile {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Atlas {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum AtlasError {\n    EmptyInput,\n    ZeroColumns,\n    InvalidPixels { index: usize },\n    DimensionMismatch { index: usize },\n    Overflow,\n}\n\npub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError> {\n    if columns == 0 {\n        return Err(AtlasError::ZeroColumns);\n    }\n    let first = tiles.first().ok_or(AtlasError::EmptyInput)?;\n    for (index, tile) in tiles.iter().enumerate() {\n        let expected = tile.width.checked_mul(tile.height).ok_or(AtlasError::Overflow)?;\n        if tile.pixels.len() != expected {\n            return Err(AtlasError::InvalidPixels { index });\n        }\n        if tile.width != first.width || tile.height != first.height {\n            return Err(AtlasError::DimensionMismatch { index });\n        }\n    }\n    let rows = tiles.len().checked_add(columns - 1).ok_or(AtlasError::Overflow)? / columns;\n    let width = first.width.checked_mul(columns).ok_or(AtlasError::Overflow)?;\n    let height = first.height.checked_mul(rows).ok_or(AtlasError::Overflow)?;\n    let len = width.checked_mul(height).ok_or(AtlasError::Overflow)?;\n    let mut pixels = vec![0; len];\n    for (index, tile) in tiles.iter().enumerate() {\n        let cell_x = index % columns;\n        let cell_y = index / columns;\n        for y in 0..tile.height {\n            let src = y * tile.width;\n            let dst = (cell_y * tile.height + y) * width + cell_x * tile.width;\n            pixels[dst..dst + tile.width].copy_from_slice(&tile.pixels[src..src + tile.width]);\n        }\n    }\n    Ok(Atlas { width, height, pixels })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "032a5ddecdb994baf3f53e709a36ef90962db01ff62ecd74dca05a9e90df8c47"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest capacity_overflow_is_reported_not_panicked ... FAILED\n\nfailures:\n\n---- capacity_overflow_is_reported_not_panicked stdout ----\n\nthread 'capacity_overflow_is_reported_not_panicked' panicked at solution.rs:42:22:\ncapacity overflow\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    capacity_overflow_is_reported_not_panicked\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "fbca7045d6c31faac5020682392a7b005e82897eb0bde2fb8351192531c5e281",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1690,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

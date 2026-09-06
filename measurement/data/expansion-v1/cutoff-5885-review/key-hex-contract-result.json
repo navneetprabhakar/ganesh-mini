@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0705",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "24614563aa9033c1351878048a6a8220dcea65f42c2b8b0cd851ef0e51f05881",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\n#[test]\nfn sixteen_byte_nonhex_payload_is_bad_hex() {\n    assert!(matches!(solution::decode_key(\"KEY:00000000000000\u00e9\"), Err(solution::KeyDecodeError::BadHex)));\n}\n\n#[test]\nfn leading_plus_is_not_hexadecimal() {\n    assert!(matches!(solution::decode_key(\"KEY:+000000000000000\"), Err(solution::KeyDecodeError::BadHex)));\n}\n",
+        "sha256": "664529aa95cfea34ea71e12320d2e90a69b121d0ce53d7bd3094534f36d0be75"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6bc02380fe5bef739c9e0f23bd6436f8b5e4b9ff58c38cc7bedc34b4a9af5e3f",
+      "text": "Implement a deterministic toy message authenticator in `solution.rs` using only the standard library. This API is for data-integrity exercises and must not be represented as cryptographically secure.\n\nExpose:\n- `pub enum TagMode { Short, Medium, Long }`\n- `pub struct SecretKey(pub u64)`\n- `pub enum KeyDecodeError { BadPrefix, BadLength, BadHex }`\n- `pub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8>`\n- `pub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool`\n- `pub fn encode_key(key: &SecretKey) -> String`\n- `pub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError>`\n\nTag lengths are 8, 16, and 32 bytes respectively. The algorithm must be deterministic, incorporate the key, mode, every message byte, its position, and the message length, and use wrapping integer arithmetic. Verification must require the exact expected length and compare all bytes without returning early for a byte mismatch. Encode keys as `KEY:` followed by exactly sixteen lowercase hexadecimal digits. Decoding must reject the wrong prefix, a payload of any other byte length, and any non-hexadecimal payload; uppercase hexadecimal digits are accepted while decoding. Empty messages and a zero key are valid. Inputs must not be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6bc02380fe5bef739c9e0f23bd6436f8b5e4b9ff58c38cc7bedc34b4a9af5e3f",
+      "text": "Implement a deterministic toy message authenticator in `solution.rs` using only the standard library. This API is for data-integrity exercises and must not be represented as cryptographically secure.\n\nExpose:\n- `pub enum TagMode { Short, Medium, Long }`\n- `pub struct SecretKey(pub u64)`\n- `pub enum KeyDecodeError { BadPrefix, BadLength, BadHex }`\n- `pub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8>`\n- `pub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool`\n- `pub fn encode_key(key: &SecretKey) -> String`\n- `pub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError>`\n\nTag lengths are 8, 16, and 32 bytes respectively. The algorithm must be deterministic, incorporate the key, mode, every message byte, its position, and the message length, and use wrapping integer arithmetic. Verification must require the exact expected length and compare all bytes without returning early for a byte mismatch. Encode keys as `KEY:` followed by exactly sixteen lowercase hexadecimal digits. Decoding must reject the wrong prefix, a payload of any other byte length, and any non-hexadecimal payload; uppercase hexadecimal digits are accepted while decoding. Empty messages and a zero key are valid. Inputs must not be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0705",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TagMode {\n    Short,\n    Medium,\n    Long,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct SecretKey(pub u64);\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum KeyDecodeError {\n    BadPrefix,\n    BadLength,\n    BadHex,\n}\n\nfn tag_len(mode: TagMode) -> usize {\n    match mode {\n        TagMode::Short => 8,\n        TagMode::Medium => 16,\n        TagMode::Long => 32,\n    }\n}\n\npub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8> {\n    let mode_word = match mode {\n        TagMode::Short => 0x11u64,\n        TagMode::Medium => 0x22u64,\n        TagMode::Long => 0x44u64,\n    };\n    let mut state = key.0 ^ mode_word ^ (message.len() as u64).wrapping_mul(0x9e3779b185ebca87);\n    for (index, byte) in message.iter().enumerate() {\n        state ^= (*byte as u64).wrapping_add((index as u64).wrapping_mul(0x100000001b3));\n        state = state.rotate_left((index % 63 + 1) as u32).wrapping_mul(0x9e3779b185ebca87);\n    }\n    let mut out = Vec::with_capacity(tag_len(mode));\n    while out.len() < tag_len(mode) {\n        state ^= state >> 29;\n        state = state.wrapping_mul(0xbf58476d1ce4e5b9).rotate_left(17);\n        out.extend_from_slice(&state.to_le_bytes());\n    }\n    out.truncate(tag_len(mode));\n    out\n}\n\npub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool {\n    let expected = create_tag(key, mode, message);\n    let mut difference = 0u8;\n    for (left, right) in expected.iter().zip(tag) {\n        difference |= left ^ right;\n    }\n    difference == 0\n}\n\npub fn encode_key(key: &SecretKey) -> String {\n    format!(\"KEY:{:016x}\", key.0)\n}\n\npub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError> {\n    let payload = encoded.strip_prefix(\"KEY:\").ok_or(KeyDecodeError::BadPrefix)?;\n    if payload.chars().count() != 16 {\n        return Err(KeyDecodeError::BadLength);\n    }\n    u64::from_str_radix(payload, 16)\n        .map(SecretKey)\n        .map_err(|_| KeyDecodeError::BadHex)\n}\n",
+          "label": "Verification accepts a matching prefix, including an empty tag, because it does not require the exact tag length.",
+          "sha256": "fef1a67709fa99f8d87b345fc604c04f632992c70784ebb3e3b01b21c3f31c2d"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TagMode {\n    Short,\n    Medium,\n    Long,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct SecretKey(pub u64);\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum KeyDecodeError {\n    BadPrefix,\n    BadLength,\n    BadHex,\n}\n\nfn tag_len(mode: TagMode) -> usize {\n    match mode {\n        TagMode::Short => 8,\n        TagMode::Medium => 16,\n        TagMode::Long => 32,\n    }\n}\n\npub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8> {\n    let mode_word = match mode {\n        TagMode::Short => 0x11u64,\n        TagMode::Medium => 0x22u64,\n        TagMode::Long => 0x44u64,\n    };\n    let mut state = key.0 ^ mode_word ^ (message.len() as u64).wrapping_mul(0x9e3779b185ebca87);\n    for (index, byte) in message.iter().enumerate() {\n        state ^= (*byte as u64).wrapping_add((index as u64).wrapping_mul(0x100000001b3));\n        state = state.rotate_left((index % 63 + 1) as u32).wrapping_mul(0x9e3779b185ebca87);\n    }\n    let mut out = Vec::with_capacity(tag_len(mode));\n    while out.len() < tag_len(mode) {\n        state ^= state >> 29;\n        state = state.wrapping_mul(0xbf58476d1ce4e5b9).rotate_left(17);\n        out.extend_from_slice(&state.to_le_bytes());\n    }\n    out.truncate(tag_len(mode));\n    out\n}\n\npub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool {\n    let expected = create_tag(key, mode, message);\n    if expected.len() != tag.len() {\n        return false;\n    }\n    let mut difference = 0u8;\n    for (left, right) in expected.iter().zip(tag) {\n        difference |= left ^ right;\n    }\n    difference == 0\n}\n\npub fn encode_key(key: &SecretKey) -> String {\n    format!(\"KEY:{:016x}\", key.0)\n}\n\npub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError> {\n    let payload = encoded.strip_prefix(\"KEY:\").ok_or(KeyDecodeError::BadPrefix)?;\n    if payload.chars().count() != 16 {\n        return Err(KeyDecodeError::BadLength);\n    }\n    u64::from_str_radix(payload, 16)\n        .map(SecretKey)\n        .map_err(|_| KeyDecodeError::BadHex)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e9ac02ce808f2afde37c6a398b13fb7ab3ec8520c84bd83b1176939f60ebf06b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{create_tag, decode_key, encode_key, verify_tag, KeyDecodeError, SecretKey, TagMode};\n\n#[test]\nfn produces_deterministic_tags_of_each_required_length() {\n    let key = SecretKey(0x0123_4567_89ab_cdef);\n    let message = b\"deterministic message\";\n\n    let short_a = create_tag(&key, TagMode::Short, message);\n    let short_b = create_tag(&key, TagMode::Short, message);\n    let medium = create_tag(&key, TagMode::Medium, message);\n    let long = create_tag(&key, TagMode::Long, message);\n\n    assert_eq!(short_a.len(), 8);\n    assert_eq!(medium.len(), 16);\n    assert_eq!(long.len(), 32);\n    assert_eq!(short_a, short_b);\n    assert_ne!(short_a, medium[..8]);\n    assert_ne!(medium, long[..16]);\n}\n\n#[test]\nfn tag_depends_on_key_bytes_positions_and_message_length() {\n    let base = create_tag(&SecretKey(7), TagMode::Long, &[1, 2, 3]);\n    assert_ne!(base, create_tag(&SecretKey(8), TagMode::Long, &[1, 2, 3]));\n    assert_ne!(base, create_tag(&SecretKey(7), TagMode::Long, &[1, 9, 3]));\n    assert_ne!(base, create_tag(&SecretKey(7), TagMode::Long, &[3, 2, 1]));\n    assert_ne!(base, create_tag(&SecretKey(7), TagMode::Long, &[1, 2, 3, 0]));\n}\n\n#[test]\nfn verification_requires_exact_length_and_exact_content() {\n    let key = SecretKey(42);\n    let message = b\"payload\";\n    let tag = create_tag(&key, TagMode::Medium, message);\n    assert!(verify_tag(&key, TagMode::Medium, message, &tag));\n\n    let mut corrupted = tag.clone();\n    corrupted[0] ^= 1;\n    corrupted[15] ^= 1;\n    assert!(!verify_tag(&key, TagMode::Medium, message, &corrupted));\n    assert!(!verify_tag(&key, TagMode::Medium, message, &tag[..15]));\n\n    let mut extended = tag.clone();\n    extended.push(0);\n    assert!(!verify_tag(&key, TagMode::Medium, message, &extended));\n    assert!(!verify_tag(&key, TagMode::Short, message, &tag));\n}\n\n#[test]\nfn empty_message_and_zero_key_are_valid() {\n    let key = SecretKey(0);\n    let tag = create_tag(&key, TagMode::Short, &[]);\n    assert_eq!(tag.len(), 8);\n    assert!(verify_tag(&key, TagMode::Short, &[], &tag));\n}\n\n#[test]\nfn key_encoding_is_fixed_width_lowercase_hex_and_round_trips() {\n    let key = SecretKey(0x00ab_cdef_0123_4567);\n    let encoded = encode_key(&key);\n    assert_eq!(encoded, \"KEY:00abcdef01234567\");\n\n    let decoded = decode_key(\"KEY:00ABCDEF01234567\").unwrap();\n    assert_eq!(decoded.0, key.0);\n    assert_eq!(encode_key(&SecretKey(0)), \"KEY:0000000000000000\");\n    assert_eq!(encode_key(&SecretKey(u64::MAX)), \"KEY:ffffffffffffffff\");\n}\n\n#[test]\nfn decoding_distinguishes_prefix_length_and_hex_errors() {\n    assert!(matches!(decode_key(\"BAD:0000000000000000\"), Err(KeyDecodeError::BadPrefix)));\n    assert!(matches!(decode_key(\"KEY:123\"), Err(KeyDecodeError::BadLength)));\n    assert!(matches!(decode_key(\"KEY:00000000000000000\"), Err(KeyDecodeError::BadLength)));\n    assert!(matches!(decode_key(\"KEY:000000000000000g\"), Err(KeyDecodeError::BadHex)));\n    assert!(matches!(decode_key(\"KEY:00000000000000\u00e9\"), Err(KeyDecodeError::BadLength)));\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "ab2d2931d6a2f01dc4ce7dcd0c9ddf135ee1ee2d04cade27d24aa92e856e9858"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6bc02380fe5bef739c9e0f23bd6436f8b5e4b9ff58c38cc7bedc34b4a9af5e3f",
+      "text": "Implement a deterministic toy message authenticator in `solution.rs` using only the standard library. This API is for data-integrity exercises and must not be represented as cryptographically secure.\n\nExpose:\n- `pub enum TagMode { Short, Medium, Long }`\n- `pub struct SecretKey(pub u64)`\n- `pub enum KeyDecodeError { BadPrefix, BadLength, BadHex }`\n- `pub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8>`\n- `pub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool`\n- `pub fn encode_key(key: &SecretKey) -> String`\n- `pub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError>`\n\nTag lengths are 8, 16, and 32 bytes respectively. The algorithm must be deterministic, incorporate the key, mode, every message byte, its position, and the message length, and use wrapping integer arithmetic. Verification must require the exact expected length and compare all bytes without returning early for a byte mismatch. Encode keys as `KEY:` followed by exactly sixteen lowercase hexadecimal digits. Decoding must reject the wrong prefix, a payload of any other byte length, and any non-hexadecimal payload; uppercase hexadecimal digits are accepted while decoding. Empty messages and a zero key are valid. Inputs must not be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6bc02380fe5bef739c9e0f23bd6436f8b5e4b9ff58c38cc7bedc34b4a9af5e3f",
+      "text": "Implement a deterministic toy message authenticator in `solution.rs` using only the standard library. This API is for data-integrity exercises and must not be represented as cryptographically secure.\n\nExpose:\n- `pub enum TagMode { Short, Medium, Long }`\n- `pub struct SecretKey(pub u64)`\n- `pub enum KeyDecodeError { BadPrefix, BadLength, BadHex }`\n- `pub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8>`\n- `pub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool`\n- `pub fn encode_key(key: &SecretKey) -> String`\n- `pub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError>`\n\nTag lengths are 8, 16, and 32 bytes respectively. The algorithm must be deterministic, incorporate the key, mode, every message byte, its position, and the message length, and use wrapping integer arithmetic. Verification must require the exact expected length and compare all bytes without returning early for a byte mismatch. Encode keys as `KEY:` followed by exactly sixteen lowercase hexadecimal digits. Decoding must reject the wrong prefix, a payload of any other byte length, and any non-hexadecimal payload; uppercase hexadecimal digits are accepted while decoding. Empty messages and a zero key are valid. Inputs must not be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0705",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TagMode {\n    Short,\n    Medium,\n    Long,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct SecretKey(pub u64);\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum KeyDecodeError {\n    BadPrefix,\n    BadLength,\n    BadHex,\n}\n\nfn tag_len(mode: TagMode) -> usize {\n    match mode {\n        TagMode::Short => 8,\n        TagMode::Medium => 16,\n        TagMode::Long => 32,\n    }\n}\n\npub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8> {\n    let mode_word = match mode {\n        TagMode::Short => 0x11u64,\n        TagMode::Medium => 0x22u64,\n        TagMode::Long => 0x44u64,\n    };\n    let mut state = key.0 ^ mode_word ^ (message.len() as u64).wrapping_mul(0x9e3779b185ebca87);\n    for (index, byte) in message.iter().enumerate() {\n        state ^= (*byte as u64).wrapping_add((index as u64).wrapping_mul(0x100000001b3));\n        state = state.rotate_left((index % 63 + 1) as u32).wrapping_mul(0x9e3779b185ebca87);\n    }\n    let mut out = Vec::with_capacity(tag_len(mode));\n    while out.len() < tag_len(mode) {\n        state ^= state >> 29;\n        state = state.wrapping_mul(0xbf58476d1ce4e5b9).rotate_left(17);\n        out.extend_from_slice(&state.to_le_bytes());\n    }\n    out.truncate(tag_len(mode));\n    out\n}\n\npub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool {\n    let expected = create_tag(key, mode, message);\n    let mut difference = 0u8;\n    for (left, right) in expected.iter().zip(tag) {\n        difference |= left ^ right;\n    }\n    difference == 0\n}\n\npub fn encode_key(key: &SecretKey) -> String {\n    format!(\"KEY:{:016x}\", key.0)\n}\n\npub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError> {\n    let payload = encoded.strip_prefix(\"KEY:\").ok_or(KeyDecodeError::BadPrefix)?;\n    if payload.chars().count() != 16 {\n        return Err(KeyDecodeError::BadLength);\n    }\n    u64::from_str_radix(payload, 16)\n        .map(SecretKey)\n        .map_err(|_| KeyDecodeError::BadHex)\n}\n",
+          "label": "Verification accepts a matching prefix, including an empty tag, because it does not require the exact tag length.",
+          "sha256": "fef1a67709fa99f8d87b345fc604c04f632992c70784ebb3e3b01b21c3f31c2d"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum TagMode {\n    Short,\n    Medium,\n    Long,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct SecretKey(pub u64);\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum KeyDecodeError {\n    BadPrefix,\n    BadLength,\n    BadHex,\n}\n\nfn tag_len(mode: TagMode) -> usize {\n    match mode {\n        TagMode::Short => 8,\n        TagMode::Medium => 16,\n        TagMode::Long => 32,\n    }\n}\n\npub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8> {\n    let mode_word = match mode {\n        TagMode::Short => 0x11u64,\n        TagMode::Medium => 0x22u64,\n        TagMode::Long => 0x44u64,\n    };\n    let mut state = key.0 ^ mode_word ^ (message.len() as u64).wrapping_mul(0x9e3779b185ebca87);\n    for (index, byte) in message.iter().enumerate() {\n        state ^= (*byte as u64).wrapping_add((index as u64).wrapping_mul(0x100000001b3));\n        state = state.rotate_left((index % 63 + 1) as u32).wrapping_mul(0x9e3779b185ebca87);\n    }\n    let mut out = Vec::with_capacity(tag_len(mode));\n    while out.len() < tag_len(mode) {\n        state ^= state >> 29;\n        state = state.wrapping_mul(0xbf58476d1ce4e5b9).rotate_left(17);\n        out.extend_from_slice(&state.to_le_bytes());\n    }\n    out.truncate(tag_len(mode));\n    out\n}\n\npub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool {\n    let expected = create_tag(key, mode, message);\n    if expected.len() != tag.len() {\n        return false;\n    }\n    let mut difference = 0u8;\n    for (left, right) in expected.iter().zip(tag) {\n        difference |= left ^ right;\n    }\n    difference == 0\n}\n\npub fn encode_key(key: &SecretKey) -> String {\n    format!(\"KEY:{:016x}\", key.0)\n}\n\npub fn decode_key(encoded: &str) -> Result<SecretKey, KeyDecodeError> {\n    let payload = encoded.strip_prefix(\"KEY:\").ok_or(KeyDecodeError::BadPrefix)?;\n    if payload.chars().count() != 16 {\n        return Err(KeyDecodeError::BadLength);\n    }\n    u64::from_str_radix(payload, 16)\n        .map(SecretKey)\n        .map_err(|_| KeyDecodeError::BadHex)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e9ac02ce808f2afde37c6a398b13fb7ab3ec8520c84bd83b1176939f60ebf06b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 2 tests\ntest leading_plus_is_not_hexadecimal ... FAILED\ntest sixteen_byte_nonhex_payload_is_bad_hex ... FAILED\n\nfailures:\n\n---- leading_plus_is_not_hexadecimal stdout ----\n\nthread 'leading_plus_is_not_hexadecimal' panicked at solution_test.rs:11:5:\nassertion failed: matches!(solution::decode_key(\"KEY:+000000000000000\"),\n    Err(solution::KeyDecodeError::BadHex))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- sixteen_byte_nonhex_payload_is_bad_hex stdout ----\n\nthread 'sixteen_byte_nonhex_payload_is_bad_hex' panicked at solution_test.rs:6:5:\nassertion failed: matches!(solution::decode_key(\"KEY:00000000000000\u00e9\"),\n    Err(solution::KeyDecodeError::BadHex))\n\n\nfailures:\n    leading_plus_is_not_hexadecimal\n    sixteen_byte_nonhex_payload_is_bad_hex\n\ntest result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "c96a60146b25a4be3a17d18eedf931f35b7ab9decbf2138b5e92eec2c5113f9b",
+    "stderr": "warning: variants `Short`, `Medium`, and `Long` are never constructed\n --> solution.rs:3:5\n  |\n2 | pub enum TagMode {\n  |          ------- variants in this enum\n3 |     Short,\n  |     ^^^^^\n4 |     Medium,\n  |     ^^^^^^\n5 |     Long,\n  |     ^^^^\n  |\n  = note: `TagMode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis\n  = note: `#[warn(dead_code)]` on by default\n\nwarning: function `tag_len` is never used\n  --> solution.rs:18:4\n   |\n18 | fn tag_len(mode: TagMode) -> usize {\n   |    ^^^^^^^\n\nwarning: function `create_tag` is never used\n  --> solution.rs:26:8\n   |\n26 | pub fn create_tag(key: &SecretKey, mode: TagMode, message: &[u8]) -> Vec<u8> {\n   |        ^^^^^^^^^^\n\nwarning: function `verify_tag` is never used\n  --> solution.rs:47:8\n   |\n47 | pub fn verify_tag(key: &SecretKey, mode: TagMode, message: &[u8], tag: &[u8]) -> bool {\n   |        ^^^^^^^^^^\n\nwarning: function `encode_key` is never used\n  --> solution.rs:59:8\n   |\n59 | pub fn encode_key(key: &SecretKey) -> String {\n   |        ^^^^^^^^^^\n\nwarning: 5 warnings emitted\n\n",
+    "stderr_sha256": "5eebe4538e61d6943108cd91f825c56140a7bb267e386a1ba7d4ea5358983a6c",
+    "duration_ms": 1691,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

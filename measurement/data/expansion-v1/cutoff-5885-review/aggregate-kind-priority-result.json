@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0757",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e4f39e83aa6be47b212b1ef506b86afe040a3222d17d0968decfbf9beaa90e0c",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\n#[test]\nfn all_kinds_are_validated_before_summing() {\n    let readings = [\n        solution::Reading { value: u128::MAX, kind: \"n\".into() },\n        solution::Reading { value: 1, kind: \"n\".into() },\n        solution::Reading { value: 0, kind: \"wrong\".into() },\n    ];\n    assert!(matches!(solution::aggregate_readings(&readings, \"n\"),\n        Err(solution::AggregateError::UnexpectedKind { expected, found }) if expected == \"n\" && found == \"wrong\"));\n}\n",
+        "sha256": "db1a6156e54b094cb6a046f0744f93f85e5ecae652115c72f85b80cbcc8fdc49"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0cae7a9b90fb212cb21667ac2efd6d70760ddb38cb9f103900953f364d23961b",
+      "text": "Implement `solution.rs` as a standard-library-only Rust library.\n\nExpose these public declarations:\n\n```rust\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError>;\n```\n\nThe function must inspect every reading and reject the first one whose `kind` differs from `expected_kind`. Otherwise, it must return one `Reading` whose kind is `expected_kind` and whose value is the checked sum of all values. Return `Overflow` instead of wrapping or saturating. An empty slice produces value zero. Preserve input order while validating so the reported mismatch is deterministic. Do not mutate or retain aliases to the input. Empty kind strings are valid when they match exactly.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0cae7a9b90fb212cb21667ac2efd6d70760ddb38cb9f103900953f364d23961b",
+      "text": "Implement `solution.rs` as a standard-library-only Rust library.\n\nExpose these public declarations:\n\n```rust\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError>;\n```\n\nThe function must inspect every reading and reject the first one whose `kind` differs from `expected_kind`. Otherwise, it must return one `Reading` whose kind is `expected_kind` and whose value is the checked sum of all values. Return `Overflow` instead of wrapping or saturating. An empty slice produces value zero. Preserve input order while validating so the reported mismatch is deterministic. Do not mutate or retain aliases to the input. Empty kind strings are valid when they match exactly.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0757",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError> {\n    let mut total = 0u128;\n    for reading in readings {\n        if reading.kind != expected_kind {\n            return Err(AggregateError::UnexpectedKind {\n                expected: expected_kind.to_owned(),\n                found: reading.kind.clone(),\n            });\n        }\n        total = total.saturating_add(reading.value);\n    }\n    Ok(Reading {\n        value: total,\n        kind: expected_kind.to_owned(),\n    })\n}\n",
+          "label": "Overflow is silently saturated instead of returning AggregateError::Overflow.",
+          "sha256": "aa1da7eed93c1d08cd00e856e11c472b01548927efd430c959d992f5e28f462a"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError> {\n    let mut total = 0u128;\n    for reading in readings {\n        if reading.kind != expected_kind {\n            return Err(AggregateError::UnexpectedKind {\n                expected: expected_kind.to_owned(),\n                found: reading.kind.clone(),\n            });\n        }\n        total = total.checked_add(reading.value).ok_or(AggregateError::Overflow)?;\n    }\n    Ok(Reading {\n        value: total,\n        kind: expected_kind.to_owned(),\n    })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "23c46242f185a0adcfed30ac02dfc0ea2017d9dca4fcd3e9cb654c2cee5a1672"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{aggregate_readings, AggregateError, Reading};\n\n#[test]\nfn sums_matching_readings_and_owns_the_result_kind() {\n    let readings = vec![\n        Reading { value: 4, kind: \"bytes\".to_owned() },\n        Reading { value: 9, kind: \"bytes\".to_owned() },\n    ];\n\n    let result = aggregate_readings(&readings, \"bytes\").unwrap();\n    assert_eq!(result.value, 13);\n    assert_eq!(result.kind, \"bytes\");\n    assert_eq!(readings[0].value, 4);\n    assert_eq!(readings[0].kind, \"bytes\");\n    assert_eq!(readings[1].kind, \"bytes\");\n}\n\n#[test]\nfn empty_input_and_empty_matching_kind_are_valid() {\n    let empty = aggregate_readings(&[], \"\").unwrap();\n    assert_eq!(empty.value, 0);\n    assert_eq!(empty.kind, \"\");\n\n    let readings = vec![Reading { value: 7, kind: String::new() }];\n    let result = aggregate_readings(&readings, \"\").unwrap();\n    assert_eq!(result.value, 7);\n    assert_eq!(result.kind, \"\");\n}\n\n#[test]\nfn reports_the_first_mismatching_kind_in_input_order() {\n    let readings = vec![\n        Reading { value: 1, kind: \"wanted\".to_owned() },\n        Reading { value: 2, kind: \"first-wrong\".to_owned() },\n        Reading { value: 3, kind: \"second-wrong\".to_owned() },\n    ];\n\n    match aggregate_readings(&readings, \"wanted\") {\n        Err(AggregateError::UnexpectedKind { expected, found }) => {\n            assert_eq!(expected, \"wanted\");\n            assert_eq!(found, \"first-wrong\");\n        }\n        _ => panic!(\"expected the first kind mismatch\"),\n    }\n\n    assert_eq!(readings[1].kind, \"first-wrong\");\n}\n\n#[test]\nfn detects_u128_overflow_without_wrapping_or_saturating() {\n    let readings = vec![\n        Reading { value: u128::MAX, kind: \"n\".to_owned() },\n        Reading { value: 1, kind: \"n\".to_owned() },\n    ];\n\n    assert!(matches!(\n        aggregate_readings(&readings, \"n\"),\n        Err(AggregateError::Overflow)\n    ));\n    assert_eq!(readings[0].value, u128::MAX);\n    assert_eq!(readings[1].value, 1);\n}\n\n#[test]\nfn maximum_sum_itself_is_valid() {\n    let readings = vec![Reading { value: u128::MAX, kind: \"max\".to_owned() }];\n    let result = aggregate_readings(&readings, \"max\").unwrap();\n    assert_eq!(result.value, u128::MAX);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "595bc8bdf472669a823cd5615482092d71e7942c2c99a475a38d2a63491348ae"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0cae7a9b90fb212cb21667ac2efd6d70760ddb38cb9f103900953f364d23961b",
+      "text": "Implement `solution.rs` as a standard-library-only Rust library.\n\nExpose these public declarations:\n\n```rust\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError>;\n```\n\nThe function must inspect every reading and reject the first one whose `kind` differs from `expected_kind`. Otherwise, it must return one `Reading` whose kind is `expected_kind` and whose value is the checked sum of all values. Return `Overflow` instead of wrapping or saturating. An empty slice produces value zero. Preserve input order while validating so the reported mismatch is deterministic. Do not mutate or retain aliases to the input. Empty kind strings are valid when they match exactly.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0cae7a9b90fb212cb21667ac2efd6d70760ddb38cb9f103900953f364d23961b",
+      "text": "Implement `solution.rs` as a standard-library-only Rust library.\n\nExpose these public declarations:\n\n```rust\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError>;\n```\n\nThe function must inspect every reading and reject the first one whose `kind` differs from `expected_kind`. Otherwise, it must return one `Reading` whose kind is `expected_kind` and whose value is the checked sum of all values. Return `Overflow` instead of wrapping or saturating. An empty slice produces value zero. Preserve input order while validating so the reported mismatch is deterministic. Do not mutate or retain aliases to the input. Empty kind strings are valid when they match exactly.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0757",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError> {\n    let mut total = 0u128;\n    for reading in readings {\n        if reading.kind != expected_kind {\n            return Err(AggregateError::UnexpectedKind {\n                expected: expected_kind.to_owned(),\n                found: reading.kind.clone(),\n            });\n        }\n        total = total.saturating_add(reading.value);\n    }\n    Ok(Reading {\n        value: total,\n        kind: expected_kind.to_owned(),\n    })\n}\n",
+          "label": "Overflow is silently saturated instead of returning AggregateError::Overflow.",
+          "sha256": "aa1da7eed93c1d08cd00e856e11c472b01548927efd430c959d992f5e28f462a"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Reading {\n    pub value: u128,\n    pub kind: String,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum AggregateError {\n    UnexpectedKind { expected: String, found: String },\n    Overflow,\n}\n\npub fn aggregate_readings(\n    readings: &[Reading],\n    expected_kind: &str,\n) -> Result<Reading, AggregateError> {\n    let mut total = 0u128;\n    for reading in readings {\n        if reading.kind != expected_kind {\n            return Err(AggregateError::UnexpectedKind {\n                expected: expected_kind.to_owned(),\n                found: reading.kind.clone(),\n            });\n        }\n        total = total.checked_add(reading.value).ok_or(AggregateError::Overflow)?;\n    }\n    Ok(Reading {\n        value: total,\n        kind: expected_kind.to_owned(),\n    })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "23c46242f185a0adcfed30ac02dfc0ea2017d9dca4fcd3e9cb654c2cee5a1672"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest all_kinds_are_validated_before_summing ... FAILED\n\nfailures:\n\n---- all_kinds_are_validated_before_summing stdout ----\n\nthread 'all_kinds_are_validated_before_summing' panicked at solution_test.rs:11:5:\nassertion failed: matches!(solution::aggregate_readings(&readings, \"n\"),\n    Err(solution::AggregateError::UnexpectedKind { expected, found }) if\n    expected == \"n\" && found == \"wrong\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    all_kinds_are_validated_before_summing\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "8527cd4eb3ee15385f029a4cad597a9cfc7e076ec7a4e85c9e72e5873627fe16",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1625,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0017",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e1f5fab2b2783f592bf6a992ca0268f1b41a745a23587972492b35ec58c79e26",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { DecimalDial } = require('./solution');\nconst value = 1e308;\nconst dial = new DecimalDial(value, {min: 0, max: Number.MAX_VALUE, step: 1, precision: 1});\n// Already an integer, within the accepted finite range. Decimal rounding\n// must not replace it with the upper bound through intermediate overflow.\nassert.equal(dial.getValue(), value);\n",
+        "sha256": "4579c76f139913f3f3482b92edfe68e73bc7e60cb438752b48a549281f4588b5"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f05a48b9767f0fd40fab79e2b7a7e76671d7979d08302f7a790f5646bffec9eb",
+      "text": "Implement a numeric model named `DecimalDial` in one CommonJS source file.\n\nExport exactly:\n\n```javascript\nmodule.exports = { DecimalDial };\n```\n\nConstructor signature: `new DecimalDial(initialValue, options)`, where `options` contains finite numeric `min`, `max`, and `step`, plus integer `precision` from 0 through 10.\n\nRequirements:\n- Require `min <= max` and `step > 0`; malformed options or values throw `TypeError`.\n- Values may be finite numbers or strict decimal strings such as `'-2'`, `'3.50'`, or `'.25'`. Reject empty strings, whitespace, exponent notation, hexadecimal, and trailing nonnumeric content.\n- Round accepted values to `precision` decimal places, then constrain nonzero values to `[min, max]`.\n- Exactly zero is always valid and must remain zero even when it lies outside `[min, max]`.\n- `getValue()` returns the current numeric value.\n- `setValue(value)` normalizes and stores a dynamic value, returning the stored number.\n- `increment()` and `decrement()` add or subtract `step`, normalize the result, and return it.\n- `subscribe(listener)` requires a function and returns an unsubscribe function. Active listeners receive a fresh frozen `{ type, value }` object after an increment or decrement actually changes the stored value. Listener iteration must tolerate unsubscription during notification.\n- `destroy()` removes all listeners and prevents later calls to `setValue`, `increment`, `decrement`, or `subscribe` by throwing `Error`. It is idempotent, and `getValue()` remains available.\n- Do not mutate the options object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f05a48b9767f0fd40fab79e2b7a7e76671d7979d08302f7a790f5646bffec9eb",
+      "text": "Implement a numeric model named `DecimalDial` in one CommonJS source file.\n\nExport exactly:\n\n```javascript\nmodule.exports = { DecimalDial };\n```\n\nConstructor signature: `new DecimalDial(initialValue, options)`, where `options` contains finite numeric `min`, `max`, and `step`, plus integer `precision` from 0 through 10.\n\nRequirements:\n- Require `min <= max` and `step > 0`; malformed options or values throw `TypeError`.\n- Values may be finite numbers or strict decimal strings such as `'-2'`, `'3.50'`, or `'.25'`. Reject empty strings, whitespace, exponent notation, hexadecimal, and trailing nonnumeric content.\n- Round accepted values to `precision` decimal places, then constrain nonzero values to `[min, max]`.\n- Exactly zero is always valid and must remain zero even when it lies outside `[min, max]`.\n- `getValue()` returns the current numeric value.\n- `setValue(value)` normalizes and stores a dynamic value, returning the stored number.\n- `increment()` and `decrement()` add or subtract `step`, normalize the result, and return it.\n- `subscribe(listener)` requires a function and returns an unsubscribe function. Active listeners receive a fresh frozen `{ type, value }` object after an increment or decrement actually changes the stored value. Listener iteration must tolerate unsubscription during notification.\n- `destroy()` removes all listeners and prevents later calls to `setValue`, `increment`, `decrement`, or `subscribe` by throwing `Error`. It is idempotent, and `getValue()` remains available.\n- Do not mutate the options object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0017",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nconst DECIMAL = /^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/;\n\nfunction parseValue(value) {\n  if (typeof value === 'number' && Number.isFinite(value)) return value;\n  if (typeof value === 'string' && DECIMAL.test(value)) return Number(value);\n  throw new TypeError('invalid numeric value');\n}\n\nclass DecimalDial {\n  constructor(initialValue, options) {\n    if (options === null || typeof options !== 'object') throw new TypeError('invalid options');\n    const { min, max, step, precision } = options;\n    if (![min, max, step].every((v) => typeof v === 'number' && Number.isFinite(v)) ||\n        min > max || step <= 0 || !Number.isInteger(precision) || precision < 0 || precision > 10) {\n      throw new TypeError('invalid options');\n    }\n    this._min = min;\n    this._max = max;\n    this._step = step;\n    this._precision = precision;\n    this._listeners = new Set();\n    this._destroyed = false;\n    this._value = this._normalize(initialValue);\n  }\n\n  _normalize(value) {\n    const factor = 10 ** this._precision;\n    const rounded = Math.round((parseValue(value) + Number.EPSILON) * factor) / factor;\n    return Math.min(this._max, Math.max(this._min, rounded));\n  }\n\n  _assertActive() {\n    if (this._destroyed) throw new Error('dial is destroyed');\n  }\n\n  getValue() {\n    return this._value;\n  }\n\n  setValue(value) {\n    this._assertActive();\n    this._value = this._normalize(value);\n    return this._value;\n  }\n\n  _move(type, amount) {\n    this._assertActive();\n    const previous = this._value;\n    this._value = this._normalize(previous + amount);\n    if (this._value !== previous) {\n      for (const listener of Array.from(this._listeners)) {\n        listener(Object.freeze({ type, value: this._value }));\n      }\n    }\n    return this._value;\n  }\n\n  increment() {\n    return this._move('increment', this._step);\n  }\n\n  decrement() {\n    return this._move('decrement', -this._step);\n  }\n\n  subscribe(listener) {\n    this._assertActive();\n    if (typeof listener !== 'function') throw new TypeError('listener must be a function');\n    this._listeners.add(listener);\n    return () => this._listeners.delete(listener);\n  }\n\n  destroy() {\n    if (!this._destroyed) {\n      this._listeners.clear();\n      this._destroyed = true;\n    }\n  }\n}\n\nmodule.exports = { DecimalDial };\n",
+          "label": "Normalization clamps zero to the minimum when the minimum is positive.",
+          "sha256": "2afafdb6ab85db98f89a276a77b59f3b8cadc05b7bb18c0c8344936b0e6b0065"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nconst DECIMAL = /^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/;\n\nfunction parseValue(value) {\n  if (typeof value === 'number' && Number.isFinite(value)) return value;\n  if (typeof value === 'string' && DECIMAL.test(value)) return Number(value);\n  throw new TypeError('invalid numeric value');\n}\n\nclass DecimalDial {\n  constructor(initialValue, options) {\n    if (options === null || typeof options !== 'object') throw new TypeError('invalid options');\n    const { min, max, step, precision } = options;\n    if (![min, max, step].every((v) => typeof v === 'number' && Number.isFinite(v)) ||\n        min > max || step <= 0 || !Number.isInteger(precision) || precision < 0 || precision > 10) {\n      throw new TypeError('invalid options');\n    }\n    this._min = min;\n    this._max = max;\n    this._step = step;\n    this._precision = precision;\n    this._listeners = new Set();\n    this._destroyed = false;\n    this._value = this._normalize(initialValue);\n  }\n\n  _normalize(value) {\n    const factor = 10 ** this._precision;\n    const rounded = Math.round((parseValue(value) + Number.EPSILON) * factor) / factor;\n    if (Object.is(rounded, -0) || rounded === 0) return 0;\n    return Math.min(this._max, Math.max(this._min, rounded));\n  }\n\n  _assertActive() {\n    if (this._destroyed) throw new Error('dial is destroyed');\n  }\n\n  getValue() {\n    return this._value;\n  }\n\n  setValue(value) {\n    this._assertActive();\n    this._value = this._normalize(value);\n    return this._value;\n  }\n\n  _move(type, amount) {\n    this._assertActive();\n    const previous = this._value;\n    this._value = this._normalize(previous + amount);\n    if (this._value !== previous) {\n      for (const listener of Array.from(this._listeners)) {\n        listener(Object.freeze({ type, value: this._value }));\n      }\n    }\n    return this._value;\n  }\n\n  increment() {\n    return this._move('increment', this._step);\n  }\n\n  decrement() {\n    return this._move('decrement', -this._step);\n  }\n\n  subscribe(listener) {\n    this._assertActive();\n    if (typeof listener !== 'function') throw new TypeError('listener must be a function');\n    this._listeners.add(listener);\n    return () => this._listeners.delete(listener);\n  }\n\n  destroy() {\n    if (!this._destroyed) {\n      this._listeners.clear();\n      this._destroyed = true;\n    }\n  }\n}\n\nmodule.exports = { DecimalDial };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4d3fbf9fe616f841dfd6c57932a6944b5e1f47c5df88a050dd3cb3e8de4a52d1"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\nassert.deepEqual(Object.keys(api), ['DecimalDial']);\nconst { DecimalDial } = api;\n\nconst options = { min: -2, max: 3, step: 0.25, precision: 2 };\nconst dial = new DecimalDial('3.50', options);\nassert.equal(dial.getValue(), 3);\nassert.deepEqual(options, { min: -2, max: 3, step: 0.25, precision: 2 });\nassert.equal(dial.setValue('.25'), 0.25);\nassert.equal(dial.getValue(), 0.25);\nassert.equal(dial.setValue('-2'), -2);\nassert.equal(dial.setValue(50), 3);\nassert.equal(dial.setValue(-50), -2);\nassert.equal(dial.setValue(-0), 0);\nassert.equal(Object.is(dial.getValue(), -0), false);\n\nfor (const value of ['', ' ', ' 2', '2 ', '1e2', '0x10', '2x', '.', '+', '--1', NaN, Infinity, -Infinity, null, undefined, {}, []]) {\n  assert.throws(() => dial.setValue(value), TypeError);\n}\nfor (const badOptions of [undefined, null, {}, { min: 0, max: 1, step: 1 }, { min: 0, max: 1, step: 1, precision: -1 }, { min: 0, max: 1, step: 1, precision: 11 }, { min: 0, max: 1, step: 1, precision: 1.5 }, { min: 2, max: 1, step: 1, precision: 0 }, { min: 0, max: 1, step: 0, precision: 0 }, { min: 0, max: 1, step: -1, precision: 0 }, { min: NaN, max: 1, step: 1, precision: 0 }, { min: 0, max: Infinity, step: 1, precision: 0 }]) {\n  assert.throws(() => new DecimalDial(0, badOptions), TypeError);\n}\nassert.throws(() => new DecimalDial('bad', options), TypeError);\n\nconst zeroOutside = new DecimalDial(0, { min: 1, max: 2, step: 0.25, precision: 2 });\nassert.equal(zeroOutside.getValue(), 0);\nassert.equal(zeroOutside.setValue('0.00'), 0);\nassert.equal(zeroOutside.increment(), 1);\nassert.equal(zeroOutside.decrement(), 1);\n\nconst observed = [];\nconst notifying = new DecimalDial(0, { min: -1, max: 1, step: 0.25, precision: 2 });\nlet unsubscribeFirst;\nunsubscribeFirst = notifying.subscribe((event) => {\n  observed.push(['first', event]);\n  unsubscribeFirst();\n});\nconst secondEvents = [];\nconst unsubscribeSecond = notifying.subscribe((event) => secondEvents.push(event));\nassert.equal(notifying.increment(), 0.25);\nassert.equal(notifying.increment(), 0.5);\nassert.equal(notifying.decrement(), 0.25);\nassert.equal(observed.length, 1);\nassert.equal(secondEvents.length, 3);\nassert.deepEqual(secondEvents.map((event) => event.type), ['increment', 'increment', 'decrement']);\nassert.deepEqual(secondEvents.map((event) => event.value), [0.25, 0.5, 0.25]);\nfor (const event of [observed[0][1], ...secondEvents]) assert.equal(Object.isFrozen(event), true);\nassert.notStrictEqual(observed[0][1], secondEvents[0]);\nassert.notStrictEqual(secondEvents[0], secondEvents[1]);\nunsubscribeSecond();\nnotifying.increment();\nassert.equal(secondEvents.length, 3);\nassert.throws(() => notifying.subscribe(1), TypeError);\n\nconst clamped = new DecimalDial(1, { min: 0, max: 1, step: 0.5, precision: 1 });\nlet calls = 0;\nclamped.subscribe(() => calls++);\nassert.equal(clamped.increment(), 1);\nassert.equal(calls, 0);\nassert.equal(clamped.decrement(), 0.5);\nassert.equal(calls, 1);\nclamped.destroy();\nclamped.destroy();\nassert.equal(clamped.getValue(), 0.5);\nfor (const operation of [() => clamped.setValue(0), () => clamped.increment(), () => clamped.decrement(), () => clamped.subscribe(() => {})]) {\n  assert.throws(operation, Error);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "5efadd61bf01cae586a4953c811556b33ec28518d310972d2e6070cadb3f1c43"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f05a48b9767f0fd40fab79e2b7a7e76671d7979d08302f7a790f5646bffec9eb",
+      "text": "Implement a numeric model named `DecimalDial` in one CommonJS source file.\n\nExport exactly:\n\n```javascript\nmodule.exports = { DecimalDial };\n```\n\nConstructor signature: `new DecimalDial(initialValue, options)`, where `options` contains finite numeric `min`, `max`, and `step`, plus integer `precision` from 0 through 10.\n\nRequirements:\n- Require `min <= max` and `step > 0`; malformed options or values throw `TypeError`.\n- Values may be finite numbers or strict decimal strings such as `'-2'`, `'3.50'`, or `'.25'`. Reject empty strings, whitespace, exponent notation, hexadecimal, and trailing nonnumeric content.\n- Round accepted values to `precision` decimal places, then constrain nonzero values to `[min, max]`.\n- Exactly zero is always valid and must remain zero even when it lies outside `[min, max]`.\n- `getValue()` returns the current numeric value.\n- `setValue(value)` normalizes and stores a dynamic value, returning the stored number.\n- `increment()` and `decrement()` add or subtract `step`, normalize the result, and return it.\n- `subscribe(listener)` requires a function and returns an unsubscribe function. Active listeners receive a fresh frozen `{ type, value }` object after an increment or decrement actually changes the stored value. Listener iteration must tolerate unsubscription during notification.\n- `destroy()` removes all listeners and prevents later calls to `setValue`, `increment`, `decrement`, or `subscribe` by throwing `Error`. It is idempotent, and `getValue()` remains available.\n- Do not mutate the options object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f05a48b9767f0fd40fab79e2b7a7e76671d7979d08302f7a790f5646bffec9eb",
+      "text": "Implement a numeric model named `DecimalDial` in one CommonJS source file.\n\nExport exactly:\n\n```javascript\nmodule.exports = { DecimalDial };\n```\n\nConstructor signature: `new DecimalDial(initialValue, options)`, where `options` contains finite numeric `min`, `max`, and `step`, plus integer `precision` from 0 through 10.\n\nRequirements:\n- Require `min <= max` and `step > 0`; malformed options or values throw `TypeError`.\n- Values may be finite numbers or strict decimal strings such as `'-2'`, `'3.50'`, or `'.25'`. Reject empty strings, whitespace, exponent notation, hexadecimal, and trailing nonnumeric content.\n- Round accepted values to `precision` decimal places, then constrain nonzero values to `[min, max]`.\n- Exactly zero is always valid and must remain zero even when it lies outside `[min, max]`.\n- `getValue()` returns the current numeric value.\n- `setValue(value)` normalizes and stores a dynamic value, returning the stored number.\n- `increment()` and `decrement()` add or subtract `step`, normalize the result, and return it.\n- `subscribe(listener)` requires a function and returns an unsubscribe function. Active listeners receive a fresh frozen `{ type, value }` object after an increment or decrement actually changes the stored value. Listener iteration must tolerate unsubscription during notification.\n- `destroy()` removes all listeners and prevents later calls to `setValue`, `increment`, `decrement`, or `subscribe` by throwing `Error`. It is idempotent, and `getValue()` remains available.\n- Do not mutate the options object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0017",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nconst DECIMAL = /^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/;\n\nfunction parseValue(value) {\n  if (typeof value === 'number' && Number.isFinite(value)) return value;\n  if (typeof value === 'string' && DECIMAL.test(value)) return Number(value);\n  throw new TypeError('invalid numeric value');\n}\n\nclass DecimalDial {\n  constructor(initialValue, options) {\n    if (options === null || typeof options !== 'object') throw new TypeError('invalid options');\n    const { min, max, step, precision } = options;\n    if (![min, max, step].every((v) => typeof v === 'number' && Number.isFinite(v)) ||\n        min > max || step <= 0 || !Number.isInteger(precision) || precision < 0 || precision > 10) {\n      throw new TypeError('invalid options');\n    }\n    this._min = min;\n    this._max = max;\n    this._step = step;\n    this._precision = precision;\n    this._listeners = new Set();\n    this._destroyed = false;\n    this._value = this._normalize(initialValue);\n  }\n\n  _normalize(value) {\n    const factor = 10 ** this._precision;\n    const rounded = Math.round((parseValue(value) + Number.EPSILON) * factor) / factor;\n    return Math.min(this._max, Math.max(this._min, rounded));\n  }\n\n  _assertActive() {\n    if (this._destroyed) throw new Error('dial is destroyed');\n  }\n\n  getValue() {\n    return this._value;\n  }\n\n  setValue(value) {\n    this._assertActive();\n    this._value = this._normalize(value);\n    return this._value;\n  }\n\n  _move(type, amount) {\n    this._assertActive();\n    const previous = this._value;\n    this._value = this._normalize(previous + amount);\n    if (this._value !== previous) {\n      for (const listener of Array.from(this._listeners)) {\n        listener(Object.freeze({ type, value: this._value }));\n      }\n    }\n    return this._value;\n  }\n\n  increment() {\n    return this._move('increment', this._step);\n  }\n\n  decrement() {\n    return this._move('decrement', -this._step);\n  }\n\n  subscribe(listener) {\n    this._assertActive();\n    if (typeof listener !== 'function') throw new TypeError('listener must be a function');\n    this._listeners.add(listener);\n    return () => this._listeners.delete(listener);\n  }\n\n  destroy() {\n    if (!this._destroyed) {\n      this._listeners.clear();\n      this._destroyed = true;\n    }\n  }\n}\n\nmodule.exports = { DecimalDial };\n",
+          "label": "Normalization clamps zero to the minimum when the minimum is positive.",
+          "sha256": "2afafdb6ab85db98f89a276a77b59f3b8cadc05b7bb18c0c8344936b0e6b0065"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nconst DECIMAL = /^[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/;\n\nfunction parseValue(value) {\n  if (typeof value === 'number' && Number.isFinite(value)) return value;\n  if (typeof value === 'string' && DECIMAL.test(value)) return Number(value);\n  throw new TypeError('invalid numeric value');\n}\n\nclass DecimalDial {\n  constructor(initialValue, options) {\n    if (options === null || typeof options !== 'object') throw new TypeError('invalid options');\n    const { min, max, step, precision } = options;\n    if (![min, max, step].every((v) => typeof v === 'number' && Number.isFinite(v)) ||\n        min > max || step <= 0 || !Number.isInteger(precision) || precision < 0 || precision > 10) {\n      throw new TypeError('invalid options');\n    }\n    this._min = min;\n    this._max = max;\n    this._step = step;\n    this._precision = precision;\n    this._listeners = new Set();\n    this._destroyed = false;\n    this._value = this._normalize(initialValue);\n  }\n\n  _normalize(value) {\n    const factor = 10 ** this._precision;\n    const rounded = Math.round((parseValue(value) + Number.EPSILON) * factor) / factor;\n    if (Object.is(rounded, -0) || rounded === 0) return 0;\n    return Math.min(this._max, Math.max(this._min, rounded));\n  }\n\n  _assertActive() {\n    if (this._destroyed) throw new Error('dial is destroyed');\n  }\n\n  getValue() {\n    return this._value;\n  }\n\n  setValue(value) {\n    this._assertActive();\n    this._value = this._normalize(value);\n    return this._value;\n  }\n\n  _move(type, amount) {\n    this._assertActive();\n    const previous = this._value;\n    this._value = this._normalize(previous + amount);\n    if (this._value !== previous) {\n      for (const listener of Array.from(this._listeners)) {\n        listener(Object.freeze({ type, value: this._value }));\n      }\n    }\n    return this._value;\n  }\n\n  increment() {\n    return this._move('increment', this._step);\n  }\n\n  decrement() {\n    return this._move('decrement', -this._step);\n  }\n\n  subscribe(listener) {\n    this._assertActive();\n    if (typeof listener !== 'function') throw new TypeError('listener must be a function');\n    this._listeners.add(listener);\n    return () => this._listeners.delete(listener);\n  }\n\n  destroy() {\n    if (!this._destroyed) {\n      this._listeners.clear();\n      this._destroyed = true;\n    }\n  }\n}\n\nmodule.exports = { DecimalDial };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4d3fbf9fe616f841dfd6c57932a6944b5e1f47c5df88a050dd3cb3e8de4a52d1"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 1.7976931348623157e+308\n- 1e+308\n\n    at Object.<anonymous> (/work/solution.test.js:8:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 1.7976931348623157e+308,\n  expected: 1e+308,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "58ed2da2f66c99ae9891e5fc5a79966061ef4bc78feab85f252224a31fb88d78",
+    "duration_ms": 765,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -4,6 +4,25 @@ Last updated: 2026-09-06
 
 ## Current gate
 
+Current: **85 holds (82 additive plus historical three)**; 69 unique outside-
+sample targeted inspections plus unchanged 300 sample. Array batch 4 preserves
+latest findings. GCS verified through 78 holds and v2 scope; later batch pending.
+All 97 tooling tests pass. No training seal, revised partition or new VM.
+
+Current: **78 holds (75 additive plus historical three)**. Fifty-four unique
+outside-sample targeted inspections; array batch 3 is recorded in
+`cutoff-5885-review/ARRAY_STRATUM_REVIEW_3.md`. Initial sample remains 300.
+No new VM, generation, partition or training seal.
+
+Scope update: seven groups / 13 strata / 3,056 records require review, not
+automatic rejection (`stratum-followup-inventory-v2.json`). All 97 data tooling
+tests pass. GCS verified through 72-hold checkpoint; v2 scope postdates archive.
+
+Current: **72 holds (69 additive plus historical three)**. Forty outside-sample
+targeted inspections plus unchanged 300 initial sample; see
+`cutoff-5885-review/ARRAY_STRATUM_REVIEW_2.md`. Nine new reproduced failures and
+one passing parcel-filter control. No new VM or training seal.
+
 Current: **63 holds (60 additive plus historical three)**; see
 `cutoff-5885-review/ARRAY_STRATUM_REVIEW.md`. Twenty-five outside-sample targeted
 inspections now accompany the unchanged 300 initial inspections. All 92 tooling

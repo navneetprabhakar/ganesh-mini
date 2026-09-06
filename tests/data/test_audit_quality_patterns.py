@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 import pytest
 
 from scripts.data import audit_quality_patterns as audit
@@ -42,3 +45,41 @@ def test_detects_inconsistent_sample_stratum(monkeypatch):
     sampled['rejection_history'] = 'corrected'
     with pytest.raises(ValueError, match='stratum mismatch'):
         audit.build([row], {'records': [sampled]})
+
+
+def test_followup_reopens_without_changing_sample_count(monkeypatch):
+    monkeypatch.setattr(audit, 'GROUPS', {})
+    row = candidate()
+    followup = {'new': [{'id': 'x', 'candidate_sha256': hashlib.sha256(audit.canonical_json(row)).hexdigest()}]}
+    result = audit.build([row, candidate('y')], {'records': []}, followup)
+    assert result['sample_inspected'] == 0
+    assert result['reopened_population'] == 2
+    assert not any(r['semantically_inspected_in_frozen_sample'] for r in result['records'])
+    followup['new'][0]['candidate_sha256'] = 'wrong'
+    with pytest.raises(ValueError, match='candidate hash mismatch'):
+        audit.build([row], {'records': []}, followup)
+
+
+@pytest.mark.parametrize('codes,timed_out,valid', [([0, 0, 1], False, True),
+                                                  ([0, 1], True, False),
+                                                  ([1, 1], False, False),
+                                                  ([0], False, False)])
+def test_followup_diagnostic_binding(tmp_path, codes, timed_out, valid):
+    row = candidate()
+    result = {'id': 'x', 'candidate_sha256': hashlib.sha256(audit.canonical_json(row)).hexdigest(),
+              'original_task': row['verification_task'],
+              'result': {'exit_codes': codes, 'timed_out': timed_out}}
+    evidence = tmp_path / 'evidence.json'
+    evidence.write_text(json.dumps(result))
+    path = tmp_path / 'groups.json'
+    path.write_text(json.dumps({'groups': {'new': [{'id': 'x', 'evidence': str(evidence)}]}}))
+    if valid:
+        bound = audit.load_followup_groups(path, [row])
+        assert bound['new'][0]['evidence_sha256'] == hashlib.sha256(evidence.read_bytes()).hexdigest()
+        result['id'] = 'different'
+        evidence.write_text(json.dumps(result))
+        with pytest.raises(ValueError, match='candidate mismatch'):
+            audit.load_followup_groups(path, [row])
+    else:
+        with pytest.raises(ValueError, match='behavioral failure'):
+            audit.load_followup_groups(path, [row])

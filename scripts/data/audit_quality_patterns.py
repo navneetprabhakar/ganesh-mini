@@ -61,7 +61,7 @@ def hits(row):
     return found
 
 
-def build(rows, review):
+def build(rows, review, followup_groups=None):
     by_id = {r['id']: r for r in rows}
     if len(by_id) != len(rows):
         raise ValueError('duplicate candidate IDs')
@@ -80,6 +80,26 @@ def build(rows, review):
             scopes.add(key)
         reopened.update(scopes)
         groups.append({'group': name, 'inspected_evidence_ids': ids,
+                       'status': 'affected-strata-reopened',
+                       'strata': [dict(zip(KEYS, key), population=population[key])
+                                  for key in sorted(scopes)]})
+    # Explicit reviewer decisions outside the original sample can extend scope,
+    # but only with candidate-bound executed diagnostics. They never enlarge
+    # the frozen sample or turn heuristic matches into semantic labels.
+    for name, evidence in (followup_groups or {}).items():
+        if name in GROUPS or not evidence:
+            raise ValueError('follow-up group must be new and nonempty')
+        scopes = set()
+        for item in evidence:
+            identifier = item['id']
+            row = by_id.get(identifier)
+            if row is None or item['candidate_sha256'] != hashlib.sha256(canonical_json(row)).hexdigest():
+                raise ValueError('follow-up candidate hash mismatch: ' + identifier)
+            scopes.add(stratum(row))
+        reopened.update(scopes)
+        groups.append({'group': name,
+                       'inspected_evidence_ids': [item['id'] for item in evidence],
+                       'bound_followup_evidence': evidence,
                        'status': 'affected-strata-reopened',
                        'strata': [dict(zip(KEYS, key), population=population[key])
                                   for key in sorted(scopes)]})
@@ -103,9 +123,36 @@ def build(rows, review):
             'records': inventory}
 
 
+def load_followup_groups(path, rows):
+    """Validate declared diagnostics; failure classification remains a reviewer decision."""
+    by_id = {row['id']: row for row in rows}
+    config = json.loads(path.read_text())
+    groups = {}
+    for name, items in config['groups'].items():
+        bound = []
+        for item in items:
+            evidence_path = Path(item['evidence'])
+            payload = evidence_path.read_bytes()
+            report = json.loads(payload)
+            row = by_id[item['id']]
+            if (report['id'] != item['id'] or
+                    report['candidate_sha256'] != hashlib.sha256(canonical_json(row)).hexdigest() or
+                    report['original_task'] != row['verification_task']):
+                raise ValueError('follow-up diagnostic candidate mismatch')
+            result = report['result']
+            codes = result.get('exit_codes', [])
+            if result.get('timed_out') is not False or not codes or codes[-1] != 1 or any(c != 0 for c in codes[:-1]):
+                raise ValueError('follow-up requires completed behavioral failure')
+            bound.append({**item, 'candidate_sha256': report['candidate_sha256'],
+                          'evidence_sha256': hashlib.sha256(payload).hexdigest()})
+        groups[name] = bound
+    return groups
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--followup-groups', type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError('preserve existing audit')
@@ -118,7 +165,11 @@ def main():
             raise ValueError('frozen input hash mismatch: ' + name)
         bound[name] = {'sha256': sha, 'bytes': len(payload)}
     rows = [json.loads(line) for line in (ROOT / 'final.candidates.jsonl').read_text().splitlines()]
-    report = build(rows, json.loads((ROOT / 'quality-review.json').read_text()))
+    followup = load_followup_groups(args.followup_groups, rows) if args.followup_groups else None
+    report = build(rows, json.loads((ROOT / 'quality-review.json').read_text()), followup)
+    if args.followup_groups:
+        report['followup_decisions'] = {'path': str(args.followup_groups),
+            'sha256': hashlib.sha256(args.followup_groups.read_bytes()).hexdigest()}
     report['frozen_inputs'] = bound
     report['report_sha256'] = hashlib.sha256(canonical_json(report)).hexdigest()
     args.output.write_text(json.dumps(report, indent=2) + '\n')

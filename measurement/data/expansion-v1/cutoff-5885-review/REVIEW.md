@@ -1,5 +1,14 @@
 # Cutoff quality review — in progress
 
+Current: **85 holds**, 82 additive plus historical three; 69 unique outside-
+sample targeted inspections. See `ARRAY_STRATUM_REVIEW_4.md`.
+
+Current: **78 holds**, 75 additive plus historical three; 54 unique outside-
+sample targeted inspections. See `ARRAY_STRATUM_REVIEW_3.md`.
+
+Current: **72 holds**, 69 additive plus historical three. Forty outside-sample
+targeted inspections; `ARRAY_STRATUM_REVIEW_2.md` records the latest batch.
+
 Current: **63 holds**, 60 additive plus historical three. Twenty-five targeted
 outside-sample inspections; see `ARRAY_STRATUM_REVIEW.md`. All 92 tooling tests
 pass; verified GCS checkpoint through 53 holds. Later batch remains additive.

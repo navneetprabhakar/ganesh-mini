@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0022",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "8190a2f2c9bc0d773f61c2b464eda9210521976ee0eab95b393259a6d2c0e29c",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { matchPath } from './solution';\nconst result = matchPath([{pattern: '/:__proto__', destination: 'd'}], '/value');\nif (!result || !Object.prototype.hasOwnProperty.call(result.params, '__proto__') || result.params['__proto__'] !== 'value') {\n  throw new Error('valid parameter name __proto__ was lost');\n}\n",
+        "sha256": "20cde2923755e368b1edb83661e72bf91aaf8487b65bc2c46e2478deb4bb76c1"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ffeea915662c1262010a07df2d279d76fe3300d4826d3fdf37ccb56789eaad0a",
+      "text": "Implement a new framework-independent path matcher.\n\nExport these declarations:\n\n- `interface RouteSpec { readonly pattern: string; readonly destination: string }`\n- `interface RouteMatch { readonly destination: string; readonly params: Readonly<Record<string, string>> }`\n- `function matchPath(routes: readonly RouteSpec[], path: string): RouteMatch | null`\n\nPaths and patterns must start with `/`, must not contain empty interior segments, and must not contain `?` or `#`; malformed values throw `TypeError`. A pattern segment is either a literal or a parameter beginning with `:` followed by a non-empty name. A pattern may instead be exactly `\"*\"`, which is the fallback. Duplicate parameter names within a pattern are invalid. The root pattern `/` matches only `/`.\n\nSelect the matching non-fallback route with the greatest number of literal segments. If specificity ties, use declaration order. Use the first fallback only when no ordinary route matches. Parameter values are raw path segments without decoding. Empty route arrays return `null`. Return a fresh parameter object and do not mutate or reorder the route array.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ffeea915662c1262010a07df2d279d76fe3300d4826d3fdf37ccb56789eaad0a",
+      "text": "Implement a new framework-independent path matcher.\n\nExport these declarations:\n\n- `interface RouteSpec { readonly pattern: string; readonly destination: string }`\n- `interface RouteMatch { readonly destination: string; readonly params: Readonly<Record<string, string>> }`\n- `function matchPath(routes: readonly RouteSpec[], path: string): RouteMatch | null`\n\nPaths and patterns must start with `/`, must not contain empty interior segments, and must not contain `?` or `#`; malformed values throw `TypeError`. A pattern segment is either a literal or a parameter beginning with `:` followed by a non-empty name. A pattern may instead be exactly `\"*\"`, which is the fallback. Duplicate parameter names within a pattern are invalid. The root pattern `/` matches only `/`.\n\nSelect the matching non-fallback route with the greatest number of literal segments. If specificity ties, use declaration order. Use the first fallback only when no ordinary route matches. Parameter values are raw path segments without decoding. Empty route arrays return `null`. Return a fresh parameter object and do not mutate or reorder the route array.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0022",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface RouteSpec {\n  readonly pattern: string;\n  readonly destination: string;\n}\n\nexport interface RouteMatch {\n  readonly destination: string;\n  readonly params: Readonly<Record<string, string>>;\n}\n\nfunction segments(value: string): string[] {\n  if (!value.startsWith(\"/\") || value.includes(\"?\") || value.includes(\"#\")) {\n    throw new TypeError(\"Invalid path syntax\");\n  }\n  if (value === \"/\") return [];\n  const result = value.slice(1).split(\"/\");\n  if (result.some((part) => part.length === 0)) {\n    throw new TypeError(\"Empty path segment\");\n  }\n  return result;\n}\n\nexport function matchPath(\n  routes: readonly RouteSpec[],\n  path: string,\n): RouteMatch | null {\n  const pathParts = segments(path);\n  let fallback: RouteSpec | undefined;\n  const candidates: Array<{ route: RouteSpec; params: Record<string, string>; score: number; index: number }> = [];\n\n  routes.forEach((route, index) => {\n    if (route.pattern === \"*\") {\n      fallback ??= route;\n      return;\n    }\n    const patternParts = segments(route.pattern);\n    const names = patternParts\n      .filter((part) => part.startsWith(\":\"))\n      .map((part) => part.slice(1));\n    if (names.some((name) => name.length === 0) || new Set(names).size !== names.length) {\n      throw new TypeError(\"Invalid route parameter\");\n    }\n    if (patternParts.length !== pathParts.length) return;\n\n    const params: Record<string, string> = {};\n    let score = 0;\n    for (let i = 0; i < patternParts.length; i += 1) {\n      const patternPart = patternParts[i]!;\n      const pathPart = pathParts[i]!;\n      if (patternPart.startsWith(\":\")) params[patternPart.slice(1)] = pathPart;\n      else if (patternPart === pathPart) score += 1;\n      else return;\n    }\n    candidates.push({ route, params, score, index });\n  });\n\n  candidates.sort((a, b) => a.score - b.score || a.index - b.index);\n  const best = candidates[0];\n  if (best) return { destination: best.route.destination, params: { ...best.params } };\n  return fallback ? { destination: fallback.destination, params: {} } : null;\n}\n",
+          "label": "Candidates are sorted from least to most specific, allowing parameter routes to shadow literal routes.",
+          "sha256": "001e8dafb34a0871829be68322e55cacd9208e0d537193eacc7b02259f660a44"
+        }
+      ],
+      "reference": {
+        "code": "export interface RouteSpec {\n  readonly pattern: string;\n  readonly destination: string;\n}\n\nexport interface RouteMatch {\n  readonly destination: string;\n  readonly params: Readonly<Record<string, string>>;\n}\n\nfunction segments(value: string): string[] {\n  if (!value.startsWith(\"/\") || value.includes(\"?\") || value.includes(\"#\")) {\n    throw new TypeError(\"Invalid path syntax\");\n  }\n  if (value === \"/\") return [];\n  const result = value.slice(1).split(\"/\");\n  if (result.some((part) => part.length === 0)) {\n    throw new TypeError(\"Empty path segment\");\n  }\n  return result;\n}\n\nexport function matchPath(\n  routes: readonly RouteSpec[],\n  path: string,\n): RouteMatch | null {\n  const pathParts = segments(path);\n  let fallback: RouteSpec | undefined;\n  const candidates: Array<{ route: RouteSpec; params: Record<string, string>; score: number; index: number }> = [];\n\n  routes.forEach((route, index) => {\n    if (route.pattern === \"*\") {\n      fallback ??= route;\n      return;\n    }\n    const patternParts = segments(route.pattern);\n    const names = patternParts\n      .filter((part) => part.startsWith(\":\"))\n      .map((part) => part.slice(1));\n    if (names.some((name) => name.length === 0) || new Set(names).size !== names.length) {\n      throw new TypeError(\"Invalid route parameter\");\n    }\n    if (patternParts.length !== pathParts.length) return;\n\n    const params: Record<string, string> = {};\n    let score = 0;\n    for (let i = 0; i < patternParts.length; i += 1) {\n      const patternPart = patternParts[i]!;\n      const pathPart = pathParts[i]!;\n      if (patternPart.startsWith(\":\")) params[patternPart.slice(1)] = pathPart;\n      else if (patternPart === pathPart) score += 1;\n      else return;\n    }\n    candidates.push({ route, params, score, index });\n  });\n\n  candidates.sort((a, b) => b.score - a.score || a.index - b.index);\n  const best = candidates[0];\n  if (best) return { destination: best.route.destination, params: { ...best.params } };\n  return fallback ? { destination: fallback.destination, params: {} } : null;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "da2c1e73a3bf56d4d20f3c6d57a6c2a54a30e173b1239120655df0b82590e46d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { matchPath, RouteSpec } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  assert(JSON.stringify(actual) === JSON.stringify(expected), message);\n}\n\nfunction throwsTypeError(fn: () => void, message: string): void {\n  let error: unknown;\n  try { fn(); } catch (caught) { error = caught; }\n  assert(error instanceof TypeError, message);\n}\n\ndeepEqual(matchPath([], '/'), null, 'empty routes return null');\ndeepEqual(matchPath([{ pattern: '/', destination: 'root' }], '/'), { destination: 'root', params: {} }, 'root matches root');\ndeepEqual(matchPath([{ pattern: '/', destination: 'root' }], '/x'), null, 'root does not match another path');\n\nconst routes: readonly RouteSpec[] = Object.freeze([\n  Object.freeze({ pattern: '*', destination: 'fallback-one' }),\n  Object.freeze({ pattern: '/:section/fixed', destination: 'parameter-first' }),\n  Object.freeze({ pattern: '/shop/:item', destination: 'literal-first' }),\n  Object.freeze({ pattern: '/shop/fixed', destination: 'most-specific' }),\n  Object.freeze({ pattern: '*', destination: 'fallback-two' })\n]);\nconst before = JSON.stringify(routes);\ndeepEqual(matchPath(routes, '/shop/fixed'), { destination: 'most-specific', params: {} }, 'selects greatest literal specificity');\ndeepEqual(matchPath(routes, '/other/fixed'), { destination: 'parameter-first', params: { section: 'other' } }, 'captures raw parameter');\ndeepEqual(matchPath(routes, '/shop/value%20raw'), { destination: 'literal-first', params: { item: 'value%20raw' } }, 'does not decode parameters');\ndeepEqual(matchPath(routes, '/nothing'), { destination: 'fallback-one', params: {} }, 'uses first fallback last');\ndeepEqual(JSON.stringify(routes), before, 'does not mutate or reorder routes');\n\nconst tied: readonly RouteSpec[] = [\n  { pattern: '/:first/x', destination: 'first' },\n  { pattern: '/a/:second', destination: 'second' }\n];\ndeepEqual(matchPath(tied, '/a/x'), { destination: 'first', params: { first: 'a' } }, 'uses declaration order on specificity tie');\n\nconst freshOne = matchPath([{ pattern: '/:id', destination: 'd' }], '/x');\nconst freshTwo = matchPath([{ pattern: '/:id', destination: 'd' }], '/x');\nassert(freshOne !== null && freshTwo !== null && freshOne.params !== freshTwo.params, 'returns fresh parameter objects');\n\nfor (const path of ['relative', '*', '/a//b', '/a?x', '/a#x']) {\n  throwsTypeError(() => matchPath([], path), `rejects malformed path ${path}`);\n}\nfor (const pattern of ['relative', '/a//b', '/x/:', '/:id/:id', '/a?x', '/a#x']) {\n  throwsTypeError(() => matchPath([{ pattern, destination: 'bad' }], '/a/b'), `rejects malformed pattern ${pattern}`);\n}\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "73004353e5604ceef9233b899e52bfb55db12fa1bf877280d18c604453355539"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ffeea915662c1262010a07df2d279d76fe3300d4826d3fdf37ccb56789eaad0a",
+      "text": "Implement a new framework-independent path matcher.\n\nExport these declarations:\n\n- `interface RouteSpec { readonly pattern: string; readonly destination: string }`\n- `interface RouteMatch { readonly destination: string; readonly params: Readonly<Record<string, string>> }`\n- `function matchPath(routes: readonly RouteSpec[], path: string): RouteMatch | null`\n\nPaths and patterns must start with `/`, must not contain empty interior segments, and must not contain `?` or `#`; malformed values throw `TypeError`. A pattern segment is either a literal or a parameter beginning with `:` followed by a non-empty name. A pattern may instead be exactly `\"*\"`, which is the fallback. Duplicate parameter names within a pattern are invalid. The root pattern `/` matches only `/`.\n\nSelect the matching non-fallback route with the greatest number of literal segments. If specificity ties, use declaration order. Use the first fallback only when no ordinary route matches. Parameter values are raw path segments without decoding. Empty route arrays return `null`. Return a fresh parameter object and do not mutate or reorder the route array.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ffeea915662c1262010a07df2d279d76fe3300d4826d3fdf37ccb56789eaad0a",
+      "text": "Implement a new framework-independent path matcher.\n\nExport these declarations:\n\n- `interface RouteSpec { readonly pattern: string; readonly destination: string }`\n- `interface RouteMatch { readonly destination: string; readonly params: Readonly<Record<string, string>> }`\n- `function matchPath(routes: readonly RouteSpec[], path: string): RouteMatch | null`\n\nPaths and patterns must start with `/`, must not contain empty interior segments, and must not contain `?` or `#`; malformed values throw `TypeError`. A pattern segment is either a literal or a parameter beginning with `:` followed by a non-empty name. A pattern may instead be exactly `\"*\"`, which is the fallback. Duplicate parameter names within a pattern are invalid. The root pattern `/` matches only `/`.\n\nSelect the matching non-fallback route with the greatest number of literal segments. If specificity ties, use declaration order. Use the first fallback only when no ordinary route matches. Parameter values are raw path segments without decoding. Empty route arrays return `null`. Return a fresh parameter object and do not mutate or reorder the route array.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0022",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface RouteSpec {\n  readonly pattern: string;\n  readonly destination: string;\n}\n\nexport interface RouteMatch {\n  readonly destination: string;\n  readonly params: Readonly<Record<string, string>>;\n}\n\nfunction segments(value: string): string[] {\n  if (!value.startsWith(\"/\") || value.includes(\"?\") || value.includes(\"#\")) {\n    throw new TypeError(\"Invalid path syntax\");\n  }\n  if (value === \"/\") return [];\n  const result = value.slice(1).split(\"/\");\n  if (result.some((part) => part.length === 0)) {\n    throw new TypeError(\"Empty path segment\");\n  }\n  return result;\n}\n\nexport function matchPath(\n  routes: readonly RouteSpec[],\n  path: string,\n): RouteMatch | null {\n  const pathParts = segments(path);\n  let fallback: RouteSpec | undefined;\n  const candidates: Array<{ route: RouteSpec; params: Record<string, string>; score: number; index: number }> = [];\n\n  routes.forEach((route, index) => {\n    if (route.pattern === \"*\") {\n      fallback ??= route;\n      return;\n    }\n    const patternParts = segments(route.pattern);\n    const names = patternParts\n      .filter((part) => part.startsWith(\":\"))\n      .map((part) => part.slice(1));\n    if (names.some((name) => name.length === 0) || new Set(names).size !== names.length) {\n      throw new TypeError(\"Invalid route parameter\");\n    }\n    if (patternParts.length !== pathParts.length) return;\n\n    const params: Record<string, string> = {};\n    let score = 0;\n    for (let i = 0; i < patternParts.length; i += 1) {\n      const patternPart = patternParts[i]!;\n      const pathPart = pathParts[i]!;\n      if (patternPart.startsWith(\":\")) params[patternPart.slice(1)] = pathPart;\n      else if (patternPart === pathPart) score += 1;\n      else return;\n    }\n    candidates.push({ route, params, score, index });\n  });\n\n  candidates.sort((a, b) => a.score - b.score || a.index - b.index);\n  const best = candidates[0];\n  if (best) return { destination: best.route.destination, params: { ...best.params } };\n  return fallback ? { destination: fallback.destination, params: {} } : null;\n}\n",
+          "label": "Candidates are sorted from least to most specific, allowing parameter routes to shadow literal routes.",
+          "sha256": "001e8dafb34a0871829be68322e55cacd9208e0d537193eacc7b02259f660a44"
+        }
+      ],
+      "reference": {
+        "code": "export interface RouteSpec {\n  readonly pattern: string;\n  readonly destination: string;\n}\n\nexport interface RouteMatch {\n  readonly destination: string;\n  readonly params: Readonly<Record<string, string>>;\n}\n\nfunction segments(value: string): string[] {\n  if (!value.startsWith(\"/\") || value.includes(\"?\") || value.includes(\"#\")) {\n    throw new TypeError(\"Invalid path syntax\");\n  }\n  if (value === \"/\") return [];\n  const result = value.slice(1).split(\"/\");\n  if (result.some((part) => part.length === 0)) {\n    throw new TypeError(\"Empty path segment\");\n  }\n  return result;\n}\n\nexport function matchPath(\n  routes: readonly RouteSpec[],\n  path: string,\n): RouteMatch | null {\n  const pathParts = segments(path);\n  let fallback: RouteSpec | undefined;\n  const candidates: Array<{ route: RouteSpec; params: Record<string, string>; score: number; index: number }> = [];\n\n  routes.forEach((route, index) => {\n    if (route.pattern === \"*\") {\n      fallback ??= route;\n      return;\n    }\n    const patternParts = segments(route.pattern);\n    const names = patternParts\n      .filter((part) => part.startsWith(\":\"))\n      .map((part) => part.slice(1));\n    if (names.some((name) => name.length === 0) || new Set(names).size !== names.length) {\n      throw new TypeError(\"Invalid route parameter\");\n    }\n    if (patternParts.length !== pathParts.length) return;\n\n    const params: Record<string, string> = {};\n    let score = 0;\n    for (let i = 0; i < patternParts.length; i += 1) {\n      const patternPart = patternParts[i]!;\n      const pathPart = pathParts[i]!;\n      if (patternPart.startsWith(\":\")) params[patternPart.slice(1)] = pathPart;\n      else if (patternPart === pathPart) score += 1;\n      else return;\n    }\n    candidates.push({ route, params, score, index });\n  });\n\n  candidates.sort((a, b) => b.score - a.score || a.index - b.index);\n  const best = candidates[0];\n  if (best) return { destination: best.route.destination, params: { ...best.params } };\n  return fallback ? { destination: fallback.destination, params: {} } : null;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "da2c1e73a3bf56d4d20f3c6d57a6c2a54a30e173b1239120655df0b82590e46d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:6\n    throw new Error('valid parameter name __proto__ was lost');\n    ^\n\nError: valid parameter name __proto__ was lost\n    at Object.<anonymous> (/work/solution.test.js:6:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "add9855774f1df14aea9dfce094d2d90c5c970cb1525ea6f8baf4afd1613cd9a",
+    "duration_ms": 6513,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,5 +1,20 @@
 # Quality follow-up decision
 
+Latest: **85 total holds** after array batch 4; initial sample unchanged.
+
+Latest: **78 total holds** after array batch 3; initial sample unchanged.
+
+Current scope v2: seven systematic groups reopen **13 strata / 3,056 records**.
+The added finite-intermediate-arithmetic group binds executed JS generation0017,
+TS repair0014 and Python repair0473 diagnostics to their immutable candidate
+hashes. `stratum-followup-inventory-v2.json` preserves original sample size 300;
+outside-sample evidence does not enlarge it. This is review scope, not rejection.
+The original v1 report remains unchanged. All 97 data tooling tests pass.
+The 72-hold checkpoint is GCS roundtrip verified; v2 scope postdates that archive.
+
+Latest: **72 total holds** after array batch 2; see `ARRAY_STRATUM_REVIEW_2.md`.
+The v1 systematic scope remains a minimum, not clearance of other strata.
+
 Current count: 60 additive holds plus three historical (63). Array batch 1
 adds ten held records, with a passing directory sparse control. See
 `ARRAY_STRATUM_REVIEW.md`. Earlier scope/disposition details follow.

@@ -2,6 +2,31 @@
 
 ## Quality review continuation — 2026-09-06
 
+Current: **85 holds (82 additive plus historical three)**. Array batch 4 adds
+15 inspections / seven holds / nine diagnostic failures; 69 unique outside-
+sample targeted inspections total. Initial sample still 300. Continue at array
+hit position 61. `ARRAY_STRATUM_REVIEW_4.md` preserves scope and negative findings.
+GCS verified through 78-hold checkpoint including v2 scope; later batch pending.
+All 97 tooling tests pass. No new VM, training seal or revised partition.
+
+Current: **78 holds (75 additive plus historical three)**. Array batch 3 adds
+14 unique outside-sample inspections (54 total) and six reproduced failures.
+ArchiveService 0026 is not double-counted. Continue at JS generation0035, array
+hit position 46. See `ARRAY_STRATUM_REVIEW_3.md`. All 97 tooling tests pass.
+No VM, generation restart, training seal or revised partition.
+
+Scope update: v2 adds finite-intermediate arithmetic, now seven groups / 13
+strata / 3,056 records of review scope, NOT rejections. All 97 data tooling
+tests pass. The 72-hold checkpoint passed exact-generation GCS roundtrip;
+see `QUALITY_STRATUM_72_BACKUP.md`. Numeric-scope v2 changes postdate that archive.
+
+Current: **72 holds (69 additive plus historical three)**. Array batch 2 brings
+outside-sample targeted inspections to 40, with nine more reproduced failures
+and a passing parcel-filter control. See `ARRAY_STRATUM_REVIEW_2.md`. Next array
+hit is JS repair-0015; initial 300 remains unchanged. Review numeric and
+parameter-object systematic scope too. No training seal or new VM. Earlier
+checkpoint details below; all data-tooling tests still 92 passing.
+
 Current: **63 holds (60 additive plus historical three)**. `ARRAY_STRATUM_REVIEW.md`
 adds 15 outside-sample inspections, ten reproduced failures and a passing sparse
 directory control; 25 total outside-sample targeted inspections. All 92 data

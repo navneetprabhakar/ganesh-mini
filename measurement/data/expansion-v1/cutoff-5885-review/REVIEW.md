@@ -5,6 +5,15 @@ Population: 5,885; deterministic sample: 300. Cutoff corpus SHA-256:
 Prepared manifest SHA-256:
 `0a58d3d30f98202bd6fd87fafb1c7ddb415a2fabbfa21f6378da0399e72b6623`.
 
+Latest checkpoint: **165/300 inspected**, indices 0–164; next index 165.
+The 65 continuation inspections and focused JS/Python sandbox findings are in
+`THIRD_BATCH_REVIEW.md`. `additional-holds.json` contains 23 additional holds;
+26 total with the original three. Excluding these would leave 5,859 before
+other open findings are adjudicated; this is not a sealed admission count.
+Repeated sparse-array validation failures require affected-stratum review.
+Inspection is not automatic seven-criterion approval. Original artifacts and
+the v1 partition remain unchanged. The following is the earlier checkpoint.
+
 This is a partial review, not a passed sample. One hundred candidate specifications,
 reference implementations, original tests, and known-bad implementations have
 been read: frozen sample indices 0–99. The earlier Go repair 0465 follow-up is

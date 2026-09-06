@@ -1,0 +1,122 @@
+{
+  "id": "exp-v1-javascript-generation-0335",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "6a5a496d762e120315c6d8298d4b4be74b09b0536014ec180c4966bfb0112487",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { reducePager } = require('./solution');\nassert.deepEqual(reducePager({ page: 3, pageCount: Number.MAX_SAFE_INTEGER, revision: 0 },\n  { type: 'previous' }), { page: 2, pageCount: Number.MAX_SAFE_INTEGER, revision: 1 });\n",
+        "sha256": "c1e32ffffb9042be89b93729f62eb27206166c7dc6b12753317f741794d5ea25"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "02043dbbf5d5c1e1d6ec2fb57c093e0cdfc952b7a26d2f1678b6160b7fdc75e0",
+      "text": "Implement a CommonJS module exporting exactly `{ reducePager }`.\n\n`reducePager(state, event)` is a pure state transition. A valid state is `{ page, pageCount, revision }`, where all fields are non-negative safe integers. If `pageCount` is zero, `page` must be zero; otherwise `page < pageCount`. A valid event has one of these forms:\n\n- `{ type: 'next' }`: move to the next page, wrapping from the last page to zero. An empty pager stays at zero.\n- `{ type: 'previous' }`: move to the previous page, wrapping from zero to the last page. An empty pager stays at zero.\n- `{ type: 'jump', page }`: require an existing page index. No jump is valid for an empty pager.\n- `{ type: 'resize', pageCount }`: require a non-negative safe integer. Preserve the current page when possible; otherwise clamp it to the new last page, or zero when resized to empty.\n\nUse `TypeError` for malformed structures, field types, or unknown event types. Use `RangeError` for inconsistent states or out-of-range jumps. Return a fresh object and never mutate or retain either argument. Increase `revision` by one only when `page` or `pageCount` changes; throw `RangeError` if that increment would exceed the safe-integer range.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "02043dbbf5d5c1e1d6ec2fb57c093e0cdfc952b7a26d2f1678b6160b7fdc75e0",
+      "text": "Implement a CommonJS module exporting exactly `{ reducePager }`.\n\n`reducePager(state, event)` is a pure state transition. A valid state is `{ page, pageCount, revision }`, where all fields are non-negative safe integers. If `pageCount` is zero, `page` must be zero; otherwise `page < pageCount`. A valid event has one of these forms:\n\n- `{ type: 'next' }`: move to the next page, wrapping from the last page to zero. An empty pager stays at zero.\n- `{ type: 'previous' }`: move to the previous page, wrapping from zero to the last page. An empty pager stays at zero.\n- `{ type: 'jump', page }`: require an existing page index. No jump is valid for an empty pager.\n- `{ type: 'resize', pageCount }`: require a non-negative safe integer. Preserve the current page when possible; otherwise clamp it to the new last page, or zero when resized to empty.\n\nUse `TypeError` for malformed structures, field types, or unknown event types. Use `RangeError` for inconsistent states or out-of-range jumps. Return a fresh object and never mutate or retain either argument. Increase `revision` by one only when `page` or `pageCount` changes; throw `RangeError` if that increment would exceed the safe-integer range.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0335",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction reducePager(state, event) {\n  validateState(state);\n  if (!event || typeof event !== 'object' || Array.isArray(event) ||\n      typeof event.type !== 'string') {\n    throw new TypeError('invalid event');\n  }\n\n  let page = state.page;\n  let pageCount = state.pageCount;\n\n  if (event.type === 'next') {\n    if (pageCount > 0) page = (page + 1) % pageCount;\n  } else if (event.type === 'previous') {\n    if (pageCount > 0) page = (page - 1) % pageCount;\n  } else if (event.type === 'jump') {\n    if (!Number.isSafeInteger(event.page)) throw new TypeError('invalid page');\n    if (event.page < 0 || event.page >= pageCount) throw new RangeError('page out of range');\n    page = event.page;\n  } else if (event.type === 'resize') {\n    if (!Number.isSafeInteger(event.pageCount) || event.pageCount < 0) {\n      throw new TypeError('invalid page count');\n    }\n    pageCount = event.pageCount;\n    page = pageCount === 0 ? 0 : Math.min(page, pageCount - 1);\n  } else {\n    throw new TypeError('unknown event type');\n  }\n\n  const changed = page !== state.page || pageCount !== state.pageCount;\n  if (changed && state.revision === Number.MAX_SAFE_INTEGER) {\n    throw new RangeError('revision overflow');\n  }\n  return {\n    page,\n    pageCount,\n    revision: changed ? state.revision + 1 : state.revision\n  };\n}\n\nfunction validateState(state) {\n  if (!state || typeof state !== 'object' || Array.isArray(state) ||\n      !Number.isSafeInteger(state.page) || state.page < 0 ||\n      !Number.isSafeInteger(state.pageCount) || state.pageCount < 0 ||\n      !Number.isSafeInteger(state.revision) || state.revision < 0) {\n    throw new TypeError('invalid state');\n  }\n  if ((state.pageCount === 0 && state.page !== 0) ||\n      (state.pageCount > 0 && state.page >= state.pageCount)) {\n    throw new RangeError('inconsistent state');\n  }\n}\n\nmodule.exports = { reducePager };\n",
+          "label": "Previous-page wrapping produces `-1` when invoked on the first page.",
+          "sha256": "a7273bcee2fb24d4870e2505efaf498c5aaee1cbd7c4093f09eeb5dbb4e26bee"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction reducePager(state, event) {\n  validateState(state);\n  if (!event || typeof event !== 'object' || Array.isArray(event) ||\n      typeof event.type !== 'string') {\n    throw new TypeError('invalid event');\n  }\n\n  let page = state.page;\n  let pageCount = state.pageCount;\n\n  if (event.type === 'next') {\n    if (pageCount > 0) page = (page + 1) % pageCount;\n  } else if (event.type === 'previous') {\n    if (pageCount > 0) page = (page - 1 + pageCount) % pageCount;\n  } else if (event.type === 'jump') {\n    if (!Number.isSafeInteger(event.page)) throw new TypeError('invalid page');\n    if (event.page < 0 || event.page >= pageCount) throw new RangeError('page out of range');\n    page = event.page;\n  } else if (event.type === 'resize') {\n    if (!Number.isSafeInteger(event.pageCount) || event.pageCount < 0) {\n      throw new TypeError('invalid page count');\n    }\n    pageCount = event.pageCount;\n    page = pageCount === 0 ? 0 : Math.min(page, pageCount - 1);\n  } else {\n    throw new TypeError('unknown event type');\n  }\n\n  const changed = page !== state.page || pageCount !== state.pageCount;\n  if (changed && state.revision === Number.MAX_SAFE_INTEGER) {\n    throw new RangeError('revision overflow');\n  }\n  return {\n    page,\n    pageCount,\n    revision: changed ? state.revision + 1 : state.revision\n  };\n}\n\nfunction validateState(state) {\n  if (!state || typeof state !== 'object' || Array.isArray(state) ||\n      !Number.isSafeInteger(state.page) || state.page < 0 ||\n      !Number.isSafeInteger(state.pageCount) || state.pageCount < 0 ||\n      !Number.isSafeInteger(state.revision) || state.revision < 0) {\n    throw new TypeError('invalid state');\n  }\n  if ((state.pageCount === 0 && state.page !== 0) ||\n      (state.pageCount > 0 && state.page >= state.pageCount)) {\n    throw new RangeError('inconsistent state');\n  }\n}\n\nmodule.exports = { reducePager };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1b2a4e0b38c5139c987519a772db2a7f18631a71652414ab212b9ea49d61fd96"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\nassert.deepEqual(Object.keys(api).sort(), ['reducePager']);\nconst { reducePager } = api;\n\nfunction transition(state, event, expected) {\n  const stateBefore = { ...state };\n  const eventBefore = { ...event };\n  const result = reducePager(state, event);\n  assert.deepEqual(result, expected);\n  assert.deepEqual(state, stateBefore);\n  assert.deepEqual(event, eventBefore);\n  assert.notStrictEqual(result, state);\n}\n\ntransition({ page: 0, pageCount: 3, revision: 4 }, { type: 'next' },\n  { page: 1, pageCount: 3, revision: 5 });\ntransition({ page: 2, pageCount: 3, revision: 4 }, { type: 'next' },\n  { page: 0, pageCount: 3, revision: 5 });\ntransition({ page: 0, pageCount: 3, revision: 4 }, { type: 'previous' },\n  { page: 2, pageCount: 3, revision: 5 });\ntransition({ page: 0, pageCount: 0, revision: 4 }, { type: 'next' },\n  { page: 0, pageCount: 0, revision: 4 });\ntransition({ page: 0, pageCount: 0, revision: 4 }, { type: 'previous' },\n  { page: 0, pageCount: 0, revision: 4 });\ntransition({ page: 1, pageCount: 3, revision: 4 }, { type: 'jump', page: 1 },\n  { page: 1, pageCount: 3, revision: 4 });\ntransition({ page: 1, pageCount: 3, revision: 4 }, { type: 'jump', page: 2 },\n  { page: 2, pageCount: 3, revision: 5 });\ntransition({ page: 1, pageCount: 3, revision: 4 }, { type: 'resize', pageCount: 5 },\n  { page: 1, pageCount: 5, revision: 5 });\ntransition({ page: 3, pageCount: 5, revision: 4 }, { type: 'resize', pageCount: 2 },\n  { page: 1, pageCount: 2, revision: 5 });\ntransition({ page: 2, pageCount: 3, revision: 4 }, { type: 'resize', pageCount: 0 },\n  { page: 0, pageCount: 0, revision: 5 });\ntransition({ page: 1, pageCount: 3, revision: 4 }, { type: 'resize', pageCount: 3 },\n  { page: 1, pageCount: 3, revision: 4 });\n\nfor (const state of [\n  null, [], {},\n  { page: -1, pageCount: 1, revision: 0 },\n  { page: 0.5, pageCount: 1, revision: 0 },\n  { page: 0, pageCount: '1', revision: 0 },\n  { page: 0, pageCount: 1, revision: NaN },\n  { page: 0, pageCount: 1, revision: Number.MAX_SAFE_INTEGER + 1 }\n]) assert.throws(() => reducePager(state, { type: 'next' }), TypeError);\n\nassert.throws(() => reducePager({ page: 1, pageCount: 0, revision: 0 }, { type: 'next' }), RangeError);\nassert.throws(() => reducePager({ page: 2, pageCount: 2, revision: 0 }, { type: 'next' }), RangeError);\n\nconst validState = { page: 0, pageCount: 2, revision: 0 };\nfor (const event of [null, [], {}, { type: 'wat' }, { type: 1 },\n  { type: 'jump', page: '1' }, { type: 'jump', page: 1.2 },\n  { type: 'resize', pageCount: -1 }, { type: 'resize', pageCount: Infinity }]) {\n  assert.throws(() => reducePager(validState, event), TypeError);\n}\nassert.throws(() => reducePager(validState, { type: 'jump', page: 2 }), RangeError);\nassert.throws(() => reducePager({ page: 0, pageCount: 0, revision: 0 }, { type: 'jump', page: 0 }), RangeError);\nassert.throws(() => reducePager(\n  { page: 0, pageCount: 2, revision: Number.MAX_SAFE_INTEGER },\n  { type: 'next' }\n), RangeError);\nassert.deepEqual(reducePager(\n  { page: 0, pageCount: 0, revision: Number.MAX_SAFE_INTEGER },\n  { type: 'next' }\n), { page: 0, pageCount: 0, revision: Number.MAX_SAFE_INTEGER });\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "f4a0eff40974cec07adc070a40c8071a6e4bc997643ae324deb06bd2da3f60ab"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "02043dbbf5d5c1e1d6ec2fb57c093e0cdfc952b7a26d2f1678b6160b7fdc75e0",
+      "text": "Implement a CommonJS module exporting exactly `{ reducePager }`.\n\n`reducePager(state, event)` is a pure state transition. A valid state is `{ page, pageCount, revision }`, where all fields are non-negative safe integers. If `pageCount` is zero, `page` must be zero; otherwise `page < pageCount`. A valid event has one of these forms:\n\n- `{ type: 'next' }`: move to the next page, wrapping from the last page to zero. An empty pager stays at zero.\n- `{ type: 'previous' }`: move to the previous page, wrapping from zero to the last page. An empty pager stays at zero.\n- `{ type: 'jump', page }`: require an existing page index. No jump is valid for an empty pager.\n- `{ type: 'resize', pageCount }`: require a non-negative safe integer. Preserve the current page when possible; otherwise clamp it to the new last page, or zero when resized to empty.\n\nUse `TypeError` for malformed structures, field types, or unknown event types. Use `RangeError` for inconsistent states or out-of-range jumps. Return a fresh object and never mutate or retain either argument. Increase `revision` by one only when `page` or `pageCount` changes; throw `RangeError` if that increment would exceed the safe-integer range.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "02043dbbf5d5c1e1d6ec2fb57c093e0cdfc952b7a26d2f1678b6160b7fdc75e0",
+      "text": "Implement a CommonJS module exporting exactly `{ reducePager }`.\n\n`reducePager(state, event)` is a pure state transition. A valid state is `{ page, pageCount, revision }`, where all fields are non-negative safe integers. If `pageCount` is zero, `page` must be zero; otherwise `page < pageCount`. A valid event has one of these forms:\n\n- `{ type: 'next' }`: move to the next page, wrapping from the last page to zero. An empty pager stays at zero.\n- `{ type: 'previous' }`: move to the previous page, wrapping from zero to the last page. An empty pager stays at zero.\n- `{ type: 'jump', page }`: require an existing page index. No jump is valid for an empty pager.\n- `{ type: 'resize', pageCount }`: require a non-negative safe integer. Preserve the current page when possible; otherwise clamp it to the new last page, or zero when resized to empty.\n\nUse `TypeError` for malformed structures, field types, or unknown event types. Use `RangeError` for inconsistent states or out-of-range jumps. Return a fresh object and never mutate or retain either argument. Increase `revision` by one only when `page` or `pageCount` changes; throw `RangeError` if that increment would exceed the safe-integer range.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0335",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction reducePager(state, event) {\n  validateState(state);\n  if (!event || typeof event !== 'object' || Array.isArray(event) ||\n      typeof event.type !== 'string') {\n    throw new TypeError('invalid event');\n  }\n\n  let page = state.page;\n  let pageCount = state.pageCount;\n\n  if (event.type === 'next') {\n    if (pageCount > 0) page = (page + 1) % pageCount;\n  } else if (event.type === 'previous') {\n    if (pageCount > 0) page = (page - 1) % pageCount;\n  } else if (event.type === 'jump') {\n    if (!Number.isSafeInteger(event.page)) throw new TypeError('invalid page');\n    if (event.page < 0 || event.page >= pageCount) throw new RangeError('page out of range');\n    page = event.page;\n  } else if (event.type === 'resize') {\n    if (!Number.isSafeInteger(event.pageCount) || event.pageCount < 0) {\n      throw new TypeError('invalid page count');\n    }\n    pageCount = event.pageCount;\n    page = pageCount === 0 ? 0 : Math.min(page, pageCount - 1);\n  } else {\n    throw new TypeError('unknown event type');\n  }\n\n  const changed = page !== state.page || pageCount !== state.pageCount;\n  if (changed && state.revision === Number.MAX_SAFE_INTEGER) {\n    throw new RangeError('revision overflow');\n  }\n  return {\n    page,\n    pageCount,\n    revision: changed ? state.revision + 1 : state.revision\n  };\n}\n\nfunction validateState(state) {\n  if (!state || typeof state !== 'object' || Array.isArray(state) ||\n      !Number.isSafeInteger(state.page) || state.page < 0 ||\n      !Number.isSafeInteger(state.pageCount) || state.pageCount < 0 ||\n      !Number.isSafeInteger(state.revision) || state.revision < 0) {\n    throw new TypeError('invalid state');\n  }\n  if ((state.pageCount === 0 && state.page !== 0) ||\n      (state.pageCount > 0 && state.page >= state.pageCount)) {\n    throw new RangeError('inconsistent state');\n  }\n}\n\nmodule.exports = { reducePager };\n",
+          "label": "Previous-page wrapping produces `-1` when invoked on the first page.",
+          "sha256": "a7273bcee2fb24d4870e2505efaf498c5aaee1cbd7c4093f09eeb5dbb4e26bee"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction reducePager(state, event) {\n  validateState(state);\n  if (!event || typeof event !== 'object' || Array.isArray(event) ||\n      typeof event.type !== 'string') {\n    throw new TypeError('invalid event');\n  }\n\n  let page = state.page;\n  let pageCount = state.pageCount;\n\n  if (event.type === 'next') {\n    if (pageCount > 0) page = (page + 1) % pageCount;\n  } else if (event.type === 'previous') {\n    if (pageCount > 0) page = (page - 1 + pageCount) % pageCount;\n  } else if (event.type === 'jump') {\n    if (!Number.isSafeInteger(event.page)) throw new TypeError('invalid page');\n    if (event.page < 0 || event.page >= pageCount) throw new RangeError('page out of range');\n    page = event.page;\n  } else if (event.type === 'resize') {\n    if (!Number.isSafeInteger(event.pageCount) || event.pageCount < 0) {\n      throw new TypeError('invalid page count');\n    }\n    pageCount = event.pageCount;\n    page = pageCount === 0 ? 0 : Math.min(page, pageCount - 1);\n  } else {\n    throw new TypeError('unknown event type');\n  }\n\n  const changed = page !== state.page || pageCount !== state.pageCount;\n  if (changed && state.revision === Number.MAX_SAFE_INTEGER) {\n    throw new RangeError('revision overflow');\n  }\n  return {\n    page,\n    pageCount,\n    revision: changed ? state.revision + 1 : state.revision\n  };\n}\n\nfunction validateState(state) {\n  if (!state || typeof state !== 'object' || Array.isArray(state) ||\n      !Number.isSafeInteger(state.page) || state.page < 0 ||\n      !Number.isSafeInteger(state.pageCount) || state.pageCount < 0 ||\n      !Number.isSafeInteger(state.revision) || state.revision < 0) {\n    throw new TypeError('invalid state');\n  }\n  if ((state.pageCount === 0 && state.page !== 0) ||\n      (state.pageCount > 0 && state.page >= state.pageCount)) {\n    throw new RangeError('inconsistent state');\n  }\n}\n\nmodule.exports = { reducePager };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1b2a4e0b38c5139c987519a772db2a7f18631a71652414ab212b9ea49d61fd96"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   page: 1,\n-   page: 2,\n    pageCount: 9007199254740991,\n    revision: 1\n  }\n\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: { page: 1, pageCount: 9007199254740991, revision: 1 },\n  expected: { page: 2, pageCount: 9007199254740991, revision: 1 },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "d8be483eb16516994415fc2394a03068caf0c9a8b20048862c7b3cf11bef840e",
+    "duration_ms": 676,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

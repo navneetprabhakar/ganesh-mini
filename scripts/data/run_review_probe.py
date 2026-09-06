@@ -1,4 +1,4 @@
-"""Run a Go additive or Java isolated review probe against a frozen reference."""
+"""Run a pinned sandbox review probe against a frozen reference."""
 import argparse
 import copy
 import hashlib
@@ -24,15 +24,16 @@ def main():
     if digest(sample.read_bytes()) != manifest['files'][sample.name]['sha256']:
         raise ValueError('sample hash mismatch')
     row = next(r for r in read_jsonl(sample) if r['id'] == args.id)
-    if row['lane'] not in ('go', 'java'):
-        raise ValueError('this probe runner supports Go and Java only')
+    if row['lane'] not in ('go', 'java', 'javascript', 'python'):
+        raise ValueError('unsupported probe language')
     task = copy.deepcopy(row['verification_task'])
     task['surface'] = 'synthetic_harness'
     content = args.probe.read_text()
-    probe_path = 'review_test.go' if row['lane'] == 'go' else 'SolutionTest.java'
-    # Java's pinned entry point is SolutionTest. Preserve the original task in
+    probe_path = {'go': 'review_test.go', 'java': 'SolutionTest.java',
+                  'javascript': 'solution.test.js', 'python': 'test_solution.py'}[row['lane']]
+    # Use the pinned runtime test entry point. Preserve the original task in
     # the output and use a separate diagnostic test; never edit the candidate.
-    if row['lane'] == 'java':
+    if row['lane'] != 'go':
         task['files'] = [f for f in task['files'] if f['path'] != probe_path]
     task['files'].append({'path': probe_path, 'role': 'test',
                           'content': content, 'sha256': digest(content.encode())})

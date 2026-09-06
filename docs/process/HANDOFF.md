@@ -2,6 +2,19 @@
 
 ## Quality review continuation — 2026-09-06
 
+Latest continuation: **165/300** inspected, frozen indices 0–164; next index
+165. Go (56), Java (60), JavaScript (30) inspected in full; Python (19) underway.
+Inspection is not seven-criterion approval. `THIRD_BATCH_REVIEW.md` preserves
+65 further detailed inspections. `additional-holds.json` now contains 23
+additional holds, or 26 with the historical three. No new partition or seal.
+Repeated JS sparse-array validation gaps are reproduced in three repair tasks;
+generation examples and affected strata still need follow-up. Python mapping
+support and numeric-range ambiguities also need adjudication. All focused
+candidate execution uses the pinned network-disabled sandbox. Continue work;
+this is an evidence checkpoint, not a terminal outcome.
+
+The paragraph below records the earlier 100-record checkpoint:
+
 Semantic inspection is now 100/300: frozen indices 0–99. Go repair 0465 at
 index 37 is counted once. Archived provenance now traces all 300: 297 unchanged
 specification-only original tests and three specification-only critic chains.

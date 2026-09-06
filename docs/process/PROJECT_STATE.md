@@ -4,6 +4,17 @@ Last updated: 2026-09-06
 
 ## Current gate
 
+Latest continuation: 165/300 frozen sample records inspected; 135 remain.
+Go 56/56, Java 60/60, JavaScript 30/30, Python 19 inspected; Rust/TypeScript
+not yet semantically inspected. The 300-record archived provenance trace is
+complete, but is not semantic approval. There are 23 additive holds plus three
+historical holds (26 total), not a revised admission count. Repeated JS sparse
+validation failures and Python Mapping/numeric-envelope issues require related
+stratum review. Details: `cutoff-5885-review/THIRD_BATCH_REVIEW.md` and
+`additional-holds.json`. Next frozen index 165. No training seal or new VM.
+
+Historical 100-record checkpoint:
+
 Quality continuation: 100/300 records inspected (frozen indices 0–99), with
 archived test provenance traced for all 300: 297 original unchanged tests and
 three specification-only critic chains. Go generation 0058 is held after its

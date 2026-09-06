@@ -1,0 +1,122 @@
+{
+  "id": "exp-v1-javascript-generation-0339",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "f5a8f4c167fb310ec01e944aad20045f9ddabc074d77d318ba0bff5d161c8a3c",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createSignalHub } = require('./solution');\nconst hub = createSignalHub();\nassert.throws(() => hub.on('topic'), TypeError);\nassert.throws(() => hub.off('topic', undefined), TypeError);\n",
+        "sha256": "89102ca83ba777328e49c025a71458440adef92bb62d72d1d864e90adb1cf2ab"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "adb3c1cdb40f24974a4c34c5df5b74945e8a400ee3bf362940988bea88c3c3bb",
+      "text": "Implement `createSignalHub()` and export an object containing exactly this function with `module.exports`.\n\nThe returned hub must expose `on(topic, handler)`, `off(topic, handler)`, and `publish(topic, payload)`. A topic is a non-empty string and a handler is a function; invalid arguments throw `TypeError`. Registering the same function twice for one topic is idempotent. `on` returns a zero-argument unsubscribe function. `off` returns whether the handler was present.\n\n`publish` invokes handlers synchronously in registration order and returns the number invoked. It must use a snapshot: additions or removals made by a handler affect later publications, not the current one. Handler exceptions propagate immediately. Publishing an unregistered topic returns zero. Payloads are passed through unchanged, and the hub must never mutate them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "adb3c1cdb40f24974a4c34c5df5b74945e8a400ee3bf362940988bea88c3c3bb",
+      "text": "Implement `createSignalHub()` and export an object containing exactly this function with `module.exports`.\n\nThe returned hub must expose `on(topic, handler)`, `off(topic, handler)`, and `publish(topic, payload)`. A topic is a non-empty string and a handler is a function; invalid arguments throw `TypeError`. Registering the same function twice for one topic is idempotent. `on` returns a zero-argument unsubscribe function. `off` returns whether the handler was present.\n\n`publish` invokes handlers synchronously in registration order and returns the number invoked. It must use a snapshot: additions or removals made by a handler affect later publications, not the current one. Handler exceptions propagate immediately. Publishing an unregistered topic returns zero. Payloads are passed through unchanged, and the hub must never mutate them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0339",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createSignalHub() {\n  const topics = new Map();\n\n  function validate(topic, handler) {\n    if (typeof topic !== 'string' || topic.length === 0) {\n      throw new TypeError('topic must be a non-empty string');\n    }\n    if (handler !== undefined && typeof handler !== 'function') {\n      throw new TypeError('handler must be a function');\n    }\n  }\n\n  function on(topic, handler) {\n    validate(topic, handler);\n    let handlers = topics.get(topic);\n    if (!handlers) {\n      handlers = new Set();\n      topics.set(topic, handlers);\n    }\n    handlers.add(handler);\n    return () => off(topic, handler);\n  }\n\n  function off(topic, handler) {\n    validate(topic, handler);\n    const handlers = topics.get(topic);\n    if (!handlers) return false;\n    const removed = handlers.delete(handler);\n    if (handlers.size === 0) topics.delete(topic);\n    return removed;\n  }\n\n  function publish(topic, payload) {\n    validate(topic);\n    const handlers = topics.get(topic);\n    if (!handlers) return 0;\n    let count = 0;\n    for (const handler of handlers) {\n      handler(payload);\n      count += 1;\n    }\n    return count;\n  }\n\n  return { on, off, publish };\n}\n\nmodule.exports = { createSignalHub };\n",
+          "label": "Iterates the live handler set, so subscription changes can affect the publication already in progress.",
+          "sha256": "e470aa78aabde78ec1e044b19d94f7e73d28c1e69c39a5e182630e29a58f90c1"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createSignalHub() {\n  const topics = new Map();\n\n  function validate(topic, handler) {\n    if (typeof topic !== 'string' || topic.length === 0) {\n      throw new TypeError('topic must be a non-empty string');\n    }\n    if (handler !== undefined && typeof handler !== 'function') {\n      throw new TypeError('handler must be a function');\n    }\n  }\n\n  function on(topic, handler) {\n    validate(topic, handler);\n    let handlers = topics.get(topic);\n    if (!handlers) {\n      handlers = new Set();\n      topics.set(topic, handlers);\n    }\n    handlers.add(handler);\n    return () => off(topic, handler);\n  }\n\n  function off(topic, handler) {\n    validate(topic, handler);\n    const handlers = topics.get(topic);\n    if (!handlers) return false;\n    const removed = handlers.delete(handler);\n    if (handlers.size === 0) topics.delete(topic);\n    return removed;\n  }\n\n  function publish(topic, payload) {\n    validate(topic);\n    const handlers = topics.get(topic);\n    if (!handlers) return 0;\n    const snapshot = Array.from(handlers);\n    for (const handler of snapshot) handler(payload);\n    return snapshot.length;\n  }\n\n  return { on, off, publish };\n}\n\nmodule.exports = { createSignalHub };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e01eb7245e37e7afcdf930b3f871b6ebd2f8deec17ea9ed7355e15131569a7c7"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\nassert.deepEqual(Object.keys(api), ['createSignalHub']);\nconst { createSignalHub } = api;\nconst hub = createSignalHub();\nassert.equal(typeof hub.on, 'function');\nassert.equal(typeof hub.off, 'function');\nassert.equal(typeof hub.publish, 'function');\n\nfor (const topic of ['', null, 3]) {\n  assert.throws(() => hub.publish(topic, null), TypeError);\n  assert.throws(() => hub.on(topic, () => {}), TypeError);\n}\nassert.throws(() => hub.on('topic', null), TypeError);\nassert.throws(() => hub.off('topic', null), TypeError);\nassert.equal(hub.publish('unused', 1), 0);\n\nconst events = [];\nconst payload = Object.freeze({ value: 7 });\nfunction first(value) {\n  events.push(['first', value]);\n}\nfunction second(value) {\n  events.push(['second', value]);\n}\nconst unsubscribeFirst = hub.on('topic', first);\nassert.equal(typeof unsubscribeFirst, 'function');\nhub.on('topic', first);\nhub.on('topic', second);\nassert.equal(hub.publish('topic', payload), 2);\nassert.deepEqual(events, [['first', payload], ['second', payload]]);\nassert.strictEqual(events[0][1], payload);\nassert.equal(hub.off('topic', first), true);\nassert.equal(hub.off('topic', first), false);\nassert.equal(hub.publish('topic', payload), 1);\nunsubscribeFirst();\n\nconst snapshotHub = createSignalHub();\nconst snapshotEvents = [];\nfunction added() { snapshotEvents.push('added'); }\nfunction later() { snapshotEvents.push('later'); }\nfunction changing() {\n  snapshotEvents.push('changing');\n  snapshotHub.off('snap', later);\n  snapshotHub.on('snap', added);\n}\nsnapshotHub.on('snap', changing);\nsnapshotHub.on('snap', later);\nassert.equal(snapshotHub.publish('snap'), 2);\nassert.deepEqual(snapshotEvents, ['changing', 'later']);\nsnapshotEvents.length = 0;\nassert.equal(snapshotHub.publish('snap'), 2);\nassert.deepEqual(snapshotEvents, ['changing', 'added']);\n\nconst failure = new Error('handler failure');\nlet afterFailure = false;\nsnapshotHub.on('errors', () => { throw failure; });\nsnapshotHub.on('errors', () => { afterFailure = true; });\nassert.throws(() => snapshotHub.publish('errors', 1), (error) => error === failure);\nassert.equal(afterFailure, false);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "4e195282603dc7d6ca1f3f9c204d14206e417a5a7b866d82b2c560cd9dc82012"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "adb3c1cdb40f24974a4c34c5df5b74945e8a400ee3bf362940988bea88c3c3bb",
+      "text": "Implement `createSignalHub()` and export an object containing exactly this function with `module.exports`.\n\nThe returned hub must expose `on(topic, handler)`, `off(topic, handler)`, and `publish(topic, payload)`. A topic is a non-empty string and a handler is a function; invalid arguments throw `TypeError`. Registering the same function twice for one topic is idempotent. `on` returns a zero-argument unsubscribe function. `off` returns whether the handler was present.\n\n`publish` invokes handlers synchronously in registration order and returns the number invoked. It must use a snapshot: additions or removals made by a handler affect later publications, not the current one. Handler exceptions propagate immediately. Publishing an unregistered topic returns zero. Payloads are passed through unchanged, and the hub must never mutate them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "adb3c1cdb40f24974a4c34c5df5b74945e8a400ee3bf362940988bea88c3c3bb",
+      "text": "Implement `createSignalHub()` and export an object containing exactly this function with `module.exports`.\n\nThe returned hub must expose `on(topic, handler)`, `off(topic, handler)`, and `publish(topic, payload)`. A topic is a non-empty string and a handler is a function; invalid arguments throw `TypeError`. Registering the same function twice for one topic is idempotent. `on` returns a zero-argument unsubscribe function. `off` returns whether the handler was present.\n\n`publish` invokes handlers synchronously in registration order and returns the number invoked. It must use a snapshot: additions or removals made by a handler affect later publications, not the current one. Handler exceptions propagate immediately. Publishing an unregistered topic returns zero. Payloads are passed through unchanged, and the hub must never mutate them.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0339",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createSignalHub() {\n  const topics = new Map();\n\n  function validate(topic, handler) {\n    if (typeof topic !== 'string' || topic.length === 0) {\n      throw new TypeError('topic must be a non-empty string');\n    }\n    if (handler !== undefined && typeof handler !== 'function') {\n      throw new TypeError('handler must be a function');\n    }\n  }\n\n  function on(topic, handler) {\n    validate(topic, handler);\n    let handlers = topics.get(topic);\n    if (!handlers) {\n      handlers = new Set();\n      topics.set(topic, handlers);\n    }\n    handlers.add(handler);\n    return () => off(topic, handler);\n  }\n\n  function off(topic, handler) {\n    validate(topic, handler);\n    const handlers = topics.get(topic);\n    if (!handlers) return false;\n    const removed = handlers.delete(handler);\n    if (handlers.size === 0) topics.delete(topic);\n    return removed;\n  }\n\n  function publish(topic, payload) {\n    validate(topic);\n    const handlers = topics.get(topic);\n    if (!handlers) return 0;\n    let count = 0;\n    for (const handler of handlers) {\n      handler(payload);\n      count += 1;\n    }\n    return count;\n  }\n\n  return { on, off, publish };\n}\n\nmodule.exports = { createSignalHub };\n",
+          "label": "Iterates the live handler set, so subscription changes can affect the publication already in progress.",
+          "sha256": "e470aa78aabde78ec1e044b19d94f7e73d28c1e69c39a5e182630e29a58f90c1"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createSignalHub() {\n  const topics = new Map();\n\n  function validate(topic, handler) {\n    if (typeof topic !== 'string' || topic.length === 0) {\n      throw new TypeError('topic must be a non-empty string');\n    }\n    if (handler !== undefined && typeof handler !== 'function') {\n      throw new TypeError('handler must be a function');\n    }\n  }\n\n  function on(topic, handler) {\n    validate(topic, handler);\n    let handlers = topics.get(topic);\n    if (!handlers) {\n      handlers = new Set();\n      topics.set(topic, handlers);\n    }\n    handlers.add(handler);\n    return () => off(topic, handler);\n  }\n\n  function off(topic, handler) {\n    validate(topic, handler);\n    const handlers = topics.get(topic);\n    if (!handlers) return false;\n    const removed = handlers.delete(handler);\n    if (handlers.size === 0) topics.delete(topic);\n    return removed;\n  }\n\n  function publish(topic, payload) {\n    validate(topic);\n    const handlers = topics.get(topic);\n    if (!handlers) return 0;\n    const snapshot = Array.from(handlers);\n    for (const handler of snapshot) handler(payload);\n    return snapshot.length;\n  }\n\n  return { on, off, publish };\n}\n\nmodule.exports = { createSignalHub };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e01eb7245e37e7afcdf930b3f871b6ebd2f8deec17ea9ed7355e15131569a7c7"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:5:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3a58ca05975c2db2db7517ef1cc8764513ec383a724c8c0b9945be6166005f45",
+    "duration_ms": 494,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

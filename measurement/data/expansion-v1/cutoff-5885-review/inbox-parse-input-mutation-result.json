@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0564",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "d429c7f9aeb17b6cfb599aa8c806b3a9fbe2abf4f0b558edf2c727f14c5ce0c7",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import process_inbox\n\nraw = {'id': 'x', 'items': []}\ndef parse(value):\n    value['items'].append('parsed')\n    return value\n\nprocess_inbox([('x.packet', raw)], parse, lambda value: True)\nassert raw == {'id': 'x', 'items': []}, 'parser mutated caller-owned raw input'\n",
+        "sha256": "f8017aaec3faaf9394cfe21210015f0671795c06f2f6a3fb0455f297a801c88b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "10a2b162e826c5b7d2f324b4eaa227fa11524eb8bacf8beffd89e119f345503f",
+      "text": "Create `solution.py` with the public function:\n\n`process_inbox(entries, parse, assess, known_ids=()) -> dict`\n\nThis is an in-memory packet-processing pipeline. `entries` is a finite iterable of `(name, raw)` pairs. Only names ending in `.packet` are processed, case-sensitively; other entries are ignored. For each processed entry in encounter order:\n\n1. Call `parse(raw)`, which must return a dictionary containing a nonblank string `id`.\n2. Append `(id, name)` to the activity log.\n3. Skip the packet if its ID was supplied in `known_ids` or was accepted earlier in this call.\n4. Call `assess(parsed)`. Only the exact value `True` marks a packet for acceptance; all other return values mean safe and are skipped.\n5. Deep-copy accepted parsed dictionaries into the result.\n\nIf entry unpacking, parsing, parsed-data validation, or assessment raises an exception, append `(name, str(exception))` to errors and continue. Malformed `known_ids`\u2014including non-string or blank values\u2014raise `ValueError` before any entry is consumed. `parse` and `assess` must be callable or `TypeError` is raised before consumption.\n\nReturn a fresh dictionary with exactly `accepted`, `activity`, and `errors`; each value is a tuple. Duplicate IDs that were merely safe or failed assessment are not considered accepted and may be assessed again. Do not mutate inputs or leak mutable aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "10a2b162e826c5b7d2f324b4eaa227fa11524eb8bacf8beffd89e119f345503f",
+      "text": "Create `solution.py` with the public function:\n\n`process_inbox(entries, parse, assess, known_ids=()) -> dict`\n\nThis is an in-memory packet-processing pipeline. `entries` is a finite iterable of `(name, raw)` pairs. Only names ending in `.packet` are processed, case-sensitively; other entries are ignored. For each processed entry in encounter order:\n\n1. Call `parse(raw)`, which must return a dictionary containing a nonblank string `id`.\n2. Append `(id, name)` to the activity log.\n3. Skip the packet if its ID was supplied in `known_ids` or was accepted earlier in this call.\n4. Call `assess(parsed)`. Only the exact value `True` marks a packet for acceptance; all other return values mean safe and are skipped.\n5. Deep-copy accepted parsed dictionaries into the result.\n\nIf entry unpacking, parsing, parsed-data validation, or assessment raises an exception, append `(name, str(exception))` to errors and continue. Malformed `known_ids`\u2014including non-string or blank values\u2014raise `ValueError` before any entry is consumed. `parse` and `assess` must be callable or `TypeError` is raised before consumption.\n\nReturn a fresh dictionary with exactly `accepted`, `activity`, and `errors`; each value is a tuple. Duplicate IDs that were merely safe or failed assessment are not considered accepted and may be assessed again. Do not mutate inputs or leak mutable aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0564",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef process_inbox(entries, parse, assess, known_ids=()) -> dict:\n    if not callable(parse) or not callable(assess):\n        raise TypeError(\"parse and assess must be callable\")\n    known = set()\n    try:\n        for item_id in known_ids:\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"known IDs must be nonblank strings\")\n            known.add(item_id)\n    except TypeError:\n        raise ValueError(\"known_ids must be iterable\") from None\n\n    accepted = []\n    activity = []\n    errors = []\n    for entry in entries:\n        name = \"<invalid>\"\n        try:\n            name, raw = entry\n            if not isinstance(name, str):\n                raise TypeError(\"entry name must be a string\")\n            if not name.endswith(\".packet\"):\n                continue\n            parsed = parse(raw)\n            if not isinstance(parsed, dict):\n                raise TypeError(\"parse must return a dictionary\")\n            item_id = parsed.get(\"id\")\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"parsed id must be a nonblank string\")\n            activity.append((item_id, name))\n            if item_id in known:\n                continue\n            verdict = assess(copy.deepcopy(parsed))\n            if verdict is True:\n                continue\n            accepted.append(copy.deepcopy(parsed))\n            known.add(item_id)\n        except Exception as exc:\n            errors.append((name, str(exc)))\n    return {\"accepted\": tuple(accepted), \"activity\": tuple(activity), \"errors\": tuple(errors)}\n",
+          "label": "Inverts the assessment decision, skipping exact `True` verdicts and accepting every other verdict.",
+          "sha256": "f7794da8f1898798b35ebef0be0c6975719660f3a914a0f0147ed2f4300c7983"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef process_inbox(entries, parse, assess, known_ids=()) -> dict:\n    if not callable(parse) or not callable(assess):\n        raise TypeError(\"parse and assess must be callable\")\n    known = set()\n    try:\n        for item_id in known_ids:\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"known IDs must be nonblank strings\")\n            known.add(item_id)\n    except TypeError:\n        raise ValueError(\"known_ids must be iterable\") from None\n\n    accepted = []\n    activity = []\n    errors = []\n    for entry in entries:\n        name = \"<invalid>\"\n        try:\n            name, raw = entry\n            if not isinstance(name, str):\n                raise TypeError(\"entry name must be a string\")\n            if not name.endswith(\".packet\"):\n                continue\n            parsed = parse(raw)\n            if not isinstance(parsed, dict):\n                raise TypeError(\"parse must return a dictionary\")\n            item_id = parsed.get(\"id\")\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"parsed id must be a nonblank string\")\n            activity.append((item_id, name))\n            if item_id in known:\n                continue\n            verdict = assess(copy.deepcopy(parsed))\n            if verdict is not True:\n                continue\n            accepted.append(copy.deepcopy(parsed))\n            known.add(item_id)\n        except Exception as exc:\n            errors.append((name, str(exc)))\n    return {\"accepted\": tuple(accepted), \"activity\": tuple(activity), \"errors\": tuple(errors)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b137880ea7554efc09d1e0e9075f10ce957d3a3f4442b6195dc8611ee2384d72"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import process_inbox\n\n\nclass ProcessInboxTests(unittest.TestCase):\n    def test_processing_order_filtering_and_exact_result_shape(self):\n        parse_calls = []\n        assess_calls = []\n\n        def parse(raw):\n            parse_calls.append(raw)\n            return {\"id\": raw, \"nested\": [raw]}\n\n        def assess(parsed):\n            assess_calls.append(parsed[\"id\"])\n            return parsed[\"id\"] != \"safe\"\n\n        result = process_inbox(\n            [(\"ignored.txt\", \"ignored\"), (\"a.packet\", \"one\"), (\"b.packet\", \"safe\"), (\"c.packet\", \"two\")],\n            parse,\n            assess,\n        )\n        self.assertEqual(set(result), {\"accepted\", \"activity\", \"errors\"})\n        self.assertEqual(result[\"activity\"], ((\"one\", \"a.packet\"), (\"safe\", \"b.packet\"), (\"two\", \"c.packet\")))\n        self.assertEqual(result[\"errors\"], ())\n        self.assertEqual([item[\"id\"] for item in result[\"accepted\"]], [\"one\", \"two\"])\n        self.assertEqual(parse_calls, [\"one\", \"safe\", \"two\"])\n        self.assertEqual(assess_calls, [\"one\", \"safe\", \"two\"])\n        for value in result.values():\n            self.assertIsInstance(value, tuple)\n\n    def test_known_and_accepted_duplicates_are_skipped(self):\n        assessed = []\n\n        def parse(raw):\n            return {\"id\": raw}\n\n        def assess(parsed):\n            assessed.append(parsed[\"id\"])\n            return True\n\n        result = process_inbox(\n            [(\"a.packet\", \"known\"), (\"b.packet\", \"new\"), (\"c.packet\", \"new\")],\n            parse,\n            assess,\n            known_ids=(value for value in [\"known\"]),\n        )\n        self.assertEqual(result[\"activity\"], ((\"known\", \"a.packet\"), (\"new\", \"b.packet\"), (\"new\", \"c.packet\")))\n        self.assertEqual(assessed, [\"new\"])\n        self.assertEqual(result[\"accepted\"], ({\"id\": \"new\"},))\n\n    def test_safe_duplicate_may_be_assessed_again_and_only_exact_true_accepts(self):\n        returns = iter([False, 1, True])\n        calls = []\n\n        def parse(raw):\n            return {\"id\": raw}\n\n        def assess(parsed):\n            calls.append(parsed[\"id\"])\n            return next(returns)\n\n        result = process_inbox(\n            [(\"a.packet\", \"same\"), (\"b.packet\", \"same\"), (\"c.packet\", \"same\")],\n            parse,\n            assess,\n        )\n        self.assertEqual(calls, [\"same\", \"same\", \"same\"])\n        self.assertEqual(result[\"accepted\"], ({\"id\": \"same\"},))\n\n    def test_errors_continue_and_activity_occurs_after_valid_parse(self):\n        def parse(raw):\n            if raw == \"parse-error\":\n                raise RuntimeError(\"cannot parse\")\n            if raw == \"bad-shape\":\n                return []\n            if raw == \"bad-id\":\n                return {\"id\": \" \"}\n            return {\"id\": raw}\n\n        def assess(parsed):\n            if parsed[\"id\"] == \"assessment-error\":\n                raise LookupError(\"cannot assess\")\n            return True\n\n        result = process_inbox(\n            [\n                (\"a.packet\", \"parse-error\"),\n                (\"b.packet\", \"bad-shape\"),\n                (\"c.packet\", \"bad-id\"),\n                (\"d.packet\", \"assessment-error\"),\n                (\"e.packet\", \"ok\"),\n            ],\n            parse,\n            assess,\n        )\n        self.assertEqual(result[\"activity\"], ((\"assessment-error\", \"d.packet\"), (\"ok\", \"e.packet\")))\n        self.assertEqual(result[\"accepted\"], ({\"id\": \"ok\"},))\n        self.assertEqual([name for name, _ in result[\"errors\"]], [\"a.packet\", \"b.packet\", \"c.packet\", \"d.packet\"])\n        self.assertEqual(result[\"errors\"][0], (\"a.packet\", \"cannot parse\"))\n        self.assertEqual(result[\"errors\"][3], (\"d.packet\", \"cannot assess\"))\n\n    def test_deep_copy_and_no_alias_leaks(self):\n        parsed = {\"id\": \"x\", \"nested\": {\"values\": [1]}}\n\n        result = process_inbox([(\"x.packet\", parsed)], lambda raw: raw, lambda value: True)\n        parsed[\"nested\"][\"values\"].append(2)\n        self.assertEqual(result[\"accepted\"][0], {\"id\": \"x\", \"nested\": {\"values\": [1]}})\n        result[\"accepted\"][0][\"nested\"][\"values\"].append(3)\n\n        again = process_inbox([(\"x.packet\", parsed)], lambda raw: raw, lambda value: True)\n        self.assertEqual(again[\"accepted\"][0][\"nested\"][\"values\"], [1, 2])\n\n    def test_prevalidation_happens_before_entries_are_consumed(self):\n        consumed = []\n\n        def entries():\n            consumed.append(True)\n            yield (\"x.packet\", \"x\")\n\n        with self.assertRaises(TypeError):\n            process_inbox(entries(), None, lambda value: True)\n        self.assertEqual(consumed, [])\n        with self.assertRaises(TypeError):\n            process_inbox(entries(), lambda value: value, None)\n        self.assertEqual(consumed, [])\n\n        for known in ([\"ok\", \"\"], [\"ok\", \"  \"], [\"ok\", 3]):\n            with self.assertRaises(ValueError):\n                process_inbox(entries(), lambda value: value, lambda value: True, known)\n            self.assertEqual(consumed, [])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "7e5dd5270d8bdcb3ba5a07eb0513c64283fa036bbc397c4a287a89fbbbd73af6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "10a2b162e826c5b7d2f324b4eaa227fa11524eb8bacf8beffd89e119f345503f",
+      "text": "Create `solution.py` with the public function:\n\n`process_inbox(entries, parse, assess, known_ids=()) -> dict`\n\nThis is an in-memory packet-processing pipeline. `entries` is a finite iterable of `(name, raw)` pairs. Only names ending in `.packet` are processed, case-sensitively; other entries are ignored. For each processed entry in encounter order:\n\n1. Call `parse(raw)`, which must return a dictionary containing a nonblank string `id`.\n2. Append `(id, name)` to the activity log.\n3. Skip the packet if its ID was supplied in `known_ids` or was accepted earlier in this call.\n4. Call `assess(parsed)`. Only the exact value `True` marks a packet for acceptance; all other return values mean safe and are skipped.\n5. Deep-copy accepted parsed dictionaries into the result.\n\nIf entry unpacking, parsing, parsed-data validation, or assessment raises an exception, append `(name, str(exception))` to errors and continue. Malformed `known_ids`\u2014including non-string or blank values\u2014raise `ValueError` before any entry is consumed. `parse` and `assess` must be callable or `TypeError` is raised before consumption.\n\nReturn a fresh dictionary with exactly `accepted`, `activity`, and `errors`; each value is a tuple. Duplicate IDs that were merely safe or failed assessment are not considered accepted and may be assessed again. Do not mutate inputs or leak mutable aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "10a2b162e826c5b7d2f324b4eaa227fa11524eb8bacf8beffd89e119f345503f",
+      "text": "Create `solution.py` with the public function:\n\n`process_inbox(entries, parse, assess, known_ids=()) -> dict`\n\nThis is an in-memory packet-processing pipeline. `entries` is a finite iterable of `(name, raw)` pairs. Only names ending in `.packet` are processed, case-sensitively; other entries are ignored. For each processed entry in encounter order:\n\n1. Call `parse(raw)`, which must return a dictionary containing a nonblank string `id`.\n2. Append `(id, name)` to the activity log.\n3. Skip the packet if its ID was supplied in `known_ids` or was accepted earlier in this call.\n4. Call `assess(parsed)`. Only the exact value `True` marks a packet for acceptance; all other return values mean safe and are skipped.\n5. Deep-copy accepted parsed dictionaries into the result.\n\nIf entry unpacking, parsing, parsed-data validation, or assessment raises an exception, append `(name, str(exception))` to errors and continue. Malformed `known_ids`\u2014including non-string or blank values\u2014raise `ValueError` before any entry is consumed. `parse` and `assess` must be callable or `TypeError` is raised before consumption.\n\nReturn a fresh dictionary with exactly `accepted`, `activity`, and `errors`; each value is a tuple. Duplicate IDs that were merely safe or failed assessment are not considered accepted and may be assessed again. Do not mutate inputs or leak mutable aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0564",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef process_inbox(entries, parse, assess, known_ids=()) -> dict:\n    if not callable(parse) or not callable(assess):\n        raise TypeError(\"parse and assess must be callable\")\n    known = set()\n    try:\n        for item_id in known_ids:\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"known IDs must be nonblank strings\")\n            known.add(item_id)\n    except TypeError:\n        raise ValueError(\"known_ids must be iterable\") from None\n\n    accepted = []\n    activity = []\n    errors = []\n    for entry in entries:\n        name = \"<invalid>\"\n        try:\n            name, raw = entry\n            if not isinstance(name, str):\n                raise TypeError(\"entry name must be a string\")\n            if not name.endswith(\".packet\"):\n                continue\n            parsed = parse(raw)\n            if not isinstance(parsed, dict):\n                raise TypeError(\"parse must return a dictionary\")\n            item_id = parsed.get(\"id\")\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"parsed id must be a nonblank string\")\n            activity.append((item_id, name))\n            if item_id in known:\n                continue\n            verdict = assess(copy.deepcopy(parsed))\n            if verdict is True:\n                continue\n            accepted.append(copy.deepcopy(parsed))\n            known.add(item_id)\n        except Exception as exc:\n            errors.append((name, str(exc)))\n    return {\"accepted\": tuple(accepted), \"activity\": tuple(activity), \"errors\": tuple(errors)}\n",
+          "label": "Inverts the assessment decision, skipping exact `True` verdicts and accepting every other verdict.",
+          "sha256": "f7794da8f1898798b35ebef0be0c6975719660f3a914a0f0147ed2f4300c7983"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef process_inbox(entries, parse, assess, known_ids=()) -> dict:\n    if not callable(parse) or not callable(assess):\n        raise TypeError(\"parse and assess must be callable\")\n    known = set()\n    try:\n        for item_id in known_ids:\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"known IDs must be nonblank strings\")\n            known.add(item_id)\n    except TypeError:\n        raise ValueError(\"known_ids must be iterable\") from None\n\n    accepted = []\n    activity = []\n    errors = []\n    for entry in entries:\n        name = \"<invalid>\"\n        try:\n            name, raw = entry\n            if not isinstance(name, str):\n                raise TypeError(\"entry name must be a string\")\n            if not name.endswith(\".packet\"):\n                continue\n            parsed = parse(raw)\n            if not isinstance(parsed, dict):\n                raise TypeError(\"parse must return a dictionary\")\n            item_id = parsed.get(\"id\")\n            if not isinstance(item_id, str) or not item_id.strip():\n                raise ValueError(\"parsed id must be a nonblank string\")\n            activity.append((item_id, name))\n            if item_id in known:\n                continue\n            verdict = assess(copy.deepcopy(parsed))\n            if verdict is not True:\n                continue\n            accepted.append(copy.deepcopy(parsed))\n            known.add(item_id)\n        except Exception as exc:\n            errors.append((name, str(exc)))\n    return {\"accepted\": tuple(accepted), \"activity\": tuple(activity), \"errors\": tuple(errors)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b137880ea7554efc09d1e0e9075f10ce957d3a3f4442b6195dc8611ee2384d72"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 9, in <module>\n    assert raw == {'id': 'x', 'items': []}, 'parser mutated caller-owned raw input'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: parser mutated caller-owned raw input\n",
+    "stderr_sha256": "ecae368639b47d255b46cec3411b307a506f457392a53a709c52639a65dd553c",
+    "duration_ms": 317,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0511",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4ae349169c88ebad6540ea0e1ea00acb6d04e7c9f42557b45fc2453feceb9536",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import SnippetTemplate\n\ntry:\n    SnippetTemplate({1: 'x', 'unknown': 'y'})\nexcept ValueError:\n    pass\nexcept Exception as exc:\n    raise AssertionError(f'unknown keys require ValueError, got {type(exc).__name__}') from exc\nelse:\n    raise AssertionError('unknown keys accepted')\n",
+        "sha256": "dec0b536ac48e7f0bb2a78a6cb23822549ade5637eeb00739c34a65edebdb44a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "19a00a76454699a52482e44b439f636c349b83de9398b554a9e7f7c62421491b",
+      "text": "Implement `solution.py` with a class `SnippetTemplate`.\n\n`SnippetTemplate(defaults=None)` stores these default options: `dialect=\"text\"`, `open_tag=None`, `close_tag=None`, and `trim=0`. A supplied defaults mapping may replace any of those values; unknown keys raise `ValueError`. Later mutation of the supplied mapping must not affect the instance.\n\n`render(source, overrides=None)` returns a new dictionary with keys `dialect`, `content`, and `source_span`. Unknown override keys raise `ValueError`, and neither input mapping may be mutated. `source` is split with `str.splitlines()`. If `open_tag` is not `None`, exclude the first line exactly equal to it and all preceding lines. If `close_tag` is not `None`, exclude the first matching line after the selected start and all following lines. A missing requested tag raises `ValueError`. `trim` must be a non-boolean, nonnegative integer; remove at most that many leading spaces independently from every selected line. `source_span` is the zero-based half-open range in the original split line sequence. Empty selected content is represented by `\"\"`. `source` and `dialect` must be strings, and tags must be strings or `None`; otherwise raise `TypeError`.\n\nAll returned containers must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "19a00a76454699a52482e44b439f636c349b83de9398b554a9e7f7c62421491b",
+      "text": "Implement `solution.py` with a class `SnippetTemplate`.\n\n`SnippetTemplate(defaults=None)` stores these default options: `dialect=\"text\"`, `open_tag=None`, `close_tag=None`, and `trim=0`. A supplied defaults mapping may replace any of those values; unknown keys raise `ValueError`. Later mutation of the supplied mapping must not affect the instance.\n\n`render(source, overrides=None)` returns a new dictionary with keys `dialect`, `content`, and `source_span`. Unknown override keys raise `ValueError`, and neither input mapping may be mutated. `source` is split with `str.splitlines()`. If `open_tag` is not `None`, exclude the first line exactly equal to it and all preceding lines. If `close_tag` is not `None`, exclude the first matching line after the selected start and all following lines. A missing requested tag raises `ValueError`. `trim` must be a non-boolean, nonnegative integer; remove at most that many leading spaces independently from every selected line. `source_span` is the zero-based half-open range in the original split line sequence. Empty selected content is represented by `\"\"`. `source` and `dialect` must be strings, and tags must be strings or `None`; otherwise raise `TypeError`.\n\nAll returned containers must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0511",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class SnippetTemplate:\n    _DEFAULTS = {\n        \"dialect\": \"text\",\n        \"open_tag\": None,\n        \"close_tag\": None,\n        \"trim\": 0,\n    }\n\n    def __init__(self, defaults=None):\n        supplied = {} if defaults is None else dict(defaults)\n        unknown = set(supplied) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        self._options = dict(self._DEFAULTS)\n        self._options.update(supplied)\n        self._validate(self._options)\n\n    @staticmethod\n    def _validate(options):\n        if not isinstance(options[\"dialect\"], str):\n            raise TypeError(\"dialect must be a string\")\n        for key in (\"open_tag\", \"close_tag\"):\n            if options[key] is not None and not isinstance(options[key], str):\n                raise TypeError(f\"{key} must be a string or None\")\n        trim = options[\"trim\"]\n        if isinstance(trim, bool) or not isinstance(trim, int):\n            raise TypeError(\"trim must be an integer\")\n        if trim < 0:\n            raise ValueError(\"trim must be nonnegative\")\n\n    def render(self, source, overrides=None):\n        if not isinstance(source, str):\n            raise TypeError(\"source must be a string\")\n        changes = {} if overrides is None else dict(overrides)\n        unknown = set(changes) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        options = dict(self._options)\n        options.update(changes)\n        self._validate(options)\n\n        lines = source.splitlines()\n        start = 0\n        end = len(lines)\n        if options[\"open_tag\"] is not None:\n            try:\n                start = lines.index(options[\"open_tag\"]) + 1\n            except ValueError as exc:\n                raise ValueError(\"open tag not found\") from exc\n        if options[\"close_tag\"] is not None:\n            try:\n                end = lines.index(options[\"close_tag\"], start)\n            except ValueError as exc:\n                raise ValueError(\"close tag not found\") from exc\n\n        trim = options[\"trim\"]\n        selected = []\n        for line in lines[start:end]:\n            selected.append(line.lstrip(\" \"))\n        return {\n            \"dialect\": options[\"dialect\"],\n            \"content\": \"\\n\".join(selected),\n            \"source_span\": (start, end),\n        }\n",
+          "label": "Removes every leading space instead of removing at most the configured trim amount.",
+          "sha256": "e74e85c037927a6f8457b49a89a86bf9becf5371e1b6a5822f4c8b59388dfc6b"
+        }
+      ],
+      "reference": {
+        "code": "class SnippetTemplate:\n    _DEFAULTS = {\n        \"dialect\": \"text\",\n        \"open_tag\": None,\n        \"close_tag\": None,\n        \"trim\": 0,\n    }\n\n    def __init__(self, defaults=None):\n        supplied = {} if defaults is None else dict(defaults)\n        unknown = set(supplied) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        self._options = dict(self._DEFAULTS)\n        self._options.update(supplied)\n        self._validate(self._options)\n\n    @staticmethod\n    def _validate(options):\n        if not isinstance(options[\"dialect\"], str):\n            raise TypeError(\"dialect must be a string\")\n        for key in (\"open_tag\", \"close_tag\"):\n            if options[key] is not None and not isinstance(options[key], str):\n                raise TypeError(f\"{key} must be a string or None\")\n        trim = options[\"trim\"]\n        if isinstance(trim, bool) or not isinstance(trim, int):\n            raise TypeError(\"trim must be an integer\")\n        if trim < 0:\n            raise ValueError(\"trim must be nonnegative\")\n\n    def render(self, source, overrides=None):\n        if not isinstance(source, str):\n            raise TypeError(\"source must be a string\")\n        changes = {} if overrides is None else dict(overrides)\n        unknown = set(changes) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        options = dict(self._options)\n        options.update(changes)\n        self._validate(options)\n\n        lines = source.splitlines()\n        start = 0\n        end = len(lines)\n        if options[\"open_tag\"] is not None:\n            try:\n                start = lines.index(options[\"open_tag\"]) + 1\n            except ValueError as exc:\n                raise ValueError(\"open tag not found\") from exc\n        if options[\"close_tag\"] is not None:\n            try:\n                end = lines.index(options[\"close_tag\"], start)\n            except ValueError as exc:\n                raise ValueError(\"close tag not found\") from exc\n\n        trim = options[\"trim\"]\n        selected = []\n        for line in lines[start:end]:\n            count = min(trim, len(line) - len(line.lstrip(\" \")))\n            selected.append(line[count:])\n        return {\n            \"dialect\": options[\"dialect\"],\n            \"content\": \"\\n\".join(selected),\n            \"source_span\": (start, end),\n        }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eb7609c7663eb4dea8f032737da62851cf3118a74a661238761913258896121e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import SnippetTemplate\n\n\nclass SnippetTemplateTests(unittest.TestCase):\n    def test_defaults_and_fresh_results(self):\n        template = SnippetTemplate()\n        first = template.render(\"alpha\\nbeta\\n\")\n        second = template.render(\"alpha\\nbeta\\n\")\n        self.assertEqual(first, {\n            \"dialect\": \"text\",\n            \"content\": \"alpha\\nbeta\",\n            \"source_span\": (0, 2),\n        })\n        self.assertEqual(second, first)\n        self.assertIsNot(first, second)\n\n    def test_tags_trim_overrides_and_input_stability(self):\n        defaults = {\"dialect\": \"python\", \"open_tag\": \"BEGIN\", \"trim\": 2}\n        template = SnippetTemplate(defaults)\n        defaults[\"dialect\"] = \"changed\"\n        defaults[\"open_tag\"] = None\n        overrides = {\"close_tag\": \"END\", \"trim\": 3}\n        result = template.render(\n            \"ignored\\nBEGIN\\n    one\\n two\\nEND\\nafter\", overrides\n        )\n        self.assertEqual(result, {\n            \"dialect\": \"python\",\n            \"content\": \" one\\ntwo\",\n            \"source_span\": (2, 4),\n        })\n        self.assertEqual(overrides, {\"close_tag\": \"END\", \"trim\": 3})\n\n    def test_empty_selection(self):\n        result = SnippetTemplate({\"open_tag\": \"[\", \"close_tag\": \"]\"}).render(\n            \"[\\n]\\nunused\"\n        )\n        self.assertEqual(result[\"content\"], \"\")\n        self.assertEqual(result[\"source_span\"], (1, 1))\n\n    def test_missing_tags(self):\n        with self.assertRaises(ValueError):\n            SnippetTemplate({\"open_tag\": \"missing\"}).render(\"a\\nb\")\n        with self.assertRaises(ValueError):\n            SnippetTemplate({\"close_tag\": \"missing\"}).render(\"a\\nb\")\n        with self.assertRaises(ValueError):\n            SnippetTemplate({\"open_tag\": \"OPEN\", \"close_tag\": \"CLOSE\"}).render(\n                \"CLOSE\\nOPEN\\ndata\"\n            )\n\n    def test_unknown_options(self):\n        with self.assertRaises(ValueError):\n            SnippetTemplate({\"unknown\": 1})\n        with self.assertRaises(ValueError):\n            SnippetTemplate().render(\"x\", {\"unknown\": 1})\n\n    def test_type_and_trim_validation(self):\n        for source in (None, 3, [\"x\"]):\n            with self.assertRaises(TypeError):\n                SnippetTemplate().render(source)\n        for options in (\n            {\"dialect\": None},\n            {\"open_tag\": 1},\n            {\"close_tag\": []},\n        ):\n            with self.assertRaises(TypeError):\n                SnippetTemplate(options).render(\"x\")\n        for trim in (True, 1.5, -1):\n            expected = TypeError if trim is True or trim == 1.5 else ValueError\n            with self.assertRaises(expected):\n                SnippetTemplate({\"trim\": trim}).render(\"x\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "834dfa33b465f19ddc62102649215c5db72417e144622fa39e433685883defe2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "19a00a76454699a52482e44b439f636c349b83de9398b554a9e7f7c62421491b",
+      "text": "Implement `solution.py` with a class `SnippetTemplate`.\n\n`SnippetTemplate(defaults=None)` stores these default options: `dialect=\"text\"`, `open_tag=None`, `close_tag=None`, and `trim=0`. A supplied defaults mapping may replace any of those values; unknown keys raise `ValueError`. Later mutation of the supplied mapping must not affect the instance.\n\n`render(source, overrides=None)` returns a new dictionary with keys `dialect`, `content`, and `source_span`. Unknown override keys raise `ValueError`, and neither input mapping may be mutated. `source` is split with `str.splitlines()`. If `open_tag` is not `None`, exclude the first line exactly equal to it and all preceding lines. If `close_tag` is not `None`, exclude the first matching line after the selected start and all following lines. A missing requested tag raises `ValueError`. `trim` must be a non-boolean, nonnegative integer; remove at most that many leading spaces independently from every selected line. `source_span` is the zero-based half-open range in the original split line sequence. Empty selected content is represented by `\"\"`. `source` and `dialect` must be strings, and tags must be strings or `None`; otherwise raise `TypeError`.\n\nAll returned containers must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "19a00a76454699a52482e44b439f636c349b83de9398b554a9e7f7c62421491b",
+      "text": "Implement `solution.py` with a class `SnippetTemplate`.\n\n`SnippetTemplate(defaults=None)` stores these default options: `dialect=\"text\"`, `open_tag=None`, `close_tag=None`, and `trim=0`. A supplied defaults mapping may replace any of those values; unknown keys raise `ValueError`. Later mutation of the supplied mapping must not affect the instance.\n\n`render(source, overrides=None)` returns a new dictionary with keys `dialect`, `content`, and `source_span`. Unknown override keys raise `ValueError`, and neither input mapping may be mutated. `source` is split with `str.splitlines()`. If `open_tag` is not `None`, exclude the first line exactly equal to it and all preceding lines. If `close_tag` is not `None`, exclude the first matching line after the selected start and all following lines. A missing requested tag raises `ValueError`. `trim` must be a non-boolean, nonnegative integer; remove at most that many leading spaces independently from every selected line. `source_span` is the zero-based half-open range in the original split line sequence. Empty selected content is represented by `\"\"`. `source` and `dialect` must be strings, and tags must be strings or `None`; otherwise raise `TypeError`.\n\nAll returned containers must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0511",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class SnippetTemplate:\n    _DEFAULTS = {\n        \"dialect\": \"text\",\n        \"open_tag\": None,\n        \"close_tag\": None,\n        \"trim\": 0,\n    }\n\n    def __init__(self, defaults=None):\n        supplied = {} if defaults is None else dict(defaults)\n        unknown = set(supplied) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        self._options = dict(self._DEFAULTS)\n        self._options.update(supplied)\n        self._validate(self._options)\n\n    @staticmethod\n    def _validate(options):\n        if not isinstance(options[\"dialect\"], str):\n            raise TypeError(\"dialect must be a string\")\n        for key in (\"open_tag\", \"close_tag\"):\n            if options[key] is not None and not isinstance(options[key], str):\n                raise TypeError(f\"{key} must be a string or None\")\n        trim = options[\"trim\"]\n        if isinstance(trim, bool) or not isinstance(trim, int):\n            raise TypeError(\"trim must be an integer\")\n        if trim < 0:\n            raise ValueError(\"trim must be nonnegative\")\n\n    def render(self, source, overrides=None):\n        if not isinstance(source, str):\n            raise TypeError(\"source must be a string\")\n        changes = {} if overrides is None else dict(overrides)\n        unknown = set(changes) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        options = dict(self._options)\n        options.update(changes)\n        self._validate(options)\n\n        lines = source.splitlines()\n        start = 0\n        end = len(lines)\n        if options[\"open_tag\"] is not None:\n            try:\n                start = lines.index(options[\"open_tag\"]) + 1\n            except ValueError as exc:\n                raise ValueError(\"open tag not found\") from exc\n        if options[\"close_tag\"] is not None:\n            try:\n                end = lines.index(options[\"close_tag\"], start)\n            except ValueError as exc:\n                raise ValueError(\"close tag not found\") from exc\n\n        trim = options[\"trim\"]\n        selected = []\n        for line in lines[start:end]:\n            selected.append(line.lstrip(\" \"))\n        return {\n            \"dialect\": options[\"dialect\"],\n            \"content\": \"\\n\".join(selected),\n            \"source_span\": (start, end),\n        }\n",
+          "label": "Removes every leading space instead of removing at most the configured trim amount.",
+          "sha256": "e74e85c037927a6f8457b49a89a86bf9becf5371e1b6a5822f4c8b59388dfc6b"
+        }
+      ],
+      "reference": {
+        "code": "class SnippetTemplate:\n    _DEFAULTS = {\n        \"dialect\": \"text\",\n        \"open_tag\": None,\n        \"close_tag\": None,\n        \"trim\": 0,\n    }\n\n    def __init__(self, defaults=None):\n        supplied = {} if defaults is None else dict(defaults)\n        unknown = set(supplied) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        self._options = dict(self._DEFAULTS)\n        self._options.update(supplied)\n        self._validate(self._options)\n\n    @staticmethod\n    def _validate(options):\n        if not isinstance(options[\"dialect\"], str):\n            raise TypeError(\"dialect must be a string\")\n        for key in (\"open_tag\", \"close_tag\"):\n            if options[key] is not None and not isinstance(options[key], str):\n                raise TypeError(f\"{key} must be a string or None\")\n        trim = options[\"trim\"]\n        if isinstance(trim, bool) or not isinstance(trim, int):\n            raise TypeError(\"trim must be an integer\")\n        if trim < 0:\n            raise ValueError(\"trim must be nonnegative\")\n\n    def render(self, source, overrides=None):\n        if not isinstance(source, str):\n            raise TypeError(\"source must be a string\")\n        changes = {} if overrides is None else dict(overrides)\n        unknown = set(changes) - set(self._DEFAULTS)\n        if unknown:\n            raise ValueError(f\"unknown options: {sorted(unknown)}\")\n        options = dict(self._options)\n        options.update(changes)\n        self._validate(options)\n\n        lines = source.splitlines()\n        start = 0\n        end = len(lines)\n        if options[\"open_tag\"] is not None:\n            try:\n                start = lines.index(options[\"open_tag\"]) + 1\n            except ValueError as exc:\n                raise ValueError(\"open tag not found\") from exc\n        if options[\"close_tag\"] is not None:\n            try:\n                end = lines.index(options[\"close_tag\"], start)\n            except ValueError as exc:\n                raise ValueError(\"close tag not found\") from exc\n\n        trim = options[\"trim\"]\n        selected = []\n        for line in lines[start:end]:\n            count = min(trim, len(line) - len(line.lstrip(\" \")))\n            selected.append(line[count:])\n        return {\n            \"dialect\": options[\"dialect\"],\n            \"content\": \"\\n\".join(selected),\n            \"source_span\": (start, end),\n        }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eb7609c7663eb4dea8f032737da62851cf3118a74a661238761913258896121e"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"test_solution.py\", line 4, in <module>\n    SnippetTemplate({1: 'x', 'unknown': 'y'})\n  File \"/work/solution.py\", line 13, in __init__\n    raise ValueError(f\"unknown options: {sorted(unknown)}\")\n                                         ^^^^^^^^^^^^^^^\nTypeError: '<' not supported between instances of 'str' and 'int'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 8, in <module>\n    raise AssertionError(f'unknown keys require ValueError, got {type(exc).__name__}') from exc\nAssertionError: unknown keys require ValueError, got TypeError\n",
+    "stderr_sha256": "60ff266da7d9b79c3cff6afcc5e3b5ef69d0122470edea6a03483cff07970b0f",
+    "duration_ms": 490,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

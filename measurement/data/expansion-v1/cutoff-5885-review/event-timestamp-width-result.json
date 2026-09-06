@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0530",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f21e80c4e16333918a51fc2dc2286c0f29e92d3687494cc95abd37849e7893c6",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import decode_event_batch\n\ntry:\n    actual = decode_event_batch('id=x|at=202411T000000|cents=1|category=c', set())\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError(f'non-YYYYMMDD timestamp accepted: {actual!r}')\n",
+        "sha256": "ec70b0aacfe7955eb1ec5aac83bcb8300157d46b6445a23453c6ae32a9e9e0db"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4e9fc1f8e2a184ba685c4d54e27468827cee5918ec7aa13e68c65cabe9733171",
+      "text": "Create `solution.py` defining an immutable dataclass `Event` with string fields `event_id`, `date`, `time`, and `category`, plus integer field `cents`, and define `decode_event_batch(data, processed_ids)`.\n\n`data` contains semicolon-separated records. Each nonempty record contains exactly these pipe-separated key-value fields in any order: `id`, `at`, `cents`, and `category`. Values cannot be empty or contain `=`. `at` uses `YYYYMMDDTHHMMSS`; output date and time are `DD.MM.YYYY` and `HH:MM:SS`. Dates and times must be calendar-valid. `cents` is a nonnegative base-10 integer without a sign. IDs and categories are preserved verbatim.\n\n`processed_ids` must be a `set` containing only strings. Return `(events, updated_ids)`, where both are new objects. Ignore records whose ID was previously processed or appeared earlier in this batch. Preserve the order of accepted records. Do not mutate or alias `processed_ids`. Empty or whitespace-only input returns an empty list and an equal but distinct set. Raise `TypeError` for wrong argument types and `ValueError` for malformed data; no caller-owned object may be changed when an error occurs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4e9fc1f8e2a184ba685c4d54e27468827cee5918ec7aa13e68c65cabe9733171",
+      "text": "Create `solution.py` defining an immutable dataclass `Event` with string fields `event_id`, `date`, `time`, and `category`, plus integer field `cents`, and define `decode_event_batch(data, processed_ids)`.\n\n`data` contains semicolon-separated records. Each nonempty record contains exactly these pipe-separated key-value fields in any order: `id`, `at`, `cents`, and `category`. Values cannot be empty or contain `=`. `at` uses `YYYYMMDDTHHMMSS`; output date and time are `DD.MM.YYYY` and `HH:MM:SS`. Dates and times must be calendar-valid. `cents` is a nonnegative base-10 integer without a sign. IDs and categories are preserved verbatim.\n\n`processed_ids` must be a `set` containing only strings. Return `(events, updated_ids)`, where both are new objects. Ignore records whose ID was previously processed or appeared earlier in this batch. Preserve the order of accepted records. Do not mutate or alias `processed_ids`. Empty or whitespace-only input returns an empty list and an equal but distinct set. Raise `TypeError` for wrong argument types and `ValueError` for malformed data; no caller-owned object may be changed when an error occurs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0530",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nfrom datetime import datetime\n\n\n@dataclass(frozen=True)\nclass Event:\n    event_id: str\n    date: str\n    time: str\n    category: str\n    cents: int\n\n\ndef decode_event_batch(data, processed_ids):\n    if not isinstance(data, str):\n        raise TypeError(\"data must be a string\")\n    if not isinstance(processed_ids, set) or any(not isinstance(x, str) for x in processed_ids):\n        raise TypeError(\"processed_ids must be a set of strings\")\n\n    parsed = []\n    for raw_record in data.split(\";\"):\n        if not raw_record.strip():\n            continue\n        fields = {}\n        for part in raw_record.split(\"|\"):\n            if part.count(\"=\") != 1:\n                raise ValueError(\"each field must contain one equals sign\")\n            key, value = part.split(\"=\", 1)\n            if not key or not value or key in fields:\n                raise ValueError(\"empty or duplicate field\")\n            fields[key] = value\n        if set(fields) != {\"id\", \"at\", \"cents\", \"category\"}:\n            raise ValueError(\"incorrect fields\")\n        try:\n            moment = datetime.strptime(fields[\"at\"], \"%Y%m%dT%H%M%S\")\n        except ValueError as exc:\n            raise ValueError(\"invalid timestamp\") from exc\n        raw_cents = fields[\"cents\"]\n        if not raw_cents.isascii() or not raw_cents.isdigit():\n            raise ValueError(\"invalid cents\")\n        parsed.append((fields, moment, int(raw_cents)))\n\n    updated = processed_ids\n    events = []\n    for fields, moment, cents in parsed:\n        event_id = fields[\"id\"]\n        if event_id in updated:\n            continue\n        updated.add(event_id)\n        events.append(Event(event_id, moment.strftime(\"%d.%m.%Y\"), moment.strftime(\"%H:%M:%S\"), fields[\"category\"], cents))\n    return events, updated\n",
+          "label": "Aliases and mutates the caller's processed ID set instead of returning an independent updated set.",
+          "sha256": "4b02b777441e8bf7256cab6b8634fee933d4bee76a1ba4c8641f1066a80dc123"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nfrom datetime import datetime\n\n\n@dataclass(frozen=True)\nclass Event:\n    event_id: str\n    date: str\n    time: str\n    category: str\n    cents: int\n\n\ndef decode_event_batch(data, processed_ids):\n    if not isinstance(data, str):\n        raise TypeError(\"data must be a string\")\n    if not isinstance(processed_ids, set) or any(not isinstance(x, str) for x in processed_ids):\n        raise TypeError(\"processed_ids must be a set of strings\")\n\n    parsed = []\n    for raw_record in data.split(\";\"):\n        if not raw_record.strip():\n            continue\n        fields = {}\n        for part in raw_record.split(\"|\"):\n            if part.count(\"=\") != 1:\n                raise ValueError(\"each field must contain one equals sign\")\n            key, value = part.split(\"=\", 1)\n            if not key or not value or key in fields:\n                raise ValueError(\"empty or duplicate field\")\n            fields[key] = value\n        if set(fields) != {\"id\", \"at\", \"cents\", \"category\"}:\n            raise ValueError(\"incorrect fields\")\n        try:\n            moment = datetime.strptime(fields[\"at\"], \"%Y%m%dT%H%M%S\")\n        except ValueError as exc:\n            raise ValueError(\"invalid timestamp\") from exc\n        raw_cents = fields[\"cents\"]\n        if not raw_cents.isascii() or not raw_cents.isdigit():\n            raise ValueError(\"invalid cents\")\n        parsed.append((fields, moment, int(raw_cents)))\n\n    updated = set(processed_ids)\n    events = []\n    for fields, moment, cents in parsed:\n        event_id = fields[\"id\"]\n        if event_id in updated:\n            continue\n        updated.add(event_id)\n        events.append(Event(event_id, moment.strftime(\"%d.%m.%Y\"), moment.strftime(\"%H:%M:%S\"), fields[\"category\"], cents))\n    return events, updated\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2a79dd8b9633ce9edf1f98d5cf3e55635663fb921ca0de013999effb40fb4361"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom dataclasses import FrozenInstanceError\n\nfrom solution import Event, decode_event_batch\n\n\nclass DecodeEventBatchTests(unittest.TestCase):\n    def test_decodes_fields_in_any_order_and_formats_timestamp(self):\n        data = (\n            \"category=sale|cents=1250|at=20240229T235959|id=A-1;\"\n            \"id=B|at=20230101T000000|cents=0|category=x y\"\n        )\n        events, ids = decode_event_batch(data, {\"old\"})\n        self.assertEqual(events, [\n            Event(\"A-1\", \"29.02.2024\", \"23:59:59\", \"sale\", 1250),\n            Event(\"B\", \"01.01.2023\", \"00:00:00\", \"x y\", 0),\n        ])\n        self.assertEqual(ids, {\"old\", \"A-1\", \"B\"})\n\n    def test_event_is_immutable(self):\n        event = Event(\"x\", \"01.01.2020\", \"00:00:00\", \"c\", 1)\n        with self.assertRaises(FrozenInstanceError):\n            event.cents = 2\n\n    def test_skips_previously_seen_and_batch_duplicate_ids(self):\n        original = {\"done\"}\n        data = (\n            \"id=done|at=20240101T010203|cents=1|category=a;\"\n            \"id=new|at=20240102T010203|cents=2|category=b;\"\n            \"id=new|at=20240103T010203|cents=3|category=c\"\n        )\n        events, updated = decode_event_batch(data, original)\n        self.assertEqual([event.event_id for event in events], [\"new\"])\n        self.assertEqual(events[0].cents, 2)\n        self.assertEqual(original, {\"done\"})\n        self.assertEqual(updated, {\"done\", \"new\"})\n        self.assertIsNot(updated, original)\n\n    def test_empty_input_returns_distinct_new_objects(self):\n        original = {\"x\"}\n        for data in (\"\", \"  \\t\\n \"):\n            events, updated = decode_event_batch(data, original)\n            self.assertEqual(events, [])\n            self.assertEqual(updated, original)\n            self.assertIsNot(updated, original)\n\n    def test_empty_semicolon_records_are_ignored(self):\n        events, ids = decode_event_batch(\n            \";;id=x|at=20241231T235959|cents=9|category=z;;\", set()\n        )\n        self.assertEqual(len(events), 1)\n        self.assertEqual(ids, {\"x\"})\n\n    def test_wrong_argument_types(self):\n        for data in (None, b\"\", 1):\n            with self.subTest(data=data):\n                with self.assertRaises(TypeError):\n                    decode_event_batch(data, set())\n        for ids in ([], frozenset(), {1}, {\"ok\", 2}):\n            with self.subTest(ids=ids):\n                with self.assertRaises(TypeError):\n                    decode_event_batch(\"\", ids)\n\n    def test_malformed_records_raise_value_error(self):\n        bad_records = [\n            \"id=x|at=20240101T000000|cents=1\",\n            \"id=x|at=20240101T000000|cents=1|category=c|extra=y\",\n            \"id=x|id=y|at=20240101T000000|cents=1|category=c\",\n            \"id=|at=20240101T000000|cents=1|category=c\",\n            \"id=x=y|at=20240101T000000|cents=1|category=c\",\n            \"id=x|at=20230229T000000|cents=1|category=c\",\n            \"id=x|at=20240101T240000|cents=1|category=c\",\n            \"id=x|at=2024-01-01T000000|cents=1|category=c\",\n            \"id=x|at=20240101T000000|cents=-1|category=c\",\n            \"id=x|at=20240101T000000|cents=+1|category=c\",\n            \"id=x|at=20240101T000000|cents=1.0|category=c\",\n        ]\n        for record in bad_records:\n            with self.subTest(record=record):\n                with self.assertRaises(ValueError):\n                    decode_event_batch(record, set())\n\n    def test_error_is_atomic_for_caller_owned_set(self):\n        original = {\"old\"}\n        data = (\n            \"id=new|at=20240101T000000|cents=1|category=ok;\"\n            \"id=bad|at=20241301T000000|cents=2|category=no\"\n        )\n        with self.assertRaises(ValueError):\n            decode_event_batch(data, original)\n        self.assertEqual(original, {\"old\"})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "045953f8946a3523d5a2858b3d63c449b60d603078c0ea23a438cae018829f31"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4e9fc1f8e2a184ba685c4d54e27468827cee5918ec7aa13e68c65cabe9733171",
+      "text": "Create `solution.py` defining an immutable dataclass `Event` with string fields `event_id`, `date`, `time`, and `category`, plus integer field `cents`, and define `decode_event_batch(data, processed_ids)`.\n\n`data` contains semicolon-separated records. Each nonempty record contains exactly these pipe-separated key-value fields in any order: `id`, `at`, `cents`, and `category`. Values cannot be empty or contain `=`. `at` uses `YYYYMMDDTHHMMSS`; output date and time are `DD.MM.YYYY` and `HH:MM:SS`. Dates and times must be calendar-valid. `cents` is a nonnegative base-10 integer without a sign. IDs and categories are preserved verbatim.\n\n`processed_ids` must be a `set` containing only strings. Return `(events, updated_ids)`, where both are new objects. Ignore records whose ID was previously processed or appeared earlier in this batch. Preserve the order of accepted records. Do not mutate or alias `processed_ids`. Empty or whitespace-only input returns an empty list and an equal but distinct set. Raise `TypeError` for wrong argument types and `ValueError` for malformed data; no caller-owned object may be changed when an error occurs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4e9fc1f8e2a184ba685c4d54e27468827cee5918ec7aa13e68c65cabe9733171",
+      "text": "Create `solution.py` defining an immutable dataclass `Event` with string fields `event_id`, `date`, `time`, and `category`, plus integer field `cents`, and define `decode_event_batch(data, processed_ids)`.\n\n`data` contains semicolon-separated records. Each nonempty record contains exactly these pipe-separated key-value fields in any order: `id`, `at`, `cents`, and `category`. Values cannot be empty or contain `=`. `at` uses `YYYYMMDDTHHMMSS`; output date and time are `DD.MM.YYYY` and `HH:MM:SS`. Dates and times must be calendar-valid. `cents` is a nonnegative base-10 integer without a sign. IDs and categories are preserved verbatim.\n\n`processed_ids` must be a `set` containing only strings. Return `(events, updated_ids)`, where both are new objects. Ignore records whose ID was previously processed or appeared earlier in this batch. Preserve the order of accepted records. Do not mutate or alias `processed_ids`. Empty or whitespace-only input returns an empty list and an equal but distinct set. Raise `TypeError` for wrong argument types and `ValueError` for malformed data; no caller-owned object may be changed when an error occurs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0530",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nfrom datetime import datetime\n\n\n@dataclass(frozen=True)\nclass Event:\n    event_id: str\n    date: str\n    time: str\n    category: str\n    cents: int\n\n\ndef decode_event_batch(data, processed_ids):\n    if not isinstance(data, str):\n        raise TypeError(\"data must be a string\")\n    if not isinstance(processed_ids, set) or any(not isinstance(x, str) for x in processed_ids):\n        raise TypeError(\"processed_ids must be a set of strings\")\n\n    parsed = []\n    for raw_record in data.split(\";\"):\n        if not raw_record.strip():\n            continue\n        fields = {}\n        for part in raw_record.split(\"|\"):\n            if part.count(\"=\") != 1:\n                raise ValueError(\"each field must contain one equals sign\")\n            key, value = part.split(\"=\", 1)\n            if not key or not value or key in fields:\n                raise ValueError(\"empty or duplicate field\")\n            fields[key] = value\n        if set(fields) != {\"id\", \"at\", \"cents\", \"category\"}:\n            raise ValueError(\"incorrect fields\")\n        try:\n            moment = datetime.strptime(fields[\"at\"], \"%Y%m%dT%H%M%S\")\n        except ValueError as exc:\n            raise ValueError(\"invalid timestamp\") from exc\n        raw_cents = fields[\"cents\"]\n        if not raw_cents.isascii() or not raw_cents.isdigit():\n            raise ValueError(\"invalid cents\")\n        parsed.append((fields, moment, int(raw_cents)))\n\n    updated = processed_ids\n    events = []\n    for fields, moment, cents in parsed:\n        event_id = fields[\"id\"]\n        if event_id in updated:\n            continue\n        updated.add(event_id)\n        events.append(Event(event_id, moment.strftime(\"%d.%m.%Y\"), moment.strftime(\"%H:%M:%S\"), fields[\"category\"], cents))\n    return events, updated\n",
+          "label": "Aliases and mutates the caller's processed ID set instead of returning an independent updated set.",
+          "sha256": "4b02b777441e8bf7256cab6b8634fee933d4bee76a1ba4c8641f1066a80dc123"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nfrom datetime import datetime\n\n\n@dataclass(frozen=True)\nclass Event:\n    event_id: str\n    date: str\n    time: str\n    category: str\n    cents: int\n\n\ndef decode_event_batch(data, processed_ids):\n    if not isinstance(data, str):\n        raise TypeError(\"data must be a string\")\n    if not isinstance(processed_ids, set) or any(not isinstance(x, str) for x in processed_ids):\n        raise TypeError(\"processed_ids must be a set of strings\")\n\n    parsed = []\n    for raw_record in data.split(\";\"):\n        if not raw_record.strip():\n            continue\n        fields = {}\n        for part in raw_record.split(\"|\"):\n            if part.count(\"=\") != 1:\n                raise ValueError(\"each field must contain one equals sign\")\n            key, value = part.split(\"=\", 1)\n            if not key or not value or key in fields:\n                raise ValueError(\"empty or duplicate field\")\n            fields[key] = value\n        if set(fields) != {\"id\", \"at\", \"cents\", \"category\"}:\n            raise ValueError(\"incorrect fields\")\n        try:\n            moment = datetime.strptime(fields[\"at\"], \"%Y%m%dT%H%M%S\")\n        except ValueError as exc:\n            raise ValueError(\"invalid timestamp\") from exc\n        raw_cents = fields[\"cents\"]\n        if not raw_cents.isascii() or not raw_cents.isdigit():\n            raise ValueError(\"invalid cents\")\n        parsed.append((fields, moment, int(raw_cents)))\n\n    updated = set(processed_ids)\n    events = []\n    for fields, moment, cents in parsed:\n        event_id = fields[\"id\"]\n        if event_id in updated:\n            continue\n        updated.add(event_id)\n        events.append(Event(event_id, moment.strftime(\"%d.%m.%Y\"), moment.strftime(\"%H:%M:%S\"), fields[\"category\"], cents))\n    return events, updated\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2a79dd8b9633ce9edf1f98d5cf3e55635663fb921ca0de013999effb40fb4361"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 8, in <module>\n    raise AssertionError(f'non-YYYYMMDD timestamp accepted: {actual!r}')\nAssertionError: non-YYYYMMDD timestamp accepted: ([Event(event_id='x', date='01.01.2024', time='00:00:00', category='c', cents=1)], {'x'})\n",
+    "stderr_sha256": "c0fbbbf0ccbc8f4db5a09e05a01fb5d3a76333ae825efe543968c3d0a953bef6",
+    "duration_ms": 463,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

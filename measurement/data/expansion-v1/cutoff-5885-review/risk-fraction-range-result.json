@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0541",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "26fc3e5b2d16d8e35555da64bca073d73ae541c378c2e8678b887b18f5f7faf1",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from fractions import Fraction\nfrom solution import MonotoneRisk\n\nscore = Fraction(10 ** 30 + 1, 10 ** 30)\nassert score > 1 and float(score) == 1.0\ntry:\n    MonotoneRisk([score])\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('out-of-range exact real accepted after float rounding')\n",
+        "sha256": "1fc77504579e970e240b07cebc2fd17883647184f9d546d9da542899e621e95c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "032406f51d611f0df02e60f36a29a52a60fd6b49056d9030ccce7ace125d658e",
+      "text": "Implement a new class `MonotoneRisk` in `solution.py`.\n\nConstructor: `MonotoneRisk(scores)` accepts any finite iterable of real numbers. Booleans are invalid. Every score must be between `0.0` and `1.0`, inclusive. Invalid elements raise `ValueError`; a non-iterable raises `TypeError`. The input may be empty and must not be mutated. Store the scores in ascending order.\n\nPublic API:\n- `scores`: a read-only tuple containing the sorted scores.\n- `reverse_rank()`: an iterator yielding `(index, score)` from the last sorted element to the first, where `index` is the zero-based index in ascending order.\n- `raw_levels()`: returns a fresh list where element `i` is `min(1.0, score * n / (i + 1))`.\n- `adjusted_levels()`: returns a fresh list whose element `i` is the minimum raw level from index `i` through the end.\n\nRepeated calls must return independent lists. No mutable input or result may be aliased internally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "032406f51d611f0df02e60f36a29a52a60fd6b49056d9030ccce7ace125d658e",
+      "text": "Implement a new class `MonotoneRisk` in `solution.py`.\n\nConstructor: `MonotoneRisk(scores)` accepts any finite iterable of real numbers. Booleans are invalid. Every score must be between `0.0` and `1.0`, inclusive. Invalid elements raise `ValueError`; a non-iterable raises `TypeError`. The input may be empty and must not be mutated. Store the scores in ascending order.\n\nPublic API:\n- `scores`: a read-only tuple containing the sorted scores.\n- `reverse_rank()`: an iterator yielding `(index, score)` from the last sorted element to the first, where `index` is the zero-based index in ascending order.\n- `raw_levels()`: returns a fresh list where element `i` is `min(1.0, score * n / (i + 1))`.\n- `adjusted_levels()`: returns a fresh list whose element `i` is the minimum raw level from index `i` through the end.\n\nRepeated calls must return independent lists. No mutable input or result may be aliased internally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0541",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from fractions import Fraction\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass MonotoneRisk:\n    def __init__(self, scores):\n        try:\n            values = list(scores)\n        except TypeError as exc:\n            raise TypeError(\"scores must be iterable\") from exc\n\n        checked = []\n        for value in values:\n            if isinstance(value, bool) or not isinstance(value, Real):\n                raise ValueError(\"each score must be a real number\")\n            try:\n                number = float(value)\n            except (TypeError, ValueError, OverflowError) as exc:\n                raise ValueError(\"each score must be a finite real number\") from exc\n            if not isfinite(number) or not 0.0 <= number <= 1.0:\n                raise ValueError(\"each score must be finite and between 0 and 1\")\n            checked.append(value)\n        self._scores = tuple(sorted(checked))\n\n    @property\n    def scores(self):\n        return self._scores\n\n    def reverse_rank(self):\n        for index in range(len(self._scores) - 1, -1, -1):\n            yield index, self._scores[index]\n\n    def raw_levels(self):\n        count = len(self._scores)\n        result = []\n        for index, score in enumerate(self._scores):\n            exact_score = Fraction(str(score))\n            level = min(Fraction(1), exact_score * count / (index + 1))\n            result.append(float(level))\n        return result\n\n    def adjusted_levels(self):\n        raw = self.raw_levels()\n        result = [0.0] * len(raw)\n        running = 1.0\n        for index in range(len(raw)):\n            running = min(running, raw[index])\n            result[index] = running\n        return result\n",
+          "label": "Computes prefix minima instead of the required suffix minima.",
+          "sha256": "224448191ce7e08900d4e28cbb33227f15bc33f7175755a81e75765886141c14"
+        }
+      ],
+      "reference": {
+        "code": "from fractions import Fraction\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass MonotoneRisk:\n    def __init__(self, scores):\n        try:\n            values = list(scores)\n        except TypeError as exc:\n            raise TypeError(\"scores must be iterable\") from exc\n\n        checked = []\n        for value in values:\n            if isinstance(value, bool) or not isinstance(value, Real):\n                raise ValueError(\"each score must be a real number\")\n            try:\n                number = float(value)\n            except (TypeError, ValueError, OverflowError) as exc:\n                raise ValueError(\"each score must be a finite real number\") from exc\n            if not isfinite(number) or not 0.0 <= number <= 1.0:\n                raise ValueError(\"each score must be finite and between 0 and 1\")\n            checked.append(value)\n        self._scores = tuple(sorted(checked))\n\n    @property\n    def scores(self):\n        return self._scores\n\n    def reverse_rank(self):\n        for index in range(len(self._scores) - 1, -1, -1):\n            yield index, self._scores[index]\n\n    def raw_levels(self):\n        count = len(self._scores)\n        result = []\n        for index, score in enumerate(self._scores):\n            exact_score = Fraction(str(score))\n            level = min(Fraction(1), exact_score * count / (index + 1))\n            result.append(float(level))\n        return result\n\n    def adjusted_levels(self):\n        raw = self.raw_levels()\n        result = [0.0] * len(raw)\n        running = 1.0\n        for index in range(len(raw) - 1, -1, -1):\n            running = min(running, raw[index])\n            result[index] = running\n        return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "45d24cd6eeb7b83d872225c4160ba6ddfafc9066f904332a2547da151eabf5bc"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\nfrom fractions import Fraction\n\nfrom solution import MonotoneRisk\n\n\nclass MonotoneRiskTests(unittest.TestCase):\n    def test_sort_rank_and_levels(self):\n        source = [0.8, 0.2, 0.5, 0.0]\n        risk = MonotoneRisk(source)\n        self.assertEqual(source, [0.8, 0.2, 0.5, 0.0])\n        self.assertEqual(risk.scores, (0.0, 0.2, 0.5, 0.8))\n        self.assertEqual(list(risk.reverse_rank()), [(3, 0.8), (2, 0.5), (1, 0.2), (0, 0.0)])\n        self.assertEqual(risk.raw_levels(), [0.0, 0.4, 2.0 / 3.0, 0.8])\n        self.assertEqual(risk.adjusted_levels(), [0.0, 0.4, 2.0 / 3.0, 0.8])\n\n    def test_adjusted_levels_use_suffix_minimum(self):\n        risk = MonotoneRisk([0.6, 0.9, 0.2])\n        self.assertEqual(risk.raw_levels(), [0.6, 0.9, 0.9])\n        self.assertEqual(risk.adjusted_levels(), [0.6, 0.9, 0.9])\n        capped = MonotoneRisk([0.5, 0.5, 1.0])\n        self.assertEqual(capped.raw_levels(), [1.0, 0.75, 1.0])\n        self.assertEqual(capped.adjusted_levels(), [0.75, 0.75, 1.0])\n\n    def test_empty_generator_boundaries_and_numeric_reals(self):\n        self.assertEqual(MonotoneRisk([]).scores, ())\n        self.assertEqual(MonotoneRisk([]).raw_levels(), [])\n        self.assertEqual(MonotoneRisk([]).adjusted_levels(), [])\n        risk = MonotoneRisk(x for x in [1, Fraction(1, 4), 0])\n        self.assertEqual(risk.scores, (0, Fraction(1, 4), 1))\n\n    def test_results_are_fresh_and_scores_are_read_only(self):\n        risk = MonotoneRisk([0.2, 0.7])\n        first = risk.raw_levels()\n        second = risk.raw_levels()\n        self.assertIsNot(first, second)\n        first[0] = 99\n        self.assertEqual(second, [0.4, 0.7])\n        adjusted1 = risk.adjusted_levels()\n        adjusted2 = risk.adjusted_levels()\n        self.assertIsNot(adjusted1, adjusted2)\n        adjusted1.clear()\n        self.assertEqual(adjusted2, [0.4, 0.7])\n        with self.assertRaises((AttributeError, TypeError)):\n            risk.scores = (0.1,)\n\n    def test_invalid_input(self):\n        with self.assertRaises(TypeError):\n            MonotoneRisk(3)\n        for values in ([True], [False], [-0.0001], [1.0001], [math.inf], [-math.inf], [math.nan], [\"0.5\"], [None]):\n            with self.subTest(values=values):\n                with self.assertRaises(ValueError):\n                    MonotoneRisk(values)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "a18e8b6bc2bf48daace1bb0e8abc9a357f9444a428e078f6cd74aa0a4e9f16c0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "032406f51d611f0df02e60f36a29a52a60fd6b49056d9030ccce7ace125d658e",
+      "text": "Implement a new class `MonotoneRisk` in `solution.py`.\n\nConstructor: `MonotoneRisk(scores)` accepts any finite iterable of real numbers. Booleans are invalid. Every score must be between `0.0` and `1.0`, inclusive. Invalid elements raise `ValueError`; a non-iterable raises `TypeError`. The input may be empty and must not be mutated. Store the scores in ascending order.\n\nPublic API:\n- `scores`: a read-only tuple containing the sorted scores.\n- `reverse_rank()`: an iterator yielding `(index, score)` from the last sorted element to the first, where `index` is the zero-based index in ascending order.\n- `raw_levels()`: returns a fresh list where element `i` is `min(1.0, score * n / (i + 1))`.\n- `adjusted_levels()`: returns a fresh list whose element `i` is the minimum raw level from index `i` through the end.\n\nRepeated calls must return independent lists. No mutable input or result may be aliased internally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "032406f51d611f0df02e60f36a29a52a60fd6b49056d9030ccce7ace125d658e",
+      "text": "Implement a new class `MonotoneRisk` in `solution.py`.\n\nConstructor: `MonotoneRisk(scores)` accepts any finite iterable of real numbers. Booleans are invalid. Every score must be between `0.0` and `1.0`, inclusive. Invalid elements raise `ValueError`; a non-iterable raises `TypeError`. The input may be empty and must not be mutated. Store the scores in ascending order.\n\nPublic API:\n- `scores`: a read-only tuple containing the sorted scores.\n- `reverse_rank()`: an iterator yielding `(index, score)` from the last sorted element to the first, where `index` is the zero-based index in ascending order.\n- `raw_levels()`: returns a fresh list where element `i` is `min(1.0, score * n / (i + 1))`.\n- `adjusted_levels()`: returns a fresh list whose element `i` is the minimum raw level from index `i` through the end.\n\nRepeated calls must return independent lists. No mutable input or result may be aliased internally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0541",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from fractions import Fraction\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass MonotoneRisk:\n    def __init__(self, scores):\n        try:\n            values = list(scores)\n        except TypeError as exc:\n            raise TypeError(\"scores must be iterable\") from exc\n\n        checked = []\n        for value in values:\n            if isinstance(value, bool) or not isinstance(value, Real):\n                raise ValueError(\"each score must be a real number\")\n            try:\n                number = float(value)\n            except (TypeError, ValueError, OverflowError) as exc:\n                raise ValueError(\"each score must be a finite real number\") from exc\n            if not isfinite(number) or not 0.0 <= number <= 1.0:\n                raise ValueError(\"each score must be finite and between 0 and 1\")\n            checked.append(value)\n        self._scores = tuple(sorted(checked))\n\n    @property\n    def scores(self):\n        return self._scores\n\n    def reverse_rank(self):\n        for index in range(len(self._scores) - 1, -1, -1):\n            yield index, self._scores[index]\n\n    def raw_levels(self):\n        count = len(self._scores)\n        result = []\n        for index, score in enumerate(self._scores):\n            exact_score = Fraction(str(score))\n            level = min(Fraction(1), exact_score * count / (index + 1))\n            result.append(float(level))\n        return result\n\n    def adjusted_levels(self):\n        raw = self.raw_levels()\n        result = [0.0] * len(raw)\n        running = 1.0\n        for index in range(len(raw)):\n            running = min(running, raw[index])\n            result[index] = running\n        return result\n",
+          "label": "Computes prefix minima instead of the required suffix minima.",
+          "sha256": "224448191ce7e08900d4e28cbb33227f15bc33f7175755a81e75765886141c14"
+        }
+      ],
+      "reference": {
+        "code": "from fractions import Fraction\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass MonotoneRisk:\n    def __init__(self, scores):\n        try:\n            values = list(scores)\n        except TypeError as exc:\n            raise TypeError(\"scores must be iterable\") from exc\n\n        checked = []\n        for value in values:\n            if isinstance(value, bool) or not isinstance(value, Real):\n                raise ValueError(\"each score must be a real number\")\n            try:\n                number = float(value)\n            except (TypeError, ValueError, OverflowError) as exc:\n                raise ValueError(\"each score must be a finite real number\") from exc\n            if not isfinite(number) or not 0.0 <= number <= 1.0:\n                raise ValueError(\"each score must be finite and between 0 and 1\")\n            checked.append(value)\n        self._scores = tuple(sorted(checked))\n\n    @property\n    def scores(self):\n        return self._scores\n\n    def reverse_rank(self):\n        for index in range(len(self._scores) - 1, -1, -1):\n            yield index, self._scores[index]\n\n    def raw_levels(self):\n        count = len(self._scores)\n        result = []\n        for index, score in enumerate(self._scores):\n            exact_score = Fraction(str(score))\n            level = min(Fraction(1), exact_score * count / (index + 1))\n            result.append(float(level))\n        return result\n\n    def adjusted_levels(self):\n        raw = self.raw_levels()\n        result = [0.0] * len(raw)\n        running = 1.0\n        for index in range(len(raw) - 1, -1, -1):\n            running = min(running, raw[index])\n            result[index] = running\n        return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "45d24cd6eeb7b83d872225c4160ba6ddfafc9066f904332a2547da151eabf5bc"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 11, in <module>\n    raise AssertionError('out-of-range exact real accepted after float rounding')\nAssertionError: out-of-range exact real accepted after float rounding\n",
+    "stderr_sha256": "335c4a16e85bc70ac3fa321874b5510c235b6518860676163cd49943ebea5c7b",
+    "duration_ms": 335,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

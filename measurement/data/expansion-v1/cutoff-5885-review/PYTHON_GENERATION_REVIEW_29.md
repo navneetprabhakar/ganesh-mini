@@ -24,8 +24,8 @@ inspections. No seven-criterion approval. Continue position 436.
 | 435 | 0499 | Complete tuple validation, duplicate order, exact True outcomes and ordinary per-probe copies agree. General pair iterables, BaseException and arbitrary deepcopy domains pending; no new hold. |
 
 Candidate SHA-256: `680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec`.
-Original candidates/tests/sample/partition unchanged. This batch awaits backup;
-last verified backup is through 639 holds / Python position 420.
+Original candidates/tests/sample/partition unchanged. This batch is backed up;
+see QUALITY_STRATUM_647_BACKUP.md for verified evidence through position 450.
 
 Three pinned Python 3.11.15 probe runs, network disabled/resource limited; all
 exit 1 without timeout. Holds are review items, not final rejections.

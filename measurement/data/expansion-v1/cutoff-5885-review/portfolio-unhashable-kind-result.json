@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0546",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "23442b0ccd751ab0cde8890fa2d23e42585516ebab741d6502e1fdb179972958",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import Portfolio\n\ntry:\n    Portfolio().frozen_ids([])\nexcept ValueError:\n    pass\nexcept Exception as exc:\n    raise AssertionError(f'unsupported kind requires ValueError, got {type(exc).__name__}') from exc\nelse:\n    raise AssertionError('unsupported kind accepted')\n",
+        "sha256": "648cabd000c12eb5c1098a5b7a982a0403945350ca3f4954ddc9258b72130256"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f6d1334e914ae54bfd3a4256745c4f9d34e3a5e6f5b3cca77f51a27ac714c209",
+      "text": "Implement a new in-memory project-freezing API in `solution.py`.\n\nDefine mutable record classes `Project`, `Milestone`, and `Deliverable`, each exposing a string `id` and Boolean `frozen`. Also define `Portfolio` with these methods:\n- `add_project(project_id)`\n- `add_milestone(milestone_id, project_id)`\n- `add_deliverable(deliverable_id, milestone_id)`\n- `freeze_project(project_id)`\n- `frozen_ids(kind)`\n\nIDs must be non-empty strings and globally unique across all three record types. Invalid IDs raise `ValueError`; duplicate IDs raise `ValueError`; unknown parent IDs raise `KeyError`. Newly added records are not frozen.\n\nFreezing a project must freeze that project, all of its milestones, and every deliverable under those milestones. Repeating the operation is harmless. Freezing one project must not affect another.\n\n`frozen_ids(kind)` accepts exactly `\"project\"`, `\"milestone\"`, or `\"deliverable\"`; other values raise `ValueError`. It returns a newly created tuple of matching frozen IDs sorted lexicographically. An empty portfolio or a kind with no frozen records returns `()`.\n\nRelationships and records must be owned by the portfolio; query results must not expose mutable internal collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f6d1334e914ae54bfd3a4256745c4f9d34e3a5e6f5b3cca77f51a27ac714c209",
+      "text": "Implement a new in-memory project-freezing API in `solution.py`.\n\nDefine mutable record classes `Project`, `Milestone`, and `Deliverable`, each exposing a string `id` and Boolean `frozen`. Also define `Portfolio` with these methods:\n- `add_project(project_id)`\n- `add_milestone(milestone_id, project_id)`\n- `add_deliverable(deliverable_id, milestone_id)`\n- `freeze_project(project_id)`\n- `frozen_ids(kind)`\n\nIDs must be non-empty strings and globally unique across all three record types. Invalid IDs raise `ValueError`; duplicate IDs raise `ValueError`; unknown parent IDs raise `KeyError`. Newly added records are not frozen.\n\nFreezing a project must freeze that project, all of its milestones, and every deliverable under those milestones. Repeating the operation is harmless. Freezing one project must not affect another.\n\n`frozen_ids(kind)` accepts exactly `\"project\"`, `\"milestone\"`, or `\"deliverable\"`; other values raise `ValueError`. It returns a newly created tuple of matching frozen IDs sorted lexicographically. An empty portfolio or a kind with no frozen records returns `()`.\n\nRelationships and records must be owned by the portfolio; query results must not expose mutable internal collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0546",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\n\n\n@dataclass\nclass Project:\n    id: str\n    frozen: bool = False\n\n\n@dataclass\nclass Milestone:\n    id: str\n    project_id: str = None\n    frozen: bool = False\n\n\n@dataclass\nclass Deliverable:\n    id: str\n    milestone_id: str = None\n    frozen: bool = False\n\n\nclass Portfolio:\n    def __init__(self):\n        self._projects = {}\n        self._milestones = {}\n        self._deliverables = {}\n        self._ids = set()\n\n    def _claim(self, record_id):\n        if not isinstance(record_id, str) or not record_id:\n            raise ValueError(\"IDs must be non-empty strings\")\n        if record_id in self._ids:\n            raise ValueError(\"IDs must be globally unique\")\n        self._ids.add(record_id)\n\n    def add_project(self, project_id):\n        self._claim(project_id)\n        self._projects[project_id] = Project(project_id)\n\n    def add_milestone(self, milestone_id, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._claim(milestone_id)\n        self._milestones[milestone_id] = Milestone(milestone_id, project_id)\n\n    def add_deliverable(self, deliverable_id, milestone_id):\n        if milestone_id not in self._milestones:\n            raise KeyError(milestone_id)\n        self._claim(deliverable_id)\n        self._deliverables[deliverable_id] = Deliverable(deliverable_id, milestone_id)\n\n    def freeze_project(self, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._projects[project_id].frozen = True\n        milestone_ids = set()\n        for item in self._milestones.values():\n            if item.project_id == project_id:\n                item.frozen = True\n                milestone_ids.add(item.id)\n        for item in self._deliverables.values():\n            if item.milestone_id in milestone_ids:\n                item.frozen = False\n\n    def frozen_ids(self, kind):\n        groups = {\n            \"project\": self._projects,\n            \"milestone\": self._milestones,\n            \"deliverable\": self._deliverables,\n        }\n        if kind not in groups:\n            raise ValueError(\"invalid record kind\")\n        return tuple(sorted(key for key, item in groups[kind].items() if item.frozen))\n",
+          "label": "Marks descendant deliverables unfrozen instead of frozen during project cascading.",
+          "sha256": "6c63b41afe245f0555938083ed936c78ce5a784ed9597becd1f7f64d09813c29"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\n\n\n@dataclass\nclass Project:\n    id: str\n    frozen: bool = False\n\n\n@dataclass\nclass Milestone:\n    id: str\n    project_id: str = None\n    frozen: bool = False\n\n\n@dataclass\nclass Deliverable:\n    id: str\n    milestone_id: str = None\n    frozen: bool = False\n\n\nclass Portfolio:\n    def __init__(self):\n        self._projects = {}\n        self._milestones = {}\n        self._deliverables = {}\n        self._ids = set()\n\n    def _claim(self, record_id):\n        if not isinstance(record_id, str) or not record_id:\n            raise ValueError(\"IDs must be non-empty strings\")\n        if record_id in self._ids:\n            raise ValueError(\"IDs must be globally unique\")\n        self._ids.add(record_id)\n\n    def add_project(self, project_id):\n        self._claim(project_id)\n        self._projects[project_id] = Project(project_id)\n\n    def add_milestone(self, milestone_id, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._claim(milestone_id)\n        self._milestones[milestone_id] = Milestone(milestone_id, project_id)\n\n    def add_deliverable(self, deliverable_id, milestone_id):\n        if milestone_id not in self._milestones:\n            raise KeyError(milestone_id)\n        self._claim(deliverable_id)\n        self._deliverables[deliverable_id] = Deliverable(deliverable_id, milestone_id)\n\n    def freeze_project(self, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._projects[project_id].frozen = True\n        milestone_ids = set()\n        for item in self._milestones.values():\n            if item.project_id == project_id:\n                item.frozen = True\n                milestone_ids.add(item.id)\n        for item in self._deliverables.values():\n            if item.milestone_id in milestone_ids:\n                item.frozen = True\n\n    def frozen_ids(self, kind):\n        groups = {\n            \"project\": self._projects,\n            \"milestone\": self._milestones,\n            \"deliverable\": self._deliverables,\n        }\n        if kind not in groups:\n            raise ValueError(\"invalid record kind\")\n        return tuple(sorted(key for key, item in groups[kind].items() if item.frozen))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c997bda1d22a0ab87ce2dbd1e9fc1fa7b49eed5398eca55d918cf116b4b63f8f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import Deliverable, Milestone, Portfolio, Project\n\n\nclass PortfolioTests(unittest.TestCase):\n    def test_record_classes_are_mutable_and_expose_fields(self):\n        for cls, identifier in ((Project, \"p\"), (Milestone, \"m\"), (Deliverable, \"d\")):\n            with self.subTest(cls=cls):\n                record = cls(identifier)\n                self.assertEqual(record.id, identifier)\n                self.assertIs(record.frozen, False)\n                record.frozen = True\n                self.assertIs(record.frozen, True)\n\n    def test_freeze_project_cascades_only_within_project(self):\n        portfolio = Portfolio()\n        portfolio.add_project(\"p2\")\n        portfolio.add_project(\"p1\")\n        portfolio.add_milestone(\"m2\", \"p1\")\n        portfolio.add_milestone(\"m1\", \"p1\")\n        portfolio.add_milestone(\"m3\", \"p2\")\n        portfolio.add_deliverable(\"d2\", \"m1\")\n        portfolio.add_deliverable(\"d1\", \"m2\")\n        portfolio.add_deliverable(\"d3\", \"m3\")\n        portfolio.freeze_project(\"p1\")\n        self.assertEqual(portfolio.frozen_ids(\"project\"), (\"p1\",))\n        self.assertEqual(portfolio.frozen_ids(\"milestone\"), (\"m1\", \"m2\"))\n        self.assertEqual(portfolio.frozen_ids(\"deliverable\"), (\"d1\", \"d2\"))\n        portfolio.freeze_project(\"p1\")\n        self.assertEqual(portfolio.frozen_ids(\"deliverable\"), (\"d1\", \"d2\"))\n\n    def test_empty_queries_and_fresh_tuple_results(self):\n        portfolio = Portfolio()\n        self.assertEqual(portfolio.frozen_ids(\"project\"), ())\n        self.assertEqual(portfolio.frozen_ids(\"milestone\"), ())\n        self.assertEqual(portfolio.frozen_ids(\"deliverable\"), ())\n        portfolio.add_project(\"project\")\n        self.assertEqual(portfolio.frozen_ids(\"project\"), ())\n        portfolio.freeze_project(\"project\")\n        first = portfolio.frozen_ids(\"project\")\n        second = portfolio.frozen_ids(\"project\")\n        self.assertEqual(first, (\"project\",))\n        self.assertEqual(second, (\"project\",))\n        self.assertIsNot(first, second)\n\n    def test_invalid_and_duplicate_ids(self):\n        portfolio = Portfolio()\n        for invalid in (\"\", 1, None, True):\n            with self.subTest(invalid=invalid):\n                with self.assertRaises(ValueError):\n                    portfolio.add_project(invalid)\n        portfolio.add_project(\"shared\")\n        with self.assertRaises(ValueError):\n            portfolio.add_project(\"shared\")\n        with self.assertRaises(ValueError):\n            portfolio.add_milestone(\"shared\", \"shared\")\n        portfolio.add_milestone(\"milestone\", \"shared\")\n        with self.assertRaises(ValueError):\n            portfolio.add_deliverable(\"milestone\", \"milestone\")\n        portfolio.add_deliverable(\"deliverable\", \"milestone\")\n        with self.assertRaises(ValueError):\n            portfolio.add_project(\"deliverable\")\n\n    def test_unknown_parents_and_projects(self):\n        portfolio = Portfolio()\n        with self.assertRaises(KeyError):\n            portfolio.add_milestone(\"m\", \"missing\")\n        portfolio.add_project(\"p\")\n        with self.assertRaises(KeyError):\n            portfolio.add_deliverable(\"d\", \"missing\")\n        with self.assertRaises(KeyError):\n            portfolio.freeze_project(\"missing\")\n\n    def test_kind_validation(self):\n        portfolio = Portfolio()\n        for kind in (\"projects\", \"\", None, 1, True):\n            with self.subTest(kind=kind):\n                with self.assertRaises(ValueError):\n                    portfolio.frozen_ids(kind)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "fa394c7c125731be2ee9bf7b104adc9bf2d2c8eff3ee5ad2809b773a9f599aec"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f6d1334e914ae54bfd3a4256745c4f9d34e3a5e6f5b3cca77f51a27ac714c209",
+      "text": "Implement a new in-memory project-freezing API in `solution.py`.\n\nDefine mutable record classes `Project`, `Milestone`, and `Deliverable`, each exposing a string `id` and Boolean `frozen`. Also define `Portfolio` with these methods:\n- `add_project(project_id)`\n- `add_milestone(milestone_id, project_id)`\n- `add_deliverable(deliverable_id, milestone_id)`\n- `freeze_project(project_id)`\n- `frozen_ids(kind)`\n\nIDs must be non-empty strings and globally unique across all three record types. Invalid IDs raise `ValueError`; duplicate IDs raise `ValueError`; unknown parent IDs raise `KeyError`. Newly added records are not frozen.\n\nFreezing a project must freeze that project, all of its milestones, and every deliverable under those milestones. Repeating the operation is harmless. Freezing one project must not affect another.\n\n`frozen_ids(kind)` accepts exactly `\"project\"`, `\"milestone\"`, or `\"deliverable\"`; other values raise `ValueError`. It returns a newly created tuple of matching frozen IDs sorted lexicographically. An empty portfolio or a kind with no frozen records returns `()`.\n\nRelationships and records must be owned by the portfolio; query results must not expose mutable internal collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f6d1334e914ae54bfd3a4256745c4f9d34e3a5e6f5b3cca77f51a27ac714c209",
+      "text": "Implement a new in-memory project-freezing API in `solution.py`.\n\nDefine mutable record classes `Project`, `Milestone`, and `Deliverable`, each exposing a string `id` and Boolean `frozen`. Also define `Portfolio` with these methods:\n- `add_project(project_id)`\n- `add_milestone(milestone_id, project_id)`\n- `add_deliverable(deliverable_id, milestone_id)`\n- `freeze_project(project_id)`\n- `frozen_ids(kind)`\n\nIDs must be non-empty strings and globally unique across all three record types. Invalid IDs raise `ValueError`; duplicate IDs raise `ValueError`; unknown parent IDs raise `KeyError`. Newly added records are not frozen.\n\nFreezing a project must freeze that project, all of its milestones, and every deliverable under those milestones. Repeating the operation is harmless. Freezing one project must not affect another.\n\n`frozen_ids(kind)` accepts exactly `\"project\"`, `\"milestone\"`, or `\"deliverable\"`; other values raise `ValueError`. It returns a newly created tuple of matching frozen IDs sorted lexicographically. An empty portfolio or a kind with no frozen records returns `()`.\n\nRelationships and records must be owned by the portfolio; query results must not expose mutable internal collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0546",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\n\n\n@dataclass\nclass Project:\n    id: str\n    frozen: bool = False\n\n\n@dataclass\nclass Milestone:\n    id: str\n    project_id: str = None\n    frozen: bool = False\n\n\n@dataclass\nclass Deliverable:\n    id: str\n    milestone_id: str = None\n    frozen: bool = False\n\n\nclass Portfolio:\n    def __init__(self):\n        self._projects = {}\n        self._milestones = {}\n        self._deliverables = {}\n        self._ids = set()\n\n    def _claim(self, record_id):\n        if not isinstance(record_id, str) or not record_id:\n            raise ValueError(\"IDs must be non-empty strings\")\n        if record_id in self._ids:\n            raise ValueError(\"IDs must be globally unique\")\n        self._ids.add(record_id)\n\n    def add_project(self, project_id):\n        self._claim(project_id)\n        self._projects[project_id] = Project(project_id)\n\n    def add_milestone(self, milestone_id, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._claim(milestone_id)\n        self._milestones[milestone_id] = Milestone(milestone_id, project_id)\n\n    def add_deliverable(self, deliverable_id, milestone_id):\n        if milestone_id not in self._milestones:\n            raise KeyError(milestone_id)\n        self._claim(deliverable_id)\n        self._deliverables[deliverable_id] = Deliverable(deliverable_id, milestone_id)\n\n    def freeze_project(self, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._projects[project_id].frozen = True\n        milestone_ids = set()\n        for item in self._milestones.values():\n            if item.project_id == project_id:\n                item.frozen = True\n                milestone_ids.add(item.id)\n        for item in self._deliverables.values():\n            if item.milestone_id in milestone_ids:\n                item.frozen = False\n\n    def frozen_ids(self, kind):\n        groups = {\n            \"project\": self._projects,\n            \"milestone\": self._milestones,\n            \"deliverable\": self._deliverables,\n        }\n        if kind not in groups:\n            raise ValueError(\"invalid record kind\")\n        return tuple(sorted(key for key, item in groups[kind].items() if item.frozen))\n",
+          "label": "Marks descendant deliverables unfrozen instead of frozen during project cascading.",
+          "sha256": "6c63b41afe245f0555938083ed936c78ce5a784ed9597becd1f7f64d09813c29"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\n\n\n@dataclass\nclass Project:\n    id: str\n    frozen: bool = False\n\n\n@dataclass\nclass Milestone:\n    id: str\n    project_id: str = None\n    frozen: bool = False\n\n\n@dataclass\nclass Deliverable:\n    id: str\n    milestone_id: str = None\n    frozen: bool = False\n\n\nclass Portfolio:\n    def __init__(self):\n        self._projects = {}\n        self._milestones = {}\n        self._deliverables = {}\n        self._ids = set()\n\n    def _claim(self, record_id):\n        if not isinstance(record_id, str) or not record_id:\n            raise ValueError(\"IDs must be non-empty strings\")\n        if record_id in self._ids:\n            raise ValueError(\"IDs must be globally unique\")\n        self._ids.add(record_id)\n\n    def add_project(self, project_id):\n        self._claim(project_id)\n        self._projects[project_id] = Project(project_id)\n\n    def add_milestone(self, milestone_id, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._claim(milestone_id)\n        self._milestones[milestone_id] = Milestone(milestone_id, project_id)\n\n    def add_deliverable(self, deliverable_id, milestone_id):\n        if milestone_id not in self._milestones:\n            raise KeyError(milestone_id)\n        self._claim(deliverable_id)\n        self._deliverables[deliverable_id] = Deliverable(deliverable_id, milestone_id)\n\n    def freeze_project(self, project_id):\n        if project_id not in self._projects:\n            raise KeyError(project_id)\n        self._projects[project_id].frozen = True\n        milestone_ids = set()\n        for item in self._milestones.values():\n            if item.project_id == project_id:\n                item.frozen = True\n                milestone_ids.add(item.id)\n        for item in self._deliverables.values():\n            if item.milestone_id in milestone_ids:\n                item.frozen = True\n\n    def frozen_ids(self, kind):\n        groups = {\n            \"project\": self._projects,\n            \"milestone\": self._milestones,\n            \"deliverable\": self._deliverables,\n        }\n        if kind not in groups:\n            raise ValueError(\"invalid record kind\")\n        return tuple(sorted(key for key, item in groups[kind].items() if item.frozen))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c997bda1d22a0ab87ce2dbd1e9fc1fa7b49eed5398eca55d918cf116b4b63f8f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"test_solution.py\", line 4, in <module>\n    Portfolio().frozen_ids([])\n  File \"/work/solution.py\", line 73, in frozen_ids\n    if kind not in groups:\n       ^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 8, in <module>\n    raise AssertionError(f'unsupported kind requires ValueError, got {type(exc).__name__}') from exc\nAssertionError: unsupported kind requires ValueError, got TypeError\n",
+    "stderr_sha256": "3c938541c6e00d0c9edbfcff07e9f6d2b3e8ac94c746acf1be4446792d683bb1",
+    "duration_ms": 570,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

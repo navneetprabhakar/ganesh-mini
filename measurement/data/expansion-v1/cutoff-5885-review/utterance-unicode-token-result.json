@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0519",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c9e907ab9beb72bc1d0b2d8964afcc06d0308cb55dad5c78e4e39794591f90f1",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import interpret_utterance\n\nactual = interpret_utterance('hi\u00e9', 10, {})\nprint(repr(actual))\nassert actual == {'action': 'retry', 'speech': 'Please say that again.', 'target': None}, 'hi is not a complete alphanumeric token'\n",
+        "sha256": "13ada94dfe0cfd22fd711aed4c631249b5a5e930651d49284ffe6736d796ff41"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e97b2d6bf0812cb35b35f5f793c172298362aeba484c2e8ab79b66a9aafa5c47",
+      "text": "In `solution.py`, implement `interpret_utterance(command, hour, summaries)` as a deterministic, text-only assistant.\n\n`command` must be a string. `hour` must be an integer from 0 through 23, excluding booleans. `summaries` is a mapping from lowercase topic names to summary strings and must not be mutated.\n\nNormalize the command by trimming it, converting it to lowercase, and extracting alphanumeric word tokens. Apply these rules in order:\n\n1. An empty command returns action `retry` and speech `Please say that again.`\n2. A command beginning with `define ` looks up the remaining trimmed topic in `summaries`. A match returns action `speak`, the stored summary as speech, and the topic as target. A miss returns action `missing` and speech `I do not have that topic.`\n3. A command beginning with `play ` returns action `play`, speech `Playing <query>.`, and the trimmed query as target. An empty query is a retry.\n4. Exact commands `open videos`, `open search`, and `open mail` return action `open`, speech `Opening <name>.`, and targets `https://video.invalid`, `https://search.invalid`, and `https://mail.invalid`, respectively.\n5. If the token sequence contains the adjacent words `current hour`, return action `speak` and speech `The hour is HH:00.` using two digits.\n6. If `hello` or `hi` is a complete token, return a greeting based on `hour`: morning before 12, afternoon before 18, otherwise evening.\n7. Exact commands `what are you doing` and `how are you` return the specified conversational responses `Waiting for your request.` and `Operating normally.`\n8. Everything else is a retry.\n\nEvery result must be a dictionary with exactly `action`, `speech`, and `target`; `target` is `None` unless otherwise specified.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e97b2d6bf0812cb35b35f5f793c172298362aeba484c2e8ab79b66a9aafa5c47",
+      "text": "In `solution.py`, implement `interpret_utterance(command, hour, summaries)` as a deterministic, text-only assistant.\n\n`command` must be a string. `hour` must be an integer from 0 through 23, excluding booleans. `summaries` is a mapping from lowercase topic names to summary strings and must not be mutated.\n\nNormalize the command by trimming it, converting it to lowercase, and extracting alphanumeric word tokens. Apply these rules in order:\n\n1. An empty command returns action `retry` and speech `Please say that again.`\n2. A command beginning with `define ` looks up the remaining trimmed topic in `summaries`. A match returns action `speak`, the stored summary as speech, and the topic as target. A miss returns action `missing` and speech `I do not have that topic.`\n3. A command beginning with `play ` returns action `play`, speech `Playing <query>.`, and the trimmed query as target. An empty query is a retry.\n4. Exact commands `open videos`, `open search`, and `open mail` return action `open`, speech `Opening <name>.`, and targets `https://video.invalid`, `https://search.invalid`, and `https://mail.invalid`, respectively.\n5. If the token sequence contains the adjacent words `current hour`, return action `speak` and speech `The hour is HH:00.` using two digits.\n6. If `hello` or `hi` is a complete token, return a greeting based on `hour`: morning before 12, afternoon before 18, otherwise evening.\n7. Exact commands `what are you doing` and `how are you` return the specified conversational responses `Waiting for your request.` and `Operating normally.`\n8. Everything else is a retry.\n\nEvery result must be a dictionary with exactly `action`, `speech`, and `target`; `target` is `None` unless otherwise specified.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0519",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\n\n\ndef _result(action, speech, target=None):\n    return {\"action\": action, \"speech\": speech, \"target\": target}\n\n\ndef interpret_utterance(command, hour, summaries):\n    if not isinstance(command, str):\n        raise TypeError(\"command must be a string\")\n    if not isinstance(hour, int) or isinstance(hour, bool) or not 0 <= hour <= 23:\n        raise ValueError(\"hour must be from 0 through 23\")\n\n    text = command.strip().lower()\n    words = re.findall(r\"[a-z0-9]+\", text)\n    if not text:\n        return _result(\"retry\", \"Please say that again.\")\n\n    if text.startswith(\"define \"):\n        topic = text[7:].strip()\n        if topic in summaries:\n            return _result(\"speak\", summaries[topic], topic)\n        return _result(\"missing\", \"I do not have that topic.\")\n\n    if text.startswith(\"play \"):\n        query = text[5:].strip()\n        if not query:\n            return _result(\"retry\", \"Please say that again.\")\n        return _result(\"play\", f\"Playing {query}.\", query)\n\n    destinations = {\n        \"open videos\": (\"videos\", \"https://video.invalid\"),\n        \"open search\": (\"search\", \"https://search.invalid\"),\n        \"open mail\": (\"mail\", \"https://mail.invalid\"),\n    }\n    if text in destinations:\n        name, target = destinations[text]\n        return _result(\"open\", f\"Opening {name}.\", target)\n\n    if any(words[i:i + 2] == [\"current\", \"hour\"] for i in range(len(words) - 1)):\n        return _result(\"speak\", f\"The hour is {hour:02d}:00.\")\n\n    if \"hello\" in words or \"hi\" in text:\n        period = \"morning\" if hour < 12 else \"afternoon\" if hour < 18 else \"evening\"\n        return _result(\"speak\", f\"Good {period}.\")\n\n    if text == \"what are you doing\":\n        return _result(\"speak\", \"Waiting for your request.\")\n    if text == \"how are you\":\n        return _result(\"speak\", \"Operating normally.\")\n    return _result(\"retry\", \"Please say that again.\")\n",
+          "label": "The greeting rule searches for `hi` as a substring, so unrelated words such as `this` trigger a greeting.",
+          "sha256": "de1c50571acf9f77353c7aee244d57853f743d281d696f65d89f82f52eb0e465"
+        }
+      ],
+      "reference": {
+        "code": "import re\n\n\ndef _result(action, speech, target=None):\n    return {\"action\": action, \"speech\": speech, \"target\": target}\n\n\ndef interpret_utterance(command, hour, summaries):\n    if not isinstance(command, str):\n        raise TypeError(\"command must be a string\")\n    if not isinstance(hour, int) or isinstance(hour, bool) or not 0 <= hour <= 23:\n        raise ValueError(\"hour must be from 0 through 23\")\n\n    text = command.strip().lower()\n    words = re.findall(r\"[a-z0-9]+\", text)\n    if not text:\n        return _result(\"retry\", \"Please say that again.\")\n\n    if text.startswith(\"define \"):\n        topic = text[7:].strip()\n        if topic in summaries:\n            return _result(\"speak\", summaries[topic], topic)\n        return _result(\"missing\", \"I do not have that topic.\")\n\n    if text.startswith(\"play \"):\n        query = text[5:].strip()\n        if not query:\n            return _result(\"retry\", \"Please say that again.\")\n        return _result(\"play\", f\"Playing {query}.\", query)\n\n    destinations = {\n        \"open videos\": (\"videos\", \"https://video.invalid\"),\n        \"open search\": (\"search\", \"https://search.invalid\"),\n        \"open mail\": (\"mail\", \"https://mail.invalid\"),\n    }\n    if text in destinations:\n        name, target = destinations[text]\n        return _result(\"open\", f\"Opening {name}.\", target)\n\n    if any(words[i:i + 2] == [\"current\", \"hour\"] for i in range(len(words) - 1)):\n        return _result(\"speak\", f\"The hour is {hour:02d}:00.\")\n\n    if \"hello\" in words or \"hi\" in words:\n        period = \"morning\" if hour < 12 else \"afternoon\" if hour < 18 else \"evening\"\n        return _result(\"speak\", f\"Good {period}.\")\n\n    if text == \"what are you doing\":\n        return _result(\"speak\", \"Waiting for your request.\")\n    if text == \"how are you\":\n        return _result(\"speak\", \"Operating normally.\")\n    return _result(\"retry\", \"Please say that again.\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a390724504ec297af309d46c220eff91c9f9238ed90e9a58d5e933c2ff035155"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import interpret_utterance\n\n\nclass InterpretUtteranceTests(unittest.TestCase):\n    def assert_result(self, actual, action, speech, target=None):\n        self.assertEqual(actual, {\"action\": action, \"speech\": speech, \"target\": target})\n        self.assertEqual(set(actual), {\"action\", \"speech\", \"target\"})\n\n    def test_empty_and_unknown_commands_retry(self):\n        for command in [\"\", \"   \", \"unrecognized words\", \"!!!\"]:\n            with self.subTest(command=command):\n                self.assert_result(\n                    interpret_utterance(command, 10, {}),\n                    \"retry\",\n                    \"Please say that again.\",\n                )\n\n    def test_define_hit_and_miss(self):\n        summaries = {\"binary tree\": \"A tree with at most two children.\"}\n        before = dict(summaries)\n        self.assert_result(\n            interpret_utterance(\"  DEFINE binary tree  \", 9, summaries),\n            \"speak\",\n            \"A tree with at most two children.\",\n            \"binary tree\",\n        )\n        self.assert_result(\n            interpret_utterance(\"define missing\", 9, summaries),\n            \"missing\",\n            \"I do not have that topic.\",\n        )\n        self.assertEqual(summaries, before)\n\n    def test_play_and_empty_play_query(self):\n        self.assert_result(\n            interpret_utterance(\" PLAY Blue Train \", 12, {}),\n            \"play\",\n            \"Playing blue train.\",\n            \"blue train\",\n        )\n        self.assert_result(\n            interpret_utterance(\"play \", 12, {}),\n            \"retry\",\n            \"Please say that again.\",\n        )\n\n    def test_exact_open_commands(self):\n        targets = {\n            \"open videos\": (\"videos\", \"https://video.invalid\"),\n            \"open search\": (\"search\", \"https://search.invalid\"),\n            \"open mail\": (\"mail\", \"https://mail.invalid\"),\n        }\n        for command, (name, target) in targets.items():\n            with self.subTest(command=command):\n                self.assert_result(\n                    interpret_utterance(command, 0, {}),\n                    \"open\",\n                    \"Opening %s.\" % name,\n                    target,\n                )\n        self.assert_result(\n            interpret_utterance(\"please open mail\", 0, {}),\n            \"retry\",\n            \"Please say that again.\",\n        )\n\n    def test_current_hour_uses_adjacent_alphanumeric_tokens_and_precedence(self):\n        self.assert_result(\n            interpret_utterance(\"hello, what is the current-hour?\", 7, {}),\n            \"speak\",\n            \"The hour is 07:00.\",\n        )\n        self.assert_result(\n            interpret_utterance(\"current local hour\", 7, {}),\n            \"retry\",\n            \"Please say that again.\",\n        )\n\n    def test_greeting_token_and_hour_boundaries(self):\n        cases = [\n            (0, \"Good morning.\"),\n            (11, \"Good morning.\"),\n            (12, \"Good afternoon.\"),\n            (17, \"Good afternoon.\"),\n            (18, \"Good evening.\"),\n            (23, \"Good evening.\"),\n        ]\n        for hour, speech in cases:\n            with self.subTest(hour=hour):\n                self.assert_result(interpret_utterance(\"well, HI there\", hour, {}), \"speak\", speech)\n        self.assert_result(\n            interpret_utterance(\"this is highlighted\", 8, {}),\n            \"retry\",\n            \"Please say that again.\",\n        )\n\n    def test_conversational_exact_commands(self):\n        self.assert_result(\n            interpret_utterance(\" WHAT ARE YOU DOING \", 10, {}),\n            \"speak\",\n            \"Waiting for your request.\",\n        )\n        self.assert_result(\n            interpret_utterance(\"how are you\", 10, {}),\n            \"speak\",\n            \"Operating normally.\",\n        )\n\n    def test_invalid_command_and_hour_types(self):\n        for command, hour in [(None, 1), (b\"hello\", 1), (\"hello\", True), (\"hello\", -1), (\"hello\", 24), (\"hello\", 2.0)]:\n            with self.subTest(command=command, hour=hour):\n                with self.assertRaises((TypeError, ValueError)):\n                    interpret_utterance(command, hour, {})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "a407ec912a0715f8928663675492a4e15dfb13334e1c32c6f6cc0fae9fb7da8d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e97b2d6bf0812cb35b35f5f793c172298362aeba484c2e8ab79b66a9aafa5c47",
+      "text": "In `solution.py`, implement `interpret_utterance(command, hour, summaries)` as a deterministic, text-only assistant.\n\n`command` must be a string. `hour` must be an integer from 0 through 23, excluding booleans. `summaries` is a mapping from lowercase topic names to summary strings and must not be mutated.\n\nNormalize the command by trimming it, converting it to lowercase, and extracting alphanumeric word tokens. Apply these rules in order:\n\n1. An empty command returns action `retry` and speech `Please say that again.`\n2. A command beginning with `define ` looks up the remaining trimmed topic in `summaries`. A match returns action `speak`, the stored summary as speech, and the topic as target. A miss returns action `missing` and speech `I do not have that topic.`\n3. A command beginning with `play ` returns action `play`, speech `Playing <query>.`, and the trimmed query as target. An empty query is a retry.\n4. Exact commands `open videos`, `open search`, and `open mail` return action `open`, speech `Opening <name>.`, and targets `https://video.invalid`, `https://search.invalid`, and `https://mail.invalid`, respectively.\n5. If the token sequence contains the adjacent words `current hour`, return action `speak` and speech `The hour is HH:00.` using two digits.\n6. If `hello` or `hi` is a complete token, return a greeting based on `hour`: morning before 12, afternoon before 18, otherwise evening.\n7. Exact commands `what are you doing` and `how are you` return the specified conversational responses `Waiting for your request.` and `Operating normally.`\n8. Everything else is a retry.\n\nEvery result must be a dictionary with exactly `action`, `speech`, and `target`; `target` is `None` unless otherwise specified.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e97b2d6bf0812cb35b35f5f793c172298362aeba484c2e8ab79b66a9aafa5c47",
+      "text": "In `solution.py`, implement `interpret_utterance(command, hour, summaries)` as a deterministic, text-only assistant.\n\n`command` must be a string. `hour` must be an integer from 0 through 23, excluding booleans. `summaries` is a mapping from lowercase topic names to summary strings and must not be mutated.\n\nNormalize the command by trimming it, converting it to lowercase, and extracting alphanumeric word tokens. Apply these rules in order:\n\n1. An empty command returns action `retry` and speech `Please say that again.`\n2. A command beginning with `define ` looks up the remaining trimmed topic in `summaries`. A match returns action `speak`, the stored summary as speech, and the topic as target. A miss returns action `missing` and speech `I do not have that topic.`\n3. A command beginning with `play ` returns action `play`, speech `Playing <query>.`, and the trimmed query as target. An empty query is a retry.\n4. Exact commands `open videos`, `open search`, and `open mail` return action `open`, speech `Opening <name>.`, and targets `https://video.invalid`, `https://search.invalid`, and `https://mail.invalid`, respectively.\n5. If the token sequence contains the adjacent words `current hour`, return action `speak` and speech `The hour is HH:00.` using two digits.\n6. If `hello` or `hi` is a complete token, return a greeting based on `hour`: morning before 12, afternoon before 18, otherwise evening.\n7. Exact commands `what are you doing` and `how are you` return the specified conversational responses `Waiting for your request.` and `Operating normally.`\n8. Everything else is a retry.\n\nEvery result must be a dictionary with exactly `action`, `speech`, and `target`; `target` is `None` unless otherwise specified.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0519",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\n\n\ndef _result(action, speech, target=None):\n    return {\"action\": action, \"speech\": speech, \"target\": target}\n\n\ndef interpret_utterance(command, hour, summaries):\n    if not isinstance(command, str):\n        raise TypeError(\"command must be a string\")\n    if not isinstance(hour, int) or isinstance(hour, bool) or not 0 <= hour <= 23:\n        raise ValueError(\"hour must be from 0 through 23\")\n\n    text = command.strip().lower()\n    words = re.findall(r\"[a-z0-9]+\", text)\n    if not text:\n        return _result(\"retry\", \"Please say that again.\")\n\n    if text.startswith(\"define \"):\n        topic = text[7:].strip()\n        if topic in summaries:\n            return _result(\"speak\", summaries[topic], topic)\n        return _result(\"missing\", \"I do not have that topic.\")\n\n    if text.startswith(\"play \"):\n        query = text[5:].strip()\n        if not query:\n            return _result(\"retry\", \"Please say that again.\")\n        return _result(\"play\", f\"Playing {query}.\", query)\n\n    destinations = {\n        \"open videos\": (\"videos\", \"https://video.invalid\"),\n        \"open search\": (\"search\", \"https://search.invalid\"),\n        \"open mail\": (\"mail\", \"https://mail.invalid\"),\n    }\n    if text in destinations:\n        name, target = destinations[text]\n        return _result(\"open\", f\"Opening {name}.\", target)\n\n    if any(words[i:i + 2] == [\"current\", \"hour\"] for i in range(len(words) - 1)):\n        return _result(\"speak\", f\"The hour is {hour:02d}:00.\")\n\n    if \"hello\" in words or \"hi\" in text:\n        period = \"morning\" if hour < 12 else \"afternoon\" if hour < 18 else \"evening\"\n        return _result(\"speak\", f\"Good {period}.\")\n\n    if text == \"what are you doing\":\n        return _result(\"speak\", \"Waiting for your request.\")\n    if text == \"how are you\":\n        return _result(\"speak\", \"Operating normally.\")\n    return _result(\"retry\", \"Please say that again.\")\n",
+          "label": "The greeting rule searches for `hi` as a substring, so unrelated words such as `this` trigger a greeting.",
+          "sha256": "de1c50571acf9f77353c7aee244d57853f743d281d696f65d89f82f52eb0e465"
+        }
+      ],
+      "reference": {
+        "code": "import re\n\n\ndef _result(action, speech, target=None):\n    return {\"action\": action, \"speech\": speech, \"target\": target}\n\n\ndef interpret_utterance(command, hour, summaries):\n    if not isinstance(command, str):\n        raise TypeError(\"command must be a string\")\n    if not isinstance(hour, int) or isinstance(hour, bool) or not 0 <= hour <= 23:\n        raise ValueError(\"hour must be from 0 through 23\")\n\n    text = command.strip().lower()\n    words = re.findall(r\"[a-z0-9]+\", text)\n    if not text:\n        return _result(\"retry\", \"Please say that again.\")\n\n    if text.startswith(\"define \"):\n        topic = text[7:].strip()\n        if topic in summaries:\n            return _result(\"speak\", summaries[topic], topic)\n        return _result(\"missing\", \"I do not have that topic.\")\n\n    if text.startswith(\"play \"):\n        query = text[5:].strip()\n        if not query:\n            return _result(\"retry\", \"Please say that again.\")\n        return _result(\"play\", f\"Playing {query}.\", query)\n\n    destinations = {\n        \"open videos\": (\"videos\", \"https://video.invalid\"),\n        \"open search\": (\"search\", \"https://search.invalid\"),\n        \"open mail\": (\"mail\", \"https://mail.invalid\"),\n    }\n    if text in destinations:\n        name, target = destinations[text]\n        return _result(\"open\", f\"Opening {name}.\", target)\n\n    if any(words[i:i + 2] == [\"current\", \"hour\"] for i in range(len(words) - 1)):\n        return _result(\"speak\", f\"The hour is {hour:02d}:00.\")\n\n    if \"hello\" in words or \"hi\" in words:\n        period = \"morning\" if hour < 12 else \"afternoon\" if hour < 18 else \"evening\"\n        return _result(\"speak\", f\"Good {period}.\")\n\n    if text == \"what are you doing\":\n        return _result(\"speak\", \"Waiting for your request.\")\n    if text == \"how are you\":\n        return _result(\"speak\", \"Operating normally.\")\n    return _result(\"retry\", \"Please say that again.\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a390724504ec297af309d46c220eff91c9f9238ed90e9a58d5e933c2ff035155"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "{'action': 'speak', 'speech': 'Good morning.', 'target': None}\n",
+    "stdout_sha256": "1f4979b53efcdd4a9f6e8d821812def0b2f2e9075510c7f07a8f6c0bf728149b",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 5, in <module>\n    assert actual == {'action': 'retry', 'speech': 'Please say that again.', 'target': None}, 'hi is not a complete alphanumeric token'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: hi is not a complete alphanumeric token\n",
+    "stderr_sha256": "f016d04e34287f6b85a86aa9377ce9a0520d4ffd719b6278a2ba24ee8c86c070",
+    "duration_ms": 508,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

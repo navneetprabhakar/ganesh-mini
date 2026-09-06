@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0549",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "aa01e9acc2988a0fe5e44779dffe82dc44a52aaabd56489ea080842ffd3cbc74",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import measure\n\nassert measure([10 ** 400, -(10 ** 400)]) == (2, 0, 0.0)\n",
+        "sha256": "dbccf0d1f9c32cf30da0cd9ad080b088df48610b190995347ca3f3eaa86c923b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9cd693f91c5c80aeba5f8969cf42e9e1be359ce9764ff98899b21b2f8a5f8703",
+      "text": "Implement `measure(values)` in `solution.py` with a descriptive docstring. It accepts any iterable of finite integers and floats and returns `(count, total, mean)`. Boolean values are not numbers for this API. Empty input returns `(0, 0, 0)`. A non-iterable or non-numeric element raises `TypeError`; NaN and either infinity raise `ValueError`. Preserve normal Python arithmetic: `total` is produced by summing from integer zero and `mean` is `total / count`. Consume a one-shot iterable only once and do not mutate supplied containers.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9cd693f91c5c80aeba5f8969cf42e9e1be359ce9764ff98899b21b2f8a5f8703",
+      "text": "Implement `measure(values)` in `solution.py` with a descriptive docstring. It accepts any iterable of finite integers and floats and returns `(count, total, mean)`. Boolean values are not numbers for this API. Empty input returns `(0, 0, 0)`. A non-iterable or non-numeric element raises `TypeError`; NaN and either infinity raise `ValueError`. Preserve normal Python arithmetic: `total` is produced by summing from integer zero and `mean` is `total / count`. Consume a one-shot iterable only once and do not mutate supplied containers.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0549",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef measure(values):\n    \"\"\"Return the count, arithmetic total, and mean of finite numeric values.\"\"\"\n    try:\n        iterator = iter(values)\n    except TypeError:\n        raise TypeError(\"values must be iterable\") from None\n\n    count = 0\n    total = 0\n    for value in iterator:\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"every value must be an integer or float\")\n        if not math.isfinite(value):\n            raise ValueError(\"values must be finite\")\n        total += value\n        count += 1\n    return count, total, total / count\n",
+          "label": "Divides by zero for empty input instead of returning the specified empty summary.",
+          "sha256": "b965072e9d8131020d4da7c84db70854c7eb67ca36ad5fa66ea7e5c3d5cba35f"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef measure(values):\n    \"\"\"Return the count, arithmetic total, and mean of finite numeric values.\"\"\"\n    try:\n        iterator = iter(values)\n    except TypeError:\n        raise TypeError(\"values must be iterable\") from None\n\n    count = 0\n    total = 0\n    for value in iterator:\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"every value must be an integer or float\")\n        if not math.isfinite(value):\n            raise ValueError(\"values must be finite\")\n        total += value\n        count += 1\n    if count == 0:\n        return 0, 0, 0\n    return count, total, total / count\n",
+        "label": "codex-teacher-reference",
+        "sha256": "56d7f7b5ecae5c90bb18d4a484b426a502ae48bac7f366d999c316bd3067afc6"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import measure\n\n\nclass SinglePassIterable:\n    def __init__(self, values):\n        self.values = list(values)\n        self.iterations = 0\n\n    def __iter__(self):\n        self.iterations += 1\n        if self.iterations > 1:\n            raise AssertionError(\"iterable consumed more than once\")\n        yield from self.values\n\n\nclass MeasureTests(unittest.TestCase):\n    def test_empty_and_integer_inputs(self):\n        self.assertEqual(measure([]), (0, 0, 0))\n        self.assertEqual(measure([1, 2, 3]), (3, 6, 2.0))\n\n    def test_mixed_numeric_values_and_normal_arithmetic(self):\n        result = measure((1, 2.5, -0.5))\n        self.assertEqual(result, (3, 3.0, 1.0))\n        count, total, mean = measure([1, 2])\n        self.assertEqual(count, 2)\n        self.assertIsInstance(total, int)\n        self.assertEqual(mean, 1.5)\n\n    def test_generator_is_consumed_once(self):\n        source = SinglePassIterable([4, 6.0])\n        self.assertEqual(measure(source), (2, 10.0, 5.0))\n        self.assertEqual(source.iterations, 1)\n\n    def test_container_is_not_mutated(self):\n        values = [3, 1, 2]\n        self.assertEqual(measure(values), (3, 6, 2.0))\n        self.assertEqual(values, [3, 1, 2])\n\n    def test_non_iterable_and_non_numeric_elements(self):\n        with self.assertRaises(TypeError):\n            measure(123)\n        for bad in (True, False, \"3\", None, object()):\n            with self.subTest(bad=bad):\n                with self.assertRaises(TypeError):\n                    measure([1, bad])\n\n    def test_non_finite_numbers(self):\n        for bad in (math.nan, math.inf, -math.inf):\n            with self.subTest(bad=bad):\n                with self.assertRaises(ValueError):\n                    measure([0, bad])\n\n    def test_has_descriptive_docstring(self):\n        self.assertIsInstance(measure.__doc__, str)\n        self.assertTrue(measure.__doc__.strip())\n        self.assertGreaterEqual(len(measure.__doc__.split()), 3)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "76399d1210a7e815423f1bd17c37b9e084a6518c3c1941d49de1f0985bfab79f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9cd693f91c5c80aeba5f8969cf42e9e1be359ce9764ff98899b21b2f8a5f8703",
+      "text": "Implement `measure(values)` in `solution.py` with a descriptive docstring. It accepts any iterable of finite integers and floats and returns `(count, total, mean)`. Boolean values are not numbers for this API. Empty input returns `(0, 0, 0)`. A non-iterable or non-numeric element raises `TypeError`; NaN and either infinity raise `ValueError`. Preserve normal Python arithmetic: `total` is produced by summing from integer zero and `mean` is `total / count`. Consume a one-shot iterable only once and do not mutate supplied containers.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9cd693f91c5c80aeba5f8969cf42e9e1be359ce9764ff98899b21b2f8a5f8703",
+      "text": "Implement `measure(values)` in `solution.py` with a descriptive docstring. It accepts any iterable of finite integers and floats and returns `(count, total, mean)`. Boolean values are not numbers for this API. Empty input returns `(0, 0, 0)`. A non-iterable or non-numeric element raises `TypeError`; NaN and either infinity raise `ValueError`. Preserve normal Python arithmetic: `total` is produced by summing from integer zero and `mean` is `total / count`. Consume a one-shot iterable only once and do not mutate supplied containers.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0549",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef measure(values):\n    \"\"\"Return the count, arithmetic total, and mean of finite numeric values.\"\"\"\n    try:\n        iterator = iter(values)\n    except TypeError:\n        raise TypeError(\"values must be iterable\") from None\n\n    count = 0\n    total = 0\n    for value in iterator:\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"every value must be an integer or float\")\n        if not math.isfinite(value):\n            raise ValueError(\"values must be finite\")\n        total += value\n        count += 1\n    return count, total, total / count\n",
+          "label": "Divides by zero for empty input instead of returning the specified empty summary.",
+          "sha256": "b965072e9d8131020d4da7c84db70854c7eb67ca36ad5fa66ea7e5c3d5cba35f"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef measure(values):\n    \"\"\"Return the count, arithmetic total, and mean of finite numeric values.\"\"\"\n    try:\n        iterator = iter(values)\n    except TypeError:\n        raise TypeError(\"values must be iterable\") from None\n\n    count = 0\n    total = 0\n    for value in iterator:\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(\"every value must be an integer or float\")\n        if not math.isfinite(value):\n            raise ValueError(\"values must be finite\")\n        total += value\n        count += 1\n    if count == 0:\n        return 0, 0, 0\n    return count, total, total / count\n",
+        "label": "codex-teacher-reference",
+        "sha256": "56d7f7b5ecae5c90bb18d4a484b426a502ae48bac7f366d999c316bd3067afc6"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 3, in <module>\n    assert measure([10 ** 400, -(10 ** 400)]) == (2, 0, 0.0)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 16, in measure\n    if not math.isfinite(value):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n",
+    "stderr_sha256": "eeb30e7537061f761d5ec65996db105a3f465d3ae3835526850f7f0c7a8268b2",
+    "duration_ms": 342,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

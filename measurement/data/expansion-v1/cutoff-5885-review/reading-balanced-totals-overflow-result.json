@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0531",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "05891777c0de612948ca905ed192cbdff2fd3ec99285586e04c892ab1ef2d0d5",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import collect_readings\n\nsnapshot = {'offers': [(1, 1e308), (2, 1e308)], 'requests': [(1, 1e308), (2, 1e308)], 'value': 1}\nactual = collect_readings([snapshot], 1, 1)\nprint(repr(actual))\nassert len(actual) == 1 and actual[0].imbalance == 0.0, 'identical sides must have zero imbalance'\n",
+        "sha256": "a7892458bb3a601d3ea4811934743c87dffc397adb66d89da402861ea4d8ac03"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fe157659e2614ec5c9fc9aef77c71936205d33f8fc676a3f00128b991ff548e2",
+      "text": "Create `solution.py` defining immutable dataclass `Reading` with float fields `imbalance`, `value`, and optional `change_percent`, plus `collect_readings(snapshots, max_points, stop_imbalance)`.\n\nEach snapshot is a dictionary with exactly `offers`, `requests`, and `value`. Each side is a list of two-item `(level, quantity)` lists or tuples. All values must be finite real numbers excluding booleans; quantities must be nonnegative. `imbalance` is total request quantity minus total offer quantity. `change_percent` is `None` for the first accepted snapshot or when the preceding value is zero; otherwise it is `(value - previous_value) / abs(previous_value) * 100`.\n\nValidate `max_points` as a nonnegative integer excluding booleans and `stop_imbalance` as a finite nonnegative real. Process in input order, stopping before a snapshot whose absolute imbalance is greater than or equal to `stop_imbalance`. Otherwise append at most `max_points` readings. With `max_points == 0`, return immediately without consuming or validating snapshot elements. Do not mutate or alias input containers. Raise `TypeError` for structural/type errors and `ValueError` for invalid numeric values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fe157659e2614ec5c9fc9aef77c71936205d33f8fc676a3f00128b991ff548e2",
+      "text": "Create `solution.py` defining immutable dataclass `Reading` with float fields `imbalance`, `value`, and optional `change_percent`, plus `collect_readings(snapshots, max_points, stop_imbalance)`.\n\nEach snapshot is a dictionary with exactly `offers`, `requests`, and `value`. Each side is a list of two-item `(level, quantity)` lists or tuples. All values must be finite real numbers excluding booleans; quantities must be nonnegative. `imbalance` is total request quantity minus total offer quantity. `change_percent` is `None` for the first accepted snapshot or when the preceding value is zero; otherwise it is `(value - previous_value) / abs(previous_value) * 100`.\n\nValidate `max_points` as a nonnegative integer excluding booleans and `stop_imbalance` as a finite nonnegative real. Process in input order, stopping before a snapshot whose absolute imbalance is greater than or equal to `stop_imbalance`. Otherwise append at most `max_points` readings. With `max_points == 0`, return immediately without consuming or validating snapshot elements. Do not mutate or alias input containers. Raise `TypeError` for structural/type errors and `ValueError` for invalid numeric values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0531",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nimport math\nimport numbers\n\n\n@dataclass(frozen=True)\nclass Reading:\n    imbalance: float\n    value: float\n    change_percent: float | None\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, numbers.Real):\n        raise TypeError(\"numeric values must be real numbers\")\n    result = float(value)\n    if not math.isfinite(result):\n        raise ValueError(\"numeric values must be finite\")\n    return result\n\n\ndef collect_readings(snapshots, max_points, stop_imbalance):\n    if isinstance(max_points, bool) or not isinstance(max_points, int):\n        raise TypeError(\"max_points must be an integer\")\n    if max_points < 0:\n        raise ValueError(\"max_points must be nonnegative\")\n    threshold = _number(stop_imbalance)\n    if threshold < 0:\n        raise ValueError(\"stop_imbalance must be nonnegative\")\n    if max_points == 0:\n        return []\n\n    result = []\n    previous = None\n    for snapshot in snapshots:\n        if not isinstance(snapshot, dict) or set(snapshot) != {\"offers\", \"requests\", \"value\"}:\n            raise TypeError(\"invalid snapshot\")\n        totals = []\n        for key in (\"offers\", \"requests\"):\n            side = snapshot[key]\n            if not isinstance(side, list):\n                raise TypeError(\"book sides must be lists\")\n            total = 0.0\n            for row in side:\n                if not isinstance(row, (list, tuple)) or len(row) != 2:\n                    raise TypeError(\"book rows must contain level and quantity\")\n                _number(row[0])\n                quantity = _number(row[1])\n                if quantity < 0:\n                    raise ValueError(\"quantities must be nonnegative\")\n                total += quantity\n            totals.append(total)\n        value = _number(snapshot[\"value\"])\n        imbalance = totals[1] - totals[0]\n        if abs(imbalance) > threshold:\n            break\n        change = None if previous is None or previous == 0 else (value - previous) / abs(previous) * 100.0\n        result.append(Reading(imbalance, value, change))\n        previous = value\n        if len(result) == max_points:\n            break\n    return result\n",
+          "label": "Fails to stop when imbalance is exactly equal to the configured boundary.",
+          "sha256": "3614e02922aa30cb11fc81d56a627ec80b721d860d92a8f1b74e3f33692188fa"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nimport math\nimport numbers\n\n\n@dataclass(frozen=True)\nclass Reading:\n    imbalance: float\n    value: float\n    change_percent: float | None\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, numbers.Real):\n        raise TypeError(\"numeric values must be real numbers\")\n    result = float(value)\n    if not math.isfinite(result):\n        raise ValueError(\"numeric values must be finite\")\n    return result\n\n\ndef collect_readings(snapshots, max_points, stop_imbalance):\n    if isinstance(max_points, bool) or not isinstance(max_points, int):\n        raise TypeError(\"max_points must be an integer\")\n    if max_points < 0:\n        raise ValueError(\"max_points must be nonnegative\")\n    threshold = _number(stop_imbalance)\n    if threshold < 0:\n        raise ValueError(\"stop_imbalance must be nonnegative\")\n    if max_points == 0:\n        return []\n\n    result = []\n    previous = None\n    for snapshot in snapshots:\n        if not isinstance(snapshot, dict) or set(snapshot) != {\"offers\", \"requests\", \"value\"}:\n            raise TypeError(\"invalid snapshot\")\n        totals = []\n        for key in (\"offers\", \"requests\"):\n            side = snapshot[key]\n            if not isinstance(side, list):\n                raise TypeError(\"book sides must be lists\")\n            total = 0.0\n            for row in side:\n                if not isinstance(row, (list, tuple)) or len(row) != 2:\n                    raise TypeError(\"book rows must contain level and quantity\")\n                _number(row[0])\n                quantity = _number(row[1])\n                if quantity < 0:\n                    raise ValueError(\"quantities must be nonnegative\")\n                total += quantity\n            totals.append(total)\n        value = _number(snapshot[\"value\"])\n        imbalance = totals[1] - totals[0]\n        if abs(imbalance) >= threshold:\n            break\n        change = None if previous is None or previous == 0 else (value - previous) / abs(previous) * 100.0\n        result.append(Reading(imbalance, value, change))\n        previous = value\n        if len(result) == max_points:\n            break\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8a5782dffe9fd20d62c98465f2ed11370c09d231b1559ab06931e70ebaf21268"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\nfrom dataclasses import FrozenInstanceError\n\nfrom solution import Reading, collect_readings\n\n\ndef snapshot(offers, requests, value):\n    return {\"offers\": offers, \"requests\": requests, \"value\": value}\n\n\nclass CollectReadingsTests(unittest.TestCase):\n    def test_computes_imbalance_and_change_in_order(self):\n        snapshots = [\n            snapshot([[100, 2], [101, 3]], [(99, 7)], 10),\n            snapshot([(100, 1)], [[99, 4], [98, 2]], 15),\n            snapshot([], [], 0),\n            snapshot([], [], 5),\n        ]\n        result = collect_readings(snapshots, 10, 100)\n        self.assertEqual(result, [\n            Reading(2.0, 10.0, None),\n            Reading(5.0, 15.0, 50.0),\n            Reading(0.0, 0.0, -100.0),\n            Reading(0.0, 5.0, None),\n        ])\n        with self.assertRaises(FrozenInstanceError):\n            result[0].value = 2\n\n    def test_stops_before_threshold_snapshot(self):\n        data = [\n            snapshot([], [[1, 2]], 10),\n            snapshot([], [[1, 3]], 20),\n            snapshot([], [], 30),\n        ]\n        result = collect_readings(data, 10, 3)\n        self.assertEqual(result, [Reading(2.0, 10.0, None)])\n\n    def test_max_points_limits_consumption(self):\n        def source():\n            yield snapshot([], [], 1)\n            yield snapshot([], [], 2)\n            raise AssertionError(\"iterator consumed past max_points\")\n\n        result = collect_readings(source(), 2, 10)\n        self.assertEqual(len(result), 2)\n\n    def test_zero_max_points_does_not_consume_input(self):\n        class ExplodingIterable:\n            def __iter__(self):\n                raise AssertionError(\"must not consume snapshots\")\n\n        self.assertEqual(collect_readings(ExplodingIterable(), 0, 1), [])\n\n    def test_empty_input_and_input_non_mutation(self):\n        self.assertEqual(collect_readings([], 3, 1), [])\n        data = [snapshot([[1, 2]], [[2, 4]], 7)]\n        offers = data[0][\"offers\"]\n        requests = data[0][\"requests\"]\n        before = repr(data)\n        collect_readings(data, 1, 10)\n        self.assertEqual(repr(data), before)\n        self.assertIs(data[0][\"offers\"], offers)\n        self.assertIs(data[0][\"requests\"], requests)\n\n    def test_parameter_validation(self):\n        for maximum in (-1, 1.5, True, \"1\"):\n            error = ValueError if maximum == -1 else TypeError\n            with self.subTest(maximum=maximum):\n                with self.assertRaises(error):\n                    collect_readings([], maximum, 1)\n        for stop, error in [(-1, ValueError), (math.inf, ValueError), (math.nan, ValueError), (True, TypeError), (\"1\", TypeError)]:\n            with self.subTest(stop=stop):\n                with self.assertRaises(error):\n                    collect_readings([], 1, stop)\n\n    def test_structural_errors(self):\n        bad = [\n            {\"offers\": [], \"requests\": []},\n            {\"offers\": [], \"requests\": [], \"value\": 1, \"extra\": 2},\n            {\"offers\": (), \"requests\": [], \"value\": 1},\n            {\"offers\": [[1]], \"requests\": [], \"value\": 1},\n            {\"offers\": [[1, 2, 3]], \"requests\": [], \"value\": 1},\n            {\"offers\": [\"ab\"], \"requests\": [], \"value\": 1},\n            {\"offers\": [[1, True]], \"requests\": [], \"value\": 1},\n            {\"offers\": [], \"requests\": [], \"value\": True},\n        ]\n        for item in bad:\n            with self.subTest(item=item):\n                with self.assertRaises(TypeError):\n                    collect_readings([item], 1, 10)\n\n    def test_invalid_numeric_values(self):\n        bad = [\n            snapshot([[math.inf, 1]], [], 1),\n            snapshot([[1, math.nan]], [], 1),\n            snapshot([[1, -0.1]], [], 1),\n            snapshot([], [[1, -1]], 1),\n            snapshot([], [], math.inf),\n        ]\n        for item in bad:\n            with self.subTest(item=item):\n                with self.assertRaises(ValueError):\n                    collect_readings([item], 1, 10)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "67428863f6eae2b7f93506036a1a4646b4967e6e5ed251a0779b766bb6b3d044"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fe157659e2614ec5c9fc9aef77c71936205d33f8fc676a3f00128b991ff548e2",
+      "text": "Create `solution.py` defining immutable dataclass `Reading` with float fields `imbalance`, `value`, and optional `change_percent`, plus `collect_readings(snapshots, max_points, stop_imbalance)`.\n\nEach snapshot is a dictionary with exactly `offers`, `requests`, and `value`. Each side is a list of two-item `(level, quantity)` lists or tuples. All values must be finite real numbers excluding booleans; quantities must be nonnegative. `imbalance` is total request quantity minus total offer quantity. `change_percent` is `None` for the first accepted snapshot or when the preceding value is zero; otherwise it is `(value - previous_value) / abs(previous_value) * 100`.\n\nValidate `max_points` as a nonnegative integer excluding booleans and `stop_imbalance` as a finite nonnegative real. Process in input order, stopping before a snapshot whose absolute imbalance is greater than or equal to `stop_imbalance`. Otherwise append at most `max_points` readings. With `max_points == 0`, return immediately without consuming or validating snapshot elements. Do not mutate or alias input containers. Raise `TypeError` for structural/type errors and `ValueError` for invalid numeric values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fe157659e2614ec5c9fc9aef77c71936205d33f8fc676a3f00128b991ff548e2",
+      "text": "Create `solution.py` defining immutable dataclass `Reading` with float fields `imbalance`, `value`, and optional `change_percent`, plus `collect_readings(snapshots, max_points, stop_imbalance)`.\n\nEach snapshot is a dictionary with exactly `offers`, `requests`, and `value`. Each side is a list of two-item `(level, quantity)` lists or tuples. All values must be finite real numbers excluding booleans; quantities must be nonnegative. `imbalance` is total request quantity minus total offer quantity. `change_percent` is `None` for the first accepted snapshot or when the preceding value is zero; otherwise it is `(value - previous_value) / abs(previous_value) * 100`.\n\nValidate `max_points` as a nonnegative integer excluding booleans and `stop_imbalance` as a finite nonnegative real. Process in input order, stopping before a snapshot whose absolute imbalance is greater than or equal to `stop_imbalance`. Otherwise append at most `max_points` readings. With `max_points == 0`, return immediately without consuming or validating snapshot elements. Do not mutate or alias input containers. Raise `TypeError` for structural/type errors and `ValueError` for invalid numeric values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0531",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nimport math\nimport numbers\n\n\n@dataclass(frozen=True)\nclass Reading:\n    imbalance: float\n    value: float\n    change_percent: float | None\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, numbers.Real):\n        raise TypeError(\"numeric values must be real numbers\")\n    result = float(value)\n    if not math.isfinite(result):\n        raise ValueError(\"numeric values must be finite\")\n    return result\n\n\ndef collect_readings(snapshots, max_points, stop_imbalance):\n    if isinstance(max_points, bool) or not isinstance(max_points, int):\n        raise TypeError(\"max_points must be an integer\")\n    if max_points < 0:\n        raise ValueError(\"max_points must be nonnegative\")\n    threshold = _number(stop_imbalance)\n    if threshold < 0:\n        raise ValueError(\"stop_imbalance must be nonnegative\")\n    if max_points == 0:\n        return []\n\n    result = []\n    previous = None\n    for snapshot in snapshots:\n        if not isinstance(snapshot, dict) or set(snapshot) != {\"offers\", \"requests\", \"value\"}:\n            raise TypeError(\"invalid snapshot\")\n        totals = []\n        for key in (\"offers\", \"requests\"):\n            side = snapshot[key]\n            if not isinstance(side, list):\n                raise TypeError(\"book sides must be lists\")\n            total = 0.0\n            for row in side:\n                if not isinstance(row, (list, tuple)) or len(row) != 2:\n                    raise TypeError(\"book rows must contain level and quantity\")\n                _number(row[0])\n                quantity = _number(row[1])\n                if quantity < 0:\n                    raise ValueError(\"quantities must be nonnegative\")\n                total += quantity\n            totals.append(total)\n        value = _number(snapshot[\"value\"])\n        imbalance = totals[1] - totals[0]\n        if abs(imbalance) > threshold:\n            break\n        change = None if previous is None or previous == 0 else (value - previous) / abs(previous) * 100.0\n        result.append(Reading(imbalance, value, change))\n        previous = value\n        if len(result) == max_points:\n            break\n    return result\n",
+          "label": "Fails to stop when imbalance is exactly equal to the configured boundary.",
+          "sha256": "3614e02922aa30cb11fc81d56a627ec80b721d860d92a8f1b74e3f33692188fa"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nimport math\nimport numbers\n\n\n@dataclass(frozen=True)\nclass Reading:\n    imbalance: float\n    value: float\n    change_percent: float | None\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, numbers.Real):\n        raise TypeError(\"numeric values must be real numbers\")\n    result = float(value)\n    if not math.isfinite(result):\n        raise ValueError(\"numeric values must be finite\")\n    return result\n\n\ndef collect_readings(snapshots, max_points, stop_imbalance):\n    if isinstance(max_points, bool) or not isinstance(max_points, int):\n        raise TypeError(\"max_points must be an integer\")\n    if max_points < 0:\n        raise ValueError(\"max_points must be nonnegative\")\n    threshold = _number(stop_imbalance)\n    if threshold < 0:\n        raise ValueError(\"stop_imbalance must be nonnegative\")\n    if max_points == 0:\n        return []\n\n    result = []\n    previous = None\n    for snapshot in snapshots:\n        if not isinstance(snapshot, dict) or set(snapshot) != {\"offers\", \"requests\", \"value\"}:\n            raise TypeError(\"invalid snapshot\")\n        totals = []\n        for key in (\"offers\", \"requests\"):\n            side = snapshot[key]\n            if not isinstance(side, list):\n                raise TypeError(\"book sides must be lists\")\n            total = 0.0\n            for row in side:\n                if not isinstance(row, (list, tuple)) or len(row) != 2:\n                    raise TypeError(\"book rows must contain level and quantity\")\n                _number(row[0])\n                quantity = _number(row[1])\n                if quantity < 0:\n                    raise ValueError(\"quantities must be nonnegative\")\n                total += quantity\n            totals.append(total)\n        value = _number(snapshot[\"value\"])\n        imbalance = totals[1] - totals[0]\n        if abs(imbalance) >= threshold:\n            break\n        change = None if previous is None or previous == 0 else (value - previous) / abs(previous) * 100.0\n        result.append(Reading(imbalance, value, change))\n        previous = value\n        if len(result) == max_points:\n            break\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8a5782dffe9fd20d62c98465f2ed11370c09d231b1559ab06931e70ebaf21268"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "[Reading(imbalance=nan, value=1.0, change_percent=None)]\n",
+    "stdout_sha256": "303e5f4cfc0688afe0f798a8dba73a3c4e4cb65b715bec0042640be48cf3761a",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 6, in <module>\n    assert len(actual) == 1 and actual[0].imbalance == 0.0, 'identical sides must have zero imbalance'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: identical sides must have zero imbalance\n",
+    "stderr_sha256": "b2bc67c64140fc600776b00f3404ffe418e6bae1a0ea4b696b9317112676a059",
+    "duration_ms": 348,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

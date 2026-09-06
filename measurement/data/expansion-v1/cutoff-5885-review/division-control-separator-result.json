@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0500",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "2d3baed1c9843dda5c6776a82d023300a57777582d593f7cfe1527788d39dcab",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import divide_integer_text\n\ntext = '\\x1c1'\ntry:\n    int(text, 10)\nexcept ValueError:\n    pass\nelse:\n    raise AssertionError('oracle expected Python int to reject separator')\nactual = divide_integer_text(text, '1')\nprint(repr(actual))\nassert actual.kind == 'invalid', 'parsing must follow Python base-10 int syntax'\n",
+        "sha256": "ca3a6de3a1031b858861f52e94636a0bb328ebcad5c31991a6cd42145c18950c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e8c7a105012228cd2a41330b4916f61eab762bc4de441d6f87dc118f8e4c97de",
+      "text": "Create a new implementation in `solution.py` that defines the frozen dataclass `DivisionResult(kind: str, value: float | None, message: str)` and the function `divide_integer_text(numerator, denominator)`.\n\nBoth arguments must be strings; otherwise raise `TypeError`. Parse each with Python's base-10 `int` syntax, which permits surrounding whitespace and a leading sign. Empty or malformed text returns `DivisionResult(\"invalid\", None, \"both inputs must be integers\")`.\n\nA zero denominator returns `DivisionResult(\"zero\", None, \"denominator must not be zero\")`. For valid nonzero integers, perform true division and return kind `\"ok\"`, the float result, and an empty message. If conversion of the mathematical quotient to a float overflows, return kind `\"overflow\"`, value `None`, and message `\"result is outside float range\"`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e8c7a105012228cd2a41330b4916f61eab762bc4de441d6f87dc118f8e4c97de",
+      "text": "Create a new implementation in `solution.py` that defines the frozen dataclass `DivisionResult(kind: str, value: float | None, message: str)` and the function `divide_integer_text(numerator, denominator)`.\n\nBoth arguments must be strings; otherwise raise `TypeError`. Parse each with Python's base-10 `int` syntax, which permits surrounding whitespace and a leading sign. Empty or malformed text returns `DivisionResult(\"invalid\", None, \"both inputs must be integers\")`.\n\nA zero denominator returns `DivisionResult(\"zero\", None, \"denominator must not be zero\")`. For valid nonzero integers, perform true division and return kind `\"ok\"`, the float result, and an empty message. If conversion of the mathematical quotient to a float overflows, return kind `\"overflow\"`, value `None`, and message `\"result is outside float range\"`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0500",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nimport unicodedata\n\n\n@dataclass(frozen=True)\nclass DivisionResult:\n    kind: str\n    value: float | None\n    message: str\n\n\ndef _parse_base_10(text: str) -> int:\n    text = text.strip()\n    if not text:\n        raise ValueError\n\n    sign = 1\n    if text[0] in \"+-\":\n        if text[0] == \"-\":\n            sign = -1\n        text = text[1:]\n\n    if not text:\n        raise ValueError\n\n    value = 0\n    need_digit = True\n    for character in text:\n        if character == \"_\":\n            if need_digit:\n                raise ValueError\n            need_digit = True\n            continue\n\n        try:\n            digit = unicodedata.decimal(character)\n        except (TypeError, ValueError) as error:\n            raise ValueError from error\n\n        value = value * 10 + digit\n        need_digit = False\n\n    if need_digit:\n        raise ValueError\n    return sign * value\n\n\ndef divide_integer_text(numerator: str, denominator: str) -> DivisionResult:\n    if not isinstance(numerator, str) or not isinstance(denominator, str):\n        raise TypeError(\"both inputs must be strings\")\n\n    try:\n        left = _parse_base_10(numerator)\n        right = _parse_base_10(denominator)\n    except ValueError:\n        return DivisionResult(\"invalid\", None, \"both inputs must be integers\")\n\n    if right == 0:\n        return DivisionResult(\"zero\", None, \"denominator must not be zero\")\n\n    try:\n        value = left // right\n    except OverflowError:\n        return DivisionResult(\"overflow\", None, \"result is outside float range\")\n    return DivisionResult(\"ok\", value, \"\")\n",
+          "label": "Performs floor division instead of true division.",
+          "sha256": "19cbc7d9ebdc4968568578a82a1eb03921e908d125963c31cacca87f4219d255"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nimport unicodedata\n\n\n@dataclass(frozen=True)\nclass DivisionResult:\n    kind: str\n    value: float | None\n    message: str\n\n\ndef _parse_base_10(text: str) -> int:\n    text = text.strip()\n    if not text:\n        raise ValueError\n\n    sign = 1\n    if text[0] in \"+-\":\n        if text[0] == \"-\":\n            sign = -1\n        text = text[1:]\n\n    if not text:\n        raise ValueError\n\n    value = 0\n    need_digit = True\n    for character in text:\n        if character == \"_\":\n            if need_digit:\n                raise ValueError\n            need_digit = True\n            continue\n\n        try:\n            digit = unicodedata.decimal(character)\n        except (TypeError, ValueError) as error:\n            raise ValueError from error\n\n        value = value * 10 + digit\n        need_digit = False\n\n    if need_digit:\n        raise ValueError\n    return sign * value\n\n\ndef divide_integer_text(numerator: str, denominator: str) -> DivisionResult:\n    if not isinstance(numerator, str) or not isinstance(denominator, str):\n        raise TypeError(\"both inputs must be strings\")\n\n    try:\n        left = _parse_base_10(numerator)\n        right = _parse_base_10(denominator)\n    except ValueError:\n        return DivisionResult(\"invalid\", None, \"both inputs must be integers\")\n\n    if right == 0:\n        return DivisionResult(\"zero\", None, \"denominator must not be zero\")\n\n    try:\n        value = left / right\n    except OverflowError:\n        return DivisionResult(\"overflow\", None, \"result is outside float range\")\n    return DivisionResult(\"ok\", value, \"\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1415d493a5a204e4731436a331f6be967685e24582532e244dd5b0ec294f4507"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom dataclasses import FrozenInstanceError\n\nfrom solution import DivisionResult, divide_integer_text\n\n\nclass DivideIntegerTextTests(unittest.TestCase):\n    def test_valid_division(self):\n        self.assertEqual(divide_integer_text(\"7\", \"2\"), DivisionResult(\"ok\", 3.5, \"\"))\n        self.assertEqual(divide_integer_text(\"-9\", \"+3\"), DivisionResult(\"ok\", -3.0, \"\"))\n\n    def test_surrounding_whitespace_and_integer_syntax(self):\n        self.assertEqual(\n            divide_integer_text(\"  +1_000\\n\", \"\\t4 \"),\n            DivisionResult(\"ok\", 250.0, \"\"),\n        )\n\n    def test_zero_denominator(self):\n        expected = DivisionResult(\"zero\", None, \"denominator must not be zero\")\n        self.assertEqual(divide_integer_text(\"5\", \"0\"), expected)\n        self.assertEqual(divide_integer_text(\"5\", \" -0 \"), expected)\n\n    def test_empty_or_malformed_input(self):\n        expected = DivisionResult(\"invalid\", None, \"both inputs must be integers\")\n        cases = [\n            (\"\", \"1\"),\n            (\"   \", \"1\"),\n            (\"1.5\", \"2\"),\n            (\"ten\", \"2\"),\n            (\"2\", \"3x\"),\n            (\"0x10\", \"2\"),\n        ]\n        for numerator, denominator in cases:\n            with self.subTest(numerator=numerator, denominator=denominator):\n                self.assertEqual(divide_integer_text(numerator, denominator), expected)\n\n    def test_non_string_arguments_raise_type_error(self):\n        for numerator, denominator in [(1, \"2\"), (\"1\", 2), (None, \"1\"), (\"1\", None)]:\n            with self.subTest(numerator=numerator, denominator=denominator):\n                with self.assertRaises(TypeError):\n                    divide_integer_text(numerator, denominator)\n\n    def test_quotient_float_overflow(self):\n        huge = \"1\" + (\"0\" * 10000)\n        self.assertEqual(\n            divide_integer_text(huge, \"1\"),\n            DivisionResult(\"overflow\", None, \"result is outside float range\"),\n        )\n        self.assertEqual(\n            divide_integer_text(\"-\" + huge, \"1\"),\n            DivisionResult(\"overflow\", None, \"result is outside float range\"),\n        )\n\n    def test_result_dataclass_is_frozen(self):\n        result = DivisionResult(\"ok\", 1.0, \"\")\n        with self.assertRaises(FrozenInstanceError):\n            result.kind = \"invalid\"\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "8e81e590b2d2a4c67882120d6f5bd46ebe36863bfd286d9071574318d278e061"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e8c7a105012228cd2a41330b4916f61eab762bc4de441d6f87dc118f8e4c97de",
+      "text": "Create a new implementation in `solution.py` that defines the frozen dataclass `DivisionResult(kind: str, value: float | None, message: str)` and the function `divide_integer_text(numerator, denominator)`.\n\nBoth arguments must be strings; otherwise raise `TypeError`. Parse each with Python's base-10 `int` syntax, which permits surrounding whitespace and a leading sign. Empty or malformed text returns `DivisionResult(\"invalid\", None, \"both inputs must be integers\")`.\n\nA zero denominator returns `DivisionResult(\"zero\", None, \"denominator must not be zero\")`. For valid nonzero integers, perform true division and return kind `\"ok\"`, the float result, and an empty message. If conversion of the mathematical quotient to a float overflows, return kind `\"overflow\"`, value `None`, and message `\"result is outside float range\"`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e8c7a105012228cd2a41330b4916f61eab762bc4de441d6f87dc118f8e4c97de",
+      "text": "Create a new implementation in `solution.py` that defines the frozen dataclass `DivisionResult(kind: str, value: float | None, message: str)` and the function `divide_integer_text(numerator, denominator)`.\n\nBoth arguments must be strings; otherwise raise `TypeError`. Parse each with Python's base-10 `int` syntax, which permits surrounding whitespace and a leading sign. Empty or malformed text returns `DivisionResult(\"invalid\", None, \"both inputs must be integers\")`.\n\nA zero denominator returns `DivisionResult(\"zero\", None, \"denominator must not be zero\")`. For valid nonzero integers, perform true division and return kind `\"ok\"`, the float result, and an empty message. If conversion of the mathematical quotient to a float overflows, return kind `\"overflow\"`, value `None`, and message `\"result is outside float range\"`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0500",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nimport unicodedata\n\n\n@dataclass(frozen=True)\nclass DivisionResult:\n    kind: str\n    value: float | None\n    message: str\n\n\ndef _parse_base_10(text: str) -> int:\n    text = text.strip()\n    if not text:\n        raise ValueError\n\n    sign = 1\n    if text[0] in \"+-\":\n        if text[0] == \"-\":\n            sign = -1\n        text = text[1:]\n\n    if not text:\n        raise ValueError\n\n    value = 0\n    need_digit = True\n    for character in text:\n        if character == \"_\":\n            if need_digit:\n                raise ValueError\n            need_digit = True\n            continue\n\n        try:\n            digit = unicodedata.decimal(character)\n        except (TypeError, ValueError) as error:\n            raise ValueError from error\n\n        value = value * 10 + digit\n        need_digit = False\n\n    if need_digit:\n        raise ValueError\n    return sign * value\n\n\ndef divide_integer_text(numerator: str, denominator: str) -> DivisionResult:\n    if not isinstance(numerator, str) or not isinstance(denominator, str):\n        raise TypeError(\"both inputs must be strings\")\n\n    try:\n        left = _parse_base_10(numerator)\n        right = _parse_base_10(denominator)\n    except ValueError:\n        return DivisionResult(\"invalid\", None, \"both inputs must be integers\")\n\n    if right == 0:\n        return DivisionResult(\"zero\", None, \"denominator must not be zero\")\n\n    try:\n        value = left // right\n    except OverflowError:\n        return DivisionResult(\"overflow\", None, \"result is outside float range\")\n    return DivisionResult(\"ok\", value, \"\")\n",
+          "label": "Performs floor division instead of true division.",
+          "sha256": "19cbc7d9ebdc4968568578a82a1eb03921e908d125963c31cacca87f4219d255"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nimport unicodedata\n\n\n@dataclass(frozen=True)\nclass DivisionResult:\n    kind: str\n    value: float | None\n    message: str\n\n\ndef _parse_base_10(text: str) -> int:\n    text = text.strip()\n    if not text:\n        raise ValueError\n\n    sign = 1\n    if text[0] in \"+-\":\n        if text[0] == \"-\":\n            sign = -1\n        text = text[1:]\n\n    if not text:\n        raise ValueError\n\n    value = 0\n    need_digit = True\n    for character in text:\n        if character == \"_\":\n            if need_digit:\n                raise ValueError\n            need_digit = True\n            continue\n\n        try:\n            digit = unicodedata.decimal(character)\n        except (TypeError, ValueError) as error:\n            raise ValueError from error\n\n        value = value * 10 + digit\n        need_digit = False\n\n    if need_digit:\n        raise ValueError\n    return sign * value\n\n\ndef divide_integer_text(numerator: str, denominator: str) -> DivisionResult:\n    if not isinstance(numerator, str) or not isinstance(denominator, str):\n        raise TypeError(\"both inputs must be strings\")\n\n    try:\n        left = _parse_base_10(numerator)\n        right = _parse_base_10(denominator)\n    except ValueError:\n        return DivisionResult(\"invalid\", None, \"both inputs must be integers\")\n\n    if right == 0:\n        return DivisionResult(\"zero\", None, \"denominator must not be zero\")\n\n    try:\n        value = left / right\n    except OverflowError:\n        return DivisionResult(\"overflow\", None, \"result is outside float range\")\n    return DivisionResult(\"ok\", value, \"\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1415d493a5a204e4731436a331f6be967685e24582532e244dd5b0ec294f4507"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "DivisionResult(kind='ok', value=1.0, message='')\n",
+    "stdout_sha256": "38a1a89163c14a42f5bc559f540642bfaf2e406de63e9a3c6087b725c4131381",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 12, in <module>\n    assert actual.kind == 'invalid', 'parsing must follow Python base-10 int syntax'\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: parsing must follow Python base-10 int syntax\n",
+    "stderr_sha256": "a1a00b739193d78dd69c97b5f02f49785cf997b844fe8938b9b393c3623bc1f6",
+    "duration_ms": 341,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

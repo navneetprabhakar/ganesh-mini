@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0565",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "1250d574491b8f2d22765478945e1fffe11fcd43a2a5aa93fa957001213bd7f2",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import prepare_measurements\n\nrecord = {'x': 2}\nactual = prepare_measurements([record, record], ['x'])\nprint(repr(actual))\nassert actual['rows'] == [{'x': 0.0}, {'x': 0.0}], 'repeated input reference must not normalize the same row twice'\nassert record == {'x': 2}\n",
+        "sha256": "7ad46fe2740027118b2cd3f04d6b0f107d0cc18ea928f937dac5d25303085e8c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "49a4e7ade35d8353bfa6ebec39d6a11acd0db0fb46c1668206edc2cbb6898de0",
+      "text": "Implement `prepare_measurements(records, fields)` in `solution.py` using only the standard library.\n\n`records` is a sequence of dictionaries and `fields` is a non-empty sequence of unique, non-empty string field names. Every record must be a dictionary. For each requested field, a value is missing when it is `None` or `\"\"`; every other value must be an `int` or `float`, but booleans are invalid.\n\nDiscard any record having numeric zero in at least one requested field. For the remaining records, replace missing requested values with that field's arithmetic mean of its available values. If a field has no available value while records remain, raise `ValueError`. Normalize each requested field with population standard deviation; use a scale of `1.0` when the deviation is zero.\n\nReturn `{\"rows\": ..., \"discarded\": ..., \"stats\": ...}`. Rows must retain their original order and all non-requested data. `stats[field]` must contain `mean` and `scale`. Empty `records` returns empty rows, zero discarded records, and zero mean/unit scale statistics. Invalid inputs raise `TypeError` or `ValueError` as appropriate. The input sequence, dictionaries, and nested values must not be mutated or aliased by the result.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "49a4e7ade35d8353bfa6ebec39d6a11acd0db0fb46c1668206edc2cbb6898de0",
+      "text": "Implement `prepare_measurements(records, fields)` in `solution.py` using only the standard library.\n\n`records` is a sequence of dictionaries and `fields` is a non-empty sequence of unique, non-empty string field names. Every record must be a dictionary. For each requested field, a value is missing when it is `None` or `\"\"`; every other value must be an `int` or `float`, but booleans are invalid.\n\nDiscard any record having numeric zero in at least one requested field. For the remaining records, replace missing requested values with that field's arithmetic mean of its available values. If a field has no available value while records remain, raise `ValueError`. Normalize each requested field with population standard deviation; use a scale of `1.0` when the deviation is zero.\n\nReturn `{\"rows\": ..., \"discarded\": ..., \"stats\": ...}`. Rows must retain their original order and all non-requested data. `stats[field]` must contain `mean` and `scale`. Empty `records` returns empty rows, zero discarded records, and zero mean/unit scale statistics. Invalid inputs raise `TypeError` or `ValueError` as appropriate. The input sequence, dictionaries, and nested values must not be mutated or aliased by the result.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0565",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom math import sqrt\n\n\ndef prepare_measurements(records, fields):\n    if not isinstance(fields, (list, tuple)):\n        raise TypeError(\"fields must be a sequence\")\n    if not fields:\n        raise ValueError(\"fields must be non-empty\")\n    if any(not isinstance(field, str) for field in fields):\n        raise TypeError(\"field names must be strings\")\n    if any(not field for field in fields):\n        raise ValueError(\"field names must be non-empty\")\n    if len(set(fields)) != len(fields):\n        raise ValueError(\"field names must be unique\")\n    if not isinstance(records, (list, tuple)):\n        raise TypeError(\"records must be a sequence\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n\n    work = list(records)\n    kept = []\n    discarded = 0\n    for record in work:\n        reject = False\n        for field in fields:\n            value = record.get(field)\n            if value is not None and value != \"\":\n                if isinstance(value, bool) or not isinstance(value, (int, float)):\n                    raise TypeError(\"measurement values must be numeric\")\n                if value == 0:\n                    reject = True\n        if reject:\n            discarded += 1\n        else:\n            kept.append(record)\n\n    stats = {}\n    for field in fields:\n        available = [\n            float(record[field])\n            for record in kept\n            if record.get(field) not in (None, \"\")\n        ]\n        if not kept:\n            mean = 0.0\n        elif not available:\n            raise ValueError(\"cannot impute a field with no available values\")\n        else:\n            mean = sum(available) / len(available)\n\n        for record in kept:\n            if record.get(field) in (None, \"\"):\n                record[field] = mean\n            else:\n                record[field] = float(record[field])\n\n        if kept:\n            variance = sum(\n                (record[field] - mean) ** 2 for record in kept\n            ) / len(kept)\n        else:\n            variance = 0.0\n        scale = sqrt(variance) or 1.0\n\n        for record in kept:\n            record[field] = (record[field] - mean) / scale\n        stats[field] = {\"mean\": mean, \"scale\": scale}\n\n    return {\"rows\": kept, \"discarded\": discarded, \"stats\": stats}\n",
+          "label": "The working rows alias the caller's dictionaries, so imputation and normalization mutate the input.",
+          "sha256": "6910f6727deac78632b25fe401a365c7b7a236d7d5ccaa7ec3e6af26c2ac161e"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom math import sqrt\n\n\ndef prepare_measurements(records, fields):\n    if not isinstance(fields, (list, tuple)):\n        raise TypeError(\"fields must be a sequence\")\n    if not fields:\n        raise ValueError(\"fields must be non-empty\")\n    if any(not isinstance(field, str) for field in fields):\n        raise TypeError(\"field names must be strings\")\n    if any(not field for field in fields):\n        raise ValueError(\"field names must be non-empty\")\n    if len(set(fields)) != len(fields):\n        raise ValueError(\"field names must be unique\")\n    if not isinstance(records, (list, tuple)):\n        raise TypeError(\"records must be a sequence\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n\n    work = deepcopy(list(records))\n    kept = []\n    discarded = 0\n    for record in work:\n        reject = False\n        for field in fields:\n            value = record.get(field)\n            if value is not None and value != \"\":\n                if isinstance(value, bool) or not isinstance(value, (int, float)):\n                    raise TypeError(\"measurement values must be numeric\")\n                if value == 0:\n                    reject = True\n        if reject:\n            discarded += 1\n        else:\n            kept.append(record)\n\n    stats = {}\n    for field in fields:\n        available = [\n            float(record[field])\n            for record in kept\n            if record.get(field) not in (None, \"\")\n        ]\n        if not kept:\n            mean = 0.0\n        elif not available:\n            raise ValueError(\"cannot impute a field with no available values\")\n        else:\n            mean = sum(available) / len(available)\n\n        for record in kept:\n            if record.get(field) in (None, \"\"):\n                record[field] = mean\n            else:\n                record[field] = float(record[field])\n\n        if kept:\n            variance = sum(\n                (record[field] - mean) ** 2 for record in kept\n            ) / len(kept)\n        else:\n            variance = 0.0\n        scale = sqrt(variance) or 1.0\n\n        for record in kept:\n            record[field] = (record[field] - mean) / scale\n        stats[field] = {\"mean\": mean, \"scale\": scale}\n\n    return {\"rows\": kept, \"discarded\": discarded, \"stats\": stats}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0183b623ca7da5c6f07cef6d64d698372a5f33b3e0359b33bc2b299d57b79c78"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import prepare_measurements\n\n\nclass PrepareMeasurementsTests(unittest.TestCase):\n    def test_normalization_discarding_imputation_and_order(self):\n        records = [\n            {\"a\": 1, \"b\": None, \"name\": \"first\", \"extra\": {\"items\": [1]}},\n            {\"a\": 3.0, \"b\": 4, \"name\": \"second\"},\n            {\"a\": 0, \"b\": 99, \"name\": \"discarded\"},\n        ]\n        result = prepare_measurements(records, [\"a\", \"b\"])\n        self.assertEqual(result[\"discarded\"], 1)\n        self.assertEqual(result[\"stats\"], {\n            \"a\": {\"mean\": 2.0, \"scale\": 1.0},\n            \"b\": {\"mean\": 4.0, \"scale\": 1.0},\n        })\n        self.assertEqual(result[\"rows\"], [\n            {\"a\": -1.0, \"b\": 0.0, \"name\": \"first\", \"extra\": {\"items\": [1]}},\n            {\"a\": 1.0, \"b\": 0.0, \"name\": \"second\"},\n        ])\n\n    def test_population_standard_deviation(self):\n        result = prepare_measurements([{\"x\": 1}, {\"x\": 2}, {\"x\": 3}], [\"x\"])\n        scale = math.sqrt(2.0 / 3.0)\n        self.assertAlmostEqual(result[\"stats\"][\"x\"][\"scale\"], scale)\n        self.assertAlmostEqual(result[\"rows\"][0][\"x\"], -1.0 / scale)\n        self.assertEqual(result[\"rows\"][1][\"x\"], 0.0)\n        self.assertAlmostEqual(result[\"rows\"][2][\"x\"], 1.0 / scale)\n\n    def test_empty_records(self):\n        self.assertEqual(\n            prepare_measurements([], [\"x\", \"y\"]),\n            {\"rows\": [], \"discarded\": 0, \"stats\": {\n                \"x\": {\"mean\": 0.0, \"scale\": 1.0},\n                \"y\": {\"mean\": 0.0, \"scale\": 1.0},\n            }},\n        )\n\n    def test_missing_field_without_available_value(self):\n        with self.assertRaises(ValueError):\n            prepare_measurements([{\"x\": None}, {\"x\": \"\"}], [\"x\"])\n\n    def test_invalid_top_level_and_field_definitions(self):\n        for records in (None, {}, \"abc\"):\n            with self.subTest(records=records):\n                with self.assertRaises(TypeError):\n                    prepare_measurements(records, [\"x\"])\n        for fields, error in [([], ValueError), ([\"\"], ValueError), ([\"x\", \"x\"], ValueError), ([1], TypeError), (\"x\", TypeError)]:\n            with self.subTest(fields=fields):\n                with self.assertRaises(error):\n                    prepare_measurements([], fields)\n\n    def test_invalid_records_and_requested_values(self):\n        with self.assertRaises(TypeError):\n            prepare_measurements([{\"x\": 1}, []], [\"x\"])\n        for value in (True, False, \"12\", [], {}):\n            with self.subTest(value=value):\n                with self.assertRaises(TypeError):\n                    prepare_measurements([{\"x\": value}], [\"x\"])\n\n    def test_inputs_and_nested_values_are_independent(self):\n        records = [{\"x\": 2, \"nested\": {\"values\": [1, 2]}}]\n        fields = [\"x\"]\n        result = prepare_measurements(records, fields)\n        self.assertEqual(records, [{\"x\": 2, \"nested\": {\"values\": [1, 2]}}])\n        result[\"rows\"][0][\"nested\"][\"values\"].append(3)\n        self.assertEqual(records[0][\"nested\"][\"values\"], [1, 2])\n        records[0][\"nested\"][\"values\"].append(4)\n        self.assertEqual(result[\"rows\"][0][\"nested\"][\"values\"], [1, 2, 3])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "9c7f888dde177b1f8133a77c6c0afeaed26d326749d736d92773e42402cf564c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "49a4e7ade35d8353bfa6ebec39d6a11acd0db0fb46c1668206edc2cbb6898de0",
+      "text": "Implement `prepare_measurements(records, fields)` in `solution.py` using only the standard library.\n\n`records` is a sequence of dictionaries and `fields` is a non-empty sequence of unique, non-empty string field names. Every record must be a dictionary. For each requested field, a value is missing when it is `None` or `\"\"`; every other value must be an `int` or `float`, but booleans are invalid.\n\nDiscard any record having numeric zero in at least one requested field. For the remaining records, replace missing requested values with that field's arithmetic mean of its available values. If a field has no available value while records remain, raise `ValueError`. Normalize each requested field with population standard deviation; use a scale of `1.0` when the deviation is zero.\n\nReturn `{\"rows\": ..., \"discarded\": ..., \"stats\": ...}`. Rows must retain their original order and all non-requested data. `stats[field]` must contain `mean` and `scale`. Empty `records` returns empty rows, zero discarded records, and zero mean/unit scale statistics. Invalid inputs raise `TypeError` or `ValueError` as appropriate. The input sequence, dictionaries, and nested values must not be mutated or aliased by the result.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "49a4e7ade35d8353bfa6ebec39d6a11acd0db0fb46c1668206edc2cbb6898de0",
+      "text": "Implement `prepare_measurements(records, fields)` in `solution.py` using only the standard library.\n\n`records` is a sequence of dictionaries and `fields` is a non-empty sequence of unique, non-empty string field names. Every record must be a dictionary. For each requested field, a value is missing when it is `None` or `\"\"`; every other value must be an `int` or `float`, but booleans are invalid.\n\nDiscard any record having numeric zero in at least one requested field. For the remaining records, replace missing requested values with that field's arithmetic mean of its available values. If a field has no available value while records remain, raise `ValueError`. Normalize each requested field with population standard deviation; use a scale of `1.0` when the deviation is zero.\n\nReturn `{\"rows\": ..., \"discarded\": ..., \"stats\": ...}`. Rows must retain their original order and all non-requested data. `stats[field]` must contain `mean` and `scale`. Empty `records` returns empty rows, zero discarded records, and zero mean/unit scale statistics. Invalid inputs raise `TypeError` or `ValueError` as appropriate. The input sequence, dictionaries, and nested values must not be mutated or aliased by the result.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0565",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom math import sqrt\n\n\ndef prepare_measurements(records, fields):\n    if not isinstance(fields, (list, tuple)):\n        raise TypeError(\"fields must be a sequence\")\n    if not fields:\n        raise ValueError(\"fields must be non-empty\")\n    if any(not isinstance(field, str) for field in fields):\n        raise TypeError(\"field names must be strings\")\n    if any(not field for field in fields):\n        raise ValueError(\"field names must be non-empty\")\n    if len(set(fields)) != len(fields):\n        raise ValueError(\"field names must be unique\")\n    if not isinstance(records, (list, tuple)):\n        raise TypeError(\"records must be a sequence\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n\n    work = list(records)\n    kept = []\n    discarded = 0\n    for record in work:\n        reject = False\n        for field in fields:\n            value = record.get(field)\n            if value is not None and value != \"\":\n                if isinstance(value, bool) or not isinstance(value, (int, float)):\n                    raise TypeError(\"measurement values must be numeric\")\n                if value == 0:\n                    reject = True\n        if reject:\n            discarded += 1\n        else:\n            kept.append(record)\n\n    stats = {}\n    for field in fields:\n        available = [\n            float(record[field])\n            for record in kept\n            if record.get(field) not in (None, \"\")\n        ]\n        if not kept:\n            mean = 0.0\n        elif not available:\n            raise ValueError(\"cannot impute a field with no available values\")\n        else:\n            mean = sum(available) / len(available)\n\n        for record in kept:\n            if record.get(field) in (None, \"\"):\n                record[field] = mean\n            else:\n                record[field] = float(record[field])\n\n        if kept:\n            variance = sum(\n                (record[field] - mean) ** 2 for record in kept\n            ) / len(kept)\n        else:\n            variance = 0.0\n        scale = sqrt(variance) or 1.0\n\n        for record in kept:\n            record[field] = (record[field] - mean) / scale\n        stats[field] = {\"mean\": mean, \"scale\": scale}\n\n    return {\"rows\": kept, \"discarded\": discarded, \"stats\": stats}\n",
+          "label": "The working rows alias the caller's dictionaries, so imputation and normalization mutate the input.",
+          "sha256": "6910f6727deac78632b25fe401a365c7b7a236d7d5ccaa7ec3e6af26c2ac161e"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom math import sqrt\n\n\ndef prepare_measurements(records, fields):\n    if not isinstance(fields, (list, tuple)):\n        raise TypeError(\"fields must be a sequence\")\n    if not fields:\n        raise ValueError(\"fields must be non-empty\")\n    if any(not isinstance(field, str) for field in fields):\n        raise TypeError(\"field names must be strings\")\n    if any(not field for field in fields):\n        raise ValueError(\"field names must be non-empty\")\n    if len(set(fields)) != len(fields):\n        raise ValueError(\"field names must be unique\")\n    if not isinstance(records, (list, tuple)):\n        raise TypeError(\"records must be a sequence\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n\n    work = deepcopy(list(records))\n    kept = []\n    discarded = 0\n    for record in work:\n        reject = False\n        for field in fields:\n            value = record.get(field)\n            if value is not None and value != \"\":\n                if isinstance(value, bool) or not isinstance(value, (int, float)):\n                    raise TypeError(\"measurement values must be numeric\")\n                if value == 0:\n                    reject = True\n        if reject:\n            discarded += 1\n        else:\n            kept.append(record)\n\n    stats = {}\n    for field in fields:\n        available = [\n            float(record[field])\n            for record in kept\n            if record.get(field) not in (None, \"\")\n        ]\n        if not kept:\n            mean = 0.0\n        elif not available:\n            raise ValueError(\"cannot impute a field with no available values\")\n        else:\n            mean = sum(available) / len(available)\n\n        for record in kept:\n            if record.get(field) in (None, \"\"):\n                record[field] = mean\n            else:\n                record[field] = float(record[field])\n\n        if kept:\n            variance = sum(\n                (record[field] - mean) ** 2 for record in kept\n            ) / len(kept)\n        else:\n            variance = 0.0\n        scale = sqrt(variance) or 1.0\n\n        for record in kept:\n            record[field] = (record[field] - mean) / scale\n        stats[field] = {\"mean\": mean, \"scale\": scale}\n\n    return {\"rows\": kept, \"discarded\": discarded, \"stats\": stats}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0183b623ca7da5c6f07cef6d64d698372a5f33b3e0359b33bc2b299d57b79c78"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "{'rows': [{'x': -2.0}, {'x': -2.0}], 'discarded': 0, 'stats': {'x': {'mean': 2.0, 'scale': 1.0}}}\n",
+    "stdout_sha256": "a9c27b9b35939065d696b67d198b4e4f85dce12169656f919e4bb57513f87df7",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 6, in <module>\n    assert actual['rows'] == [{'x': 0.0}, {'x': 0.0}], 'repeated input reference must not normalize the same row twice'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: repeated input reference must not normalize the same row twice\n",
+    "stderr_sha256": "bce3b0b2f04b2ad2ff6bc44d67abbc6c3b08a75c7a2c79826dcb0cee3680d49e",
+    "duration_ms": 353,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

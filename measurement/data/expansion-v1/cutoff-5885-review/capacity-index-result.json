@@ -1,0 +1,143 @@
+{
+  "id": "exp-v1-typescript-generation-0390",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "c57bae1e6b1defbdf3dc06612333f3ae134dfd5f569434654ff5d083baca2016",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { RegionalCapacityLedger } from './solution';\nconst ledger = new RegionalCapacityLedger();\nledger.setSite({ used: 1, limit: 2 }, 4294967295);\nif (ledger.used !== 1 || ledger.limit !== 2 || ledger.meanUtilization !== 0.5) {\n  throw new Error('Accepted nonnegative integer slot omitted from totals: ' + JSON.stringify({used: ledger.used, limit: ledger.limit, mean: ledger.meanUtilization}));\n}\n",
+        "sha256": "8deee4380268083661b1caeac68a572c418b243eb8a12b417749a95c6b6e9141"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b01709e0d4d8f7fbef804b79b61e6b34fec90c4a510c30ed608dbe3cf14ad33b",
+      "text": "Implement a complete TypeScript module exporting `SiteCapacity`, abstract class `CapacityLedger`, and class `RegionalCapacityLedger`.\n\n`SiteCapacity` has `used: number` and `limit: number`. `CapacityLedger` exposes readonly numeric properties `used` and `limit`, a getter `sites: readonly (Readonly<SiteCapacity> | undefined)[]`, `setSite(site: SiteCapacity, index: number): void`, and protected abstract `recalculate(): void`.\n\nA site requires finite values with `limit > 0` and `0 <= used <= limit`. An index must be a nonnegative integer. Invalid input throws `RangeError` and leaves the ledger unchanged. `setSite` inserts or replaces that slot, may create sparse slots, copies the input, then recalculates. Totals sum all defined sites. The `sites` getter returns a frozen snapshot preserving holes as explicit `undefined` values and containing frozen copies, so neither input nor output mutation can affect the ledger.\n\n`RegionalCapacityLedger` additionally exposes readonly `meanUtilization`. It is the arithmetic mean of each defined site's individual `used / limit` ratio, not the aggregate ratio. With no defined sites, all three aggregate values are zero.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b01709e0d4d8f7fbef804b79b61e6b34fec90c4a510c30ed608dbe3cf14ad33b",
+      "text": "Implement a complete TypeScript module exporting `SiteCapacity`, abstract class `CapacityLedger`, and class `RegionalCapacityLedger`.\n\n`SiteCapacity` has `used: number` and `limit: number`. `CapacityLedger` exposes readonly numeric properties `used` and `limit`, a getter `sites: readonly (Readonly<SiteCapacity> | undefined)[]`, `setSite(site: SiteCapacity, index: number): void`, and protected abstract `recalculate(): void`.\n\nA site requires finite values with `limit > 0` and `0 <= used <= limit`. An index must be a nonnegative integer. Invalid input throws `RangeError` and leaves the ledger unchanged. `setSite` inserts or replaces that slot, may create sparse slots, copies the input, then recalculates. Totals sum all defined sites. The `sites` getter returns a frozen snapshot preserving holes as explicit `undefined` values and containing frozen copies, so neither input nor output mutation can affect the ledger.\n\n`RegionalCapacityLedger` additionally exposes readonly `meanUtilization`. It is the arithmetic mean of each defined site's individual `used / limit` ratio, not the aggregate ratio. With no defined sites, all three aggregate values are zero.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0390",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface SiteCapacity { used: number; limit: number }\n\nexport abstract class CapacityLedger {\n  protected readonly stored: Array<SiteCapacity | undefined> = [];\n  private totalUsed = 0;\n  private totalLimit = 0;\n\n  get used(): number {\n    return this.totalUsed;\n  }\n\n  get limit(): number {\n    return this.totalLimit;\n  }\n\n  protected setTotals(used: number, limit: number): void {\n    this.totalUsed = used;\n    this.totalLimit = limit;\n  }\n\n  get sites(): readonly (Readonly<SiteCapacity> | undefined)[] {\n    const snapshot = Array.from(\n      { length: this.stored.length },\n      (_, index) => {\n        const site = this.stored[index];\n        return site === undefined\n          ? undefined\n          : Object.freeze({ used: site.used, limit: site.limit });\n      },\n    );\n    return Object.freeze(snapshot);\n  }\n\n  setSite(site: SiteCapacity, index: number): void {\n    if (!Number.isInteger(index) || index < 0) {\n      throw new RangeError(\"invalid index\");\n    }\n\n    if (\n      site === null ||\n      typeof site !== \"object\" ||\n      !Number.isFinite(site.used) ||\n      !Number.isFinite(site.limit) ||\n      site.limit <= 0 ||\n      site.used < 0 ||\n      site.used > site.limit\n    ) {\n      throw new RangeError(\"invalid site capacity\");\n    }\n\n    const copy: SiteCapacity = { used: site.used, limit: site.limit };\n    this.stored[index] = copy;\n    this.recalculate();\n  }\n\n  protected abstract recalculate(): void;\n}\n\nexport class RegionalCapacityLedger extends CapacityLedger {\n  private averageUtilization = 0;\n\n  get meanUtilization(): number {\n    return this.averageUtilization;\n  }\n\n  protected recalculate(): void {\n    let used = 0;\n    let limit = 0;\n\n    for (const site of this.stored) {\n      if (site !== undefined) {\n        used += site.used;\n        limit += site.limit;\n      }\n    }\n\n    this.setTotals(used, limit);\n    this.averageUtilization = limit === 0 ? 0 : used / limit;\n  }\n}\n",
+          "label": "Calculates an aggregate weighted utilization ratio instead of the arithmetic mean of per-site ratios.",
+          "sha256": "b5dd81a7404077195821d753a5dac4e46a3fd4a3a2fa85adbf4f5b0be1f214b4"
+        }
+      ],
+      "reference": {
+        "code": "export interface SiteCapacity { used: number; limit: number }\n\nexport abstract class CapacityLedger {\n  protected readonly stored: Array<SiteCapacity | undefined> = [];\n  private totalUsed = 0;\n  private totalLimit = 0;\n\n  get used(): number {\n    return this.totalUsed;\n  }\n\n  get limit(): number {\n    return this.totalLimit;\n  }\n\n  protected setTotals(used: number, limit: number): void {\n    this.totalUsed = used;\n    this.totalLimit = limit;\n  }\n\n  get sites(): readonly (Readonly<SiteCapacity> | undefined)[] {\n    const snapshot = Array.from(\n      { length: this.stored.length },\n      (_, index) => {\n        const site = this.stored[index];\n        return site === undefined\n          ? undefined\n          : Object.freeze({ used: site.used, limit: site.limit });\n      },\n    );\n    return Object.freeze(snapshot);\n  }\n\n  setSite(site: SiteCapacity, index: number): void {\n    if (!Number.isInteger(index) || index < 0) {\n      throw new RangeError(\"invalid index\");\n    }\n\n    if (\n      site === null ||\n      typeof site !== \"object\" ||\n      !Number.isFinite(site.used) ||\n      !Number.isFinite(site.limit) ||\n      site.limit <= 0 ||\n      site.used < 0 ||\n      site.used > site.limit\n    ) {\n      throw new RangeError(\"invalid site capacity\");\n    }\n\n    const copy: SiteCapacity = { used: site.used, limit: site.limit };\n    this.stored[index] = copy;\n    this.recalculate();\n  }\n\n  protected abstract recalculate(): void;\n}\n\nexport class RegionalCapacityLedger extends CapacityLedger {\n  private averageUtilization = 0;\n\n  get meanUtilization(): number {\n    return this.averageUtilization;\n  }\n\n  protected recalculate(): void {\n    let used = 0;\n    let limit = 0;\n    let utilizationSum = 0;\n    let count = 0;\n\n    for (const site of this.stored) {\n      if (site !== undefined) {\n        used += site.used;\n        limit += site.limit;\n        utilizationSum += site.used / site.limit;\n        count += 1;\n      }\n    }\n\n    this.setTotals(used, limit);\n    this.averageUtilization = count === 0 ? 0 : utilizationSum / count;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b884cf15e5bc372d247d98926609780924d1c0bf0e9cdd96b0cfb6acd3070274"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { RegionalCapacityLedger } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction approx(actual: number, expected: number, message: string): void {\n  if (Math.abs(actual - expected) > 1e-12) throw new Error(`${message}: expected ${expected}, got ${actual}`);\n}\nfunction throwsRange(fn: () => unknown, message: string): void {\n  try { fn(); } catch (error) {\n    if (error instanceof RangeError) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: did not throw`);\n}\n\nconst ledger = new RegionalCapacityLedger();\napprox(ledger.used, 0, 'empty used');\napprox(ledger.limit, 0, 'empty limit');\napprox(ledger.meanUtilization, 0, 'empty mean');\nconst emptySites = ledger.sites;\nassert(Object.isFrozen(emptySites), 'empty sites snapshot frozen');\nassert(emptySites.length === 0, 'empty sites snapshot');\n\nconst first = { used: 2, limit: 4 };\nledger.setSite(first, 0);\nfirst.used = 4;\napprox(ledger.used, 2, 'input copied');\napprox(ledger.limit, 4, 'first limit');\napprox(ledger.meanUtilization, 0.5, 'first mean');\n\nledger.setSite({ used: 9, limit: 10 }, 2);\napprox(ledger.used, 11, 'sparse total used');\napprox(ledger.limit, 14, 'sparse total limit');\napprox(ledger.meanUtilization, 0.7, 'mean uses individual ratios');\nconst snapshot = ledger.sites;\nassert(snapshot.length === 3, 'sparse snapshot length');\nassert(0 in snapshot && 1 in snapshot && 2 in snapshot, 'holes represented as explicit values');\nassert(snapshot[1] === undefined, 'sparse slot is undefined');\nassert(Object.isFrozen(snapshot), 'sites array frozen');\nassert(Object.isFrozen(snapshot[0]!), 'defined site frozen');\nassert(Object.isFrozen(snapshot[2]!), 'second defined site frozen');\nconst anotherSnapshot = ledger.sites;\nassert(anotherSnapshot !== snapshot, 'getter returns new array');\nassert(anotherSnapshot[0] !== snapshot[0], 'getter returns new site copies');\n\nledger.setSite({ used: 1, limit: 2 }, 0);\napprox(ledger.used, 10, 'replacement used');\napprox(ledger.limit, 12, 'replacement limit');\napprox(ledger.meanUtilization, 0.7, 'replacement mean');\napprox(snapshot[0]!.used, 2, 'older snapshot remains stable');\n\nconst before = ledger.sites;\nconst beforeUsed = ledger.used;\nfor (const site of [\n  { used: -1, limit: 1 }, { used: 2, limit: 1 }, { used: 0, limit: 0 },\n  { used: NaN, limit: 1 }, { used: 0, limit: Infinity },\n]) {\n  throwsRange(() => ledger.setSite(site, 1), 'invalid site');\n  approx(ledger.used, beforeUsed, 'invalid site leaves totals unchanged');\n}\nfor (const index of [-1, 0.5, Infinity, NaN]) {\n  throwsRange(() => ledger.setSite({ used: 0, limit: 1 }, index), 'invalid index');\n}\nconst after = ledger.sites;\napprox(after[0]!.used, before[0]!.used, 'failed operations leave sites unchanged');\nassert(after[1] === undefined, 'failed operations do not fill sparse slot');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "1f4d9cce23db1f04402e1adf7178f77a42e15bbab7653898fdb288579f499729"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b01709e0d4d8f7fbef804b79b61e6b34fec90c4a510c30ed608dbe3cf14ad33b",
+      "text": "Implement a complete TypeScript module exporting `SiteCapacity`, abstract class `CapacityLedger`, and class `RegionalCapacityLedger`.\n\n`SiteCapacity` has `used: number` and `limit: number`. `CapacityLedger` exposes readonly numeric properties `used` and `limit`, a getter `sites: readonly (Readonly<SiteCapacity> | undefined)[]`, `setSite(site: SiteCapacity, index: number): void`, and protected abstract `recalculate(): void`.\n\nA site requires finite values with `limit > 0` and `0 <= used <= limit`. An index must be a nonnegative integer. Invalid input throws `RangeError` and leaves the ledger unchanged. `setSite` inserts or replaces that slot, may create sparse slots, copies the input, then recalculates. Totals sum all defined sites. The `sites` getter returns a frozen snapshot preserving holes as explicit `undefined` values and containing frozen copies, so neither input nor output mutation can affect the ledger.\n\n`RegionalCapacityLedger` additionally exposes readonly `meanUtilization`. It is the arithmetic mean of each defined site's individual `used / limit` ratio, not the aggregate ratio. With no defined sites, all three aggregate values are zero.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b01709e0d4d8f7fbef804b79b61e6b34fec90c4a510c30ed608dbe3cf14ad33b",
+      "text": "Implement a complete TypeScript module exporting `SiteCapacity`, abstract class `CapacityLedger`, and class `RegionalCapacityLedger`.\n\n`SiteCapacity` has `used: number` and `limit: number`. `CapacityLedger` exposes readonly numeric properties `used` and `limit`, a getter `sites: readonly (Readonly<SiteCapacity> | undefined)[]`, `setSite(site: SiteCapacity, index: number): void`, and protected abstract `recalculate(): void`.\n\nA site requires finite values with `limit > 0` and `0 <= used <= limit`. An index must be a nonnegative integer. Invalid input throws `RangeError` and leaves the ledger unchanged. `setSite` inserts or replaces that slot, may create sparse slots, copies the input, then recalculates. Totals sum all defined sites. The `sites` getter returns a frozen snapshot preserving holes as explicit `undefined` values and containing frozen copies, so neither input nor output mutation can affect the ledger.\n\n`RegionalCapacityLedger` additionally exposes readonly `meanUtilization`. It is the arithmetic mean of each defined site's individual `used / limit` ratio, not the aggregate ratio. With no defined sites, all three aggregate values are zero.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0390",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface SiteCapacity { used: number; limit: number }\n\nexport abstract class CapacityLedger {\n  protected readonly stored: Array<SiteCapacity | undefined> = [];\n  private totalUsed = 0;\n  private totalLimit = 0;\n\n  get used(): number {\n    return this.totalUsed;\n  }\n\n  get limit(): number {\n    return this.totalLimit;\n  }\n\n  protected setTotals(used: number, limit: number): void {\n    this.totalUsed = used;\n    this.totalLimit = limit;\n  }\n\n  get sites(): readonly (Readonly<SiteCapacity> | undefined)[] {\n    const snapshot = Array.from(\n      { length: this.stored.length },\n      (_, index) => {\n        const site = this.stored[index];\n        return site === undefined\n          ? undefined\n          : Object.freeze({ used: site.used, limit: site.limit });\n      },\n    );\n    return Object.freeze(snapshot);\n  }\n\n  setSite(site: SiteCapacity, index: number): void {\n    if (!Number.isInteger(index) || index < 0) {\n      throw new RangeError(\"invalid index\");\n    }\n\n    if (\n      site === null ||\n      typeof site !== \"object\" ||\n      !Number.isFinite(site.used) ||\n      !Number.isFinite(site.limit) ||\n      site.limit <= 0 ||\n      site.used < 0 ||\n      site.used > site.limit\n    ) {\n      throw new RangeError(\"invalid site capacity\");\n    }\n\n    const copy: SiteCapacity = { used: site.used, limit: site.limit };\n    this.stored[index] = copy;\n    this.recalculate();\n  }\n\n  protected abstract recalculate(): void;\n}\n\nexport class RegionalCapacityLedger extends CapacityLedger {\n  private averageUtilization = 0;\n\n  get meanUtilization(): number {\n    return this.averageUtilization;\n  }\n\n  protected recalculate(): void {\n    let used = 0;\n    let limit = 0;\n\n    for (const site of this.stored) {\n      if (site !== undefined) {\n        used += site.used;\n        limit += site.limit;\n      }\n    }\n\n    this.setTotals(used, limit);\n    this.averageUtilization = limit === 0 ? 0 : used / limit;\n  }\n}\n",
+          "label": "Calculates an aggregate weighted utilization ratio instead of the arithmetic mean of per-site ratios.",
+          "sha256": "b5dd81a7404077195821d753a5dac4e46a3fd4a3a2fa85adbf4f5b0be1f214b4"
+        }
+      ],
+      "reference": {
+        "code": "export interface SiteCapacity { used: number; limit: number }\n\nexport abstract class CapacityLedger {\n  protected readonly stored: Array<SiteCapacity | undefined> = [];\n  private totalUsed = 0;\n  private totalLimit = 0;\n\n  get used(): number {\n    return this.totalUsed;\n  }\n\n  get limit(): number {\n    return this.totalLimit;\n  }\n\n  protected setTotals(used: number, limit: number): void {\n    this.totalUsed = used;\n    this.totalLimit = limit;\n  }\n\n  get sites(): readonly (Readonly<SiteCapacity> | undefined)[] {\n    const snapshot = Array.from(\n      { length: this.stored.length },\n      (_, index) => {\n        const site = this.stored[index];\n        return site === undefined\n          ? undefined\n          : Object.freeze({ used: site.used, limit: site.limit });\n      },\n    );\n    return Object.freeze(snapshot);\n  }\n\n  setSite(site: SiteCapacity, index: number): void {\n    if (!Number.isInteger(index) || index < 0) {\n      throw new RangeError(\"invalid index\");\n    }\n\n    if (\n      site === null ||\n      typeof site !== \"object\" ||\n      !Number.isFinite(site.used) ||\n      !Number.isFinite(site.limit) ||\n      site.limit <= 0 ||\n      site.used < 0 ||\n      site.used > site.limit\n    ) {\n      throw new RangeError(\"invalid site capacity\");\n    }\n\n    const copy: SiteCapacity = { used: site.used, limit: site.limit };\n    this.stored[index] = copy;\n    this.recalculate();\n  }\n\n  protected abstract recalculate(): void;\n}\n\nexport class RegionalCapacityLedger extends CapacityLedger {\n  private averageUtilization = 0;\n\n  get meanUtilization(): number {\n    return this.averageUtilization;\n  }\n\n  protected recalculate(): void {\n    let used = 0;\n    let limit = 0;\n    let utilizationSum = 0;\n    let count = 0;\n\n    for (const site of this.stored) {\n      if (site !== undefined) {\n        used += site.used;\n        limit += site.limit;\n        utilizationSum += site.used / site.limit;\n        count += 1;\n      }\n    }\n\n    this.setTotals(used, limit);\n    this.averageUtilization = count === 0 ? 0 : utilizationSum / count;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b884cf15e5bc372d247d98926609780924d1c0bf0e9cdd96b0cfb6acd3070274"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:7\n    throw new Error('Accepted nonnegative integer slot omitted from totals: ' + JSON.stringify({ used: ledger.used, limit: ledger.limit, mean: ledger.meanUtilization }));\n    ^\n\nError: Accepted nonnegative integer slot omitted from totals: {\"used\":0,\"limit\":0,\"mean\":0}\n    at Object.<anonymous> (/work/solution.test.js:7:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "34d4fa5bf704d525373f5b76bc9c4ad6ea780e2edb29955d0bea61a53bb5c4ec",
+    "duration_ms": 4282,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

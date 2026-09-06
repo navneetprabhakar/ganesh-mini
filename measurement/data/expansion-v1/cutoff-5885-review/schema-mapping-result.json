@@ -1,0 +1,124 @@
+{
+  "id": "exp-v1-python-generation-0368",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "fcdbf6ee4b2de5e3fac7529b87c56bd3f2ad5d811203a33fc236a881cf3ac423",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom types import MappingProxyType\nfrom solution import migrate_schema\n\n\nclass ReviewProbe(unittest.TestCase):\n    def test_readonly_mapping(self):\n        source = MappingProxyType({'fields': {'blob': {'kind': 'old'}}})\n        result = migrate_schema(source)\n        self.assertEqual(result['fields']['blob']['kind'], 'upload')\n        self.assertEqual(source['fields']['blob']['kind'], 'old')\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "352753ee2d24c31a10974038abdd4fe2dc085c479b0d2f7638d44dac8dac1a76"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "567a82d61da396760371b8951828719ce6b9d4aae327e1afe4236e20e4ac59b7",
+      "text": "In solution.py, implement two standard-library-only APIs for an in-memory record schema.\n\n- make_blob_name(member_id, epoch, original_name, max_length=80): member_id must be a nonempty string containing only ASCII letters, digits, `_`, or `-`; epoch must be a non-boolean, nonnegative integer; original_name must be a nonempty string without `/`, `\\\\`, or NUL; max_length must be a non-boolean positive integer. Use the substring after the final dot as the extension only when the dot is neither first nor last. Return `member_id_epoch.ext`, lowercasing the extension but otherwise preserving text. If necessary, truncate only member_id from the right so the result fits. Raise ValueError if even one member-id character plus the suffix cannot fit. Inputs are not mutated.\n- migrate_schema(schema): schema must be a mapping whose `fields` member is a mapping containing `blob`. Return a deep copy in which `fields[\"blob\"]` is exactly `{\"kind\": \"upload\", \"optional\": True, \"max_length\": 80, \"namer\": make_blob_name}`. Preserve every other value and preserve the function object by identity. Raise ValueError for malformed structure. No caller-owned mutable object may be aliased by the result.\n\nProvide a new implementation without filesystem, clock, or framework access.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "567a82d61da396760371b8951828719ce6b9d4aae327e1afe4236e20e4ac59b7",
+      "text": "In solution.py, implement two standard-library-only APIs for an in-memory record schema.\n\n- make_blob_name(member_id, epoch, original_name, max_length=80): member_id must be a nonempty string containing only ASCII letters, digits, `_`, or `-`; epoch must be a non-boolean, nonnegative integer; original_name must be a nonempty string without `/`, `\\\\`, or NUL; max_length must be a non-boolean positive integer. Use the substring after the final dot as the extension only when the dot is neither first nor last. Return `member_id_epoch.ext`, lowercasing the extension but otherwise preserving text. If necessary, truncate only member_id from the right so the result fits. Raise ValueError if even one member-id character plus the suffix cannot fit. Inputs are not mutated.\n- migrate_schema(schema): schema must be a mapping whose `fields` member is a mapping containing `blob`. Return a deep copy in which `fields[\"blob\"]` is exactly `{\"kind\": \"upload\", \"optional\": True, \"max_length\": 80, \"namer\": make_blob_name}`. Preserve every other value and preserve the function object by identity. Raise ValueError for malformed structure. No caller-owned mutable object may be aliased by the result.\n\nProvide a new implementation without filesystem, clock, or framework access.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0368",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport re\nfrom collections.abc import Mapping\n\n_MEMBER = re.compile(r\"[A-Za-z0-9_-]+\\Z\")\n\n\ndef make_blob_name(member_id, epoch, original_name, max_length=80):\n    if not isinstance(member_id, str) or not member_id or not _MEMBER.fullmatch(member_id):\n        raise ValueError(\"invalid member_id\")\n    if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:\n        raise ValueError(\"invalid epoch\")\n    if not isinstance(original_name, str) or not original_name or any(c in original_name for c in (\"/\", \"\\\\\", \"\\0\")):\n        raise ValueError(\"invalid original_name\")\n    if isinstance(max_length, bool) or not isinstance(max_length, int) or max_length < 1:\n        raise ValueError(\"invalid max_length\")\n    dot = original_name.find(\".\")\n    extension = original_name[dot + 1:].lower() if 0 < dot < len(original_name) - 1 else \"\"\n    suffix = \"_\" + str(epoch) + ((\".\" + extension) if extension else \"\")\n    available = max_length - len(suffix)\n    if available < 1:\n        raise ValueError(\"max_length is too small\")\n    return member_id[:available] + suffix\n\n\ndef migrate_schema(schema):\n    if not isinstance(schema, Mapping) or not isinstance(schema.get(\"fields\"), Mapping) or \"blob\" not in schema[\"fields\"]:\n        raise ValueError(\"malformed schema\")\n    result = copy.deepcopy(schema)\n    result[\"fields\"][\"blob\"] = {\n        \"kind\": \"upload\",\n        \"optional\": True,\n        \"max_length\": 80,\n        \"namer\": make_blob_name,\n    }\n    return result\n",
+          "label": "make_blob_name takes the extension after the first dot rather than after the final dot.",
+          "sha256": "687fb9d29232edd06fe8c3a167b7af1db0f62b5b23116a05d0c2a68b272b4c69"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport re\nfrom collections.abc import Mapping\n\n_MEMBER = re.compile(r\"[A-Za-z0-9_-]+\\Z\")\n\n\ndef make_blob_name(member_id, epoch, original_name, max_length=80):\n    if not isinstance(member_id, str) or not member_id or not _MEMBER.fullmatch(member_id):\n        raise ValueError(\"invalid member_id\")\n    if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:\n        raise ValueError(\"invalid epoch\")\n    if not isinstance(original_name, str) or not original_name or any(c in original_name for c in (\"/\", \"\\\\\", \"\\0\")):\n        raise ValueError(\"invalid original_name\")\n    if isinstance(max_length, bool) or not isinstance(max_length, int) or max_length < 1:\n        raise ValueError(\"invalid max_length\")\n    dot = original_name.rfind(\".\")\n    extension = original_name[dot + 1:].lower() if 0 < dot < len(original_name) - 1 else \"\"\n    suffix = \"_\" + str(epoch) + ((\".\" + extension) if extension else \"\")\n    available = max_length - len(suffix)\n    if available < 1:\n        raise ValueError(\"max_length is too small\")\n    return member_id[:available] + suffix\n\n\ndef migrate_schema(schema):\n    if not isinstance(schema, Mapping) or not isinstance(schema.get(\"fields\"), Mapping) or \"blob\" not in schema[\"fields\"]:\n        raise ValueError(\"malformed schema\")\n    result = copy.deepcopy(schema)\n    result[\"fields\"][\"blob\"] = {\n        \"kind\": \"upload\",\n        \"optional\": True,\n        \"max_length\": 80,\n        \"namer\": make_blob_name,\n    }\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "85e486ceaf8600648eeae7f19c4e02ec6822a077dd92c9eabdc767741b07a59a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nimport solution\n\n\nclass BlobSchemaTests(unittest.TestCase):\n    def test_blob_names_and_extensions(self):\n        self.assertEqual(solution.make_blob_name(\"Member_9\", 0, \"Photo.JPEG\"),\n                         \"Member_9_0.jpeg\")\n        self.assertEqual(solution.make_blob_name(\"abc\", 42, \"archive\"), \"abc_42\")\n        self.assertEqual(solution.make_blob_name(\"abc\", 42, \".profile\"), \"abc_42\")\n        self.assertEqual(solution.make_blob_name(\"abc\", 42, \"name.\"), \"abc_42\")\n        self.assertEqual(solution.make_blob_name(\"abc\", 42, \"a.b.C\"), \"abc_42.c\")\n\n    def test_truncation_and_length_boundaries(self):\n        self.assertEqual(solution.make_blob_name(\"abcdef\", 12, \"x.GZ\", 10),\n                         \"abcd_12.gz\")\n        self.assertEqual(solution.make_blob_name(\"abcdef\", 7, \"x.txt\", 7),\n                         \"a_7.txt\")\n        with self.assertRaises(ValueError):\n            solution.make_blob_name(\"abcdef\", 7, \"x.txt\", 6)\n\n    def test_blob_name_validation(self):\n        cases = [\n            (\"\", 1, \"x.txt\", 80),\n            (\"a b\", 1, \"x.txt\", 80),\n            (\"\u00e9\", 1, \"x.txt\", 80),\n            (\"ok\", True, \"x.txt\", 80),\n            (\"ok\", -1, \"x.txt\", 80),\n            (\"ok\", 1, \"\", 80),\n            (\"ok\", 1, \"a/b\", 80),\n            (\"ok\", 1, \"a\\\\b\", 80),\n            (\"ok\", 1, \"a\\0b\", 80),\n            (\"ok\", 1, \"x\", True),\n            (\"ok\", 1, \"x\", 0),\n        ]\n        for args in cases:\n            with self.subTest(args=args):\n                with self.assertRaises(ValueError):\n                    solution.make_blob_name(*args)\n\n    def test_migration_is_deep_and_preserves_other_values(self):\n        schema = {\n            \"name\": \"records\",\n            \"metadata\": {\"owners\": [\"a\"]},\n            \"fields\": {\n                \"blob\": {\"kind\": \"old\", \"nested\": [1]},\n                \"title\": {\"kind\": \"text\", \"options\": [1, {\"x\": 2}]},\n            },\n        }\n        migrated = solution.migrate_schema(schema)\n        self.assertEqual(migrated[\"fields\"][\"blob\"], {\n            \"kind\": \"upload\",\n            \"optional\": True,\n            \"max_length\": 80,\n            \"namer\": solution.make_blob_name,\n        })\n        self.assertIs(migrated[\"fields\"][\"blob\"][\"namer\"], solution.make_blob_name)\n        self.assertEqual(migrated[\"fields\"][\"title\"], schema[\"fields\"][\"title\"])\n        self.assertIsNot(migrated[\"fields\"], schema[\"fields\"])\n        self.assertIsNot(migrated[\"fields\"][\"title\"], schema[\"fields\"][\"title\"])\n        self.assertIsNot(migrated[\"metadata\"], schema[\"metadata\"])\n        migrated[\"metadata\"][\"owners\"].append(\"b\")\n        migrated[\"fields\"][\"title\"][\"options\"][1][\"x\"] = 9\n        self.assertEqual(schema[\"metadata\"][\"owners\"], [\"a\"])\n        self.assertEqual(schema[\"fields\"][\"title\"][\"options\"][1][\"x\"], 2)\n\n    def test_migration_rejects_bad_structure(self):\n        for value in (None, [], {}, {\"fields\": []}, {\"fields\": {}},\n                      {\"fields\": {\"other\": {}}}):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    solution.migrate_schema(value)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "aea9d86950ea10bf649bf83c6bca448e47e7a829c5b26f7f2de051dbff9bd24e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "567a82d61da396760371b8951828719ce6b9d4aae327e1afe4236e20e4ac59b7",
+      "text": "In solution.py, implement two standard-library-only APIs for an in-memory record schema.\n\n- make_blob_name(member_id, epoch, original_name, max_length=80): member_id must be a nonempty string containing only ASCII letters, digits, `_`, or `-`; epoch must be a non-boolean, nonnegative integer; original_name must be a nonempty string without `/`, `\\\\`, or NUL; max_length must be a non-boolean positive integer. Use the substring after the final dot as the extension only when the dot is neither first nor last. Return `member_id_epoch.ext`, lowercasing the extension but otherwise preserving text. If necessary, truncate only member_id from the right so the result fits. Raise ValueError if even one member-id character plus the suffix cannot fit. Inputs are not mutated.\n- migrate_schema(schema): schema must be a mapping whose `fields` member is a mapping containing `blob`. Return a deep copy in which `fields[\"blob\"]` is exactly `{\"kind\": \"upload\", \"optional\": True, \"max_length\": 80, \"namer\": make_blob_name}`. Preserve every other value and preserve the function object by identity. Raise ValueError for malformed structure. No caller-owned mutable object may be aliased by the result.\n\nProvide a new implementation without filesystem, clock, or framework access.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "567a82d61da396760371b8951828719ce6b9d4aae327e1afe4236e20e4ac59b7",
+      "text": "In solution.py, implement two standard-library-only APIs for an in-memory record schema.\n\n- make_blob_name(member_id, epoch, original_name, max_length=80): member_id must be a nonempty string containing only ASCII letters, digits, `_`, or `-`; epoch must be a non-boolean, nonnegative integer; original_name must be a nonempty string without `/`, `\\\\`, or NUL; max_length must be a non-boolean positive integer. Use the substring after the final dot as the extension only when the dot is neither first nor last. Return `member_id_epoch.ext`, lowercasing the extension but otherwise preserving text. If necessary, truncate only member_id from the right so the result fits. Raise ValueError if even one member-id character plus the suffix cannot fit. Inputs are not mutated.\n- migrate_schema(schema): schema must be a mapping whose `fields` member is a mapping containing `blob`. Return a deep copy in which `fields[\"blob\"]` is exactly `{\"kind\": \"upload\", \"optional\": True, \"max_length\": 80, \"namer\": make_blob_name}`. Preserve every other value and preserve the function object by identity. Raise ValueError for malformed structure. No caller-owned mutable object may be aliased by the result.\n\nProvide a new implementation without filesystem, clock, or framework access.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0368",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport re\nfrom collections.abc import Mapping\n\n_MEMBER = re.compile(r\"[A-Za-z0-9_-]+\\Z\")\n\n\ndef make_blob_name(member_id, epoch, original_name, max_length=80):\n    if not isinstance(member_id, str) or not member_id or not _MEMBER.fullmatch(member_id):\n        raise ValueError(\"invalid member_id\")\n    if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:\n        raise ValueError(\"invalid epoch\")\n    if not isinstance(original_name, str) or not original_name or any(c in original_name for c in (\"/\", \"\\\\\", \"\\0\")):\n        raise ValueError(\"invalid original_name\")\n    if isinstance(max_length, bool) or not isinstance(max_length, int) or max_length < 1:\n        raise ValueError(\"invalid max_length\")\n    dot = original_name.find(\".\")\n    extension = original_name[dot + 1:].lower() if 0 < dot < len(original_name) - 1 else \"\"\n    suffix = \"_\" + str(epoch) + ((\".\" + extension) if extension else \"\")\n    available = max_length - len(suffix)\n    if available < 1:\n        raise ValueError(\"max_length is too small\")\n    return member_id[:available] + suffix\n\n\ndef migrate_schema(schema):\n    if not isinstance(schema, Mapping) or not isinstance(schema.get(\"fields\"), Mapping) or \"blob\" not in schema[\"fields\"]:\n        raise ValueError(\"malformed schema\")\n    result = copy.deepcopy(schema)\n    result[\"fields\"][\"blob\"] = {\n        \"kind\": \"upload\",\n        \"optional\": True,\n        \"max_length\": 80,\n        \"namer\": make_blob_name,\n    }\n    return result\n",
+          "label": "make_blob_name takes the extension after the first dot rather than after the final dot.",
+          "sha256": "687fb9d29232edd06fe8c3a167b7af1db0f62b5b23116a05d0c2a68b272b4c69"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport re\nfrom collections.abc import Mapping\n\n_MEMBER = re.compile(r\"[A-Za-z0-9_-]+\\Z\")\n\n\ndef make_blob_name(member_id, epoch, original_name, max_length=80):\n    if not isinstance(member_id, str) or not member_id or not _MEMBER.fullmatch(member_id):\n        raise ValueError(\"invalid member_id\")\n    if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:\n        raise ValueError(\"invalid epoch\")\n    if not isinstance(original_name, str) or not original_name or any(c in original_name for c in (\"/\", \"\\\\\", \"\\0\")):\n        raise ValueError(\"invalid original_name\")\n    if isinstance(max_length, bool) or not isinstance(max_length, int) or max_length < 1:\n        raise ValueError(\"invalid max_length\")\n    dot = original_name.rfind(\".\")\n    extension = original_name[dot + 1:].lower() if 0 < dot < len(original_name) - 1 else \"\"\n    suffix = \"_\" + str(epoch) + ((\".\" + extension) if extension else \"\")\n    available = max_length - len(suffix)\n    if available < 1:\n        raise ValueError(\"max_length is too small\")\n    return member_id[:available] + suffix\n\n\ndef migrate_schema(schema):\n    if not isinstance(schema, Mapping) or not isinstance(schema.get(\"fields\"), Mapping) or \"blob\" not in schema[\"fields\"]:\n        raise ValueError(\"malformed schema\")\n    result = copy.deepcopy(schema)\n    result[\"fields\"][\"blob\"] = {\n        \"kind\": \"upload\",\n        \"optional\": True,\n        \"max_length\": 80,\n        \"namer\": make_blob_name,\n    }\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "85e486ceaf8600648eeae7f19c4e02ec6822a077dd92c9eabdc767741b07a59a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_readonly_mapping (__main__.ReviewProbe.test_readonly_mapping)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_readonly_mapping\n    result = migrate_schema(source)\n             ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 29, in migrate_schema\n    result = copy.deepcopy(schema)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n\n----------------------------------------------------------------------\nRan 1 test in 0.011s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "fddea61c5377dda2d3f6f81a3ef3754a6533a4d98bf5354e6b2f74163de07cc7",
+    "duration_ms": 666,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

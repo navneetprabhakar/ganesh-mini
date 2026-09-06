@@ -2,16 +2,29 @@
 
 ## Quality review continuation — 2026-09-06
 
-Latest continuation: **165/300** inspected, frozen indices 0–164; next index
-165. Go (56), Java (60), JavaScript (30) inspected in full; Python (19) underway.
-Inspection is not seven-criterion approval. `THIRD_BATCH_REVIEW.md` preserves
-65 further detailed inspections. `additional-holds.json` now contains 23
-additional holds, or 26 with the historical three. No new partition or seal.
-Repeated JS sparse-array validation gaps are reproduced in three repair tasks;
-generation examples and affected strata still need follow-up. Python mapping
-support and numeric-range ambiguities also need adjudication. All focused
-candidate execution uses the pinned network-disabled sandbox. Continue work;
-this is an evidence checkpoint, not a terminal outcome.
+Latest follow-up: 45 holds (42 additive plus historical three). All 300 initial
+inspections are complete. Six recurring defect groups reopen 11 frozen strata
+covering 2,567 records; this is review scope, not a rejection count. See
+`STRATUM_REVIEW.md` and `stratum-followup-inventory-v1.json`. The initial
+300/41-hold checkpoint passed exact-generation GCS roundtrip; later four JS
+sparse probes and stratum inventory postdate it. All 86 data tooling tests pass.
+Next: inspect high-signal subscription/overload hits outside the sample and
+continue stratum resolution. The prior checkpoint details follow.
+
+Initial semantic inspection is **300/300**, frozen indices 0–299. Go 56,
+Java 60, JavaScript 30, Python 61, Rust 62, TypeScript 31. Inspection is not
+seven-criterion approval. `FOURTH_BATCH_REVIEW.md` preserves the last 135
+inspections. `additional-holds.json` contains 38 additive holds, or 41 with
+the historical three. No revised partition, training seal or new VM.
+Seven TypeScript probes compiled and reproduced behavioral defects without
+timeouts; a CSS terminal-newline hypothesis was disproved and is not held.
+Rust/Python probes, raw outputs and exact diagnostic tasks are also preserved.
+All 82 data tooling tests pass. Next: criterion-specific adjudication and
+related-stratum audits for sparse validation, subscription identity, API/test
+accommodation, numeric envelopes and elementary tasks. In particular Rust
+0192 and TypeScript 0382/repair0208 contain test-accommodating reference changes.
+Continue locally; do not restart generation or infer training readiness from
+the historical 5,882-row partition. All candidate execution stays sandboxed.
 
 The paragraph below records the earlier 100-record checkpoint:
 

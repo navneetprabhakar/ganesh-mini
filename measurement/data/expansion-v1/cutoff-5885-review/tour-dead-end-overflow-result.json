@@ -1,0 +1,130 @@
+{
+  "id": "exp-v1-rust-generation-0630",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "0f7f14bb3f47c11b8ab120ef115c5cf5a75a764a93a09437e25c5a05b1b8dba1",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{analyze_tours, Passage};\n\n#[test]\nfn incomplete_paths_are_not_otherwise_valid_tours() {\n    let passages = vec![\n        Passage { from: \"A\".into(), to: \"B\".into(), minutes: u64::MAX },\n        Passage { from: \"B\".into(), to: \"C\".into(), minutes: 1 },\n        Passage { from: \"D\".into(), to: \"E\".into(), minutes: 1 },\n    ];\n    assert_eq!(analyze_tours(&passages), Ok(Vec::new()));\n}\n",
+        "sha256": "3f3c902491236956cb12e38f1c2b33b617c849069dc87886156d0f3819edf240"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0a623f4f9c63280d98e219fa50b678b8f7923d5c7cb6d0cb04003f0ed9a258e1",
+      "text": "Implement an exhaustive exhibit-tour analyzer in `solution.rs` using only the standard library.\n\nPublic API:\n- `pub struct Passage { pub from: String, pub to: String, pub minutes: u64 }`\n- `pub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }`\n- `pub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }`\n- `pub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError>`.\n\nPassages are undirected. Room names are exact and case-sensitive. Reject an empty endpoint, a passage from a room to itself, or a repeated unordered room pair; validation errors must follow input order. A tour visits every distinct room exactly once and may use only listed passages between consecutive rooms. Return every such oriented tour: a tour and its reverse are separate unless they are identical. Sort results lexicographically by their `rooms` vectors. Use checked addition and return `CostOverflow` if any otherwise-valid tour cost overflows `u64`. With no passages there are no known rooms, so return an empty vector. A single distinct room cannot arise from valid input. Inputs must not be mutated. Derive `Clone`, `Debug`, `PartialEq`, and `Eq` for public types. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0a623f4f9c63280d98e219fa50b678b8f7923d5c7cb6d0cb04003f0ed9a258e1",
+      "text": "Implement an exhaustive exhibit-tour analyzer in `solution.rs` using only the standard library.\n\nPublic API:\n- `pub struct Passage { pub from: String, pub to: String, pub minutes: u64 }`\n- `pub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }`\n- `pub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }`\n- `pub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError>`.\n\nPassages are undirected. Room names are exact and case-sensitive. Reject an empty endpoint, a passage from a room to itself, or a repeated unordered room pair; validation errors must follow input order. A tour visits every distinct room exactly once and may use only listed passages between consecutive rooms. Return every such oriented tour: a tour and its reverse are separate unless they are identical. Sort results lexicographically by their `rooms` vectors. Use checked addition and return `CostOverflow` if any otherwise-valid tour cost overflows `u64`. With no passages there are no known rooms, so return an empty vector. A single distinct room cannot arise from valid input. Inputs must not be mutated. Derive `Clone`, `Debug`, `PartialEq`, and `Eq` for public types. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0630",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::{BTreeSet, HashMap, HashSet};\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Passage { pub from: String, pub to: String, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }\n\npub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError> {\n    let mut names = BTreeSet::new();\n    let mut pairs = HashSet::new();\n    let mut costs = HashMap::new();\n    for passage in passages {\n        if passage.from.is_empty() || passage.to.is_empty() { return Err(TourError::EmptyRoom); }\n        if passage.from == passage.to { return Err(TourError::SelfPassage); }\n        let pair = if passage.from < passage.to {\n            (passage.from.clone(), passage.to.clone())\n        } else {\n            (passage.to.clone(), passage.from.clone())\n        };\n        if !pairs.insert(pair.clone()) { return Err(TourError::DuplicatePassage); }\n        names.insert(passage.from.clone());\n        names.insert(passage.to.clone());\n        costs.insert(pair, passage.minutes);\n    }\n    let names: Vec<String> = names.into_iter().collect();\n    if names.is_empty() { return Ok(Vec::new()); }\n    let mut answer = Vec::new();\n    fn build(names: &[String], costs: &HashMap<(String, String), u64>, used: &mut [bool], path: &mut Vec<String>, total: u64, out: &mut Vec<Tour>) -> Result<(), TourError> {\n        if path.len() == names.len() {\n            out.push(Tour { rooms: path.clone(), minutes: total });\n            return Ok(());\n        }\n        for i in 0..names.len() {\n            if used[i] { continue; }\n            let next_total = if let Some(previous) = path.last() {\n                let pair = if previous < &names[i] { (previous.clone(), names[i].clone()) } else { (names[i].clone(), previous.clone()) };\n                let Some(edge) = costs.get(&pair) else { continue; };\n                total.checked_add(*edge).ok_or(TourError::CostOverflow)?\n            } else { total };\n            used[i] = true;\n            path.push(names[i].clone());\n            build(names, costs, used, path, next_total, out)?;\n            path.pop();\n            used[i] = false;\n        }\n        Ok(())\n    }\n    build(&names, &costs, &mut vec![false; names.len()], &mut Vec::new(), 0, &mut answer)?;\n    answer.sort_by(|a, b| a.minutes.cmp(&b.minutes));\n    Ok(answer)\n}\n",
+          "label": "Sorts tours by total duration instead of lexicographically by their room sequences.",
+          "sha256": "30698fd286691adce8749a64211a80b8b71f2321242371aa831d6c36172a79f1"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::{BTreeSet, HashMap, HashSet};\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Passage { pub from: String, pub to: String, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }\n\npub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError> {\n    let mut names = BTreeSet::new();\n    let mut pairs = HashSet::new();\n    let mut costs = HashMap::new();\n    for passage in passages {\n        if passage.from.is_empty() || passage.to.is_empty() { return Err(TourError::EmptyRoom); }\n        if passage.from == passage.to { return Err(TourError::SelfPassage); }\n        let pair = if passage.from < passage.to {\n            (passage.from.clone(), passage.to.clone())\n        } else {\n            (passage.to.clone(), passage.from.clone())\n        };\n        if !pairs.insert(pair.clone()) { return Err(TourError::DuplicatePassage); }\n        names.insert(passage.from.clone());\n        names.insert(passage.to.clone());\n        costs.insert(pair, passage.minutes);\n    }\n    let names: Vec<String> = names.into_iter().collect();\n    if names.is_empty() { return Ok(Vec::new()); }\n    let mut answer = Vec::new();\n    fn build(names: &[String], costs: &HashMap<(String, String), u64>, used: &mut [bool], path: &mut Vec<String>, total: u64, out: &mut Vec<Tour>) -> Result<(), TourError> {\n        if path.len() == names.len() {\n            out.push(Tour { rooms: path.clone(), minutes: total });\n            return Ok(());\n        }\n        for i in 0..names.len() {\n            if used[i] { continue; }\n            let next_total = if let Some(previous) = path.last() {\n                let pair = if previous < &names[i] { (previous.clone(), names[i].clone()) } else { (names[i].clone(), previous.clone()) };\n                let Some(edge) = costs.get(&pair) else { continue; };\n                total.checked_add(*edge).ok_or(TourError::CostOverflow)?\n            } else { total };\n            used[i] = true;\n            path.push(names[i].clone());\n            build(names, costs, used, path, next_total, out)?;\n            path.pop();\n            used[i] = false;\n        }\n        Ok(())\n    }\n    build(&names, &costs, &mut vec![false; names.len()], &mut Vec::new(), 0, &mut answer)?;\n    answer.sort_by(|a, b| a.rooms.cmp(&b.rooms));\n    Ok(answer)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4754d79523abf7673544be78997e882f8056c41bcac3ab8cd1a0ae125ac65f30"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{analyze_tours, Passage, Tour, TourError};\n\nfn passage(from: &str, to: &str, minutes: u64) -> Passage {\n    Passage { from: from.to_string(), to: to.to_string(), minutes }\n}\n\n#[test]\nfn public_types_have_required_traits() {\n    fn require_traits<T: Clone + std::fmt::Debug + Eq>() {}\n    require_traits::<Passage>();\n    require_traits::<Tour>();\n    require_traits::<TourError>();\n}\n\n#[test]\nfn no_passages_produce_no_known_rooms_or_tours() {\n    assert_eq!(analyze_tours(&[]), Ok(Vec::new()));\n}\n\n#[test]\nfn path_graph_produces_both_orientations_in_lexicographic_order() {\n    let passages = vec![passage(\"B\", \"C\", 3), passage(\"A\", \"B\", 2)];\n    let before = passages.clone();\n    let tours = analyze_tours(&passages).unwrap();\n\n    assert_eq!(tours, vec![\n        Tour { rooms: vec![\"A\".to_string(), \"B\".to_string(), \"C\".to_string()], minutes: 5 },\n        Tour { rooms: vec![\"C\".to_string(), \"B\".to_string(), \"A\".to_string()], minutes: 5 },\n    ]);\n    assert_eq!(passages, before);\n}\n\n#[test]\nfn complete_three_room_graph_returns_every_oriented_tour_sorted() {\n    let passages = vec![passage(\"A\", \"B\", 1), passage(\"B\", \"C\", 2), passage(\"A\", \"C\", 4)];\n    let tours = analyze_tours(&passages).unwrap();\n    let expected_rooms = vec![\n        vec![\"A\", \"B\", \"C\"],\n        vec![\"A\", \"C\", \"B\"],\n        vec![\"B\", \"A\", \"C\"],\n        vec![\"B\", \"C\", \"A\"],\n        vec![\"C\", \"A\", \"B\"],\n        vec![\"C\", \"B\", \"A\"],\n    ];\n    assert_eq!(tours.iter().map(|t| t.rooms.iter().map(String::as_str).collect::<Vec<_>>()).collect::<Vec<_>>(), expected_rooms);\n    assert_eq!(tours.iter().map(|t| t.minutes).collect::<Vec<_>>(), vec![3, 6, 5, 6, 5, 3]);\n}\n\n#[test]\nfn disconnected_graph_has_no_complete_tour() {\n    let passages = vec![passage(\"A\", \"B\", 1), passage(\"C\", \"D\", 1)];\n    assert_eq!(analyze_tours(&passages), Ok(Vec::new()));\n}\n\n#[test]\nfn names_are_exact_and_case_sensitive() {\n    let tours = analyze_tours(&[passage(\"A\", \"a\", 7)]).unwrap();\n    assert_eq!(tours, vec![\n        Tour { rooms: vec![\"A\".to_string(), \"a\".to_string()], minutes: 7 },\n        Tour { rooms: vec![\"a\".to_string(), \"A\".to_string()], minutes: 7 },\n    ]);\n}\n\n#[test]\nfn validation_rejects_empty_self_and_unordered_duplicates() {\n    assert_eq!(analyze_tours(&[passage(\"\", \"A\", 1)]), Err(TourError::EmptyRoom));\n    assert_eq!(analyze_tours(&[passage(\"A\", \"\", 1)]), Err(TourError::EmptyRoom));\n    assert_eq!(analyze_tours(&[passage(\"same\", \"same\", 1)]), Err(TourError::SelfPassage));\n    assert_eq!(\n        analyze_tours(&[passage(\"A\", \"B\", 1), passage(\"B\", \"A\", 9)]),\n        Err(TourError::DuplicatePassage)\n    );\n}\n\n#[test]\nfn validation_errors_follow_input_order() {\n    let duplicate_before_empty = vec![\n        passage(\"A\", \"B\", 1),\n        passage(\"B\", \"A\", 2),\n        passage(\"\", \"C\", 3),\n    ];\n    assert_eq!(analyze_tours(&duplicate_before_empty), Err(TourError::DuplicatePassage));\n\n    let self_before_duplicate = vec![\n        passage(\"X\", \"X\", 1),\n        passage(\"A\", \"B\", 1),\n        passage(\"B\", \"A\", 2),\n    ];\n    assert_eq!(analyze_tours(&self_before_duplicate), Err(TourError::SelfPassage));\n}\n\n#[test]\nfn overflowing_cost_of_an_otherwise_valid_tour_is_an_error() {\n    let passages = vec![passage(\"A\", \"B\", u64::MAX), passage(\"B\", \"C\", 1)];\n    assert_eq!(analyze_tours(&passages), Err(TourError::CostOverflow));\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "bb1fccaecfa02587ff09c86077b6c990250a4af2f45e4425bb42a2dae8d03f5f"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0a623f4f9c63280d98e219fa50b678b8f7923d5c7cb6d0cb04003f0ed9a258e1",
+      "text": "Implement an exhaustive exhibit-tour analyzer in `solution.rs` using only the standard library.\n\nPublic API:\n- `pub struct Passage { pub from: String, pub to: String, pub minutes: u64 }`\n- `pub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }`\n- `pub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }`\n- `pub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError>`.\n\nPassages are undirected. Room names are exact and case-sensitive. Reject an empty endpoint, a passage from a room to itself, or a repeated unordered room pair; validation errors must follow input order. A tour visits every distinct room exactly once and may use only listed passages between consecutive rooms. Return every such oriented tour: a tour and its reverse are separate unless they are identical. Sort results lexicographically by their `rooms` vectors. Use checked addition and return `CostOverflow` if any otherwise-valid tour cost overflows `u64`. With no passages there are no known rooms, so return an empty vector. A single distinct room cannot arise from valid input. Inputs must not be mutated. Derive `Clone`, `Debug`, `PartialEq`, and `Eq` for public types. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0a623f4f9c63280d98e219fa50b678b8f7923d5c7cb6d0cb04003f0ed9a258e1",
+      "text": "Implement an exhaustive exhibit-tour analyzer in `solution.rs` using only the standard library.\n\nPublic API:\n- `pub struct Passage { pub from: String, pub to: String, pub minutes: u64 }`\n- `pub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }`\n- `pub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }`\n- `pub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError>`.\n\nPassages are undirected. Room names are exact and case-sensitive. Reject an empty endpoint, a passage from a room to itself, or a repeated unordered room pair; validation errors must follow input order. A tour visits every distinct room exactly once and may use only listed passages between consecutive rooms. Return every such oriented tour: a tour and its reverse are separate unless they are identical. Sort results lexicographically by their `rooms` vectors. Use checked addition and return `CostOverflow` if any otherwise-valid tour cost overflows `u64`. With no passages there are no known rooms, so return an empty vector. A single distinct room cannot arise from valid input. Inputs must not be mutated. Derive `Clone`, `Debug`, `PartialEq`, and `Eq` for public types. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0630",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::{BTreeSet, HashMap, HashSet};\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Passage { pub from: String, pub to: String, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }\n\npub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError> {\n    let mut names = BTreeSet::new();\n    let mut pairs = HashSet::new();\n    let mut costs = HashMap::new();\n    for passage in passages {\n        if passage.from.is_empty() || passage.to.is_empty() { return Err(TourError::EmptyRoom); }\n        if passage.from == passage.to { return Err(TourError::SelfPassage); }\n        let pair = if passage.from < passage.to {\n            (passage.from.clone(), passage.to.clone())\n        } else {\n            (passage.to.clone(), passage.from.clone())\n        };\n        if !pairs.insert(pair.clone()) { return Err(TourError::DuplicatePassage); }\n        names.insert(passage.from.clone());\n        names.insert(passage.to.clone());\n        costs.insert(pair, passage.minutes);\n    }\n    let names: Vec<String> = names.into_iter().collect();\n    if names.is_empty() { return Ok(Vec::new()); }\n    let mut answer = Vec::new();\n    fn build(names: &[String], costs: &HashMap<(String, String), u64>, used: &mut [bool], path: &mut Vec<String>, total: u64, out: &mut Vec<Tour>) -> Result<(), TourError> {\n        if path.len() == names.len() {\n            out.push(Tour { rooms: path.clone(), minutes: total });\n            return Ok(());\n        }\n        for i in 0..names.len() {\n            if used[i] { continue; }\n            let next_total = if let Some(previous) = path.last() {\n                let pair = if previous < &names[i] { (previous.clone(), names[i].clone()) } else { (names[i].clone(), previous.clone()) };\n                let Some(edge) = costs.get(&pair) else { continue; };\n                total.checked_add(*edge).ok_or(TourError::CostOverflow)?\n            } else { total };\n            used[i] = true;\n            path.push(names[i].clone());\n            build(names, costs, used, path, next_total, out)?;\n            path.pop();\n            used[i] = false;\n        }\n        Ok(())\n    }\n    build(&names, &costs, &mut vec![false; names.len()], &mut Vec::new(), 0, &mut answer)?;\n    answer.sort_by(|a, b| a.minutes.cmp(&b.minutes));\n    Ok(answer)\n}\n",
+          "label": "Sorts tours by total duration instead of lexicographically by their room sequences.",
+          "sha256": "30698fd286691adce8749a64211a80b8b71f2321242371aa831d6c36172a79f1"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::{BTreeSet, HashMap, HashSet};\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Passage { pub from: String, pub to: String, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }\n\npub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError> {\n    let mut names = BTreeSet::new();\n    let mut pairs = HashSet::new();\n    let mut costs = HashMap::new();\n    for passage in passages {\n        if passage.from.is_empty() || passage.to.is_empty() { return Err(TourError::EmptyRoom); }\n        if passage.from == passage.to { return Err(TourError::SelfPassage); }\n        let pair = if passage.from < passage.to {\n            (passage.from.clone(), passage.to.clone())\n        } else {\n            (passage.to.clone(), passage.from.clone())\n        };\n        if !pairs.insert(pair.clone()) { return Err(TourError::DuplicatePassage); }\n        names.insert(passage.from.clone());\n        names.insert(passage.to.clone());\n        costs.insert(pair, passage.minutes);\n    }\n    let names: Vec<String> = names.into_iter().collect();\n    if names.is_empty() { return Ok(Vec::new()); }\n    let mut answer = Vec::new();\n    fn build(names: &[String], costs: &HashMap<(String, String), u64>, used: &mut [bool], path: &mut Vec<String>, total: u64, out: &mut Vec<Tour>) -> Result<(), TourError> {\n        if path.len() == names.len() {\n            out.push(Tour { rooms: path.clone(), minutes: total });\n            return Ok(());\n        }\n        for i in 0..names.len() {\n            if used[i] { continue; }\n            let next_total = if let Some(previous) = path.last() {\n                let pair = if previous < &names[i] { (previous.clone(), names[i].clone()) } else { (names[i].clone(), previous.clone()) };\n                let Some(edge) = costs.get(&pair) else { continue; };\n                total.checked_add(*edge).ok_or(TourError::CostOverflow)?\n            } else { total };\n            used[i] = true;\n            path.push(names[i].clone());\n            build(names, costs, used, path, next_total, out)?;\n            path.pop();\n            used[i] = false;\n        }\n        Ok(())\n    }\n    build(&names, &costs, &mut vec![false; names.len()], &mut Vec::new(), 0, &mut answer)?;\n    answer.sort_by(|a, b| a.rooms.cmp(&b.rooms));\n    Ok(answer)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4754d79523abf7673544be78997e882f8056c41bcac3ab8cd1a0ae125ac65f30"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest incomplete_paths_are_not_otherwise_valid_tours ... FAILED\n\nfailures:\n\n---- incomplete_paths_are_not_otherwise_valid_tours stdout ----\n\nthread 'incomplete_paths_are_not_otherwise_valid_tours' panicked at solution_test.rs:12:5:\nassertion `left == right` failed\n  left: Err(CostOverflow)\n right: Ok([])\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    incomplete_paths_are_not_otherwise_valid_tours\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "24178177bcecaae71cc5aa7f64422dd0b09360cea2dcaed4a2532c1ae7045fa1",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 2326,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

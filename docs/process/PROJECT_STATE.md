@@ -4,14 +4,23 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Latest continuation: 165/300 frozen sample records inspected; 135 remain.
-Go 56/56, Java 60/60, JavaScript 30/30, Python 19 inspected; Rust/TypeScript
-not yet semantically inspected. The 300-record archived provenance trace is
-complete, but is not semantic approval. There are 23 additive holds plus three
-historical holds (26 total), not a revised admission count. Repeated JS sparse
-validation failures and Python Mapping/numeric-envelope issues require related
-stratum review. Details: `cutoff-5885-review/THIRD_BATCH_REVIEW.md` and
-`additional-holds.json`. Next frozen index 165. No training seal or new VM.
+Latest follow-up: 45 holds (42 additive plus three historical). Initial sample
+inspection complete; six recurring groups reopen 11 strata containing 2,567
+records for review, NOT rejection. See `cutoff-5885-review/STRATUM_REVIEW.md`.
+All 86 data tooling tests pass. Initial 300/41-hold evidence is GCS roundtrip
+verified; subsequent sparse/stratum work requires the next backup checkpoint.
+No training-ready seal. The preceding checkpoint follows.
+
+Initial inspection complete: 300/300 frozen sample records. Go 56, Java 60,
+JavaScript 30, Python 61, Rust 62, TypeScript 31. Archived provenance also
+traces all 300, but neither count is seven-criterion approval. There are 38
+additive holds plus three historical holds (41 total), not a revised admission
+count. Repeated sparse validation, subscription identity, reference/test API
+accommodation and numeric-envelope findings require affected-stratum review.
+Details: `cutoff-5885-review/FOURTH_BATCH_REVIEW.md`, `additional-holds.json`.
+Seven new TypeScript diagnostic failures are sandbox-confirmed; CSS terminal
+newline concern was disproved. All 82 data tooling tests pass. Continue quality
+adjudication and targeted audits. No training seal, new partition or new VM.
 
 Historical 100-record checkpoint:
 

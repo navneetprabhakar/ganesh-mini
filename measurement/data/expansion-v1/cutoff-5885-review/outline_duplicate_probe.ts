@@ -1,0 +1,10 @@
+import { OutlineTree } from './solution';
+const tree = new OutlineTree([{ id: 'one', label: 'one', kind: 'page' }]);
+const calls: string[] = [];
+const same = () => { calls.push('A'); };
+tree.onSelection(same);
+tree.onSelection(() => { calls.push('B'); });
+const removeLast = tree.onSelection(same);
+removeLast();
+tree.select('one');
+if (calls.join(',') !== 'A,B') throw new Error('Wrong registration removed: ' + calls.join(','));

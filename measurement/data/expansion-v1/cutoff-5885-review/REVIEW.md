@@ -1,18 +1,25 @@
 # Cutoff quality review — in progress
 
+Latest: initial inspection complete; **45 holds** including three historical.
+Six recurring groups reopen 11 strata (2,567 records of review scope, not
+rejections). See `STRATUM_REVIEW.md`. All 86 data tooling tests pass. The
+300/41-hold archive is GCS roundtrip verified; later follow-up remains additive.
+
 Population: 5,885; deterministic sample: 300. Cutoff corpus SHA-256:
 `3ca9209b51d36b9137d65f6f0424bfc369a662bd5af7f99666f4ecc60ee24e92`.
 Prepared manifest SHA-256:
 `0a58d3d30f98202bd6fd87fafb1c7ddb415a2fabbfa21f6378da0399e72b6623`.
 
-Latest checkpoint: **165/300 inspected**, indices 0–164; next index 165.
-The 65 continuation inspections and focused JS/Python sandbox findings are in
-`THIRD_BATCH_REVIEW.md`. `additional-holds.json` contains 23 additional holds;
-26 total with the original three. Excluding these would leave 5,859 before
-other open findings are adjudicated; this is not a sealed admission count.
-Repeated sparse-array validation failures require affected-stratum review.
+Initial inspection complete: **300/300**, indices 0–299. Counts: Go 56, Java 60,
+JavaScript 30, Python 61, Rust 62, TypeScript 31. `FOURTH_BATCH_REVIEW.md`
+preserves the last 135 inspections and focused Python/Rust/TypeScript findings.
+`additional-holds.json` contains 38 additive holds; 41 with the original three.
+These are not the complete rejected set or a sealed admission count. Repeated
+sparse validation, subscription identity, API/test accommodation and numeric
+envelope issues require affected-stratum review. Seven TS probes reproduced
+defects; one CSS hypothesis was disproved. All 82 data tooling tests pass.
 Inspection is not automatic seven-criterion approval. Original artifacts and
-the v1 partition remain unchanged. The following is the earlier checkpoint.
+the v1 partition remain unchanged. The following is the historical 100 checkpoint.
 
 This is a partial review, not a passed sample. One hundred candidate specifications,
 reference implementations, original tests, and known-bad implementations have

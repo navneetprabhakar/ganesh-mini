@@ -24,13 +24,14 @@ def main():
     if digest(sample.read_bytes()) != manifest['files'][sample.name]['sha256']:
         raise ValueError('sample hash mismatch')
     row = next(r for r in read_jsonl(sample) if r['id'] == args.id)
-    if row['lane'] not in ('go', 'java', 'javascript', 'python'):
+    if row['lane'] not in ('go', 'java', 'javascript', 'python', 'rust', 'typescript'):
         raise ValueError('unsupported probe language')
     task = copy.deepcopy(row['verification_task'])
     task['surface'] = 'synthetic_harness'
     content = args.probe.read_text()
     probe_path = {'go': 'review_test.go', 'java': 'SolutionTest.java',
-                  'javascript': 'solution.test.js', 'python': 'test_solution.py'}[row['lane']]
+                  'javascript': 'solution.test.js', 'python': 'test_solution.py',
+                  'rust': 'solution_test.rs', 'typescript': 'solution.test.ts'}[row['lane']]
     # Use the pinned runtime test entry point. Preserve the original task in
     # the output and use a separate diagnostic test; never edit the candidate.
     if row['lane'] != 'go':

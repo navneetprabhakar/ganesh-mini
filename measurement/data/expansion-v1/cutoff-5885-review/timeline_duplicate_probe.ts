@@ -1,0 +1,10 @@
+import { ReleaseTimeline } from './solution';
+const timeline = new ReleaseTimeline();
+const calls: string[] = [];
+const same = () => { calls.push('A'); };
+timeline.subscribe(same);
+timeline.subscribe(() => { calls.push('B'); });
+const removeLast = timeline.subscribe(same);
+removeLast();
+timeline.append('one');
+if (calls.join(',') !== 'A,B') throw new Error('Wrong registration removed: ' + calls.join(','));

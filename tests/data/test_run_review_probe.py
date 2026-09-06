@@ -8,7 +8,8 @@ from scripts.data import run_review_probe
 
 
 @pytest.mark.parametrize('lane,test_path', [('go', 'solution_test.go'), ('java', 'SolutionTest.java'),
-                                         ('javascript', 'solution.test.js'), ('python', 'test_solution.py')])
+                                         ('javascript', 'solution.test.js'), ('python', 'test_solution.py'),
+                                         ('rust', 'solution_test.rs'), ('typescript', 'solution.test.ts')])
 def test_probe_preserves_original_and_uses_verifier(tmp_path, monkeypatch, lane, test_path):
     monkeypatch.chdir(tmp_path)
     root = tmp_path / 'datasets/cache/expansion-v1/cutoff-5885'

@@ -1,0 +1,143 @@
+{
+  "id": "exp-v1-typescript-generation-0281",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "candidate_sha256": "7b3ee535b71d9f20961285b81a1cfb10e17f74d166eddb51ce601f3fbbd46b07",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ReleaseTimeline } from './solution';\nconst timeline = new ReleaseTimeline();\nconst calls: string[] = [];\nconst same = () => { calls.push('A'); };\ntimeline.subscribe(same);\ntimeline.subscribe(() => { calls.push('B'); });\nconst removeLast = timeline.subscribe(same);\nremoveLast();\ntimeline.append('one');\nif (calls.join(',') !== 'A,B') throw new Error('Wrong registration removed: ' + calls.join(','));\n",
+        "sha256": "4407093b72ea9652a8da7d07c037f9c43fb687c53e49956a5358440dcce28fb9"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "eabdc05e517362182a5a2d0fd9fe36a2a6e8ee3bf392b7ce527714df1c5599b7",
+      "text": "Implement an observable ordered release timeline in one complete TypeScript file. Export:\n\n```typescript\nexport type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nexport class ReleaseTimeline {\n  subscribe(listener: TimelineListener): () => void;\n  append(label: string, note?: string): ReleaseEntry;\n  rename(id: number, label: string): ReleaseEntry;\n  remove(id: number): boolean;\n  promote(id: number): ReleaseEntry;\n  snapshot(): ReleaseEntry[];\n}\n```\n\nLabels must be non-empty after trimming and are stored trimmed. Notes default to `null`; supplied notes must be strings and are stored unchanged. IDs start at 1 and are never reused. `rename`, `remove`, and `promote` require a positive integer ID; malformed IDs throw `RangeError`. `rename` and `promote` throw `RangeError` when the ID is absent, while `remove` returns `false`. Promotion moves an entry to the front while preserving the relative order of all others; promoting the first entry is still successful.\n\nListeners run synchronously in subscription order after a successful mutation. The returned unsubscribe function is idempotent. A listener removed during notification must not affect the current notification, only later ones. Listener exceptions propagate after the mutation and stop delivery of that event to later listeners. Events, returned entries, and snapshots must contain copies, so callers cannot mutate internal state. Failed operations emit nothing.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "eabdc05e517362182a5a2d0fd9fe36a2a6e8ee3bf392b7ce527714df1c5599b7",
+      "text": "Implement an observable ordered release timeline in one complete TypeScript file. Export:\n\n```typescript\nexport type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nexport class ReleaseTimeline {\n  subscribe(listener: TimelineListener): () => void;\n  append(label: string, note?: string): ReleaseEntry;\n  rename(id: number, label: string): ReleaseEntry;\n  remove(id: number): boolean;\n  promote(id: number): ReleaseEntry;\n  snapshot(): ReleaseEntry[];\n}\n```\n\nLabels must be non-empty after trimming and are stored trimmed. Notes default to `null`; supplied notes must be strings and are stored unchanged. IDs start at 1 and are never reused. `rename`, `remove`, and `promote` require a positive integer ID; malformed IDs throw `RangeError`. `rename` and `promote` throw `RangeError` when the ID is absent, while `remove` returns `false`. Promotion moves an entry to the front while preserving the relative order of all others; promoting the first entry is still successful.\n\nListeners run synchronously in subscription order after a successful mutation. The returned unsubscribe function is idempotent. A listener removed during notification must not affect the current notification, only later ones. Listener exceptions propagate after the mutation and stop delivery of that event to later listeners. Events, returned entries, and snapshots must contain copies, so callers cannot mutate internal state. Failed operations emit nothing.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0281",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nconst copy = (entry: ReleaseEntry): ReleaseEntry => ({ ...entry });\n\nexport class ReleaseTimeline {\n  private readonly entries: ReleaseEntry[] = [];\n  private readonly listeners: TimelineListener[] = [];\n  private nextId = 1;\n\n  subscribe(listener: TimelineListener): () => void {\n    if (typeof listener !== \"function\") throw new TypeError(\"Invalid listener\");\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private emit(kind: TimelineEvent[\"kind\"], entry: ReleaseEntry): void {\n    const event = { kind, entry: copy(entry) } as TimelineEvent;\n    for (const listener of [...this.listeners]) listener(event);\n  }\n\n  private indexOf(id: number): number {\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    return this.entries.findIndex(entry => entry.id === id);\n  }\n\n  append(label: string, note?: string): ReleaseEntry {\n    if (typeof label !== \"string\" || label.trim() === \"\" ||\n        (note !== undefined && typeof note !== \"string\")) throw new TypeError(\"Invalid entry\");\n    const entry: ReleaseEntry = { id: this.nextId++, label: label.trim(), note: note ?? null };\n    this.entries.push(entry);\n    this.emit(\"added\", entry);\n    return copy(entry);\n  }\n\n  rename(id: number, label: string): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (typeof label !== \"string\" || label.trim() === \"\") throw new TypeError(\"Invalid label\");\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    this.entries[index].label = label.trim();\n    this.emit(\"renamed\", this.entries[index]);\n    return copy(this.entries[index]);\n  }\n\n  remove(id: number): boolean {\n    const index = this.indexOf(id);\n    if (index < 0) return false;\n    const [entry] = this.entries.splice(index, 1);\n    this.emit(\"removed\", entry);\n    return true;\n  }\n\n  promote(id: number): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    const [entry] = this.entries.splice(index, 1);\n    this.entries.push(entry);\n    this.emit(\"promoted\", entry);\n    return copy(entry);\n  }\n\n  snapshot(): ReleaseEntry[] {\n    return this.entries.map(copy);\n  }\n}\n",
+          "label": "Promotion moves the selected entry to the end instead of the front.",
+          "sha256": "9d1691a5119dbbb0e032c0d4ab78baac47272a73cd67ee55117e141d57da042a"
+        }
+      ],
+      "reference": {
+        "code": "export type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nconst copy = (entry: ReleaseEntry): ReleaseEntry => ({ ...entry });\n\nexport class ReleaseTimeline {\n  private readonly entries: ReleaseEntry[] = [];\n  private readonly listeners: TimelineListener[] = [];\n  private nextId = 1;\n\n  subscribe(listener: TimelineListener): () => void {\n    if (typeof listener !== \"function\") throw new TypeError(\"Invalid listener\");\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private emit(kind: TimelineEvent[\"kind\"], entry: ReleaseEntry): void {\n    const event = { kind, entry: copy(entry) } as TimelineEvent;\n    for (const listener of [...this.listeners]) listener(event);\n  }\n\n  private indexOf(id: number): number {\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    return this.entries.findIndex(entry => entry.id === id);\n  }\n\n  append(label: string, note?: string): ReleaseEntry {\n    if (typeof label !== \"string\" || label.trim() === \"\" ||\n        (note !== undefined && typeof note !== \"string\")) throw new TypeError(\"Invalid entry\");\n    const entry: ReleaseEntry = { id: this.nextId++, label: label.trim(), note: note ?? null };\n    this.entries.push(entry);\n    this.emit(\"added\", entry);\n    return copy(entry);\n  }\n\n  rename(id: number, label: string): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (typeof label !== \"string\" || label.trim() === \"\") throw new TypeError(\"Invalid label\");\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    this.entries[index].label = label.trim();\n    this.emit(\"renamed\", this.entries[index]);\n    return copy(this.entries[index]);\n  }\n\n  remove(id: number): boolean {\n    const index = this.indexOf(id);\n    if (index < 0) return false;\n    const [entry] = this.entries.splice(index, 1);\n    this.emit(\"removed\", entry);\n    return true;\n  }\n\n  promote(id: number): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    const [entry] = this.entries.splice(index, 1);\n    this.entries.unshift(entry);\n    this.emit(\"promoted\", entry);\n    return copy(entry);\n  }\n\n  snapshot(): ReleaseEntry[] {\n    return this.entries.map(copy);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ddcfbce998e78f6e17bfc96ca081bbd3cfffe0503054dbd97a41b10f8a122d20"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ReleaseTimeline, type TimelineEvent } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);\n}\nfunction captures(fn: () => void): unknown {\n  try { fn(); } catch (error) { return error; }\n  return undefined;\n}\n\nconst timeline = new ReleaseTimeline();\nconst observed: TimelineEvent[] = [];\nconst order: string[] = [];\nlet unsubscribeSecond = (): void => {};\ntimeline.subscribe(event => {\n  order.push(`first:${event.kind}`);\n  observed.push(event);\n  unsubscribeSecond();\n});\nunsubscribeSecond = timeline.subscribe(event => order.push(`second:${event.kind}`));\n\nconst first = timeline.append('  One  ');\ndeepEqual(first, { id: 1, label: 'One', note: null }, 'append trims label and defaults note');\ndeepEqual(order, ['first:added', 'second:added'], 'listeners use notification-start subscription snapshot');\nunsubscribeSecond();\nfirst.label = 'Changed';\nobserved[0].entry.label = 'Event mutation';\nassert(timeline.snapshot()[0].label === 'One', 'returns and events cannot mutate state');\n\nconst second = timeline.append('Two', ' note unchanged ');\ndeepEqual(second, { id: 2, label: 'Two', note: ' note unchanged ' }, 'supplied note preserved');\ndeepEqual(order, ['first:added', 'second:added', 'first:added'], 'unsubscribe is idempotent and affects later events');\nconst renamed = timeline.rename(2, '  Second  ');\ndeepEqual(renamed, { id: 2, label: 'Second', note: ' note unchanged ' }, 'rename succeeds');\nconst promoted = timeline.promote(2);\nassert(promoted.id === 2, 'promotion returns entry');\ndeepEqual(timeline.snapshot().map(entry => entry.id), [2, 1], 'promotion moves item to front');\ntimeline.promote(2);\ndeepEqual(timeline.snapshot().map(entry => entry.id), [2, 1], 'promoting first item succeeds without reordering others');\n\nconst snapshot = timeline.snapshot();\nsnapshot.reverse();\nsnapshot[0].label = 'Bad';\ndeepEqual(timeline.snapshot().map(entry => entry.label), ['Second', 'One'], 'snapshot is defensive');\nassert(timeline.remove(999) === false, 'absent removal returns false');\nassert(timeline.remove(1) === true, 'existing removal succeeds');\nassert(timeline.append('Three').id === 3, 'ids are never reused');\n\nconst beforeFailed = timeline.snapshot();\nassert(captures(() => timeline.append('   ')) instanceof TypeError, 'blank label rejected');\nassert(captures(() => timeline.append('X', 4 as unknown as string)) instanceof TypeError, 'non-string note rejected');\nfor (const id of [0, -1, 1.5, NaN]) {\n  assert(captures(() => timeline.rename(id, 'X')) instanceof RangeError, 'rename id validated');\n  assert(captures(() => timeline.remove(id)) instanceof RangeError, 'remove id validated');\n  assert(captures(() => timeline.promote(id)) instanceof RangeError, 'promote id validated');\n}\nassert(captures(() => timeline.rename(999, 'X')) instanceof RangeError, 'rename absent id rejected');\nassert(captures(() => timeline.promote(999)) instanceof RangeError, 'promote absent id rejected');\ndeepEqual(timeline.snapshot(), beforeFailed, 'failed operations do not mutate state');\n\nconst exceptional = new ReleaseTimeline();\nconst delivered: string[] = [];\nexceptional.subscribe(() => { delivered.push('throwing'); throw new Error('listener failed'); });\nexceptional.subscribe(() => delivered.push('later'));\nconst listenerError = captures(() => exceptional.append('Persisted'));\nassert(listenerError instanceof Error && (listenerError as Error).message === 'listener failed', 'listener exception propagates');\ndeepEqual(delivered, ['throwing'], 'listener exception stops later delivery');\nassert(exceptional.snapshot().length === 1, 'mutation remains committed when listener throws');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "69cd9cdb255093362a9381c517cd9ab163373b0af8acc0baab20237db8444ee0"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "eabdc05e517362182a5a2d0fd9fe36a2a6e8ee3bf392b7ce527714df1c5599b7",
+      "text": "Implement an observable ordered release timeline in one complete TypeScript file. Export:\n\n```typescript\nexport type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nexport class ReleaseTimeline {\n  subscribe(listener: TimelineListener): () => void;\n  append(label: string, note?: string): ReleaseEntry;\n  rename(id: number, label: string): ReleaseEntry;\n  remove(id: number): boolean;\n  promote(id: number): ReleaseEntry;\n  snapshot(): ReleaseEntry[];\n}\n```\n\nLabels must be non-empty after trimming and are stored trimmed. Notes default to `null`; supplied notes must be strings and are stored unchanged. IDs start at 1 and are never reused. `rename`, `remove`, and `promote` require a positive integer ID; malformed IDs throw `RangeError`. `rename` and `promote` throw `RangeError` when the ID is absent, while `remove` returns `false`. Promotion moves an entry to the front while preserving the relative order of all others; promoting the first entry is still successful.\n\nListeners run synchronously in subscription order after a successful mutation. The returned unsubscribe function is idempotent. A listener removed during notification must not affect the current notification, only later ones. Listener exceptions propagate after the mutation and stop delivery of that event to later listeners. Events, returned entries, and snapshots must contain copies, so callers cannot mutate internal state. Failed operations emit nothing.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "eabdc05e517362182a5a2d0fd9fe36a2a6e8ee3bf392b7ce527714df1c5599b7",
+      "text": "Implement an observable ordered release timeline in one complete TypeScript file. Export:\n\n```typescript\nexport type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nexport class ReleaseTimeline {\n  subscribe(listener: TimelineListener): () => void;\n  append(label: string, note?: string): ReleaseEntry;\n  rename(id: number, label: string): ReleaseEntry;\n  remove(id: number): boolean;\n  promote(id: number): ReleaseEntry;\n  snapshot(): ReleaseEntry[];\n}\n```\n\nLabels must be non-empty after trimming and are stored trimmed. Notes default to `null`; supplied notes must be strings and are stored unchanged. IDs start at 1 and are never reused. `rename`, `remove`, and `promote` require a positive integer ID; malformed IDs throw `RangeError`. `rename` and `promote` throw `RangeError` when the ID is absent, while `remove` returns `false`. Promotion moves an entry to the front while preserving the relative order of all others; promoting the first entry is still successful.\n\nListeners run synchronously in subscription order after a successful mutation. The returned unsubscribe function is idempotent. A listener removed during notification must not affect the current notification, only later ones. Listener exceptions propagate after the mutation and stop delivery of that event to later listeners. Events, returned entries, and snapshots must contain copies, so callers cannot mutate internal state. Failed operations emit nothing.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0281",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nconst copy = (entry: ReleaseEntry): ReleaseEntry => ({ ...entry });\n\nexport class ReleaseTimeline {\n  private readonly entries: ReleaseEntry[] = [];\n  private readonly listeners: TimelineListener[] = [];\n  private nextId = 1;\n\n  subscribe(listener: TimelineListener): () => void {\n    if (typeof listener !== \"function\") throw new TypeError(\"Invalid listener\");\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private emit(kind: TimelineEvent[\"kind\"], entry: ReleaseEntry): void {\n    const event = { kind, entry: copy(entry) } as TimelineEvent;\n    for (const listener of [...this.listeners]) listener(event);\n  }\n\n  private indexOf(id: number): number {\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    return this.entries.findIndex(entry => entry.id === id);\n  }\n\n  append(label: string, note?: string): ReleaseEntry {\n    if (typeof label !== \"string\" || label.trim() === \"\" ||\n        (note !== undefined && typeof note !== \"string\")) throw new TypeError(\"Invalid entry\");\n    const entry: ReleaseEntry = { id: this.nextId++, label: label.trim(), note: note ?? null };\n    this.entries.push(entry);\n    this.emit(\"added\", entry);\n    return copy(entry);\n  }\n\n  rename(id: number, label: string): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (typeof label !== \"string\" || label.trim() === \"\") throw new TypeError(\"Invalid label\");\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    this.entries[index].label = label.trim();\n    this.emit(\"renamed\", this.entries[index]);\n    return copy(this.entries[index]);\n  }\n\n  remove(id: number): boolean {\n    const index = this.indexOf(id);\n    if (index < 0) return false;\n    const [entry] = this.entries.splice(index, 1);\n    this.emit(\"removed\", entry);\n    return true;\n  }\n\n  promote(id: number): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    const [entry] = this.entries.splice(index, 1);\n    this.entries.push(entry);\n    this.emit(\"promoted\", entry);\n    return copy(entry);\n  }\n\n  snapshot(): ReleaseEntry[] {\n    return this.entries.map(copy);\n  }\n}\n",
+          "label": "Promotion moves the selected entry to the end instead of the front.",
+          "sha256": "9d1691a5119dbbb0e032c0d4ab78baac47272a73cd67ee55117e141d57da042a"
+        }
+      ],
+      "reference": {
+        "code": "export type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\nconst copy = (entry: ReleaseEntry): ReleaseEntry => ({ ...entry });\n\nexport class ReleaseTimeline {\n  private readonly entries: ReleaseEntry[] = [];\n  private readonly listeners: TimelineListener[] = [];\n  private nextId = 1;\n\n  subscribe(listener: TimelineListener): () => void {\n    if (typeof listener !== \"function\") throw new TypeError(\"Invalid listener\");\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private emit(kind: TimelineEvent[\"kind\"], entry: ReleaseEntry): void {\n    const event = { kind, entry: copy(entry) } as TimelineEvent;\n    for (const listener of [...this.listeners]) listener(event);\n  }\n\n  private indexOf(id: number): number {\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    return this.entries.findIndex(entry => entry.id === id);\n  }\n\n  append(label: string, note?: string): ReleaseEntry {\n    if (typeof label !== \"string\" || label.trim() === \"\" ||\n        (note !== undefined && typeof note !== \"string\")) throw new TypeError(\"Invalid entry\");\n    const entry: ReleaseEntry = { id: this.nextId++, label: label.trim(), note: note ?? null };\n    this.entries.push(entry);\n    this.emit(\"added\", entry);\n    return copy(entry);\n  }\n\n  rename(id: number, label: string): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (typeof label !== \"string\" || label.trim() === \"\") throw new TypeError(\"Invalid label\");\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    this.entries[index].label = label.trim();\n    this.emit(\"renamed\", this.entries[index]);\n    return copy(this.entries[index]);\n  }\n\n  remove(id: number): boolean {\n    const index = this.indexOf(id);\n    if (index < 0) return false;\n    const [entry] = this.entries.splice(index, 1);\n    this.emit(\"removed\", entry);\n    return true;\n  }\n\n  promote(id: number): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    const [entry] = this.entries.splice(index, 1);\n    this.entries.unshift(entry);\n    this.emit(\"promoted\", entry);\n    return copy(entry);\n  }\n\n  snapshot(): ReleaseEntry[] {\n    return this.entries.map(copy);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ddcfbce998e78f6e17bfc96ca081bbd3cfffe0503054dbd97a41b10f8a122d20"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:13\n    throw new Error('Wrong registration removed: ' + calls.join(','));\n    ^\n\nError: Wrong registration removed: B,A\n    at Object.<anonymous> (/work/solution.test.js:13:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "88b3ef12c082485a3de58d3efaac152f10eceb98644a8dbdbdaab246d8840632",
+    "duration_ms": 5139,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

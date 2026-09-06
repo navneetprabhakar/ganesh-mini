@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0141",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b479918e95467cb3b7ba88f1515c1b5daa98275e93da1811adf37f4208dd6cd9",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import duplicate_bundle\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_bundle(self):\n        value = []\n        for _ in range(600):\n            value = [value]\n        error = None\n        try:\n            duplicate_bundle([{'value': value}])\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "86150afeb979589578b42a8c9d408c3c0482d67844e3df0b964a81a08130421b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d5989ced8734f9302cc90bc1164de5272900012900b604a851c72e5429b028e4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`duplicate_bundle(bundle)` must accept a list of dictionaries and return a deep copy. Every mutable object in the result must be independent from the input. Aliasing inside the bundle must be preserved: if two input paths refer to the same object, the corresponding result paths must refer to one shared cloned object. The input must not be mutated. An empty list returns a distinct empty list. Raise `TypeError` if `bundle` is not a list and `ValueError` if any top-level element is not a dictionary.\n\nKnown-bad source:\n```python\ndef duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return [dict(item) for item in bundle]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d5989ced8734f9302cc90bc1164de5272900012900b604a851c72e5429b028e4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`duplicate_bundle(bundle)` must accept a list of dictionaries and return a deep copy. Every mutable object in the result must be independent from the input. Aliasing inside the bundle must be preserved: if two input paths refer to the same object, the corresponding result paths must refer to one shared cloned object. The input must not be mutated. An empty list returns a distinct empty list. Raise `TypeError` if `bundle` is not a list and `ValueError` if any top-level element is not a dictionary.\n\nKnown-bad source:\n```python\ndef duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return [dict(item) for item in bundle]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0141",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return [dict(item) for item in bundle]\n",
+          "label": "Performs only a shallow copy, leaving nested mutable objects aliased to the input and failing to preserve bundle-wide cloned aliasing.",
+          "sha256": "248e283351355bd29cf7f828f86507ad501bd9afe501f8b1cf6be6b936b96c91"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return deepcopy(bundle)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "32d91bc29bcb0cbae0c7813519ae2f30de0e0b15ce031bbe381c37a0cfcffc8c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import duplicate_bundle\n\n\nclass DuplicateBundleTests(unittest.TestCase):\n    def test_deep_copy_makes_mutable_objects_independent(self):\n        bundle = [\n            {\"name\": \"one\", \"nested\": {\"values\": [1, 2]}},\n            {\"name\": \"two\", \"tags\": {\"a\", \"b\"}},\n        ]\n        result = duplicate_bundle(bundle)\n        self.assertEqual(result, bundle)\n        self.assertIsNot(result, bundle)\n        self.assertIsNot(result[0], bundle[0])\n        self.assertIsNot(result[0][\"nested\"], bundle[0][\"nested\"])\n        self.assertIsNot(result[0][\"nested\"][\"values\"], bundle[0][\"nested\"][\"values\"])\n        self.assertIsNot(result[1][\"tags\"], bundle[1][\"tags\"])\n        result[0][\"nested\"][\"values\"].append(3)\n        result[1][\"tags\"].add(\"c\")\n        self.assertEqual(bundle[0][\"nested\"][\"values\"], [1, 2])\n        self.assertEqual(bundle[1][\"tags\"], {\"a\", \"b\"})\n\n    def test_aliasing_across_paths_and_top_level_entries_is_preserved(self):\n        shared_list = [{\"value\": 1}]\n        shared_dict = {\"left\": shared_list, \"right\": shared_list}\n        bundle = [shared_dict, shared_dict]\n        result = duplicate_bundle(bundle)\n        self.assertIs(result[0], result[1])\n        self.assertIs(result[0][\"left\"], result[0][\"right\"])\n        self.assertIsNot(result[0], shared_dict)\n        self.assertIsNot(result[0][\"left\"], shared_list)\n        self.assertIsNot(result[0][\"left\"][0], shared_list[0])\n\n    def test_cycles_are_cloned_without_pointing_to_input(self):\n        item = {}\n        item[\"self\"] = item\n        result = duplicate_bundle([item])\n        self.assertIsNot(result[0], item)\n        self.assertIs(result[0][\"self\"], result[0])\n\n    def test_input_is_not_mutated(self):\n        shared = [1]\n        bundle = [{\"a\": shared}, {\"b\": shared}]\n        duplicate_bundle(bundle)\n        self.assertEqual(bundle, [{\"a\": [1]}, {\"b\": [1]}])\n        self.assertIs(bundle[0][\"a\"], bundle[1][\"b\"])\n\n    def test_empty_returns_distinct_empty_list(self):\n        bundle = []\n        result = duplicate_bundle(bundle)\n        self.assertEqual(result, [])\n        self.assertIsNot(result, bundle)\n\n    def test_validation(self):\n        for value in (None, (), {}, \"items\"):\n            with self.subTest(value=value), self.assertRaises(TypeError):\n                duplicate_bundle(value)\n        for bundle in ([{} , 1], [\"bad\"], [[], {}]):\n            with self.subTest(bundle=bundle), self.assertRaises(ValueError):\n                duplicate_bundle(bundle)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "2b582abbdc27a9f9cce8449b474f2f0b5f9cc2c55f07c4bd71ac78d0e3ae55f0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d5989ced8734f9302cc90bc1164de5272900012900b604a851c72e5429b028e4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`duplicate_bundle(bundle)` must accept a list of dictionaries and return a deep copy. Every mutable object in the result must be independent from the input. Aliasing inside the bundle must be preserved: if two input paths refer to the same object, the corresponding result paths must refer to one shared cloned object. The input must not be mutated. An empty list returns a distinct empty list. Raise `TypeError` if `bundle` is not a list and `ValueError` if any top-level element is not a dictionary.\n\nKnown-bad source:\n```python\ndef duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return [dict(item) for item in bundle]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d5989ced8734f9302cc90bc1164de5272900012900b604a851c72e5429b028e4",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`duplicate_bundle(bundle)` must accept a list of dictionaries and return a deep copy. Every mutable object in the result must be independent from the input. Aliasing inside the bundle must be preserved: if two input paths refer to the same object, the corresponding result paths must refer to one shared cloned object. The input must not be mutated. An empty list returns a distinct empty list. Raise `TypeError` if `bundle` is not a list and `ValueError` if any top-level element is not a dictionary.\n\nKnown-bad source:\n```python\ndef duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return [dict(item) for item in bundle]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0141",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return [dict(item) for item in bundle]\n",
+          "label": "Performs only a shallow copy, leaving nested mutable objects aliased to the input and failing to preserve bundle-wide cloned aliasing.",
+          "sha256": "248e283351355bd29cf7f828f86507ad501bd9afe501f8b1cf6be6b936b96c91"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef duplicate_bundle(bundle):\n    if not isinstance(bundle, list):\n        raise TypeError(\"bundle must be a list\")\n    if any(not isinstance(item, dict) for item in bundle):\n        raise ValueError(\"bundle items must be dictionaries\")\n    return deepcopy(bundle)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "32d91bc29bcb0cbae0c7813519ae2f30de0e0b15ce031bbe381c37a0cfcffc8c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_bundle (__main__.Probe.test_finite_bundle)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_finite_bundle\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "a50db4a9d1abf9fc322478c81f5fc0e717d4b74dbf5c54bbe1f589ee2753fa2c",
+    "duration_ms": 497,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

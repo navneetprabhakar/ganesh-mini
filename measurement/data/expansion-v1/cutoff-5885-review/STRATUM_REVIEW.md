@@ -1,14 +1,15 @@
 # Quality follow-up decision
 
-Current checkpoint: **774 holds (771 additive plus historical three)**; 2,007
+Current checkpoint: **791 holds (788 additive plus historical three)**; 2,037
 unique outside-sample inspections. All 544 array queue positions inspected;
 Rust generation queue complete: 684 of 684 inspected.
 Python generation queue complete: 684 of 684 inspected; batches 45–46 backed up.
-Python repair queue: 90 of 426 inspected; continue position 91. Batches 5–6 backed up.
+Python repair queue: 120 of 426 checkpointed; batches 7–8 backed up.
+Working continuation: positions 121–126 read; see PYTHON_REPAIR_REVIEW_9_WORKING.md.
 GCS authentication restored; preserved archive through 285 now verified.
-GCS verified through 774 holds / Python repair batch 6 / 2,007 outside-sample inspections.
-See QUALITY_STRATUM_774_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
-See PYTHON_REPAIR_REVIEW_6.md. Remaining strata and quality criteria are pending;
+GCS verified through 791 holds / Python repair batch 8 / 2,037 outside-sample inspections.
+See QUALITY_STRATUM_791_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
+See PYTHON_REPAIR_REVIEW_8.md. Remaining strata and quality criteria are pending;
 inspection is not admission. All 97 data tooling tests pass.
 No training seal or new VM. Older entries are historical.
 

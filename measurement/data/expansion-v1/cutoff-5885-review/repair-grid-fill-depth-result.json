@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0114",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c70a67c8b8a05bb488df7f9b0ef63d54987ae1a4c646758b044f83b725c77c86",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import make_grid\n\n\nclass ReviewProbe(unittest.TestCase):\n    def test_finite_nested_fill(self):\n        value = []\n        cursor = value\n        for _ in range(600):\n            child = []\n            cursor.append(child)\n            cursor = child\n        error = None\n        try:\n            make_grid(1, 1, value)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "59480dbc9760612ead5137277af5bbedecfb84478295db774f0de8a6a92a5932"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cf1019764b14ba1b1177e5501af0ae098bafcced7626b5c58b7d5d7345113cae",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_grid(rows, columns, fill)` must return a list containing `rows` lists of length `columns`. Dimensions must be nonnegative integers; booleans and non-integers raise `TypeError`, and negative values raise `ValueError`. Every cell must contain an independent deep copy of `fill`: mutating the original object or any returned cell must not affect another cell. Rows must likewise be distinct. Zero in either dimension produces the naturally shaped empty result, and the function must not mutate `fill`.\n\n```python\nfrom copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill)] * columns for _ in range(rows)]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cf1019764b14ba1b1177e5501af0ae098bafcced7626b5c58b7d5d7345113cae",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_grid(rows, columns, fill)` must return a list containing `rows` lists of length `columns`. Dimensions must be nonnegative integers; booleans and non-integers raise `TypeError`, and negative values raise `ValueError`. Every cell must contain an independent deep copy of `fill`: mutating the original object or any returned cell must not affect another cell. Rows must likewise be distinct. Zero in either dimension produces the naturally shaped empty result, and the function must not mutate `fill`.\n\n```python\nfrom copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill)] * columns for _ in range(rows)]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0114",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill)] * columns for _ in range(rows)]\n",
+          "label": "Cells within each row alias the same copied object instead of being independent deep copies.",
+          "sha256": "a88a140ce3fb70b5f777a45feb1316c14a8fe8525f270e462ba59fcbc2efe48c"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill) for _ in range(columns)] for _ in range(rows)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "29c9c11d7f5c99a5154e6b8f15c87961b76e2dad0ac78fab0dc2a230e2fdaf5c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import make_grid\n\n\nclass MakeGridTests(unittest.TestCase):\n    def test_shape_and_scalar_fill(self):\n        grid = make_grid(2, 3, 7)\n        self.assertEqual(grid, [[7, 7, 7], [7, 7, 7]])\n        self.assertIsNot(grid[0], grid[1])\n\n    def test_every_cell_is_an_independent_deep_copy(self):\n        fill = {\"items\": [[1], {\"value\": 2}]}\n        grid = make_grid(2, 2, fill)\n        self.assertEqual(grid, [[fill, fill], [fill, fill]])\n        for row in grid:\n            for cell in row:\n                self.assertIsNot(cell, fill)\n        self.assertIsNot(grid[0][0], grid[0][1])\n        self.assertIsNot(grid[0][0], grid[1][0])\n        self.assertIsNot(grid[0][0][\"items\"], grid[0][1][\"items\"])\n\n        grid[0][0][\"items\"][0].append(99)\n        grid[0][0][\"items\"][1][\"value\"] = 100\n        self.assertEqual(grid[0][1], fill)\n        self.assertEqual(grid[1][0], fill)\n        self.assertEqual(grid[1][1], fill)\n        self.assertEqual(fill, {\"items\": [[1], {\"value\": 2}]})\n\n    def test_mutating_original_after_creation_does_not_change_cells(self):\n        fill = [1, {\"nested\": [2]}]\n        grid = make_grid(1, 2, fill)\n        fill.append(3)\n        fill[1][\"nested\"].append(4)\n        self.assertEqual(grid, [[[1, {\"nested\": [2]}], [1, {\"nested\": [2]}]]])\n\n    def test_zero_dimensions_have_natural_shapes(self):\n        self.assertEqual(make_grid(0, 3, []), [])\n        grid = make_grid(3, 0, [])\n        self.assertEqual(grid, [[], [], []])\n        self.assertIsNot(grid[0], grid[1])\n        self.assertIsNot(grid[1], grid[2])\n        self.assertEqual(make_grid(0, 0, object()), [])\n\n    def test_invalid_dimension_types(self):\n        invalid = (True, False, 1.0, \"2\", None)\n        for value in invalid:\n            with self.subTest(dimension=\"rows\", value=value):\n                with self.assertRaises(TypeError):\n                    make_grid(value, 1, None)\n            with self.subTest(dimension=\"columns\", value=value):\n                with self.assertRaises(TypeError):\n                    make_grid(1, value, None)\n\n    def test_negative_dimensions(self):\n        with self.assertRaises(ValueError):\n            make_grid(-1, 2, None)\n        with self.assertRaises(ValueError):\n            make_grid(2, -1, None)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "e488f2e3ce22f802748b5b8af259585f507713e70b8b10f703731f09f01bfc8f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cf1019764b14ba1b1177e5501af0ae098bafcced7626b5c58b7d5d7345113cae",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_grid(rows, columns, fill)` must return a list containing `rows` lists of length `columns`. Dimensions must be nonnegative integers; booleans and non-integers raise `TypeError`, and negative values raise `ValueError`. Every cell must contain an independent deep copy of `fill`: mutating the original object or any returned cell must not affect another cell. Rows must likewise be distinct. Zero in either dimension produces the naturally shaped empty result, and the function must not mutate `fill`.\n\n```python\nfrom copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill)] * columns for _ in range(rows)]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cf1019764b14ba1b1177e5501af0ae098bafcced7626b5c58b7d5d7345113cae",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_grid(rows, columns, fill)` must return a list containing `rows` lists of length `columns`. Dimensions must be nonnegative integers; booleans and non-integers raise `TypeError`, and negative values raise `ValueError`. Every cell must contain an independent deep copy of `fill`: mutating the original object or any returned cell must not affect another cell. Rows must likewise be distinct. Zero in either dimension produces the naturally shaped empty result, and the function must not mutate `fill`.\n\n```python\nfrom copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill)] * columns for _ in range(rows)]\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0114",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill)] * columns for _ in range(rows)]\n",
+          "label": "Cells within each row alias the same copied object instead of being independent deep copies.",
+          "sha256": "a88a140ce3fb70b5f777a45feb1316c14a8fe8525f270e462ba59fcbc2efe48c"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef make_grid(rows, columns, fill):\n    for name, value in ((\"rows\", rows), (\"columns\", columns)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value < 0:\n            raise ValueError(f\"{name} must be nonnegative\")\n\n    return [[deepcopy(fill) for _ in range(columns)] for _ in range(rows)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "29c9c11d7f5c99a5154e6b8f15c87961b76e2dad0ac78fab0dc2a230e2fdaf5c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_nested_fill (__main__.ReviewProbe.test_finite_nested_fill)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 18, in test_finite_nested_fill\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "deb8558e7924691554d314ca8603f0728b826f5ef80322a63d5b53b284c84a52",
+    "duration_ms": 680,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

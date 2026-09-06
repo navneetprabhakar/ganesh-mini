@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0123",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4b54a84d8d63f428a141333225c01764a43f36f387f6ec47fe8883e1e088f7a5",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import order_entries\n\n\nclass OrderPolicyTests(unittest.TestCase):\n    def test_unhashable_policy_has_required_error(self):\n        with self.assertRaisesRegex(ValueError, \"^invalid policy$\"):\n            order_entries([], [])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "4018479130ba974b7b7c64bc8f3b31dadd5865510844e0b5ff0c60f0ddd5860e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2eb7b44a7cc36c72ec482c39874bcbab4908942e803ab57e433a71142a0ad454",
+      "text": "Implement a new function `order_entries(entries, policy)` in `solution.py`. `entries` must be a list of dictionaries, and each dictionary must contain an integer `rank` that is not a Boolean. `policy` must be exactly `\"low\"`, `\"high\"`, or `\"keep\"`; validate it even when the list is empty.\n\nFor `\"low\"`, return entries in ascending rank order. For `\"high\"`, return descending rank order. Equal ranks retain their original relative order. For `\"keep\"`, retain the original order. In every mode, return a full deep copy: the returned list, dictionaries, and any nested mutable values must not alias the input. Never mutate the input. Raise `ValueError(\"invalid policy\")` for an unsupported policy and `ValueError(\"invalid entries\")` for malformed entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2eb7b44a7cc36c72ec482c39874bcbab4908942e803ab57e433a71142a0ad454",
+      "text": "Implement a new function `order_entries(entries, policy)` in `solution.py`. `entries` must be a list of dictionaries, and each dictionary must contain an integer `rank` that is not a Boolean. `policy` must be exactly `\"low\"`, `\"high\"`, or `\"keep\"`; validate it even when the list is empty.\n\nFor `\"low\"`, return entries in ascending rank order. For `\"high\"`, return descending rank order. Equal ranks retain their original relative order. For `\"keep\"`, retain the original order. In every mode, return a full deep copy: the returned list, dictionaries, and any nested mutable values must not alias the input. Never mutate the input. Raise `ValueError(\"invalid policy\")` for an unsupported policy and `ValueError(\"invalid entries\")` for malformed entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0123",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef order_entries(entries, policy):\n    if policy not in {\"low\", \"high\", \"keep\"}:\n        raise ValueError(\"invalid policy\")\n    if not isinstance(entries, list) or any(\n        not isinstance(item, dict)\n        or \"rank\" not in item\n        or not isinstance(item[\"rank\"], int)\n        or isinstance(item[\"rank\"], bool)\n        for item in entries\n    ):\n        raise ValueError(\"invalid entries\")\n    copied = deepcopy(entries)\n    if policy == \"keep\":\n        return entries\n    return sorted(copied, key=lambda item: item[\"rank\"], reverse=policy == \"high\")\n",
+          "label": "The keep policy returns the original aliased list instead of the required deep copy.",
+          "sha256": "67d2074e130a7ef5a2dcb18453a60ffe5d4c60210d4bd49a3d9ee53143ba2933"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef order_entries(entries, policy):\n    if policy not in {\"low\", \"high\", \"keep\"}:\n        raise ValueError(\"invalid policy\")\n    if not isinstance(entries, list) or any(\n        not isinstance(item, dict)\n        or \"rank\" not in item\n        or not isinstance(item[\"rank\"], int)\n        or isinstance(item[\"rank\"], bool)\n        for item in entries\n    ):\n        raise ValueError(\"invalid entries\")\n    copied = deepcopy(entries)\n    if policy == \"keep\":\n        return copied\n    return sorted(copied, key=lambda item: item[\"rank\"], reverse=policy == \"high\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1132e730f2fb834e070263c0c27df9c3c64a74afb5bb4c2a41d571f731499db9"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom copy import deepcopy\n\nfrom solution import order_entries\n\n\nclass OrderEntriesTests(unittest.TestCase):\n    def setUp(self):\n        self.entries = [\n            {\"rank\": 2, \"name\": \"a\", \"nested\": {\"items\": [1]}},\n            {\"rank\": 1, \"name\": \"b\", \"nested\": {\"items\": [2]}},\n            {\"rank\": 2, \"name\": \"c\", \"nested\": {\"items\": [3]}},\n        ]\n\n    def test_low_is_stable_and_deep_copied(self):\n        original = deepcopy(self.entries)\n        result = order_entries(self.entries, \"low\")\n        self.assertEqual([item[\"name\"] for item in result], [\"b\", \"a\", \"c\"])\n        self.assertEqual(self.entries, original)\n        source_by_name = {item[\"name\"]: item for item in self.entries}\n        for item in result:\n            source = source_by_name[item[\"name\"]]\n            self.assertIsNot(item, source)\n            self.assertIsNot(item[\"nested\"], source[\"nested\"])\n            self.assertIsNot(item[\"nested\"][\"items\"], source[\"nested\"][\"items\"])\n\n    def test_high_is_stable(self):\n        result = order_entries(self.entries, \"high\")\n        self.assertEqual([item[\"name\"] for item in result], [\"a\", \"c\", \"b\"])\n\n    def test_keep_retains_order_but_not_aliases(self):\n        result = order_entries(self.entries, \"keep\")\n        self.assertEqual(result, self.entries)\n        self.assertIsNot(result, self.entries)\n        self.assertIsNot(result[0], self.entries[0])\n        result[0][\"nested\"][\"items\"].append(9)\n        self.assertEqual(self.entries[0][\"nested\"][\"items\"], [1])\n\n    def test_empty_and_policy_validation(self):\n        result = order_entries([], \"keep\")\n        self.assertEqual(result, [])\n        self.assertIsInstance(result, list)\n        for policy in (\"LOW\", \"\", None, 1):\n            with self.subTest(policy=policy):\n                with self.assertRaisesRegex(ValueError, \"^invalid policy$\"):\n                    order_entries([], policy)\n\n    def test_invalid_entries(self):\n        invalid = [None, {}, [1], [{\"rank\": True}], [{\"rank\": 1.0}], [{\"x\": 1}]]\n        for entries in invalid:\n            with self.subTest(entries=entries):\n                with self.assertRaisesRegex(ValueError, \"^invalid entries$\"):\n                    order_entries(entries, \"low\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "cd1ae8179f863d63c83ddb0236bf4e322f3244daade3b02624ea895d9a37b8a5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "2eb7b44a7cc36c72ec482c39874bcbab4908942e803ab57e433a71142a0ad454",
+      "text": "Implement a new function `order_entries(entries, policy)` in `solution.py`. `entries` must be a list of dictionaries, and each dictionary must contain an integer `rank` that is not a Boolean. `policy` must be exactly `\"low\"`, `\"high\"`, or `\"keep\"`; validate it even when the list is empty.\n\nFor `\"low\"`, return entries in ascending rank order. For `\"high\"`, return descending rank order. Equal ranks retain their original relative order. For `\"keep\"`, retain the original order. In every mode, return a full deep copy: the returned list, dictionaries, and any nested mutable values must not alias the input. Never mutate the input. Raise `ValueError(\"invalid policy\")` for an unsupported policy and `ValueError(\"invalid entries\")` for malformed entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "2eb7b44a7cc36c72ec482c39874bcbab4908942e803ab57e433a71142a0ad454",
+      "text": "Implement a new function `order_entries(entries, policy)` in `solution.py`. `entries` must be a list of dictionaries, and each dictionary must contain an integer `rank` that is not a Boolean. `policy` must be exactly `\"low\"`, `\"high\"`, or `\"keep\"`; validate it even when the list is empty.\n\nFor `\"low\"`, return entries in ascending rank order. For `\"high\"`, return descending rank order. Equal ranks retain their original relative order. For `\"keep\"`, retain the original order. In every mode, return a full deep copy: the returned list, dictionaries, and any nested mutable values must not alias the input. Never mutate the input. Raise `ValueError(\"invalid policy\")` for an unsupported policy and `ValueError(\"invalid entries\")` for malformed entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0123",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef order_entries(entries, policy):\n    if policy not in {\"low\", \"high\", \"keep\"}:\n        raise ValueError(\"invalid policy\")\n    if not isinstance(entries, list) or any(\n        not isinstance(item, dict)\n        or \"rank\" not in item\n        or not isinstance(item[\"rank\"], int)\n        or isinstance(item[\"rank\"], bool)\n        for item in entries\n    ):\n        raise ValueError(\"invalid entries\")\n    copied = deepcopy(entries)\n    if policy == \"keep\":\n        return entries\n    return sorted(copied, key=lambda item: item[\"rank\"], reverse=policy == \"high\")\n",
+          "label": "The keep policy returns the original aliased list instead of the required deep copy.",
+          "sha256": "67d2074e130a7ef5a2dcb18453a60ffe5d4c60210d4bd49a3d9ee53143ba2933"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef order_entries(entries, policy):\n    if policy not in {\"low\", \"high\", \"keep\"}:\n        raise ValueError(\"invalid policy\")\n    if not isinstance(entries, list) or any(\n        not isinstance(item, dict)\n        or \"rank\" not in item\n        or not isinstance(item[\"rank\"], int)\n        or isinstance(item[\"rank\"], bool)\n        for item in entries\n    ):\n        raise ValueError(\"invalid entries\")\n    copied = deepcopy(entries)\n    if policy == \"keep\":\n        return copied\n    return sorted(copied, key=lambda item: item[\"rank\"], reverse=policy == \"high\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1132e730f2fb834e070263c0c27df9c3c64a74afb5bb4c2a41d571f731499db9"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_unhashable_policy_has_required_error (__main__.OrderPolicyTests.test_unhashable_policy_has_required_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_unhashable_policy_has_required_error\n    order_entries([], [])\n  File \"/work/solution.py\", line 5, in order_entries\n    if policy not in {\"low\", \"high\", \"keep\"}:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "0edf63611891cb3e0de452c4e755dcbeb4067d1ed54cd5a2eefa2e8ad8028232",
+    "duration_ms": 422,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

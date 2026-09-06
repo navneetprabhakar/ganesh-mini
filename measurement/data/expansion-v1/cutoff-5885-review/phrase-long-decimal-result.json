@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0175",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "8c219787e9df8fc95b9a488da52df13e2504e90f6dc81522a701d6590ae3da6d",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import analyze_phrase\n\n\nclass PhraseLongDecimalTests(unittest.TestCase):\n    def test_digit_run_with_leading_zeroes(self):\n        self.assertEqual(analyze_phrase('0' * 5000 + '7')['quantities'], [7])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "2873ff7a9f8bcac0b8aedb6d5e9e2da587c94119f52909eb126bc7c9ed31b94f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c94bf7da1cf4c454ff27aa94ded864f69359a2d7c20bdf7a7c2b174dc59cf88d",
+      "text": "Create `solution.py` with a top-level function `analyze_phrase(text, lexicons=None, omit_leading=False)`.\n\nTokenize `text` into ASCII words (internal apostrophes are allowed) and unsigned digit runs; ignore all other characters. If `omit_leading` is true, discard the first token before performing any analysis. Return a dictionary with exactly these keys:\n\n- `terms`: lowercase word tokens, excluding `a`, `an`, `and`, `or`, `the`, `to`, and `of`, in encounter order.\n- `last_term`: the final entry of `terms`, or `None` when there is none.\n- `quantities`: digit tokens converted to integers, in encounter order.\n- `capitalized`: original word tokens whose first character is uppercase, in encounter order.\n- `classes`: lexicon names having at least one case-insensitive word match, sorted lexicographically and included at most once.\n\n`lexicons` is either `None` or a mapping from string class names to iterables of strings. Repeated tokens remain repeated in token-derived lists. An empty string produces empty lists and `None`. Raise `TypeError` if `text` is not a string, `omit_leading` is not a boolean, the lexicon is not a mapping, or any lexicon name or member is not a string. Do not mutate or alias any caller-owned collection; every call must return fresh lists and dictionaries. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c94bf7da1cf4c454ff27aa94ded864f69359a2d7c20bdf7a7c2b174dc59cf88d",
+      "text": "Create `solution.py` with a top-level function `analyze_phrase(text, lexicons=None, omit_leading=False)`.\n\nTokenize `text` into ASCII words (internal apostrophes are allowed) and unsigned digit runs; ignore all other characters. If `omit_leading` is true, discard the first token before performing any analysis. Return a dictionary with exactly these keys:\n\n- `terms`: lowercase word tokens, excluding `a`, `an`, `and`, `or`, `the`, `to`, and `of`, in encounter order.\n- `last_term`: the final entry of `terms`, or `None` when there is none.\n- `quantities`: digit tokens converted to integers, in encounter order.\n- `capitalized`: original word tokens whose first character is uppercase, in encounter order.\n- `classes`: lexicon names having at least one case-insensitive word match, sorted lexicographically and included at most once.\n\n`lexicons` is either `None` or a mapping from string class names to iterables of strings. Repeated tokens remain repeated in token-derived lists. An empty string produces empty lists and `None`. Raise `TypeError` if `text` is not a string, `omit_leading` is not a boolean, the lexicon is not a mapping, or any lexicon name or member is not a string. Do not mutate or alias any caller-owned collection; every call must return fresh lists and dictionaries. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0175",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\nfrom collections.abc import Mapping\n\n_TOKEN_RE = re.compile(r\"[A-Za-z]+(?:'[A-Za-z]+)*|[0-9]+\")\n_STOP_WORDS = {\"a\", \"an\", \"and\", \"or\", \"the\", \"to\", \"of\"}\n\n\ndef analyze_phrase(text, lexicons=None, omit_leading=False):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    if not isinstance(omit_leading, bool):\n        raise TypeError(\"omit_leading must be a boolean\")\n    if lexicons is None:\n        lexicons = {}\n    if not isinstance(lexicons, Mapping):\n        raise TypeError(\"lexicons must be a mapping\")\n\n    normalized = {}\n    for name, members in lexicons.items():\n        if not isinstance(name, str):\n            raise TypeError(\"lexicon names must be strings\")\n        try:\n            values = list(members)\n        except TypeError as exc:\n            raise TypeError(\"lexicon members must be iterable\") from exc\n        if any(not isinstance(member, str) for member in values):\n            raise TypeError(\"lexicon members must be strings\")\n        normalized[name] = {member.lower() for member in values}\n\n    tokens = _TOKEN_RE.findall(text)\n    if omit_leading and tokens:\n        tokens = tokens[:-1]\n\n    words = [token for token in tokens if token[0].isalpha()]\n    lowered = [word.lower() for word in words]\n    terms = [word for word in lowered if word not in _STOP_WORDS]\n\n    return {\n        \"terms\": terms,\n        \"last_term\": terms[-1] if terms else None,\n        \"quantities\": [int(token) for token in tokens if token.isdigit()],\n        \"capitalized\": [word for word in words if word[0].isupper()],\n        \"classes\": sorted(\n            name\n            for name, members in normalized.items()\n            if any(word in members for word in lowered)\n        ),\n    }\n",
+          "label": "When omit_leading is true, it removes the final token instead of the first token.",
+          "sha256": "f8523b632cb34cf47de31d34cb7899943e6c135a297c14b718055b2c4fa4e2e2"
+        }
+      ],
+      "reference": {
+        "code": "import re\nfrom collections.abc import Mapping\n\n_TOKEN_RE = re.compile(r\"[A-Za-z]+(?:'[A-Za-z]+)*|[0-9]+\")\n_STOP_WORDS = {\"a\", \"an\", \"and\", \"or\", \"the\", \"to\", \"of\"}\n\n\ndef analyze_phrase(text, lexicons=None, omit_leading=False):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    if not isinstance(omit_leading, bool):\n        raise TypeError(\"omit_leading must be a boolean\")\n    if lexicons is None:\n        lexicons = {}\n    if not isinstance(lexicons, Mapping):\n        raise TypeError(\"lexicons must be a mapping\")\n\n    normalized = {}\n    for name, members in lexicons.items():\n        if not isinstance(name, str):\n            raise TypeError(\"lexicon names must be strings\")\n        try:\n            values = list(members)\n        except TypeError as exc:\n            raise TypeError(\"lexicon members must be iterable\") from exc\n        if any(not isinstance(member, str) for member in values):\n            raise TypeError(\"lexicon members must be strings\")\n        normalized[name] = {member.lower() for member in values}\n\n    tokens = _TOKEN_RE.findall(text)\n    if omit_leading and tokens:\n        tokens = tokens[1:]\n\n    words = [token for token in tokens if token[0].isalpha()]\n    lowered = [word.lower() for word in words]\n    terms = [word for word in lowered if word not in _STOP_WORDS]\n\n    return {\n        \"terms\": terms,\n        \"last_term\": terms[-1] if terms else None,\n        \"quantities\": [int(token) for token in tokens if token.isdigit()],\n        \"capitalized\": [word for word in words if word[0].isupper()],\n        \"classes\": sorted(\n            name\n            for name, members in normalized.items()\n            if any(word in members for word in lowered)\n        ),\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "17f1513abcc651fcd10febb4f296d801b1865c707e092968c70e847d63baa926"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import OrderedDict\n\nfrom solution import analyze_phrase\n\n\nclass AnalyzePhraseTests(unittest.TestCase):\n    def test_full_analysis_preserves_token_order_and_repetition(self):\n        lexicons = OrderedDict([\n            (\"people\", [\"alice\", \"o'reilly\"]),\n            (\"actions\", [\"RUN\", \"jump\"]),\n            (\"unused\", [\"missing\"]),\n        ])\n        result = analyze_phrase(\"The Alice, Alice and O'Reilly can't RUN 007 or 12!\", lexicons)\n        self.assertEqual(\n            result,\n            {\n                \"terms\": [\"alice\", \"alice\", \"o'reilly\", \"can't\", \"run\"],\n                \"last_term\": \"run\",\n                \"quantities\": [7, 12],\n                \"capitalized\": [\"The\", \"Alice\", \"Alice\", \"O'Reilly\", \"RUN\"],\n                \"classes\": [\"actions\", \"people\"],\n            },\n        )\n        self.assertEqual(list(result), [\"terms\", \"last_term\", \"quantities\", \"capitalized\", \"classes\"])\n\n    def test_ascii_tokenization_and_omit_leading(self):\n        result = analyze_phrase(\"99 caf\u00e9 _Rock rock'n'roll 3\", omit_leading=True)\n        self.assertEqual(result[\"terms\"], [\"caf\", \"rock\", \"rock'n'roll\"])\n        self.assertEqual(result[\"quantities\"], [3])\n        self.assertEqual(result[\"capitalized\"], [\"Rock\"])\n        self.assertIsNone(analyze_phrase(\"the and 4\")[\"last_term\"])\n\n    def test_empty_and_only_ignored_content(self):\n        expected = {\"terms\": [], \"last_term\": None, \"quantities\": [], \"capitalized\": [], \"classes\": []}\n        self.assertEqual(analyze_phrase(\"\"), expected)\n        self.assertEqual(analyze_phrase(\"a an and or the to of\"), expected)\n        self.assertEqual(analyze_phrase(\"single\", omit_leading=True), expected)\n\n    def test_results_are_fresh_and_inputs_are_unchanged(self):\n        lexicons = {\"kind\": [\"word\"]}\n        before = {\"kind\": [\"word\"]}\n        first = analyze_phrase(\"Word 2\", lexicons)\n        second = analyze_phrase(\"Word 2\", lexicons)\n        first[\"terms\"].append(\"changed\")\n        first[\"classes\"].clear()\n        first[\"extra\"] = True\n        self.assertEqual(lexicons, before)\n        self.assertEqual(second[\"terms\"], [\"word\"])\n        self.assertEqual(second[\"classes\"], [\"kind\"])\n        self.assertNotEqual(id(first[\"terms\"]), id(second[\"terms\"]))\n\n    def test_invalid_arguments(self):\n        for value in (None, 4, b\"text\"):\n            with self.subTest(text=value):\n                with self.assertRaises(TypeError):\n                    analyze_phrase(value)\n        for value in (0, 1, None, \"yes\"):\n            with self.subTest(omit=value):\n                with self.assertRaises(TypeError):\n                    analyze_phrase(\"x\", omit_leading=value)\n        with self.assertRaises(TypeError):\n            analyze_phrase(\"x\", [(\"name\", [\"x\"])])\n        with self.assertRaises(TypeError):\n            analyze_phrase(\"x\", {1: [\"x\"]})\n        with self.assertRaises(TypeError):\n            analyze_phrase(\"x\", {\"name\": [\"x\", 2]})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "6ea53e8db0caa5849bdead8d26c5aa4026bbcb1add928c0e485027db4de351d4"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c94bf7da1cf4c454ff27aa94ded864f69359a2d7c20bdf7a7c2b174dc59cf88d",
+      "text": "Create `solution.py` with a top-level function `analyze_phrase(text, lexicons=None, omit_leading=False)`.\n\nTokenize `text` into ASCII words (internal apostrophes are allowed) and unsigned digit runs; ignore all other characters. If `omit_leading` is true, discard the first token before performing any analysis. Return a dictionary with exactly these keys:\n\n- `terms`: lowercase word tokens, excluding `a`, `an`, `and`, `or`, `the`, `to`, and `of`, in encounter order.\n- `last_term`: the final entry of `terms`, or `None` when there is none.\n- `quantities`: digit tokens converted to integers, in encounter order.\n- `capitalized`: original word tokens whose first character is uppercase, in encounter order.\n- `classes`: lexicon names having at least one case-insensitive word match, sorted lexicographically and included at most once.\n\n`lexicons` is either `None` or a mapping from string class names to iterables of strings. Repeated tokens remain repeated in token-derived lists. An empty string produces empty lists and `None`. Raise `TypeError` if `text` is not a string, `omit_leading` is not a boolean, the lexicon is not a mapping, or any lexicon name or member is not a string. Do not mutate or alias any caller-owned collection; every call must return fresh lists and dictionaries. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c94bf7da1cf4c454ff27aa94ded864f69359a2d7c20bdf7a7c2b174dc59cf88d",
+      "text": "Create `solution.py` with a top-level function `analyze_phrase(text, lexicons=None, omit_leading=False)`.\n\nTokenize `text` into ASCII words (internal apostrophes are allowed) and unsigned digit runs; ignore all other characters. If `omit_leading` is true, discard the first token before performing any analysis. Return a dictionary with exactly these keys:\n\n- `terms`: lowercase word tokens, excluding `a`, `an`, `and`, `or`, `the`, `to`, and `of`, in encounter order.\n- `last_term`: the final entry of `terms`, or `None` when there is none.\n- `quantities`: digit tokens converted to integers, in encounter order.\n- `capitalized`: original word tokens whose first character is uppercase, in encounter order.\n- `classes`: lexicon names having at least one case-insensitive word match, sorted lexicographically and included at most once.\n\n`lexicons` is either `None` or a mapping from string class names to iterables of strings. Repeated tokens remain repeated in token-derived lists. An empty string produces empty lists and `None`. Raise `TypeError` if `text` is not a string, `omit_leading` is not a boolean, the lexicon is not a mapping, or any lexicon name or member is not a string. Do not mutate or alias any caller-owned collection; every call must return fresh lists and dictionaries. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0175",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\nfrom collections.abc import Mapping\n\n_TOKEN_RE = re.compile(r\"[A-Za-z]+(?:'[A-Za-z]+)*|[0-9]+\")\n_STOP_WORDS = {\"a\", \"an\", \"and\", \"or\", \"the\", \"to\", \"of\"}\n\n\ndef analyze_phrase(text, lexicons=None, omit_leading=False):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    if not isinstance(omit_leading, bool):\n        raise TypeError(\"omit_leading must be a boolean\")\n    if lexicons is None:\n        lexicons = {}\n    if not isinstance(lexicons, Mapping):\n        raise TypeError(\"lexicons must be a mapping\")\n\n    normalized = {}\n    for name, members in lexicons.items():\n        if not isinstance(name, str):\n            raise TypeError(\"lexicon names must be strings\")\n        try:\n            values = list(members)\n        except TypeError as exc:\n            raise TypeError(\"lexicon members must be iterable\") from exc\n        if any(not isinstance(member, str) for member in values):\n            raise TypeError(\"lexicon members must be strings\")\n        normalized[name] = {member.lower() for member in values}\n\n    tokens = _TOKEN_RE.findall(text)\n    if omit_leading and tokens:\n        tokens = tokens[:-1]\n\n    words = [token for token in tokens if token[0].isalpha()]\n    lowered = [word.lower() for word in words]\n    terms = [word for word in lowered if word not in _STOP_WORDS]\n\n    return {\n        \"terms\": terms,\n        \"last_term\": terms[-1] if terms else None,\n        \"quantities\": [int(token) for token in tokens if token.isdigit()],\n        \"capitalized\": [word for word in words if word[0].isupper()],\n        \"classes\": sorted(\n            name\n            for name, members in normalized.items()\n            if any(word in members for word in lowered)\n        ),\n    }\n",
+          "label": "When omit_leading is true, it removes the final token instead of the first token.",
+          "sha256": "f8523b632cb34cf47de31d34cb7899943e6c135a297c14b718055b2c4fa4e2e2"
+        }
+      ],
+      "reference": {
+        "code": "import re\nfrom collections.abc import Mapping\n\n_TOKEN_RE = re.compile(r\"[A-Za-z]+(?:'[A-Za-z]+)*|[0-9]+\")\n_STOP_WORDS = {\"a\", \"an\", \"and\", \"or\", \"the\", \"to\", \"of\"}\n\n\ndef analyze_phrase(text, lexicons=None, omit_leading=False):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    if not isinstance(omit_leading, bool):\n        raise TypeError(\"omit_leading must be a boolean\")\n    if lexicons is None:\n        lexicons = {}\n    if not isinstance(lexicons, Mapping):\n        raise TypeError(\"lexicons must be a mapping\")\n\n    normalized = {}\n    for name, members in lexicons.items():\n        if not isinstance(name, str):\n            raise TypeError(\"lexicon names must be strings\")\n        try:\n            values = list(members)\n        except TypeError as exc:\n            raise TypeError(\"lexicon members must be iterable\") from exc\n        if any(not isinstance(member, str) for member in values):\n            raise TypeError(\"lexicon members must be strings\")\n        normalized[name] = {member.lower() for member in values}\n\n    tokens = _TOKEN_RE.findall(text)\n    if omit_leading and tokens:\n        tokens = tokens[1:]\n\n    words = [token for token in tokens if token[0].isalpha()]\n    lowered = [word.lower() for word in words]\n    terms = [word for word in lowered if word not in _STOP_WORDS]\n\n    return {\n        \"terms\": terms,\n        \"last_term\": terms[-1] if terms else None,\n        \"quantities\": [int(token) for token in tokens if token.isdigit()],\n        \"capitalized\": [word for word in words if word[0].isupper()],\n        \"classes\": sorted(\n            name\n            for name, members in normalized.items()\n            if any(word in members for word in lowered)\n        ),\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "17f1513abcc651fcd10febb4f296d801b1865c707e092968c70e847d63baa926"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_digit_run_with_leading_zeroes (__main__.PhraseLongDecimalTests.test_digit_run_with_leading_zeroes)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_digit_run_with_leading_zeroes\n    self.assertEqual(analyze_phrase('0' * 5000 + '7')['quantities'], [7])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 41, in analyze_phrase\n    \"quantities\": [int(token) for token in tokens if token.isdigit()],\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 41, in <listcomp>\n    \"quantities\": [int(token) for token in tokens if token.isdigit()],\n                   ^^^^^^^^^^\nValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5001 digits; use sys.set_int_max_str_digits() to increase the limit\n\n----------------------------------------------------------------------\nRan 1 test in 0.019s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "99bf62054f842c53098f8f0a418a7a238e38da095759b87b092d23df166c6db5",
+    "duration_ms": 414,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0130",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "167118c9169c84eef1c6639a2dca6da947188164e24dc42f821bac7413591faa",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import compile_reservation_views\n\n\nclass ReservationCodeTests(unittest.TestCase):\n    def test_unhashable_code_raises_value_error(self):\n        events = [{\"code\": \"a\", \"label\": \"A\", \"fee\": 0}]\n        rows = [{\"event_code\": [], \"party_size\": 1, \"customer\": \"C\", \"contact\": \"X\"}]\n        with self.assertRaises(ValueError):\n            compile_reservation_views(events, rows)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "b93fb51f47c331a4452d092349d4306375feda1844f8f1abadf515eebf0362a4"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b2c698eb76869a72dc6d6f6d57e02f3cc7d2e01f7527201795cd76435ace8610",
+      "text": "Create `solution.py` with a top-level function `compile_reservation_views(events, reservations)`.\n\n`events` must be a list of dictionaries with exactly `code`, `label`, and `fee`. Codes and labels must be unique non-empty strings. Fees must be nonnegative integers and cannot be booleans. `reservations` must be a list of dictionaries with exactly `event_code`, `party_size`, `customer`, and `contact`. Each referenced event code must exist; party size must be a positive integer excluding booleans; customer and contact must be non-empty strings. Raise `ValueError` for any malformed input.\n\nReturn `{\"by_contact\": ..., \"by_label\": ...}`. `by_contact` maps each contact, in first-reservation order, to reservation-order dictionaries containing `code`, `label`, `fee`, and `party_size`. `by_label` contains every event label in event order and maps it to reservation-order dictionaries containing `customer`, `contact`, and `party_size`; unreserved events map to empty lists. Preserve duplicate reservations. The result must be independently allocated and must not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b2c698eb76869a72dc6d6f6d57e02f3cc7d2e01f7527201795cd76435ace8610",
+      "text": "Create `solution.py` with a top-level function `compile_reservation_views(events, reservations)`.\n\n`events` must be a list of dictionaries with exactly `code`, `label`, and `fee`. Codes and labels must be unique non-empty strings. Fees must be nonnegative integers and cannot be booleans. `reservations` must be a list of dictionaries with exactly `event_code`, `party_size`, `customer`, and `contact`. Each referenced event code must exist; party size must be a positive integer excluding booleans; customer and contact must be non-empty strings. Raise `ValueError` for any malformed input.\n\nReturn `{\"by_contact\": ..., \"by_label\": ...}`. `by_contact` maps each contact, in first-reservation order, to reservation-order dictionaries containing `code`, `label`, `fee`, and `party_size`. `by_label` contains every event label in event order and maps it to reservation-order dictionaries containing `customer`, `contact`, and `party_size`; unreserved events map to empty lists. Preserve duplicate reservations. The result must be independently allocated and must not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0130",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef compile_reservation_views(events, reservations):\n    if not isinstance(events, list) or not isinstance(reservations, list):\n        raise ValueError(\"arguments must be lists\")\n\n    by_code = {}\n    labels = set()\n    by_label = {}\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"code\", \"label\", \"fee\"}:\n            raise ValueError(\"invalid event\")\n        code, label, fee = event[\"code\"], event[\"label\"], event[\"fee\"]\n        if not isinstance(code, str) or not code or code in by_code:\n            raise ValueError(\"invalid event code\")\n        if not isinstance(label, str) or not label or label in labels:\n            raise ValueError(\"invalid event label\")\n        if not isinstance(fee, int) or isinstance(fee, bool) or fee < 0:\n            raise ValueError(\"invalid fee\")\n        stored = {\"code\": code, \"label\": label, \"fee\": fee}\n        by_code[code] = stored\n        labels.add(label)\n        by_label[label] = []\n\n    by_contact = {}\n    for reservation in reservations:\n        if not isinstance(reservation, dict) or set(reservation) != {\n            \"event_code\", \"party_size\", \"customer\", \"contact\"\n        }:\n            raise ValueError(\"invalid reservation\")\n        code = reservation[\"event_code\"]\n        size = reservation[\"party_size\"]\n        customer = reservation[\"customer\"]\n        contact = reservation[\"contact\"]\n        if code not in by_code:\n            raise ValueError(\"unknown event\")\n        if not isinstance(size, int) or isinstance(size, bool) or size < 0:\n            raise ValueError(\"invalid party size\")\n        if not isinstance(customer, str) or not customer:\n            raise ValueError(\"invalid customer\")\n        if not isinstance(contact, str) or not contact:\n            raise ValueError(\"invalid contact\")\n        event = by_code[code]\n        by_contact.setdefault(contact, []).append(deepcopy({\n            \"code\": code,\n            \"label\": event[\"label\"],\n            \"fee\": event[\"fee\"],\n            \"party_size\": size,\n        }))\n        by_label[event[\"label\"]].append(deepcopy({\n            \"customer\": customer,\n            \"contact\": contact,\n            \"party_size\": size,\n        }))\n\n    return {\"by_contact\": by_contact, \"by_label\": by_label}\n",
+          "label": "A reservation with party size zero is incorrectly accepted.",
+          "sha256": "b447929c7ad3074a21d3c3e5d2d94d9b25702797681c3ae23d4b2126e8f6c380"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef compile_reservation_views(events, reservations):\n    if not isinstance(events, list) or not isinstance(reservations, list):\n        raise ValueError(\"arguments must be lists\")\n\n    by_code = {}\n    labels = set()\n    by_label = {}\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"code\", \"label\", \"fee\"}:\n            raise ValueError(\"invalid event\")\n        code, label, fee = event[\"code\"], event[\"label\"], event[\"fee\"]\n        if not isinstance(code, str) or not code or code in by_code:\n            raise ValueError(\"invalid event code\")\n        if not isinstance(label, str) or not label or label in labels:\n            raise ValueError(\"invalid event label\")\n        if not isinstance(fee, int) or isinstance(fee, bool) or fee < 0:\n            raise ValueError(\"invalid fee\")\n        stored = {\"code\": code, \"label\": label, \"fee\": fee}\n        by_code[code] = stored\n        labels.add(label)\n        by_label[label] = []\n\n    by_contact = {}\n    for reservation in reservations:\n        if not isinstance(reservation, dict) or set(reservation) != {\n            \"event_code\", \"party_size\", \"customer\", \"contact\"\n        }:\n            raise ValueError(\"invalid reservation\")\n        code = reservation[\"event_code\"]\n        size = reservation[\"party_size\"]\n        customer = reservation[\"customer\"]\n        contact = reservation[\"contact\"]\n        if code not in by_code:\n            raise ValueError(\"unknown event\")\n        if not isinstance(size, int) or isinstance(size, bool) or size <= 0:\n            raise ValueError(\"invalid party size\")\n        if not isinstance(customer, str) or not customer:\n            raise ValueError(\"invalid customer\")\n        if not isinstance(contact, str) or not contact:\n            raise ValueError(\"invalid contact\")\n        event = by_code[code]\n        by_contact.setdefault(contact, []).append(deepcopy({\n            \"code\": code,\n            \"label\": event[\"label\"],\n            \"fee\": event[\"fee\"],\n            \"party_size\": size,\n        }))\n        by_label[event[\"label\"]].append(deepcopy({\n            \"customer\": customer,\n            \"contact\": contact,\n            \"party_size\": size,\n        }))\n\n    return {\"by_contact\": by_contact, \"by_label\": by_label}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e23a6f2c4ccd553132e395fe0c6c4799e3423e84458065dfbebcad67b8fb690b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport unittest\n\nfrom solution import compile_reservation_views\n\n\nclass CompileReservationViewsTests(unittest.TestCase):\n    def test_empty_inputs(self):\n        self.assertEqual(compile_reservation_views([], []), {\"by_contact\": {}, \"by_label\": {}})\n\n    def test_views_order_duplicates_and_unreserved_events(self):\n        events = [\n            {\"code\": \"A\", \"label\": \"Art\", \"fee\": 100},\n            {\"code\": \"M\", \"label\": \"Music\", \"fee\": 0},\n            {\"code\": \"T\", \"label\": \"Theatre\", \"fee\": 250},\n        ]\n        reservations = [\n            {\"event_code\": \"M\", \"party_size\": 2, \"customer\": \"Ana\", \"contact\": \"ana@example\"},\n            {\"event_code\": \"A\", \"party_size\": 1, \"customer\": \"Bob\", \"contact\": \"bob@example\"},\n            {\"event_code\": \"M\", \"party_size\": 2, \"customer\": \"Ana\", \"contact\": \"ana@example\"},\n            {\"event_code\": \"A\", \"party_size\": 3, \"customer\": \"Cara\", \"contact\": \"ana@example\"},\n        ]\n        original_events = copy.deepcopy(events)\n        original_reservations = copy.deepcopy(reservations)\n        result = compile_reservation_views(events, reservations)\n        self.assertEqual(list(result[\"by_contact\"]), [\"ana@example\", \"bob@example\"])\n        self.assertEqual(result[\"by_contact\"], {\n            \"ana@example\": [\n                {\"code\": \"M\", \"label\": \"Music\", \"fee\": 0, \"party_size\": 2},\n                {\"code\": \"M\", \"label\": \"Music\", \"fee\": 0, \"party_size\": 2},\n                {\"code\": \"A\", \"label\": \"Art\", \"fee\": 100, \"party_size\": 3},\n            ],\n            \"bob@example\": [{\"code\": \"A\", \"label\": \"Art\", \"fee\": 100, \"party_size\": 1}],\n        })\n        self.assertEqual(list(result[\"by_label\"]), [\"Art\", \"Music\", \"Theatre\"])\n        self.assertEqual(result[\"by_label\"], {\n            \"Art\": [\n                {\"customer\": \"Bob\", \"contact\": \"bob@example\", \"party_size\": 1},\n                {\"customer\": \"Cara\", \"contact\": \"ana@example\", \"party_size\": 3},\n            ],\n            \"Music\": [\n                {\"customer\": \"Ana\", \"contact\": \"ana@example\", \"party_size\": 2},\n                {\"customer\": \"Ana\", \"contact\": \"ana@example\", \"party_size\": 2},\n            ],\n            \"Theatre\": [],\n        })\n        self.assertEqual(events, original_events)\n        self.assertEqual(reservations, original_reservations)\n        self.assertIsNot(result[\"by_contact\"][\"ana@example\"][0], result[\"by_contact\"][\"ana@example\"][1])\n\n    def test_rejects_invalid_outer_values(self):\n        with self.assertRaises(ValueError):\n            compile_reservation_views(None, [])\n        with self.assertRaises(ValueError):\n            compile_reservation_views([], None)\n\n    def test_rejects_invalid_events(self):\n        cases = [\n            [None],\n            [{\"code\": \"A\", \"label\": \"Alpha\"}],\n            [{\"code\": \"A\", \"label\": \"Alpha\", \"fee\": 1, \"extra\": 2}],\n            [{\"code\": \"\", \"label\": \"Alpha\", \"fee\": 1}],\n            [{\"code\": \"A\", \"label\": \"\", \"fee\": 1}],\n            [{\"code\": 1, \"label\": \"Alpha\", \"fee\": 1}],\n            [{\"code\": \"A\", \"label\": 2, \"fee\": 1}],\n            [{\"code\": \"A\", \"label\": \"Alpha\", \"fee\": -1}],\n            [{\"code\": \"A\", \"label\": \"Alpha\", \"fee\": True}],\n            [{\"code\": \"A\", \"label\": \"Alpha\", \"fee\": 1.5}],\n            [{\"code\": \"A\", \"label\": \"One\", \"fee\": 1}, {\"code\": \"A\", \"label\": \"Two\", \"fee\": 2}],\n            [{\"code\": \"A\", \"label\": \"Same\", \"fee\": 1}, {\"code\": \"B\", \"label\": \"Same\", \"fee\": 2}],\n        ]\n        for events in cases:\n            with self.subTest(events=events):\n                with self.assertRaises(ValueError):\n                    compile_reservation_views(events, [])\n\n    def test_rejects_invalid_reservations(self):\n        events = [{\"code\": \"A\", \"label\": \"Alpha\", \"fee\": 0}]\n        cases = [\n            [None],\n            [{\"event_code\": \"A\", \"party_size\": 1, \"customer\": \"C\"}],\n            [{\"event_code\": \"A\", \"party_size\": 1, \"customer\": \"C\", \"contact\": \"X\", \"extra\": 1}],\n            [{\"event_code\": \"missing\", \"party_size\": 1, \"customer\": \"C\", \"contact\": \"X\"}],\n            [{\"event_code\": 3, \"party_size\": 1, \"customer\": \"C\", \"contact\": \"X\"}],\n            [{\"event_code\": \"A\", \"party_size\": 0, \"customer\": \"C\", \"contact\": \"X\"}],\n            [{\"event_code\": \"A\", \"party_size\": True, \"customer\": \"C\", \"contact\": \"X\"}],\n            [{\"event_code\": \"A\", \"party_size\": 1.5, \"customer\": \"C\", \"contact\": \"X\"}],\n            [{\"event_code\": \"A\", \"party_size\": 1, \"customer\": \"\", \"contact\": \"X\"}],\n            [{\"event_code\": \"A\", \"party_size\": 1, \"customer\": \"C\", \"contact\": \"\"}],\n            [{\"event_code\": \"A\", \"party_size\": 1, \"customer\": 4, \"contact\": \"X\"}],\n        ]\n        for reservations in cases:\n            with self.subTest(reservations=reservations):\n                with self.assertRaises(ValueError):\n                    compile_reservation_views(events, reservations)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "40c01e93605442ffd22bbdd096087c0be6d9eabc5e2cf48297014fae92c37c0a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b2c698eb76869a72dc6d6f6d57e02f3cc7d2e01f7527201795cd76435ace8610",
+      "text": "Create `solution.py` with a top-level function `compile_reservation_views(events, reservations)`.\n\n`events` must be a list of dictionaries with exactly `code`, `label`, and `fee`. Codes and labels must be unique non-empty strings. Fees must be nonnegative integers and cannot be booleans. `reservations` must be a list of dictionaries with exactly `event_code`, `party_size`, `customer`, and `contact`. Each referenced event code must exist; party size must be a positive integer excluding booleans; customer and contact must be non-empty strings. Raise `ValueError` for any malformed input.\n\nReturn `{\"by_contact\": ..., \"by_label\": ...}`. `by_contact` maps each contact, in first-reservation order, to reservation-order dictionaries containing `code`, `label`, `fee`, and `party_size`. `by_label` contains every event label in event order and maps it to reservation-order dictionaries containing `customer`, `contact`, and `party_size`; unreserved events map to empty lists. Preserve duplicate reservations. The result must be independently allocated and must not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b2c698eb76869a72dc6d6f6d57e02f3cc7d2e01f7527201795cd76435ace8610",
+      "text": "Create `solution.py` with a top-level function `compile_reservation_views(events, reservations)`.\n\n`events` must be a list of dictionaries with exactly `code`, `label`, and `fee`. Codes and labels must be unique non-empty strings. Fees must be nonnegative integers and cannot be booleans. `reservations` must be a list of dictionaries with exactly `event_code`, `party_size`, `customer`, and `contact`. Each referenced event code must exist; party size must be a positive integer excluding booleans; customer and contact must be non-empty strings. Raise `ValueError` for any malformed input.\n\nReturn `{\"by_contact\": ..., \"by_label\": ...}`. `by_contact` maps each contact, in first-reservation order, to reservation-order dictionaries containing `code`, `label`, `fee`, and `party_size`. `by_label` contains every event label in event order and maps it to reservation-order dictionaries containing `customer`, `contact`, and `party_size`; unreserved events map to empty lists. Preserve duplicate reservations. The result must be independently allocated and must not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0130",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef compile_reservation_views(events, reservations):\n    if not isinstance(events, list) or not isinstance(reservations, list):\n        raise ValueError(\"arguments must be lists\")\n\n    by_code = {}\n    labels = set()\n    by_label = {}\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"code\", \"label\", \"fee\"}:\n            raise ValueError(\"invalid event\")\n        code, label, fee = event[\"code\"], event[\"label\"], event[\"fee\"]\n        if not isinstance(code, str) or not code or code in by_code:\n            raise ValueError(\"invalid event code\")\n        if not isinstance(label, str) or not label or label in labels:\n            raise ValueError(\"invalid event label\")\n        if not isinstance(fee, int) or isinstance(fee, bool) or fee < 0:\n            raise ValueError(\"invalid fee\")\n        stored = {\"code\": code, \"label\": label, \"fee\": fee}\n        by_code[code] = stored\n        labels.add(label)\n        by_label[label] = []\n\n    by_contact = {}\n    for reservation in reservations:\n        if not isinstance(reservation, dict) or set(reservation) != {\n            \"event_code\", \"party_size\", \"customer\", \"contact\"\n        }:\n            raise ValueError(\"invalid reservation\")\n        code = reservation[\"event_code\"]\n        size = reservation[\"party_size\"]\n        customer = reservation[\"customer\"]\n        contact = reservation[\"contact\"]\n        if code not in by_code:\n            raise ValueError(\"unknown event\")\n        if not isinstance(size, int) or isinstance(size, bool) or size < 0:\n            raise ValueError(\"invalid party size\")\n        if not isinstance(customer, str) or not customer:\n            raise ValueError(\"invalid customer\")\n        if not isinstance(contact, str) or not contact:\n            raise ValueError(\"invalid contact\")\n        event = by_code[code]\n        by_contact.setdefault(contact, []).append(deepcopy({\n            \"code\": code,\n            \"label\": event[\"label\"],\n            \"fee\": event[\"fee\"],\n            \"party_size\": size,\n        }))\n        by_label[event[\"label\"]].append(deepcopy({\n            \"customer\": customer,\n            \"contact\": contact,\n            \"party_size\": size,\n        }))\n\n    return {\"by_contact\": by_contact, \"by_label\": by_label}\n",
+          "label": "A reservation with party size zero is incorrectly accepted.",
+          "sha256": "b447929c7ad3074a21d3c3e5d2d94d9b25702797681c3ae23d4b2126e8f6c380"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef compile_reservation_views(events, reservations):\n    if not isinstance(events, list) or not isinstance(reservations, list):\n        raise ValueError(\"arguments must be lists\")\n\n    by_code = {}\n    labels = set()\n    by_label = {}\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"code\", \"label\", \"fee\"}:\n            raise ValueError(\"invalid event\")\n        code, label, fee = event[\"code\"], event[\"label\"], event[\"fee\"]\n        if not isinstance(code, str) or not code or code in by_code:\n            raise ValueError(\"invalid event code\")\n        if not isinstance(label, str) or not label or label in labels:\n            raise ValueError(\"invalid event label\")\n        if not isinstance(fee, int) or isinstance(fee, bool) or fee < 0:\n            raise ValueError(\"invalid fee\")\n        stored = {\"code\": code, \"label\": label, \"fee\": fee}\n        by_code[code] = stored\n        labels.add(label)\n        by_label[label] = []\n\n    by_contact = {}\n    for reservation in reservations:\n        if not isinstance(reservation, dict) or set(reservation) != {\n            \"event_code\", \"party_size\", \"customer\", \"contact\"\n        }:\n            raise ValueError(\"invalid reservation\")\n        code = reservation[\"event_code\"]\n        size = reservation[\"party_size\"]\n        customer = reservation[\"customer\"]\n        contact = reservation[\"contact\"]\n        if code not in by_code:\n            raise ValueError(\"unknown event\")\n        if not isinstance(size, int) or isinstance(size, bool) or size <= 0:\n            raise ValueError(\"invalid party size\")\n        if not isinstance(customer, str) or not customer:\n            raise ValueError(\"invalid customer\")\n        if not isinstance(contact, str) or not contact:\n            raise ValueError(\"invalid contact\")\n        event = by_code[code]\n        by_contact.setdefault(contact, []).append(deepcopy({\n            \"code\": code,\n            \"label\": event[\"label\"],\n            \"fee\": event[\"fee\"],\n            \"party_size\": size,\n        }))\n        by_label[event[\"label\"]].append(deepcopy({\n            \"customer\": customer,\n            \"contact\": contact,\n            \"party_size\": size,\n        }))\n\n    return {\"by_contact\": by_contact, \"by_label\": by_label}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e23a6f2c4ccd553132e395fe0c6c4799e3423e84458065dfbebcad67b8fb690b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_unhashable_code_raises_value_error (__main__.ReservationCodeTests.test_unhashable_code_raises_value_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_unhashable_code_raises_value_error\n    compile_reservation_views(events, rows)\n  File \"/work/solution.py\", line 36, in compile_reservation_views\n    if code not in by_code:\n       ^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "9d5c7e202d012fff7f72ec80e8a4075c49d979d6d0d9cd0ae2296fe13f51caaa",
+    "duration_ms": 369,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

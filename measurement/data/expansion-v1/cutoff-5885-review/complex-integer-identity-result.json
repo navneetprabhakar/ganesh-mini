@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0164",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a841afda91792006dd1220ccd143b170744d59073adcd9f31ac1810699aed0ee",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import LinearComplexSystem\n\n\nclass ComplexIntegerIdentityTests(unittest.TestCase):\n    def test_allowed_integer_system_has_representable_solution(self):\n        value = 10 ** 400\n        system = LinearComplexSystem([[value]], [value])\n        self.assertEqual(system.solve(), [1 + 0j])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "30c25aa96389f42c8b8a2fd7189a7ab9657da85e2814b595170c7693ef18d504"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d8e1dd01239635816f5a80d52aab141e2386a83e0e92af95d322a71d0e03837a",
+      "text": "Implement a class `LinearComplexSystem` in `solution.py`. Its constructor is `LinearComplexSystem(coefficients: list[list[complex]], constants: list[complex])`. It must validate that `coefficients` is a square matrix and that `constants` has the matching length; malformed shapes raise `ValueError`, while non-list containers or entries that are not `int`, `float`, or `complex` raise `TypeError` (booleans are invalid). The constructor must copy its inputs so later caller mutations have no effect. `solve() -> list[complex]` must solve the system using Gaussian elimination with partial pivoting, return a new list on every call, return `[]` for a zero-dimensional system, and raise `ValueError` for a singular matrix. It must not mutate stored data. `residual(solution: list[complex]) -> list[complex]` must return `A*x-b`, validate the solution in the same way, and never alias caller-owned lists.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d8e1dd01239635816f5a80d52aab141e2386a83e0e92af95d322a71d0e03837a",
+      "text": "Implement a class `LinearComplexSystem` in `solution.py`. Its constructor is `LinearComplexSystem(coefficients: list[list[complex]], constants: list[complex])`. It must validate that `coefficients` is a square matrix and that `constants` has the matching length; malformed shapes raise `ValueError`, while non-list containers or entries that are not `int`, `float`, or `complex` raise `TypeError` (booleans are invalid). The constructor must copy its inputs so later caller mutations have no effect. `solve() -> list[complex]` must solve the system using Gaussian elimination with partial pivoting, return a new list on every call, return `[]` for a zero-dimensional system, and raise `ValueError` for a singular matrix. It must not mutate stored data. `residual(solution: list[complex]) -> list[complex]` must return `A*x-b`, validate the solution in the same way, and never alias caller-owned lists.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0164",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class LinearComplexSystem:\n    def __init__(self, coefficients: list[list[complex]], constants: list[complex]):\n        if not isinstance(coefficients, list) or not isinstance(constants, list):\n            raise TypeError(\"coefficients and constants must be lists\")\n        n = len(coefficients)\n        if len(constants) != n:\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        matrix = []\n        for row in coefficients:\n            if not isinstance(row, list):\n                raise TypeError(\"each matrix row must be a list\")\n            if len(row) != n:\n                raise ValueError(\"coefficients must be square\")\n            if any(isinstance(value, bool) or not isinstance(value, numeric) for value in row):\n                raise TypeError(\"matrix entries must be numeric\")\n            matrix.append([complex(value) for value in row])\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in constants):\n            raise TypeError(\"constants must be numeric\")\n        self._a = matrix\n        self._b = [complex(value) for value in constants]\n\n    def solve(self) -> list[complex]:\n        n = len(self._b)\n        a = [row[:] for row in self._a]\n        b = self._b[:]\n        for column in range(n):\n            pivot = min(range(column, n), key=lambda row: abs(a[row][column]))\n            if a[pivot][column] == 0:\n                raise ValueError(\"singular matrix\")\n            a[column], a[pivot] = a[pivot], a[column]\n            b[column], b[pivot] = b[pivot], b[column]\n            for row in range(column + 1, n):\n                factor = a[row][column] / a[column][column]\n                for index in range(column, n):\n                    a[row][index] -= factor * a[column][index]\n                b[row] -= factor * b[column]\n        result = [0j] * n\n        for row in range(n - 1, -1, -1):\n            result[row] = (b[row] - sum(a[row][j] * result[j] for j in range(row + 1, n))) / a[row][row]\n        return result\n\n    def residual(self, solution: list[complex]) -> list[complex]:\n        if not isinstance(solution, list):\n            raise TypeError(\"solution must be a list\")\n        if len(solution) != len(self._b):\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in solution):\n            raise TypeError(\"solution entries must be numeric\")\n        x = [complex(value) for value in solution]\n        return [sum(value * x[j] for j, value in enumerate(row)) - self._b[i]\n                for i, row in enumerate(self._a)]\n",
+          "label": "Chooses the smallest pivot magnitude, which can falsely classify an invertible system as singular and is numerically unstable.",
+          "sha256": "2a4fc69db1d61b0f47743ec59a81c66b6a0b517913894a056dafc6228520f34b"
+        }
+      ],
+      "reference": {
+        "code": "class LinearComplexSystem:\n    def __init__(self, coefficients: list[list[complex]], constants: list[complex]):\n        if not isinstance(coefficients, list) or not isinstance(constants, list):\n            raise TypeError(\"coefficients and constants must be lists\")\n        n = len(coefficients)\n        if len(constants) != n:\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        matrix = []\n        for row in coefficients:\n            if not isinstance(row, list):\n                raise TypeError(\"each matrix row must be a list\")\n            if len(row) != n:\n                raise ValueError(\"coefficients must be square\")\n            if any(isinstance(value, bool) or not isinstance(value, numeric) for value in row):\n                raise TypeError(\"matrix entries must be numeric\")\n            matrix.append([complex(value) for value in row])\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in constants):\n            raise TypeError(\"constants must be numeric\")\n        self._a = matrix\n        self._b = [complex(value) for value in constants]\n\n    def solve(self) -> list[complex]:\n        n = len(self._b)\n        a = [row[:] for row in self._a]\n        b = self._b[:]\n        for column in range(n):\n            pivot = max(range(column, n), key=lambda row: abs(a[row][column]))\n            if a[pivot][column] == 0:\n                raise ValueError(\"singular matrix\")\n            a[column], a[pivot] = a[pivot], a[column]\n            b[column], b[pivot] = b[pivot], b[column]\n            for row in range(column + 1, n):\n                factor = a[row][column] / a[column][column]\n                for index in range(column, n):\n                    a[row][index] -= factor * a[column][index]\n                b[row] -= factor * b[column]\n        result = [0j] * n\n        for row in range(n - 1, -1, -1):\n            result[row] = (b[row] - sum(a[row][j] * result[j] for j in range(row + 1, n))) / a[row][row]\n        return result\n\n    def residual(self, solution: list[complex]) -> list[complex]:\n        if not isinstance(solution, list):\n            raise TypeError(\"solution must be a list\")\n        if len(solution) != len(self._b):\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in solution):\n            raise TypeError(\"solution entries must be numeric\")\n        x = [complex(value) for value in solution]\n        return [sum(value * x[j] for j, value in enumerate(row)) - self._b[i]\n                for i, row in enumerate(self._a)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4b8d113d81396b2c58266286101c4938287daad110d730bd39334409e2cc4b75"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import LinearComplexSystem\n\n\nclass LinearComplexSystemTests(unittest.TestCase):\n    def assertComplexListAlmostEqual(self, actual, expected):\n        self.assertEqual(len(actual), len(expected))\n        for left, right in zip(actual, expected):\n            self.assertAlmostEqual(left.real, complex(right).real)\n            self.assertAlmostEqual(left.imag, complex(right).imag)\n\n    def test_solves_with_partial_pivoting_and_is_repeatable(self):\n        system = LinearComplexSystem([[0, 1], [1, 1]], [2, 3])\n        first = system.solve()\n        second = system.solve()\n        self.assertComplexListAlmostEqual(first, [1, 2])\n        self.assertComplexListAlmostEqual(second, [1, 2])\n        self.assertIsNot(first, second)\n        first[0] = 999\n        self.assertComplexListAlmostEqual(system.solve(), [1, 2])\n\n    def test_complex_solution_and_residual(self):\n        system = LinearComplexSystem([[1, 1], [1, -1]], [1 + 1j, 3 - 1j])\n        answer = system.solve()\n        self.assertComplexListAlmostEqual(answer, [2, -1 + 1j])\n        residual1 = system.residual(answer)\n        residual2 = system.residual(answer)\n        self.assertComplexListAlmostEqual(residual1, [0, 0])\n        self.assertIsNot(residual1, residual2)\n        residual1.append(10)\n        self.assertComplexListAlmostEqual(system.residual(answer), [0, 0])\n\n    def test_constructor_copies_inputs(self):\n        coefficients = [[2, 0], [0, 4]]\n        constants = [6, 8]\n        system = LinearComplexSystem(coefficients, constants)\n        coefficients[0][0] = 100\n        coefficients.append([1, 1])\n        constants[0] = 100\n        constants.append(9)\n        self.assertComplexListAlmostEqual(system.solve(), [3, 2])\n\n    def test_zero_dimensional_system(self):\n        system = LinearComplexSystem([], [])\n        first = system.solve()\n        second = system.solve()\n        self.assertEqual(first, [])\n        self.assertEqual(system.residual([]), [])\n        self.assertIsNot(first, second)\n\n    def test_singular_matrix(self):\n        system = LinearComplexSystem([[1, 2], [2, 4]], [3, 6])\n        with self.assertRaises(ValueError):\n            system.solve()\n\n    def test_shape_validation(self):\n        malformed = [\n            ([[1, 2]], [1]),\n            ([[1], [2]], [1, 2]),\n            ([[1, 0], [0, 1]], [1]),\n        ]\n        for coefficients, constants in malformed:\n            with self.subTest(coefficients=coefficients, constants=constants):\n                with self.assertRaises(ValueError):\n                    LinearComplexSystem(coefficients, constants)\n\n    def test_type_validation(self):\n        cases = [\n            (((1,),), [1]),\n            ([[1]], (1,)),\n            ([1], [1]),\n            ([[True]], [1]),\n            ([[1]], [False]),\n            ([[\"1\"]], [1]),\n        ]\n        for coefficients, constants in cases:\n            with self.subTest(coefficients=coefficients, constants=constants):\n                with self.assertRaises(TypeError):\n                    LinearComplexSystem(coefficients, constants)\n\n    def test_residual_validation_and_input_stability(self):\n        system = LinearComplexSystem([[2, 1], [1, 3]], [4, 7])\n        candidate = [1, 2]\n        snapshot = candidate.copy()\n        self.assertComplexListAlmostEqual(system.residual(candidate), [0, 0])\n        self.assertEqual(candidate, snapshot)\n        with self.assertRaises(TypeError):\n            system.residual((1, 2))\n        with self.assertRaises(TypeError):\n            system.residual([1, True])\n        with self.assertRaises(ValueError):\n            system.residual([1])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "7fa86bb86a104b36b1013e8d852aa4c41f18c7917eb082d29ae0a50ca6a541e8"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d8e1dd01239635816f5a80d52aab141e2386a83e0e92af95d322a71d0e03837a",
+      "text": "Implement a class `LinearComplexSystem` in `solution.py`. Its constructor is `LinearComplexSystem(coefficients: list[list[complex]], constants: list[complex])`. It must validate that `coefficients` is a square matrix and that `constants` has the matching length; malformed shapes raise `ValueError`, while non-list containers or entries that are not `int`, `float`, or `complex` raise `TypeError` (booleans are invalid). The constructor must copy its inputs so later caller mutations have no effect. `solve() -> list[complex]` must solve the system using Gaussian elimination with partial pivoting, return a new list on every call, return `[]` for a zero-dimensional system, and raise `ValueError` for a singular matrix. It must not mutate stored data. `residual(solution: list[complex]) -> list[complex]` must return `A*x-b`, validate the solution in the same way, and never alias caller-owned lists.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d8e1dd01239635816f5a80d52aab141e2386a83e0e92af95d322a71d0e03837a",
+      "text": "Implement a class `LinearComplexSystem` in `solution.py`. Its constructor is `LinearComplexSystem(coefficients: list[list[complex]], constants: list[complex])`. It must validate that `coefficients` is a square matrix and that `constants` has the matching length; malformed shapes raise `ValueError`, while non-list containers or entries that are not `int`, `float`, or `complex` raise `TypeError` (booleans are invalid). The constructor must copy its inputs so later caller mutations have no effect. `solve() -> list[complex]` must solve the system using Gaussian elimination with partial pivoting, return a new list on every call, return `[]` for a zero-dimensional system, and raise `ValueError` for a singular matrix. It must not mutate stored data. `residual(solution: list[complex]) -> list[complex]` must return `A*x-b`, validate the solution in the same way, and never alias caller-owned lists.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0164",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class LinearComplexSystem:\n    def __init__(self, coefficients: list[list[complex]], constants: list[complex]):\n        if not isinstance(coefficients, list) or not isinstance(constants, list):\n            raise TypeError(\"coefficients and constants must be lists\")\n        n = len(coefficients)\n        if len(constants) != n:\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        matrix = []\n        for row in coefficients:\n            if not isinstance(row, list):\n                raise TypeError(\"each matrix row must be a list\")\n            if len(row) != n:\n                raise ValueError(\"coefficients must be square\")\n            if any(isinstance(value, bool) or not isinstance(value, numeric) for value in row):\n                raise TypeError(\"matrix entries must be numeric\")\n            matrix.append([complex(value) for value in row])\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in constants):\n            raise TypeError(\"constants must be numeric\")\n        self._a = matrix\n        self._b = [complex(value) for value in constants]\n\n    def solve(self) -> list[complex]:\n        n = len(self._b)\n        a = [row[:] for row in self._a]\n        b = self._b[:]\n        for column in range(n):\n            pivot = min(range(column, n), key=lambda row: abs(a[row][column]))\n            if a[pivot][column] == 0:\n                raise ValueError(\"singular matrix\")\n            a[column], a[pivot] = a[pivot], a[column]\n            b[column], b[pivot] = b[pivot], b[column]\n            for row in range(column + 1, n):\n                factor = a[row][column] / a[column][column]\n                for index in range(column, n):\n                    a[row][index] -= factor * a[column][index]\n                b[row] -= factor * b[column]\n        result = [0j] * n\n        for row in range(n - 1, -1, -1):\n            result[row] = (b[row] - sum(a[row][j] * result[j] for j in range(row + 1, n))) / a[row][row]\n        return result\n\n    def residual(self, solution: list[complex]) -> list[complex]:\n        if not isinstance(solution, list):\n            raise TypeError(\"solution must be a list\")\n        if len(solution) != len(self._b):\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in solution):\n            raise TypeError(\"solution entries must be numeric\")\n        x = [complex(value) for value in solution]\n        return [sum(value * x[j] for j, value in enumerate(row)) - self._b[i]\n                for i, row in enumerate(self._a)]\n",
+          "label": "Chooses the smallest pivot magnitude, which can falsely classify an invertible system as singular and is numerically unstable.",
+          "sha256": "2a4fc69db1d61b0f47743ec59a81c66b6a0b517913894a056dafc6228520f34b"
+        }
+      ],
+      "reference": {
+        "code": "class LinearComplexSystem:\n    def __init__(self, coefficients: list[list[complex]], constants: list[complex]):\n        if not isinstance(coefficients, list) or not isinstance(constants, list):\n            raise TypeError(\"coefficients and constants must be lists\")\n        n = len(coefficients)\n        if len(constants) != n:\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        matrix = []\n        for row in coefficients:\n            if not isinstance(row, list):\n                raise TypeError(\"each matrix row must be a list\")\n            if len(row) != n:\n                raise ValueError(\"coefficients must be square\")\n            if any(isinstance(value, bool) or not isinstance(value, numeric) for value in row):\n                raise TypeError(\"matrix entries must be numeric\")\n            matrix.append([complex(value) for value in row])\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in constants):\n            raise TypeError(\"constants must be numeric\")\n        self._a = matrix\n        self._b = [complex(value) for value in constants]\n\n    def solve(self) -> list[complex]:\n        n = len(self._b)\n        a = [row[:] for row in self._a]\n        b = self._b[:]\n        for column in range(n):\n            pivot = max(range(column, n), key=lambda row: abs(a[row][column]))\n            if a[pivot][column] == 0:\n                raise ValueError(\"singular matrix\")\n            a[column], a[pivot] = a[pivot], a[column]\n            b[column], b[pivot] = b[pivot], b[column]\n            for row in range(column + 1, n):\n                factor = a[row][column] / a[column][column]\n                for index in range(column, n):\n                    a[row][index] -= factor * a[column][index]\n                b[row] -= factor * b[column]\n        result = [0j] * n\n        for row in range(n - 1, -1, -1):\n            result[row] = (b[row] - sum(a[row][j] * result[j] for j in range(row + 1, n))) / a[row][row]\n        return result\n\n    def residual(self, solution: list[complex]) -> list[complex]:\n        if not isinstance(solution, list):\n            raise TypeError(\"solution must be a list\")\n        if len(solution) != len(self._b):\n            raise ValueError(\"dimension mismatch\")\n        numeric = (int, float, complex)\n        if any(isinstance(value, bool) or not isinstance(value, numeric) for value in solution):\n            raise TypeError(\"solution entries must be numeric\")\n        x = [complex(value) for value in solution]\n        return [sum(value * x[j] for j, value in enumerate(row)) - self._b[i]\n                for i, row in enumerate(self._a)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4b8d113d81396b2c58266286101c4938287daad110d730bd39334409e2cc4b75"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_allowed_integer_system_has_representable_solution (__main__.ComplexIntegerIdentityTests.test_allowed_integer_system_has_representable_solution)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_allowed_integer_system_has_representable_solution\n    system = LinearComplexSystem([[value]], [value])\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 17, in __init__\n    matrix.append([complex(value) for value in row])\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 17, in <listcomp>\n    matrix.append([complex(value) for value in row])\n                   ^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "118e4772b47df3ba0256766fb340f38699da70e5082e29beae547bb6db384969",
+    "duration_ms": 418,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

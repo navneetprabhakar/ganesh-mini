@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0133",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "d679da16ea6f4e49b00bf96c33941f9746a0a50979077b452af8e63e09ea8159",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import correct_wheel_speeds\n\n\nclass WheelSequenceTests(unittest.TestCase):\n    def test_set_is_not_an_encoder_sequence(self):\n        with self.assertRaises(TypeError):\n            correct_wheel_speeds(set(), set(), 10)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "7b3b0b2a076dbbfddf43c6e23e5162e7b7f876a01ba5547f7014e98e4950bdfe"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c6e8480670123b71dac7272fb42a34a7d2b4edcaf299fb282dabaed6861e146c",
+      "text": "Create a new implementation in `solution.py` with this public API:\n\n`correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1) -> list[tuple[int, int]]`\n\n`left_counts` and `right_counts` are equally sized sequences of cumulative encoder counts. Each count must be a non-negative integer other than `bool`, and counts within each sequence must never decrease. `target_speed` must be an integer from 0 through 100, and `gain` must be a non-negative integer; booleans are invalid for both. Raise `TypeError` for incorrect types and `ValueError` for invalid values or unequal sequence lengths.\n\nReturn one `(left_speed, right_speed)` pair per reading. An empty pair of sequences returns an empty list. At index `i`, compute drift as `(left_counts[i] - left_counts[0]) - (right_counts[i] - right_counts[0])`. Set the left speed to `target_speed - gain * drift` and the right speed to `target_speed + gain * drift`, clamping each independently to the inclusive range 0 through 100. Preserve input ordering and do not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c6e8480670123b71dac7272fb42a34a7d2b4edcaf299fb282dabaed6861e146c",
+      "text": "Create a new implementation in `solution.py` with this public API:\n\n`correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1) -> list[tuple[int, int]]`\n\n`left_counts` and `right_counts` are equally sized sequences of cumulative encoder counts. Each count must be a non-negative integer other than `bool`, and counts within each sequence must never decrease. `target_speed` must be an integer from 0 through 100, and `gain` must be a non-negative integer; booleans are invalid for both. Raise `TypeError` for incorrect types and `ValueError` for invalid values or unequal sequence lengths.\n\nReturn one `(left_speed, right_speed)` pair per reading. An empty pair of sequences returns an empty list. At index `i`, compute drift as `(left_counts[i] - left_counts[0]) - (right_counts[i] - right_counts[0])`. Set the left speed to `target_speed - gain * drift` and the right speed to `target_speed + gain * drift`, clamping each independently to the inclusive range 0 through 100. Preserve input ordering and do not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0133",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1):\n    if isinstance(left_counts, (str, bytes)) or not hasattr(left_counts, \"__iter__\"):\n        raise TypeError(\"left_counts must be a sequence\")\n    if isinstance(right_counts, (str, bytes)) or not hasattr(right_counts, \"__iter__\"):\n        raise TypeError(\"right_counts must be a sequence\")\n    if isinstance(target_speed, bool) or not isinstance(target_speed, int):\n        raise TypeError(\"target_speed must be an integer\")\n    if isinstance(gain, bool) or not isinstance(gain, int):\n        raise TypeError(\"gain must be an integer\")\n    if not 0 <= target_speed <= 100:\n        raise ValueError(\"target_speed must be between 0 and 100\")\n    if gain < 0:\n        raise ValueError(\"gain must be non-negative\")\n\n    left = list(left_counts)\n    right = list(right_counts)\n    if len(left) != len(right):\n        raise ValueError(\"encoder sequences must have equal length\")\n\n    for readings in (left, right):\n        previous = None\n        for count in readings:\n            if isinstance(count, bool) or not isinstance(count, int):\n                raise TypeError(\"encoder counts must be integers\")\n            if count < 0:\n                raise ValueError(\"encoder counts must be non-negative\")\n            if previous is not None and count < previous:\n                raise ValueError(\"encoder counts must not decrease\")\n            previous = count\n\n    if not left:\n        return []\n\n    result = []\n    for left_count, right_count in zip(left, right):\n        drift = (left_count - left[0]) - (right_count - right[0])\n        left_speed = max(0, min(100, target_speed + gain * drift))\n        right_speed = max(0, min(100, target_speed - gain * drift))\n        result.append((left_speed, right_speed))\n    return result\n",
+          "label": "Applies the drift correction in the wrong direction, accelerating the wheel that is already ahead.",
+          "sha256": "ba1594f5f0b8e6d09cdd26201c0642b6a27cacbaee52fc98e88d28ff7ec72f12"
+        }
+      ],
+      "reference": {
+        "code": "def correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1):\n    if isinstance(left_counts, (str, bytes)) or not hasattr(left_counts, \"__iter__\"):\n        raise TypeError(\"left_counts must be a sequence\")\n    if isinstance(right_counts, (str, bytes)) or not hasattr(right_counts, \"__iter__\"):\n        raise TypeError(\"right_counts must be a sequence\")\n    if isinstance(target_speed, bool) or not isinstance(target_speed, int):\n        raise TypeError(\"target_speed must be an integer\")\n    if isinstance(gain, bool) or not isinstance(gain, int):\n        raise TypeError(\"gain must be an integer\")\n    if not 0 <= target_speed <= 100:\n        raise ValueError(\"target_speed must be between 0 and 100\")\n    if gain < 0:\n        raise ValueError(\"gain must be non-negative\")\n\n    left = list(left_counts)\n    right = list(right_counts)\n    if len(left) != len(right):\n        raise ValueError(\"encoder sequences must have equal length\")\n\n    for readings in (left, right):\n        previous = None\n        for count in readings:\n            if isinstance(count, bool) or not isinstance(count, int):\n                raise TypeError(\"encoder counts must be integers\")\n            if count < 0:\n                raise ValueError(\"encoder counts must be non-negative\")\n            if previous is not None and count < previous:\n                raise ValueError(\"encoder counts must not decrease\")\n            previous = count\n\n    if not left:\n        return []\n\n    result = []\n    for left_count, right_count in zip(left, right):\n        drift = (left_count - left[0]) - (right_count - right[0])\n        left_speed = max(0, min(100, target_speed - gain * drift))\n        right_speed = max(0, min(100, target_speed + gain * drift))\n        result.append((left_speed, right_speed))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f5fd82520150e8bb8d4e299de2a82254f32348db9cab5fe9b17c4a706af8afaf"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import correct_wheel_speeds\n\n\nclass CorrectWheelSpeedsTests(unittest.TestCase):\n    def test_empty_and_baseline(self):\n        self.assertEqual(correct_wheel_speeds([], [], 40), [])\n        self.assertEqual(correct_wheel_speeds([10], [20], 40, 3), [(40, 40)])\n\n    def test_drift_order_gain_and_clamping(self):\n        self.assertEqual(\n            correct_wheel_speeds([10, 13, 13, 80], [20, 21, 30, 30], 50, 2),\n            [(50, 50), (46, 54), (64, 36), (0, 100)],\n        )\n        self.assertEqual(correct_wheel_speeds((4, 9), (7, 7), 25, 0), [(25, 25), (25, 25)])\n        self.assertEqual(correct_wheel_speeds([0, 1], [0, 2], 0, 100), [(0, 0), (100, 0)])\n\n    def test_inputs_are_not_mutated_or_aliased(self):\n        left = [5, 8]\n        right = [2, 3]\n        result = correct_wheel_speeds(left, right, 20)\n        self.assertEqual(left, [5, 8])\n        self.assertEqual(right, [2, 3])\n        result.append((1, 1))\n        self.assertEqual(left, [5, 8])\n        self.assertEqual(right, [2, 3])\n\n    def test_bad_container_and_element_types(self):\n        for left, right in [(1, []), ([], None), ('12', [1, 2]), ([1, True], [1, 2]), ([1, 2.0], [1, 2])]:\n            with self.subTest(left=left, right=right):\n                with self.assertRaises(TypeError):\n                    correct_wheel_speeds(left, right, 10)\n\n    def test_invalid_values_and_lengths(self):\n        invalid = [\n            ([1], [], 10, 1),\n            ([-1], [0], 10, 1),\n            ([2, 1], [0, 1], 10, 1),\n            ([0, 1], [3, 2], 10, 1),\n            ([0], [0], -1, 1),\n            ([0], [0], 101, 1),\n            ([0], [0], 10, -1),\n        ]\n        for args in invalid:\n            with self.subTest(args=args):\n                with self.assertRaises(ValueError):\n                    correct_wheel_speeds(*args)\n\n    def test_target_and_gain_types(self):\n        for target, gain in [(True, 1), (10.0, 1), (10, False), (10, 1.0)]:\n            with self.subTest(target=target, gain=gain):\n                with self.assertRaises(TypeError):\n                    correct_wheel_speeds([0], [0], target, gain)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "5b26ce6a0a822ede331c41e6715b1839256d7322576add4515f1b975dfd479e4"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c6e8480670123b71dac7272fb42a34a7d2b4edcaf299fb282dabaed6861e146c",
+      "text": "Create a new implementation in `solution.py` with this public API:\n\n`correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1) -> list[tuple[int, int]]`\n\n`left_counts` and `right_counts` are equally sized sequences of cumulative encoder counts. Each count must be a non-negative integer other than `bool`, and counts within each sequence must never decrease. `target_speed` must be an integer from 0 through 100, and `gain` must be a non-negative integer; booleans are invalid for both. Raise `TypeError` for incorrect types and `ValueError` for invalid values or unequal sequence lengths.\n\nReturn one `(left_speed, right_speed)` pair per reading. An empty pair of sequences returns an empty list. At index `i`, compute drift as `(left_counts[i] - left_counts[0]) - (right_counts[i] - right_counts[0])`. Set the left speed to `target_speed - gain * drift` and the right speed to `target_speed + gain * drift`, clamping each independently to the inclusive range 0 through 100. Preserve input ordering and do not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c6e8480670123b71dac7272fb42a34a7d2b4edcaf299fb282dabaed6861e146c",
+      "text": "Create a new implementation in `solution.py` with this public API:\n\n`correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1) -> list[tuple[int, int]]`\n\n`left_counts` and `right_counts` are equally sized sequences of cumulative encoder counts. Each count must be a non-negative integer other than `bool`, and counts within each sequence must never decrease. `target_speed` must be an integer from 0 through 100, and `gain` must be a non-negative integer; booleans are invalid for both. Raise `TypeError` for incorrect types and `ValueError` for invalid values or unequal sequence lengths.\n\nReturn one `(left_speed, right_speed)` pair per reading. An empty pair of sequences returns an empty list. At index `i`, compute drift as `(left_counts[i] - left_counts[0]) - (right_counts[i] - right_counts[0])`. Set the left speed to `target_speed - gain * drift` and the right speed to `target_speed + gain * drift`, clamping each independently to the inclusive range 0 through 100. Preserve input ordering and do not mutate or alias either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0133",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1):\n    if isinstance(left_counts, (str, bytes)) or not hasattr(left_counts, \"__iter__\"):\n        raise TypeError(\"left_counts must be a sequence\")\n    if isinstance(right_counts, (str, bytes)) or not hasattr(right_counts, \"__iter__\"):\n        raise TypeError(\"right_counts must be a sequence\")\n    if isinstance(target_speed, bool) or not isinstance(target_speed, int):\n        raise TypeError(\"target_speed must be an integer\")\n    if isinstance(gain, bool) or not isinstance(gain, int):\n        raise TypeError(\"gain must be an integer\")\n    if not 0 <= target_speed <= 100:\n        raise ValueError(\"target_speed must be between 0 and 100\")\n    if gain < 0:\n        raise ValueError(\"gain must be non-negative\")\n\n    left = list(left_counts)\n    right = list(right_counts)\n    if len(left) != len(right):\n        raise ValueError(\"encoder sequences must have equal length\")\n\n    for readings in (left, right):\n        previous = None\n        for count in readings:\n            if isinstance(count, bool) or not isinstance(count, int):\n                raise TypeError(\"encoder counts must be integers\")\n            if count < 0:\n                raise ValueError(\"encoder counts must be non-negative\")\n            if previous is not None and count < previous:\n                raise ValueError(\"encoder counts must not decrease\")\n            previous = count\n\n    if not left:\n        return []\n\n    result = []\n    for left_count, right_count in zip(left, right):\n        drift = (left_count - left[0]) - (right_count - right[0])\n        left_speed = max(0, min(100, target_speed + gain * drift))\n        right_speed = max(0, min(100, target_speed - gain * drift))\n        result.append((left_speed, right_speed))\n    return result\n",
+          "label": "Applies the drift correction in the wrong direction, accelerating the wheel that is already ahead.",
+          "sha256": "ba1594f5f0b8e6d09cdd26201c0642b6a27cacbaee52fc98e88d28ff7ec72f12"
+        }
+      ],
+      "reference": {
+        "code": "def correct_wheel_speeds(left_counts, right_counts, target_speed, gain=1):\n    if isinstance(left_counts, (str, bytes)) or not hasattr(left_counts, \"__iter__\"):\n        raise TypeError(\"left_counts must be a sequence\")\n    if isinstance(right_counts, (str, bytes)) or not hasattr(right_counts, \"__iter__\"):\n        raise TypeError(\"right_counts must be a sequence\")\n    if isinstance(target_speed, bool) or not isinstance(target_speed, int):\n        raise TypeError(\"target_speed must be an integer\")\n    if isinstance(gain, bool) or not isinstance(gain, int):\n        raise TypeError(\"gain must be an integer\")\n    if not 0 <= target_speed <= 100:\n        raise ValueError(\"target_speed must be between 0 and 100\")\n    if gain < 0:\n        raise ValueError(\"gain must be non-negative\")\n\n    left = list(left_counts)\n    right = list(right_counts)\n    if len(left) != len(right):\n        raise ValueError(\"encoder sequences must have equal length\")\n\n    for readings in (left, right):\n        previous = None\n        for count in readings:\n            if isinstance(count, bool) or not isinstance(count, int):\n                raise TypeError(\"encoder counts must be integers\")\n            if count < 0:\n                raise ValueError(\"encoder counts must be non-negative\")\n            if previous is not None and count < previous:\n                raise ValueError(\"encoder counts must not decrease\")\n            previous = count\n\n    if not left:\n        return []\n\n    result = []\n    for left_count, right_count in zip(left, right):\n        drift = (left_count - left[0]) - (right_count - right[0])\n        left_speed = max(0, min(100, target_speed - gain * drift))\n        right_speed = max(0, min(100, target_speed + gain * drift))\n        result.append((left_speed, right_speed))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f5fd82520150e8bb8d4e299de2a82254f32348db9cab5fe9b17c4a706af8afaf"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_set_is_not_an_encoder_sequence (__main__.WheelSequenceTests.test_set_is_not_an_encoder_sequence)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_set_is_not_an_encoder_sequence\n    with self.assertRaises(TypeError):\nAssertionError: TypeError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "2f6455986ff49ba74104d93e6bafda6f2d93b92c0e0bf293ac7d4c5a05363797",
+    "duration_ms": 375,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

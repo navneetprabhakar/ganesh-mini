@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0138",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "ddf1c7c5d12fa94c82f90a73ece8154535d9a793cd00716bc4d84c64311c38cf",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import OfferDirectory\n\n\nclass OfferDiscountTests(unittest.TestCase):\n    def test_out_of_range_integer_discount_raises_value_error(self):\n        offer = {\"id\": 1, \"code\": \"x\", \"starts_at\": 0, \"ends_at\": 0, \"discount\": 10**400, \"active\": True, \"metadata\": {}}\n        with self.assertRaises(ValueError):\n            OfferDirectory([offer])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "0795dfab83e3ddb6b844909d2a3d2cc976e3088b0f025bc1f4083b27697929fe"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b0f743440b5612486c6f4685bb47af7e6de344c429f72f650615798644c44a66",
+      "text": "Create a new implementation in `solution.py` defining an `OfferDirectory` class.\n\n`OfferDirectory(offers)` accepts a non-string iterable of mappings. Every offer must contain exactly `id`, `code`, `starts_at`, `ends_at`, `discount`, `active`, and `metadata`. Requirements are:\n\n- `id`: unique positive integer other than `bool`\n- `code`: non-empty string\n- `starts_at` and `ends_at`: integers other than `bool`, with `starts_at <= ends_at`\n- `discount`: finite real number other than `bool`, from 0 through 100 inclusive\n- `active`: boolean\n- `metadata`: dictionary with arbitrary deeply nested contents\n\nRaise `TypeError` for incorrect types and `ValueError` for invalid values, missing or extra fields, or duplicate IDs. Construction must not retain aliases to caller-owned objects.\n\nProvide `all_offers() -> list[dict]`, returning deep copies ordered by ascending ID, and `get_offer(offer_id) -> dict | None`, returning a deep copy of the matching offer or `None` when absent. `get_offer` requires an integer other than `bool`; otherwise raise `TypeError`. Mutating constructor inputs or returned values must never change directory state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b0f743440b5612486c6f4685bb47af7e6de344c429f72f650615798644c44a66",
+      "text": "Create a new implementation in `solution.py` defining an `OfferDirectory` class.\n\n`OfferDirectory(offers)` accepts a non-string iterable of mappings. Every offer must contain exactly `id`, `code`, `starts_at`, `ends_at`, `discount`, `active`, and `metadata`. Requirements are:\n\n- `id`: unique positive integer other than `bool`\n- `code`: non-empty string\n- `starts_at` and `ends_at`: integers other than `bool`, with `starts_at <= ends_at`\n- `discount`: finite real number other than `bool`, from 0 through 100 inclusive\n- `active`: boolean\n- `metadata`: dictionary with arbitrary deeply nested contents\n\nRaise `TypeError` for incorrect types and `ValueError` for invalid values, missing or extra fields, or duplicate IDs. Construction must not retain aliases to caller-owned objects.\n\nProvide `all_offers() -> list[dict]`, returning deep copies ordered by ascending ID, and `get_offer(offer_id) -> dict | None`, returning a deep copy of the matching offer or `None` when absent. `get_offer` requires an integer other than `bool`; otherwise raise `TypeError`. Mutating constructor inputs or returned values must never change directory state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0138",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom collections.abc import Iterable, Mapping\nfrom copy import deepcopy\nfrom numbers import Real\n\n\nclass OfferDirectory:\n    _fields = {\"id\", \"code\", \"starts_at\", \"ends_at\", \"discount\", \"active\", \"metadata\"}\n\n    def __init__(self, offers):\n        if isinstance(offers, (str, bytes)) or not isinstance(offers, Iterable):\n            raise TypeError(\"offers must be a non-string iterable\")\n        prepared = {}\n        for offer in offers:\n            normalized = self._validate(offer)\n            offer_id = normalized[\"id\"]\n            if offer_id in prepared:\n                raise ValueError(\"offer ids must be unique\")\n            prepared[offer_id] = normalized\n        self._offers = prepared\n\n    @classmethod\n    def _validate(cls, offer):\n        if not isinstance(offer, Mapping):\n            raise TypeError(\"each offer must be a mapping\")\n        if set(offer) != cls._fields:\n            raise ValueError(\"offer fields do not match the schema\")\n        value = deepcopy(dict(offer))\n        offer_id = value[\"id\"]\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"id must be an integer\")\n        if offer_id <= 0:\n            raise ValueError(\"id must be positive\")\n        if not isinstance(value[\"code\"], str):\n            raise TypeError(\"code must be a string\")\n        if not value[\"code\"]:\n            raise ValueError(\"code must not be empty\")\n        for key in (\"starts_at\", \"ends_at\"):\n            if isinstance(value[key], bool) or not isinstance(value[key], int):\n                raise TypeError(f\"{key} must be an integer\")\n        if value[\"starts_at\"] > value[\"ends_at\"]:\n            raise ValueError(\"starts_at must not exceed ends_at\")\n        discount = value[\"discount\"]\n        if isinstance(discount, bool) or not isinstance(discount, Real):\n            raise TypeError(\"discount must be a real number\")\n        if not math.isfinite(discount) or not 0 <= discount <= 100:\n            raise ValueError(\"discount must be finite and between 0 and 100\")\n        if not isinstance(value[\"active\"], bool):\n            raise TypeError(\"active must be boolean\")\n        if not isinstance(value[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n        return value\n\n    def all_offers(self):\n        return [deepcopy(self._offers[key]) for key in sorted(self._offers)]\n\n    def get_offer(self, offer_id):\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"offer_id must be an integer\")\n        offer = self._offers.get(offer_id)\n        return offer\n",
+          "label": "Returns the internally stored offer directly, allowing callers to mutate directory state.",
+          "sha256": "6c65ee42186d185cfb3b9b5a3f5490f68b99a1b7c015cabc1be15d1554813d0e"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom collections.abc import Iterable, Mapping\nfrom copy import deepcopy\nfrom numbers import Real\n\n\nclass OfferDirectory:\n    _fields = {\"id\", \"code\", \"starts_at\", \"ends_at\", \"discount\", \"active\", \"metadata\"}\n\n    def __init__(self, offers):\n        if isinstance(offers, (str, bytes)) or not isinstance(offers, Iterable):\n            raise TypeError(\"offers must be a non-string iterable\")\n        prepared = {}\n        for offer in offers:\n            normalized = self._validate(offer)\n            offer_id = normalized[\"id\"]\n            if offer_id in prepared:\n                raise ValueError(\"offer ids must be unique\")\n            prepared[offer_id] = normalized\n        self._offers = prepared\n\n    @classmethod\n    def _validate(cls, offer):\n        if not isinstance(offer, Mapping):\n            raise TypeError(\"each offer must be a mapping\")\n        if set(offer) != cls._fields:\n            raise ValueError(\"offer fields do not match the schema\")\n        value = deepcopy(dict(offer))\n        offer_id = value[\"id\"]\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"id must be an integer\")\n        if offer_id <= 0:\n            raise ValueError(\"id must be positive\")\n        if not isinstance(value[\"code\"], str):\n            raise TypeError(\"code must be a string\")\n        if not value[\"code\"]:\n            raise ValueError(\"code must not be empty\")\n        for key in (\"starts_at\", \"ends_at\"):\n            if isinstance(value[key], bool) or not isinstance(value[key], int):\n                raise TypeError(f\"{key} must be an integer\")\n        if value[\"starts_at\"] > value[\"ends_at\"]:\n            raise ValueError(\"starts_at must not exceed ends_at\")\n        discount = value[\"discount\"]\n        if isinstance(discount, bool) or not isinstance(discount, Real):\n            raise TypeError(\"discount must be a real number\")\n        if not math.isfinite(discount) or not 0 <= discount <= 100:\n            raise ValueError(\"discount must be finite and between 0 and 100\")\n        if not isinstance(value[\"active\"], bool):\n            raise TypeError(\"active must be boolean\")\n        if not isinstance(value[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n        return value\n\n    def all_offers(self):\n        return [deepcopy(self._offers[key]) for key in sorted(self._offers)]\n\n    def get_offer(self, offer_id):\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"offer_id must be an integer\")\n        offer = self._offers.get(offer_id)\n        return None if offer is None else deepcopy(offer)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8fc03c6bc8a37b0a05b7231fbd1f23b51558e686fe11cf12f55a0b7785e38c22"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import OfferDirectory\n\n\nclass OfferDirectoryTests(unittest.TestCase):\n    def offer(self, offer_id=1, **changes):\n        value = {\n            'id': offer_id, 'code': 'SAVE10', 'starts_at': 10, 'ends_at': 20,\n            'discount': 10, 'active': True,\n            'metadata': {'audience': {'regions': ['south']}, 'labels': ['new']},\n        }\n        value.update(changes)\n        return value\n\n    def test_sorted_lookup_and_missing(self):\n        directory = OfferDirectory(iter([self.offer(3, code='C'), self.offer(1, code='A'), self.offer(2, code='B')]))\n        self.assertEqual([item['id'] for item in directory.all_offers()], [1, 2, 3])\n        self.assertEqual(directory.get_offer(2)['code'], 'B')\n        self.assertIsNone(directory.get_offer(999))\n        self.assertEqual(OfferDirectory([]).all_offers(), [])\n\n    def test_boundaries(self):\n        directory = OfferDirectory([\n            self.offer(1, starts_at=5, ends_at=5, discount=0),\n            self.offer(2, discount=100.0),\n        ])\n        self.assertEqual(directory.get_offer(1)['discount'], 0)\n        self.assertEqual(directory.get_offer(2)['discount'], 100.0)\n\n    def test_constructor_and_results_are_deep_copied(self):\n        source = self.offer()\n        directory = OfferDirectory([source])\n        source['metadata']['audience']['regions'].append('west')\n        source['code'] = 'CHANGED'\n        first = directory.get_offer(1)\n        self.assertEqual(first['code'], 'SAVE10')\n        self.assertEqual(first['metadata']['audience']['regions'], ['south'])\n        first['metadata']['audience']['regions'].append('east')\n        listing = directory.all_offers()\n        listing[0]['metadata']['labels'].append('mutated')\n        fresh = directory.get_offer(1)\n        self.assertEqual(fresh['metadata']['audience']['regions'], ['south'])\n        self.assertEqual(fresh['metadata']['labels'], ['new'])\n\n    def test_offer_container_and_field_type_errors(self):\n        for offers in [None, 5, 'offers', b'offers']:\n            with self.subTest(offers=offers):\n                with self.assertRaises(TypeError):\n                    OfferDirectory(offers)\n        bad = [\n            3, self.offer(id=True), self.offer(code=3), self.offer(starts_at=1.0),\n            self.offer(ends_at=False), self.offer(discount=True), self.offer(discount='10'),\n            self.offer(active=1), self.offer(metadata=[]),\n        ]\n        for offer in bad:\n            with self.subTest(offer=offer):\n                with self.assertRaises(TypeError):\n                    OfferDirectory([offer])\n        for offer_id in [True, 1.0, '1', None]:\n            with self.subTest(offer_id=offer_id):\n                with self.assertRaises(TypeError):\n                    OfferDirectory([]).get_offer(offer_id)\n\n    def test_invalid_values_keys_and_duplicates(self):\n        missing = self.offer()\n        missing.pop('code')\n        extra = self.offer()\n        extra['extra'] = 1\n        cases = [\n            self.offer(0), self.offer(-1), self.offer(code=''),\n            self.offer(starts_at=21, ends_at=20), self.offer(discount=-0.1),\n            self.offer(discount=100.1), self.offer(discount=float('nan')),\n            self.offer(discount=float('inf')), missing, extra,\n        ]\n        for offer in cases:\n            with self.subTest(offer=offer):\n                with self.assertRaises(ValueError):\n                    OfferDirectory([offer])\n        with self.assertRaises(ValueError):\n            OfferDirectory([self.offer(1), self.offer(1, code='OTHER')])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "abec3c3c3705cb42857267b1093127d1d556302abb99629eb31b635fcd598a2f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b0f743440b5612486c6f4685bb47af7e6de344c429f72f650615798644c44a66",
+      "text": "Create a new implementation in `solution.py` defining an `OfferDirectory` class.\n\n`OfferDirectory(offers)` accepts a non-string iterable of mappings. Every offer must contain exactly `id`, `code`, `starts_at`, `ends_at`, `discount`, `active`, and `metadata`. Requirements are:\n\n- `id`: unique positive integer other than `bool`\n- `code`: non-empty string\n- `starts_at` and `ends_at`: integers other than `bool`, with `starts_at <= ends_at`\n- `discount`: finite real number other than `bool`, from 0 through 100 inclusive\n- `active`: boolean\n- `metadata`: dictionary with arbitrary deeply nested contents\n\nRaise `TypeError` for incorrect types and `ValueError` for invalid values, missing or extra fields, or duplicate IDs. Construction must not retain aliases to caller-owned objects.\n\nProvide `all_offers() -> list[dict]`, returning deep copies ordered by ascending ID, and `get_offer(offer_id) -> dict | None`, returning a deep copy of the matching offer or `None` when absent. `get_offer` requires an integer other than `bool`; otherwise raise `TypeError`. Mutating constructor inputs or returned values must never change directory state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b0f743440b5612486c6f4685bb47af7e6de344c429f72f650615798644c44a66",
+      "text": "Create a new implementation in `solution.py` defining an `OfferDirectory` class.\n\n`OfferDirectory(offers)` accepts a non-string iterable of mappings. Every offer must contain exactly `id`, `code`, `starts_at`, `ends_at`, `discount`, `active`, and `metadata`. Requirements are:\n\n- `id`: unique positive integer other than `bool`\n- `code`: non-empty string\n- `starts_at` and `ends_at`: integers other than `bool`, with `starts_at <= ends_at`\n- `discount`: finite real number other than `bool`, from 0 through 100 inclusive\n- `active`: boolean\n- `metadata`: dictionary with arbitrary deeply nested contents\n\nRaise `TypeError` for incorrect types and `ValueError` for invalid values, missing or extra fields, or duplicate IDs. Construction must not retain aliases to caller-owned objects.\n\nProvide `all_offers() -> list[dict]`, returning deep copies ordered by ascending ID, and `get_offer(offer_id) -> dict | None`, returning a deep copy of the matching offer or `None` when absent. `get_offer` requires an integer other than `bool`; otherwise raise `TypeError`. Mutating constructor inputs or returned values must never change directory state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0138",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom collections.abc import Iterable, Mapping\nfrom copy import deepcopy\nfrom numbers import Real\n\n\nclass OfferDirectory:\n    _fields = {\"id\", \"code\", \"starts_at\", \"ends_at\", \"discount\", \"active\", \"metadata\"}\n\n    def __init__(self, offers):\n        if isinstance(offers, (str, bytes)) or not isinstance(offers, Iterable):\n            raise TypeError(\"offers must be a non-string iterable\")\n        prepared = {}\n        for offer in offers:\n            normalized = self._validate(offer)\n            offer_id = normalized[\"id\"]\n            if offer_id in prepared:\n                raise ValueError(\"offer ids must be unique\")\n            prepared[offer_id] = normalized\n        self._offers = prepared\n\n    @classmethod\n    def _validate(cls, offer):\n        if not isinstance(offer, Mapping):\n            raise TypeError(\"each offer must be a mapping\")\n        if set(offer) != cls._fields:\n            raise ValueError(\"offer fields do not match the schema\")\n        value = deepcopy(dict(offer))\n        offer_id = value[\"id\"]\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"id must be an integer\")\n        if offer_id <= 0:\n            raise ValueError(\"id must be positive\")\n        if not isinstance(value[\"code\"], str):\n            raise TypeError(\"code must be a string\")\n        if not value[\"code\"]:\n            raise ValueError(\"code must not be empty\")\n        for key in (\"starts_at\", \"ends_at\"):\n            if isinstance(value[key], bool) or not isinstance(value[key], int):\n                raise TypeError(f\"{key} must be an integer\")\n        if value[\"starts_at\"] > value[\"ends_at\"]:\n            raise ValueError(\"starts_at must not exceed ends_at\")\n        discount = value[\"discount\"]\n        if isinstance(discount, bool) or not isinstance(discount, Real):\n            raise TypeError(\"discount must be a real number\")\n        if not math.isfinite(discount) or not 0 <= discount <= 100:\n            raise ValueError(\"discount must be finite and between 0 and 100\")\n        if not isinstance(value[\"active\"], bool):\n            raise TypeError(\"active must be boolean\")\n        if not isinstance(value[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n        return value\n\n    def all_offers(self):\n        return [deepcopy(self._offers[key]) for key in sorted(self._offers)]\n\n    def get_offer(self, offer_id):\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"offer_id must be an integer\")\n        offer = self._offers.get(offer_id)\n        return offer\n",
+          "label": "Returns the internally stored offer directly, allowing callers to mutate directory state.",
+          "sha256": "6c65ee42186d185cfb3b9b5a3f5490f68b99a1b7c015cabc1be15d1554813d0e"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom collections.abc import Iterable, Mapping\nfrom copy import deepcopy\nfrom numbers import Real\n\n\nclass OfferDirectory:\n    _fields = {\"id\", \"code\", \"starts_at\", \"ends_at\", \"discount\", \"active\", \"metadata\"}\n\n    def __init__(self, offers):\n        if isinstance(offers, (str, bytes)) or not isinstance(offers, Iterable):\n            raise TypeError(\"offers must be a non-string iterable\")\n        prepared = {}\n        for offer in offers:\n            normalized = self._validate(offer)\n            offer_id = normalized[\"id\"]\n            if offer_id in prepared:\n                raise ValueError(\"offer ids must be unique\")\n            prepared[offer_id] = normalized\n        self._offers = prepared\n\n    @classmethod\n    def _validate(cls, offer):\n        if not isinstance(offer, Mapping):\n            raise TypeError(\"each offer must be a mapping\")\n        if set(offer) != cls._fields:\n            raise ValueError(\"offer fields do not match the schema\")\n        value = deepcopy(dict(offer))\n        offer_id = value[\"id\"]\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"id must be an integer\")\n        if offer_id <= 0:\n            raise ValueError(\"id must be positive\")\n        if not isinstance(value[\"code\"], str):\n            raise TypeError(\"code must be a string\")\n        if not value[\"code\"]:\n            raise ValueError(\"code must not be empty\")\n        for key in (\"starts_at\", \"ends_at\"):\n            if isinstance(value[key], bool) or not isinstance(value[key], int):\n                raise TypeError(f\"{key} must be an integer\")\n        if value[\"starts_at\"] > value[\"ends_at\"]:\n            raise ValueError(\"starts_at must not exceed ends_at\")\n        discount = value[\"discount\"]\n        if isinstance(discount, bool) or not isinstance(discount, Real):\n            raise TypeError(\"discount must be a real number\")\n        if not math.isfinite(discount) or not 0 <= discount <= 100:\n            raise ValueError(\"discount must be finite and between 0 and 100\")\n        if not isinstance(value[\"active\"], bool):\n            raise TypeError(\"active must be boolean\")\n        if not isinstance(value[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n        return value\n\n    def all_offers(self):\n        return [deepcopy(self._offers[key]) for key in sorted(self._offers)]\n\n    def get_offer(self, offer_id):\n        if isinstance(offer_id, bool) or not isinstance(offer_id, int):\n            raise TypeError(\"offer_id must be an integer\")\n        offer = self._offers.get(offer_id)\n        return None if offer is None else deepcopy(offer)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8fc03c6bc8a37b0a05b7231fbd1f23b51558e686fe11cf12f55a0b7785e38c22"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_out_of_range_integer_discount_raises_value_error (__main__.OfferDiscountTests.test_out_of_range_integer_discount_raises_value_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_out_of_range_integer_discount_raises_value_error\n    OfferDirectory([offer])\n  File \"/work/solution.py\", line 15, in __init__\n    normalized = self._validate(offer)\n                 ^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 46, in _validate\n    if not math.isfinite(discount) or not 0 <= discount <= 100:\n           ^^^^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "1eb8036fed7fc1e7f6b1690c41f7d4a9f83d6151f5d90d9e9eb6c47feaec8fef",
+    "duration_ms": 528,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

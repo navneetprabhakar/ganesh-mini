@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0118",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "366f9dd30c2c46d18412de65b66868d26cb7fc0794bb7e58459d2820064110a0",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import advance_profiles\n\n\nclass ProfileIntegerTargetTests(unittest.TestCase):\n    def test_empty_profiles_accept_finite_integer_target(self):\n        self.assertEqual(advance_profiles([], 10**400), [])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "36704909be8c738f324003b0206780d2818210b352b01f28f4c785e81307d1aa"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "bf75a00cada971f91b47454ea1d209388d65dac49b04a12ed0a07b5a428d01e7",
+      "text": "Create `solution.py` with a top-level function `advance_profiles(profiles, target, keep_history=False)`. `profiles` must be a list of dictionaries containing exactly `id`, `score`, `adjustments`, and `metadata`. IDs must be unique strings. Scores and adjustment values must be finite numbers, excluding booleans. `adjustments` must be a list; `metadata` must be a dictionary. `target` must be a finite number and `keep_history` exactly a bool. Process profiles in input order. For each profile, repeatedly remove and apply the largest strictly positive remaining adjustment, breaking equal-value ties by original list position, until its score is at least `target` or no positive adjustment remains. Nonpositive adjustments stay in their original relative order; unused positive adjustments also retain their relative order. Return deep-copied profile dictionaries with updated `score` and `adjustments`. If `keep_history` is true, also add `history`, containing the initial score followed by each resulting score; otherwise the key must be absent. The input and all nested values must remain unchanged, and no mutable result may alias input data or another result. Empty input returns an empty list. Raise `TypeError` for type errors and `ValueError` for non-finite numbers, duplicate IDs, or incorrect key sets.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "bf75a00cada971f91b47454ea1d209388d65dac49b04a12ed0a07b5a428d01e7",
+      "text": "Create `solution.py` with a top-level function `advance_profiles(profiles, target, keep_history=False)`. `profiles` must be a list of dictionaries containing exactly `id`, `score`, `adjustments`, and `metadata`. IDs must be unique strings. Scores and adjustment values must be finite numbers, excluding booleans. `adjustments` must be a list; `metadata` must be a dictionary. `target` must be a finite number and `keep_history` exactly a bool. Process profiles in input order. For each profile, repeatedly remove and apply the largest strictly positive remaining adjustment, breaking equal-value ties by original list position, until its score is at least `target` or no positive adjustment remains. Nonpositive adjustments stay in their original relative order; unused positive adjustments also retain their relative order. Return deep-copied profile dictionaries with updated `score` and `adjustments`. If `keep_history` is true, also add `history`, containing the initial score followed by each resulting score; otherwise the key must be absent. The input and all nested values must remain unchanged, and no mutable result may alias input data or another result. Empty input returns an empty list. Raise `TypeError` for type errors and `ValueError` for non-finite numbers, duplicate IDs, or incorrect key sets.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0118",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport math\n\n\ndef _number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be a number\")\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n\n\ndef advance_profiles(profiles, target, keep_history=False):\n    if not isinstance(profiles, list):\n        raise TypeError(\"profiles must be a list\")\n    _number(target, \"target\")\n    if type(keep_history) is not bool:\n        raise TypeError(\"keep_history must be a bool\")\n\n    seen = set()\n    result = []\n    for source in profiles:\n        if not isinstance(source, dict):\n            raise TypeError(\"each profile must be a dictionary\")\n        if set(source) != {\"id\", \"score\", \"adjustments\", \"metadata\"}:\n            raise ValueError(\"profile has incorrect keys\")\n        if not isinstance(source[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if source[\"id\"] in seen:\n            raise ValueError(\"ids must be unique\")\n        seen.add(source[\"id\"])\n        _number(source[\"score\"], \"score\")\n        if not isinstance(source[\"adjustments\"], list):\n            raise TypeError(\"adjustments must be a list\")\n        for adjustment in source[\"adjustments\"]:\n            _number(adjustment, \"adjustment\")\n        if not isinstance(source[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n\n        profile = source.copy()\n        history = [profile[\"score\"]]\n        while profile[\"score\"] < target:\n            candidates = [\n                (value, -index, index)\n                for index, value in enumerate(profile[\"adjustments\"])\n                if value > 0\n            ]\n            if not candidates:\n                break\n            _, _, index = max(candidates)\n            adjustment = profile[\"adjustments\"].pop(index)\n            profile[\"score\"] += adjustment\n            history.append(profile[\"score\"])\n        if keep_history:\n            profile[\"history\"] = history\n        result.append(profile)\n    return result\n",
+          "label": "Uses a shallow profile copy, so consuming adjustments mutates the input list and nested metadata remains aliased.",
+          "sha256": "5802dac448f0e745ab98db743a9436278a0c950478db0519f7e836fddff88ec8"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport math\n\n\ndef _number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be a number\")\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n\n\ndef advance_profiles(profiles, target, keep_history=False):\n    if not isinstance(profiles, list):\n        raise TypeError(\"profiles must be a list\")\n    _number(target, \"target\")\n    if type(keep_history) is not bool:\n        raise TypeError(\"keep_history must be a bool\")\n\n    seen = set()\n    result = []\n    for source in profiles:\n        if not isinstance(source, dict):\n            raise TypeError(\"each profile must be a dictionary\")\n        if set(source) != {\"id\", \"score\", \"adjustments\", \"metadata\"}:\n            raise ValueError(\"profile has incorrect keys\")\n        if not isinstance(source[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if source[\"id\"] in seen:\n            raise ValueError(\"ids must be unique\")\n        seen.add(source[\"id\"])\n        _number(source[\"score\"], \"score\")\n        if not isinstance(source[\"adjustments\"], list):\n            raise TypeError(\"adjustments must be a list\")\n        for adjustment in source[\"adjustments\"]:\n            _number(adjustment, \"adjustment\")\n        if not isinstance(source[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n\n        profile = deepcopy(source)\n        history = [profile[\"score\"]]\n        while profile[\"score\"] < target:\n            candidates = [\n                (value, -index, index)\n                for index, value in enumerate(profile[\"adjustments\"])\n                if value > 0\n            ]\n            if not candidates:\n                break\n            _, _, index = max(candidates)\n            adjustment = profile[\"adjustments\"].pop(index)\n            profile[\"score\"] += adjustment\n            history.append(profile[\"score\"])\n        if keep_history:\n            profile[\"history\"] = history\n        result.append(profile)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "462ca08c368e0cb099b774bf7780a8a0ad00f85a40054b923da1792a8c1de1ef"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport math\nimport unittest\nfrom solution import advance_profiles\n\n\nclass AdvanceProfilesTests(unittest.TestCase):\n    def test_selection_history_stability_and_deep_copy(self):\n        metadata = {\"tags\": [\"x\"]}\n        profiles = [\n            {\"id\": \"a\", \"score\": 1, \"adjustments\": [3, -1, 3, 2, 0], \"metadata\": metadata},\n            {\"id\": \"b\", \"score\": 10, \"adjustments\": [5], \"metadata\": metadata},\n        ]\n        original = copy.deepcopy(profiles)\n        result = advance_profiles(profiles, 7, True)\n        self.assertEqual(result, [\n            {\"id\": \"a\", \"score\": 7, \"adjustments\": [-1, 2, 0], \"metadata\": {\"tags\": [\"x\"]}, \"history\": [1, 4, 7]},\n            {\"id\": \"b\", \"score\": 10, \"adjustments\": [5], \"metadata\": {\"tags\": [\"x\"]}, \"history\": [10]},\n        ])\n        self.assertEqual(profiles, original)\n        self.assertIsNot(result[0], profiles[0])\n        self.assertIsNot(result[0][\"metadata\"], profiles[0][\"metadata\"])\n        self.assertIsNot(result[0][\"metadata\"], result[1][\"metadata\"])\n        result[0][\"metadata\"][\"tags\"].append(\"changed\")\n        self.assertEqual(profiles, original)\n        self.assertEqual(result[1][\"metadata\"][\"tags\"], [\"x\"])\n\n    def test_no_history_empty_and_exhaustion(self):\n        profile = {\"id\": \"x\", \"score\": 0.5, \"adjustments\": [0, -2, 1.5], \"metadata\": {}}\n        result = advance_profiles([profile], 10)\n        self.assertEqual(result, [{\"id\": \"x\", \"score\": 2.0, \"adjustments\": [0, -2], \"metadata\": {}}])\n        self.assertNotIn(\"history\", result[0])\n        self.assertEqual(advance_profiles([], 0, False), [])\n\n    def test_top_level_type_validation(self):\n        for profiles in (None, (), {}):\n            with self.assertRaises(TypeError):\n                advance_profiles(profiles, 1)\n        for target in (True, \"1\", None):\n            with self.assertRaises(TypeError):\n                advance_profiles([], target)\n        for target in (math.inf, -math.inf, math.nan):\n            with self.assertRaises(ValueError):\n                advance_profiles([], target)\n        for keep in (0, 1, None, \"false\"):\n            with self.assertRaises(TypeError):\n                advance_profiles([], 1, keep)\n\n    def test_profile_validation(self):\n        good = {\"id\": \"x\", \"score\": 1, \"adjustments\": [1], \"metadata\": {}}\n        for profile in (None, [], \"x\"):\n            with self.assertRaises(TypeError):\n                advance_profiles([profile], 2)\n        with self.assertRaises(ValueError):\n            advance_profiles([{\"id\": \"x\", \"score\": 1, \"adjustments\": [1]}], 2)\n        with self.assertRaises(ValueError):\n            advance_profiles([{**good, \"extra\": 1}], 2)\n        for bad_id in (1, None):\n            with self.assertRaises(TypeError):\n                advance_profiles([{**good, \"id\": bad_id}], 2)\n        for score in (True, \"1\", None):\n            with self.assertRaises(TypeError):\n                advance_profiles([{**good, \"score\": score}], 2)\n        for score in (math.inf, math.nan):\n            with self.assertRaises(ValueError):\n                advance_profiles([{**good, \"score\": score}], 2)\n        with self.assertRaises(TypeError):\n            advance_profiles([{**good, \"adjustments\": (1,)}], 2)\n        for adjustment in (True, \"1\", None):\n            with self.assertRaises(TypeError):\n                advance_profiles([{**good, \"adjustments\": [adjustment]}], 2)\n        with self.assertRaises(ValueError):\n            advance_profiles([{**good, \"adjustments\": [math.inf]}], 2)\n        with self.assertRaises(TypeError):\n            advance_profiles([{**good, \"metadata\": []}], 2)\n        with self.assertRaises(ValueError):\n            advance_profiles([good, copy.deepcopy(good)], 2)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "aea0dcb04155d5de355b63f590eb4d0b97181bbcb9d447da3a65be587af17869"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "bf75a00cada971f91b47454ea1d209388d65dac49b04a12ed0a07b5a428d01e7",
+      "text": "Create `solution.py` with a top-level function `advance_profiles(profiles, target, keep_history=False)`. `profiles` must be a list of dictionaries containing exactly `id`, `score`, `adjustments`, and `metadata`. IDs must be unique strings. Scores and adjustment values must be finite numbers, excluding booleans. `adjustments` must be a list; `metadata` must be a dictionary. `target` must be a finite number and `keep_history` exactly a bool. Process profiles in input order. For each profile, repeatedly remove and apply the largest strictly positive remaining adjustment, breaking equal-value ties by original list position, until its score is at least `target` or no positive adjustment remains. Nonpositive adjustments stay in their original relative order; unused positive adjustments also retain their relative order. Return deep-copied profile dictionaries with updated `score` and `adjustments`. If `keep_history` is true, also add `history`, containing the initial score followed by each resulting score; otherwise the key must be absent. The input and all nested values must remain unchanged, and no mutable result may alias input data or another result. Empty input returns an empty list. Raise `TypeError` for type errors and `ValueError` for non-finite numbers, duplicate IDs, or incorrect key sets.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "bf75a00cada971f91b47454ea1d209388d65dac49b04a12ed0a07b5a428d01e7",
+      "text": "Create `solution.py` with a top-level function `advance_profiles(profiles, target, keep_history=False)`. `profiles` must be a list of dictionaries containing exactly `id`, `score`, `adjustments`, and `metadata`. IDs must be unique strings. Scores and adjustment values must be finite numbers, excluding booleans. `adjustments` must be a list; `metadata` must be a dictionary. `target` must be a finite number and `keep_history` exactly a bool. Process profiles in input order. For each profile, repeatedly remove and apply the largest strictly positive remaining adjustment, breaking equal-value ties by original list position, until its score is at least `target` or no positive adjustment remains. Nonpositive adjustments stay in their original relative order; unused positive adjustments also retain their relative order. Return deep-copied profile dictionaries with updated `score` and `adjustments`. If `keep_history` is true, also add `history`, containing the initial score followed by each resulting score; otherwise the key must be absent. The input and all nested values must remain unchanged, and no mutable result may alias input data or another result. Empty input returns an empty list. Raise `TypeError` for type errors and `ValueError` for non-finite numbers, duplicate IDs, or incorrect key sets.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0118",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport math\n\n\ndef _number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be a number\")\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n\n\ndef advance_profiles(profiles, target, keep_history=False):\n    if not isinstance(profiles, list):\n        raise TypeError(\"profiles must be a list\")\n    _number(target, \"target\")\n    if type(keep_history) is not bool:\n        raise TypeError(\"keep_history must be a bool\")\n\n    seen = set()\n    result = []\n    for source in profiles:\n        if not isinstance(source, dict):\n            raise TypeError(\"each profile must be a dictionary\")\n        if set(source) != {\"id\", \"score\", \"adjustments\", \"metadata\"}:\n            raise ValueError(\"profile has incorrect keys\")\n        if not isinstance(source[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if source[\"id\"] in seen:\n            raise ValueError(\"ids must be unique\")\n        seen.add(source[\"id\"])\n        _number(source[\"score\"], \"score\")\n        if not isinstance(source[\"adjustments\"], list):\n            raise TypeError(\"adjustments must be a list\")\n        for adjustment in source[\"adjustments\"]:\n            _number(adjustment, \"adjustment\")\n        if not isinstance(source[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n\n        profile = source.copy()\n        history = [profile[\"score\"]]\n        while profile[\"score\"] < target:\n            candidates = [\n                (value, -index, index)\n                for index, value in enumerate(profile[\"adjustments\"])\n                if value > 0\n            ]\n            if not candidates:\n                break\n            _, _, index = max(candidates)\n            adjustment = profile[\"adjustments\"].pop(index)\n            profile[\"score\"] += adjustment\n            history.append(profile[\"score\"])\n        if keep_history:\n            profile[\"history\"] = history\n        result.append(profile)\n    return result\n",
+          "label": "Uses a shallow profile copy, so consuming adjustments mutates the input list and nested metadata remains aliased.",
+          "sha256": "5802dac448f0e745ab98db743a9436278a0c950478db0519f7e836fddff88ec8"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport math\n\n\ndef _number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be a number\")\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n\n\ndef advance_profiles(profiles, target, keep_history=False):\n    if not isinstance(profiles, list):\n        raise TypeError(\"profiles must be a list\")\n    _number(target, \"target\")\n    if type(keep_history) is not bool:\n        raise TypeError(\"keep_history must be a bool\")\n\n    seen = set()\n    result = []\n    for source in profiles:\n        if not isinstance(source, dict):\n            raise TypeError(\"each profile must be a dictionary\")\n        if set(source) != {\"id\", \"score\", \"adjustments\", \"metadata\"}:\n            raise ValueError(\"profile has incorrect keys\")\n        if not isinstance(source[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if source[\"id\"] in seen:\n            raise ValueError(\"ids must be unique\")\n        seen.add(source[\"id\"])\n        _number(source[\"score\"], \"score\")\n        if not isinstance(source[\"adjustments\"], list):\n            raise TypeError(\"adjustments must be a list\")\n        for adjustment in source[\"adjustments\"]:\n            _number(adjustment, \"adjustment\")\n        if not isinstance(source[\"metadata\"], dict):\n            raise TypeError(\"metadata must be a dictionary\")\n\n        profile = deepcopy(source)\n        history = [profile[\"score\"]]\n        while profile[\"score\"] < target:\n            candidates = [\n                (value, -index, index)\n                for index, value in enumerate(profile[\"adjustments\"])\n                if value > 0\n            ]\n            if not candidates:\n                break\n            _, _, index = max(candidates)\n            adjustment = profile[\"adjustments\"].pop(index)\n            profile[\"score\"] += adjustment\n            history.append(profile[\"score\"])\n        if keep_history:\n            profile[\"history\"] = history\n        result.append(profile)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "462ca08c368e0cb099b774bf7780a8a0ad00f85a40054b923da1792a8c1de1ef"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_empty_profiles_accept_finite_integer_target (__main__.ProfileIntegerTargetTests.test_empty_profiles_accept_finite_integer_target)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_empty_profiles_accept_finite_integer_target\n    self.assertEqual(advance_profiles([], 10**400), [])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 15, in advance_profiles\n    _number(target, \"target\")\n  File \"/work/solution.py\", line 8, in _number\n    if not math.isfinite(value):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "b1695730ea213c7c3e51441abf711c92a7962750376e91c8e5c9e127076522d8",
+    "duration_ms": 479,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,12 +1,12 @@
 # Cutoff quality review — in progress
 
-Current checkpoint: **523 holds (520 additive plus historical three)**; 1,338
+Current checkpoint: **554 holds (551 additive plus historical three)**; 1,398
 unique outside-sample inspections. All 544 array queue positions inspected;
 Rust generation queue complete: 684 of 684 inspected.
-Python generation queue: 105 of 684 inspected, continue 106; batches 1–7 backed up.
-GCS verified through 523 holds / Python batch 7 / 1,338 outside-sample inspections.
-See QUALITY_STRATUM_523_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
-See PYTHON_GENERATION_REVIEW_7.md. Remaining strata and quality criteria are pending;
+Python generation queue: 165 of 684 inspected, continue 166; batch 11 backed up.
+GCS verified through 554 holds / Python batch 11 / 1,398 outside-sample inspections.
+See QUALITY_STRATUM_554_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
+See PYTHON_GENERATION_REVIEW_11.md. Remaining strata and quality criteria are pending;
 inspection is not admission. All 97 data tooling tests pass.
 No training seal or new VM. Older entries are historical.
 

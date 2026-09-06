@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0156",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "0c23e909c2ebad68f8ede1a958275f2556a147199fbef166e3dc9c443e8e64b6",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import logging\nimport unittest\nfrom solution import BaseUnit\n\n\nclass FalseyLogger(logging.Logger):\n    def __init__(self):\n        super().__init__(\"probe\")\n        self.messages = []\n\n    def __bool__(self):\n        return False\n\n    def debug(self, message, *args, **kwargs):\n        self.messages.append(message)\n\n\nclass SuppliedLoggerTests(unittest.TestCase):\n    def test_falsey_logger_instance_is_used(self):\n        logger = FalseyLogger()\n        BaseUnit(logger).initialize()\n        self.assertEqual(logger.messages, [\"base:initialization\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "11538f8407e2dcc50319b3765d2442d038ccdd8fb3e6ffae1605d4aab0cea6d0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "dd53aabfb665ded9b96d502ac5ceb89e2f3a4ee44c82890b27cdfe4a9f917cba",
+      "text": "Create `solution.py` with lifecycle classes `BaseUnit` and `AuditUnit`.\n\n`BaseUnit(logger=None)` accepts `None` or a `logging.Logger`; invalid values raise `ValueError`. With `None`, use `logging.getLogger(__name__)`. It starts in state `\"new\"` and stores an internal event list.\n\nPublic methods enforce this lifecycle:\n- `initialize()` is valid only in `new`, calls `_execute_initialization()`, then changes state to `initialized`.\n- `start()` is valid only in `initialized`, calls `_execute_start()`, then changes state to `running`.\n- `stop()` is valid only in `running`, calls `_execute_stop()`, then changes state to `stopped`.\n\nInvalid transitions raise `RuntimeError` without calling hooks or changing state. Base hook implementations must append `base:<stage>` to the event list and emit the same text with `logger.debug`.\n\n`AuditUnit` overrides all three hooks. Each override first invokes its superclass hook and then appends and logs `audit:<stage>`. Its `load()` method returns `True` without changing state or events.\n\nExpose read-only properties `state` and `events`; `events` returns an immutable tuple snapshot. Importing the module must not alter global logging configuration. Implement the new API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "dd53aabfb665ded9b96d502ac5ceb89e2f3a4ee44c82890b27cdfe4a9f917cba",
+      "text": "Create `solution.py` with lifecycle classes `BaseUnit` and `AuditUnit`.\n\n`BaseUnit(logger=None)` accepts `None` or a `logging.Logger`; invalid values raise `ValueError`. With `None`, use `logging.getLogger(__name__)`. It starts in state `\"new\"` and stores an internal event list.\n\nPublic methods enforce this lifecycle:\n- `initialize()` is valid only in `new`, calls `_execute_initialization()`, then changes state to `initialized`.\n- `start()` is valid only in `initialized`, calls `_execute_start()`, then changes state to `running`.\n- `stop()` is valid only in `running`, calls `_execute_stop()`, then changes state to `stopped`.\n\nInvalid transitions raise `RuntimeError` without calling hooks or changing state. Base hook implementations must append `base:<stage>` to the event list and emit the same text with `logger.debug`.\n\n`AuditUnit` overrides all three hooks. Each override first invokes its superclass hook and then appends and logs `audit:<stage>`. Its `load()` method returns `True` without changing state or events.\n\nExpose read-only properties `state` and `events`; `events` returns an immutable tuple snapshot. Importing the module must not alter global logging configuration. Implement the new API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0156",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import logging\n\n\nclass BaseUnit:\n    def __init__(self, logger=None):\n        if logger is not None and not isinstance(logger, logging.Logger):\n            raise ValueError(\"logger must be a Logger\")\n        self._logger = logger or logging.getLogger(__name__)\n        self._state = \"new\"\n        self._events = []\n\n    @property\n    def state(self):\n        return self._state\n\n    @property\n    def events(self):\n        return tuple(self._events)\n\n    def _record(self, text):\n        self._events.append(text)\n        self._logger.debug(text)\n\n    def initialize(self):\n        if self._state != \"new\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_initialization()\n        self._state = \"initialized\"\n\n    def start(self):\n        if self._state != \"initialized\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_start()\n        self._state = \"running\"\n\n    def stop(self):\n        if self._state != \"running\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_stop()\n        self._state = \"stopped\"\n\n    def _execute_initialization(self):\n        self._record(\"base:initialization\")\n\n    def _execute_start(self):\n        self._record(\"base:start\")\n\n    def _execute_stop(self):\n        self._record(\"base:stop\")\n\n\nclass AuditUnit(BaseUnit):\n    def _execute_initialization(self):\n        self._record(\"audit:initialization\")\n        super()._execute_initialization()\n\n    def _execute_start(self):\n        super()._execute_start()\n        self._record(\"audit:start\")\n\n    def _execute_stop(self):\n        super()._execute_stop()\n        self._record(\"audit:stop\")\n\n    def load(self):\n        return True\n",
+          "label": "Records the audit initialization event before the required superclass initialization event.",
+          "sha256": "6e9d5f4963574333367ce0192311cb6af9860400321bc63bf861ed92c61bebac"
+        }
+      ],
+      "reference": {
+        "code": "import logging\n\n\nclass BaseUnit:\n    def __init__(self, logger=None):\n        if logger is not None and not isinstance(logger, logging.Logger):\n            raise ValueError(\"logger must be a Logger\")\n        self._logger = logger or logging.getLogger(__name__)\n        self._state = \"new\"\n        self._events = []\n\n    @property\n    def state(self):\n        return self._state\n\n    @property\n    def events(self):\n        return tuple(self._events)\n\n    def _record(self, text):\n        self._events.append(text)\n        self._logger.debug(text)\n\n    def initialize(self):\n        if self._state != \"new\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_initialization()\n        self._state = \"initialized\"\n\n    def start(self):\n        if self._state != \"initialized\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_start()\n        self._state = \"running\"\n\n    def stop(self):\n        if self._state != \"running\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_stop()\n        self._state = \"stopped\"\n\n    def _execute_initialization(self):\n        self._record(\"base:initialization\")\n\n    def _execute_start(self):\n        self._record(\"base:start\")\n\n    def _execute_stop(self):\n        self._record(\"base:stop\")\n\n\nclass AuditUnit(BaseUnit):\n    def _execute_initialization(self):\n        super()._execute_initialization()\n        self._record(\"audit:initialization\")\n\n    def _execute_start(self):\n        super()._execute_start()\n        self._record(\"audit:start\")\n\n    def _execute_stop(self):\n        super()._execute_stop()\n        self._record(\"audit:stop\")\n\n    def load(self):\n        return True\n",
+        "label": "codex-teacher-reference",
+        "sha256": "04601ba54b2a9d8c36b51dc0437bc1f85f4d2bc8591d7e6375e62d926115fa36"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import logging\nimport unittest\n\nfrom solution import AuditUnit, BaseUnit\n\n\nclass RecordingHandler(logging.Handler):\n    def __init__(self):\n        super().__init__()\n        self.messages = []\n\n    def emit(self, record):\n        self.messages.append(record.getMessage())\n\n\nclass LifecycleTests(unittest.TestCase):\n    def make_logger(self):\n        logger = logging.getLogger(\"lifecycle-test\")\n        logger.handlers = []\n        logger.propagate = False\n        logger.setLevel(logging.DEBUG)\n        handler = RecordingHandler()\n        logger.addHandler(handler)\n        return logger, handler\n\n    def test_base_lifecycle_events_and_logging(self):\n        logger, handler = self.make_logger()\n        unit = BaseUnit(logger)\n        self.assertEqual(unit.state, \"new\")\n        self.assertEqual(unit.events, ())\n        self.assertIsNone(unit.initialize())\n        self.assertEqual(unit.state, \"initialized\")\n        self.assertIsNone(unit.start())\n        self.assertEqual(unit.state, \"running\")\n        self.assertIsNone(unit.stop())\n        self.assertEqual(unit.state, \"stopped\")\n        expected = (\"base:initialization\", \"base:start\", \"base:stop\")\n        self.assertEqual(unit.events, expected)\n        self.assertEqual(handler.messages, list(expected))\n\n    def test_audit_hook_order_and_load_stability(self):\n        logger, handler = self.make_logger()\n        unit = AuditUnit(logger)\n        self.assertTrue(unit.load())\n        self.assertEqual(unit.state, \"new\")\n        self.assertEqual(unit.events, ())\n        unit.initialize()\n        unit.start()\n        unit.stop()\n        expected = (\n            \"base:initialization\", \"audit:initialization\",\n            \"base:start\", \"audit:start\",\n            \"base:stop\", \"audit:stop\",\n        )\n        self.assertEqual(unit.events, expected)\n        self.assertEqual(handler.messages, list(expected))\n\n    def test_invalid_transitions_do_not_call_hooks_or_change_state(self):\n        unit = AuditUnit()\n        for operation in [unit.start, unit.stop]:\n            with self.assertRaises(RuntimeError):\n                operation()\n            self.assertEqual(unit.state, \"new\")\n            self.assertEqual(unit.events, ())\n        unit.initialize()\n        before = unit.events\n        with self.assertRaises(RuntimeError):\n            unit.initialize()\n        self.assertEqual(unit.state, \"initialized\")\n        self.assertEqual(unit.events, before)\n        unit.start()\n        before = unit.events\n        with self.assertRaises(RuntimeError):\n            unit.start()\n        self.assertEqual(unit.state, \"running\")\n        self.assertEqual(unit.events, before)\n        unit.stop()\n        before = unit.events\n        with self.assertRaises(RuntimeError):\n            unit.stop()\n        self.assertEqual(unit.state, \"stopped\")\n        self.assertEqual(unit.events, before)\n\n    def test_invalid_loggers(self):\n        for logger in [object(), \"logger\", 1, False]:\n            with self.subTest(logger=logger):\n                with self.assertRaises(ValueError):\n                    BaseUnit(logger)\n        self.assertIsInstance(BaseUnit()._logger, logging.Logger)\n\n    def test_properties_are_read_only_and_events_are_immutable(self):\n        unit = BaseUnit()\n        unit.initialize()\n        snapshot = unit.events\n        self.assertIsInstance(snapshot, tuple)\n        snapshot += (\"fake\",)\n        self.assertEqual(unit.events, (\"base:initialization\",))\n        with self.assertRaises(AttributeError):\n            unit.state = \"running\"\n        with self.assertRaises(AttributeError):\n            unit.events = ()\n\n    def test_hook_exception_prevents_state_transition(self):\n        class FailingUnit(BaseUnit):\n            def _execute_start(self):\n                raise LookupError(\"failed\")\n\n        unit = FailingUnit()\n        unit.initialize()\n        before = unit.events\n        with self.assertRaises(LookupError):\n            unit.start()\n        self.assertEqual(unit.state, \"initialized\")\n        self.assertEqual(unit.events, before)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "1f4ce125d98892eb55a33152a6b149bd821c0b0561eece0e75b23418cd55b84c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "dd53aabfb665ded9b96d502ac5ceb89e2f3a4ee44c82890b27cdfe4a9f917cba",
+      "text": "Create `solution.py` with lifecycle classes `BaseUnit` and `AuditUnit`.\n\n`BaseUnit(logger=None)` accepts `None` or a `logging.Logger`; invalid values raise `ValueError`. With `None`, use `logging.getLogger(__name__)`. It starts in state `\"new\"` and stores an internal event list.\n\nPublic methods enforce this lifecycle:\n- `initialize()` is valid only in `new`, calls `_execute_initialization()`, then changes state to `initialized`.\n- `start()` is valid only in `initialized`, calls `_execute_start()`, then changes state to `running`.\n- `stop()` is valid only in `running`, calls `_execute_stop()`, then changes state to `stopped`.\n\nInvalid transitions raise `RuntimeError` without calling hooks or changing state. Base hook implementations must append `base:<stage>` to the event list and emit the same text with `logger.debug`.\n\n`AuditUnit` overrides all three hooks. Each override first invokes its superclass hook and then appends and logs `audit:<stage>`. Its `load()` method returns `True` without changing state or events.\n\nExpose read-only properties `state` and `events`; `events` returns an immutable tuple snapshot. Importing the module must not alter global logging configuration. Implement the new API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "dd53aabfb665ded9b96d502ac5ceb89e2f3a4ee44c82890b27cdfe4a9f917cba",
+      "text": "Create `solution.py` with lifecycle classes `BaseUnit` and `AuditUnit`.\n\n`BaseUnit(logger=None)` accepts `None` or a `logging.Logger`; invalid values raise `ValueError`. With `None`, use `logging.getLogger(__name__)`. It starts in state `\"new\"` and stores an internal event list.\n\nPublic methods enforce this lifecycle:\n- `initialize()` is valid only in `new`, calls `_execute_initialization()`, then changes state to `initialized`.\n- `start()` is valid only in `initialized`, calls `_execute_start()`, then changes state to `running`.\n- `stop()` is valid only in `running`, calls `_execute_stop()`, then changes state to `stopped`.\n\nInvalid transitions raise `RuntimeError` without calling hooks or changing state. Base hook implementations must append `base:<stage>` to the event list and emit the same text with `logger.debug`.\n\n`AuditUnit` overrides all three hooks. Each override first invokes its superclass hook and then appends and logs `audit:<stage>`. Its `load()` method returns `True` without changing state or events.\n\nExpose read-only properties `state` and `events`; `events` returns an immutable tuple snapshot. Importing the module must not alter global logging configuration. Implement the new API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0156",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import logging\n\n\nclass BaseUnit:\n    def __init__(self, logger=None):\n        if logger is not None and not isinstance(logger, logging.Logger):\n            raise ValueError(\"logger must be a Logger\")\n        self._logger = logger or logging.getLogger(__name__)\n        self._state = \"new\"\n        self._events = []\n\n    @property\n    def state(self):\n        return self._state\n\n    @property\n    def events(self):\n        return tuple(self._events)\n\n    def _record(self, text):\n        self._events.append(text)\n        self._logger.debug(text)\n\n    def initialize(self):\n        if self._state != \"new\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_initialization()\n        self._state = \"initialized\"\n\n    def start(self):\n        if self._state != \"initialized\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_start()\n        self._state = \"running\"\n\n    def stop(self):\n        if self._state != \"running\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_stop()\n        self._state = \"stopped\"\n\n    def _execute_initialization(self):\n        self._record(\"base:initialization\")\n\n    def _execute_start(self):\n        self._record(\"base:start\")\n\n    def _execute_stop(self):\n        self._record(\"base:stop\")\n\n\nclass AuditUnit(BaseUnit):\n    def _execute_initialization(self):\n        self._record(\"audit:initialization\")\n        super()._execute_initialization()\n\n    def _execute_start(self):\n        super()._execute_start()\n        self._record(\"audit:start\")\n\n    def _execute_stop(self):\n        super()._execute_stop()\n        self._record(\"audit:stop\")\n\n    def load(self):\n        return True\n",
+          "label": "Records the audit initialization event before the required superclass initialization event.",
+          "sha256": "6e9d5f4963574333367ce0192311cb6af9860400321bc63bf861ed92c61bebac"
+        }
+      ],
+      "reference": {
+        "code": "import logging\n\n\nclass BaseUnit:\n    def __init__(self, logger=None):\n        if logger is not None and not isinstance(logger, logging.Logger):\n            raise ValueError(\"logger must be a Logger\")\n        self._logger = logger or logging.getLogger(__name__)\n        self._state = \"new\"\n        self._events = []\n\n    @property\n    def state(self):\n        return self._state\n\n    @property\n    def events(self):\n        return tuple(self._events)\n\n    def _record(self, text):\n        self._events.append(text)\n        self._logger.debug(text)\n\n    def initialize(self):\n        if self._state != \"new\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_initialization()\n        self._state = \"initialized\"\n\n    def start(self):\n        if self._state != \"initialized\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_start()\n        self._state = \"running\"\n\n    def stop(self):\n        if self._state != \"running\":\n            raise RuntimeError(\"invalid transition\")\n        self._execute_stop()\n        self._state = \"stopped\"\n\n    def _execute_initialization(self):\n        self._record(\"base:initialization\")\n\n    def _execute_start(self):\n        self._record(\"base:start\")\n\n    def _execute_stop(self):\n        self._record(\"base:stop\")\n\n\nclass AuditUnit(BaseUnit):\n    def _execute_initialization(self):\n        super()._execute_initialization()\n        self._record(\"audit:initialization\")\n\n    def _execute_start(self):\n        super()._execute_start()\n        self._record(\"audit:start\")\n\n    def _execute_stop(self):\n        super()._execute_stop()\n        self._record(\"audit:stop\")\n\n    def load(self):\n        return True\n",
+        "label": "codex-teacher-reference",
+        "sha256": "04601ba54b2a9d8c36b51dc0437bc1f85f4d2bc8591d7e6375e62d926115fa36"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_falsey_logger_instance_is_used (__main__.SuppliedLoggerTests.test_falsey_logger_instance_is_used)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 22, in test_falsey_logger_instance_is_used\n    self.assertEqual(logger.messages, [\"base:initialization\"])\nAssertionError: Lists differ: [] != ['base:initialization']\n\nSecond list contains 1 additional elements.\nFirst extra element 0:\n'base:initialization'\n\n- []\n+ ['base:initialization']\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "4b9a687ea6e2b16cd699c0158f4c123dc3a9facf990057b15f61405d3a56e763",
+    "duration_ms": 414,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

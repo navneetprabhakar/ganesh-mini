@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0122",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5c8dd2c2d909e7e24f06d9c4b16b70a939b4c090aa0cb3bba6491930459ad0d2",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import prepare_quotes\n\n\nclass QuoteIntegerPriceTests(unittest.TestCase):\n    def test_large_equal_finite_prices_have_zero_changes_and_ranges(self):\n        n = 10**400\n        rows = [{\"day\": \"2024-01-01\", \"open\": n, \"close\": n}, {\"day\": \"2024-01-02\", \"open\": n, \"close\": n}]\n        result = prepare_quotes(rows, \"2024-01-01\")\n        self.assertEqual(result[\"train\"][0][\"open\"], 0.0)\n        self.assertEqual(result[\"train\"][0][\"fractional_change\"], 0.0)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "e6fd1f802c028d8132d040306f0e5f970c747af6be79b27d90fc61406fe85547"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "996d275c12597faef053d43b623cb9349aaf5722dd9ec31ea1c4103998ecf6a6",
+      "text": "Implement a new standard-library-only function `prepare_quotes(rows, cutoff)` in `solution.py`.\n\n`rows` must be a list of dictionaries in strictly increasing `day` order. Every row must contain `day`, `open`, and `close`; extra fields must be preserved. A day is a canonical `YYYY-MM-DD` calendar-date string. Prices must be finite integers or floats, excluding Booleans. `cutoff` follows the same date format.\n\nFor every row except the last, copy the row and add `next_close`, `change` (`next_close - close`), `direction` (`-1`, `0`, or `1` according to the sign of `change`), and `fractional_change` (`change / close`, or `None` when close is zero). Discard the final row because it has no successor. Rows whose `day` is at most `cutoff` form training data; later rows form testing data. At least one derived training row is required.\n\nFit independent min-max parameters for `open` and `close` using only training rows. Replace those two fields in both partitions with `(value - minimum) / (maximum - minimum)`; use `0.0` when a training range is zero. Return `{\"scaler\": {field: (minimum, maximum), ...}, \"train\": [...], \"test\": [...]}`. Preserve ordering, never mutate the input, and ensure returned nested mutable data does not alias it. Raise `ValueError` for all malformed input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "996d275c12597faef053d43b623cb9349aaf5722dd9ec31ea1c4103998ecf6a6",
+      "text": "Implement a new standard-library-only function `prepare_quotes(rows, cutoff)` in `solution.py`.\n\n`rows` must be a list of dictionaries in strictly increasing `day` order. Every row must contain `day`, `open`, and `close`; extra fields must be preserved. A day is a canonical `YYYY-MM-DD` calendar-date string. Prices must be finite integers or floats, excluding Booleans. `cutoff` follows the same date format.\n\nFor every row except the last, copy the row and add `next_close`, `change` (`next_close - close`), `direction` (`-1`, `0`, or `1` according to the sign of `change`), and `fractional_change` (`change / close`, or `None` when close is zero). Discard the final row because it has no successor. Rows whose `day` is at most `cutoff` form training data; later rows form testing data. At least one derived training row is required.\n\nFit independent min-max parameters for `open` and `close` using only training rows. Replace those two fields in both partitions with `(value - minimum) / (maximum - minimum)`; use `0.0` when a training range is zero. Return `{\"scaler\": {field: (minimum, maximum), ...}, \"train\": [...], \"test\": [...]}`. Preserve ordering, never mutate the input, and ensure returned nested mutable data does not alias it. Raise `ValueError` for all malformed input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0122",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom datetime import date\nfrom math import isfinite\n\n\ndef _parse_day(value):\n    if not isinstance(value, str):\n        raise ValueError(\"invalid day\")\n    try:\n        parsed = date.fromisoformat(value)\n    except ValueError as exc:\n        raise ValueError(\"invalid day\") from exc\n    if parsed.isoformat() != value:\n        raise ValueError(\"invalid day\")\n    return parsed\n\n\ndef _price(value):\n    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(value)\n\n\ndef _fit(rows):\n    return {\n        field: (min(row[field] for row in rows), max(row[field] for row in rows))\n        for field in (\"open\", \"close\")\n    }\n\n\ndef _scale(rows, scaler):\n    result = deepcopy(rows)\n    for row in result:\n        for field, (low, high) in scaler.items():\n            row[field] = 0.0 if high == low else (row[field] - low) / (high - low)\n    return result\n\n\ndef prepare_quotes(rows, cutoff):\n    if not isinstance(rows, list):\n        raise ValueError(\"invalid rows\")\n    cutoff_day = _parse_day(cutoff)\n    parsed_days = []\n    for row in rows:\n        if not isinstance(row, dict) or not {\"day\", \"open\", \"close\"}.issubset(row):\n            raise ValueError(\"invalid row\")\n        parsed_days.append(_parse_day(row[\"day\"]))\n        if not _price(row[\"open\"]) or not _price(row[\"close\"]):\n            raise ValueError(\"invalid price\")\n    if any(a >= b for a, b in zip(parsed_days, parsed_days[1:])):\n        raise ValueError(\"days must increase\")\n    derived = []\n    for current, following in zip(rows, rows[1:]):\n        item = deepcopy(current)\n        change = following[\"close\"] - current[\"close\"]\n        item[\"next_close\"] = deepcopy(following[\"close\"])\n        item[\"change\"] = change\n        item[\"direction\"] = (change > 0) - (change < 0)\n        item[\"fractional_change\"] = None if current[\"close\"] == 0 else change / current[\"close\"]\n        derived.append(item)\n    train_raw = [row for row in derived if _parse_day(row[\"day\"]) <= cutoff_day]\n    test_raw = [row for row in derived if _parse_day(row[\"day\"]) > cutoff_day]\n    if not train_raw:\n        raise ValueError(\"empty training partition\")\n    scaler = _fit(train_raw)\n    test_scaler = _fit(test_raw) if test_raw else scaler\n    return {\"scaler\": deepcopy(scaler), \"train\": _scale(train_raw, scaler), \"test\": _scale(test_raw, test_scaler)}\n",
+          "label": "Fits a separate scaler on testing rows instead of applying the training parameters.",
+          "sha256": "d6eb6bfa71dd264ad20b82d6bfa79c78331353a8866fd7ea9342d921e31dcf62"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom datetime import date\nfrom math import isfinite\n\n\ndef _parse_day(value):\n    if not isinstance(value, str):\n        raise ValueError(\"invalid day\")\n    try:\n        parsed = date.fromisoformat(value)\n    except ValueError as exc:\n        raise ValueError(\"invalid day\") from exc\n    if parsed.isoformat() != value:\n        raise ValueError(\"invalid day\")\n    return parsed\n\n\ndef _price(value):\n    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(value)\n\n\ndef _fit(rows):\n    return {\n        field: (min(row[field] for row in rows), max(row[field] for row in rows))\n        for field in (\"open\", \"close\")\n    }\n\n\ndef _scale(rows, scaler):\n    result = deepcopy(rows)\n    for row in result:\n        for field, (low, high) in scaler.items():\n            row[field] = 0.0 if high == low else (row[field] - low) / (high - low)\n    return result\n\n\ndef prepare_quotes(rows, cutoff):\n    if not isinstance(rows, list):\n        raise ValueError(\"invalid rows\")\n    cutoff_day = _parse_day(cutoff)\n    parsed_days = []\n    for row in rows:\n        if not isinstance(row, dict) or not {\"day\", \"open\", \"close\"}.issubset(row):\n            raise ValueError(\"invalid row\")\n        parsed_days.append(_parse_day(row[\"day\"]))\n        if not _price(row[\"open\"]) or not _price(row[\"close\"]):\n            raise ValueError(\"invalid price\")\n    if any(a >= b for a, b in zip(parsed_days, parsed_days[1:])):\n        raise ValueError(\"days must increase\")\n    derived = []\n    for current, following in zip(rows, rows[1:]):\n        item = deepcopy(current)\n        change = following[\"close\"] - current[\"close\"]\n        item[\"next_close\"] = deepcopy(following[\"close\"])\n        item[\"change\"] = change\n        item[\"direction\"] = (change > 0) - (change < 0)\n        item[\"fractional_change\"] = None if current[\"close\"] == 0 else change / current[\"close\"]\n        derived.append(item)\n    train_raw = [row for row in derived if _parse_day(row[\"day\"]) <= cutoff_day]\n    test_raw = [row for row in derived if _parse_day(row[\"day\"]) > cutoff_day]\n    if not train_raw:\n        raise ValueError(\"empty training partition\")\n    scaler = _fit(train_raw)\n    return {\"scaler\": deepcopy(scaler), \"train\": _scale(train_raw, scaler), \"test\": _scale(test_raw, scaler)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c8a7b699a1568dddeb6bae27072420d6e5c3d886e6a90e64f424ffcbd2a39f78"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\nfrom copy import deepcopy\n\nfrom solution import prepare_quotes\n\n\nclass PrepareQuotesTests(unittest.TestCase):\n    def test_partition_scaling_derivation_and_independence(self):\n        rows = [\n            {\"day\": \"2024-01-01\", \"open\": 10, \"close\": 20, \"meta\": {\"x\": [1]}},\n            {\"day\": \"2024-01-02\", \"open\": 20, \"close\": 10, \"meta\": {\"x\": [2]}},\n            {\"day\": \"2024-01-03\", \"open\": 30, \"close\": 15, \"meta\": {\"x\": [3]}},\n            {\"day\": \"2024-01-04\", \"open\": 40, \"close\": 15, \"meta\": {\"x\": [4]}},\n        ]\n        original = deepcopy(rows)\n        result = prepare_quotes(rows, \"2024-01-02\")\n        self.assertEqual(result[\"scaler\"], {\"open\": (10, 20), \"close\": (10, 20)})\n        self.assertEqual(len(result[\"train\"]), 2)\n        self.assertEqual(len(result[\"test\"]), 1)\n        first, second = result[\"train\"]\n        self.assertEqual((first[\"open\"], first[\"close\"]), (0.0, 1.0))\n        self.assertEqual((first[\"next_close\"], first[\"change\"], first[\"direction\"]), (10, -10, -1))\n        self.assertEqual(first[\"fractional_change\"], -0.5)\n        self.assertEqual((second[\"open\"], second[\"close\"]), (1.0, 0.0))\n        self.assertEqual((second[\"next_close\"], second[\"change\"], second[\"direction\"]), (15, 5, 1))\n        self.assertEqual(second[\"fractional_change\"], 0.5)\n        test = result[\"test\"][0]\n        self.assertEqual((test[\"open\"], test[\"close\"]), (2.0, 0.5))\n        self.assertEqual((test[\"next_close\"], test[\"change\"], test[\"direction\"]), (15, 0, 0))\n        self.assertEqual(test[\"fractional_change\"], 0.0)\n        self.assertEqual(rows, original)\n        self.assertIsNot(first[\"meta\"], rows[0][\"meta\"])\n        self.assertIsNot(first[\"meta\"][\"x\"], rows[0][\"meta\"][\"x\"])\n\n    def test_zero_training_ranges_and_zero_close(self):\n        rows = [\n            {\"day\": \"2024-02-28\", \"open\": 5, \"close\": 0},\n            {\"day\": \"2024-02-29\", \"open\": 5, \"close\": 0},\n        ]\n        result = prepare_quotes(rows, \"2024-02-28\")\n        self.assertEqual(result[\"scaler\"], {\"open\": (5, 5), \"close\": (0, 0)})\n        self.assertEqual(result[\"train\"][0][\"open\"], 0.0)\n        self.assertEqual(result[\"train\"][0][\"close\"], 0.0)\n        self.assertIsNone(result[\"train\"][0][\"fractional_change\"])\n        self.assertEqual(result[\"test\"], [])\n\n    def test_malformed_inputs(self):\n        valid = [\n            {\"day\": \"2024-01-01\", \"open\": 1, \"close\": 2},\n            {\"day\": \"2024-01-02\", \"open\": 2, \"close\": 3},\n        ]\n        bad_rows = [\n            None,\n            [],\n            [valid[0]],\n            [{\"day\": \"2024-01-01\", \"open\": 1}, valid[1]],\n            [{\"day\": \"2024-1-01\", \"open\": 1, \"close\": 2}, valid[1]],\n            [{\"day\": \"2023-02-29\", \"open\": 1, \"close\": 2}, valid[1]],\n            [valid[1], valid[0]],\n            [valid[0], dict(valid[0])],\n            [{\"day\": \"2024-01-01\", \"open\": True, \"close\": 2}, valid[1]],\n            [{\"day\": \"2024-01-01\", \"open\": math.inf, \"close\": 2}, valid[1]],\n            [{\"day\": \"2024-01-01\", \"open\": 1, \"close\": math.nan}, valid[1]],\n        ]\n        for rows in bad_rows:\n            with self.subTest(rows=rows):\n                with self.assertRaises(ValueError):\n                    prepare_quotes(rows, \"2024-01-01\")\n        for cutoff in (\"2024-1-01\", \"2024-02-30\", 20240101):\n            with self.subTest(cutoff=cutoff):\n                with self.assertRaises(ValueError):\n                    prepare_quotes(valid, cutoff)\n        with self.assertRaises(ValueError):\n            prepare_quotes(valid, \"2023-12-31\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "b22d8c9e6b82999f1bbf21b099056b8325fe28cc193d1bfa785c0d7bc10ff0ce"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "996d275c12597faef053d43b623cb9349aaf5722dd9ec31ea1c4103998ecf6a6",
+      "text": "Implement a new standard-library-only function `prepare_quotes(rows, cutoff)` in `solution.py`.\n\n`rows` must be a list of dictionaries in strictly increasing `day` order. Every row must contain `day`, `open`, and `close`; extra fields must be preserved. A day is a canonical `YYYY-MM-DD` calendar-date string. Prices must be finite integers or floats, excluding Booleans. `cutoff` follows the same date format.\n\nFor every row except the last, copy the row and add `next_close`, `change` (`next_close - close`), `direction` (`-1`, `0`, or `1` according to the sign of `change`), and `fractional_change` (`change / close`, or `None` when close is zero). Discard the final row because it has no successor. Rows whose `day` is at most `cutoff` form training data; later rows form testing data. At least one derived training row is required.\n\nFit independent min-max parameters for `open` and `close` using only training rows. Replace those two fields in both partitions with `(value - minimum) / (maximum - minimum)`; use `0.0` when a training range is zero. Return `{\"scaler\": {field: (minimum, maximum), ...}, \"train\": [...], \"test\": [...]}`. Preserve ordering, never mutate the input, and ensure returned nested mutable data does not alias it. Raise `ValueError` for all malformed input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "996d275c12597faef053d43b623cb9349aaf5722dd9ec31ea1c4103998ecf6a6",
+      "text": "Implement a new standard-library-only function `prepare_quotes(rows, cutoff)` in `solution.py`.\n\n`rows` must be a list of dictionaries in strictly increasing `day` order. Every row must contain `day`, `open`, and `close`; extra fields must be preserved. A day is a canonical `YYYY-MM-DD` calendar-date string. Prices must be finite integers or floats, excluding Booleans. `cutoff` follows the same date format.\n\nFor every row except the last, copy the row and add `next_close`, `change` (`next_close - close`), `direction` (`-1`, `0`, or `1` according to the sign of `change`), and `fractional_change` (`change / close`, or `None` when close is zero). Discard the final row because it has no successor. Rows whose `day` is at most `cutoff` form training data; later rows form testing data. At least one derived training row is required.\n\nFit independent min-max parameters for `open` and `close` using only training rows. Replace those two fields in both partitions with `(value - minimum) / (maximum - minimum)`; use `0.0` when a training range is zero. Return `{\"scaler\": {field: (minimum, maximum), ...}, \"train\": [...], \"test\": [...]}`. Preserve ordering, never mutate the input, and ensure returned nested mutable data does not alias it. Raise `ValueError` for all malformed input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0122",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom datetime import date\nfrom math import isfinite\n\n\ndef _parse_day(value):\n    if not isinstance(value, str):\n        raise ValueError(\"invalid day\")\n    try:\n        parsed = date.fromisoformat(value)\n    except ValueError as exc:\n        raise ValueError(\"invalid day\") from exc\n    if parsed.isoformat() != value:\n        raise ValueError(\"invalid day\")\n    return parsed\n\n\ndef _price(value):\n    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(value)\n\n\ndef _fit(rows):\n    return {\n        field: (min(row[field] for row in rows), max(row[field] for row in rows))\n        for field in (\"open\", \"close\")\n    }\n\n\ndef _scale(rows, scaler):\n    result = deepcopy(rows)\n    for row in result:\n        for field, (low, high) in scaler.items():\n            row[field] = 0.0 if high == low else (row[field] - low) / (high - low)\n    return result\n\n\ndef prepare_quotes(rows, cutoff):\n    if not isinstance(rows, list):\n        raise ValueError(\"invalid rows\")\n    cutoff_day = _parse_day(cutoff)\n    parsed_days = []\n    for row in rows:\n        if not isinstance(row, dict) or not {\"day\", \"open\", \"close\"}.issubset(row):\n            raise ValueError(\"invalid row\")\n        parsed_days.append(_parse_day(row[\"day\"]))\n        if not _price(row[\"open\"]) or not _price(row[\"close\"]):\n            raise ValueError(\"invalid price\")\n    if any(a >= b for a, b in zip(parsed_days, parsed_days[1:])):\n        raise ValueError(\"days must increase\")\n    derived = []\n    for current, following in zip(rows, rows[1:]):\n        item = deepcopy(current)\n        change = following[\"close\"] - current[\"close\"]\n        item[\"next_close\"] = deepcopy(following[\"close\"])\n        item[\"change\"] = change\n        item[\"direction\"] = (change > 0) - (change < 0)\n        item[\"fractional_change\"] = None if current[\"close\"] == 0 else change / current[\"close\"]\n        derived.append(item)\n    train_raw = [row for row in derived if _parse_day(row[\"day\"]) <= cutoff_day]\n    test_raw = [row for row in derived if _parse_day(row[\"day\"]) > cutoff_day]\n    if not train_raw:\n        raise ValueError(\"empty training partition\")\n    scaler = _fit(train_raw)\n    test_scaler = _fit(test_raw) if test_raw else scaler\n    return {\"scaler\": deepcopy(scaler), \"train\": _scale(train_raw, scaler), \"test\": _scale(test_raw, test_scaler)}\n",
+          "label": "Fits a separate scaler on testing rows instead of applying the training parameters.",
+          "sha256": "d6eb6bfa71dd264ad20b82d6bfa79c78331353a8866fd7ea9342d921e31dcf62"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom datetime import date\nfrom math import isfinite\n\n\ndef _parse_day(value):\n    if not isinstance(value, str):\n        raise ValueError(\"invalid day\")\n    try:\n        parsed = date.fromisoformat(value)\n    except ValueError as exc:\n        raise ValueError(\"invalid day\") from exc\n    if parsed.isoformat() != value:\n        raise ValueError(\"invalid day\")\n    return parsed\n\n\ndef _price(value):\n    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(value)\n\n\ndef _fit(rows):\n    return {\n        field: (min(row[field] for row in rows), max(row[field] for row in rows))\n        for field in (\"open\", \"close\")\n    }\n\n\ndef _scale(rows, scaler):\n    result = deepcopy(rows)\n    for row in result:\n        for field, (low, high) in scaler.items():\n            row[field] = 0.0 if high == low else (row[field] - low) / (high - low)\n    return result\n\n\ndef prepare_quotes(rows, cutoff):\n    if not isinstance(rows, list):\n        raise ValueError(\"invalid rows\")\n    cutoff_day = _parse_day(cutoff)\n    parsed_days = []\n    for row in rows:\n        if not isinstance(row, dict) or not {\"day\", \"open\", \"close\"}.issubset(row):\n            raise ValueError(\"invalid row\")\n        parsed_days.append(_parse_day(row[\"day\"]))\n        if not _price(row[\"open\"]) or not _price(row[\"close\"]):\n            raise ValueError(\"invalid price\")\n    if any(a >= b for a, b in zip(parsed_days, parsed_days[1:])):\n        raise ValueError(\"days must increase\")\n    derived = []\n    for current, following in zip(rows, rows[1:]):\n        item = deepcopy(current)\n        change = following[\"close\"] - current[\"close\"]\n        item[\"next_close\"] = deepcopy(following[\"close\"])\n        item[\"change\"] = change\n        item[\"direction\"] = (change > 0) - (change < 0)\n        item[\"fractional_change\"] = None if current[\"close\"] == 0 else change / current[\"close\"]\n        derived.append(item)\n    train_raw = [row for row in derived if _parse_day(row[\"day\"]) <= cutoff_day]\n    test_raw = [row for row in derived if _parse_day(row[\"day\"]) > cutoff_day]\n    if not train_raw:\n        raise ValueError(\"empty training partition\")\n    scaler = _fit(train_raw)\n    return {\"scaler\": deepcopy(scaler), \"train\": _scale(train_raw, scaler), \"test\": _scale(test_raw, scaler)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c8a7b699a1568dddeb6bae27072420d6e5c3d886e6a90e64f424ffcbd2a39f78"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_large_equal_finite_prices_have_zero_changes_and_ranges (__main__.QuoteIntegerPriceTests.test_large_equal_finite_prices_have_zero_changes_and_ranges)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_large_equal_finite_prices_have_zero_changes_and_ranges\n    result = prepare_quotes(rows, \"2024-01-01\")\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 46, in prepare_quotes\n    if not _price(row[\"open\"]) or not _price(row[\"close\"]):\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 19, in _price\n    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(value)\n                                                                               ^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "e9a906e7f35244b971d5245695bbbde8bbff2dcb60bfd8f87fd9b727174e7b67",
+    "duration_ms": 465,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

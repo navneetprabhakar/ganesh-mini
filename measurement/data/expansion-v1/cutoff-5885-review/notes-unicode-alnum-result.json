@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0142",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "90591b1a2186c543ed09a322c417b2180e006326660eaa582bfe981c2cd4d25d",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import prepare_notes\n\n\nclass UnicodeNoteTests(unittest.TestCase):\n    def test_unicode_letters_and_digits_are_alphanumeric(self):\n        rows = [{\"group\": \"g\", \"channel\": \"c\", \"priority\": \"p\", \"text\": \"CAF\u00c9 \u0967\u0968\"}]\n        self.assertEqual(prepare_notes(rows)[0][\"tokens\"], [\"caf\u00e9\", \"\u0967\u0968\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "a1c21e181037c7e8945ad5ea8d04fa988f71d81ba3c759f1acdfb730a1a72c0d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c78530b2dda68d590a3913309fe08a899ac86162cba5ab3c1415f97de491220f",
+      "text": "Create `solution.py` with `prepare_notes(rows)`. Each row must be a dictionary containing string fields `group`, `channel`, `priority`, and `text`; malformed rows raise `TypeError` or `ValueError`. Group rows by `(group, channel, priority)`, concatenate their text in original input order separated by one space, lowercase it, replace each run of non-alphanumeric characters with one space, and split it into tokens. For each categorical column, assign integer codes independently by sorting that column's distinct values lexicographically and numbering from zero. Return a list of dictionaries with keys `group_code`, `channel_code`, `priority_code`, and `tokens`, ordered by the original strings of the grouping tuple. An empty input returns `[]`. Each token list must be newly allocated, and neither input rows nor nested input data may be mutated or returned by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c78530b2dda68d590a3913309fe08a899ac86162cba5ab3c1415f97de491220f",
+      "text": "Create `solution.py` with `prepare_notes(rows)`. Each row must be a dictionary containing string fields `group`, `channel`, `priority`, and `text`; malformed rows raise `TypeError` or `ValueError`. Group rows by `(group, channel, priority)`, concatenate their text in original input order separated by one space, lowercase it, replace each run of non-alphanumeric characters with one space, and split it into tokens. For each categorical column, assign integer codes independently by sorting that column's distinct values lexicographically and numbering from zero. Return a list of dictionaries with keys `group_code`, `channel_code`, `priority_code`, and `tokens`, ordered by the original strings of the grouping tuple. An empty input returns `[]`. Each token list must be newly allocated, and neither input rows nor nested input data may be mutated or returned by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0142",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\nfrom typing import Any\n\n\ndef prepare_notes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n\n    required = (\"group\", \"channel\", \"priority\", \"text\")\n    groups: dict[tuple[str, str, str], list[str]] = {}\n    for row in rows:\n        if not isinstance(row, dict):\n            raise TypeError(\"each row must be a dictionary\")\n        if any(field not in row for field in required):\n            raise ValueError(\"row is missing a required field\")\n        if any(not isinstance(row[field], str) for field in required):\n            raise TypeError(\"required fields must be strings\")\n        key = (row[\"group\"], row[\"channel\"], row[\"priority\"])\n        groups.setdefault(key, []).append(row[\"text\"])\n\n    group_codes = {value: index for index, value in enumerate(dict.fromkeys(key[0] for key in groups))}\n    channel_codes = {value: index for index, value in enumerate(dict.fromkeys(key[1] for key in groups))}\n    priority_codes = {value: index for index, value in enumerate(dict.fromkeys(key[2] for key in groups))}\n\n    result: list[dict[str, Any]] = []\n    for key in sorted(groups):\n        normalized = re.sub(r\"[^a-z0-9]+\", \" \", \" \".join(groups[key]).lower()).strip()\n        result.append({\n            \"group_code\": group_codes[key[0]],\n            \"channel_code\": channel_codes[key[1]],\n            \"priority_code\": priority_codes[key[2]],\n            \"tokens\": normalized.split() if normalized else [],\n        })\n    return result\n",
+          "label": "Assigns category codes in encounter order instead of lexicographically sorted order.",
+          "sha256": "6900ca8bbbd7a031d78bc9cbaf4d47d98116a9a8cf1f8be6804244e008adb760"
+        }
+      ],
+      "reference": {
+        "code": "import re\nfrom typing import Any\n\n\ndef prepare_notes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n\n    required = (\"group\", \"channel\", \"priority\", \"text\")\n    groups: dict[tuple[str, str, str], list[str]] = {}\n    for row in rows:\n        if not isinstance(row, dict):\n            raise TypeError(\"each row must be a dictionary\")\n        if any(field not in row for field in required):\n            raise ValueError(\"row is missing a required field\")\n        if any(not isinstance(row[field], str) for field in required):\n            raise TypeError(\"required fields must be strings\")\n        key = (row[\"group\"], row[\"channel\"], row[\"priority\"])\n        groups.setdefault(key, []).append(row[\"text\"])\n\n    group_codes = {value: index for index, value in enumerate(sorted({key[0] for key in groups}))}\n    channel_codes = {value: index for index, value in enumerate(sorted({key[1] for key in groups}))}\n    priority_codes = {value: index for index, value in enumerate(sorted({key[2] for key in groups}))}\n\n    result: list[dict[str, Any]] = []\n    for key in sorted(groups):\n        normalized = re.sub(r\"[^a-z0-9]+\", \" \", \" \".join(groups[key]).lower()).strip()\n        result.append({\n            \"group_code\": group_codes[key[0]],\n            \"channel_code\": channel_codes[key[1]],\n            \"priority_code\": priority_codes[key[2]],\n            \"tokens\": normalized.split() if normalized else [],\n        })\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bfbb6c2f7c020d9ccc1dd8bce67591ab16906d5139f3d80573877d83364b867f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport unittest\n\nfrom solution import prepare_notes\n\n\nclass PrepareNotesTests(unittest.TestCase):\n    def test_grouping_encoding_tokenization_and_order(self):\n        rows = [\n            {\"group\": \"beta\", \"channel\": \"web\", \"priority\": \"low\",\n             \"text\": \"First, NOTE!\", \"extra\": {\"keep\": [1]}},\n            {\"group\": \"alpha\", \"channel\": \"web\", \"priority\": \"high\",\n             \"text\": \"Hello---WORLD\"},\n            {\"group\": \"beta\", \"channel\": \"web\", \"priority\": \"low\",\n             \"text\": \"Second_part 42\"},\n            {\"group\": \"alpha\", \"channel\": \"app\", \"priority\": \"low\",\n             \"text\": \"  Mixed.Case  \"},\n        ]\n        original = copy.deepcopy(rows)\n\n        result = prepare_notes(rows)\n\n        self.assertEqual(result, [\n            {\"group_code\": 0, \"channel_code\": 0, \"priority_code\": 1,\n             \"tokens\": [\"mixed\", \"case\"]},\n            {\"group_code\": 0, \"channel_code\": 1, \"priority_code\": 0,\n             \"tokens\": [\"hello\", \"world\"]},\n            {\"group_code\": 1, \"channel_code\": 1, \"priority_code\": 1,\n             \"tokens\": [\"first\", \"note\", \"second\", \"part\", \"42\"]},\n        ])\n        self.assertEqual(rows, original)\n        self.assertIsNot(result[0][\"tokens\"], result[1][\"tokens\"])\n        self.assertIsNot(result[1][\"tokens\"], result[2][\"tokens\"])\n        result[2][\"tokens\"].append(\"changed\")\n        self.assertEqual(rows, original)\n\n    def test_independent_lexicographic_codes(self):\n        rows = [\n            {\"group\": \"z\", \"channel\": \"a\", \"priority\": \"m\", \"text\": \"one\"},\n            {\"group\": \"a\", \"channel\": \"z\", \"priority\": \"a\", \"text\": \"two\"},\n        ]\n        self.assertEqual(prepare_notes(rows), [\n            {\"group_code\": 0, \"channel_code\": 1, \"priority_code\": 0,\n             \"tokens\": [\"two\"]},\n            {\"group_code\": 1, \"channel_code\": 0, \"priority_code\": 1,\n             \"tokens\": [\"one\"]},\n        ])\n\n    def test_empty_input(self):\n        self.assertEqual(prepare_notes([]), [])\n\n    def test_empty_or_punctuation_only_text_produces_empty_tokens(self):\n        result = prepare_notes([\n            {\"group\": \"g\", \"channel\": \"c\", \"priority\": \"p\", \"text\": \"--- !!\"}\n        ])\n        self.assertEqual(result[0][\"tokens\"], [])\n\n    def test_rejects_malformed_rows(self):\n        invalid = [\n            [1],\n            [{}],\n            [{\"group\": \"g\", \"channel\": \"c\", \"priority\": \"p\"}],\n            [{\"group\": 1, \"channel\": \"c\", \"priority\": \"p\", \"text\": \"x\"}],\n            [{\"group\": \"g\", \"channel\": None, \"priority\": \"p\", \"text\": \"x\"}],\n            [{\"group\": \"g\", \"channel\": \"c\", \"priority\": [], \"text\": \"x\"}],\n            [{\"group\": \"g\", \"channel\": \"c\", \"priority\": \"p\", \"text\": 4}],\n        ]\n        for rows in invalid:\n            with self.subTest(rows=rows):\n                with self.assertRaises((TypeError, ValueError)):\n                    prepare_notes(rows)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "4b68b76c2bb3e48308e62878f2c4f13b4750f7fde4fe212d487a7ad4e16f1b1d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c78530b2dda68d590a3913309fe08a899ac86162cba5ab3c1415f97de491220f",
+      "text": "Create `solution.py` with `prepare_notes(rows)`. Each row must be a dictionary containing string fields `group`, `channel`, `priority`, and `text`; malformed rows raise `TypeError` or `ValueError`. Group rows by `(group, channel, priority)`, concatenate their text in original input order separated by one space, lowercase it, replace each run of non-alphanumeric characters with one space, and split it into tokens. For each categorical column, assign integer codes independently by sorting that column's distinct values lexicographically and numbering from zero. Return a list of dictionaries with keys `group_code`, `channel_code`, `priority_code`, and `tokens`, ordered by the original strings of the grouping tuple. An empty input returns `[]`. Each token list must be newly allocated, and neither input rows nor nested input data may be mutated or returned by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c78530b2dda68d590a3913309fe08a899ac86162cba5ab3c1415f97de491220f",
+      "text": "Create `solution.py` with `prepare_notes(rows)`. Each row must be a dictionary containing string fields `group`, `channel`, `priority`, and `text`; malformed rows raise `TypeError` or `ValueError`. Group rows by `(group, channel, priority)`, concatenate their text in original input order separated by one space, lowercase it, replace each run of non-alphanumeric characters with one space, and split it into tokens. For each categorical column, assign integer codes independently by sorting that column's distinct values lexicographically and numbering from zero. Return a list of dictionaries with keys `group_code`, `channel_code`, `priority_code`, and `tokens`, ordered by the original strings of the grouping tuple. An empty input returns `[]`. Each token list must be newly allocated, and neither input rows nor nested input data may be mutated or returned by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0142",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\nfrom typing import Any\n\n\ndef prepare_notes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n\n    required = (\"group\", \"channel\", \"priority\", \"text\")\n    groups: dict[tuple[str, str, str], list[str]] = {}\n    for row in rows:\n        if not isinstance(row, dict):\n            raise TypeError(\"each row must be a dictionary\")\n        if any(field not in row for field in required):\n            raise ValueError(\"row is missing a required field\")\n        if any(not isinstance(row[field], str) for field in required):\n            raise TypeError(\"required fields must be strings\")\n        key = (row[\"group\"], row[\"channel\"], row[\"priority\"])\n        groups.setdefault(key, []).append(row[\"text\"])\n\n    group_codes = {value: index for index, value in enumerate(dict.fromkeys(key[0] for key in groups))}\n    channel_codes = {value: index for index, value in enumerate(dict.fromkeys(key[1] for key in groups))}\n    priority_codes = {value: index for index, value in enumerate(dict.fromkeys(key[2] for key in groups))}\n\n    result: list[dict[str, Any]] = []\n    for key in sorted(groups):\n        normalized = re.sub(r\"[^a-z0-9]+\", \" \", \" \".join(groups[key]).lower()).strip()\n        result.append({\n            \"group_code\": group_codes[key[0]],\n            \"channel_code\": channel_codes[key[1]],\n            \"priority_code\": priority_codes[key[2]],\n            \"tokens\": normalized.split() if normalized else [],\n        })\n    return result\n",
+          "label": "Assigns category codes in encounter order instead of lexicographically sorted order.",
+          "sha256": "6900ca8bbbd7a031d78bc9cbaf4d47d98116a9a8cf1f8be6804244e008adb760"
+        }
+      ],
+      "reference": {
+        "code": "import re\nfrom typing import Any\n\n\ndef prepare_notes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n\n    required = (\"group\", \"channel\", \"priority\", \"text\")\n    groups: dict[tuple[str, str, str], list[str]] = {}\n    for row in rows:\n        if not isinstance(row, dict):\n            raise TypeError(\"each row must be a dictionary\")\n        if any(field not in row for field in required):\n            raise ValueError(\"row is missing a required field\")\n        if any(not isinstance(row[field], str) for field in required):\n            raise TypeError(\"required fields must be strings\")\n        key = (row[\"group\"], row[\"channel\"], row[\"priority\"])\n        groups.setdefault(key, []).append(row[\"text\"])\n\n    group_codes = {value: index for index, value in enumerate(sorted({key[0] for key in groups}))}\n    channel_codes = {value: index for index, value in enumerate(sorted({key[1] for key in groups}))}\n    priority_codes = {value: index for index, value in enumerate(sorted({key[2] for key in groups}))}\n\n    result: list[dict[str, Any]] = []\n    for key in sorted(groups):\n        normalized = re.sub(r\"[^a-z0-9]+\", \" \", \" \".join(groups[key]).lower()).strip()\n        result.append({\n            \"group_code\": group_codes[key[0]],\n            \"channel_code\": channel_codes[key[1]],\n            \"priority_code\": priority_codes[key[2]],\n            \"tokens\": normalized.split() if normalized else [],\n        })\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bfbb6c2f7c020d9ccc1dd8bce67591ab16906d5139f3d80573877d83364b867f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_unicode_letters_and_digits_are_alphanumeric (__main__.UnicodeNoteTests.test_unicode_letters_and_digits_are_alphanumeric)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_unicode_letters_and_digits_are_alphanumeric\n    self.assertEqual(prepare_notes(rows)[0][\"tokens\"], [\"caf\u00e9\", \"\u0967\u0968\"])\nAssertionError: Lists differ: ['caf'] != ['caf\u00e9', '\u0967\u0968']\n\nFirst differing element 0:\n'caf'\n'caf\u00e9'\n\nSecond list contains 1 additional elements.\nFirst extra element 1:\n'\u0967\u0968'\n\n- ['caf']\n+ ['caf\u00e9', '\u0967\u0968']\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "90775ecfbaf1a2427a84559cb074791b5482a064c8757c8a2ce0119d5f67dab5",
+    "duration_ms": 473,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

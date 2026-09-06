@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0128",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3a1ba355b87cceb1e59cda9c15203f2814886860f199da8e533c720497a7cb04",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import ChainNode, merge_sorted_chains\n\n\nclass ChainValueTests(unittest.TestCase):\n    def test_public_node_value_is_revalidated_before_merge(self):\n        node = ChainNode(1)\n        node.value = True\n        with self.assertRaises(ValueError):\n            merge_sorted_chains([node])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "486d43bde4c491963466823b5d9c83d3c534df32146098a38afb09ac09c6a06b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "11ca57fddf0e59672b08cabccf43aad7b8d8096473c89da380100bbcb8525050",
+      "text": "Create `solution.py` defining `ChainNode` and `merge_sorted_chains(heads)`.\n\n`ChainNode(value, next=None)` stores an integer `value` and a `next` reference. Boolean values are not valid integers for this task. `heads` must be a list containing `ChainNode` instances or `None`. Every chain must be acyclic, must be sorted in nondecreasing order, and must not share any node with another input chain. Raise `ValueError` if any condition is violated.\n\nMerge the chains using iterative bottom-up pairwise merging and return the merged head. Empty input and input containing only `None` return `None`. Equal values must be stable: nodes from an earlier input chain precede equal-valued nodes from a later chain, while order within each chain is preserved. Reuse and relink the original nodes; do not create replacement nodes. Apart from relinking `next` references during a valid merge, preserve node identity and values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "11ca57fddf0e59672b08cabccf43aad7b8d8096473c89da380100bbcb8525050",
+      "text": "Create `solution.py` defining `ChainNode` and `merge_sorted_chains(heads)`.\n\n`ChainNode(value, next=None)` stores an integer `value` and a `next` reference. Boolean values are not valid integers for this task. `heads` must be a list containing `ChainNode` instances or `None`. Every chain must be acyclic, must be sorted in nondecreasing order, and must not share any node with another input chain. Raise `ValueError` if any condition is violated.\n\nMerge the chains using iterative bottom-up pairwise merging and return the merged head. Empty input and input containing only `None` return `None`. Equal values must be stable: nodes from an earlier input chain precede equal-valued nodes from a later chain, while order within each chain is preserved. Reuse and relink the original nodes; do not create replacement nodes. Apart from relinking `next` references during a valid merge, preserve node identity and values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0128",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class ChainNode:\n    def __init__(self, value, next=None):\n        if not isinstance(value, int) or isinstance(value, bool):\n            raise ValueError(\"value must be an integer\")\n        if next is not None and not isinstance(next, ChainNode):\n            raise ValueError(\"next must be a ChainNode or None\")\n        self.value = value\n        self.next = next\n\n\ndef _merge_two(left, right):\n    dummy = ChainNode(0)\n    tail = dummy\n    while left is not None and right is not None:\n        if left.value < right.value:\n            tail.next = left\n            left = left.next\n        else:\n            tail.next = right\n            right = right.next\n        tail = tail.next\n    tail.next = left if left is not None else right\n    return dummy.next\n\n\ndef merge_sorted_chains(heads):\n    if not isinstance(heads, list):\n        raise ValueError(\"heads must be a list\")\n\n    seen = set()\n    for head in heads:\n        if head is not None and not isinstance(head, ChainNode):\n            raise ValueError(\"invalid head\")\n        node = head\n        previous = None\n        local = set()\n        while node is not None:\n            if not isinstance(node, ChainNode):\n                raise ValueError(\"invalid next reference\")\n            marker = id(node)\n            if marker in local:\n                raise ValueError(\"cycle detected\")\n            if marker in seen:\n                raise ValueError(\"shared node detected\")\n            local.add(marker)\n            seen.add(marker)\n            if previous is not None and previous > node.value:\n                raise ValueError(\"chain is not sorted\")\n            previous = node.value\n            node = node.next\n\n    work = list(heads)\n    interval = 1\n    while interval < len(work):\n        for index in range(0, len(work) - interval, interval * 2):\n            work[index] = _merge_two(work[index], work[index + interval])\n        interval *= 2\n    return work[0] if work else None\n",
+          "label": "The strict comparison takes equal-valued nodes from the later chain first, violating stability.",
+          "sha256": "2642bd4c241aa1f226dc046b94e914afb2831f2d1a25edc3b65c13d780c87097"
+        }
+      ],
+      "reference": {
+        "code": "class ChainNode:\n    def __init__(self, value, next=None):\n        if not isinstance(value, int) or isinstance(value, bool):\n            raise ValueError(\"value must be an integer\")\n        if next is not None and not isinstance(next, ChainNode):\n            raise ValueError(\"next must be a ChainNode or None\")\n        self.value = value\n        self.next = next\n\n\ndef _merge_two(left, right):\n    dummy = ChainNode(0)\n    tail = dummy\n    while left is not None and right is not None:\n        if left.value <= right.value:\n            tail.next = left\n            left = left.next\n        else:\n            tail.next = right\n            right = right.next\n        tail = tail.next\n    tail.next = left if left is not None else right\n    return dummy.next\n\n\ndef merge_sorted_chains(heads):\n    if not isinstance(heads, list):\n        raise ValueError(\"heads must be a list\")\n\n    seen = set()\n    for head in heads:\n        if head is not None and not isinstance(head, ChainNode):\n            raise ValueError(\"invalid head\")\n        node = head\n        previous = None\n        local = set()\n        while node is not None:\n            if not isinstance(node, ChainNode):\n                raise ValueError(\"invalid next reference\")\n            marker = id(node)\n            if marker in local:\n                raise ValueError(\"cycle detected\")\n            if marker in seen:\n                raise ValueError(\"shared node detected\")\n            local.add(marker)\n            seen.add(marker)\n            if previous is not None and previous > node.value:\n                raise ValueError(\"chain is not sorted\")\n            previous = node.value\n            node = node.next\n\n    work = list(heads)\n    interval = 1\n    while interval < len(work):\n        for index in range(0, len(work) - interval, interval * 2):\n            work[index] = _merge_two(work[index], work[index + interval])\n        interval *= 2\n    return work[0] if work else None\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7cc20740925f48c17a895359e806a4b6de9fafb400890fed69d75fcac17d2f35"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import ChainNode, merge_sorted_chains\n\n\ndef chain(values):\n    nodes = [ChainNode(value) for value in values]\n    for left, right in zip(nodes, nodes[1:]):\n        left.next = right\n    return (nodes[0] if nodes else None), nodes\n\n\ndef collect(head, limit=100):\n    values = []\n    nodes = []\n    while head is not None:\n        if len(nodes) >= limit:\n            raise AssertionError(\"unexpected cycle\")\n        nodes.append(head)\n        values.append(head.value)\n        head = head.next\n    return values, nodes\n\n\nclass MergeSortedChainsTests(unittest.TestCase):\n    def test_empty_and_only_none(self):\n        self.assertIsNone(merge_sorted_chains([]))\n        self.assertIsNone(merge_sorted_chains([None, None]))\n\n    def test_pairwise_merge_reuses_nodes_and_is_stable(self):\n        h0, n0 = chain([1, 2, 2, 7])\n        h1, n1 = chain([1, 2, 5])\n        h2, n2 = chain([2, 2, 6])\n        merged = merge_sorted_chains([h0, h1, h2])\n        values, nodes = collect(merged)\n        self.assertEqual(values, [1, 1, 2, 2, 2, 2, 2, 5, 6, 7])\n        self.assertEqual(nodes, [n0[0], n1[0], n0[1], n0[2], n1[1], n2[0], n2[1], n1[2], n2[2], n0[3]])\n        self.assertEqual({id(node) for node in nodes}, {id(node) for node in n0 + n1 + n2})\n\n    def test_none_entries_do_not_affect_order(self):\n        first, first_nodes = chain([1, 3])\n        second, second_nodes = chain([1, 2])\n        merged = merge_sorted_chains([None, first, None, second])\n        values, nodes = collect(merged)\n        self.assertEqual(values, [1, 1, 2, 3])\n        self.assertEqual(nodes, [first_nodes[0], second_nodes[0], second_nodes[1], first_nodes[1]])\n\n    def test_single_chain_is_returned_unchanged(self):\n        head, nodes = chain([-2, 0, 4])\n        result = merge_sorted_chains([head])\n        self.assertIs(result, head)\n        self.assertEqual(collect(result)[1], nodes)\n\n    def test_rejects_bad_heads_and_node_values(self):\n        for bad in (None, (), {}, \"x\"):\n            with self.subTest(bad=bad):\n                with self.assertRaises(ValueError):\n                    merge_sorted_chains(bad)\n        for value in (True, False, 1.5, \"1\", None):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    merge_sorted_chains([ChainNode(value)])\n        with self.assertRaises(ValueError):\n            merge_sorted_chains([object()])\n\n    def test_rejects_unsorted_chain(self):\n        head, _ = chain([1, 4, 3])\n        with self.assertRaises(ValueError):\n            merge_sorted_chains([head])\n\n    def test_rejects_cycle(self):\n        a = ChainNode(1)\n        b = ChainNode(2)\n        a.next = b\n        b.next = a\n        with self.assertRaises(ValueError):\n            merge_sorted_chains([a])\n\n    def test_rejects_shared_nodes_between_chains(self):\n        shared = ChainNode(3)\n        first = ChainNode(1, shared)\n        second = ChainNode(2, shared)\n        with self.assertRaises(ValueError):\n            merge_sorted_chains([first, second])\n\n    def test_rejects_non_node_next_reference(self):\n        head = ChainNode(1)\n        head.next = \"not a node\"\n        with self.assertRaises(ValueError):\n            merge_sorted_chains([head])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "6348ee82c54b80f7325ca74b23fe81b01bdee01c89267131476fce31036ff8be"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "11ca57fddf0e59672b08cabccf43aad7b8d8096473c89da380100bbcb8525050",
+      "text": "Create `solution.py` defining `ChainNode` and `merge_sorted_chains(heads)`.\n\n`ChainNode(value, next=None)` stores an integer `value` and a `next` reference. Boolean values are not valid integers for this task. `heads` must be a list containing `ChainNode` instances or `None`. Every chain must be acyclic, must be sorted in nondecreasing order, and must not share any node with another input chain. Raise `ValueError` if any condition is violated.\n\nMerge the chains using iterative bottom-up pairwise merging and return the merged head. Empty input and input containing only `None` return `None`. Equal values must be stable: nodes from an earlier input chain precede equal-valued nodes from a later chain, while order within each chain is preserved. Reuse and relink the original nodes; do not create replacement nodes. Apart from relinking `next` references during a valid merge, preserve node identity and values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "11ca57fddf0e59672b08cabccf43aad7b8d8096473c89da380100bbcb8525050",
+      "text": "Create `solution.py` defining `ChainNode` and `merge_sorted_chains(heads)`.\n\n`ChainNode(value, next=None)` stores an integer `value` and a `next` reference. Boolean values are not valid integers for this task. `heads` must be a list containing `ChainNode` instances or `None`. Every chain must be acyclic, must be sorted in nondecreasing order, and must not share any node with another input chain. Raise `ValueError` if any condition is violated.\n\nMerge the chains using iterative bottom-up pairwise merging and return the merged head. Empty input and input containing only `None` return `None`. Equal values must be stable: nodes from an earlier input chain precede equal-valued nodes from a later chain, while order within each chain is preserved. Reuse and relink the original nodes; do not create replacement nodes. Apart from relinking `next` references during a valid merge, preserve node identity and values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0128",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class ChainNode:\n    def __init__(self, value, next=None):\n        if not isinstance(value, int) or isinstance(value, bool):\n            raise ValueError(\"value must be an integer\")\n        if next is not None and not isinstance(next, ChainNode):\n            raise ValueError(\"next must be a ChainNode or None\")\n        self.value = value\n        self.next = next\n\n\ndef _merge_two(left, right):\n    dummy = ChainNode(0)\n    tail = dummy\n    while left is not None and right is not None:\n        if left.value < right.value:\n            tail.next = left\n            left = left.next\n        else:\n            tail.next = right\n            right = right.next\n        tail = tail.next\n    tail.next = left if left is not None else right\n    return dummy.next\n\n\ndef merge_sorted_chains(heads):\n    if not isinstance(heads, list):\n        raise ValueError(\"heads must be a list\")\n\n    seen = set()\n    for head in heads:\n        if head is not None and not isinstance(head, ChainNode):\n            raise ValueError(\"invalid head\")\n        node = head\n        previous = None\n        local = set()\n        while node is not None:\n            if not isinstance(node, ChainNode):\n                raise ValueError(\"invalid next reference\")\n            marker = id(node)\n            if marker in local:\n                raise ValueError(\"cycle detected\")\n            if marker in seen:\n                raise ValueError(\"shared node detected\")\n            local.add(marker)\n            seen.add(marker)\n            if previous is not None and previous > node.value:\n                raise ValueError(\"chain is not sorted\")\n            previous = node.value\n            node = node.next\n\n    work = list(heads)\n    interval = 1\n    while interval < len(work):\n        for index in range(0, len(work) - interval, interval * 2):\n            work[index] = _merge_two(work[index], work[index + interval])\n        interval *= 2\n    return work[0] if work else None\n",
+          "label": "The strict comparison takes equal-valued nodes from the later chain first, violating stability.",
+          "sha256": "2642bd4c241aa1f226dc046b94e914afb2831f2d1a25edc3b65c13d780c87097"
+        }
+      ],
+      "reference": {
+        "code": "class ChainNode:\n    def __init__(self, value, next=None):\n        if not isinstance(value, int) or isinstance(value, bool):\n            raise ValueError(\"value must be an integer\")\n        if next is not None and not isinstance(next, ChainNode):\n            raise ValueError(\"next must be a ChainNode or None\")\n        self.value = value\n        self.next = next\n\n\ndef _merge_two(left, right):\n    dummy = ChainNode(0)\n    tail = dummy\n    while left is not None and right is not None:\n        if left.value <= right.value:\n            tail.next = left\n            left = left.next\n        else:\n            tail.next = right\n            right = right.next\n        tail = tail.next\n    tail.next = left if left is not None else right\n    return dummy.next\n\n\ndef merge_sorted_chains(heads):\n    if not isinstance(heads, list):\n        raise ValueError(\"heads must be a list\")\n\n    seen = set()\n    for head in heads:\n        if head is not None and not isinstance(head, ChainNode):\n            raise ValueError(\"invalid head\")\n        node = head\n        previous = None\n        local = set()\n        while node is not None:\n            if not isinstance(node, ChainNode):\n                raise ValueError(\"invalid next reference\")\n            marker = id(node)\n            if marker in local:\n                raise ValueError(\"cycle detected\")\n            if marker in seen:\n                raise ValueError(\"shared node detected\")\n            local.add(marker)\n            seen.add(marker)\n            if previous is not None and previous > node.value:\n                raise ValueError(\"chain is not sorted\")\n            previous = node.value\n            node = node.next\n\n    work = list(heads)\n    interval = 1\n    while interval < len(work):\n        for index in range(0, len(work) - interval, interval * 2):\n            work[index] = _merge_two(work[index], work[index + interval])\n        interval *= 2\n    return work[0] if work else None\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7cc20740925f48c17a895359e806a4b6de9fafb400890fed69d75fcac17d2f35"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_public_node_value_is_revalidated_before_merge (__main__.ChainValueTests.test_public_node_value_is_revalidated_before_merge)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_public_node_value_is_revalidated_before_merge\n    with self.assertRaises(ValueError):\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "1cf077ac7f5d848f04740371132a29b33e0472b803b6dd0d681639760b26894d",
+    "duration_ms": 407,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

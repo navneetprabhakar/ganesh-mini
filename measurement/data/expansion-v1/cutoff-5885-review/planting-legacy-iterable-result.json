@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0134",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "cd94caf4c7c044579e996fbe8ea9cc3b1b26932067f8beedc10d252be7d7c38e",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import PlantingLedger\n\n\nclass Records:\n    def __getitem__(self, index):\n        if index == 0:\n            return {\"field\": \"f\", \"crop\": \"c\", \"planting_date\": \"date\"}\n        raise IndexError\n\n\nclass PlantingIterableTests(unittest.TestCase):\n    def test_sequence_protocol_is_iterable(self):\n        self.assertEqual(PlantingLedger().import_records(Records())[0][\"id\"], 1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "ab1909a027f12b2b1256cc11c90baef1fc457e0b38719d010b639794372c221d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5e72dc7c8a0aaee9dcce5877a3ccc04fb7ade02b068776963aa0b043f42df308",
+      "text": "Create a new implementation in `solution.py` defining a `PlantingLedger` class.\n\nThe constructor takes no arguments. Provide these public methods:\n\n- `add(record) -> dict`: validate and store one record, assign the next integer `id` starting at 1, and return a deep copy of the stored record.\n- `import_records(records) -> list[dict]`: accept any non-string iterable of records, validate the entire batch before changing the ledger, then store them in input order and return deep copies. An empty iterable returns an empty list.\n- `all_records() -> list[dict]`: return all stored records in insertion order as a deep copy.\n\nEach input record must be a mapping with exactly these permitted keys: required `field`, `crop`, and `planting_date`; optional `variety`, `notes`, and `tags`. It must not contain `id`. All textual fields must be strings; required strings must be non-empty after stripping. Store textual values unchanged. `tags` must be a list of strings. Missing optional textual fields default to `\"\"`, and missing `tags` defaults to `[]`. Unknown keys are invalid.\n\nRaise `TypeError` for an incorrect container or field type and `ValueError` for missing, unknown, or empty required fields. Batch import must be atomic, including ID allocation. Neither stored state nor returned values may alias caller-owned nested objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5e72dc7c8a0aaee9dcce5877a3ccc04fb7ade02b068776963aa0b043f42df308",
+      "text": "Create a new implementation in `solution.py` defining a `PlantingLedger` class.\n\nThe constructor takes no arguments. Provide these public methods:\n\n- `add(record) -> dict`: validate and store one record, assign the next integer `id` starting at 1, and return a deep copy of the stored record.\n- `import_records(records) -> list[dict]`: accept any non-string iterable of records, validate the entire batch before changing the ledger, then store them in input order and return deep copies. An empty iterable returns an empty list.\n- `all_records() -> list[dict]`: return all stored records in insertion order as a deep copy.\n\nEach input record must be a mapping with exactly these permitted keys: required `field`, `crop`, and `planting_date`; optional `variety`, `notes`, and `tags`. It must not contain `id`. All textual fields must be strings; required strings must be non-empty after stripping. Store textual values unchanged. `tags` must be a list of strings. Missing optional textual fields default to `\"\"`, and missing `tags` defaults to `[]`. Unknown keys are invalid.\n\nRaise `TypeError` for an incorrect container or field type and `ValueError` for missing, unknown, or empty required fields. Batch import must be atomic, including ID allocation. Neither stored state nor returned values may alias caller-owned nested objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0134",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Iterable, Mapping\nfrom copy import deepcopy\n\n\nclass PlantingLedger:\n    _required = {\"field\", \"crop\", \"planting_date\"}\n    _optional = {\"variety\", \"notes\", \"tags\"}\n\n    def __init__(self):\n        self._records = []\n        self._next_id = 1\n\n    @classmethod\n    def _normalize(cls, record):\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        keys = set(record)\n        missing = cls._required - keys\n        unknown = keys - cls._required - cls._optional\n        if missing:\n            raise ValueError(\"missing required fields\")\n        if unknown:\n            raise ValueError(\"unknown fields are not permitted\")\n\n        normalized = dict(record)\n        for key in cls._required | {\"variety\", \"notes\"}:\n            value = normalized.get(key, \"\")\n            if not isinstance(value, str):\n                raise TypeError(f\"{key} must be a string\")\n            if key in cls._required and not value.strip():\n                raise ValueError(f\"{key} must not be empty\")\n            normalized[key] = value\n\n        tags = normalized.get(\"tags\", [])\n        if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):\n            raise TypeError(\"tags must be a list of strings\")\n        normalized[\"tags\"] = tags\n        return normalized\n\n    def add(self, record):\n        normalized = self._normalize(record)\n        stored = {\"id\": self._next_id, **normalized}\n        self._records.append(stored)\n        self._next_id += 1\n        return deepcopy(stored)\n\n    def import_records(self, records):\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be a non-string iterable\")\n        normalized_batch = [self._normalize(record) for record in records]\n        added = []\n        for normalized in normalized_batch:\n            stored = {\"id\": self._next_id, **normalized}\n            self._records.append(stored)\n            self._next_id += 1\n            added.append(deepcopy(stored))\n        return added\n\n    def all_records(self):\n        return deepcopy(self._records)\n",
+          "label": "Only shallow-copies input records, allowing a caller's tags list to alias stored state.",
+          "sha256": "9ba1eef44184a40589b162578abc01af1e10cc54727486bb287a9673dcbf2ac9"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Iterable, Mapping\nfrom copy import deepcopy\n\n\nclass PlantingLedger:\n    _required = {\"field\", \"crop\", \"planting_date\"}\n    _optional = {\"variety\", \"notes\", \"tags\"}\n\n    def __init__(self):\n        self._records = []\n        self._next_id = 1\n\n    @classmethod\n    def _normalize(cls, record):\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        keys = set(record)\n        missing = cls._required - keys\n        unknown = keys - cls._required - cls._optional\n        if missing:\n            raise ValueError(\"missing required fields\")\n        if unknown:\n            raise ValueError(\"unknown fields are not permitted\")\n\n        normalized = deepcopy(dict(record))\n        for key in cls._required | {\"variety\", \"notes\"}:\n            value = normalized.get(key, \"\")\n            if not isinstance(value, str):\n                raise TypeError(f\"{key} must be a string\")\n            if key in cls._required and not value.strip():\n                raise ValueError(f\"{key} must not be empty\")\n            normalized[key] = value\n\n        tags = normalized.get(\"tags\", [])\n        if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):\n            raise TypeError(\"tags must be a list of strings\")\n        normalized[\"tags\"] = tags\n        return normalized\n\n    def add(self, record):\n        normalized = self._normalize(record)\n        stored = {\"id\": self._next_id, **normalized}\n        self._records.append(stored)\n        self._next_id += 1\n        return deepcopy(stored)\n\n    def import_records(self, records):\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be a non-string iterable\")\n        normalized_batch = [self._normalize(record) for record in records]\n        added = []\n        for normalized in normalized_batch:\n            stored = {\"id\": self._next_id, **normalized}\n            self._records.append(stored)\n            self._next_id += 1\n            added.append(deepcopy(stored))\n        return added\n\n    def all_records(self):\n        return deepcopy(self._records)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1071dbc974fe4d3ad17d9a9492f8840c306601508d160845dc3ea0eab36c801d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import UserDict\n\nfrom solution import PlantingLedger\n\n\nclass PlantingLedgerTests(unittest.TestCase):\n    def record(self, **changes):\n        value = {'field': 'north', 'crop': 'corn', 'planting_date': '2026-04-03'}\n        value.update(changes)\n        return value\n\n    def test_add_defaults_ids_and_preserves_text(self):\n        ledger = PlantingLedger()\n        first = ledger.add(self.record(field=' north '))\n        second = ledger.add(self.record(variety='sweet', notes='note', tags=['early']))\n        self.assertEqual(first, {\n            'id': 1, 'field': ' north ', 'crop': 'corn', 'planting_date': '2026-04-03',\n            'variety': '', 'notes': '', 'tags': [],\n        })\n        self.assertEqual(second['id'], 2)\n        self.assertEqual(second['tags'], ['early'])\n\n    def test_import_iterable_order_and_empty(self):\n        ledger = PlantingLedger()\n        self.assertEqual(ledger.import_records(iter(())), [])\n        result = ledger.import_records(self.record(field=str(i)) for i in range(3))\n        self.assertEqual([item['id'] for item in result], [1, 2, 3])\n        self.assertEqual([item['field'] for item in ledger.all_records()], ['0', '1', '2'])\n\n    def test_batch_is_atomic_including_ids(self):\n        ledger = PlantingLedger()\n        self.assertEqual(ledger.add(self.record())['id'], 1)\n        batch = [self.record(field='valid'), self.record(field='   ')]\n        with self.assertRaises(ValueError):\n            ledger.import_records(batch)\n        self.assertEqual(len(ledger.all_records()), 1)\n        self.assertEqual(ledger.add(self.record(field='after'))['id'], 2)\n\n    def test_caller_and_returned_tags_do_not_alias_state(self):\n        tags = ['spring']\n        source = self.record(tags=tags)\n        ledger = PlantingLedger()\n        returned = ledger.add(source)\n        tags.append('caller-change')\n        source['field'] = 'changed'\n        returned['tags'].append('return-change')\n        returned['field'] = 'also changed'\n        snapshot = ledger.all_records()\n        self.assertEqual(snapshot[0]['field'], 'north')\n        self.assertEqual(snapshot[0]['tags'], ['spring'])\n        snapshot[0]['tags'].append('snapshot-change')\n        self.assertEqual(ledger.all_records()[0]['tags'], ['spring'])\n\n    def test_mapping_subclass_is_accepted(self):\n        ledger = PlantingLedger()\n        self.assertEqual(ledger.add(UserDict(self.record()))['id'], 1)\n\n    def test_container_and_field_type_errors(self):\n        ledger = PlantingLedger()\n        bad_records = [None, [('field', 'x')], self.record(field=1), self.record(crop=None),\n                       self.record(planting_date=20260403), self.record(variety=2),\n                       self.record(notes=[]), self.record(tags=('a',)), self.record(tags=['ok', 3])]\n        for record in bad_records:\n            with self.subTest(record=record):\n                with self.assertRaises(TypeError):\n                    ledger.add(record)\n        for records in [None, 7, 'records', b'records']:\n            with self.subTest(records=records):\n                with self.assertRaises(TypeError):\n                    ledger.import_records(records)\n\n    def test_missing_unknown_empty_and_id_are_value_errors(self):\n        ledger = PlantingLedger()\n        cases = [\n            {'crop': 'corn', 'planting_date': 'date'},\n            self.record(extra='x'),\n            self.record(id=9),\n            self.record(field=''),\n            self.record(crop=' \\t '),\n            self.record(planting_date='\\n'),\n        ]\n        for record in cases:\n            with self.subTest(record=record):\n                with self.assertRaises(ValueError):\n                    ledger.add(record)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "a747ed3abf57428bc94e58e3cf04afdebfdf9d6e454a35212f48443b7f4cfa87"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5e72dc7c8a0aaee9dcce5877a3ccc04fb7ade02b068776963aa0b043f42df308",
+      "text": "Create a new implementation in `solution.py` defining a `PlantingLedger` class.\n\nThe constructor takes no arguments. Provide these public methods:\n\n- `add(record) -> dict`: validate and store one record, assign the next integer `id` starting at 1, and return a deep copy of the stored record.\n- `import_records(records) -> list[dict]`: accept any non-string iterable of records, validate the entire batch before changing the ledger, then store them in input order and return deep copies. An empty iterable returns an empty list.\n- `all_records() -> list[dict]`: return all stored records in insertion order as a deep copy.\n\nEach input record must be a mapping with exactly these permitted keys: required `field`, `crop`, and `planting_date`; optional `variety`, `notes`, and `tags`. It must not contain `id`. All textual fields must be strings; required strings must be non-empty after stripping. Store textual values unchanged. `tags` must be a list of strings. Missing optional textual fields default to `\"\"`, and missing `tags` defaults to `[]`. Unknown keys are invalid.\n\nRaise `TypeError` for an incorrect container or field type and `ValueError` for missing, unknown, or empty required fields. Batch import must be atomic, including ID allocation. Neither stored state nor returned values may alias caller-owned nested objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5e72dc7c8a0aaee9dcce5877a3ccc04fb7ade02b068776963aa0b043f42df308",
+      "text": "Create a new implementation in `solution.py` defining a `PlantingLedger` class.\n\nThe constructor takes no arguments. Provide these public methods:\n\n- `add(record) -> dict`: validate and store one record, assign the next integer `id` starting at 1, and return a deep copy of the stored record.\n- `import_records(records) -> list[dict]`: accept any non-string iterable of records, validate the entire batch before changing the ledger, then store them in input order and return deep copies. An empty iterable returns an empty list.\n- `all_records() -> list[dict]`: return all stored records in insertion order as a deep copy.\n\nEach input record must be a mapping with exactly these permitted keys: required `field`, `crop`, and `planting_date`; optional `variety`, `notes`, and `tags`. It must not contain `id`. All textual fields must be strings; required strings must be non-empty after stripping. Store textual values unchanged. `tags` must be a list of strings. Missing optional textual fields default to `\"\"`, and missing `tags` defaults to `[]`. Unknown keys are invalid.\n\nRaise `TypeError` for an incorrect container or field type and `ValueError` for missing, unknown, or empty required fields. Batch import must be atomic, including ID allocation. Neither stored state nor returned values may alias caller-owned nested objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0134",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Iterable, Mapping\nfrom copy import deepcopy\n\n\nclass PlantingLedger:\n    _required = {\"field\", \"crop\", \"planting_date\"}\n    _optional = {\"variety\", \"notes\", \"tags\"}\n\n    def __init__(self):\n        self._records = []\n        self._next_id = 1\n\n    @classmethod\n    def _normalize(cls, record):\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        keys = set(record)\n        missing = cls._required - keys\n        unknown = keys - cls._required - cls._optional\n        if missing:\n            raise ValueError(\"missing required fields\")\n        if unknown:\n            raise ValueError(\"unknown fields are not permitted\")\n\n        normalized = dict(record)\n        for key in cls._required | {\"variety\", \"notes\"}:\n            value = normalized.get(key, \"\")\n            if not isinstance(value, str):\n                raise TypeError(f\"{key} must be a string\")\n            if key in cls._required and not value.strip():\n                raise ValueError(f\"{key} must not be empty\")\n            normalized[key] = value\n\n        tags = normalized.get(\"tags\", [])\n        if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):\n            raise TypeError(\"tags must be a list of strings\")\n        normalized[\"tags\"] = tags\n        return normalized\n\n    def add(self, record):\n        normalized = self._normalize(record)\n        stored = {\"id\": self._next_id, **normalized}\n        self._records.append(stored)\n        self._next_id += 1\n        return deepcopy(stored)\n\n    def import_records(self, records):\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be a non-string iterable\")\n        normalized_batch = [self._normalize(record) for record in records]\n        added = []\n        for normalized in normalized_batch:\n            stored = {\"id\": self._next_id, **normalized}\n            self._records.append(stored)\n            self._next_id += 1\n            added.append(deepcopy(stored))\n        return added\n\n    def all_records(self):\n        return deepcopy(self._records)\n",
+          "label": "Only shallow-copies input records, allowing a caller's tags list to alias stored state.",
+          "sha256": "9ba1eef44184a40589b162578abc01af1e10cc54727486bb287a9673dcbf2ac9"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Iterable, Mapping\nfrom copy import deepcopy\n\n\nclass PlantingLedger:\n    _required = {\"field\", \"crop\", \"planting_date\"}\n    _optional = {\"variety\", \"notes\", \"tags\"}\n\n    def __init__(self):\n        self._records = []\n        self._next_id = 1\n\n    @classmethod\n    def _normalize(cls, record):\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        keys = set(record)\n        missing = cls._required - keys\n        unknown = keys - cls._required - cls._optional\n        if missing:\n            raise ValueError(\"missing required fields\")\n        if unknown:\n            raise ValueError(\"unknown fields are not permitted\")\n\n        normalized = deepcopy(dict(record))\n        for key in cls._required | {\"variety\", \"notes\"}:\n            value = normalized.get(key, \"\")\n            if not isinstance(value, str):\n                raise TypeError(f\"{key} must be a string\")\n            if key in cls._required and not value.strip():\n                raise ValueError(f\"{key} must not be empty\")\n            normalized[key] = value\n\n        tags = normalized.get(\"tags\", [])\n        if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):\n            raise TypeError(\"tags must be a list of strings\")\n        normalized[\"tags\"] = tags\n        return normalized\n\n    def add(self, record):\n        normalized = self._normalize(record)\n        stored = {\"id\": self._next_id, **normalized}\n        self._records.append(stored)\n        self._next_id += 1\n        return deepcopy(stored)\n\n    def import_records(self, records):\n        if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n            raise TypeError(\"records must be a non-string iterable\")\n        normalized_batch = [self._normalize(record) for record in records]\n        added = []\n        for normalized in normalized_batch:\n            stored = {\"id\": self._next_id, **normalized}\n            self._records.append(stored)\n            self._next_id += 1\n            added.append(deepcopy(stored))\n        return added\n\n    def all_records(self):\n        return deepcopy(self._records)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1071dbc974fe4d3ad17d9a9492f8840c306601508d160845dc3ea0eab36c801d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_sequence_protocol_is_iterable (__main__.PlantingIterableTests.test_sequence_protocol_is_iterable)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 14, in test_sequence_protocol_is_iterable\n    self.assertEqual(PlantingLedger().import_records(Records())[0][\"id\"], 1)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 49, in import_records\n    raise TypeError(\"records must be a non-string iterable\")\nTypeError: records must be a non-string iterable\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "93c7b788404640fc76428f91719d927038facb990a161c22e9a0ff8a3177b3d8",
+    "duration_ms": 425,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0222",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "245dd110c9d80854e6ac3f0c94e811a1ab513313196f0ee3e251d31f52b8803f",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { createStandardCodecBank } from './solution';\nlet rejected = false;\ntry { createStandardCodecBank().encode('string-list', new Array<string>(1)); }\ncatch (e) { if (!(e instanceof RangeError)) throw e; rejected = true; }\nif (!rejected) throw new Error('missing string member serialized as null');\n",
+        "sha256": "c1a94be226e7a7de24dec5216ec748bc7ffae78043c73b5721f075fd79a22263"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e697a286c31604fb721b1d2ad5244022405644b1f13b5b6b4c4782c253559ad3",
+      "text": "Implement a complete TypeScript source file containing a small codec registry with this exact public API:\n\n```typescript\nexport interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\nexport class CodecBank {\n  register<T>(name: string, codec: Codec<T>): void;\n  decode<T>(name: string, text: string): T;\n  encode<T>(name: string, value: T): string;\n  names(): string[];\n}\nexport function createStandardCodecBank(): CodecBank;\n```\n\nRegistry names are exact and case-sensitive. `register` must throw `RangeError` for a blank name and `Error` for a duplicate. Unknown names passed to `decode` or `encode` throw `Error`. `names` returns names in registration order and must not expose mutable internal state.\n\n`createStandardCodecBank` must register these codecs in order:\n\n- `integer`: decode only strings matching `^-?(0|[1-9][0-9]*)$` whose numeric value is a safe integer; encode only safe integers, otherwise throw `RangeError`.\n- `boolean`: decode exactly `\"true\"` or `\"false\"`; encode booleans as those strings and reject all other runtime values with `RangeError`.\n- `string-list`: decode a JSON string representing an array containing only strings; encode an array containing only strings. Malformed JSON, non-arrays, or invalid members throw `RangeError`.\n\nThe string-list codec must return or serialize independent arrays and must not mutate supplied values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e697a286c31604fb721b1d2ad5244022405644b1f13b5b6b4c4782c253559ad3",
+      "text": "Implement a complete TypeScript source file containing a small codec registry with this exact public API:\n\n```typescript\nexport interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\nexport class CodecBank {\n  register<T>(name: string, codec: Codec<T>): void;\n  decode<T>(name: string, text: string): T;\n  encode<T>(name: string, value: T): string;\n  names(): string[];\n}\nexport function createStandardCodecBank(): CodecBank;\n```\n\nRegistry names are exact and case-sensitive. `register` must throw `RangeError` for a blank name and `Error` for a duplicate. Unknown names passed to `decode` or `encode` throw `Error`. `names` returns names in registration order and must not expose mutable internal state.\n\n`createStandardCodecBank` must register these codecs in order:\n\n- `integer`: decode only strings matching `^-?(0|[1-9][0-9]*)$` whose numeric value is a safe integer; encode only safe integers, otherwise throw `RangeError`.\n- `boolean`: decode exactly `\"true\"` or `\"false\"`; encode booleans as those strings and reject all other runtime values with `RangeError`.\n- `string-list`: decode a JSON string representing an array containing only strings; encode an array containing only strings. Malformed JSON, non-arrays, or invalid members throw `RangeError`.\n\nThe string-list codec must return or serialize independent arrays and must not mutate supplied values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0222",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\n\nexport class CodecBank {\n  private readonly codecs = new Map<string, Codec<unknown>>();\n\n  register<T>(name: string, codec: Codec<T>): void {\n    if (name.trim().length === 0) throw new RangeError(\"Codec name must not be blank\");\n    if (this.codecs.has(name)) throw new Error(`Duplicate codec: ${name}`);\n    this.codecs.set(name, codec as Codec<unknown>);\n  }\n\n  decode<T>(name: string, text: string): T {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.decode(text) as T;\n  }\n\n  encode<T>(name: string, value: T): string {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.encode(value);\n  }\n\n  names(): string[] {\n    return [...this.codecs.keys()];\n  }\n}\n\nexport function createStandardCodecBank(): CodecBank {\n  const bank = new CodecBank();\n  bank.register<number>(\"integer\", {\n    decode(text) {\n      if (!/^-?(0|[1-9][0-9]*)$/.test(text)) throw new RangeError(\"Invalid integer\");\n      const value = Number(text);\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Unsafe integer\");\n      return value;\n    },\n    encode(value) {\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Invalid integer\");\n      return String(value);\n    }\n  });\n  bank.register<boolean>(\"boolean\", {\n    decode(text) {\n      if (text.toLowerCase() === \"true\") return true;\n      if (text.toLowerCase() === \"false\") return false;\n      throw new RangeError(\"Invalid boolean\");\n    },\n    encode(value) {\n      if (typeof value !== \"boolean\") throw new RangeError(\"Invalid boolean\");\n      return String(value);\n    }\n  });\n  bank.register<string[]>(\"string-list\", {\n    decode(text) {\n      let value: unknown;\n      try { value = JSON.parse(text); } catch { throw new RangeError(\"Invalid string list\"); }\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return [...value];\n    },\n    encode(value) {\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return JSON.stringify([...value]);\n    }\n  });\n  return bank;\n}\n",
+          "label": "The boolean decoder is incorrectly case-insensitive and accepts values such as \"TRUE\" that must be rejected.",
+          "sha256": "4b1696f26a4c91e9edc34d1b1625dfb33969634e86ab50f194845a0b19cd990d"
+        }
+      ],
+      "reference": {
+        "code": "export interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\n\nexport class CodecBank {\n  private readonly codecs = new Map<string, Codec<unknown>>();\n\n  register<T>(name: string, codec: Codec<T>): void {\n    if (name.trim().length === 0) throw new RangeError(\"Codec name must not be blank\");\n    if (this.codecs.has(name)) throw new Error(`Duplicate codec: ${name}`);\n    this.codecs.set(name, codec as Codec<unknown>);\n  }\n\n  decode<T>(name: string, text: string): T {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.decode(text) as T;\n  }\n\n  encode<T>(name: string, value: T): string {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.encode(value);\n  }\n\n  names(): string[] {\n    return [...this.codecs.keys()];\n  }\n}\n\nexport function createStandardCodecBank(): CodecBank {\n  const bank = new CodecBank();\n  bank.register<number>(\"integer\", {\n    decode(text) {\n      if (!/^-?(0|[1-9][0-9]*)$/.test(text)) throw new RangeError(\"Invalid integer\");\n      const value = Number(text);\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Unsafe integer\");\n      return value;\n    },\n    encode(value) {\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Invalid integer\");\n      return String(value);\n    }\n  });\n  bank.register<boolean>(\"boolean\", {\n    decode(text) {\n      if (text === \"true\") return true;\n      if (text === \"false\") return false;\n      throw new RangeError(\"Invalid boolean\");\n    },\n    encode(value) {\n      if (typeof value !== \"boolean\") throw new RangeError(\"Invalid boolean\");\n      return String(value);\n    }\n  });\n  bank.register<string[]>(\"string-list\", {\n    decode(text) {\n      let value: unknown;\n      try { value = JSON.parse(text); } catch { throw new RangeError(\"Invalid string list\"); }\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return [...value];\n    },\n    encode(value) {\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return JSON.stringify([...value]);\n    }\n  });\n  return bank;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4a93089289ec3b916c074dc0013ccfd197b5f7ac1f7ffd38a9ab09e6e9020ab6"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { CodecBank, createStandardCodecBank } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${message}: ${JSON.stringify(actual)}`);\n}\nfunction throws(fn: () => unknown, ctor: new (...args: any[]) => Error, message: string): void {\n  let caught: unknown;\n  try { fn(); } catch (error) { caught = error; }\n  assert(caught instanceof ctor, message);\n}\n\nconst custom = new CodecBank();\ncustom.register(\"Exact\", { decode: (text) => text.length, encode: (value: number) => String(value) });\ncustom.register(\"lower\", { decode: (text) => text, encode: (value: string) => value });\ndeepEqual(custom.names(), [\"Exact\", \"lower\"], \"names preserve registration order and case\");\nconst exposedNames = custom.names();\nexposedNames.reverse();\ndeepEqual(custom.names(), [\"Exact\", \"lower\"], \"names returns a copy\");\nthrows(() => custom.register(\" \\t\", { decode: (text) => text, encode: (value: string) => value }), RangeError, \"blank name rejected\");\nthrows(() => custom.register(\"Exact\", { decode: (text) => text, encode: (value: string) => value }), Error, \"duplicate rejected\");\ndeepEqual(custom.names(), [\"Exact\", \"lower\"], \"failed registrations preserve bank\");\nassert(custom.decode<number>(\"Exact\", \"abcd\") === 4, \"custom decode\");\nassert(custom.encode<number>(\"Exact\", 12) === \"12\", \"custom encode\");\nthrows(() => custom.decode(\"exact\", \"x\"), Error, \"names are case-sensitive\");\nthrows(() => custom.encode(\"missing\", \"x\"), Error, \"unknown encode rejected\");\n\nconst bank = createStandardCodecBank();\ndeepEqual(bank.names(), [\"integer\", \"boolean\", \"string-list\"], \"standard codec order\");\nfor (const text of [\"0\", \"-0\", \"42\", \"-17\", String(Number.MAX_SAFE_INTEGER), String(Number.MIN_SAFE_INTEGER)]) {\n  const decoded = bank.decode<number>(\"integer\", text);\n  assert(Object.is(decoded, Number(text)), `integer decode ${text}`);\n}\nfor (const text of [\"\", \"+1\", \"01\", \"-01\", \"1.0\", \" 1\", \"1 \", \"1e2\", String(Number.MAX_SAFE_INTEGER + 1)]) {\n  throws(() => bank.decode<number>(\"integer\", text), RangeError, `invalid integer ${text}`);\n}\nassert(bank.encode<number>(\"integer\", 0) === \"0\", \"encode zero\");\nassert(bank.encode<number>(\"integer\", Number.MIN_SAFE_INTEGER) === String(Number.MIN_SAFE_INTEGER), \"encode safe boundary\");\nfor (const value of [1.5, Infinity, Number.NaN, Number.MAX_SAFE_INTEGER + 1]) {\n  throws(() => bank.encode<number>(\"integer\", value), RangeError, \"invalid integer encode\");\n}\n\nassert(bank.decode<boolean>(\"boolean\", \"true\") === true, \"decode true\");\nassert(bank.decode<boolean>(\"boolean\", \"false\") === false, \"decode false\");\nassert(bank.encode<boolean>(\"boolean\", true) === \"true\", \"encode true\");\nassert(bank.encode<boolean>(\"boolean\", false) === \"false\", \"encode false\");\nfor (const value of [\"True\", \"FALSE\", \"0\", \"\"] as const) {\n  throws(() => bank.decode<boolean>(\"boolean\", value), RangeError, \"invalid boolean decode\");\n}\nthrows(() => bank.encode<boolean>(\"boolean\", \"true\" as unknown as boolean), RangeError, \"runtime non-boolean rejected\");\n\nconst decoded = bank.decode<string[]>(\"string-list\", \"[\\\"a\\\",\\\"b\\\",\\\"a\\\"]\");\ndeepEqual(decoded, [\"a\", \"b\", \"a\"], \"string-list decode\");\ndecoded[0] = \"changed\";\ndeepEqual(bank.decode<string[]>(\"string-list\", \"[\\\"a\\\",\\\"b\\\",\\\"a\\\"]\"), [\"a\", \"b\", \"a\"], \"decoded arrays are independent\");\nconst supplied = [\"x\", \"y\"];\nassert(bank.encode<string[]>(\"string-list\", supplied) === \"[\\\"x\\\",\\\"y\\\"]\", \"string-list encode\");\ndeepEqual(supplied, [\"x\", \"y\"], \"encode does not mutate array\");\nfor (const text of [\"not json\", \"{}\", \"[1]\", \"[\\\"x\\\",null]\"]) {\n  throws(() => bank.decode<string[]>(\"string-list\", text), RangeError, \"invalid string-list decode\");\n}\nfor (const value of [{}, [\"x\", 1], \"x\"] as unknown[]) {\n  throws(() => bank.encode<string[]>(\"string-list\", value as string[]), RangeError, \"invalid string-list encode\");\n}\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "2839eb951821d190eaf2e2e174de74ca0c5102e0755379b0d296b9be4606c53c"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e697a286c31604fb721b1d2ad5244022405644b1f13b5b6b4c4782c253559ad3",
+      "text": "Implement a complete TypeScript source file containing a small codec registry with this exact public API:\n\n```typescript\nexport interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\nexport class CodecBank {\n  register<T>(name: string, codec: Codec<T>): void;\n  decode<T>(name: string, text: string): T;\n  encode<T>(name: string, value: T): string;\n  names(): string[];\n}\nexport function createStandardCodecBank(): CodecBank;\n```\n\nRegistry names are exact and case-sensitive. `register` must throw `RangeError` for a blank name and `Error` for a duplicate. Unknown names passed to `decode` or `encode` throw `Error`. `names` returns names in registration order and must not expose mutable internal state.\n\n`createStandardCodecBank` must register these codecs in order:\n\n- `integer`: decode only strings matching `^-?(0|[1-9][0-9]*)$` whose numeric value is a safe integer; encode only safe integers, otherwise throw `RangeError`.\n- `boolean`: decode exactly `\"true\"` or `\"false\"`; encode booleans as those strings and reject all other runtime values with `RangeError`.\n- `string-list`: decode a JSON string representing an array containing only strings; encode an array containing only strings. Malformed JSON, non-arrays, or invalid members throw `RangeError`.\n\nThe string-list codec must return or serialize independent arrays and must not mutate supplied values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e697a286c31604fb721b1d2ad5244022405644b1f13b5b6b4c4782c253559ad3",
+      "text": "Implement a complete TypeScript source file containing a small codec registry with this exact public API:\n\n```typescript\nexport interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\nexport class CodecBank {\n  register<T>(name: string, codec: Codec<T>): void;\n  decode<T>(name: string, text: string): T;\n  encode<T>(name: string, value: T): string;\n  names(): string[];\n}\nexport function createStandardCodecBank(): CodecBank;\n```\n\nRegistry names are exact and case-sensitive. `register` must throw `RangeError` for a blank name and `Error` for a duplicate. Unknown names passed to `decode` or `encode` throw `Error`. `names` returns names in registration order and must not expose mutable internal state.\n\n`createStandardCodecBank` must register these codecs in order:\n\n- `integer`: decode only strings matching `^-?(0|[1-9][0-9]*)$` whose numeric value is a safe integer; encode only safe integers, otherwise throw `RangeError`.\n- `boolean`: decode exactly `\"true\"` or `\"false\"`; encode booleans as those strings and reject all other runtime values with `RangeError`.\n- `string-list`: decode a JSON string representing an array containing only strings; encode an array containing only strings. Malformed JSON, non-arrays, or invalid members throw `RangeError`.\n\nThe string-list codec must return or serialize independent arrays and must not mutate supplied values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0222",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\n\nexport class CodecBank {\n  private readonly codecs = new Map<string, Codec<unknown>>();\n\n  register<T>(name: string, codec: Codec<T>): void {\n    if (name.trim().length === 0) throw new RangeError(\"Codec name must not be blank\");\n    if (this.codecs.has(name)) throw new Error(`Duplicate codec: ${name}`);\n    this.codecs.set(name, codec as Codec<unknown>);\n  }\n\n  decode<T>(name: string, text: string): T {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.decode(text) as T;\n  }\n\n  encode<T>(name: string, value: T): string {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.encode(value);\n  }\n\n  names(): string[] {\n    return [...this.codecs.keys()];\n  }\n}\n\nexport function createStandardCodecBank(): CodecBank {\n  const bank = new CodecBank();\n  bank.register<number>(\"integer\", {\n    decode(text) {\n      if (!/^-?(0|[1-9][0-9]*)$/.test(text)) throw new RangeError(\"Invalid integer\");\n      const value = Number(text);\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Unsafe integer\");\n      return value;\n    },\n    encode(value) {\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Invalid integer\");\n      return String(value);\n    }\n  });\n  bank.register<boolean>(\"boolean\", {\n    decode(text) {\n      if (text.toLowerCase() === \"true\") return true;\n      if (text.toLowerCase() === \"false\") return false;\n      throw new RangeError(\"Invalid boolean\");\n    },\n    encode(value) {\n      if (typeof value !== \"boolean\") throw new RangeError(\"Invalid boolean\");\n      return String(value);\n    }\n  });\n  bank.register<string[]>(\"string-list\", {\n    decode(text) {\n      let value: unknown;\n      try { value = JSON.parse(text); } catch { throw new RangeError(\"Invalid string list\"); }\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return [...value];\n    },\n    encode(value) {\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return JSON.stringify([...value]);\n    }\n  });\n  return bank;\n}\n",
+          "label": "The boolean decoder is incorrectly case-insensitive and accepts values such as \"TRUE\" that must be rejected.",
+          "sha256": "4b1696f26a4c91e9edc34d1b1625dfb33969634e86ab50f194845a0b19cd990d"
+        }
+      ],
+      "reference": {
+        "code": "export interface Codec<T> {\n  readonly decode: (text: string) => T;\n  readonly encode: (value: T) => string;\n}\n\nexport class CodecBank {\n  private readonly codecs = new Map<string, Codec<unknown>>();\n\n  register<T>(name: string, codec: Codec<T>): void {\n    if (name.trim().length === 0) throw new RangeError(\"Codec name must not be blank\");\n    if (this.codecs.has(name)) throw new Error(`Duplicate codec: ${name}`);\n    this.codecs.set(name, codec as Codec<unknown>);\n  }\n\n  decode<T>(name: string, text: string): T {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.decode(text) as T;\n  }\n\n  encode<T>(name: string, value: T): string {\n    const codec = this.codecs.get(name);\n    if (codec === undefined) throw new Error(`Unknown codec: ${name}`);\n    return codec.encode(value);\n  }\n\n  names(): string[] {\n    return [...this.codecs.keys()];\n  }\n}\n\nexport function createStandardCodecBank(): CodecBank {\n  const bank = new CodecBank();\n  bank.register<number>(\"integer\", {\n    decode(text) {\n      if (!/^-?(0|[1-9][0-9]*)$/.test(text)) throw new RangeError(\"Invalid integer\");\n      const value = Number(text);\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Unsafe integer\");\n      return value;\n    },\n    encode(value) {\n      if (!Number.isSafeInteger(value)) throw new RangeError(\"Invalid integer\");\n      return String(value);\n    }\n  });\n  bank.register<boolean>(\"boolean\", {\n    decode(text) {\n      if (text === \"true\") return true;\n      if (text === \"false\") return false;\n      throw new RangeError(\"Invalid boolean\");\n    },\n    encode(value) {\n      if (typeof value !== \"boolean\") throw new RangeError(\"Invalid boolean\");\n      return String(value);\n    }\n  });\n  bank.register<string[]>(\"string-list\", {\n    decode(text) {\n      let value: unknown;\n      try { value = JSON.parse(text); } catch { throw new RangeError(\"Invalid string list\"); }\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return [...value];\n    },\n    encode(value) {\n      if (!Array.isArray(value) || !value.every((item) => typeof item === \"string\")) {\n        throw new RangeError(\"Invalid string list\");\n      }\n      return JSON.stringify([...value]);\n    }\n  });\n  return bank;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4a93089289ec3b916c074dc0013ccfd197b5f7ac1f7ffd38a9ab09e6e9020ab6"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:14\n    throw new Error('missing string member serialized as null');\n    ^\n\nError: missing string member serialized as null\n    at Object.<anonymous> (/work/solution.test.js:14:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "6ae3d46c2ddf1e7fed9b032492e3cc6e96b78038fef72bb27dfa3b1685ad3c07",
+    "duration_ms": 2088,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

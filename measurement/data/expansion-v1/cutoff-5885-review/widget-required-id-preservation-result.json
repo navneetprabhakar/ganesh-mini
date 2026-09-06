@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0211",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a2b2f4f5b4c9e3d5098311995f3e411634fdd18ec75ac7b16bf0105fa39c5f11",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { Widget, applyWidgetCommand } from './solution';\nconst widget: Widget = { id: '', x: 0, y: 0, width: 20, height: 20, selected: false };\nObject.defineProperty(widget, 'id', { enumerable: false });\nconst result = applyWidgetCommand(widget, { type: 'select', selected: true }, { width: 100, height: 100 });\nif (result.id !== '') throw new Error('required empty identifier lost');\n",
+        "sha256": "9cc0929844547e38774e157e0075467b7e6f9dd86c70858d85725d05b763411a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "20091d1a890cb723466f662d358e0c65dabb7d3d72aecca2d37be55cb904f200",
+      "text": "Implement a deterministic widget-layout module. Export `CanvasSize`, `Widget`, `WidgetCommand`, and `applyWidgetCommand`. `CanvasSize` has numeric `width` and `height`. `Widget` has `id`, `x`, `y`, `width`, `height`, and `selected`. Commands are `{ type: \"move\"; x: number; y: number }`, `{ type: \"resize\"; width: number; height: number }`, or `{ type: \"select\"; selected: boolean }`. `applyWidgetCommand(widget, command, canvas)` must return a new widget and never mutate or alias the input. Canvas dimensions and all command coordinates or dimensions must be finite. Canvas dimensions must be positive; otherwise throw `RangeError`. Move coordinates are clamped so the entire widget remains inside the canvas. Resize dimensions are clamped between 20 and the canvas dimensions, and the position is then clamped to keep the resized widget inside. Selection changes only `selected`. Empty identifiers are allowed and preserved. Existing widget dimensions must be finite and positive; malformed widgets throw `RangeError`. Values exactly on a boundary are accepted.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "20091d1a890cb723466f662d358e0c65dabb7d3d72aecca2d37be55cb904f200",
+      "text": "Implement a deterministic widget-layout module. Export `CanvasSize`, `Widget`, `WidgetCommand`, and `applyWidgetCommand`. `CanvasSize` has numeric `width` and `height`. `Widget` has `id`, `x`, `y`, `width`, `height`, and `selected`. Commands are `{ type: \"move\"; x: number; y: number }`, `{ type: \"resize\"; width: number; height: number }`, or `{ type: \"select\"; selected: boolean }`. `applyWidgetCommand(widget, command, canvas)` must return a new widget and never mutate or alias the input. Canvas dimensions and all command coordinates or dimensions must be finite. Canvas dimensions must be positive; otherwise throw `RangeError`. Move coordinates are clamped so the entire widget remains inside the canvas. Resize dimensions are clamped between 20 and the canvas dimensions, and the position is then clamped to keep the resized widget inside. Selection changes only `selected`. Empty identifiers are allowed and preserved. Existing widget dimensions must be finite and positive; malformed widgets throw `RangeError`. Values exactly on a boundary are accepted.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0211",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface CanvasSize {\n  readonly width: number;\n  readonly height: number;\n}\n\nexport interface Widget {\n  readonly id: string;\n  readonly x: number;\n  readonly y: number;\n  readonly width: number;\n  readonly height: number;\n  readonly selected: boolean;\n}\n\nexport type WidgetCommand =\n  | { readonly type: \"move\"; readonly x: number; readonly y: number }\n  | { readonly type: \"resize\"; readonly width: number; readonly height: number }\n  | { readonly type: \"select\"; readonly selected: boolean };\n\nfunction finite(value: number): boolean {\n  return Number.isFinite(value);\n}\n\nfunction validate(widget: Widget, canvas: CanvasSize): void {\n  if (!finite(canvas.width) || !finite(canvas.height) || canvas.width <= 0 || canvas.height <= 0) {\n    throw new RangeError(\"Canvas dimensions must be finite and positive\");\n  }\n  if (![widget.x, widget.y, widget.width, widget.height].every(finite) || widget.width <= 0 || widget.height <= 0) {\n    throw new RangeError(\"Widget geometry must be finite with positive dimensions\");\n  }\n}\n\nfunction clamp(value: number, low: number, high: number): number {\n  return Math.min(Math.max(value, low), high);\n}\n\nexport function applyWidgetCommand(widget: Widget, command: WidgetCommand, canvas: CanvasSize): Widget {\n  validate(widget, canvas);\n  if (command.type === \"select\") {\n    return { ...widget, selected: command.selected };\n  }\n  if (command.type === \"move\") {\n    if (!finite(command.x) || !finite(command.y)) throw new RangeError(\"Move coordinates must be finite\");\n    return {\n      ...widget,\n      x: clamp(command.x, 0, canvas.width),\n      y: clamp(command.y, 0, Math.max(0, canvas.height - widget.height))\n    };\n  }\n  if (!finite(command.width) || !finite(command.height)) throw new RangeError(\"Resize dimensions must be finite\");\n  const width = clamp(command.width, Math.min(20, canvas.width), canvas.width);\n  const height = clamp(command.height, Math.min(20, canvas.height), canvas.height);\n  return {\n    ...widget,\n    width,\n    height,\n    x: clamp(widget.x, 0, canvas.width - width),\n    y: clamp(widget.y, 0, canvas.height - height)\n  };\n}\n",
+          "label": "Horizontal moves clamp x to the canvas width instead of the largest x that keeps the widget inside.",
+          "sha256": "95e71c7f4965fb624d96a37e3804f2ca161d8543751c1661fe1b3d4e3284de9b"
+        }
+      ],
+      "reference": {
+        "code": "export interface CanvasSize {\n  readonly width: number;\n  readonly height: number;\n}\n\nexport interface Widget {\n  readonly id: string;\n  readonly x: number;\n  readonly y: number;\n  readonly width: number;\n  readonly height: number;\n  readonly selected: boolean;\n}\n\nexport type WidgetCommand =\n  | { readonly type: \"move\"; readonly x: number; readonly y: number }\n  | { readonly type: \"resize\"; readonly width: number; readonly height: number }\n  | { readonly type: \"select\"; readonly selected: boolean };\n\nfunction finite(value: number): boolean {\n  return Number.isFinite(value);\n}\n\nfunction validate(widget: Widget, canvas: CanvasSize): void {\n  if (!finite(canvas.width) || !finite(canvas.height) || canvas.width <= 0 || canvas.height <= 0) {\n    throw new RangeError(\"Canvas dimensions must be finite and positive\");\n  }\n  if (![widget.x, widget.y, widget.width, widget.height].every(finite) || widget.width <= 0 || widget.height <= 0) {\n    throw new RangeError(\"Widget geometry must be finite with positive dimensions\");\n  }\n}\n\nfunction clamp(value: number, low: number, high: number): number {\n  return Math.min(Math.max(value, low), high);\n}\n\nexport function applyWidgetCommand(widget: Widget, command: WidgetCommand, canvas: CanvasSize): Widget {\n  validate(widget, canvas);\n  if (command.type === \"select\") {\n    return { ...widget, selected: command.selected };\n  }\n  if (command.type === \"move\") {\n    if (!finite(command.x) || !finite(command.y)) throw new RangeError(\"Move coordinates must be finite\");\n    return {\n      ...widget,\n      x: clamp(command.x, 0, Math.max(0, canvas.width - widget.width)),\n      y: clamp(command.y, 0, Math.max(0, canvas.height - widget.height))\n    };\n  }\n  if (!finite(command.width) || !finite(command.height)) throw new RangeError(\"Resize dimensions must be finite\");\n  const width = clamp(command.width, Math.min(20, canvas.width), canvas.width);\n  const height = clamp(command.height, Math.min(20, canvas.height), canvas.height);\n  return {\n    ...widget,\n    width,\n    height,\n    x: clamp(widget.x, 0, canvas.width - width),\n    y: clamp(widget.y, 0, canvas.height - height)\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "395ee9102cd9e675ada671eaf022c1b862ec325f1c46d4240a7a337ea55f7583"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { applyWidgetCommand, CanvasSize, Widget, WidgetCommand } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction rangeError(fn: () => unknown, message: string): void {\n  try { fn(); } catch (error) { if (error instanceof RangeError) return; throw new Error(`${message}: wrong error`); }\n  throw new Error(`${message}: did not throw`);\n}\n\nconst canvas: CanvasSize = { width: 100, height: 80 };\nconst widget: Widget = { id: \"\", x: 30, y: 25, width: 40, height: 30, selected: false };\nconst move: WidgetCommand = { type: \"move\", x: 95, y: -10 };\nconst moved = applyWidgetCommand(widget, move, canvas);\nequal(moved.id, \"\", \"empty id preserved\");\nequal(moved.x, 60, \"move clamps right\");\nequal(moved.y, 0, \"move clamps top\");\nequal(moved.width, 40, \"move preserves width\");\nequal(moved.height, 30, \"move preserves height\");\nequal(moved.selected, false, \"move preserves selection\");\nassert(moved !== widget, \"move returns a fresh widget\");\nequal(widget.x, 30, \"move does not mutate x\");\nequal(widget.y, 25, \"move does not mutate y\");\nequal(move.x, 95, \"move command is not mutated\");\n\nconst boundaryMove = applyWidgetCommand(widget, { type: \"move\", x: 60, y: 50 }, canvas);\nequal(boundaryMove.x, 60, \"exact right boundary accepted\");\nequal(boundaryMove.y, 50, \"exact bottom boundary accepted\");\n\nconst resized = applyWidgetCommand(widget, { type: \"resize\", width: 500, height: 5 }, canvas);\nequal(resized.width, 100, \"resize clamps to canvas width\");\nequal(resized.height, 20, \"resize clamps to minimum height\");\nequal(resized.x, 0, \"resize reclamps x\");\nequal(resized.y, 25, \"resize retains valid y\");\nequal(widget.width, 40, \"resize does not mutate input\");\n\nconst exactResize = applyWidgetCommand(widget, { type: \"resize\", width: 20, height: 80 }, canvas);\nequal(exactResize.width, 20, \"minimum size accepted\");\nequal(exactResize.height, 80, \"canvas-sized height accepted\");\nequal(exactResize.y, 0, \"position clamped after resize\");\n\nconst selected = applyWidgetCommand(widget, { type: \"select\", selected: true }, canvas);\nequal(selected.selected, true, \"selection changes\");\nequal(selected.x, 30, \"selection preserves x\");\nequal(selected.y, 25, \"selection preserves y\");\nequal(selected.width, 40, \"selection preserves width\");\nassert(selected !== widget, \"selection returns a fresh widget\");\n\nrangeError(() => applyWidgetCommand(widget, { type: \"move\", x: 0, y: 0 }, { width: 0, height: 80 }), \"zero canvas width\");\nrangeError(() => applyWidgetCommand(widget, { type: \"move\", x: 0, y: 0 }, { width: 100, height: Infinity }), \"non-finite canvas height\");\nrangeError(() => applyWidgetCommand(widget, { type: \"move\", x: NaN, y: 0 }, canvas), \"non-finite move coordinate\");\nrangeError(() => applyWidgetCommand(widget, { type: \"resize\", width: 20, height: Infinity }, canvas), \"non-finite resize dimension\");\nrangeError(() => applyWidgetCommand({ ...widget, width: 0 }, { type: \"select\", selected: true }, canvas), \"zero existing width\");\nrangeError(() => applyWidgetCommand({ ...widget, height: NaN }, { type: \"select\", selected: true }, canvas), \"non-finite existing height\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "ce545c1ee050601ac5594afe9215cebf8ae8755ed268cd559873170638670088"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "20091d1a890cb723466f662d358e0c65dabb7d3d72aecca2d37be55cb904f200",
+      "text": "Implement a deterministic widget-layout module. Export `CanvasSize`, `Widget`, `WidgetCommand`, and `applyWidgetCommand`. `CanvasSize` has numeric `width` and `height`. `Widget` has `id`, `x`, `y`, `width`, `height`, and `selected`. Commands are `{ type: \"move\"; x: number; y: number }`, `{ type: \"resize\"; width: number; height: number }`, or `{ type: \"select\"; selected: boolean }`. `applyWidgetCommand(widget, command, canvas)` must return a new widget and never mutate or alias the input. Canvas dimensions and all command coordinates or dimensions must be finite. Canvas dimensions must be positive; otherwise throw `RangeError`. Move coordinates are clamped so the entire widget remains inside the canvas. Resize dimensions are clamped between 20 and the canvas dimensions, and the position is then clamped to keep the resized widget inside. Selection changes only `selected`. Empty identifiers are allowed and preserved. Existing widget dimensions must be finite and positive; malformed widgets throw `RangeError`. Values exactly on a boundary are accepted.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "20091d1a890cb723466f662d358e0c65dabb7d3d72aecca2d37be55cb904f200",
+      "text": "Implement a deterministic widget-layout module. Export `CanvasSize`, `Widget`, `WidgetCommand`, and `applyWidgetCommand`. `CanvasSize` has numeric `width` and `height`. `Widget` has `id`, `x`, `y`, `width`, `height`, and `selected`. Commands are `{ type: \"move\"; x: number; y: number }`, `{ type: \"resize\"; width: number; height: number }`, or `{ type: \"select\"; selected: boolean }`. `applyWidgetCommand(widget, command, canvas)` must return a new widget and never mutate or alias the input. Canvas dimensions and all command coordinates or dimensions must be finite. Canvas dimensions must be positive; otherwise throw `RangeError`. Move coordinates are clamped so the entire widget remains inside the canvas. Resize dimensions are clamped between 20 and the canvas dimensions, and the position is then clamped to keep the resized widget inside. Selection changes only `selected`. Empty identifiers are allowed and preserved. Existing widget dimensions must be finite and positive; malformed widgets throw `RangeError`. Values exactly on a boundary are accepted.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0211",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface CanvasSize {\n  readonly width: number;\n  readonly height: number;\n}\n\nexport interface Widget {\n  readonly id: string;\n  readonly x: number;\n  readonly y: number;\n  readonly width: number;\n  readonly height: number;\n  readonly selected: boolean;\n}\n\nexport type WidgetCommand =\n  | { readonly type: \"move\"; readonly x: number; readonly y: number }\n  | { readonly type: \"resize\"; readonly width: number; readonly height: number }\n  | { readonly type: \"select\"; readonly selected: boolean };\n\nfunction finite(value: number): boolean {\n  return Number.isFinite(value);\n}\n\nfunction validate(widget: Widget, canvas: CanvasSize): void {\n  if (!finite(canvas.width) || !finite(canvas.height) || canvas.width <= 0 || canvas.height <= 0) {\n    throw new RangeError(\"Canvas dimensions must be finite and positive\");\n  }\n  if (![widget.x, widget.y, widget.width, widget.height].every(finite) || widget.width <= 0 || widget.height <= 0) {\n    throw new RangeError(\"Widget geometry must be finite with positive dimensions\");\n  }\n}\n\nfunction clamp(value: number, low: number, high: number): number {\n  return Math.min(Math.max(value, low), high);\n}\n\nexport function applyWidgetCommand(widget: Widget, command: WidgetCommand, canvas: CanvasSize): Widget {\n  validate(widget, canvas);\n  if (command.type === \"select\") {\n    return { ...widget, selected: command.selected };\n  }\n  if (command.type === \"move\") {\n    if (!finite(command.x) || !finite(command.y)) throw new RangeError(\"Move coordinates must be finite\");\n    return {\n      ...widget,\n      x: clamp(command.x, 0, canvas.width),\n      y: clamp(command.y, 0, Math.max(0, canvas.height - widget.height))\n    };\n  }\n  if (!finite(command.width) || !finite(command.height)) throw new RangeError(\"Resize dimensions must be finite\");\n  const width = clamp(command.width, Math.min(20, canvas.width), canvas.width);\n  const height = clamp(command.height, Math.min(20, canvas.height), canvas.height);\n  return {\n    ...widget,\n    width,\n    height,\n    x: clamp(widget.x, 0, canvas.width - width),\n    y: clamp(widget.y, 0, canvas.height - height)\n  };\n}\n",
+          "label": "Horizontal moves clamp x to the canvas width instead of the largest x that keeps the widget inside.",
+          "sha256": "95e71c7f4965fb624d96a37e3804f2ca161d8543751c1661fe1b3d4e3284de9b"
+        }
+      ],
+      "reference": {
+        "code": "export interface CanvasSize {\n  readonly width: number;\n  readonly height: number;\n}\n\nexport interface Widget {\n  readonly id: string;\n  readonly x: number;\n  readonly y: number;\n  readonly width: number;\n  readonly height: number;\n  readonly selected: boolean;\n}\n\nexport type WidgetCommand =\n  | { readonly type: \"move\"; readonly x: number; readonly y: number }\n  | { readonly type: \"resize\"; readonly width: number; readonly height: number }\n  | { readonly type: \"select\"; readonly selected: boolean };\n\nfunction finite(value: number): boolean {\n  return Number.isFinite(value);\n}\n\nfunction validate(widget: Widget, canvas: CanvasSize): void {\n  if (!finite(canvas.width) || !finite(canvas.height) || canvas.width <= 0 || canvas.height <= 0) {\n    throw new RangeError(\"Canvas dimensions must be finite and positive\");\n  }\n  if (![widget.x, widget.y, widget.width, widget.height].every(finite) || widget.width <= 0 || widget.height <= 0) {\n    throw new RangeError(\"Widget geometry must be finite with positive dimensions\");\n  }\n}\n\nfunction clamp(value: number, low: number, high: number): number {\n  return Math.min(Math.max(value, low), high);\n}\n\nexport function applyWidgetCommand(widget: Widget, command: WidgetCommand, canvas: CanvasSize): Widget {\n  validate(widget, canvas);\n  if (command.type === \"select\") {\n    return { ...widget, selected: command.selected };\n  }\n  if (command.type === \"move\") {\n    if (!finite(command.x) || !finite(command.y)) throw new RangeError(\"Move coordinates must be finite\");\n    return {\n      ...widget,\n      x: clamp(command.x, 0, Math.max(0, canvas.width - widget.width)),\n      y: clamp(command.y, 0, Math.max(0, canvas.height - widget.height))\n    };\n  }\n  if (!finite(command.width) || !finite(command.height)) throw new RangeError(\"Resize dimensions must be finite\");\n  const width = clamp(command.width, Math.min(20, canvas.width), canvas.width);\n  const height = clamp(command.height, Math.min(20, canvas.height), canvas.height);\n  return {\n    ...widget,\n    width,\n    height,\n    x: clamp(widget.x, 0, canvas.width - width),\n    y: clamp(widget.y, 0, canvas.height - height)\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "395ee9102cd9e675ada671eaf022c1b862ec325f1c46d4240a7a337ea55f7583"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('required empty identifier lost');\n    ^\n\nError: required empty identifier lost\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "cb090e23438d12b121e59caf62248d230a0558b1997eedbd39ddde5e6d9225c2",
+    "duration_ms": 2094,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

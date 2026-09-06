@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-repair-0138",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f808bdf265e675a46f34f57fef7a9ab4b79cdc74d467fac60301822952a67401",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { Membership, MembershipManager } from './solution';\n(async () => {\n  const item: Membership = { id: 'm', service: 'Service', active: true, credits: 1 };\n  Object.defineProperty(item, 'id', { enumerable: false });\n  const manager = new MembershipManager({ count: async () => 1, at: async () => item, cancel: async () => {} });\n  const rows = await manager.refresh('u');\n  if (rows[0].id !== 'm') throw new Error('required membership id lost');\n})();\n",
+        "sha256": "c4eb27a87fa3e931de77d70a47262b3eb241599e03e7cbb4c9de41d90982f223"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "13caf5d73c1ddbd1bec52aad4475ccfbe73ba9295b2cdaadcdf5926fe9afd542",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same exported API. `MembershipManager.refresh(userId)` must request the count once, then request indices 0 through count-1 sequentially, replace stored memberships only after all requests succeed, and return a detached snapshot. A count that is negative, non-integral, or unsafe must throw `RangeError` without requesting entries. `visible(active)` preserves contract order and returns detached objects. `cancel(id)` must do nothing and return false if the ID is missing or inactive; otherwise await the contract cancellation, refresh the same current user, and return true. Calling cancel before a successful refresh throws `Error`. Failures propagate without partially replacing stored data. Input and returned objects must not alias internal wrappers.\n\n```typescript\nexport interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 1; index <= count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "13caf5d73c1ddbd1bec52aad4475ccfbe73ba9295b2cdaadcdf5926fe9afd542",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same exported API. `MembershipManager.refresh(userId)` must request the count once, then request indices 0 through count-1 sequentially, replace stored memberships only after all requests succeed, and return a detached snapshot. A count that is negative, non-integral, or unsafe must throw `RangeError` without requesting entries. `visible(active)` preserves contract order and returns detached objects. `cancel(id)` must do nothing and return false if the ID is missing or inactive; otherwise await the contract cancellation, refresh the same current user, and return true. Calling cancel before a successful refresh throws `Error`. Failures propagate without partially replacing stored data. Input and returned objects must not alias internal wrappers.\n\n```typescript\nexport interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 1; index <= count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-repair-0138",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 1; index <= count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n",
+          "label": "Refresh uses one-based indices and requests index count, while the contract requires zero-based indices from 0 through count-1.",
+          "sha256": "1fa25645efb5dcea553436e95e26464d28fb63ea03d8edb11583161a91e5b290"
+        }
+      ],
+      "reference": {
+        "code": "export interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 0; index < count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5d14ead5a6e1f5a9ad56082958a8f06cc3daa1f632d9774a73a6c309ff0a0002"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { Membership, MembershipContract, MembershipManager } from './solution';\n\nfunction ok(v: unknown, m = 'assertion failed'): asserts v { if (!v) throw new Error(m); }\nfunction equal(a: unknown, b: unknown, m = 'values differ'): void { if (a !== b) throw new Error(`${m}: ${String(a)} !== ${String(b)}`); }\nasync function rejects(p: Promise<unknown>, kind?: Function): Promise<void> { try { await p; } catch (e) { if (kind) ok(e instanceof (kind as any)); return; } throw new Error('expected rejection'); }\n\n(async () => {\n  let rows: Membership[] = [{ id: 'a', service: 'A', active: true, credits: 2 }, { id: 'b', service: 'B', active: false, credits: 0 }];\n  const calls: string[] = []; let badAt = -1; let invalidCount: number | null = null;\n  const contract: MembershipContract = {\n    count: async user => { calls.push(`count:${user}`); return invalidCount === null ? rows.length : invalidCount; },\n    at: async (user, index) => { calls.push(`at:${user}:${index}`); if (index === badAt) throw new Error('at failed'); return rows[index]; },\n    cancel: async id => { calls.push(`cancel:${id}`); rows = rows.map(x => x.id === id ? { ...x, active: false } : x); },\n  };\n  const manager = new MembershipManager(contract);\n  await rejects(manager.cancel('a'), Error);\n  const snapshot = await manager.refresh('u1');\n  equal(calls.join(','), 'count:u1,at:u1:0,at:u1:1'); equal(snapshot.map(x => x.id).join(','), 'a,b');\n  ok(snapshot[0] !== rows[0]); snapshot[0] = { ...snapshot[0], service: 'changed' }; equal(manager.visible(true)[0].service, 'A');\n  const visible = manager.visible(false); visible[0] = { ...visible[0], service: 'x' }; equal(manager.visible(false)[0].service, 'B');\n  calls.length = 0; equal(await manager.cancel('missing'), false); equal(calls.length, 0); equal(await manager.cancel('b'), false); equal(calls.length, 0);\n  equal(await manager.cancel('a'), true); equal(calls.join(','), 'cancel:a,count:u1,at:u1:0,at:u1:1'); equal(manager.visible(true).length, 0);\n  calls.length = 0; invalidCount = -1; await rejects(manager.refresh('bad'), RangeError); equal(calls.join(','), 'count:bad');\n  for (const value of [1.5, Number.MAX_SAFE_INTEGER + 1]) { calls.length = 0; invalidCount = value; await rejects(manager.refresh('bad'), RangeError); equal(calls.length, 1); }\n  invalidCount = null; rows = [{ id: 'x', service: 'X', active: true, credits: 1 }, { id: 'y', service: 'Y', active: true, credits: 1 }]; badAt = 1;\n  await rejects(manager.refresh('u2')); equal(manager.visible(false).map(x => x.id).join(','), 'a,b');\n})().catch(error => { throw error; });\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "4445292e7e2c7375a0672d75e3f193aa59162fe73bbdf5646d80da8a070d5680"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "13caf5d73c1ddbd1bec52aad4475ccfbe73ba9295b2cdaadcdf5926fe9afd542",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same exported API. `MembershipManager.refresh(userId)` must request the count once, then request indices 0 through count-1 sequentially, replace stored memberships only after all requests succeed, and return a detached snapshot. A count that is negative, non-integral, or unsafe must throw `RangeError` without requesting entries. `visible(active)` preserves contract order and returns detached objects. `cancel(id)` must do nothing and return false if the ID is missing or inactive; otherwise await the contract cancellation, refresh the same current user, and return true. Calling cancel before a successful refresh throws `Error`. Failures propagate without partially replacing stored data. Input and returned objects must not alias internal wrappers.\n\n```typescript\nexport interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 1; index <= count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "13caf5d73c1ddbd1bec52aad4475ccfbe73ba9295b2cdaadcdf5926fe9afd542",
+      "text": "Repair the complete source below. Return a corrected complete TypeScript source file with the same exported API. `MembershipManager.refresh(userId)` must request the count once, then request indices 0 through count-1 sequentially, replace stored memberships only after all requests succeed, and return a detached snapshot. A count that is negative, non-integral, or unsafe must throw `RangeError` without requesting entries. `visible(active)` preserves contract order and returns detached objects. `cancel(id)` must do nothing and return false if the ID is missing or inactive; otherwise await the contract cancellation, refresh the same current user, and return true. Calling cancel before a successful refresh throws `Error`. Failures propagate without partially replacing stored data. Input and returned objects must not alias internal wrappers.\n\n```typescript\nexport interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 1; index <= count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-repair-0138",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 1; index <= count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n",
+          "label": "Refresh uses one-based indices and requests index count, while the contract requires zero-based indices from 0 through count-1.",
+          "sha256": "1fa25645efb5dcea553436e95e26464d28fb63ea03d8edb11583161a91e5b290"
+        }
+      ],
+      "reference": {
+        "code": "export interface Membership {\n  readonly id: string;\n  readonly service: string;\n  readonly active: boolean;\n  readonly credits: number;\n}\n\nexport interface MembershipContract {\n  count(userId: string): Promise<number>;\n  at(userId: string, index: number): Promise<Membership>;\n  cancel(id: string): Promise<void>;\n}\n\nexport class MembershipManager {\n  private userId: string | null = null;\n  private memberships: Membership[] = [];\n\n  constructor(private readonly contract: MembershipContract) {}\n\n  async refresh(userId: string): Promise<Membership[]> {\n    const count = await this.contract.count(userId);\n    if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('invalid count');\n    const next: Membership[] = [];\n    for (let index = 0; index < count; index++) {\n      next.push({ ...(await this.contract.at(userId, index)) });\n    }\n    this.userId = userId;\n    this.memberships = next;\n    return this.snapshot();\n  }\n\n  visible(active: boolean): Membership[] {\n    return this.memberships.filter(item => item.active === active).map(item => ({ ...item }));\n  }\n\n  async cancel(id: string): Promise<boolean> {\n    if (this.userId === null) throw new Error('refresh required');\n    const item = this.memberships.find(candidate => candidate.id === id);\n    if (!item || !item.active) return false;\n    await this.contract.cancel(id);\n    await this.refresh(this.userId);\n    return true;\n  }\n\n  private snapshot(): Membership[] {\n    return this.memberships.map(item => ({ ...item }));\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5d14ead5a6e1f5a9ad56082958a8f06cc3daa1f632d9774a73a6c309ff0a0002"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:10\n        throw new Error('required membership id lost');\n              ^\n\nError: required membership id lost\n    at /work/solution.test.js:10:15\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "cf7d98ce2bd96a1549cee0bcaceb86ff3ed576eb2e47212299d283111428f812",
+    "duration_ms": 2093,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

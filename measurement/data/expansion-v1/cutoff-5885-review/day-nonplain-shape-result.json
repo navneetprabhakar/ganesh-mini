@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0247",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "79de02f436e8a8faa191faf269c70e05b6a73c484faa651e93797ca193fc2607",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { makeDayChosenEvent } = require('./solution');\nclass Day { constructor() { this.year = 2024; this.month = 2; this.day = 29; } }\nassert.throws(() => makeDayChosenEvent(new Day()), TypeError);\n",
+        "sha256": "44e12c52ed07417adf21eab8d896436d1b54c22bb523fa6db8c0c234c15c71bc"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "50414fb737c0fab639d64936e5b2e2234c6a94b43adaa8180e038108242792bf",
+      "text": "Implement a CommonJS module exporting exactly `{ createDaySelectionModel, makeDayChosenEvent }`.\n\nA calendar day is a plain object `{ year, month, day }` using the Gregorian calendar. `makeDayChosenEvent(day)` must validate the day and return `{ type: 'DAY_CHOSEN', payload: clonedDay }`.\n\n`createDaySelectionModel(initialDay, dispatch, navigate)` must require `dispatch` and `navigate` to be functions. `initialDay` may be `null` or a valid day. It returns an object with:\n- `select(day)`: validate and clone `day`, store it as the current selection, call `dispatch(makeDayChosenEvent(day))`, then call `navigate('/overview')`. Return a fresh clone of the selected day.\n- `getSelected()`: return `null` or a fresh clone of the current selection.\n- `isWeekend(day)`: return `true` for Saturday or Sunday and `false` otherwise.\n\nInvalid day shapes, non-integer fields, impossible dates, and years below 1 must throw `TypeError` or `RangeError` as appropriate. Leap years follow Gregorian rules. Neither input days nor returned/event days may alias internal state. If `dispatch` throws, navigation must not occur, although the selection remains updated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "50414fb737c0fab639d64936e5b2e2234c6a94b43adaa8180e038108242792bf",
+      "text": "Implement a CommonJS module exporting exactly `{ createDaySelectionModel, makeDayChosenEvent }`.\n\nA calendar day is a plain object `{ year, month, day }` using the Gregorian calendar. `makeDayChosenEvent(day)` must validate the day and return `{ type: 'DAY_CHOSEN', payload: clonedDay }`.\n\n`createDaySelectionModel(initialDay, dispatch, navigate)` must require `dispatch` and `navigate` to be functions. `initialDay` may be `null` or a valid day. It returns an object with:\n- `select(day)`: validate and clone `day`, store it as the current selection, call `dispatch(makeDayChosenEvent(day))`, then call `navigate('/overview')`. Return a fresh clone of the selected day.\n- `getSelected()`: return `null` or a fresh clone of the current selection.\n- `isWeekend(day)`: return `true` for Saturday or Sunday and `false` otherwise.\n\nInvalid day shapes, non-integer fields, impossible dates, and years below 1 must throw `TypeError` or `RangeError` as appropriate. Leap years follow Gregorian rules. Neither input days nor returned/event days may alias internal state. If `dispatch` throws, navigation must not occur, although the selection remains updated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0247",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction cloneAndValidateDay(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) {\n    throw new TypeError('day must be an object');\n  }\n  const { year, month, day } = value;\n  if (![year, month, day].every(Number.isInteger)) {\n    throw new TypeError('day fields must be integers');\n  }\n  if (year < 1 || month < 1 || month > 12) {\n    throw new RangeError('day is out of range');\n  }\n  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);\n  const lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];\n  if (day < 1 || day > lengths[month - 1]) {\n    throw new RangeError('day is out of range');\n  }\n  return { year, month, day };\n}\n\nfunction makeDayChosenEvent(day) {\n  return { type: 'DAY_CHOSEN', payload: cloneAndValidateDay(day) };\n}\n\nfunction weekday(day) {\n  const d = cloneAndValidateDay(day);\n  let y = d.year;\n  let m = d.month;\n  if (m < 3) {\n    y -= 1;\n    m += 12;\n  }\n  return (d.day + Math.floor((13 * (m + 1)) / 5) + y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400)) % 7;\n}\n\nfunction createDaySelectionModel(initialDay, dispatch, navigate) {\n  if (typeof dispatch !== 'function' || typeof navigate !== 'function') {\n    throw new TypeError('dispatch and navigate must be functions');\n  }\n  let selected = initialDay === null ? null : cloneAndValidateDay(initialDay);\n  return {\n    select(day) {\n      selected = cloneAndValidateDay(day);\n      dispatch(makeDayChosenEvent(selected));\n      navigate('/overview');\n      return { ...selected };\n    },\n    getSelected() {\n      return selected === null ? null : { ...selected };\n    },\n    isWeekend(day) {\n      const value = weekday(day);\n      return value === 1;\n    }\n  };\n}\n\nmodule.exports = { createDaySelectionModel, makeDayChosenEvent };\n",
+          "label": "Weekend detection recognizes Sunday but incorrectly excludes Saturday.",
+          "sha256": "466d140c708435106ebc0bc1e8032f600377ea4751dc1e003b208293043186da"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction cloneAndValidateDay(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) {\n    throw new TypeError('day must be an object');\n  }\n  const { year, month, day } = value;\n  if (![year, month, day].every(Number.isInteger)) {\n    throw new TypeError('day fields must be integers');\n  }\n  if (year < 1 || month < 1 || month > 12) {\n    throw new RangeError('day is out of range');\n  }\n  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);\n  const lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];\n  if (day < 1 || day > lengths[month - 1]) {\n    throw new RangeError('day is out of range');\n  }\n  return { year, month, day };\n}\n\nfunction makeDayChosenEvent(day) {\n  return { type: 'DAY_CHOSEN', payload: cloneAndValidateDay(day) };\n}\n\nfunction weekday(day) {\n  const d = cloneAndValidateDay(day);\n  let y = d.year;\n  let m = d.month;\n  if (m < 3) {\n    y -= 1;\n    m += 12;\n  }\n  return (d.day + Math.floor((13 * (m + 1)) / 5) + y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400)) % 7;\n}\n\nfunction createDaySelectionModel(initialDay, dispatch, navigate) {\n  if (typeof dispatch !== 'function' || typeof navigate !== 'function') {\n    throw new TypeError('dispatch and navigate must be functions');\n  }\n  let selected = initialDay === null ? null : cloneAndValidateDay(initialDay);\n  return {\n    select(day) {\n      selected = cloneAndValidateDay(day);\n      dispatch(makeDayChosenEvent(selected));\n      navigate('/overview');\n      return { ...selected };\n    },\n    getSelected() {\n      return selected === null ? null : { ...selected };\n    },\n    isWeekend(day) {\n      const value = weekday(day);\n      return value === 0 || value === 1;\n    }\n  };\n}\n\nmodule.exports = { createDaySelectionModel, makeDayChosenEvent };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7b676f79804a6e368bdd0ad9275374f07db29ef2c2e2e9efd42a4262ddd764fd"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\n\nassert.deepEqual(Object.keys(api).sort(), ['createDaySelectionModel', 'makeDayChosenEvent']);\nconst { createDaySelectionModel, makeDayChosenEvent } = api;\n\nconst original = { year: 2024, month: 2, day: 29 };\nconst event = makeDayChosenEvent(original);\nassert.deepEqual(event, { type: 'DAY_CHOSEN', payload: original });\nassert.notStrictEqual(event.payload, original);\nevent.payload.day = 1;\nassert.equal(original.day, 29);\n\nassert.throws(() => makeDayChosenEvent(null), TypeError);\nassert.throws(() => makeDayChosenEvent([]), TypeError);\nassert.throws(() => makeDayChosenEvent({ year: 2024, month: 2 }), TypeError);\nassert.throws(() => makeDayChosenEvent({ year: 2024.5, month: 2, day: 1 }), TypeError);\nassert.throws(() => makeDayChosenEvent({ year: 0, month: 1, day: 1 }), RangeError);\nassert.throws(() => makeDayChosenEvent({ year: 2023, month: 2, day: 29 }), RangeError);\nassert.throws(() => makeDayChosenEvent({ year: 2024, month: 13, day: 1 }), RangeError);\nassert.throws(() => makeDayChosenEvent({ year: 2024, month: 4, day: 31 }), RangeError);\n\nassert.throws(() => createDaySelectionModel(null, null, () => {}), TypeError);\nassert.throws(() => createDaySelectionModel(null, () => {}, 'navigate'), TypeError);\nassert.throws(() => createDaySelectionModel({ year: 2023, month: 2, day: 29 }, () => {}, () => {}), RangeError);\n\nconst calls = [];\nlet dispatched;\nconst initial = { year: 2025, month: 1, day: 6 };\nconst model = createDaySelectionModel(initial, value => {\n  calls.push('dispatch');\n  dispatched = value;\n}, path => calls.push(['navigate', path]));\ninitial.day = 7;\nassert.deepEqual(model.getSelected(), { year: 2025, month: 1, day: 6 });\nconst firstSnapshot = model.getSelected();\nfirstSnapshot.day = 20;\nassert.deepEqual(model.getSelected(), { year: 2025, month: 1, day: 6 });\n\nconst selectedInput = { year: 2025, month: 7, day: 12 };\nconst selectedResult = model.select(selectedInput);\nassert.deepEqual(calls, ['dispatch', ['navigate', '/overview']]);\nassert.deepEqual(dispatched, {\n  type: 'DAY_CHOSEN',\n  payload: { year: 2025, month: 7, day: 12 }\n});\nassert.notStrictEqual(dispatched.payload, selectedInput);\nassert.notStrictEqual(selectedResult, selectedInput);\nselectedInput.day = 13;\nselectedResult.day = 14;\ndispatched.payload.day = 15;\nassert.deepEqual(model.getSelected(), { year: 2025, month: 7, day: 12 });\n\nassert.equal(model.isWeekend({ year: 2025, month: 7, day: 12 }), true);\nassert.equal(model.isWeekend({ year: 2025, month: 7, day: 13 }), true);\nassert.equal(model.isWeekend({ year: 2025, month: 7, day: 14 }), false);\nassert.throws(() => model.isWeekend({ year: 2025, month: 2, day: 29 }), RangeError);\n\nlet navigations = 0;\nconst failing = createDaySelectionModel(null, () => {\n  throw new Error('dispatch failed');\n}, () => {\n  navigations += 1;\n});\nassert.equal(failing.getSelected(), null);\nassert.throws(() => failing.select({ year: 2026, month: 8, day: 28 }), /dispatch failed/);\nassert.equal(navigations, 0);\nassert.deepEqual(failing.getSelected(), { year: 2026, month: 8, day: 28 });\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "749d5db50e96c31d34e63993bd804f85c28a1c6594218cdd04d1f734a430e4bd"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "50414fb737c0fab639d64936e5b2e2234c6a94b43adaa8180e038108242792bf",
+      "text": "Implement a CommonJS module exporting exactly `{ createDaySelectionModel, makeDayChosenEvent }`.\n\nA calendar day is a plain object `{ year, month, day }` using the Gregorian calendar. `makeDayChosenEvent(day)` must validate the day and return `{ type: 'DAY_CHOSEN', payload: clonedDay }`.\n\n`createDaySelectionModel(initialDay, dispatch, navigate)` must require `dispatch` and `navigate` to be functions. `initialDay` may be `null` or a valid day. It returns an object with:\n- `select(day)`: validate and clone `day`, store it as the current selection, call `dispatch(makeDayChosenEvent(day))`, then call `navigate('/overview')`. Return a fresh clone of the selected day.\n- `getSelected()`: return `null` or a fresh clone of the current selection.\n- `isWeekend(day)`: return `true` for Saturday or Sunday and `false` otherwise.\n\nInvalid day shapes, non-integer fields, impossible dates, and years below 1 must throw `TypeError` or `RangeError` as appropriate. Leap years follow Gregorian rules. Neither input days nor returned/event days may alias internal state. If `dispatch` throws, navigation must not occur, although the selection remains updated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "50414fb737c0fab639d64936e5b2e2234c6a94b43adaa8180e038108242792bf",
+      "text": "Implement a CommonJS module exporting exactly `{ createDaySelectionModel, makeDayChosenEvent }`.\n\nA calendar day is a plain object `{ year, month, day }` using the Gregorian calendar. `makeDayChosenEvent(day)` must validate the day and return `{ type: 'DAY_CHOSEN', payload: clonedDay }`.\n\n`createDaySelectionModel(initialDay, dispatch, navigate)` must require `dispatch` and `navigate` to be functions. `initialDay` may be `null` or a valid day. It returns an object with:\n- `select(day)`: validate and clone `day`, store it as the current selection, call `dispatch(makeDayChosenEvent(day))`, then call `navigate('/overview')`. Return a fresh clone of the selected day.\n- `getSelected()`: return `null` or a fresh clone of the current selection.\n- `isWeekend(day)`: return `true` for Saturday or Sunday and `false` otherwise.\n\nInvalid day shapes, non-integer fields, impossible dates, and years below 1 must throw `TypeError` or `RangeError` as appropriate. Leap years follow Gregorian rules. Neither input days nor returned/event days may alias internal state. If `dispatch` throws, navigation must not occur, although the selection remains updated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0247",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction cloneAndValidateDay(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) {\n    throw new TypeError('day must be an object');\n  }\n  const { year, month, day } = value;\n  if (![year, month, day].every(Number.isInteger)) {\n    throw new TypeError('day fields must be integers');\n  }\n  if (year < 1 || month < 1 || month > 12) {\n    throw new RangeError('day is out of range');\n  }\n  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);\n  const lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];\n  if (day < 1 || day > lengths[month - 1]) {\n    throw new RangeError('day is out of range');\n  }\n  return { year, month, day };\n}\n\nfunction makeDayChosenEvent(day) {\n  return { type: 'DAY_CHOSEN', payload: cloneAndValidateDay(day) };\n}\n\nfunction weekday(day) {\n  const d = cloneAndValidateDay(day);\n  let y = d.year;\n  let m = d.month;\n  if (m < 3) {\n    y -= 1;\n    m += 12;\n  }\n  return (d.day + Math.floor((13 * (m + 1)) / 5) + y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400)) % 7;\n}\n\nfunction createDaySelectionModel(initialDay, dispatch, navigate) {\n  if (typeof dispatch !== 'function' || typeof navigate !== 'function') {\n    throw new TypeError('dispatch and navigate must be functions');\n  }\n  let selected = initialDay === null ? null : cloneAndValidateDay(initialDay);\n  return {\n    select(day) {\n      selected = cloneAndValidateDay(day);\n      dispatch(makeDayChosenEvent(selected));\n      navigate('/overview');\n      return { ...selected };\n    },\n    getSelected() {\n      return selected === null ? null : { ...selected };\n    },\n    isWeekend(day) {\n      const value = weekday(day);\n      return value === 1;\n    }\n  };\n}\n\nmodule.exports = { createDaySelectionModel, makeDayChosenEvent };\n",
+          "label": "Weekend detection recognizes Sunday but incorrectly excludes Saturday.",
+          "sha256": "466d140c708435106ebc0bc1e8032f600377ea4751dc1e003b208293043186da"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction cloneAndValidateDay(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) {\n    throw new TypeError('day must be an object');\n  }\n  const { year, month, day } = value;\n  if (![year, month, day].every(Number.isInteger)) {\n    throw new TypeError('day fields must be integers');\n  }\n  if (year < 1 || month < 1 || month > 12) {\n    throw new RangeError('day is out of range');\n  }\n  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);\n  const lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];\n  if (day < 1 || day > lengths[month - 1]) {\n    throw new RangeError('day is out of range');\n  }\n  return { year, month, day };\n}\n\nfunction makeDayChosenEvent(day) {\n  return { type: 'DAY_CHOSEN', payload: cloneAndValidateDay(day) };\n}\n\nfunction weekday(day) {\n  const d = cloneAndValidateDay(day);\n  let y = d.year;\n  let m = d.month;\n  if (m < 3) {\n    y -= 1;\n    m += 12;\n  }\n  return (d.day + Math.floor((13 * (m + 1)) / 5) + y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400)) % 7;\n}\n\nfunction createDaySelectionModel(initialDay, dispatch, navigate) {\n  if (typeof dispatch !== 'function' || typeof navigate !== 'function') {\n    throw new TypeError('dispatch and navigate must be functions');\n  }\n  let selected = initialDay === null ? null : cloneAndValidateDay(initialDay);\n  return {\n    select(day) {\n      selected = cloneAndValidateDay(day);\n      dispatch(makeDayChosenEvent(selected));\n      navigate('/overview');\n      return { ...selected };\n    },\n    getSelected() {\n      return selected === null ? null : { ...selected };\n    },\n    isWeekend(day) {\n      const value = weekday(day);\n      return value === 0 || value === 1;\n    }\n  };\n}\n\nmodule.exports = { createDaySelectionModel, makeDayChosenEvent };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7b676f79804a6e368bdd0ad9275374f07db29ef2c2e2e9efd42a4262ddd764fd"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:5:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3a58ca05975c2db2db7517ef1cc8764513ec383a724c8c0b9945be6166005f45",
+    "duration_ms": 333,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,9 +1,9 @@
 # Cutoff quality review — in progress
 
-Current checkpoint: **226 holds (223 additive plus historical three)**; 313
-unique outside-sample inspections. Batch 21 partial through position 305;
-continue 306. GCS verified through 223 holds / completed batch 20 / scope v6
-(11 groups, 14 strata, 3,085 review records). Latest five inspections await backup.
+Current checkpoint: **253 holds (250 additive plus historical three)**; 353
+unique outside-sample inspections. Batch 23 complete through position 345;
+continue 346. GCS verified through 244 holds / completed batch 22 / scope v6
+(11 groups, 14 strata, 3,085 review records). Batch 23 awaits backup.
 No training seal or new VM. Older entries are historical.
 
 Current checkpoint: **223 holds (220 additive plus historical three)**; 308

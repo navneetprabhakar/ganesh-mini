@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0208",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "ac385c0cb19c727104a7886ec0b825c0be536e0ad9e541a4d529e25143f306a0",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { Notebook, NotebookRowController } from './solution';\n(async () => {\n  const notebook: Notebook = { id: 'n', title: 'Title', summary: null };\n  Object.defineProperty(notebook, 'id', { enumerable: false });\n  const actions: any[] = [];\n  const controller = new NotebookRowController(notebook, 'w', () => ({ selectedId: null, notebooks: [], saving: false }), a => actions.push(a), {\n    rename: async () => {}, remove: async () => {}, list: async () => [notebook],\n  });\n  await controller.rename('New');\n  if (actions[0].notebooks[0].id !== 'n') throw new Error('required notebook id lost');\n})();\n",
+        "sha256": "dfba80b3e88738115626f4c486adf7fbe8a3e057705b91efdd31841853fab23e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6a2c222a9f88488d106f04be14154be85b44c342c301f891a04dfd0ea9cd6154",
+      "text": "Implement a complete TypeScript source file exporting `Notebook`, `NotebookState`, `NotebookGateway`, and `NotebookRowController`. A notebook has readonly `id`, `title`, and nullable `summary`. State contains a nullable selected ID, a readonly notebook list, and a boolean `saving`. The controller receives a notebook, workspace ID, state getter, dispatch callback, and gateway. `icon()` returns `complete` when the summary is a non-empty trimmed string and `draft` otherwise. `select()` dispatches `{ type: \"select\"; id }` only when state.saving is false. `rename(title)` trims the title, rejects empty titles with `RangeError`, calls `gateway.rename(workspaceId, notebookId, title)`, then awaits `gateway.list(workspaceId)` and dispatches one `replace` action containing fresh copies. `remove()` similarly calls remove, refreshes, and dispatches replace. If the removed notebook was selected, it must then dispatch select with null. Gateway failures propagate and produce no dispatch. Inputs and gateway results must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6a2c222a9f88488d106f04be14154be85b44c342c301f891a04dfd0ea9cd6154",
+      "text": "Implement a complete TypeScript source file exporting `Notebook`, `NotebookState`, `NotebookGateway`, and `NotebookRowController`. A notebook has readonly `id`, `title`, and nullable `summary`. State contains a nullable selected ID, a readonly notebook list, and a boolean `saving`. The controller receives a notebook, workspace ID, state getter, dispatch callback, and gateway. `icon()` returns `complete` when the summary is a non-empty trimmed string and `draft` otherwise. `select()` dispatches `{ type: \"select\"; id }` only when state.saving is false. `rename(title)` trims the title, rejects empty titles with `RangeError`, calls `gateway.rename(workspaceId, notebookId, title)`, then awaits `gateway.list(workspaceId)` and dispatches one `replace` action containing fresh copies. `remove()` similarly calls remove, refreshes, and dispatches replace. If the removed notebook was selected, it must then dispatch select with null. Gateway failures propagate and produce no dispatch. Inputs and gateway results must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0208",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Notebook {\n  readonly id: string;\n  readonly title: string;\n  readonly summary: string | null;\n}\n\nexport interface NotebookState {\n  readonly selectedId: string | null;\n  readonly notebooks: readonly Notebook[];\n  readonly saving: boolean;\n}\n\nexport type NotebookAction =\n  | { readonly type: 'select'; readonly id: string | null }\n  | { readonly type: 'replace'; readonly notebooks: readonly Notebook[] };\n\nexport interface NotebookGateway {\n  rename(workspaceId: string, notebookId: string, title: string): Promise<void>;\n  remove(workspaceId: string, notebookId: string): Promise<void>;\n  list(workspaceId: string): Promise<readonly Notebook[]>;\n}\n\nexport class NotebookRowController {\n  constructor(\n    private readonly notebook: Notebook,\n    private readonly workspaceId: string,\n    private readonly getState: () => NotebookState,\n    private readonly dispatch: (action: NotebookAction) => void,\n    private readonly gateway: NotebookGateway,\n  ) {}\n\n  icon(): 'draft' | 'complete' {\n    return this.notebook.summary?.trim() ? 'complete' : 'draft';\n  }\n\n  select(): void {\n    if (this.getState().saving) {\n      this.dispatch({ type: 'select', id: this.notebook.id });\n    }\n  }\n\n  async rename(title: string): Promise<void> {\n    const clean = title.trim();\n    if (!clean) throw new RangeError('title must not be empty');\n    await this.gateway.rename(this.workspaceId, this.notebook.id, clean);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n  }\n\n  async remove(): Promise<void> {\n    const wasSelected = this.getState().selectedId === this.notebook.id;\n    await this.gateway.remove(this.workspaceId, this.notebook.id);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n    if (wasSelected) this.dispatch({ type: 'select', id: null });\n  }\n}\n",
+          "label": "Selection is dispatched while saving is active instead of while saving is inactive.",
+          "sha256": "faae878b982c9bc581f95e19d4307ebfb387dce7d5d7d4791ec4e930c278bfdf"
+        }
+      ],
+      "reference": {
+        "code": "export interface Notebook {\n  readonly id: string;\n  readonly title: string;\n  readonly summary: string | null;\n}\n\nexport interface NotebookState {\n  readonly selectedId: string | null;\n  readonly notebooks: readonly Notebook[];\n  readonly saving: boolean;\n}\n\nexport type NotebookAction =\n  | { readonly type: 'select'; readonly id: string | null }\n  | { readonly type: 'replace'; readonly notebooks: readonly Notebook[] };\n\nexport interface NotebookGateway {\n  rename(workspaceId: string, notebookId: string, title: string): Promise<void>;\n  remove(workspaceId: string, notebookId: string): Promise<void>;\n  list(workspaceId: string): Promise<readonly Notebook[]>;\n}\n\nexport class NotebookRowController {\n  constructor(\n    private readonly notebook: Notebook,\n    private readonly workspaceId: string,\n    private readonly getState: () => NotebookState,\n    private readonly dispatch: (action: NotebookAction) => void,\n    private readonly gateway: NotebookGateway,\n  ) {}\n\n  icon(): 'draft' | 'complete' {\n    return this.notebook.summary?.trim() ? 'complete' : 'draft';\n  }\n\n  select(): void {\n    if (!this.getState().saving) {\n      this.dispatch({ type: 'select', id: this.notebook.id });\n    }\n  }\n\n  async rename(title: string): Promise<void> {\n    const clean = title.trim();\n    if (!clean) throw new RangeError('title must not be empty');\n    await this.gateway.rename(this.workspaceId, this.notebook.id, clean);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n  }\n\n  async remove(): Promise<void> {\n    const wasSelected = this.getState().selectedId === this.notebook.id;\n    await this.gateway.remove(this.workspaceId, this.notebook.id);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n    if (wasSelected) this.dispatch({ type: 'select', id: null });\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "513da42623b66b3929d3ff942889f0556973fe9e3c1590d78fca55953e60d6dc"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { Notebook, NotebookState, NotebookGateway, NotebookRowController } from './solution';\n\nfunction ok(v: unknown, m = 'assertion failed'): asserts v { if (!v) throw new Error(m); }\nfunction equal(a: unknown, b: unknown, m = 'values differ'): void { if (a !== b) throw new Error(`${m}: ${String(a)} !== ${String(b)}`); }\nasync function rejects(p: Promise<unknown>): Promise<void> { try { await p; } catch { return; } throw new Error('expected rejection'); }\n\n(async () => {\n  const notebook: Notebook = { id: 'n1', title: 'Old', summary: '  text  ' };\n  let state: NotebookState = { selectedId: 'n1', notebooks: [notebook], saving: false };\n  const actions: any[] = []; const calls: string[] = [];\n  let listed: any[] = [{ id: 'n1', title: 'New', summary: null }, { id: 'n2', title: 'Two', summary: '' }];\n  let failure = false;\n  const gateway: NotebookGateway = {\n    rename: async (w, id, title) => { calls.push(`rename:${w}:${id}:${title}`); if (failure) throw new Error('rename failed'); },\n    remove: async (w, id) => { calls.push(`remove:${w}:${id}`); if (failure) throw new Error('remove failed'); },\n    list: async w => { calls.push(`list:${w}`); if (failure) throw new Error('list failed'); return listed; },\n  };\n  const controller = new NotebookRowController(notebook, 'w1', () => state, a => actions.push(a), gateway);\n  equal(controller.icon(), 'complete');\n  const draft = new NotebookRowController({ id: 'd', title: 'D', summary: '   ' }, 'w1', () => state, a => actions.push(a), gateway);\n  equal(draft.icon(), 'draft');\n  controller.select(); equal(actions.length, 1); equal(actions[0].type, 'select'); equal(actions[0].id, 'n1');\n  state = { ...state, saving: true }; controller.select(); equal(actions.length, 1); state = { ...state, saving: false };\n  try { await controller.rename('   '); throw new Error('expected RangeError'); } catch (e) { ok(e instanceof RangeError); } equal(calls.length, 0);\n  actions.length = 0; await controller.rename('  Renamed  ');\n  equal(calls.join(','), 'rename:w1:n1:Renamed,list:w1'); equal(actions.length, 1); equal(actions[0].type, 'replace');\n  ok(actions[0].notebooks !== listed); ok(actions[0].notebooks[0] !== listed[0]); actions[0].notebooks[0].title = 'mutated'; equal(listed[0].title, 'New'); equal(notebook.title, 'Old');\n  calls.length = 0; actions.length = 0; await controller.remove();\n  equal(calls.join(','), 'remove:w1:n1,list:w1'); equal(actions.length, 2); equal(actions[0].type, 'replace'); equal(actions[1].type, 'select'); equal(actions[1].id, null);\n  state = { ...state, selectedId: 'n2' }; actions.length = 0; calls.length = 0; await controller.remove(); equal(actions.length, 1); equal(actions[0].type, 'replace');\n  failure = true; actions.length = 0; calls.length = 0; await rejects(controller.rename('Valid')); equal(actions.length, 0);\n})().catch(error => { throw error; });\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "0c78885552c78186f96a91e4b29202176aa63834d81b53a55967b39e6cda1cfe"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6a2c222a9f88488d106f04be14154be85b44c342c301f891a04dfd0ea9cd6154",
+      "text": "Implement a complete TypeScript source file exporting `Notebook`, `NotebookState`, `NotebookGateway`, and `NotebookRowController`. A notebook has readonly `id`, `title`, and nullable `summary`. State contains a nullable selected ID, a readonly notebook list, and a boolean `saving`. The controller receives a notebook, workspace ID, state getter, dispatch callback, and gateway. `icon()` returns `complete` when the summary is a non-empty trimmed string and `draft` otherwise. `select()` dispatches `{ type: \"select\"; id }` only when state.saving is false. `rename(title)` trims the title, rejects empty titles with `RangeError`, calls `gateway.rename(workspaceId, notebookId, title)`, then awaits `gateway.list(workspaceId)` and dispatches one `replace` action containing fresh copies. `remove()` similarly calls remove, refreshes, and dispatches replace. If the removed notebook was selected, it must then dispatch select with null. Gateway failures propagate and produce no dispatch. Inputs and gateway results must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6a2c222a9f88488d106f04be14154be85b44c342c301f891a04dfd0ea9cd6154",
+      "text": "Implement a complete TypeScript source file exporting `Notebook`, `NotebookState`, `NotebookGateway`, and `NotebookRowController`. A notebook has readonly `id`, `title`, and nullable `summary`. State contains a nullable selected ID, a readonly notebook list, and a boolean `saving`. The controller receives a notebook, workspace ID, state getter, dispatch callback, and gateway. `icon()` returns `complete` when the summary is a non-empty trimmed string and `draft` otherwise. `select()` dispatches `{ type: \"select\"; id }` only when state.saving is false. `rename(title)` trims the title, rejects empty titles with `RangeError`, calls `gateway.rename(workspaceId, notebookId, title)`, then awaits `gateway.list(workspaceId)` and dispatches one `replace` action containing fresh copies. `remove()` similarly calls remove, refreshes, and dispatches replace. If the removed notebook was selected, it must then dispatch select with null. Gateway failures propagate and produce no dispatch. Inputs and gateway results must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0208",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Notebook {\n  readonly id: string;\n  readonly title: string;\n  readonly summary: string | null;\n}\n\nexport interface NotebookState {\n  readonly selectedId: string | null;\n  readonly notebooks: readonly Notebook[];\n  readonly saving: boolean;\n}\n\nexport type NotebookAction =\n  | { readonly type: 'select'; readonly id: string | null }\n  | { readonly type: 'replace'; readonly notebooks: readonly Notebook[] };\n\nexport interface NotebookGateway {\n  rename(workspaceId: string, notebookId: string, title: string): Promise<void>;\n  remove(workspaceId: string, notebookId: string): Promise<void>;\n  list(workspaceId: string): Promise<readonly Notebook[]>;\n}\n\nexport class NotebookRowController {\n  constructor(\n    private readonly notebook: Notebook,\n    private readonly workspaceId: string,\n    private readonly getState: () => NotebookState,\n    private readonly dispatch: (action: NotebookAction) => void,\n    private readonly gateway: NotebookGateway,\n  ) {}\n\n  icon(): 'draft' | 'complete' {\n    return this.notebook.summary?.trim() ? 'complete' : 'draft';\n  }\n\n  select(): void {\n    if (this.getState().saving) {\n      this.dispatch({ type: 'select', id: this.notebook.id });\n    }\n  }\n\n  async rename(title: string): Promise<void> {\n    const clean = title.trim();\n    if (!clean) throw new RangeError('title must not be empty');\n    await this.gateway.rename(this.workspaceId, this.notebook.id, clean);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n  }\n\n  async remove(): Promise<void> {\n    const wasSelected = this.getState().selectedId === this.notebook.id;\n    await this.gateway.remove(this.workspaceId, this.notebook.id);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n    if (wasSelected) this.dispatch({ type: 'select', id: null });\n  }\n}\n",
+          "label": "Selection is dispatched while saving is active instead of while saving is inactive.",
+          "sha256": "faae878b982c9bc581f95e19d4307ebfb387dce7d5d7d4791ec4e930c278bfdf"
+        }
+      ],
+      "reference": {
+        "code": "export interface Notebook {\n  readonly id: string;\n  readonly title: string;\n  readonly summary: string | null;\n}\n\nexport interface NotebookState {\n  readonly selectedId: string | null;\n  readonly notebooks: readonly Notebook[];\n  readonly saving: boolean;\n}\n\nexport type NotebookAction =\n  | { readonly type: 'select'; readonly id: string | null }\n  | { readonly type: 'replace'; readonly notebooks: readonly Notebook[] };\n\nexport interface NotebookGateway {\n  rename(workspaceId: string, notebookId: string, title: string): Promise<void>;\n  remove(workspaceId: string, notebookId: string): Promise<void>;\n  list(workspaceId: string): Promise<readonly Notebook[]>;\n}\n\nexport class NotebookRowController {\n  constructor(\n    private readonly notebook: Notebook,\n    private readonly workspaceId: string,\n    private readonly getState: () => NotebookState,\n    private readonly dispatch: (action: NotebookAction) => void,\n    private readonly gateway: NotebookGateway,\n  ) {}\n\n  icon(): 'draft' | 'complete' {\n    return this.notebook.summary?.trim() ? 'complete' : 'draft';\n  }\n\n  select(): void {\n    if (!this.getState().saving) {\n      this.dispatch({ type: 'select', id: this.notebook.id });\n    }\n  }\n\n  async rename(title: string): Promise<void> {\n    const clean = title.trim();\n    if (!clean) throw new RangeError('title must not be empty');\n    await this.gateway.rename(this.workspaceId, this.notebook.id, clean);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n  }\n\n  async remove(): Promise<void> {\n    const wasSelected = this.getState().selectedId === this.notebook.id;\n    await this.gateway.remove(this.workspaceId, this.notebook.id);\n    const notebooks = await this.gateway.list(this.workspaceId);\n    this.dispatch({ type: 'replace', notebooks: notebooks.map(item => ({ ...item })) });\n    if (wasSelected) this.dispatch({ type: 'select', id: null });\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "513da42623b66b3929d3ff942889f0556973fe9e3c1590d78fca55953e60d6dc"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:13\n        throw new Error('required notebook id lost');\n              ^\n\nError: required notebook id lost\n    at /work/solution.test.js:13:15\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "2d6bfdae522df5b9a8197118cd82f2d8cc95941ebc5555898ff4859600a3536c",
+    "duration_ms": 2157,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

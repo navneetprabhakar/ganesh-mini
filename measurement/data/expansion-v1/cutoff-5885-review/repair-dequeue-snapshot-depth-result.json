@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0346",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bfd3704bc5452ab351f45a6682919700019e3d4eb074ddb1613a1c815d79da27",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import dequeue_snapshot\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_payload(self):\n        value = {}\n        for _ in range(600):\n            value = {'x': value}\n        error = None\n        try:\n            dequeue_snapshot([value])\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "aeca8c7f0649123c216ee635e44e19eb4c7026b37e46cdc9370c837294489d08"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3cd080cf5ec9902bd805bba949839e0833b021c90c3ece79e475dee1eb8a74ad",
+      "text": "The following `solution.py` should implement `dequeue_snapshot(rows)`. `rows` must be a list. For an empty list it returns `(None, [])`. Otherwise it returns a two-tuple containing a deep copy of the first element and a deep copy of the remaining list. The function must not mutate `rows`, and neither returned value may alias any mutable object reachable from `rows`. A non-list input must raise `TypeError`.\n\nThe current source mutates its argument:\n\n```python\nfrom copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows.pop(0))\n    return first, deepcopy(rows)\n```\n\nProvide a corrected complete `solution.py` using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3cd080cf5ec9902bd805bba949839e0833b021c90c3ece79e475dee1eb8a74ad",
+      "text": "The following `solution.py` should implement `dequeue_snapshot(rows)`. `rows` must be a list. For an empty list it returns `(None, [])`. Otherwise it returns a two-tuple containing a deep copy of the first element and a deep copy of the remaining list. The function must not mutate `rows`, and neither returned value may alias any mutable object reachable from `rows`. A non-list input must raise `TypeError`.\n\nThe current source mutates its argument:\n\n```python\nfrom copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows.pop(0))\n    return first, deepcopy(rows)\n```\n\nProvide a corrected complete `solution.py` using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0346",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows.pop(0))\n    return first, deepcopy(rows)\n",
+          "label": "Calling `pop(0)` removes the first element from the caller's list.",
+          "sha256": "3726160058cee2ff24739d3c1f6a91a99d6293e53d23bcb44d027e43bf1bd980"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows[0])\n    return first, deepcopy(rows[1:])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d900d25e7c7f80f8b1ada94baa451d8772f12d0401daf0f83b769a6db5a8ad09"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import dequeue_snapshot\n\n\nclass DequeueSnapshotTests(unittest.TestCase):\n    def test_returns_deep_independent_snapshots_without_mutation(self):\n        rows = [\n            {\"name\": \"first\", \"nested\": [1, {\"x\": 2}]},\n            {\"name\": \"second\", \"nested\": [3]},\n            [\"third\"],\n        ]\n        original_first = rows[0]\n        original_second = rows[1]\n\n        first, remaining = dequeue_snapshot(rows)\n\n        self.assertEqual(first, rows[0])\n        self.assertEqual(remaining, rows[1:])\n        self.assertEqual(len(rows), 3)\n        self.assertIs(rows[0], original_first)\n        self.assertIs(rows[1], original_second)\n        self.assertIsNot(first, rows[0])\n        self.assertIsNot(first[\"nested\"], rows[0][\"nested\"])\n        self.assertIsNot(first[\"nested\"][1], rows[0][\"nested\"][1])\n        self.assertIsNot(remaining, rows)\n        self.assertIsNot(remaining[0], rows[1])\n        self.assertIsNot(remaining[0][\"nested\"], rows[1][\"nested\"])\n        self.assertIsNot(remaining[1], rows[2])\n\n        first[\"nested\"][1][\"x\"] = 99\n        remaining[0][\"nested\"].append(4)\n        self.assertEqual(rows[0][\"nested\"][1][\"x\"], 2)\n        self.assertEqual(rows[1][\"nested\"], [3])\n\n    def test_single_element(self):\n        rows = [[{\"value\": 1}]]\n        first, remaining = dequeue_snapshot(rows)\n        self.assertEqual(first, [{\"value\": 1}])\n        self.assertEqual(remaining, [])\n        self.assertIsNot(first, rows[0])\n        self.assertIsNot(first[0], rows[0][0])\n        self.assertEqual(rows, [[{\"value\": 1}]])\n\n    def test_empty_list(self):\n        rows = []\n        first, remaining = dequeue_snapshot(rows)\n        self.assertIsNone(first)\n        self.assertEqual(remaining, [])\n        self.assertIsNot(remaining, rows)\n\n    def test_non_list_raises_type_error(self):\n        for rows in [None, (), \"rows\", {\"a\": 1}]:\n            with self.subTest(rows=rows):\n                with self.assertRaises(TypeError):\n                    dequeue_snapshot(rows)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "47c0c37ad9ab9624b7f57a2bed71d0f085742fcc29b14e6f7d465d8a2bc64478"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3cd080cf5ec9902bd805bba949839e0833b021c90c3ece79e475dee1eb8a74ad",
+      "text": "The following `solution.py` should implement `dequeue_snapshot(rows)`. `rows` must be a list. For an empty list it returns `(None, [])`. Otherwise it returns a two-tuple containing a deep copy of the first element and a deep copy of the remaining list. The function must not mutate `rows`, and neither returned value may alias any mutable object reachable from `rows`. A non-list input must raise `TypeError`.\n\nThe current source mutates its argument:\n\n```python\nfrom copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows.pop(0))\n    return first, deepcopy(rows)\n```\n\nProvide a corrected complete `solution.py` using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3cd080cf5ec9902bd805bba949839e0833b021c90c3ece79e475dee1eb8a74ad",
+      "text": "The following `solution.py` should implement `dequeue_snapshot(rows)`. `rows` must be a list. For an empty list it returns `(None, [])`. Otherwise it returns a two-tuple containing a deep copy of the first element and a deep copy of the remaining list. The function must not mutate `rows`, and neither returned value may alias any mutable object reachable from `rows`. A non-list input must raise `TypeError`.\n\nThe current source mutates its argument:\n\n```python\nfrom copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows.pop(0))\n    return first, deepcopy(rows)\n```\n\nProvide a corrected complete `solution.py` using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0346",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows.pop(0))\n    return first, deepcopy(rows)\n",
+          "label": "Calling `pop(0)` removes the first element from the caller's list.",
+          "sha256": "3726160058cee2ff24739d3c1f6a91a99d6293e53d23bcb44d027e43bf1bd980"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef dequeue_snapshot(rows):\n    if not isinstance(rows, list):\n        raise TypeError(\"rows must be a list\")\n    if not rows:\n        return None, []\n    first = deepcopy(rows[0])\n    return first, deepcopy(rows[1:])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d900d25e7c7f80f8b1ada94baa451d8772f12d0401daf0f83b769a6db5a8ad09"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_payload (__main__.Probe.test_finite_payload)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_finite_payload\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "393d5e0eb006e733f63558252dffe5cb35939a621f0c93dba144b0078a9f9bec",
+    "duration_ms": 488,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

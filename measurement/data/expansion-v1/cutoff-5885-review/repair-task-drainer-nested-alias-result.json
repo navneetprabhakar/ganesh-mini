@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0282",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "87d3504136cbc8b0f49fe228037d8b316455a02d99ab98d5cf728f22e29815d6",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import TaskDrainer\n\nclass Probe(unittest.TestCase):\n    def test_later_nested_caller_mutation(self):\n        value = [1]\n        drainer = TaskDrainer([value])\n        before = drainer.drain()\n        value.append(2)\n        self.assertEqual(drainer.drain(), before)\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "cef669cb5860311324fb75f6a1d11e11c24e7a791290902badc9706b08438b59"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d8247476550a0154141b8264270c52f7af1445dc0bc7448f0c2410b377499412",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. Do not change the public class or method names.\n\n`TaskDrainer(items=None)` accepts either `None` or a list/tuple of values. It copies a supplied sequence so later caller mutation has no effect. `drain()` processes values in order by passing each to `format_item`, returns a tuple of the formatted results, and can be called repeatedly with the same result. `None` represents an empty task sequence and must return an empty tuple. Other constructor inputs raise `TypeError`. `format_item(value)` returns `str(value)`.\n\nKnown-bad source:\n\n```python\nclass TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items:\n            result.append(self.format_item(value))\n        return tuple(result)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d8247476550a0154141b8264270c52f7af1445dc0bc7448f0c2410b377499412",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. Do not change the public class or method names.\n\n`TaskDrainer(items=None)` accepts either `None` or a list/tuple of values. It copies a supplied sequence so later caller mutation has no effect. `drain()` processes values in order by passing each to `format_item`, returns a tuple of the formatted results, and can be called repeatedly with the same result. `None` represents an empty task sequence and must return an empty tuple. Other constructor inputs raise `TypeError`. `format_item(value)` returns `str(value)`.\n\nKnown-bad source:\n\n```python\nclass TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items:\n            result.append(self.format_item(value))\n        return tuple(result)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0282",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items:\n            result.append(self.format_item(value))\n        return tuple(result)\n",
+          "label": "drain attempts to iterate over None instead of treating it as an empty task sequence.",
+          "sha256": "3f33b11cd7a9771875dc72848d8fc188cd9eff17602a3f209705bf8b950fbc84"
+        }
+      ],
+      "reference": {
+        "code": "class TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items or ():\n            result.append(self.format_item(value))\n        return tuple(result)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7610d17f288d862ba704deebf760159fc790e4f9d986c775b3d0d7de312a41b5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import TaskDrainer\n\n\nclass TaskDrainerTests(unittest.TestCase):\n    def test_none_and_empty_sequences_drain_to_empty_tuple(self):\n        self.assertEqual(TaskDrainer().drain(), ())\n        self.assertEqual(TaskDrainer(None).drain(), ())\n        self.assertEqual(TaskDrainer([]).drain(), ())\n        self.assertEqual(TaskDrainer(()).drain(), ())\n\n    def test_formats_in_order_and_is_repeatable(self):\n        drainer = TaskDrainer([1, \"two\", None, True])\n        expected = (\"1\", \"two\", \"None\", \"True\")\n        self.assertEqual(drainer.drain(), expected)\n        self.assertEqual(drainer.drain(), expected)\n\n    def test_copies_caller_sequence(self):\n        items = [1, 2]\n        drainer = TaskDrainer(items)\n        items[0] = 9\n        items.append(3)\n        self.assertEqual(drainer.drain(), (\"1\", \"2\"))\n\n    def test_drain_dispatches_through_format_item_each_time(self):\n        class RecordingDrainer(TaskDrainer):\n            def __init__(self, items):\n                super().__init__(items)\n                self.calls = []\n\n            def format_item(self, value):\n                self.calls.append(value)\n                return \"[{}]\".format(value)\n\n        drainer = RecordingDrainer((3, 4))\n        self.assertEqual(drainer.drain(), (\"[3]\", \"[4]\"))\n        self.assertEqual(drainer.calls, [3, 4])\n        self.assertEqual(drainer.drain(), (\"[3]\", \"[4]\"))\n        self.assertEqual(drainer.calls, [3, 4, 3, 4])\n\n    def test_format_item_uses_str(self):\n        value = object()\n        self.assertEqual(TaskDrainer().format_item(value), str(value))\n\n    def test_rejects_other_constructor_inputs(self):\n        for value in (\"abc\", {1, 2}, {\"a\": 1}, 3, True, iter([1, 2])):\n            with self.subTest(value=value):\n                with self.assertRaises(TypeError):\n                    TaskDrainer(value)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "09eb5122f7e5545b5cc98048445f3a19dda1f6b228b9875f3cd0dfe321187284"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d8247476550a0154141b8264270c52f7af1445dc0bc7448f0c2410b377499412",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. Do not change the public class or method names.\n\n`TaskDrainer(items=None)` accepts either `None` or a list/tuple of values. It copies a supplied sequence so later caller mutation has no effect. `drain()` processes values in order by passing each to `format_item`, returns a tuple of the formatted results, and can be called repeatedly with the same result. `None` represents an empty task sequence and must return an empty tuple. Other constructor inputs raise `TypeError`. `format_item(value)` returns `str(value)`.\n\nKnown-bad source:\n\n```python\nclass TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items:\n            result.append(self.format_item(value))\n        return tuple(result)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d8247476550a0154141b8264270c52f7af1445dc0bc7448f0c2410b377499412",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. Do not change the public class or method names.\n\n`TaskDrainer(items=None)` accepts either `None` or a list/tuple of values. It copies a supplied sequence so later caller mutation has no effect. `drain()` processes values in order by passing each to `format_item`, returns a tuple of the formatted results, and can be called repeatedly with the same result. `None` represents an empty task sequence and must return an empty tuple. Other constructor inputs raise `TypeError`. `format_item(value)` returns `str(value)`.\n\nKnown-bad source:\n\n```python\nclass TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items:\n            result.append(self.format_item(value))\n        return tuple(result)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0282",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items:\n            result.append(self.format_item(value))\n        return tuple(result)\n",
+          "label": "drain attempts to iterate over None instead of treating it as an empty task sequence.",
+          "sha256": "3f33b11cd7a9771875dc72848d8fc188cd9eff17602a3f209705bf8b950fbc84"
+        }
+      ],
+      "reference": {
+        "code": "class TaskDrainer:\n    def __init__(self, items=None):\n        if items is not None and not isinstance(items, (list, tuple)):\n            raise TypeError(\"items must be a sequence or None\")\n        self._items = None if items is None else tuple(items)\n\n    def format_item(self, value):\n        return str(value)\n\n    def drain(self):\n        result = []\n        for value in self._items or ():\n            result.append(self.format_item(value))\n        return tuple(result)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7610d17f288d862ba704deebf760159fc790e4f9d986c775b3d0d7de312a41b5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_later_nested_caller_mutation (__main__.Probe.test_later_nested_caller_mutation)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_later_nested_caller_mutation\n    self.assertEqual(drainer.drain(), before)\nAssertionError: Tuples differ: ('[1, 2]',) != ('[1]',)\n\nFirst differing element 0:\n'[1, 2]'\n'[1]'\n\n- ('[1, 2]',)\n?     ---\n\n+ ('[1]',)\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "c2b9f45471383095331a016ebd1d6796b8c65581c665c15000a2df3c7f5688eb",
+    "duration_ms": 571,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

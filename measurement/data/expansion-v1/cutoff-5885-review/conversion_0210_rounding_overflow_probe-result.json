@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0210",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "d05c091548391ee0a2503cd5eca3f3fc5de2cc5e4999344ab02f872c908ead12",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst buildConversionView = require('./solution');\nassert.throws(() => buildConversionView({ estimatedRate: Number.MAX_VALUE, amount: 1,\n  source: 'A', target: 'B', direction: 'forward' }), TypeError,\n  'Required precision conversion overflows but no TypeError is thrown');\n",
+        "sha256": "9c06a2ed11fe55356401cb65022197a136fe89e654826cd3f50bb7a8e8372f02"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "51695d54e8e28cdf159f71cec4466e14155938831b2325b1202e7c53405ecb24",
+      "text": "Implement `buildConversionView(input)` and export it directly with `module.exports`. `input` must be a non-array object with `estimatedRate`, `amount`, `source`, `target`, and `direction`. `estimatedRate` and `amount` may be finite numbers or canonical decimal strings matching `^(0|[1-9]\\d*)(\\.\\d+)?$`; symbols must be non-empty strings after trimming; direction must be `'forward'` or `'reverse'`. If `estimatedRate` is `null`, `undefined`, or `''`, or if the parsed amount is zero, return `null` after validating the other structural fields. Otherwise the rate and amount must be positive and finite; malformed, negative, zero-rate, or overflow values throw `TypeError`. Forward direction means one source equals `estimatedRate` target units. Reverse means one target equals `1 / estimatedRate` source units. Format the displayed rate by applying `toPrecision(7)`, converting the result back to a number, then to a string. Return `{ left, right, rate, text, nextDirection }`, where symbols are trimmed, `text` is `'1 <left> = <rate> <right>'`, and `nextDirection` is the opposite direction. Do not mutate or retain `input`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "51695d54e8e28cdf159f71cec4466e14155938831b2325b1202e7c53405ecb24",
+      "text": "Implement `buildConversionView(input)` and export it directly with `module.exports`. `input` must be a non-array object with `estimatedRate`, `amount`, `source`, `target`, and `direction`. `estimatedRate` and `amount` may be finite numbers or canonical decimal strings matching `^(0|[1-9]\\d*)(\\.\\d+)?$`; symbols must be non-empty strings after trimming; direction must be `'forward'` or `'reverse'`. If `estimatedRate` is `null`, `undefined`, or `''`, or if the parsed amount is zero, return `null` after validating the other structural fields. Otherwise the rate and amount must be positive and finite; malformed, negative, zero-rate, or overflow values throw `TypeError`. Forward direction means one source equals `estimatedRate` target units. Reverse means one target equals `1 / estimatedRate` source units. Format the displayed rate by applying `toPrecision(7)`, converting the result back to a number, then to a string. Return `{ left, right, rate, text, nextDirection }`, where symbols are trimmed, `text` is `'1 <left> = <rate> <right>'`, and `nextDirection` is the opposite direction. Do not mutate or retain `input`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0210",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nconst decimalPattern = /^(0|[1-9]\\d*)(\\.\\d+)?$/;\n\nfunction parseDecimal(value, field, allowMissing) {\n  if (allowMissing && (value === null || value === undefined || value === '')) return null;\n  if (typeof value === 'string' && !decimalPattern.test(value)) {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  if (typeof value !== 'string' && typeof value !== 'number') {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  const number = Number(value);\n  if (!Number.isFinite(number) || number < 0) {\n    throw new TypeError(field + ' must be finite and non-negative');\n  }\n  return number;\n}\n\nfunction buildConversionView(input) {\n  if (input === null || typeof input !== 'object' || Array.isArray(input)) {\n    throw new TypeError('input must be an object');\n  }\n  if (typeof input.source !== 'string' || input.source.trim().length === 0 ||\n      typeof input.target !== 'string' || input.target.trim().length === 0 ||\n      (input.direction !== 'forward' && input.direction !== 'reverse')) {\n    throw new TypeError('invalid conversion fields');\n  }\n\n  const amount = parseDecimal(input.amount, 'amount', false);\n  const estimatedRate = parseDecimal(input.estimatedRate, 'estimatedRate', true);\n  if (estimatedRate === null || amount === 0) return null;\n  if (amount <= 0 || estimatedRate <= 0) throw new TypeError('values must be positive');\n\n  const source = input.source.trim();\n  const target = input.target.trim();\n  const reversed = input.direction === 'reverse';\n  const numericRate = estimatedRate;\n  if (!Number.isFinite(numericRate) || numericRate <= 0) {\n    throw new TypeError('calculated rate is invalid');\n  }\n  const rate = Number(numericRate.toPrecision(7)).toString();\n  const left = reversed ? target : source;\n  const right = reversed ? source : target;\n\n  return {\n    left,\n    right,\n    rate,\n    text: '1 ' + left + ' = ' + rate + ' ' + right,\n    nextDirection: reversed ? 'forward' : 'reverse'\n  };\n}\n\nmodule.exports = buildConversionView;\n",
+          "label": "Reverse direction swaps the symbols but displays the original rate instead of its reciprocal.",
+          "sha256": "21fa2bd5f381e5354bda0ff78f6fc8b608fc5bbcbaff34abf943cc513acd1b59"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nconst decimalPattern = /^(0|[1-9]\\d*)(\\.\\d+)?$/;\n\nfunction parseDecimal(value, field, allowMissing) {\n  if (allowMissing && (value === null || value === undefined || value === '')) return null;\n  if (typeof value === 'string' && !decimalPattern.test(value)) {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  if (typeof value !== 'string' && typeof value !== 'number') {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  const number = Number(value);\n  if (!Number.isFinite(number) || number < 0) {\n    throw new TypeError(field + ' must be finite and non-negative');\n  }\n  return number;\n}\n\nfunction buildConversionView(input) {\n  if (input === null || typeof input !== 'object' || Array.isArray(input)) {\n    throw new TypeError('input must be an object');\n  }\n  if (typeof input.source !== 'string' || input.source.trim().length === 0 ||\n      typeof input.target !== 'string' || input.target.trim().length === 0 ||\n      (input.direction !== 'forward' && input.direction !== 'reverse')) {\n    throw new TypeError('invalid conversion fields');\n  }\n\n  const amount = parseDecimal(input.amount, 'amount', false);\n  const estimatedRate = parseDecimal(input.estimatedRate, 'estimatedRate', true);\n  if (estimatedRate === null || amount === 0) return null;\n  if (amount <= 0 || estimatedRate <= 0) throw new TypeError('values must be positive');\n\n  const source = input.source.trim();\n  const target = input.target.trim();\n  const reversed = input.direction === 'reverse';\n  const numericRate = reversed ? 1 / estimatedRate : estimatedRate;\n  if (!Number.isFinite(numericRate) || numericRate <= 0) {\n    throw new TypeError('calculated rate is invalid');\n  }\n  const rate = Number(numericRate.toPrecision(7)).toString();\n  const left = reversed ? target : source;\n  const right = reversed ? source : target;\n\n  return {\n    left,\n    right,\n    rate,\n    text: '1 ' + left + ' = ' + rate + ' ' + right,\n    nextDirection: reversed ? 'forward' : 'reverse'\n  };\n}\n\nmodule.exports = buildConversionView;\n",
+        "label": "codex-teacher-reference",
+        "sha256": "63ddb27297dfabab0cae3b758e1c58d58b2a6c329dae79d939351caa2ca5fb18"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst buildConversionView = require('./solution');\n\nassert.equal(typeof buildConversionView, 'function');\nconst input = {\n  estimatedRate: '12.3456789', amount: '2.50',\n  source: ' USD ', target: ' INR ', direction: 'forward'\n};\nassert.deepEqual(buildConversionView(input), {\n  left: 'USD', right: 'INR', rate: '12.34568',\n  text: '1 USD = 12.34568 INR', nextDirection: 'reverse'\n});\nassert.deepEqual(input, {\n  estimatedRate: '12.3456789', amount: '2.50',\n  source: ' USD ', target: ' INR ', direction: 'forward'\n});\n\nassert.deepEqual(buildConversionView({\n  estimatedRate: 4, amount: 1, source: 'A', target: 'B', direction: 'reverse'\n}), {\n  left: 'B', right: 'A', rate: '0.25', text: '1 B = 0.25 A', nextDirection: 'forward'\n});\nassert.deepEqual(buildConversionView({\n  estimatedRate: 3, amount: 1, source: 'S', target: 'T', direction: 'reverse'\n}), {\n  left: 'T', right: 'S', rate: '0.3333333', text: '1 T = 0.3333333 S', nextDirection: 'forward'\n});\nassert.deepEqual(buildConversionView({\n  estimatedRate: '1.0000000', amount: '0.01', source: 'X', target: 'Y', direction: 'forward'\n}), {\n  left: 'X', right: 'Y', rate: '1', text: '1 X = 1 Y', nextDirection: 'reverse'\n});\n\nfor (const absent of [null, undefined, '']) {\n  assert.equal(buildConversionView({ estimatedRate: absent, amount: 2, source: 'A', target: 'B', direction: 'forward' }), null);\n}\nfor (const zero of [0, '0', '0.00']) {\n  assert.equal(buildConversionView({ estimatedRate: 2, amount: zero, source: 'A', target: 'B', direction: 'forward' }), null);\n}\n\nconst badInputs = [null, [], {},\n  { estimatedRate: 1, amount: 1, source: '', target: 'B', direction: 'forward' },\n  { estimatedRate: 1, amount: 1, source: 'A', target: '  ', direction: 'forward' },\n  { estimatedRate: 1, amount: 1, source: 'A', target: 'B', direction: 'sideways' },\n  { estimatedRate: 0, amount: 1, source: 'A', target: 'B', direction: 'forward' },\n  { estimatedRate: -1, amount: 1, source: 'A', target: 'B', direction: 'forward' },\n  { estimatedRate: Infinity, amount: 1, source: 'A', target: 'B', direction: 'forward' },\n  { estimatedRate: '01', amount: 1, source: 'A', target: 'B', direction: 'forward' },\n  { estimatedRate: '1.', amount: 1, source: 'A', target: 'B', direction: 'forward' },\n  { estimatedRate: 1, amount: -1, source: 'A', target: 'B', direction: 'forward' },\n  { estimatedRate: 1, amount: '1e2', source: 'A', target: 'B', direction: 'forward' },\n  { estimatedRate: 1e-320, amount: 1, source: 'A', target: 'B', direction: 'reverse' }\n];\nfor (const value of badInputs) assert.throws(() => buildConversionView(value), TypeError);\nassert.throws(() => buildConversionView({\n  estimatedRate: null, amount: 1, source: '', target: 'B', direction: 'forward'\n}), TypeError);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "b33e85216b3969e6a2e5674dfa9f3f63715d7034ae2b32f95e499cbf0fe2df28"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "51695d54e8e28cdf159f71cec4466e14155938831b2325b1202e7c53405ecb24",
+      "text": "Implement `buildConversionView(input)` and export it directly with `module.exports`. `input` must be a non-array object with `estimatedRate`, `amount`, `source`, `target`, and `direction`. `estimatedRate` and `amount` may be finite numbers or canonical decimal strings matching `^(0|[1-9]\\d*)(\\.\\d+)?$`; symbols must be non-empty strings after trimming; direction must be `'forward'` or `'reverse'`. If `estimatedRate` is `null`, `undefined`, or `''`, or if the parsed amount is zero, return `null` after validating the other structural fields. Otherwise the rate and amount must be positive and finite; malformed, negative, zero-rate, or overflow values throw `TypeError`. Forward direction means one source equals `estimatedRate` target units. Reverse means one target equals `1 / estimatedRate` source units. Format the displayed rate by applying `toPrecision(7)`, converting the result back to a number, then to a string. Return `{ left, right, rate, text, nextDirection }`, where symbols are trimmed, `text` is `'1 <left> = <rate> <right>'`, and `nextDirection` is the opposite direction. Do not mutate or retain `input`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "51695d54e8e28cdf159f71cec4466e14155938831b2325b1202e7c53405ecb24",
+      "text": "Implement `buildConversionView(input)` and export it directly with `module.exports`. `input` must be a non-array object with `estimatedRate`, `amount`, `source`, `target`, and `direction`. `estimatedRate` and `amount` may be finite numbers or canonical decimal strings matching `^(0|[1-9]\\d*)(\\.\\d+)?$`; symbols must be non-empty strings after trimming; direction must be `'forward'` or `'reverse'`. If `estimatedRate` is `null`, `undefined`, or `''`, or if the parsed amount is zero, return `null` after validating the other structural fields. Otherwise the rate and amount must be positive and finite; malformed, negative, zero-rate, or overflow values throw `TypeError`. Forward direction means one source equals `estimatedRate` target units. Reverse means one target equals `1 / estimatedRate` source units. Format the displayed rate by applying `toPrecision(7)`, converting the result back to a number, then to a string. Return `{ left, right, rate, text, nextDirection }`, where symbols are trimmed, `text` is `'1 <left> = <rate> <right>'`, and `nextDirection` is the opposite direction. Do not mutate or retain `input`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0210",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nconst decimalPattern = /^(0|[1-9]\\d*)(\\.\\d+)?$/;\n\nfunction parseDecimal(value, field, allowMissing) {\n  if (allowMissing && (value === null || value === undefined || value === '')) return null;\n  if (typeof value === 'string' && !decimalPattern.test(value)) {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  if (typeof value !== 'string' && typeof value !== 'number') {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  const number = Number(value);\n  if (!Number.isFinite(number) || number < 0) {\n    throw new TypeError(field + ' must be finite and non-negative');\n  }\n  return number;\n}\n\nfunction buildConversionView(input) {\n  if (input === null || typeof input !== 'object' || Array.isArray(input)) {\n    throw new TypeError('input must be an object');\n  }\n  if (typeof input.source !== 'string' || input.source.trim().length === 0 ||\n      typeof input.target !== 'string' || input.target.trim().length === 0 ||\n      (input.direction !== 'forward' && input.direction !== 'reverse')) {\n    throw new TypeError('invalid conversion fields');\n  }\n\n  const amount = parseDecimal(input.amount, 'amount', false);\n  const estimatedRate = parseDecimal(input.estimatedRate, 'estimatedRate', true);\n  if (estimatedRate === null || amount === 0) return null;\n  if (amount <= 0 || estimatedRate <= 0) throw new TypeError('values must be positive');\n\n  const source = input.source.trim();\n  const target = input.target.trim();\n  const reversed = input.direction === 'reverse';\n  const numericRate = estimatedRate;\n  if (!Number.isFinite(numericRate) || numericRate <= 0) {\n    throw new TypeError('calculated rate is invalid');\n  }\n  const rate = Number(numericRate.toPrecision(7)).toString();\n  const left = reversed ? target : source;\n  const right = reversed ? source : target;\n\n  return {\n    left,\n    right,\n    rate,\n    text: '1 ' + left + ' = ' + rate + ' ' + right,\n    nextDirection: reversed ? 'forward' : 'reverse'\n  };\n}\n\nmodule.exports = buildConversionView;\n",
+          "label": "Reverse direction swaps the symbols but displays the original rate instead of its reciprocal.",
+          "sha256": "21fa2bd5f381e5354bda0ff78f6fc8b608fc5bbcbaff34abf943cc513acd1b59"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nconst decimalPattern = /^(0|[1-9]\\d*)(\\.\\d+)?$/;\n\nfunction parseDecimal(value, field, allowMissing) {\n  if (allowMissing && (value === null || value === undefined || value === '')) return null;\n  if (typeof value === 'string' && !decimalPattern.test(value)) {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  if (typeof value !== 'string' && typeof value !== 'number') {\n    throw new TypeError(field + ' must be a decimal');\n  }\n  const number = Number(value);\n  if (!Number.isFinite(number) || number < 0) {\n    throw new TypeError(field + ' must be finite and non-negative');\n  }\n  return number;\n}\n\nfunction buildConversionView(input) {\n  if (input === null || typeof input !== 'object' || Array.isArray(input)) {\n    throw new TypeError('input must be an object');\n  }\n  if (typeof input.source !== 'string' || input.source.trim().length === 0 ||\n      typeof input.target !== 'string' || input.target.trim().length === 0 ||\n      (input.direction !== 'forward' && input.direction !== 'reverse')) {\n    throw new TypeError('invalid conversion fields');\n  }\n\n  const amount = parseDecimal(input.amount, 'amount', false);\n  const estimatedRate = parseDecimal(input.estimatedRate, 'estimatedRate', true);\n  if (estimatedRate === null || amount === 0) return null;\n  if (amount <= 0 || estimatedRate <= 0) throw new TypeError('values must be positive');\n\n  const source = input.source.trim();\n  const target = input.target.trim();\n  const reversed = input.direction === 'reverse';\n  const numericRate = reversed ? 1 / estimatedRate : estimatedRate;\n  if (!Number.isFinite(numericRate) || numericRate <= 0) {\n    throw new TypeError('calculated rate is invalid');\n  }\n  const rate = Number(numericRate.toPrecision(7)).toString();\n  const left = reversed ? target : source;\n  const right = reversed ? source : target;\n\n  return {\n    left,\n    right,\n    rate,\n    text: '1 ' + left + ' = ' + rate + ' ' + right,\n    nextDirection: reversed ? 'forward' : 'reverse'\n  };\n}\n\nmodule.exports = buildConversionView;\n",
+        "label": "codex-teacher-reference",
+        "sha256": "63ddb27297dfabab0cae3b758e1c58d58b2a6c329dae79d939351caa2ca5fb18"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError): Required precision conversion overflows but no TypeError is thrown\n    at Object.<anonymous> (/work/solution.test.js:3:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "d69856b8d74e8676e4796829386e00d31e3368c383998ca7805054c27e93e1e4",
+    "duration_ms": 441,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

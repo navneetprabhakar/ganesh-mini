@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0174",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "88d50d70241b9ed70fc96380bccd22687cbab02226f1bb8c4a2a6b60875e80c6",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { reduceEditor, EditorState } from './solution';\nconst state: EditorState = { dialog: 'none', groupDraft: 'group', passDraft: 'preserve', groups: [], passes: [] };\nObject.defineProperty(state, 'passDraft', { value: 'preserve', enumerable: false });\nconst result = reduceEditor(state, { type: 'open', dialog: 'group' });\nif (result.passDraft !== 'preserve') throw new Error('Opening group lost untouched required passDraft: ' + JSON.stringify(result));\n",
+        "sha256": "aca1126152284d2921aa07d8b13d3de03b013d4f508c4b3887025bc728019efa"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6c761c5e6cafd06572d89cc5e98a206c687613f8de970be3bd331926e70e8010",
+      "text": "Implement a new immutable editor reducer. Export `EditorState`, `EditorAction`, and `reduceEditor(state, action)`. State contains `dialog` (`none`, `group`, or `pass`), a group-name draft, and a pass-title draft. `open` selects a dialog and clears only that dialog's draft. `edit` is allowed only for the currently open dialog and replaces its draft without trimming. `cancel` closes the current dialog and clears its draft. `save` trims the current draft, throws `TypeError` if no dialog is open or the trimmed draft is empty, then closes and clears the draft while appending the saved text to the corresponding array. Unknown dialog/action combinations throw `TypeError` without mutating input. Existing array order is preserved, and neither input arrays nor returned arrays may alias each other.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6c761c5e6cafd06572d89cc5e98a206c687613f8de970be3bd331926e70e8010",
+      "text": "Implement a new immutable editor reducer. Export `EditorState`, `EditorAction`, and `reduceEditor(state, action)`. State contains `dialog` (`none`, `group`, or `pass`), a group-name draft, and a pass-title draft. `open` selects a dialog and clears only that dialog's draft. `edit` is allowed only for the currently open dialog and replaces its draft without trimming. `cancel` closes the current dialog and clears its draft. `save` trims the current draft, throws `TypeError` if no dialog is open or the trimmed draft is empty, then closes and clears the draft while appending the saved text to the corresponding array. Unknown dialog/action combinations throw `TypeError` without mutating input. Existing array order is preserved, and neither input arrays nor returned arrays may alias each other.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0174",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface EditorState {\n  readonly dialog: \"none\" | \"group\" | \"pass\";\n  readonly groupDraft: string;\n  readonly passDraft: string;\n  readonly groups: readonly string[];\n  readonly passes: readonly string[];\n}\n\nexport type EditorAction =\n  | { readonly type: \"open\"; readonly dialog: \"group\" | \"pass\" }\n  | { readonly type: \"edit\"; readonly dialog: \"group\" | \"pass\"; readonly value: string }\n  | { readonly type: \"cancel\" }\n  | { readonly type: \"save\" };\n\nexport function reduceEditor(state: EditorState, action: EditorAction): EditorState {\n  const detached = (): EditorState => ({\n    ...state,\n    groups: [...state.groups],\n    passes: [...state.passes]\n  });\n\n  switch (action.type) {\n    case \"open\": {\n      const base = detached();\n      if (action.dialog === \"group\") {\n        return { ...base, dialog: \"group\", groupDraft: \"\" };\n      }\n      if (action.dialog === \"pass\") {\n        return { ...base, dialog: \"pass\", passDraft: \"\" };\n      }\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"edit\": {\n      if (typeof action.value !== \"string\" || action.dialog !== state.dialog) {\n        throw new TypeError(\"inactive dialog\");\n      }\n      const base = detached();\n      if (state.dialog === \"group\") return { ...base, groupDraft: action.value };\n      if (state.dialog === \"pass\") return { ...base, passDraft: action.value };\n      throw new TypeError(\"no open dialog\");\n    }\n\n    case \"cancel\": {\n      const base = detached();\n      if (state.dialog === \"group\") {\n        return { ...base, dialog: \"none\", groupDraft: \"\" };\n      }\n      if (state.dialog === \"pass\") {\n        return { ...base, dialog: \"none\", passDraft: \"\" };\n      }\n      if (state.dialog === \"none\") return base;\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"save\": {\n      if (state.dialog === \"none\") throw new TypeError(\"no open dialog\");\n      if (state.dialog !== \"group\" && state.dialog !== \"pass\") {\n        throw new TypeError(\"invalid dialog\");\n      }\n\n      const value = state.dialog === \"group\" ? state.groupDraft : state.passDraft;\n      if (!value) throw new TypeError(\"blank draft\");\n      const base = detached();\n\n      return state.dialog === \"group\"\n        ? { ...base, dialog: \"none\", groupDraft: \"\", groups: [...base.groups, value] }\n        : { ...base, dialog: \"none\", passDraft: \"\", passes: [...base.passes, value] };\n    }\n\n    default:\n      throw new TypeError(\"unknown action\");\n  }\n}\n",
+          "label": "Saving does not trim the draft, allowing whitespace-only values and preserving unwanted surrounding whitespace.",
+          "sha256": "f16816d64b959519547bc12ef6c7638497e9b828850442889f83bccf47e29bc8"
+        }
+      ],
+      "reference": {
+        "code": "export interface EditorState {\n  readonly dialog: \"none\" | \"group\" | \"pass\";\n  readonly groupDraft: string;\n  readonly passDraft: string;\n  readonly groups: readonly string[];\n  readonly passes: readonly string[];\n}\n\nexport type EditorAction =\n  | { readonly type: \"open\"; readonly dialog: \"group\" | \"pass\" }\n  | { readonly type: \"edit\"; readonly dialog: \"group\" | \"pass\"; readonly value: string }\n  | { readonly type: \"cancel\" }\n  | { readonly type: \"save\" };\n\nexport function reduceEditor(state: EditorState, action: EditorAction): EditorState {\n  const detached = (): EditorState => ({\n    ...state,\n    groups: [...state.groups],\n    passes: [...state.passes]\n  });\n\n  switch (action.type) {\n    case \"open\": {\n      const base = detached();\n      if (action.dialog === \"group\") {\n        return { ...base, dialog: \"group\", groupDraft: \"\" };\n      }\n      if (action.dialog === \"pass\") {\n        return { ...base, dialog: \"pass\", passDraft: \"\" };\n      }\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"edit\": {\n      if (typeof action.value !== \"string\" || action.dialog !== state.dialog) {\n        throw new TypeError(\"inactive dialog\");\n      }\n      const base = detached();\n      if (state.dialog === \"group\") return { ...base, groupDraft: action.value };\n      if (state.dialog === \"pass\") return { ...base, passDraft: action.value };\n      throw new TypeError(\"no open dialog\");\n    }\n\n    case \"cancel\": {\n      const base = detached();\n      if (state.dialog === \"group\") {\n        return { ...base, dialog: \"none\", groupDraft: \"\" };\n      }\n      if (state.dialog === \"pass\") {\n        return { ...base, dialog: \"none\", passDraft: \"\" };\n      }\n      if (state.dialog === \"none\") return base;\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"save\": {\n      if (state.dialog === \"none\") throw new TypeError(\"no open dialog\");\n      if (state.dialog !== \"group\" && state.dialog !== \"pass\") {\n        throw new TypeError(\"invalid dialog\");\n      }\n\n      const value = (state.dialog === \"group\" ? state.groupDraft : state.passDraft).trim();\n      if (!value) throw new TypeError(\"blank draft\");\n      const base = detached();\n\n      return state.dialog === \"group\"\n        ? { ...base, dialog: \"none\", groupDraft: \"\", groups: [...base.groups, value] }\n        : { ...base, dialog: \"none\", passDraft: \"\", passes: [...base.passes, value] };\n    }\n\n    default:\n      throw new TypeError(\"unknown action\");\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d8879f9126e39939984f43ed18f43e9eb2e0b591e4440171d2c79004859066b9"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { reduceEditor } from './solution';\n\nfunction eq(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message + ': ' + JSON.stringify(actual));\n}\nfunction throwsType(fn: () => unknown, message: string): void {\n  try { fn(); } catch (error) { if (error instanceof TypeError) return; throw error; }\n  throw new Error(message);\n}\nfunction detached(result: any, input: any, message: string): void {\n  if (result.groups === input.groups || result.passes === input.passes) throw new Error(message);\n}\n\nconst initial: any = { dialog: 'none', groupDraft: 'old group', passDraft: 'old pass', groups: ['Existing'], passes: ['Original'] };\nconst openedGroup: any = reduceEditor(initial, { type: 'open', dialog: 'group' } as any);\neq(openedGroup, { dialog: 'group', groupDraft: '', passDraft: 'old pass', groups: ['Existing'], passes: ['Original'] }, 'opening group clears only group draft');\neq(initial, { dialog: 'none', groupDraft: 'old group', passDraft: 'old pass', groups: ['Existing'], passes: ['Original'] }, 'open does not mutate input');\ndetached(openedGroup, initial, 'open arrays detached');\n\nconst editedGroup: any = reduceEditor(openedGroup, { type: 'edit', dialog: 'group', value: '  New Group  ' } as any);\neq(editedGroup.groupDraft, '  New Group  ', 'edit preserves whitespace');\neq(openedGroup.groupDraft, '', 'edit does not mutate input');\nconst savedGroup: any = reduceEditor(editedGroup, { type: 'save' } as any);\neq(savedGroup, { dialog: 'none', groupDraft: '', passDraft: 'old pass', groups: ['Existing', 'New Group'], passes: ['Original'] }, 'save trims, appends, closes, and clears');\ndetached(savedGroup, editedGroup, 'saved arrays detached');\n\nconst openedPass: any = reduceEditor(savedGroup, { type: 'open', dialog: 'pass' } as any);\neq(openedPass.passDraft, '', 'opening pass clears pass draft');\neq(openedPass.groupDraft, '', 'opening pass preserves group draft');\nconst editedPass: any = reduceEditor(openedPass, { type: 'edit', dialog: 'pass', value: '\\t Evening Pass \\n' } as any);\nconst savedPass: any = reduceEditor(editedPass, { type: 'save' } as any);\neq(savedPass.passes, ['Original', 'Evening Pass'], 'pass save appends trimmed title');\neq(savedPass.groups, ['Existing', 'New Group'], 'pass save preserves groups');\neq(savedPass.dialog, 'none', 'pass save closes dialog');\neq(savedPass.passDraft, '', 'pass save clears draft');\n\nconst cancelInput: any = { dialog: 'group', groupDraft: 'discard', passDraft: 'keep', groups: ['G'], passes: ['P'] };\nconst cancelled: any = reduceEditor(cancelInput, { type: 'cancel' } as any);\neq(cancelled, { dialog: 'none', groupDraft: '', passDraft: 'keep', groups: ['G'], passes: ['P'] }, 'cancel clears only current draft');\neq(cancelInput.groupDraft, 'discard', 'cancel does not mutate input');\ndetached(cancelled, cancelInput, 'cancel arrays detached');\n\nconst blank: any = { dialog: 'pass', groupDraft: 'g', passDraft: ' \\t ', groups: ['G'], passes: ['P'] };\nconst blankBefore = JSON.stringify(blank);\nthrowsType(() => reduceEditor(blank, { type: 'save' } as any), 'blank save rejected');\neq(JSON.stringify(blank), blankBefore, 'failed blank save does not mutate');\nthrowsType(() => reduceEditor(initial, { type: 'save' } as any), 'save with no dialog rejected');\neq(JSON.stringify(initial), JSON.stringify({ dialog: 'none', groupDraft: 'old group', passDraft: 'old pass', groups: ['Existing'], passes: ['Original'] }), 'failed closed save does not mutate');\nthrowsType(() => reduceEditor(openedGroup, { type: 'edit', dialog: 'pass', value: 'wrong' } as any), 'edit for inactive dialog rejected');\nthrowsType(() => reduceEditor(initial, { type: 'edit', dialog: 'group', value: 'wrong' } as any), 'edit while closed rejected');\nthrowsType(() => reduceEditor(initial, { type: 'unknown' } as any), 'unknown action rejected');\n\nsavedPass.groups.push('mutated');\nsavedPass.passes.push('mutated');\neq(editedPass.groups, ['Existing', 'New Group'], 'result groups do not alias input');\neq(editedPass.passes, ['Original'], 'result passes do not alias input');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "4e7c52fea4f591df1599e700dadbdb8ad882fc607497553d6b0d14d011883365"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6c761c5e6cafd06572d89cc5e98a206c687613f8de970be3bd331926e70e8010",
+      "text": "Implement a new immutable editor reducer. Export `EditorState`, `EditorAction`, and `reduceEditor(state, action)`. State contains `dialog` (`none`, `group`, or `pass`), a group-name draft, and a pass-title draft. `open` selects a dialog and clears only that dialog's draft. `edit` is allowed only for the currently open dialog and replaces its draft without trimming. `cancel` closes the current dialog and clears its draft. `save` trims the current draft, throws `TypeError` if no dialog is open or the trimmed draft is empty, then closes and clears the draft while appending the saved text to the corresponding array. Unknown dialog/action combinations throw `TypeError` without mutating input. Existing array order is preserved, and neither input arrays nor returned arrays may alias each other.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6c761c5e6cafd06572d89cc5e98a206c687613f8de970be3bd331926e70e8010",
+      "text": "Implement a new immutable editor reducer. Export `EditorState`, `EditorAction`, and `reduceEditor(state, action)`. State contains `dialog` (`none`, `group`, or `pass`), a group-name draft, and a pass-title draft. `open` selects a dialog and clears only that dialog's draft. `edit` is allowed only for the currently open dialog and replaces its draft without trimming. `cancel` closes the current dialog and clears its draft. `save` trims the current draft, throws `TypeError` if no dialog is open or the trimmed draft is empty, then closes and clears the draft while appending the saved text to the corresponding array. Unknown dialog/action combinations throw `TypeError` without mutating input. Existing array order is preserved, and neither input arrays nor returned arrays may alias each other.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0174",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface EditorState {\n  readonly dialog: \"none\" | \"group\" | \"pass\";\n  readonly groupDraft: string;\n  readonly passDraft: string;\n  readonly groups: readonly string[];\n  readonly passes: readonly string[];\n}\n\nexport type EditorAction =\n  | { readonly type: \"open\"; readonly dialog: \"group\" | \"pass\" }\n  | { readonly type: \"edit\"; readonly dialog: \"group\" | \"pass\"; readonly value: string }\n  | { readonly type: \"cancel\" }\n  | { readonly type: \"save\" };\n\nexport function reduceEditor(state: EditorState, action: EditorAction): EditorState {\n  const detached = (): EditorState => ({\n    ...state,\n    groups: [...state.groups],\n    passes: [...state.passes]\n  });\n\n  switch (action.type) {\n    case \"open\": {\n      const base = detached();\n      if (action.dialog === \"group\") {\n        return { ...base, dialog: \"group\", groupDraft: \"\" };\n      }\n      if (action.dialog === \"pass\") {\n        return { ...base, dialog: \"pass\", passDraft: \"\" };\n      }\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"edit\": {\n      if (typeof action.value !== \"string\" || action.dialog !== state.dialog) {\n        throw new TypeError(\"inactive dialog\");\n      }\n      const base = detached();\n      if (state.dialog === \"group\") return { ...base, groupDraft: action.value };\n      if (state.dialog === \"pass\") return { ...base, passDraft: action.value };\n      throw new TypeError(\"no open dialog\");\n    }\n\n    case \"cancel\": {\n      const base = detached();\n      if (state.dialog === \"group\") {\n        return { ...base, dialog: \"none\", groupDraft: \"\" };\n      }\n      if (state.dialog === \"pass\") {\n        return { ...base, dialog: \"none\", passDraft: \"\" };\n      }\n      if (state.dialog === \"none\") return base;\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"save\": {\n      if (state.dialog === \"none\") throw new TypeError(\"no open dialog\");\n      if (state.dialog !== \"group\" && state.dialog !== \"pass\") {\n        throw new TypeError(\"invalid dialog\");\n      }\n\n      const value = state.dialog === \"group\" ? state.groupDraft : state.passDraft;\n      if (!value) throw new TypeError(\"blank draft\");\n      const base = detached();\n\n      return state.dialog === \"group\"\n        ? { ...base, dialog: \"none\", groupDraft: \"\", groups: [...base.groups, value] }\n        : { ...base, dialog: \"none\", passDraft: \"\", passes: [...base.passes, value] };\n    }\n\n    default:\n      throw new TypeError(\"unknown action\");\n  }\n}\n",
+          "label": "Saving does not trim the draft, allowing whitespace-only values and preserving unwanted surrounding whitespace.",
+          "sha256": "f16816d64b959519547bc12ef6c7638497e9b828850442889f83bccf47e29bc8"
+        }
+      ],
+      "reference": {
+        "code": "export interface EditorState {\n  readonly dialog: \"none\" | \"group\" | \"pass\";\n  readonly groupDraft: string;\n  readonly passDraft: string;\n  readonly groups: readonly string[];\n  readonly passes: readonly string[];\n}\n\nexport type EditorAction =\n  | { readonly type: \"open\"; readonly dialog: \"group\" | \"pass\" }\n  | { readonly type: \"edit\"; readonly dialog: \"group\" | \"pass\"; readonly value: string }\n  | { readonly type: \"cancel\" }\n  | { readonly type: \"save\" };\n\nexport function reduceEditor(state: EditorState, action: EditorAction): EditorState {\n  const detached = (): EditorState => ({\n    ...state,\n    groups: [...state.groups],\n    passes: [...state.passes]\n  });\n\n  switch (action.type) {\n    case \"open\": {\n      const base = detached();\n      if (action.dialog === \"group\") {\n        return { ...base, dialog: \"group\", groupDraft: \"\" };\n      }\n      if (action.dialog === \"pass\") {\n        return { ...base, dialog: \"pass\", passDraft: \"\" };\n      }\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"edit\": {\n      if (typeof action.value !== \"string\" || action.dialog !== state.dialog) {\n        throw new TypeError(\"inactive dialog\");\n      }\n      const base = detached();\n      if (state.dialog === \"group\") return { ...base, groupDraft: action.value };\n      if (state.dialog === \"pass\") return { ...base, passDraft: action.value };\n      throw new TypeError(\"no open dialog\");\n    }\n\n    case \"cancel\": {\n      const base = detached();\n      if (state.dialog === \"group\") {\n        return { ...base, dialog: \"none\", groupDraft: \"\" };\n      }\n      if (state.dialog === \"pass\") {\n        return { ...base, dialog: \"none\", passDraft: \"\" };\n      }\n      if (state.dialog === \"none\") return base;\n      throw new TypeError(\"invalid dialog\");\n    }\n\n    case \"save\": {\n      if (state.dialog === \"none\") throw new TypeError(\"no open dialog\");\n      if (state.dialog !== \"group\" && state.dialog !== \"pass\") {\n        throw new TypeError(\"invalid dialog\");\n      }\n\n      const value = (state.dialog === \"group\" ? state.groupDraft : state.passDraft).trim();\n      if (!value) throw new TypeError(\"blank draft\");\n      const base = detached();\n\n      return state.dialog === \"group\"\n        ? { ...base, dialog: \"none\", groupDraft: \"\", groups: [...base.groups, value] }\n        : { ...base, dialog: \"none\", passDraft: \"\", passes: [...base.passes, value] };\n    }\n\n    default:\n      throw new TypeError(\"unknown action\");\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d8879f9126e39939984f43ed18f43e9eb2e0b591e4440171d2c79004859066b9"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('Opening group lost untouched required passDraft: ' + JSON.stringify(result));\n    ^\n\nError: Opening group lost untouched required passDraft: {\"dialog\":\"group\",\"groupDraft\":\"\",\"groups\":[],\"passes\":[]}\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "8d16d924df03a38f147bd2a9fdefa628ae66cbccedd80ded8034411b163315d4",
+    "duration_ms": 3138,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

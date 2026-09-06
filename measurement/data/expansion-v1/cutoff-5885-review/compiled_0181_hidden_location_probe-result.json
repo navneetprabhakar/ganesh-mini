@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0181",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "ce0a6eb7ac8a277276581210663eea91873e2519d68714f1b184f996d4cd9b85",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { packCompiledRecords } = require('./solution');\nconst record = { location: '/base/a', source: 'text', format: 'compiled' };\nObject.defineProperty(record, 'location', { value: '/base/a', enumerable: false });\nconst result = packCompiledRecords([record], { makeKey: () => 0, debug: false, base: '/base' });\nassert.equal(result[0][0].location, '/base/a', 'copied record lost required location');\n",
+        "sha256": "29ba07b60a1e1fee50f6cf1adc08a173324badcd1846d06fb1c9a323a33a9f0e"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "aec985b979b87289ef3e3233e9d51cabe900510cf38566b619e564e0c5b27af3",
+      "text": "Implement `packCompiledRecords(records, options)`.\n\n`records` must be an array of objects with string properties `location`, `source`, and `format`. Validate every record before processing; malformed input throws `TypeError`. Only records whose `format` is exactly `\"compiled\"` are eligible. `options` must contain `makeKey(location)`, boolean `debug`, and string `base`; it may contain `accept(record)`, which defaults to accepting every eligible record. `accept` is called only for eligible records and must return a boolean.\n\nFor each accepted record, in input order, call `makeKey` once. It must return a non-negative safe integer or a `TypeError` is thrown. Produce a tuple containing a new shallow copy of the record and two newly allocated buffers. The first buffer contains `JSON.stringify({ key, debug, relative }) + \"\\n\"`, where `relative` is the location with the exact `base + \"/\"` prefix removed when present. The second buffer contains the record source as UTF-8. Return an empty array for empty input. Do not mutate the inputs, and do not expose an input record as the tuple's record object.\n\nUse CommonJS and export exactly `{ packCompiledRecords }` via `module.exports`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "aec985b979b87289ef3e3233e9d51cabe900510cf38566b619e564e0c5b27af3",
+      "text": "Implement `packCompiledRecords(records, options)`.\n\n`records` must be an array of objects with string properties `location`, `source`, and `format`. Validate every record before processing; malformed input throws `TypeError`. Only records whose `format` is exactly `\"compiled\"` are eligible. `options` must contain `makeKey(location)`, boolean `debug`, and string `base`; it may contain `accept(record)`, which defaults to accepting every eligible record. `accept` is called only for eligible records and must return a boolean.\n\nFor each accepted record, in input order, call `makeKey` once. It must return a non-negative safe integer or a `TypeError` is thrown. Produce a tuple containing a new shallow copy of the record and two newly allocated buffers. The first buffer contains `JSON.stringify({ key, debug, relative }) + \"\\n\"`, where `relative` is the location with the exact `base + \"/\"` prefix removed when present. The second buffer contains the record source as UTF-8. Return an empty array for empty input. Do not mutate the inputs, and do not expose an input record as the tuple's record object.\n\nUse CommonJS and export exactly `{ packCompiledRecords }` via `module.exports`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0181",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction packCompiledRecords(records, options) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  for (const record of records) {\n    if (!record || typeof record !== 'object' ||\n        typeof record.location !== 'string' ||\n        typeof record.source !== 'string' ||\n        typeof record.format !== 'string') {\n      throw new TypeError('each record must have string location, source, and format');\n    }\n  }\n  if (!options || typeof options !== 'object' ||\n      typeof options.makeKey !== 'function' ||\n      typeof options.debug !== 'boolean' ||\n      typeof options.base !== 'string') {\n    throw new TypeError('invalid options');\n  }\n  const accept = options.accept === undefined ? () => true : options.accept;\n  if (typeof accept !== 'function') throw new TypeError('accept must be a function');\n\n  const output = [];\n  for (const record of records) {\n    if (record.format !== 'compiled') continue;\n    const accepted = accept(record);\n    if (typeof accepted !== 'boolean') throw new TypeError('accept must return a boolean');\n    if (accepted) continue;\n\n    const key = options.makeKey(record.location);\n    if (!Number.isSafeInteger(key) || key < 0) throw new TypeError('invalid key');\n    const prefix = options.base + '/';\n    const relative = record.location.startsWith(prefix)\n      ? record.location.slice(prefix.length)\n      : record.location;\n    const header = JSON.stringify({ key, debug: options.debug, relative }) + '\\n';\n    output.push([\n      { ...record },\n      Buffer.from(header, 'utf8'),\n      Buffer.from(record.source, 'utf8')\n    ]);\n  }\n  return output;\n}\n\nmodule.exports = { packCompiledRecords };\n",
+          "label": "The acceptance condition is inverted, so accepted records are skipped and rejected records are packed.",
+          "sha256": "82079b598d3088df5beade288e5c03b4793032844934c6d0452cbba3c871514a"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction packCompiledRecords(records, options) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  for (const record of records) {\n    if (!record || typeof record !== 'object' ||\n        typeof record.location !== 'string' ||\n        typeof record.source !== 'string' ||\n        typeof record.format !== 'string') {\n      throw new TypeError('each record must have string location, source, and format');\n    }\n  }\n  if (!options || typeof options !== 'object' ||\n      typeof options.makeKey !== 'function' ||\n      typeof options.debug !== 'boolean' ||\n      typeof options.base !== 'string') {\n    throw new TypeError('invalid options');\n  }\n  const accept = options.accept === undefined ? () => true : options.accept;\n  if (typeof accept !== 'function') throw new TypeError('accept must be a function');\n\n  const output = [];\n  for (const record of records) {\n    if (record.format !== 'compiled') continue;\n    const accepted = accept(record);\n    if (typeof accepted !== 'boolean') throw new TypeError('accept must return a boolean');\n    if (!accepted) continue;\n\n    const key = options.makeKey(record.location);\n    if (!Number.isSafeInteger(key) || key < 0) throw new TypeError('invalid key');\n    const prefix = options.base + '/';\n    const relative = record.location.startsWith(prefix)\n      ? record.location.slice(prefix.length)\n      : record.location;\n    const header = JSON.stringify({ key, debug: options.debug, relative }) + '\\n';\n    output.push([\n      { ...record },\n      Buffer.from(header, 'utf8'),\n      Buffer.from(record.source, 'utf8')\n    ]);\n  }\n  return output;\n}\n\nmodule.exports = { packCompiledRecords };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cd4e29fb05b672c6a9b233af0e182bb26d407a0102abcf40fee238256c189a8c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['packCompiledRecords']);\nconst { packCompiledRecords } = api;\n\nconst records = [\n  { location: '/base/one.js', source: 'alpha', format: 'compiled', extra: 1 },\n  { location: '/base/raw.js', source: 'raw', format: 'source' },\n  { location: '/baseball/two.js', source: '\u03b2', format: 'compiled' }\n];\nconst before = JSON.parse(JSON.stringify(records));\nconst keyCalls = [];\nconst acceptCalls = [];\nconst packed = packCompiledRecords(records, {\n  base: '/base',\n  debug: true,\n  accept(record) {\n    acceptCalls.push(record.location);\n    return true;\n  },\n  makeKey(location) {\n    keyCalls.push(location);\n    return keyCalls.length - 1;\n  }\n});\n\nassert.deepStrictEqual(acceptCalls, ['/base/one.js', '/baseball/two.js']);\nassert.deepStrictEqual(keyCalls, ['/base/one.js', '/baseball/two.js']);\nassert.strictEqual(packed.length, 2);\nassert.deepStrictEqual(packed[0][0], records[0]);\nassert.notStrictEqual(packed[0][0], records[0]);\nassert.deepStrictEqual(packed[1][0], records[2]);\nassert.notStrictEqual(packed[1][0], records[2]);\nassert(Buffer.isBuffer(packed[0][1]));\nassert(Buffer.isBuffer(packed[0][2]));\nassert.notStrictEqual(packed[0][1], packed[1][1]);\nassert.notStrictEqual(packed[0][2], packed[1][2]);\nassert.strictEqual(packed[0][1].toString('utf8'), JSON.stringify({ key: 0, debug: true, relative: 'one.js' }) + '\\n');\nassert.strictEqual(packed[1][1].toString('utf8'), JSON.stringify({ key: 1, debug: true, relative: '/baseball/two.js' }) + '\\n');\nassert.strictEqual(packed[0][2].toString('utf8'), 'alpha');\nassert.strictEqual(packed[1][2].toString('utf8'), '\u03b2');\nassert.deepStrictEqual(records, before);\npacked[0][0].source = 'changed';\npacked[0][2][0] = 0;\nassert.strictEqual(records[0].source, 'alpha');\n\nlet rejectedKeyCalls = 0;\nassert.deepStrictEqual(packCompiledRecords(records, {\n  base: '/base', debug: false,\n  accept: () => false,\n  makeKey: () => { rejectedKeyCalls += 1; return 0; }\n}), []);\nassert.strictEqual(rejectedKeyCalls, 0);\n\nassert.deepStrictEqual(packCompiledRecords([], {\n  base: '', debug: false, makeKey: () => 0\n}), []);\n\nfor (const bad of [null, {}, 'records']) {\n  assert.throws(() => packCompiledRecords(bad, { base: '', debug: false, makeKey: () => 0 }), TypeError);\n}\nfor (const badRecord of [null, {}, { location: 1, source: '', format: 'compiled' }, { location: '', source: 2, format: 'compiled' }, { location: '', source: '', format: 3 }]) {\n  assert.throws(() => packCompiledRecords([badRecord], { base: '', debug: false, makeKey: () => 0 }), TypeError);\n}\n\nlet prematureCalls = 0;\nassert.throws(() => packCompiledRecords([\n  { location: 'ok', source: 'x', format: 'compiled' },\n  { location: 'bad', source: 1, format: 'compiled' }\n], {\n  base: '', debug: false,\n  accept: () => { prematureCalls += 1; return true; },\n  makeKey: () => { prematureCalls += 1; return 0; }\n}), TypeError);\nassert.strictEqual(prematureCalls, 0);\n\nconst valid = [{ location: 'x', source: 'y', format: 'compiled' }];\nfor (const options of [null, {}, { base: '', debug: false, makeKey: 1 }, { base: 1, debug: false, makeKey: () => 0 }, { base: '', debug: 0, makeKey: () => 0 }, { base: '', debug: false, makeKey: () => 0, accept: 1 }]) {\n  assert.throws(() => packCompiledRecords(valid, options), TypeError);\n}\nassert.throws(() => packCompiledRecords(valid, { base: '', debug: false, accept: () => 'yes', makeKey: () => 0 }), TypeError);\nfor (const badKey of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1, '0']) {\n  assert.throws(() => packCompiledRecords(valid, { base: '', debug: false, makeKey: () => badKey }), TypeError);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "6b2912ffc41e3b58a339dd1100c919f237f9286a557ee93569c8bdf1ca509d5d"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "aec985b979b87289ef3e3233e9d51cabe900510cf38566b619e564e0c5b27af3",
+      "text": "Implement `packCompiledRecords(records, options)`.\n\n`records` must be an array of objects with string properties `location`, `source`, and `format`. Validate every record before processing; malformed input throws `TypeError`. Only records whose `format` is exactly `\"compiled\"` are eligible. `options` must contain `makeKey(location)`, boolean `debug`, and string `base`; it may contain `accept(record)`, which defaults to accepting every eligible record. `accept` is called only for eligible records and must return a boolean.\n\nFor each accepted record, in input order, call `makeKey` once. It must return a non-negative safe integer or a `TypeError` is thrown. Produce a tuple containing a new shallow copy of the record and two newly allocated buffers. The first buffer contains `JSON.stringify({ key, debug, relative }) + \"\\n\"`, where `relative` is the location with the exact `base + \"/\"` prefix removed when present. The second buffer contains the record source as UTF-8. Return an empty array for empty input. Do not mutate the inputs, and do not expose an input record as the tuple's record object.\n\nUse CommonJS and export exactly `{ packCompiledRecords }` via `module.exports`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "aec985b979b87289ef3e3233e9d51cabe900510cf38566b619e564e0c5b27af3",
+      "text": "Implement `packCompiledRecords(records, options)`.\n\n`records` must be an array of objects with string properties `location`, `source`, and `format`. Validate every record before processing; malformed input throws `TypeError`. Only records whose `format` is exactly `\"compiled\"` are eligible. `options` must contain `makeKey(location)`, boolean `debug`, and string `base`; it may contain `accept(record)`, which defaults to accepting every eligible record. `accept` is called only for eligible records and must return a boolean.\n\nFor each accepted record, in input order, call `makeKey` once. It must return a non-negative safe integer or a `TypeError` is thrown. Produce a tuple containing a new shallow copy of the record and two newly allocated buffers. The first buffer contains `JSON.stringify({ key, debug, relative }) + \"\\n\"`, where `relative` is the location with the exact `base + \"/\"` prefix removed when present. The second buffer contains the record source as UTF-8. Return an empty array for empty input. Do not mutate the inputs, and do not expose an input record as the tuple's record object.\n\nUse CommonJS and export exactly `{ packCompiledRecords }` via `module.exports`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0181",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction packCompiledRecords(records, options) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  for (const record of records) {\n    if (!record || typeof record !== 'object' ||\n        typeof record.location !== 'string' ||\n        typeof record.source !== 'string' ||\n        typeof record.format !== 'string') {\n      throw new TypeError('each record must have string location, source, and format');\n    }\n  }\n  if (!options || typeof options !== 'object' ||\n      typeof options.makeKey !== 'function' ||\n      typeof options.debug !== 'boolean' ||\n      typeof options.base !== 'string') {\n    throw new TypeError('invalid options');\n  }\n  const accept = options.accept === undefined ? () => true : options.accept;\n  if (typeof accept !== 'function') throw new TypeError('accept must be a function');\n\n  const output = [];\n  for (const record of records) {\n    if (record.format !== 'compiled') continue;\n    const accepted = accept(record);\n    if (typeof accepted !== 'boolean') throw new TypeError('accept must return a boolean');\n    if (accepted) continue;\n\n    const key = options.makeKey(record.location);\n    if (!Number.isSafeInteger(key) || key < 0) throw new TypeError('invalid key');\n    const prefix = options.base + '/';\n    const relative = record.location.startsWith(prefix)\n      ? record.location.slice(prefix.length)\n      : record.location;\n    const header = JSON.stringify({ key, debug: options.debug, relative }) + '\\n';\n    output.push([\n      { ...record },\n      Buffer.from(header, 'utf8'),\n      Buffer.from(record.source, 'utf8')\n    ]);\n  }\n  return output;\n}\n\nmodule.exports = { packCompiledRecords };\n",
+          "label": "The acceptance condition is inverted, so accepted records are skipped and rejected records are packed.",
+          "sha256": "82079b598d3088df5beade288e5c03b4793032844934c6d0452cbba3c871514a"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction packCompiledRecords(records, options) {\n  if (!Array.isArray(records)) throw new TypeError('records must be an array');\n  for (const record of records) {\n    if (!record || typeof record !== 'object' ||\n        typeof record.location !== 'string' ||\n        typeof record.source !== 'string' ||\n        typeof record.format !== 'string') {\n      throw new TypeError('each record must have string location, source, and format');\n    }\n  }\n  if (!options || typeof options !== 'object' ||\n      typeof options.makeKey !== 'function' ||\n      typeof options.debug !== 'boolean' ||\n      typeof options.base !== 'string') {\n    throw new TypeError('invalid options');\n  }\n  const accept = options.accept === undefined ? () => true : options.accept;\n  if (typeof accept !== 'function') throw new TypeError('accept must be a function');\n\n  const output = [];\n  for (const record of records) {\n    if (record.format !== 'compiled') continue;\n    const accepted = accept(record);\n    if (typeof accepted !== 'boolean') throw new TypeError('accept must return a boolean');\n    if (!accepted) continue;\n\n    const key = options.makeKey(record.location);\n    if (!Number.isSafeInteger(key) || key < 0) throw new TypeError('invalid key');\n    const prefix = options.base + '/';\n    const relative = record.location.startsWith(prefix)\n      ? record.location.slice(prefix.length)\n      : record.location;\n    const header = JSON.stringify({ key, debug: options.debug, relative }) + '\\n';\n    output.push([\n      { ...record },\n      Buffer.from(header, 'utf8'),\n      Buffer.from(record.source, 'utf8')\n    ]);\n  }\n  return output;\n}\n\nmodule.exports = { packCompiledRecords };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cd4e29fb05b672c6a9b233af0e182bb26d407a0102abcf40fee238256c189a8c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: copied record lost required location\n+ actual - expected\n\n+ undefined\n- '/base/a'\n\n    at Object.<anonymous> (/work/solution.test.js:7:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: '/base/a',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "300add50485041dbda3ad67943b7e4c86d864c0d8f585e20be33ecde3d976eba",
+    "duration_ms": 486,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

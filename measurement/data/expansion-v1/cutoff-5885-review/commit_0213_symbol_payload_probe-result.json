@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0213",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "2d6f0d9f8d92ea4a82dc92ab3852d3ba8720f32f7719da7a74e5eb9fdf22195b",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { createCommitGate } = require('./solution');\nconst key = Symbol('payload');\nconst nested = {};\nconst gate = createCommitGate(() => true);\nassert.throws(() => gate.stage({ [key]: nested }), TypeError,\n  'Own symbol value is an unsupported object and must not be retained');\n",
+        "sha256": "d460881f7cc62f91a17d191d4f578cb25ef02f7b483a39a32541f8c34b7f3c29"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0627f2d0c42735fc6941f9ddddbe2ba628b02aef3f5150ed6afad9d65296e60d",
+      "text": "Implement a CommonJS module exporting exactly `{ createCommitGate }`.\n\n`createCommitGate(apply)` accepts a function and returns `{ stage, commit, abort, state }` for a single irreversible command.\n\n- `stage(payload)` accepts a plain object whose own values are strings, finite numbers, booleans, or null. It succeeds only while idle, stores a shallow copy, and returns `true`; otherwise it returns `false` without mutation.\n- `commit()` may invoke `apply(payloadCopy)` at most once. A staged commit changes state before invoking `apply`, so a reentrant `commit()` call cannot invoke it again. On success, later commits return the original result. If no commit can start, return `false`. If `apply` throws, mark the gate failed and rethrow; later commits return `false`.\n- `abort()` changes a staged gate to aborted and returns `true`; otherwise it returns `false`.\n- `state()` returns a fresh `{ status, payload }`, where status is `idle`, `staged`, `committing`, `committed`, `failed`, or `aborted`; payload is a fresh copy or `null`.\n\nReject an invalid `apply` or malformed payload with `TypeError`. Empty payloads are valid. No caller-owned object may be mutated or retained.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0627f2d0c42735fc6941f9ddddbe2ba628b02aef3f5150ed6afad9d65296e60d",
+      "text": "Implement a CommonJS module exporting exactly `{ createCommitGate }`.\n\n`createCommitGate(apply)` accepts a function and returns `{ stage, commit, abort, state }` for a single irreversible command.\n\n- `stage(payload)` accepts a plain object whose own values are strings, finite numbers, booleans, or null. It succeeds only while idle, stores a shallow copy, and returns `true`; otherwise it returns `false` without mutation.\n- `commit()` may invoke `apply(payloadCopy)` at most once. A staged commit changes state before invoking `apply`, so a reentrant `commit()` call cannot invoke it again. On success, later commits return the original result. If no commit can start, return `false`. If `apply` throws, mark the gate failed and rethrow; later commits return `false`.\n- `abort()` changes a staged gate to aborted and returns `true`; otherwise it returns `false`.\n- `state()` returns a fresh `{ status, payload }`, where status is `idle`, `staged`, `committing`, `committed`, `failed`, or `aborted`; payload is a fresh copy or `null`.\n\nReject an invalid `apply` or malformed payload with `TypeError`. Empty payloads are valid. No caller-owned object may be mutated or retained.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0213",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createCommitGate(apply) {\n  if (typeof apply !== 'function') throw new TypeError('apply must be a function');\n\n  let status = 'idle';\n  let payload = null;\n  let result;\n\n  function stage(value) {\n    if (value === null || typeof value !== 'object' || Array.isArray(value)) {\n      throw new TypeError('payload must be a plain object');\n    }\n    const prototype = Object.getPrototypeOf(value);\n    if (prototype !== Object.prototype && prototype !== null) {\n      throw new TypeError('payload must be a plain object');\n    }\n    for (const item of Object.values(value)) {\n      const valid = item === null || typeof item === 'string' || typeof item === 'boolean' ||\n        (typeof item === 'number' && Number.isFinite(item));\n      if (!valid) throw new TypeError('payload contains an unsupported value');\n    }\n    if (status !== 'idle') return false;\n    payload = { ...value };\n    status = 'staged';\n    return true;\n  }\n\n  function commit() {\n    if (status === 'committed') return result;\n    if (status !== 'staged') return false;\n    try {\n      result = apply({ ...payload });\n      status = 'committed';\n      return result;\n    } catch (error) {\n      status = 'failed';\n      throw error;\n    }\n  }\n\n  function abort() {\n    if (status !== 'staged') return false;\n    status = 'aborted';\n    return true;\n  }\n\n  function state() {\n    return { status, payload: payload === null ? null : { ...payload } };\n  }\n\n  return { stage, commit, abort, state };\n}\n\nmodule.exports = { createCommitGate };\n",
+          "label": "Does not enter the committing state before invoking the callback, allowing a reentrant commit to apply twice.",
+          "sha256": "33c40ff8e5bdcbb21f7a67e917969db4bb105962690387564d237d74f9f44ebe"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createCommitGate(apply) {\n  if (typeof apply !== 'function') throw new TypeError('apply must be a function');\n\n  let status = 'idle';\n  let payload = null;\n  let result;\n\n  function stage(value) {\n    if (value === null || typeof value !== 'object' || Array.isArray(value)) {\n      throw new TypeError('payload must be a plain object');\n    }\n    const prototype = Object.getPrototypeOf(value);\n    if (prototype !== Object.prototype && prototype !== null) {\n      throw new TypeError('payload must be a plain object');\n    }\n    for (const item of Object.values(value)) {\n      const valid = item === null || typeof item === 'string' || typeof item === 'boolean' ||\n        (typeof item === 'number' && Number.isFinite(item));\n      if (!valid) throw new TypeError('payload contains an unsupported value');\n    }\n    if (status !== 'idle') return false;\n    payload = { ...value };\n    status = 'staged';\n    return true;\n  }\n\n  function commit() {\n    if (status === 'committed') return result;\n    if (status !== 'staged') return false;\n    status = 'committing';\n    try {\n      result = apply({ ...payload });\n      status = 'committed';\n      return result;\n    } catch (error) {\n      status = 'failed';\n      throw error;\n    }\n  }\n\n  function abort() {\n    if (status !== 'staged') return false;\n    status = 'aborted';\n    return true;\n  }\n\n  function state() {\n    return { status, payload: payload === null ? null : { ...payload } };\n  }\n\n  return { stage, commit, abort, state };\n}\n\nmodule.exports = { createCommitGate };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d3867be6a0c895b3fa837081f70bb7fb0a4d31553b7c94a1b720b1664a09a1b9"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createCommitGate']);\nconst { createCommitGate } = api;\n\nassert.throws(() => createCommitGate(null), TypeError);\n\nlet applyCalls = 0;\nlet gate;\nconst resultObject = { done: true };\nconst original = { count: 2, label: 'x', enabled: true, optional: null };\ngate = createCommitGate(payload => {\n  applyCalls += 1;\n  assert.deepStrictEqual(gate.state(), {\n    status: 'committing',\n    payload: { count: 2, label: 'x', enabled: true, optional: null }\n  });\n  assert.strictEqual(gate.commit(), false);\n  payload.count = 999;\n  return resultObject;\n});\nassert.deepStrictEqual(gate.state(), { status: 'idle', payload: null });\nassert.strictEqual(gate.commit(), false);\nassert.strictEqual(gate.abort(), false);\nassert.strictEqual(gate.stage(original), true);\noriginal.count = 50;\noriginal.added = 'later';\nassert.strictEqual(gate.stage({ another: 1 }), false);\n\nconst stagedA = gate.state();\nconst stagedB = gate.state();\nassert.notStrictEqual(stagedA, stagedB);\nassert.notStrictEqual(stagedA.payload, stagedB.payload);\nstagedA.payload.count = 77;\nassert.deepStrictEqual(gate.state(), {\n  status: 'staged',\n  payload: { count: 2, label: 'x', enabled: true, optional: null }\n});\nassert.strictEqual(gate.commit(), resultObject);\nassert.strictEqual(gate.commit(), resultObject);\nassert.strictEqual(applyCalls, 1);\nassert.deepStrictEqual(gate.state(), {\n  status: 'committed',\n  payload: { count: 2, label: 'x', enabled: true, optional: null }\n});\nassert.strictEqual(gate.abort(), false);\n\nfor (const payload of [null, [], new Date(), { x: undefined }, { x: Infinity }, { x: {} }]) {\n  const candidate = createCommitGate(() => undefined);\n  assert.throws(() => candidate.stage(payload), TypeError);\n  assert.deepStrictEqual(candidate.state(), { status: 'idle', payload: null });\n}\nconst empty = createCommitGate(payload => Object.keys(payload).length);\nassert.strictEqual(empty.stage({}), true);\nassert.strictEqual(empty.commit(), 0);\n\nconst aborted = createCommitGate(() => { throw new Error('must not run'); });\nassert.strictEqual(aborted.stage({ value: 1 }), true);\nassert.strictEqual(aborted.abort(), true);\nassert.deepStrictEqual(aborted.state(), { status: 'aborted', payload: { value: 1 } });\nassert.strictEqual(aborted.abort(), false);\nassert.strictEqual(aborted.commit(), false);\n\nconst failure = new Error('apply failed');\nlet failureCalls = 0;\nconst failed = createCommitGate(() => {\n  failureCalls += 1;\n  throw failure;\n});\nassert.strictEqual(failed.stage({ value: 3 }), true);\nassert.throws(() => failed.commit(), error => error === failure);\nassert.deepStrictEqual(failed.state(), { status: 'failed', payload: { value: 3 } });\nassert.strictEqual(failed.commit(), false);\nassert.strictEqual(failureCalls, 1);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "e36219a8cd6be80e33f6833e492c254250fa0556d0ead82be56fde181210e7e6"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0627f2d0c42735fc6941f9ddddbe2ba628b02aef3f5150ed6afad9d65296e60d",
+      "text": "Implement a CommonJS module exporting exactly `{ createCommitGate }`.\n\n`createCommitGate(apply)` accepts a function and returns `{ stage, commit, abort, state }` for a single irreversible command.\n\n- `stage(payload)` accepts a plain object whose own values are strings, finite numbers, booleans, or null. It succeeds only while idle, stores a shallow copy, and returns `true`; otherwise it returns `false` without mutation.\n- `commit()` may invoke `apply(payloadCopy)` at most once. A staged commit changes state before invoking `apply`, so a reentrant `commit()` call cannot invoke it again. On success, later commits return the original result. If no commit can start, return `false`. If `apply` throws, mark the gate failed and rethrow; later commits return `false`.\n- `abort()` changes a staged gate to aborted and returns `true`; otherwise it returns `false`.\n- `state()` returns a fresh `{ status, payload }`, where status is `idle`, `staged`, `committing`, `committed`, `failed`, or `aborted`; payload is a fresh copy or `null`.\n\nReject an invalid `apply` or malformed payload with `TypeError`. Empty payloads are valid. No caller-owned object may be mutated or retained.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0627f2d0c42735fc6941f9ddddbe2ba628b02aef3f5150ed6afad9d65296e60d",
+      "text": "Implement a CommonJS module exporting exactly `{ createCommitGate }`.\n\n`createCommitGate(apply)` accepts a function and returns `{ stage, commit, abort, state }` for a single irreversible command.\n\n- `stage(payload)` accepts a plain object whose own values are strings, finite numbers, booleans, or null. It succeeds only while idle, stores a shallow copy, and returns `true`; otherwise it returns `false` without mutation.\n- `commit()` may invoke `apply(payloadCopy)` at most once. A staged commit changes state before invoking `apply`, so a reentrant `commit()` call cannot invoke it again. On success, later commits return the original result. If no commit can start, return `false`. If `apply` throws, mark the gate failed and rethrow; later commits return `false`.\n- `abort()` changes a staged gate to aborted and returns `true`; otherwise it returns `false`.\n- `state()` returns a fresh `{ status, payload }`, where status is `idle`, `staged`, `committing`, `committed`, `failed`, or `aborted`; payload is a fresh copy or `null`.\n\nReject an invalid `apply` or malformed payload with `TypeError`. Empty payloads are valid. No caller-owned object may be mutated or retained.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0213",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createCommitGate(apply) {\n  if (typeof apply !== 'function') throw new TypeError('apply must be a function');\n\n  let status = 'idle';\n  let payload = null;\n  let result;\n\n  function stage(value) {\n    if (value === null || typeof value !== 'object' || Array.isArray(value)) {\n      throw new TypeError('payload must be a plain object');\n    }\n    const prototype = Object.getPrototypeOf(value);\n    if (prototype !== Object.prototype && prototype !== null) {\n      throw new TypeError('payload must be a plain object');\n    }\n    for (const item of Object.values(value)) {\n      const valid = item === null || typeof item === 'string' || typeof item === 'boolean' ||\n        (typeof item === 'number' && Number.isFinite(item));\n      if (!valid) throw new TypeError('payload contains an unsupported value');\n    }\n    if (status !== 'idle') return false;\n    payload = { ...value };\n    status = 'staged';\n    return true;\n  }\n\n  function commit() {\n    if (status === 'committed') return result;\n    if (status !== 'staged') return false;\n    try {\n      result = apply({ ...payload });\n      status = 'committed';\n      return result;\n    } catch (error) {\n      status = 'failed';\n      throw error;\n    }\n  }\n\n  function abort() {\n    if (status !== 'staged') return false;\n    status = 'aborted';\n    return true;\n  }\n\n  function state() {\n    return { status, payload: payload === null ? null : { ...payload } };\n  }\n\n  return { stage, commit, abort, state };\n}\n\nmodule.exports = { createCommitGate };\n",
+          "label": "Does not enter the committing state before invoking the callback, allowing a reentrant commit to apply twice.",
+          "sha256": "33c40ff8e5bdcbb21f7a67e917969db4bb105962690387564d237d74f9f44ebe"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createCommitGate(apply) {\n  if (typeof apply !== 'function') throw new TypeError('apply must be a function');\n\n  let status = 'idle';\n  let payload = null;\n  let result;\n\n  function stage(value) {\n    if (value === null || typeof value !== 'object' || Array.isArray(value)) {\n      throw new TypeError('payload must be a plain object');\n    }\n    const prototype = Object.getPrototypeOf(value);\n    if (prototype !== Object.prototype && prototype !== null) {\n      throw new TypeError('payload must be a plain object');\n    }\n    for (const item of Object.values(value)) {\n      const valid = item === null || typeof item === 'string' || typeof item === 'boolean' ||\n        (typeof item === 'number' && Number.isFinite(item));\n      if (!valid) throw new TypeError('payload contains an unsupported value');\n    }\n    if (status !== 'idle') return false;\n    payload = { ...value };\n    status = 'staged';\n    return true;\n  }\n\n  function commit() {\n    if (status === 'committed') return result;\n    if (status !== 'staged') return false;\n    status = 'committing';\n    try {\n      result = apply({ ...payload });\n      status = 'committed';\n      return result;\n    } catch (error) {\n      status = 'failed';\n      throw error;\n    }\n  }\n\n  function abort() {\n    if (status !== 'staged') return false;\n    status = 'aborted';\n    return true;\n  }\n\n  function state() {\n    return { status, payload: payload === null ? null : { ...payload } };\n  }\n\n  return { stage, commit, abort, state };\n}\n\nmodule.exports = { createCommitGate };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d3867be6a0c895b3fa837081f70bb7fb0a4d31553b7c94a1b720b1664a09a1b9"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError): Own symbol value is an unsupported object and must not be retained\n    at Object.<anonymous> (/work/solution.test.js:6:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "84d5f20977294f4a37eb52f2d578d97c4724d3e10fede775eecf89330b43faaf",
+    "duration_ms": 652,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0698",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5c715370794501cfb6659df5d4784977477b4979cd18b113ac18ea8373bd7a4a",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import parse_offset\n\n\nclass DecimalWidthTests(unittest.TestCase):\n    def test_three_decimal_components_without_unspecified_width(self):\n        self.assertEqual(parse_offset(\"1:2:3\"), 3723)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "f0a9e617a3f2fc28324bbb535902c24490b19da58f6b8b9ace30e403506e1a16"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "34b31a7c6705ae7726671286c4c21cb3c3dbed7656f7ac601462c517f2e9deb5",
+      "text": "Create `solution.py` with utilities for normalized event envelopes.\n\nPublic API:\n- `class MissingRecords(Exception)`\n- `format_offset(total_seconds, separator=\":\")`: `total_seconds` must be an integer from 0 through 86399, excluding booleans. `separator` must be a non-empty string. Return zero-padded `HH<separator>MM<separator>SS`.\n- `parse_offset(text, separator=\":\")`: require exactly three decimal components separated by `separator`; hours must be 0..23 and minutes/seconds 0..59. Return seconds since midnight. Whitespace around the entire text is ignored, but whitespace inside components is malformed.\n- `normalize_envelope(response, tag)`: both arguments must be mappings/non-empty strings as appropriate. `response` has optional `errors` and `payload`. `errors` must be a list; `payload` must be a mapping. The selected `payload[tag]` must be a list of mappings. Strip surrounding whitespace from string values under `device_id` and `module_id`, leaving all other values unchanged. Return `{\"records\": ..., \"errors\": ...}`. Preserve record order and extra keys.\n- Raise `MissingRecords` if errors is non-empty, the tag is absent, or its record list is empty. Other malformed input raises `ValueError`.\n- Returned records and errors must be deep copies with no mutable aliasing to the input or between separate calls. Never mutate the response.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "34b31a7c6705ae7726671286c4c21cb3c3dbed7656f7ac601462c517f2e9deb5",
+      "text": "Create `solution.py` with utilities for normalized event envelopes.\n\nPublic API:\n- `class MissingRecords(Exception)`\n- `format_offset(total_seconds, separator=\":\")`: `total_seconds` must be an integer from 0 through 86399, excluding booleans. `separator` must be a non-empty string. Return zero-padded `HH<separator>MM<separator>SS`.\n- `parse_offset(text, separator=\":\")`: require exactly three decimal components separated by `separator`; hours must be 0..23 and minutes/seconds 0..59. Return seconds since midnight. Whitespace around the entire text is ignored, but whitespace inside components is malformed.\n- `normalize_envelope(response, tag)`: both arguments must be mappings/non-empty strings as appropriate. `response` has optional `errors` and `payload`. `errors` must be a list; `payload` must be a mapping. The selected `payload[tag]` must be a list of mappings. Strip surrounding whitespace from string values under `device_id` and `module_id`, leaving all other values unchanged. Return `{\"records\": ..., \"errors\": ...}`. Preserve record order and extra keys.\n- Raise `MissingRecords` if errors is non-empty, the tag is absent, or its record list is empty. Other malformed input raises `ValueError`.\n- Returned records and errors must be deep copies with no mutable aliasing to the input or between separate calls. Never mutate the response.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0698",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Mapping\n\n\nclass MissingRecords(Exception):\n    pass\n\n\ndef format_offset(total_seconds, separator=\":\"):\n    if type(total_seconds) is not int or not 0 <= total_seconds <= 86399:\n        raise ValueError(\"total_seconds must be in 0..86399\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    hours, remainder = divmod(total_seconds, 3600)\n    minutes, seconds = divmod(remainder, 60)\n    return f\"{hours:02d}{separator}{minutes:02d}{separator}{seconds:02d}\"\n\n\ndef parse_offset(text, separator=\":\"):\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    parts = text.strip().split(separator)\n    if len(parts) != 3 or any(\n        len(part) != 2 or not part.isdecimal() for part in parts\n    ):\n        raise ValueError(\"malformed offset\")\n    hours, minutes, seconds = map(int, parts)\n    if hours > 23 or minutes > 59 or seconds > 59:\n        raise ValueError(\"offset component out of range\")\n    return hours * 3600 + minutes * 60 + seconds\n\n\ndef normalize_envelope(response, tag):\n    if not isinstance(response, Mapping):\n        raise ValueError(\"response must be a mapping\")\n    if not isinstance(tag, str) or not tag:\n        raise ValueError(\"tag must be non-empty\")\n    errors = response.get(\"errors\", [])\n    payload = response.get(\"payload\", {})\n    if not isinstance(errors, list) or not isinstance(payload, Mapping):\n        raise ValueError(\"malformed envelope\")\n    if errors:\n        raise MissingRecords(\"response contains errors\")\n    if tag not in payload:\n        raise MissingRecords(\"tag is absent\")\n    records = payload[tag]\n    if not isinstance(records, list):\n        raise ValueError(\"tag value must be a list\")\n    if not records:\n        raise MissingRecords(\"record list is empty\")\n    result = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise ValueError(\"each record must be a mapping\")\n        item = deepcopy(dict(record))\n        for key in (\"device_id\", \"module_id\"):\n            if key in item and isinstance(item[key], str):\n                item[key] = item[key].strip()\n        result.append(item)\n    return {\"records\": result, \"errors\": errors}\n",
+          "label": "The returned `errors` list aliases the input envelope instead of being deep-copied.",
+          "sha256": "d534c0cc014ec9ccbeb8163e0a5d365f877dde121200fb592b01fd895c36799f"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Mapping\n\n\nclass MissingRecords(Exception):\n    pass\n\n\ndef format_offset(total_seconds, separator=\":\"):\n    if type(total_seconds) is not int or not 0 <= total_seconds <= 86399:\n        raise ValueError(\"total_seconds must be in 0..86399\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    hours, remainder = divmod(total_seconds, 3600)\n    minutes, seconds = divmod(remainder, 60)\n    return f\"{hours:02d}{separator}{minutes:02d}{separator}{seconds:02d}\"\n\n\ndef parse_offset(text, separator=\":\"):\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    parts = text.strip().split(separator)\n    if len(parts) != 3 or any(\n        len(part) != 2 or not part.isdecimal() for part in parts\n    ):\n        raise ValueError(\"malformed offset\")\n    hours, minutes, seconds = map(int, parts)\n    if hours > 23 or minutes > 59 or seconds > 59:\n        raise ValueError(\"offset component out of range\")\n    return hours * 3600 + minutes * 60 + seconds\n\n\ndef normalize_envelope(response, tag):\n    if not isinstance(response, Mapping):\n        raise ValueError(\"response must be a mapping\")\n    if not isinstance(tag, str) or not tag:\n        raise ValueError(\"tag must be non-empty\")\n    errors = response.get(\"errors\", [])\n    payload = response.get(\"payload\", {})\n    if not isinstance(errors, list) or not isinstance(payload, Mapping):\n        raise ValueError(\"malformed envelope\")\n    if errors:\n        raise MissingRecords(\"response contains errors\")\n    if tag not in payload:\n        raise MissingRecords(\"tag is absent\")\n    records = payload[tag]\n    if not isinstance(records, list):\n        raise ValueError(\"tag value must be a list\")\n    if not records:\n        raise MissingRecords(\"record list is empty\")\n    result = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise ValueError(\"each record must be a mapping\")\n        item = deepcopy(dict(record))\n        for key in (\"device_id\", \"module_id\"):\n            if key in item and isinstance(item[key], str):\n                item[key] = item[key].strip()\n        result.append(item)\n    return {\"records\": result, \"errors\": deepcopy(errors)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ba24ff0d745a5e155213eabbf9c761252c733c64e310c2ff5af6f4eb64e96f44"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import MissingRecords, format_offset, normalize_envelope, parse_offset\n\n\nclass EnvelopeTests(unittest.TestCase):\n    def test_format_offset_boundaries_and_custom_separator(self):\n        self.assertEqual(format_offset(0), \"00:00:00\")\n        self.assertEqual(format_offset(3661), \"01:01:01\")\n        self.assertEqual(format_offset(86399, \"--\"), \"23--59--59\")\n        for value in (-1, 86400, True, 1.5, \"1\"):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    format_offset(value)\n        for separator in (\"\", 2, None):\n            with self.subTest(separator=separator):\n                with self.assertRaises(ValueError):\n                    format_offset(1, separator)\n\n    def test_parse_offset_and_whitespace_rules(self):\n        self.assertEqual(parse_offset(\" 23:59:59\\n\"), 86399)\n        self.assertEqual(parse_offset(\"01--02--03\", \"--\"), 3723)\n        malformed = [\"1:02:03\", \"01:2:03\", \"01:02:3\", \"24:00:00\",\n                     \"00:60:00\", \"00:00:60\", \"00: 00:00\", \"+01:00:00\",\n                     \"00:00\", \"00:00:00:00\", \"aa:00:00\"]\n        for text in malformed:\n            with self.subTest(text=text):\n                with self.assertRaises(ValueError):\n                    parse_offset(text)\n        for args in ((123, \":\"), (\"00:00:00\", \"\"), (\"00:00:00\", 1)):\n            with self.assertRaises(ValueError):\n                parse_offset(*args)\n\n    def test_normalize_preserves_order_and_extra_values(self):\n        response = {\n            \"errors\": [],\n            \"payload\": {\"events\": [\n                {\"device_id\": \" d1 \", \"module_id\": \" m1\\t\", \"n\": 3,\n                 \"extra\": {\"items\": [1]}},\n                {\"device_id\": 9, \"module_id\": None, \"n\": 4},\n            ]},\n        }\n        result = normalize_envelope(response, \"events\")\n        self.assertEqual(result[\"records\"][0][\"device_id\"], \"d1\")\n        self.assertEqual(result[\"records\"][0][\"module_id\"], \"m1\")\n        self.assertEqual(result[\"records\"][1][\"device_id\"], 9)\n        self.assertEqual(result[\"records\"][1][\"module_id\"], None)\n        self.assertEqual([r[\"n\"] for r in result[\"records\"]], [3, 4])\n        self.assertEqual(result[\"errors\"], [])\n\n    def test_results_are_deep_copied_without_cross_call_aliases(self):\n        response = {\"errors\": [], \"payload\": {\"x\": [{\"nested\": [1]}]}}\n        first = normalize_envelope(response, \"x\")\n        second = normalize_envelope(response, \"x\")\n        first[\"records\"][0][\"nested\"].append(2)\n        first[\"errors\"].append({\"local\": True})\n        self.assertEqual(response, {\"errors\": [], \"payload\": {\"x\": [{\"nested\": [1]}]}})\n        self.assertEqual(second, {\"records\": [{\"nested\": [1]}], \"errors\": []})\n\n    def test_missing_records_conditions(self):\n        cases = [\n            ({\"errors\": [\"failure\"], \"payload\": {\"x\": [{}]}}, \"x\"),\n            ({\"errors\": [], \"payload\": {}}, \"x\"),\n            ({\"errors\": [], \"payload\": {\"x\": []}}, \"x\"),\n        ]\n        for response, tag in cases:\n            with self.subTest(response=response):\n                with self.assertRaises(MissingRecords):\n                    normalize_envelope(response, tag)\n\n    def test_malformed_envelopes_raise_value_error(self):\n        cases = [\n            ([], \"x\"), ({}, \"\"), ({}, 1),\n            ({\"errors\": {}, \"payload\": {\"x\": [{}]}}, \"x\"),\n            ({\"errors\": [], \"payload\": []}, \"x\"),\n            ({\"errors\": [], \"payload\": {\"x\": {}}}, \"x\"),\n            ({\"errors\": [], \"payload\": {\"x\": [1]}}, \"x\"),\n        ]\n        for response, tag in cases:\n            with self.subTest(response=response, tag=tag):\n                with self.assertRaises(ValueError):\n                    normalize_envelope(response, tag)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "cd03dc349ccdcfdabaf41ecf3b1cdba8b74deaccae22ccf4c7a0932b160eba7f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "34b31a7c6705ae7726671286c4c21cb3c3dbed7656f7ac601462c517f2e9deb5",
+      "text": "Create `solution.py` with utilities for normalized event envelopes.\n\nPublic API:\n- `class MissingRecords(Exception)`\n- `format_offset(total_seconds, separator=\":\")`: `total_seconds` must be an integer from 0 through 86399, excluding booleans. `separator` must be a non-empty string. Return zero-padded `HH<separator>MM<separator>SS`.\n- `parse_offset(text, separator=\":\")`: require exactly three decimal components separated by `separator`; hours must be 0..23 and minutes/seconds 0..59. Return seconds since midnight. Whitespace around the entire text is ignored, but whitespace inside components is malformed.\n- `normalize_envelope(response, tag)`: both arguments must be mappings/non-empty strings as appropriate. `response` has optional `errors` and `payload`. `errors` must be a list; `payload` must be a mapping. The selected `payload[tag]` must be a list of mappings. Strip surrounding whitespace from string values under `device_id` and `module_id`, leaving all other values unchanged. Return `{\"records\": ..., \"errors\": ...}`. Preserve record order and extra keys.\n- Raise `MissingRecords` if errors is non-empty, the tag is absent, or its record list is empty. Other malformed input raises `ValueError`.\n- Returned records and errors must be deep copies with no mutable aliasing to the input or between separate calls. Never mutate the response.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "34b31a7c6705ae7726671286c4c21cb3c3dbed7656f7ac601462c517f2e9deb5",
+      "text": "Create `solution.py` with utilities for normalized event envelopes.\n\nPublic API:\n- `class MissingRecords(Exception)`\n- `format_offset(total_seconds, separator=\":\")`: `total_seconds` must be an integer from 0 through 86399, excluding booleans. `separator` must be a non-empty string. Return zero-padded `HH<separator>MM<separator>SS`.\n- `parse_offset(text, separator=\":\")`: require exactly three decimal components separated by `separator`; hours must be 0..23 and minutes/seconds 0..59. Return seconds since midnight. Whitespace around the entire text is ignored, but whitespace inside components is malformed.\n- `normalize_envelope(response, tag)`: both arguments must be mappings/non-empty strings as appropriate. `response` has optional `errors` and `payload`. `errors` must be a list; `payload` must be a mapping. The selected `payload[tag]` must be a list of mappings. Strip surrounding whitespace from string values under `device_id` and `module_id`, leaving all other values unchanged. Return `{\"records\": ..., \"errors\": ...}`. Preserve record order and extra keys.\n- Raise `MissingRecords` if errors is non-empty, the tag is absent, or its record list is empty. Other malformed input raises `ValueError`.\n- Returned records and errors must be deep copies with no mutable aliasing to the input or between separate calls. Never mutate the response.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0698",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Mapping\n\n\nclass MissingRecords(Exception):\n    pass\n\n\ndef format_offset(total_seconds, separator=\":\"):\n    if type(total_seconds) is not int or not 0 <= total_seconds <= 86399:\n        raise ValueError(\"total_seconds must be in 0..86399\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    hours, remainder = divmod(total_seconds, 3600)\n    minutes, seconds = divmod(remainder, 60)\n    return f\"{hours:02d}{separator}{minutes:02d}{separator}{seconds:02d}\"\n\n\ndef parse_offset(text, separator=\":\"):\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    parts = text.strip().split(separator)\n    if len(parts) != 3 or any(\n        len(part) != 2 or not part.isdecimal() for part in parts\n    ):\n        raise ValueError(\"malformed offset\")\n    hours, minutes, seconds = map(int, parts)\n    if hours > 23 or minutes > 59 or seconds > 59:\n        raise ValueError(\"offset component out of range\")\n    return hours * 3600 + minutes * 60 + seconds\n\n\ndef normalize_envelope(response, tag):\n    if not isinstance(response, Mapping):\n        raise ValueError(\"response must be a mapping\")\n    if not isinstance(tag, str) or not tag:\n        raise ValueError(\"tag must be non-empty\")\n    errors = response.get(\"errors\", [])\n    payload = response.get(\"payload\", {})\n    if not isinstance(errors, list) or not isinstance(payload, Mapping):\n        raise ValueError(\"malformed envelope\")\n    if errors:\n        raise MissingRecords(\"response contains errors\")\n    if tag not in payload:\n        raise MissingRecords(\"tag is absent\")\n    records = payload[tag]\n    if not isinstance(records, list):\n        raise ValueError(\"tag value must be a list\")\n    if not records:\n        raise MissingRecords(\"record list is empty\")\n    result = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise ValueError(\"each record must be a mapping\")\n        item = deepcopy(dict(record))\n        for key in (\"device_id\", \"module_id\"):\n            if key in item and isinstance(item[key], str):\n                item[key] = item[key].strip()\n        result.append(item)\n    return {\"records\": result, \"errors\": errors}\n",
+          "label": "The returned `errors` list aliases the input envelope instead of being deep-copied.",
+          "sha256": "d534c0cc014ec9ccbeb8163e0a5d365f877dde121200fb592b01fd895c36799f"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Mapping\n\n\nclass MissingRecords(Exception):\n    pass\n\n\ndef format_offset(total_seconds, separator=\":\"):\n    if type(total_seconds) is not int or not 0 <= total_seconds <= 86399:\n        raise ValueError(\"total_seconds must be in 0..86399\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    hours, remainder = divmod(total_seconds, 3600)\n    minutes, seconds = divmod(remainder, 60)\n    return f\"{hours:02d}{separator}{minutes:02d}{separator}{seconds:02d}\"\n\n\ndef parse_offset(text, separator=\":\"):\n    if not isinstance(text, str):\n        raise ValueError(\"text must be a string\")\n    if not isinstance(separator, str) or not separator:\n        raise ValueError(\"separator must be non-empty\")\n    parts = text.strip().split(separator)\n    if len(parts) != 3 or any(\n        len(part) != 2 or not part.isdecimal() for part in parts\n    ):\n        raise ValueError(\"malformed offset\")\n    hours, minutes, seconds = map(int, parts)\n    if hours > 23 or minutes > 59 or seconds > 59:\n        raise ValueError(\"offset component out of range\")\n    return hours * 3600 + minutes * 60 + seconds\n\n\ndef normalize_envelope(response, tag):\n    if not isinstance(response, Mapping):\n        raise ValueError(\"response must be a mapping\")\n    if not isinstance(tag, str) or not tag:\n        raise ValueError(\"tag must be non-empty\")\n    errors = response.get(\"errors\", [])\n    payload = response.get(\"payload\", {})\n    if not isinstance(errors, list) or not isinstance(payload, Mapping):\n        raise ValueError(\"malformed envelope\")\n    if errors:\n        raise MissingRecords(\"response contains errors\")\n    if tag not in payload:\n        raise MissingRecords(\"tag is absent\")\n    records = payload[tag]\n    if not isinstance(records, list):\n        raise ValueError(\"tag value must be a list\")\n    if not records:\n        raise MissingRecords(\"record list is empty\")\n    result = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise ValueError(\"each record must be a mapping\")\n        item = deepcopy(dict(record))\n        for key in (\"device_id\", \"module_id\"):\n            if key in item and isinstance(item[key], str):\n                item[key] = item[key].strip()\n        result.append(item)\n    return {\"records\": result, \"errors\": deepcopy(errors)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ba24ff0d745a5e155213eabbf9c761252c733c64e310c2ff5af6f4eb64e96f44"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_three_decimal_components_without_unspecified_width (__main__.DecimalWidthTests.test_three_decimal_components_without_unspecified_width)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_three_decimal_components_without_unspecified_width\n    self.assertEqual(parse_offset(\"1:2:3\"), 3723)\n                     ^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 28, in parse_offset\n    raise ValueError(\"malformed offset\")\nValueError: malformed offset\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "e2d44d4c7b4af708ff88e9c1be3200f1d9afd5a63d2b91f4bbd0d0c7986d14db",
+    "duration_ms": 419,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

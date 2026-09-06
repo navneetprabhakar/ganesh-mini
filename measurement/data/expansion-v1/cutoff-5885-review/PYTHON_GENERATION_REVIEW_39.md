@@ -24,8 +24,8 @@ inspections. No seven-criterion approval. Continue position 586.
 | 585 | 0687 | Hold: mutating extractor changes caller-owned frame. Ordinary skip/quit boundaries, repeated labels and per-result copies agree. Unknown unvisited actions and malformed action types pending. |
 
 Candidate SHA-256: `680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec`.
-Original candidates/tests/sample/partition unchanged. This batch awaits backup;
-last verified backup is through 682 holds / Python position 570.
+Original candidates/tests/sample/partition unchanged. This batch is backed up;
+see QUALITY_STRATUM_693_BACKUP.md for verified backup through Python position 600.
 
 Five pinned Python 3.11.15 probes, network disabled/resource limited; all
 exit 1 without timeout. Holds are review items, not final rejections.

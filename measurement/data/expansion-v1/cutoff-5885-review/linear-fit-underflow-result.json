@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0699",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f67547677cbefdf94b440ed1092e9962692b3a31cd8f8c0f233b10c9a14ec7c7",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import LinearFit\n\n\nclass SmallDistinctInputTests(unittest.TestCase):\n    def test_distinct_finite_x_values_fit_unit_slope(self):\n        fitted = LinearFit.fit([0.0, 1e-200], [0.0, 1e-200])\n        self.assertAlmostEqual(fitted.slope, 1.0)\n        self.assertEqual(fitted.intercept, 0.0)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "e064c58a44314adc010fb695e48045850d79cf34c83e19edfbdbce7e4d1b071d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0d92e647d061d1f0a015370810575b4959deafc87c382bc73cb952fbf198f109",
+      "text": "Create `solution.py` implementing deterministic, standard-library-only univariate least-squares fitting.\n\nPublic API:\n- `class LinearFit`\n- `LinearFit.fit(xs, ys)` is a class method returning a fitted instance. Both inputs must be finite, non-string iterables of equal length containing at least two finite real numbers. Booleans are invalid. Reject data whose x values are all equal with `ValueError`. Consume each iterable only once.\n- Read-only properties `slope` and `intercept`.\n- `predict(x)` returns the fitted value for one finite real input.\n- `predict_many(xs)` returns a new list in input iteration order. An empty iterable returns `[]`.\n- `coefficients()` returns the two-tuple `(slope, intercept)`.\n- `residuals(xs, ys)` validates inputs like `fit`, except one pair is allowed, and returns `observed - predicted` in order.\n\nConvert accepted numeric values to `float`. Do not mutate inputs. Malformed, unequal, non-finite, or string-like inputs raise `ValueError`. The implementation may not import third-party packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0d92e647d061d1f0a015370810575b4959deafc87c382bc73cb952fbf198f109",
+      "text": "Create `solution.py` implementing deterministic, standard-library-only univariate least-squares fitting.\n\nPublic API:\n- `class LinearFit`\n- `LinearFit.fit(xs, ys)` is a class method returning a fitted instance. Both inputs must be finite, non-string iterables of equal length containing at least two finite real numbers. Booleans are invalid. Reject data whose x values are all equal with `ValueError`. Consume each iterable only once.\n- Read-only properties `slope` and `intercept`.\n- `predict(x)` returns the fitted value for one finite real input.\n- `predict_many(xs)` returns a new list in input iteration order. An empty iterable returns `[]`.\n- `coefficients()` returns the two-tuple `(slope, intercept)`.\n- `residuals(xs, ys)` validates inputs like `fit`, except one pair is allowed, and returns `observed - predicted` in order.\n\nConvert accepted numeric values to `float`. Do not mutate inputs. Malformed, unequal, non-finite, or string-like inputs raise `ValueError`. The implementation may not import third-party packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0699",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef _values(source, name):\n    if isinstance(source, (str, bytes)):\n        raise ValueError(f\"{name} must be a numeric iterable\")\n    try:\n        raw = list(source)\n    except TypeError as exc:\n        raise ValueError(f\"{name} must be iterable\") from exc\n    values = []\n    for value in raw:\n        if isinstance(value, bool) or not isinstance(value, Real):\n            raise ValueError(f\"{name} contains a non-number\")\n        number = float(value)\n        if not math.isfinite(number):\n            raise ValueError(f\"{name} contains a non-finite number\")\n        values.append(number)\n    return values\n\n\nclass LinearFit:\n    def __init__(self, slope, intercept):\n        self._slope = float(slope)\n        self._intercept = float(intercept)\n\n    @property\n    def slope(self):\n        return self._slope\n\n    @property\n    def intercept(self):\n        return self._intercept\n\n    @classmethod\n    def fit(cls, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or len(x_values) < 2:\n            raise ValueError(\"fit requires equal lengths of at least two\")\n        mean_x = sum(x_values) / len(x_values)\n        mean_y = sum(y_values) / len(y_values)\n        denominator = sum((x - mean_x) ** 2 for x in x_values)\n        if denominator == 0:\n            raise ValueError(\"x values must not all be equal\")\n        numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, y_values))\n        slope = numerator / denominator\n        return cls(slope, mean_y + slope * mean_x)\n\n    def predict(self, x):\n        values = _values([x], \"x\")\n        return self._slope * values[0] + self._intercept\n\n    def predict_many(self, xs):\n        return [self._slope * x + self._intercept for x in _values(xs, \"xs\")]\n\n    def coefficients(self):\n        return (self._slope, self._intercept)\n\n    def residuals(self, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or not x_values:\n            raise ValueError(\"residuals require equal non-empty inputs\")\n        return [y - (self._slope * x + self._intercept) for x, y in zip(x_values, y_values)]\n",
+          "label": "The fitted intercept adds `slope * mean_x` instead of subtracting it.",
+          "sha256": "945eb3de0768c211d90390bba3cb62f1ea736cf2f40c164dcbbfaf34b4f6e9af"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef _values(source, name):\n    if isinstance(source, (str, bytes)):\n        raise ValueError(f\"{name} must be a numeric iterable\")\n    try:\n        raw = list(source)\n    except TypeError as exc:\n        raise ValueError(f\"{name} must be iterable\") from exc\n    values = []\n    for value in raw:\n        if isinstance(value, bool) or not isinstance(value, Real):\n            raise ValueError(f\"{name} contains a non-number\")\n        number = float(value)\n        if not math.isfinite(number):\n            raise ValueError(f\"{name} contains a non-finite number\")\n        values.append(number)\n    return values\n\n\nclass LinearFit:\n    def __init__(self, slope, intercept):\n        self._slope = float(slope)\n        self._intercept = float(intercept)\n\n    @property\n    def slope(self):\n        return self._slope\n\n    @property\n    def intercept(self):\n        return self._intercept\n\n    @classmethod\n    def fit(cls, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or len(x_values) < 2:\n            raise ValueError(\"fit requires equal lengths of at least two\")\n        mean_x = sum(x_values) / len(x_values)\n        mean_y = sum(y_values) / len(y_values)\n        denominator = sum((x - mean_x) ** 2 for x in x_values)\n        if denominator == 0:\n            raise ValueError(\"x values must not all be equal\")\n        numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, y_values))\n        slope = numerator / denominator\n        return cls(slope, mean_y - slope * mean_x)\n\n    def predict(self, x):\n        values = _values([x], \"x\")\n        return self._slope * values[0] + self._intercept\n\n    def predict_many(self, xs):\n        return [self._slope * x + self._intercept for x in _values(xs, \"xs\")]\n\n    def coefficients(self):\n        return (self._slope, self._intercept)\n\n    def residuals(self, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or not x_values:\n            raise ValueError(\"residuals require equal non-empty inputs\")\n        return [y - (self._slope * x + self._intercept) for x, y in zip(x_values, y_values)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1a5b78cd96e0d0a9f8292e910bde2e0c686949a6268fb5c53dde8fae7985730f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import LinearFit\n\n\nclass OnceIterable:\n    def __init__(self, values):\n        self.values = values\n        self.iterations = 0\n\n    def __iter__(self):\n        self.iterations += 1\n        if self.iterations > 1:\n            raise AssertionError(\"iterable consumed more than once\")\n        return iter(self.values)\n\n\nclass LinearFitTests(unittest.TestCase):\n    def test_fit_coefficients_predictions_and_residuals(self):\n        fit = LinearFit.fit([1, 2, 3], [3, 5, 7])\n        self.assertAlmostEqual(fit.slope, 2.0)\n        self.assertAlmostEqual(fit.intercept, 1.0)\n        self.assertEqual(fit.coefficients(), (fit.slope, fit.intercept))\n        self.assertAlmostEqual(fit.predict(4), 9.0)\n        self.assertEqual(fit.predict_many((x for x in [0, 2.5])), [1.0, 6.0])\n        self.assertEqual(fit.predict_many([]), [])\n        self.assertEqual(fit.residuals([1, 2, 3], [4, 4, 8]), [1.0, -1.0, 1.0])\n        self.assertEqual(fit.residuals([10], [25]), [4.0])\n\n    def test_iterables_are_consumed_once(self):\n        xs = OnceIterable([0, 1, 2])\n        ys = OnceIterable([1, 3, 5])\n        fit = LinearFit.fit(xs, ys)\n        self.assertEqual((xs.iterations, ys.iterations), (1, 1))\n        values = OnceIterable([1, 2])\n        self.assertEqual(fit.predict_many(values), [3.0, 5.0])\n        self.assertEqual(values.iterations, 1)\n        rx = OnceIterable([0])\n        ry = OnceIterable([1])\n        self.assertEqual(fit.residuals(rx, ry), [0.0])\n        self.assertEqual((rx.iterations, ry.iterations), (1, 1))\n\n    def test_properties_are_read_only(self):\n        fit = LinearFit.fit([0, 1], [1, 2])\n        with self.assertRaises((AttributeError, TypeError)):\n            fit.slope = 9\n        with self.assertRaises((AttributeError, TypeError)):\n            fit.intercept = 9\n\n    def test_fit_rejects_malformed_data(self):\n        cases = [\n            ([], []), ([1], [2]), ([1, 2], [1]), ([1], [1, 2]),\n            ([1, 1], [2, 3]), ([True, 2], [1, 2]),\n            ([1, math.inf], [1, 2]), ([1, 2], [1, math.nan]),\n            (\"12\", [1, 2]), ([1, 2], b\"12\"), (3, [1, 2]),\n        ]\n        for xs, ys in cases:\n            with self.subTest(xs=xs, ys=ys):\n                with self.assertRaises(ValueError):\n                    LinearFit.fit(xs, ys)\n\n    def test_prediction_and_residual_validation(self):\n        fit = LinearFit.fit([0, 1], [0, 1])\n        for value in (True, \"1\", math.inf, math.nan, None):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    fit.predict(value)\n        for values in (\"12\", [1, True], [math.inf], None):\n            with self.subTest(values=values):\n                with self.assertRaises(ValueError):\n                    fit.predict_many(values)\n        for xs, ys in (([], []), ([1], []), (\"1\", [1]), ([1], [True]),\n                       ([math.nan], [1])):\n            with self.subTest(xs=xs, ys=ys):\n                with self.assertRaises(ValueError):\n                    fit.residuals(xs, ys)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "559b11c05852c13a232769328eb75dd41b2eec983a8154f9ef9c8c7ba62361e8"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0d92e647d061d1f0a015370810575b4959deafc87c382bc73cb952fbf198f109",
+      "text": "Create `solution.py` implementing deterministic, standard-library-only univariate least-squares fitting.\n\nPublic API:\n- `class LinearFit`\n- `LinearFit.fit(xs, ys)` is a class method returning a fitted instance. Both inputs must be finite, non-string iterables of equal length containing at least two finite real numbers. Booleans are invalid. Reject data whose x values are all equal with `ValueError`. Consume each iterable only once.\n- Read-only properties `slope` and `intercept`.\n- `predict(x)` returns the fitted value for one finite real input.\n- `predict_many(xs)` returns a new list in input iteration order. An empty iterable returns `[]`.\n- `coefficients()` returns the two-tuple `(slope, intercept)`.\n- `residuals(xs, ys)` validates inputs like `fit`, except one pair is allowed, and returns `observed - predicted` in order.\n\nConvert accepted numeric values to `float`. Do not mutate inputs. Malformed, unequal, non-finite, or string-like inputs raise `ValueError`. The implementation may not import third-party packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0d92e647d061d1f0a015370810575b4959deafc87c382bc73cb952fbf198f109",
+      "text": "Create `solution.py` implementing deterministic, standard-library-only univariate least-squares fitting.\n\nPublic API:\n- `class LinearFit`\n- `LinearFit.fit(xs, ys)` is a class method returning a fitted instance. Both inputs must be finite, non-string iterables of equal length containing at least two finite real numbers. Booleans are invalid. Reject data whose x values are all equal with `ValueError`. Consume each iterable only once.\n- Read-only properties `slope` and `intercept`.\n- `predict(x)` returns the fitted value for one finite real input.\n- `predict_many(xs)` returns a new list in input iteration order. An empty iterable returns `[]`.\n- `coefficients()` returns the two-tuple `(slope, intercept)`.\n- `residuals(xs, ys)` validates inputs like `fit`, except one pair is allowed, and returns `observed - predicted` in order.\n\nConvert accepted numeric values to `float`. Do not mutate inputs. Malformed, unequal, non-finite, or string-like inputs raise `ValueError`. The implementation may not import third-party packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0699",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef _values(source, name):\n    if isinstance(source, (str, bytes)):\n        raise ValueError(f\"{name} must be a numeric iterable\")\n    try:\n        raw = list(source)\n    except TypeError as exc:\n        raise ValueError(f\"{name} must be iterable\") from exc\n    values = []\n    for value in raw:\n        if isinstance(value, bool) or not isinstance(value, Real):\n            raise ValueError(f\"{name} contains a non-number\")\n        number = float(value)\n        if not math.isfinite(number):\n            raise ValueError(f\"{name} contains a non-finite number\")\n        values.append(number)\n    return values\n\n\nclass LinearFit:\n    def __init__(self, slope, intercept):\n        self._slope = float(slope)\n        self._intercept = float(intercept)\n\n    @property\n    def slope(self):\n        return self._slope\n\n    @property\n    def intercept(self):\n        return self._intercept\n\n    @classmethod\n    def fit(cls, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or len(x_values) < 2:\n            raise ValueError(\"fit requires equal lengths of at least two\")\n        mean_x = sum(x_values) / len(x_values)\n        mean_y = sum(y_values) / len(y_values)\n        denominator = sum((x - mean_x) ** 2 for x in x_values)\n        if denominator == 0:\n            raise ValueError(\"x values must not all be equal\")\n        numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, y_values))\n        slope = numerator / denominator\n        return cls(slope, mean_y + slope * mean_x)\n\n    def predict(self, x):\n        values = _values([x], \"x\")\n        return self._slope * values[0] + self._intercept\n\n    def predict_many(self, xs):\n        return [self._slope * x + self._intercept for x in _values(xs, \"xs\")]\n\n    def coefficients(self):\n        return (self._slope, self._intercept)\n\n    def residuals(self, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or not x_values:\n            raise ValueError(\"residuals require equal non-empty inputs\")\n        return [y - (self._slope * x + self._intercept) for x, y in zip(x_values, y_values)]\n",
+          "label": "The fitted intercept adds `slope * mean_x` instead of subtracting it.",
+          "sha256": "945eb3de0768c211d90390bba3cb62f1ea736cf2f40c164dcbbfaf34b4f6e9af"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef _values(source, name):\n    if isinstance(source, (str, bytes)):\n        raise ValueError(f\"{name} must be a numeric iterable\")\n    try:\n        raw = list(source)\n    except TypeError as exc:\n        raise ValueError(f\"{name} must be iterable\") from exc\n    values = []\n    for value in raw:\n        if isinstance(value, bool) or not isinstance(value, Real):\n            raise ValueError(f\"{name} contains a non-number\")\n        number = float(value)\n        if not math.isfinite(number):\n            raise ValueError(f\"{name} contains a non-finite number\")\n        values.append(number)\n    return values\n\n\nclass LinearFit:\n    def __init__(self, slope, intercept):\n        self._slope = float(slope)\n        self._intercept = float(intercept)\n\n    @property\n    def slope(self):\n        return self._slope\n\n    @property\n    def intercept(self):\n        return self._intercept\n\n    @classmethod\n    def fit(cls, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or len(x_values) < 2:\n            raise ValueError(\"fit requires equal lengths of at least two\")\n        mean_x = sum(x_values) / len(x_values)\n        mean_y = sum(y_values) / len(y_values)\n        denominator = sum((x - mean_x) ** 2 for x in x_values)\n        if denominator == 0:\n            raise ValueError(\"x values must not all be equal\")\n        numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, y_values))\n        slope = numerator / denominator\n        return cls(slope, mean_y - slope * mean_x)\n\n    def predict(self, x):\n        values = _values([x], \"x\")\n        return self._slope * values[0] + self._intercept\n\n    def predict_many(self, xs):\n        return [self._slope * x + self._intercept for x in _values(xs, \"xs\")]\n\n    def coefficients(self):\n        return (self._slope, self._intercept)\n\n    def residuals(self, xs, ys):\n        x_values = _values(xs, \"xs\")\n        y_values = _values(ys, \"ys\")\n        if len(x_values) != len(y_values) or not x_values:\n            raise ValueError(\"residuals require equal non-empty inputs\")\n        return [y - (self._slope * x + self._intercept) for x, y in zip(x_values, y_values)]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1a5b78cd96e0d0a9f8292e910bde2e0c686949a6268fb5c53dde8fae7985730f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_distinct_finite_x_values_fit_unit_slope (__main__.SmallDistinctInputTests.test_distinct_finite_x_values_fit_unit_slope)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_distinct_finite_x_values_fit_unit_slope\n    fitted = LinearFit.fit([0.0, 1e-200], [0.0, 1e-200])\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 46, in fit\n    raise ValueError(\"x values must not all be equal\")\nValueError: x values must not all be equal\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "b88fe1d44fca9cf01b2a4a3fe953355718d94034374ac9eeca56e2be9803d7bf",
+    "duration_ms": 417,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0204",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b0911cfea3b4bfeaa79feffc2e1ef1fee103e28aba5320515d0cbdaebcd6b5ce",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestNewPowersOfThreeSequenceAndExhaustion(t *testing.T) {\n\tg := NewPowersOfThree()\n\tvar values []uint64\n\tfor {\n\t\tv, ok := g()\n\t\tif !ok {\n\t\t\tif v != 0 {\n\t\t\t\tt.Fatalf(\"exhausted generator returned %d, false\", v)\n\t\t\t}\n\t\t\tbreak\n\t\t}\n\t\tvalues = append(values, v)\n\t}\n\tif len(values) != 41 {\n\t\tt.Fatalf(\"generated %d values, want 41\", len(values))\n\t}\n\tif values[0] != 1 || values[len(values)-1] != 12157665459056928801 {\n\t\tt.Fatalf(\"unexpected endpoints: %d, %d\", values[0], values[len(values)-1])\n\t}\n\tfor i := 1; i < len(values); i++ {\n\t\tif values[i] != values[i-1]*3 {\n\t\t\tt.Fatalf(\"value %d = %d, want %d\", i, values[i], values[i-1]*3)\n\t\t}\n\t}\n\tfor i := 0; i < 3; i++ {\n\t\tif v, ok := g(); ok || v != 0 {\n\t\t\tt.Fatalf(\"post-exhaustion call %d = (%d, %v)\", i, v, ok)\n\t\t}\n\t}\n}\n\nfunc TestGeneratorsHaveIndependentState(t *testing.T) {\n\ta := NewPowersOfThree()\n\tb := NewPowersOfThree()\n\tav, aok := a()\n\tav2, aok2 := a()\n\tbv, bok := b()\n\tif av != 1 || !aok || av2 != 3 || !aok2 || bv != 1 || !bok {\n\t\tt.Fatalf(\"independence results: a=(%d,%v),(%d,%v), b=(%d,%v)\", av, aok, av2, aok2, bv, bok)\n\t}\n}\n\nfunc TestPowersOfThreeBoundariesAndFreshResults(t *testing.T) {\n\tfor _, n := range []int{-2, 0} {\n\t\tgot := PowersOfThree(n)\n\t\tif got == nil || len(got) != 0 {\n\t\t\tt.Errorf(\"PowersOfThree(%d) = %#v, want non-nil empty\", n, got)\n\t\t}\n\t}\n\tgot := PowersOfThree(5)\n\twant := []uint64{1, 3, 9, 27, 81}\n\tif len(got) != len(want) {\n\t\tt.Fatalf(\"PowersOfThree(5) = %#v\", got)\n\t}\n\tfor i := range want {\n\t\tif got[i] != want[i] {\n\t\t\tt.Fatalf(\"PowersOfThree(5) = %#v\", got)\n\t\t}\n\t}\n\tgot[0] = 999\n\tagain := PowersOfThree(2)\n\tif len(again) != 2 || again[0] != 1 || again[1] != 3 {\n\t\tt.Fatalf(\"later result shares state: %#v\", again)\n\t}\n\tall := PowersOfThree(100)\n\tif len(all) != 41 || all[40] != 12157665459056928801 {\n\t\tt.Fatalf(\"exhaustion result has len %d and last %d\", len(all), all[len(all)-1])\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "be927faab716391609a320461a1c6252b5c53bcc0f1d98060e12c9758cca2d33"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewBoundedGenerator0204(t *testing.T) {\n\tdefer func() { if p := recover(); p != nil { t.Errorf(\"bounded output panicked: %v\", p) } }()\n\tvalues := PowersOfThree(int(^uint(0)>>1))\n\tif len(values) != 41 || values[0] != 1 || values[40] != 12157665459056928801 {\n\t\tt.Fatalf(\"incorrect bounded power sequence: %v\", values)\n\t}\n}\n",
+        "sha256": "a965c00941562371a71b53fc5f4c83016948123142638d4529196514ce6db4df"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e9e812bc007a21c737711dc24f594f97ada4b259f4255cf1a9bdb1ac8d48eba2",
+      "text": "Implement a finite numeric generator in package `solution`.\n\nExport:\n\n- `func NewPowersOfThree() func() (uint64, bool)`\n- `func PowersOfThree(n int) []uint64`\n\nEach generator returned by `NewPowersOfThree` has independent state. Successive calls return `1, 3, 9, ...` with `true`. After returning the largest power of three representable by `uint64`, all later calls return `0, false`; arithmetic must not overflow.\n\n`PowersOfThree` uses a fresh generator and returns at most the first `n` values, stopping earlier only at exhaustion. If `n <= 0`, it returns a non-nil empty slice. Returned slices share no mutable state with later calls.\n\nReturn one complete standard-library-only Go source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e9e812bc007a21c737711dc24f594f97ada4b259f4255cf1a9bdb1ac8d48eba2",
+      "text": "Implement a finite numeric generator in package `solution`.\n\nExport:\n\n- `func NewPowersOfThree() func() (uint64, bool)`\n- `func PowersOfThree(n int) []uint64`\n\nEach generator returned by `NewPowersOfThree` has independent state. Successive calls return `1, 3, 9, ...` with `true`. After returning the largest power of three representable by `uint64`, all later calls return `0, false`; arithmetic must not overflow.\n\n`PowersOfThree` uses a fresh generator and returns at most the first `n` values, stopping earlier only at exhaustion. If `n <= 0`, it returns a non-nil empty slice. Returned slices share no mutable state with later calls.\n\nReturn one complete standard-library-only Go source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0204",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nfunc NewPowersOfThree() func() (uint64, bool) {\n\tnext := uint64(3)\n\tdone := false\n\treturn func() (uint64, bool) {\n\t\tif done {\n\t\t\treturn 0, false\n\t\t}\n\t\tvalue := next\n\t\tif next > ^uint64(0)/3 {\n\t\t\tdone = true\n\t\t} else {\n\t\t\tnext *= 3\n\t\t}\n\t\treturn value, true\n\t}\n}\n\nfunc PowersOfThree(n int) []uint64 {\n\tif n <= 0 {\n\t\treturn []uint64{}\n\t}\n\tout := make([]uint64, 0, n)\n\tnext := NewPowersOfThree()\n\tfor len(out) < n {\n\t\tvalue, ok := next()\n\t\tif !ok {\n\t\t\tbreak\n\t\t}\n\t\tout = append(out, value)\n\t}\n\treturn out\n}\n",
+          "label": "The generator starts at three and omits the required initial value one.",
+          "sha256": "aa99944d60f23a6eec386e759250b07df082eb35895fb1a64bfa716d3ec08edc"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nfunc NewPowersOfThree() func() (uint64, bool) {\n\tnext := uint64(1)\n\tdone := false\n\treturn func() (uint64, bool) {\n\t\tif done {\n\t\t\treturn 0, false\n\t\t}\n\t\tvalue := next\n\t\tif next > ^uint64(0)/3 {\n\t\t\tdone = true\n\t\t} else {\n\t\t\tnext *= 3\n\t\t}\n\t\treturn value, true\n\t}\n}\n\nfunc PowersOfThree(n int) []uint64 {\n\tif n <= 0 {\n\t\treturn []uint64{}\n\t}\n\tout := make([]uint64, 0, n)\n\tnext := NewPowersOfThree()\n\tfor len(out) < n {\n\t\tvalue, ok := next()\n\t\tif !ok {\n\t\t\tbreak\n\t\t}\n\t\tout = append(out, value)\n\t}\n\treturn out\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a8c44ed562a5dfece2390acde8a50f0aaae05a4a652dba9f0786e3f6f97f3530"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestNewPowersOfThreeSequenceAndExhaustion(t *testing.T) {\n\tg := NewPowersOfThree()\n\tvar values []uint64\n\tfor {\n\t\tv, ok := g()\n\t\tif !ok {\n\t\t\tif v != 0 {\n\t\t\t\tt.Fatalf(\"exhausted generator returned %d, false\", v)\n\t\t\t}\n\t\t\tbreak\n\t\t}\n\t\tvalues = append(values, v)\n\t}\n\tif len(values) != 41 {\n\t\tt.Fatalf(\"generated %d values, want 41\", len(values))\n\t}\n\tif values[0] != 1 || values[len(values)-1] != 12157665459056928801 {\n\t\tt.Fatalf(\"unexpected endpoints: %d, %d\", values[0], values[len(values)-1])\n\t}\n\tfor i := 1; i < len(values); i++ {\n\t\tif values[i] != values[i-1]*3 {\n\t\t\tt.Fatalf(\"value %d = %d, want %d\", i, values[i], values[i-1]*3)\n\t\t}\n\t}\n\tfor i := 0; i < 3; i++ {\n\t\tif v, ok := g(); ok || v != 0 {\n\t\t\tt.Fatalf(\"post-exhaustion call %d = (%d, %v)\", i, v, ok)\n\t\t}\n\t}\n}\n\nfunc TestGeneratorsHaveIndependentState(t *testing.T) {\n\ta := NewPowersOfThree()\n\tb := NewPowersOfThree()\n\tav, aok := a()\n\tav2, aok2 := a()\n\tbv, bok := b()\n\tif av != 1 || !aok || av2 != 3 || !aok2 || bv != 1 || !bok {\n\t\tt.Fatalf(\"independence results: a=(%d,%v),(%d,%v), b=(%d,%v)\", av, aok, av2, aok2, bv, bok)\n\t}\n}\n\nfunc TestPowersOfThreeBoundariesAndFreshResults(t *testing.T) {\n\tfor _, n := range []int{-2, 0} {\n\t\tgot := PowersOfThree(n)\n\t\tif got == nil || len(got) != 0 {\n\t\t\tt.Errorf(\"PowersOfThree(%d) = %#v, want non-nil empty\", n, got)\n\t\t}\n\t}\n\tgot := PowersOfThree(5)\n\twant := []uint64{1, 3, 9, 27, 81}\n\tif len(got) != len(want) {\n\t\tt.Fatalf(\"PowersOfThree(5) = %#v\", got)\n\t}\n\tfor i := range want {\n\t\tif got[i] != want[i] {\n\t\t\tt.Fatalf(\"PowersOfThree(5) = %#v\", got)\n\t\t}\n\t}\n\tgot[0] = 999\n\tagain := PowersOfThree(2)\n\tif len(again) != 2 || again[0] != 1 || again[1] != 3 {\n\t\tt.Fatalf(\"later result shares state: %#v\", again)\n\t}\n\tall := PowersOfThree(100)\n\tif len(all) != 41 || all[40] != 12157665459056928801 {\n\t\tt.Fatalf(\"exhaustion result has len %d and last %d\", len(all), all[len(all)-1])\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "be927faab716391609a320461a1c6252b5c53bcc0f1d98060e12c9758cca2d33"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e9e812bc007a21c737711dc24f594f97ada4b259f4255cf1a9bdb1ac8d48eba2",
+      "text": "Implement a finite numeric generator in package `solution`.\n\nExport:\n\n- `func NewPowersOfThree() func() (uint64, bool)`\n- `func PowersOfThree(n int) []uint64`\n\nEach generator returned by `NewPowersOfThree` has independent state. Successive calls return `1, 3, 9, ...` with `true`. After returning the largest power of three representable by `uint64`, all later calls return `0, false`; arithmetic must not overflow.\n\n`PowersOfThree` uses a fresh generator and returns at most the first `n` values, stopping earlier only at exhaustion. If `n <= 0`, it returns a non-nil empty slice. Returned slices share no mutable state with later calls.\n\nReturn one complete standard-library-only Go source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e9e812bc007a21c737711dc24f594f97ada4b259f4255cf1a9bdb1ac8d48eba2",
+      "text": "Implement a finite numeric generator in package `solution`.\n\nExport:\n\n- `func NewPowersOfThree() func() (uint64, bool)`\n- `func PowersOfThree(n int) []uint64`\n\nEach generator returned by `NewPowersOfThree` has independent state. Successive calls return `1, 3, 9, ...` with `true`. After returning the largest power of three representable by `uint64`, all later calls return `0, false`; arithmetic must not overflow.\n\n`PowersOfThree` uses a fresh generator and returns at most the first `n` values, stopping earlier only at exhaustion. If `n <= 0`, it returns a non-nil empty slice. Returned slices share no mutable state with later calls.\n\nReturn one complete standard-library-only Go source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0204",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nfunc NewPowersOfThree() func() (uint64, bool) {\n\tnext := uint64(3)\n\tdone := false\n\treturn func() (uint64, bool) {\n\t\tif done {\n\t\t\treturn 0, false\n\t\t}\n\t\tvalue := next\n\t\tif next > ^uint64(0)/3 {\n\t\t\tdone = true\n\t\t} else {\n\t\t\tnext *= 3\n\t\t}\n\t\treturn value, true\n\t}\n}\n\nfunc PowersOfThree(n int) []uint64 {\n\tif n <= 0 {\n\t\treturn []uint64{}\n\t}\n\tout := make([]uint64, 0, n)\n\tnext := NewPowersOfThree()\n\tfor len(out) < n {\n\t\tvalue, ok := next()\n\t\tif !ok {\n\t\t\tbreak\n\t\t}\n\t\tout = append(out, value)\n\t}\n\treturn out\n}\n",
+          "label": "The generator starts at three and omits the required initial value one.",
+          "sha256": "aa99944d60f23a6eec386e759250b07df082eb35895fb1a64bfa716d3ec08edc"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nfunc NewPowersOfThree() func() (uint64, bool) {\n\tnext := uint64(1)\n\tdone := false\n\treturn func() (uint64, bool) {\n\t\tif done {\n\t\t\treturn 0, false\n\t\t}\n\t\tvalue := next\n\t\tif next > ^uint64(0)/3 {\n\t\t\tdone = true\n\t\t} else {\n\t\t\tnext *= 3\n\t\t}\n\t\treturn value, true\n\t}\n}\n\nfunc PowersOfThree(n int) []uint64 {\n\tif n <= 0 {\n\t\treturn []uint64{}\n\t}\n\tout := make([]uint64, 0, n)\n\tnext := NewPowersOfThree()\n\tfor len(out) < n {\n\t\tvalue, ok := next()\n\t\tif !ok {\n\t\t\tbreak\n\t\t}\n\t\tout = append(out, value)\n\t}\n\treturn out\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a8c44ed562a5dfece2390acde8a50f0aaae05a4a652dba9f0786e3f6f97f3530"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewBoundedGenerator0204 (0.00s)\n    review_test.go:6: bounded output panicked: runtime error: makeslice: cap out of range\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "26a4689b396ff60948171ed2c2d9b85df777e591d4008c4ef710b38ba4d96fef",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 27548,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

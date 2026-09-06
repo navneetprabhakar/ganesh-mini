@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0162",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5ddf5ab93723be07cbfeebaa5ab450f6b344f84b581915a47d5c9480dee30e29",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"testing\"\n\t\"time\"\n)\n\nfunc TestDurationDistributionBucketsAndBoundaryValues(t *testing.T) {\n\tbounds := []time.Duration{10 * time.Nanosecond, 20 * time.Nanosecond}\n\td, err := NewDurationDistribution(bounds)\n\tif err != nil {\n\t\tt.Fatalf(\"NewDurationDistribution returned error: %v\", err)\n\t}\n\tbounds[0] = time.Second\n\n\tfor _, duration := range []time.Duration{0, 10 * time.Nanosecond, 11 * time.Nanosecond, 20 * time.Nanosecond, 21 * time.Nanosecond} {\n\t\tif err := d.Add(duration); err != nil {\n\t\t\tt.Fatalf(\"Add(%v) returned error: %v\", duration, err)\n\t\t}\n\t}\n\tgot, err := json.Marshal(d)\n\tif err != nil {\n\t\tt.Fatalf(\"Marshal returned error: %v\", err)\n\t}\n\twant := `{\"bounds_ns\":[10,20],\"counts\":[2,2,1]}`\n\tif string(got) != want {\n\t\tt.Fatalf(\"JSON = %s, want %s\", got, want)\n\t}\n}\n\nfunc TestDurationDistributionRejectsBadBounds(t *testing.T) {\n\tcases := [][]time.Duration{\n\t\t{0},\n\t\t{-1},\n\t\t{2, 2},\n\t\t{3, 2},\n\t\t{1, 0},\n\t}\n\tfor _, bounds := range cases {\n\t\tif got, err := NewDurationDistribution(bounds); err == nil || got != nil {\n\t\t\tt.Errorf(\"NewDurationDistribution(%v) returned (%#v, %v), want nil and error\", bounds, got, err)\n\t\t}\n\t}\n}\n\nfunc TestDurationDistributionEmptyAndZeroValue(t *testing.T) {\n\tfor _, bounds := range [][]time.Duration{nil, {}} {\n\t\td, err := NewDurationDistribution(bounds)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"NewDurationDistribution(%v): %v\", bounds, err)\n\t\t}\n\t\tgot, err := d.MarshalJSON()\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\tif string(got) != `{\"bounds_ns\":[],\"counts\":[0]}` {\n\t\t\tt.Fatalf(\"empty distribution JSON = %s\", got)\n\t\t}\n\t}\n\n\tvar zero DurationDistribution\n\tgot, err := zero.MarshalJSON()\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif string(got) != `{\"bounds_ns\":[],\"counts\":[0]}` {\n\t\tt.Fatalf(\"zero-value JSON = %s\", got)\n\t}\n}\n\nfunc TestDurationDistributionNegativeAddIsAtomic(t *testing.T) {\n\td, _ := NewDurationDistribution([]time.Duration{5})\n\tif err := d.Add(4); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tbefore, _ := d.MarshalJSON()\n\tif err := d.Add(-1); err == nil {\n\t\tt.Fatal(\"negative duration was accepted\")\n\t}\n\tafter, _ := d.MarshalJSON()\n\tif string(after) != string(before) {\n\t\tt.Fatalf(\"counts changed after rejected Add: before=%s after=%s\", before, after)\n\t}\n}\n\nfunc TestDurationDistributionReturnedJSONIsStable(t *testing.T) {\n\td, _ := NewDurationDistribution([]time.Duration{5})\n\tfirst, _ := d.MarshalJSON()\n\tfirstCopy := append([]byte(nil), first...)\n\tif err := d.Add(5); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif string(first) != string(firstCopy) || string(first) != `{\"bounds_ns\":[5],\"counts\":[0,0]}` {\n\t\tt.Fatalf(\"previous JSON changed after Add: %s\", first)\n\t}\n}\n\nfunc TestAssemblyStatsString(t *testing.T) {\n\ttests := []struct {\n\t\tstats AssemblyStats\n\t\twant  string\n\t}{\n\t\t{AssemblyStats{}, \"assembly: none\"},\n\t\t{AssemblyStats{Transactions: 3}, \"assembly: transactions=3\"},\n\t\t{AssemblyStats{ProcessingTime: 1500 * time.Millisecond}, \"assembly: processing=1.5s\"},\n\t\t{AssemblyStats{Transactions: 2, ProcessingTime: time.Second, Retries: 4, Rejected: 1}, \"assembly: transactions=2, processing=1s, retries=4, rejected=1\"},\n\t\t{AssemblyStats{Transactions: -2, ProcessingTime: -time.Millisecond, Retries: -3, Rejected: -4}, \"assembly: transactions=-2, processing=-1ms, retries=-3, rejected=-4\"},\n\t}\n\tfor _, tc := range tests {\n\t\tif got := tc.stats.String(); got != tc.want {\n\t\t\tt.Errorf(\"(%#v).String() = %q, want %q\", tc.stats, got, tc.want)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "fab512efbf3501f5963f6e6d2c8c8bb465609d600da04fab7a25528b50429501"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"testing\"\n)\n\nfunc TestReviewNilDistribution0162(t *testing.T) {\n\tvar d *DurationDistribution\n\tgot, err := json.Marshal(d)\n\tif err != nil { t.Fatal(err) }\n\tif string(got) != `{\"bounds_ns\":[],\"counts\":[0]}` {\n\t\tt.Fatalf(\"nil distribution JSON=%s\", got)\n\t}\n}\n",
+        "sha256": "5611f8e523ce02302bbe48dad6466896ff202f0b5ae226f53815d8cf74db937c"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "435803026371d2d47d1312aea9eaf1a7ad8233595e50feb37a1052a77156dbca",
+      "text": "Implement a duration distribution and a compact assembly summary.\n\nExport:\n\n- `type DurationDistribution struct` (fields may be private)\n- `func NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error)`\n- `func (d *DurationDistribution) Add(duration time.Duration) error`\n- `func (d DurationDistribution) MarshalJSON() ([]byte, error)`\n- `type AssemblyStats struct { Transactions int; ProcessingTime time.Duration; Retries int; Rejected int }`\n- `func (s AssemblyStats) String() string`\n\nBounds must be positive and strictly increasing. Copy them in the constructor. A nil or empty bounds slice is valid and creates one catch-all bucket. Reject negative durations without changing counts. A duration equal to a bound belongs to that bound's bucket; the final bucket contains values greater than the last bound.\n\nJSON must have the exact shape `{\"bounds_ns\":[...],\"counts\":[...]}`, with bounds as nanoseconds and one more count than bounds. Nil and zero-value distributions marshal as empty bounds with one zero count. Returned JSON must be independent of future mutations.\n\n`AssemblyStats.String` emits non-zero fields in this fixed order, separated by `, ` and prefixed with `assembly: `: `transactions=N`, `processing=D`, `retries=N`, `rejected=N`. Zero durations are omitted; negative values are still non-zero and included. If every field is zero, return `assembly: none`.\n\nUse only the standard library and package `solution`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "435803026371d2d47d1312aea9eaf1a7ad8233595e50feb37a1052a77156dbca",
+      "text": "Implement a duration distribution and a compact assembly summary.\n\nExport:\n\n- `type DurationDistribution struct` (fields may be private)\n- `func NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error)`\n- `func (d *DurationDistribution) Add(duration time.Duration) error`\n- `func (d DurationDistribution) MarshalJSON() ([]byte, error)`\n- `type AssemblyStats struct { Transactions int; ProcessingTime time.Duration; Retries int; Rejected int }`\n- `func (s AssemblyStats) String() string`\n\nBounds must be positive and strictly increasing. Copy them in the constructor. A nil or empty bounds slice is valid and creates one catch-all bucket. Reject negative durations without changing counts. A duration equal to a bound belongs to that bound's bucket; the final bucket contains values greater than the last bound.\n\nJSON must have the exact shape `{\"bounds_ns\":[...],\"counts\":[...]}`, with bounds as nanoseconds and one more count than bounds. Nil and zero-value distributions marshal as empty bounds with one zero count. Returned JSON must be independent of future mutations.\n\n`AssemblyStats.String` emits non-zero fields in this fixed order, separated by `, ` and prefixed with `assembly: `: `transactions=N`, `processing=D`, `retries=N`, `rejected=N`. Zero durations are omitted; negative values are still non-zero and included. If every field is zero, return `assembly: none`.\n\nUse only the standard library and package `solution`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0162",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"strings\"\n\t\"time\"\n)\n\ntype DurationDistribution struct {\n\tbounds []time.Duration\n\tcounts []uint64\n}\n\nfunc NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error) {\n\tcopied := append([]time.Duration(nil), bounds...)\n\tfor i, bound := range copied {\n\t\tif bound <= 0 {\n\t\t\treturn nil, fmt.Errorf(\"bound %d must be positive\", i)\n\t\t}\n\t\tif i > 0 && bound <= copied[i-1] {\n\t\t\treturn nil, fmt.Errorf(\"bounds must be strictly increasing\")\n\t\t}\n\t}\n\treturn &DurationDistribution{bounds: copied, counts: make([]uint64, len(copied)+1)}, nil\n}\n\nfunc (d *DurationDistribution) Add(duration time.Duration) error {\n\tif d == nil {\n\t\treturn fmt.Errorf(\"nil distribution\")\n\t}\n\tif duration < 0 {\n\t\treturn fmt.Errorf(\"duration must not be negative\")\n\t}\n\tif len(d.counts) != len(d.bounds)+1 {\n\t\td.counts = make([]uint64, len(d.bounds)+1)\n\t}\n\tindex := len(d.bounds)\n\tfor i, bound := range d.bounds {\n\t\tif duration < bound {\n\t\t\tindex = i\n\t\t\tbreak\n\t\t}\n\t}\n\td.counts[index]++\n\treturn nil\n}\n\nfunc (d DurationDistribution) MarshalJSON() ([]byte, error) {\n\tbounds := make([]int64, len(d.bounds))\n\tfor i, bound := range d.bounds {\n\t\tbounds[i] = int64(bound)\n\t}\n\tcounts := append([]uint64(nil), d.counts...)\n\tif len(counts) != len(bounds)+1 {\n\t\tcounts = make([]uint64, len(bounds)+1)\n\t}\n\treturn json.Marshal(struct {\n\t\tBounds []int64  `json:\"bounds_ns\"`\n\t\tCounts []uint64 `json:\"counts\"`\n\t}{Bounds: bounds, Counts: counts})\n}\n\ntype AssemblyStats struct {\n\tTransactions  int\n\tProcessingTime time.Duration\n\tRetries       int\n\tRejected      int\n}\n\nfunc (s AssemblyStats) String() string {\n\tparts := make([]string, 0, 4)\n\tif s.Transactions != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"transactions=%d\", s.Transactions))\n\t}\n\tif s.ProcessingTime != 0 {\n\t\tparts = append(parts, \"processing=\"+s.ProcessingTime.String())\n\t}\n\tif s.Retries != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"retries=%d\", s.Retries))\n\t}\n\tif s.Rejected != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"rejected=%d\", s.Rejected))\n\t}\n\tif len(parts) == 0 {\n\t\treturn \"assembly: none\"\n\t}\n\treturn \"assembly: \" + strings.Join(parts, \", \")\n}\n",
+          "label": "Places durations equal to a bound into the following bucket instead of that bound's bucket.",
+          "sha256": "616fedcfc3a2df8faf532a9319d364a3a8dc0f444f09215ea76567aad0e67b01"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"strings\"\n\t\"time\"\n)\n\ntype DurationDistribution struct {\n\tbounds []time.Duration\n\tcounts []uint64\n}\n\nfunc NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error) {\n\tcopied := append([]time.Duration(nil), bounds...)\n\tfor i, bound := range copied {\n\t\tif bound <= 0 {\n\t\t\treturn nil, fmt.Errorf(\"bound %d must be positive\", i)\n\t\t}\n\t\tif i > 0 && bound <= copied[i-1] {\n\t\t\treturn nil, fmt.Errorf(\"bounds must be strictly increasing\")\n\t\t}\n\t}\n\treturn &DurationDistribution{bounds: copied, counts: make([]uint64, len(copied)+1)}, nil\n}\n\nfunc (d *DurationDistribution) Add(duration time.Duration) error {\n\tif d == nil {\n\t\treturn fmt.Errorf(\"nil distribution\")\n\t}\n\tif duration < 0 {\n\t\treturn fmt.Errorf(\"duration must not be negative\")\n\t}\n\tif len(d.counts) != len(d.bounds)+1 {\n\t\td.counts = make([]uint64, len(d.bounds)+1)\n\t}\n\tindex := len(d.bounds)\n\tfor i, bound := range d.bounds {\n\t\tif duration <= bound {\n\t\t\tindex = i\n\t\t\tbreak\n\t\t}\n\t}\n\td.counts[index]++\n\treturn nil\n}\n\nfunc (d DurationDistribution) MarshalJSON() ([]byte, error) {\n\tbounds := make([]int64, len(d.bounds))\n\tfor i, bound := range d.bounds {\n\t\tbounds[i] = int64(bound)\n\t}\n\tcounts := append([]uint64(nil), d.counts...)\n\tif len(counts) != len(bounds)+1 {\n\t\tcounts = make([]uint64, len(bounds)+1)\n\t}\n\treturn json.Marshal(struct {\n\t\tBounds []int64  `json:\"bounds_ns\"`\n\t\tCounts []uint64 `json:\"counts\"`\n\t}{Bounds: bounds, Counts: counts})\n}\n\ntype AssemblyStats struct {\n\tTransactions  int\n\tProcessingTime time.Duration\n\tRetries       int\n\tRejected      int\n}\n\nfunc (s AssemblyStats) String() string {\n\tparts := make([]string, 0, 4)\n\tif s.Transactions != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"transactions=%d\", s.Transactions))\n\t}\n\tif s.ProcessingTime != 0 {\n\t\tparts = append(parts, \"processing=\"+s.ProcessingTime.String())\n\t}\n\tif s.Retries != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"retries=%d\", s.Retries))\n\t}\n\tif s.Rejected != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"rejected=%d\", s.Rejected))\n\t}\n\tif len(parts) == 0 {\n\t\treturn \"assembly: none\"\n\t}\n\treturn \"assembly: \" + strings.Join(parts, \", \")\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "822a3f6395cf02b2b26f53e8b81766cb1863fabb7e052762454754aa0d64f445"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"testing\"\n\t\"time\"\n)\n\nfunc TestDurationDistributionBucketsAndBoundaryValues(t *testing.T) {\n\tbounds := []time.Duration{10 * time.Nanosecond, 20 * time.Nanosecond}\n\td, err := NewDurationDistribution(bounds)\n\tif err != nil {\n\t\tt.Fatalf(\"NewDurationDistribution returned error: %v\", err)\n\t}\n\tbounds[0] = time.Second\n\n\tfor _, duration := range []time.Duration{0, 10 * time.Nanosecond, 11 * time.Nanosecond, 20 * time.Nanosecond, 21 * time.Nanosecond} {\n\t\tif err := d.Add(duration); err != nil {\n\t\t\tt.Fatalf(\"Add(%v) returned error: %v\", duration, err)\n\t\t}\n\t}\n\tgot, err := json.Marshal(d)\n\tif err != nil {\n\t\tt.Fatalf(\"Marshal returned error: %v\", err)\n\t}\n\twant := `{\"bounds_ns\":[10,20],\"counts\":[2,2,1]}`\n\tif string(got) != want {\n\t\tt.Fatalf(\"JSON = %s, want %s\", got, want)\n\t}\n}\n\nfunc TestDurationDistributionRejectsBadBounds(t *testing.T) {\n\tcases := [][]time.Duration{\n\t\t{0},\n\t\t{-1},\n\t\t{2, 2},\n\t\t{3, 2},\n\t\t{1, 0},\n\t}\n\tfor _, bounds := range cases {\n\t\tif got, err := NewDurationDistribution(bounds); err == nil || got != nil {\n\t\t\tt.Errorf(\"NewDurationDistribution(%v) returned (%#v, %v), want nil and error\", bounds, got, err)\n\t\t}\n\t}\n}\n\nfunc TestDurationDistributionEmptyAndZeroValue(t *testing.T) {\n\tfor _, bounds := range [][]time.Duration{nil, {}} {\n\t\td, err := NewDurationDistribution(bounds)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"NewDurationDistribution(%v): %v\", bounds, err)\n\t\t}\n\t\tgot, err := d.MarshalJSON()\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\tif string(got) != `{\"bounds_ns\":[],\"counts\":[0]}` {\n\t\t\tt.Fatalf(\"empty distribution JSON = %s\", got)\n\t\t}\n\t}\n\n\tvar zero DurationDistribution\n\tgot, err := zero.MarshalJSON()\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif string(got) != `{\"bounds_ns\":[],\"counts\":[0]}` {\n\t\tt.Fatalf(\"zero-value JSON = %s\", got)\n\t}\n}\n\nfunc TestDurationDistributionNegativeAddIsAtomic(t *testing.T) {\n\td, _ := NewDurationDistribution([]time.Duration{5})\n\tif err := d.Add(4); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tbefore, _ := d.MarshalJSON()\n\tif err := d.Add(-1); err == nil {\n\t\tt.Fatal(\"negative duration was accepted\")\n\t}\n\tafter, _ := d.MarshalJSON()\n\tif string(after) != string(before) {\n\t\tt.Fatalf(\"counts changed after rejected Add: before=%s after=%s\", before, after)\n\t}\n}\n\nfunc TestDurationDistributionReturnedJSONIsStable(t *testing.T) {\n\td, _ := NewDurationDistribution([]time.Duration{5})\n\tfirst, _ := d.MarshalJSON()\n\tfirstCopy := append([]byte(nil), first...)\n\tif err := d.Add(5); err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif string(first) != string(firstCopy) || string(first) != `{\"bounds_ns\":[5],\"counts\":[0,0]}` {\n\t\tt.Fatalf(\"previous JSON changed after Add: %s\", first)\n\t}\n}\n\nfunc TestAssemblyStatsString(t *testing.T) {\n\ttests := []struct {\n\t\tstats AssemblyStats\n\t\twant  string\n\t}{\n\t\t{AssemblyStats{}, \"assembly: none\"},\n\t\t{AssemblyStats{Transactions: 3}, \"assembly: transactions=3\"},\n\t\t{AssemblyStats{ProcessingTime: 1500 * time.Millisecond}, \"assembly: processing=1.5s\"},\n\t\t{AssemblyStats{Transactions: 2, ProcessingTime: time.Second, Retries: 4, Rejected: 1}, \"assembly: transactions=2, processing=1s, retries=4, rejected=1\"},\n\t\t{AssemblyStats{Transactions: -2, ProcessingTime: -time.Millisecond, Retries: -3, Rejected: -4}, \"assembly: transactions=-2, processing=-1ms, retries=-3, rejected=-4\"},\n\t}\n\tfor _, tc := range tests {\n\t\tif got := tc.stats.String(); got != tc.want {\n\t\t\tt.Errorf(\"(%#v).String() = %q, want %q\", tc.stats, got, tc.want)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "fab512efbf3501f5963f6e6d2c8c8bb465609d600da04fab7a25528b50429501"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "435803026371d2d47d1312aea9eaf1a7ad8233595e50feb37a1052a77156dbca",
+      "text": "Implement a duration distribution and a compact assembly summary.\n\nExport:\n\n- `type DurationDistribution struct` (fields may be private)\n- `func NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error)`\n- `func (d *DurationDistribution) Add(duration time.Duration) error`\n- `func (d DurationDistribution) MarshalJSON() ([]byte, error)`\n- `type AssemblyStats struct { Transactions int; ProcessingTime time.Duration; Retries int; Rejected int }`\n- `func (s AssemblyStats) String() string`\n\nBounds must be positive and strictly increasing. Copy them in the constructor. A nil or empty bounds slice is valid and creates one catch-all bucket. Reject negative durations without changing counts. A duration equal to a bound belongs to that bound's bucket; the final bucket contains values greater than the last bound.\n\nJSON must have the exact shape `{\"bounds_ns\":[...],\"counts\":[...]}`, with bounds as nanoseconds and one more count than bounds. Nil and zero-value distributions marshal as empty bounds with one zero count. Returned JSON must be independent of future mutations.\n\n`AssemblyStats.String` emits non-zero fields in this fixed order, separated by `, ` and prefixed with `assembly: `: `transactions=N`, `processing=D`, `retries=N`, `rejected=N`. Zero durations are omitted; negative values are still non-zero and included. If every field is zero, return `assembly: none`.\n\nUse only the standard library and package `solution`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "435803026371d2d47d1312aea9eaf1a7ad8233595e50feb37a1052a77156dbca",
+      "text": "Implement a duration distribution and a compact assembly summary.\n\nExport:\n\n- `type DurationDistribution struct` (fields may be private)\n- `func NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error)`\n- `func (d *DurationDistribution) Add(duration time.Duration) error`\n- `func (d DurationDistribution) MarshalJSON() ([]byte, error)`\n- `type AssemblyStats struct { Transactions int; ProcessingTime time.Duration; Retries int; Rejected int }`\n- `func (s AssemblyStats) String() string`\n\nBounds must be positive and strictly increasing. Copy them in the constructor. A nil or empty bounds slice is valid and creates one catch-all bucket. Reject negative durations without changing counts. A duration equal to a bound belongs to that bound's bucket; the final bucket contains values greater than the last bound.\n\nJSON must have the exact shape `{\"bounds_ns\":[...],\"counts\":[...]}`, with bounds as nanoseconds and one more count than bounds. Nil and zero-value distributions marshal as empty bounds with one zero count. Returned JSON must be independent of future mutations.\n\n`AssemblyStats.String` emits non-zero fields in this fixed order, separated by `, ` and prefixed with `assembly: `: `transactions=N`, `processing=D`, `retries=N`, `rejected=N`. Zero durations are omitted; negative values are still non-zero and included. If every field is zero, return `assembly: none`.\n\nUse only the standard library and package `solution`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0162",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"strings\"\n\t\"time\"\n)\n\ntype DurationDistribution struct {\n\tbounds []time.Duration\n\tcounts []uint64\n}\n\nfunc NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error) {\n\tcopied := append([]time.Duration(nil), bounds...)\n\tfor i, bound := range copied {\n\t\tif bound <= 0 {\n\t\t\treturn nil, fmt.Errorf(\"bound %d must be positive\", i)\n\t\t}\n\t\tif i > 0 && bound <= copied[i-1] {\n\t\t\treturn nil, fmt.Errorf(\"bounds must be strictly increasing\")\n\t\t}\n\t}\n\treturn &DurationDistribution{bounds: copied, counts: make([]uint64, len(copied)+1)}, nil\n}\n\nfunc (d *DurationDistribution) Add(duration time.Duration) error {\n\tif d == nil {\n\t\treturn fmt.Errorf(\"nil distribution\")\n\t}\n\tif duration < 0 {\n\t\treturn fmt.Errorf(\"duration must not be negative\")\n\t}\n\tif len(d.counts) != len(d.bounds)+1 {\n\t\td.counts = make([]uint64, len(d.bounds)+1)\n\t}\n\tindex := len(d.bounds)\n\tfor i, bound := range d.bounds {\n\t\tif duration < bound {\n\t\t\tindex = i\n\t\t\tbreak\n\t\t}\n\t}\n\td.counts[index]++\n\treturn nil\n}\n\nfunc (d DurationDistribution) MarshalJSON() ([]byte, error) {\n\tbounds := make([]int64, len(d.bounds))\n\tfor i, bound := range d.bounds {\n\t\tbounds[i] = int64(bound)\n\t}\n\tcounts := append([]uint64(nil), d.counts...)\n\tif len(counts) != len(bounds)+1 {\n\t\tcounts = make([]uint64, len(bounds)+1)\n\t}\n\treturn json.Marshal(struct {\n\t\tBounds []int64  `json:\"bounds_ns\"`\n\t\tCounts []uint64 `json:\"counts\"`\n\t}{Bounds: bounds, Counts: counts})\n}\n\ntype AssemblyStats struct {\n\tTransactions  int\n\tProcessingTime time.Duration\n\tRetries       int\n\tRejected      int\n}\n\nfunc (s AssemblyStats) String() string {\n\tparts := make([]string, 0, 4)\n\tif s.Transactions != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"transactions=%d\", s.Transactions))\n\t}\n\tif s.ProcessingTime != 0 {\n\t\tparts = append(parts, \"processing=\"+s.ProcessingTime.String())\n\t}\n\tif s.Retries != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"retries=%d\", s.Retries))\n\t}\n\tif s.Rejected != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"rejected=%d\", s.Rejected))\n\t}\n\tif len(parts) == 0 {\n\t\treturn \"assembly: none\"\n\t}\n\treturn \"assembly: \" + strings.Join(parts, \", \")\n}\n",
+          "label": "Places durations equal to a bound into the following bucket instead of that bound's bucket.",
+          "sha256": "616fedcfc3a2df8faf532a9319d364a3a8dc0f444f09215ea76567aad0e67b01"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"strings\"\n\t\"time\"\n)\n\ntype DurationDistribution struct {\n\tbounds []time.Duration\n\tcounts []uint64\n}\n\nfunc NewDurationDistribution(bounds []time.Duration) (*DurationDistribution, error) {\n\tcopied := append([]time.Duration(nil), bounds...)\n\tfor i, bound := range copied {\n\t\tif bound <= 0 {\n\t\t\treturn nil, fmt.Errorf(\"bound %d must be positive\", i)\n\t\t}\n\t\tif i > 0 && bound <= copied[i-1] {\n\t\t\treturn nil, fmt.Errorf(\"bounds must be strictly increasing\")\n\t\t}\n\t}\n\treturn &DurationDistribution{bounds: copied, counts: make([]uint64, len(copied)+1)}, nil\n}\n\nfunc (d *DurationDistribution) Add(duration time.Duration) error {\n\tif d == nil {\n\t\treturn fmt.Errorf(\"nil distribution\")\n\t}\n\tif duration < 0 {\n\t\treturn fmt.Errorf(\"duration must not be negative\")\n\t}\n\tif len(d.counts) != len(d.bounds)+1 {\n\t\td.counts = make([]uint64, len(d.bounds)+1)\n\t}\n\tindex := len(d.bounds)\n\tfor i, bound := range d.bounds {\n\t\tif duration <= bound {\n\t\t\tindex = i\n\t\t\tbreak\n\t\t}\n\t}\n\td.counts[index]++\n\treturn nil\n}\n\nfunc (d DurationDistribution) MarshalJSON() ([]byte, error) {\n\tbounds := make([]int64, len(d.bounds))\n\tfor i, bound := range d.bounds {\n\t\tbounds[i] = int64(bound)\n\t}\n\tcounts := append([]uint64(nil), d.counts...)\n\tif len(counts) != len(bounds)+1 {\n\t\tcounts = make([]uint64, len(bounds)+1)\n\t}\n\treturn json.Marshal(struct {\n\t\tBounds []int64  `json:\"bounds_ns\"`\n\t\tCounts []uint64 `json:\"counts\"`\n\t}{Bounds: bounds, Counts: counts})\n}\n\ntype AssemblyStats struct {\n\tTransactions  int\n\tProcessingTime time.Duration\n\tRetries       int\n\tRejected      int\n}\n\nfunc (s AssemblyStats) String() string {\n\tparts := make([]string, 0, 4)\n\tif s.Transactions != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"transactions=%d\", s.Transactions))\n\t}\n\tif s.ProcessingTime != 0 {\n\t\tparts = append(parts, \"processing=\"+s.ProcessingTime.String())\n\t}\n\tif s.Retries != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"retries=%d\", s.Retries))\n\t}\n\tif s.Rejected != 0 {\n\t\tparts = append(parts, fmt.Sprintf(\"rejected=%d\", s.Rejected))\n\t}\n\tif len(parts) == 0 {\n\t\treturn \"assembly: none\"\n\t}\n\treturn \"assembly: \" + strings.Join(parts, \", \")\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "822a3f6395cf02b2b26f53e8b81766cb1863fabb7e052762454754aa0d64f445"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewNilDistribution0162 (0.00s)\n    review_test.go:13: nil distribution JSON=null\nFAIL\nFAIL\tganesh.invalid/expansion\t0.023s\nFAIL\n",
+    "stdout_sha256": "9db87757186b8c91b4ad8606a1878d01990748de5f80a73dbb3b383793130bc7",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 28915,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

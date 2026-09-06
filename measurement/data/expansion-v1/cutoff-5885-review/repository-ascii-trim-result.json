@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0553",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "31a9d66e2b3e01423477aba5a5caba8d2bd3d34092a03b0b5886224b3dff009e",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::*;\nuse std::collections::BTreeSet;\n\n#[test]\nfn non_ascii_whitespace_is_part_of_repository_identity() {\n    assert_eq!(normalize_repository(\"\\u{2003}Org/Repo\"), Some(\"\\u{2003}org/repo\".into()));\n}\n\n#[test]\nfn unicode_whitespace_alias_does_not_gain_authorization() {\n    let policy = TrustPolicy {\n        organizations: BTreeSet::new(),\n        repositories: BTreeSet::from([\"org/repo\".into()]),\n    };\n    assert!(!is_authorized(&policy, \"\\u{2003}org/repo\"));\n}\n",
+        "sha256": "83535130a1592471fd33dd5649e1d9ceb71d692875f242bc468d2dec04fa41b2"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0b58ae63839af0126727137b81d0de54eed33318a7dcad5db3ae3b65185aeb94",
+      "text": "Implement a standard-library-only repository authorization policy in `solution.rs`.\n\nExpose this exact API:\n\n```rust\nuse std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String>;\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool;\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool;\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool;\n```\n\nA valid repository has exactly two nonempty slash-separated components. Trim ASCII whitespace around the complete input and each component, lowercase both components using ASCII lowercase conversion, and return `organization/repository`. Inputs with extra slashes are invalid.\n\nAuthorization succeeds when the normalized full repository is present in `repositories` or its organization is present in `organizations`. Stored entries are already normalized. Invalid input is never authorized.\n\n`add_authorization` inserts a valid normalized repository and returns whether the set changed. Invalid input leaves the policy unchanged and returns false. Repeated aliases that normalize to the same value must not create duplicates.\n\n`authorize_or_decide` first accepts already-authorized repositories. Otherwise, invalid repositories and non-interactive calls return false without mutation. In interactive mode, `Once` returns true without mutation, `Remember` inserts the repository and returns true, and `Reject` returns false. Preserve all unrelated entries and expose no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0b58ae63839af0126727137b81d0de54eed33318a7dcad5db3ae3b65185aeb94",
+      "text": "Implement a standard-library-only repository authorization policy in `solution.rs`.\n\nExpose this exact API:\n\n```rust\nuse std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String>;\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool;\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool;\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool;\n```\n\nA valid repository has exactly two nonempty slash-separated components. Trim ASCII whitespace around the complete input and each component, lowercase both components using ASCII lowercase conversion, and return `organization/repository`. Inputs with extra slashes are invalid.\n\nAuthorization succeeds when the normalized full repository is present in `repositories` or its organization is present in `organizations`. Stored entries are already normalized. Invalid input is never authorized.\n\n`add_authorization` inserts a valid normalized repository and returns whether the set changed. Invalid input leaves the policy unchanged and returns false. Repeated aliases that normalize to the same value must not create duplicates.\n\n`authorize_or_decide` first accepts already-authorized repositories. Otherwise, invalid repositories and non-interactive calls return false without mutation. In interactive mode, `Once` returns true without mutation, `Remember` inserts the repository and returns true, and `Reject` returns false. Preserve all unrelated entries and expose no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0553",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String> {\n    let mut parts = input.trim().split('/');\n    let organization = parts.next()?.trim();\n    let repository = parts.next()?.trim();\n    if organization.is_empty() || repository.is_empty() || parts.next().is_some() {\n        return None;\n    }\n    Some(format!(\"{}/{}\", organization.to_ascii_lowercase(), repository.to_ascii_lowercase()))\n}\n\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool {\n    let Some(repository) = normalize_repository(repository) else { return false; };\n    let organization = repository.split_once('/').unwrap().0;\n    policy.repositories.contains(&repository) || policy.organizations.contains(organization)\n}\n\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool {\n    match normalize_repository(repository) {\n        Some(repository) => policy.repositories.insert(repository),\n        None => false,\n    }\n}\n\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool {\n    if is_authorized(policy, repository) {\n        return true;\n    }\n    if normalize_repository(repository).is_none() {\n        return false;\n    }\n    match choice {\n        TrustChoice::Once => true,\n        TrustChoice::Remember => {\n            add_authorization(policy, repository);\n            true\n        }\n        TrustChoice::Reject => false,\n    }\n}\n",
+          "label": "Non-interactive authorization incorrectly honors the supplied choice and may mutate the policy.",
+          "sha256": "0c3d802fee3ccfb308ea229dc05d5a708fe25a7885feb21138015c37e20825f7"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String> {\n    let mut parts = input.trim().split('/');\n    let organization = parts.next()?.trim();\n    let repository = parts.next()?.trim();\n    if organization.is_empty() || repository.is_empty() || parts.next().is_some() {\n        return None;\n    }\n    Some(format!(\"{}/{}\", organization.to_ascii_lowercase(), repository.to_ascii_lowercase()))\n}\n\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool {\n    let Some(repository) = normalize_repository(repository) else { return false; };\n    let organization = repository.split_once('/').unwrap().0;\n    policy.repositories.contains(&repository) || policy.organizations.contains(organization)\n}\n\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool {\n    match normalize_repository(repository) {\n        Some(repository) => policy.repositories.insert(repository),\n        None => false,\n    }\n}\n\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool {\n    if is_authorized(policy, repository) {\n        return true;\n    }\n    if !interactive || normalize_repository(repository).is_none() {\n        return false;\n    }\n    match choice {\n        TrustChoice::Once => true,\n        TrustChoice::Remember => {\n            add_authorization(policy, repository);\n            true\n        }\n        TrustChoice::Reject => false,\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b33728d423a41be7e33b059dfb7cd928c0f2ebc6eab6abb197e5403bd6d1a8b0"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{add_authorization, authorize_or_decide, is_authorized, normalize_repository, TrustChoice, TrustPolicy};\nuse std::collections::BTreeSet;\n\nfn empty_policy() -> TrustPolicy {\n    TrustPolicy { organizations: BTreeSet::new(), repositories: BTreeSet::new() }\n}\n\n#[test]\nfn normalization_trims_ascii_and_canonicalizes_case() {\n    assert_eq!(normalize_repository(\" \\t Acme / Widget \\r \"), Some(\"acme/widget\".to_string()));\n    assert_eq!(normalize_repository(\"ORG/REPO\"), Some(\"org/repo\".to_string()));\n    assert_eq!(normalize_repository(\"\u00c4CME/R\u00c9PO\"), Some(\"\u00c4cme/r\u00c9po\".to_string()));\n}\n\n#[test]\nfn normalization_rejects_wrong_component_counts_and_empty_components() {\n    for input in [\"\", \"   \", \"org\", \"/repo\", \"org/\", \"org//repo\", \"a/b/c\"] {\n        assert_eq!(normalize_repository(input), None, \"input: {input:?}\");\n    }\n}\n\n#[test]\nfn authorization_accepts_repository_or_organization_entries() {\n    let mut policy = empty_policy();\n    policy.repositories.insert(\"acme/widget\".to_string());\n    policy.organizations.insert(\"trusted\".to_string());\n\n    assert!(is_authorized(&policy, \" ACME / WIDGET \"));\n    assert!(is_authorized(&policy, \"Trusted/Anything\"));\n    assert!(!is_authorized(&policy, \"other/widget\"));\n    assert!(!is_authorized(&policy, \"trusted/extra/path\"));\n}\n\n#[test]\nfn adding_is_normalized_deduplicated_and_atomic_on_invalid_input() {\n    let mut policy = empty_policy();\n    policy.organizations.insert(\"existing-org\".to_string());\n\n    assert!(add_authorization(&mut policy, \" Acme / Widget \"));\n    assert!(!add_authorization(&mut policy, \"ACME/WIDGET\"));\n    assert_eq!(policy.repositories.len(), 1);\n    assert!(policy.repositories.contains(\"acme/widget\"));\n\n    let before = policy.clone();\n    assert!(!add_authorization(&mut policy, \"bad/input/extra\"));\n    assert_eq!(policy, before);\n}\n\n#[test]\nfn decisions_obey_interactivity_choice_and_mutation_rules() {\n    let mut policy = empty_policy();\n\n    let before_once = policy.clone();\n    assert!(authorize_or_decide(&mut policy, \"Org/Temporary\", true, TrustChoice::Once));\n    assert_eq!(policy, before_once);\n\n    assert!(authorize_or_decide(&mut policy, \"Org/Permanent\", true, TrustChoice::Remember));\n    assert!(policy.repositories.contains(\"org/permanent\"));\n\n    let before_authorized = policy.clone();\n    assert!(authorize_or_decide(&mut policy, \"ORG/PERMANENT\", false, TrustChoice::Reject));\n    assert_eq!(policy, before_authorized);\n\n    let before_reject = policy.clone();\n    assert!(!authorize_or_decide(&mut policy, \"Org/Rejected\", true, TrustChoice::Reject));\n    assert_eq!(policy, before_reject);\n\n    assert!(!authorize_or_decide(&mut policy, \"Org/NonInteractive\", false, TrustChoice::Remember));\n    assert_eq!(policy, before_reject);\n    assert!(!authorize_or_decide(&mut policy, \"invalid\", true, TrustChoice::Once));\n    assert_eq!(policy, before_reject);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "7dd634e574dc4fa967ea1ddedb6ccd0131126634f9ed2daea3c4603d88d6eab8"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0b58ae63839af0126727137b81d0de54eed33318a7dcad5db3ae3b65185aeb94",
+      "text": "Implement a standard-library-only repository authorization policy in `solution.rs`.\n\nExpose this exact API:\n\n```rust\nuse std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String>;\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool;\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool;\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool;\n```\n\nA valid repository has exactly two nonempty slash-separated components. Trim ASCII whitespace around the complete input and each component, lowercase both components using ASCII lowercase conversion, and return `organization/repository`. Inputs with extra slashes are invalid.\n\nAuthorization succeeds when the normalized full repository is present in `repositories` or its organization is present in `organizations`. Stored entries are already normalized. Invalid input is never authorized.\n\n`add_authorization` inserts a valid normalized repository and returns whether the set changed. Invalid input leaves the policy unchanged and returns false. Repeated aliases that normalize to the same value must not create duplicates.\n\n`authorize_or_decide` first accepts already-authorized repositories. Otherwise, invalid repositories and non-interactive calls return false without mutation. In interactive mode, `Once` returns true without mutation, `Remember` inserts the repository and returns true, and `Reject` returns false. Preserve all unrelated entries and expose no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0b58ae63839af0126727137b81d0de54eed33318a7dcad5db3ae3b65185aeb94",
+      "text": "Implement a standard-library-only repository authorization policy in `solution.rs`.\n\nExpose this exact API:\n\n```rust\nuse std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String>;\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool;\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool;\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool;\n```\n\nA valid repository has exactly two nonempty slash-separated components. Trim ASCII whitespace around the complete input and each component, lowercase both components using ASCII lowercase conversion, and return `organization/repository`. Inputs with extra slashes are invalid.\n\nAuthorization succeeds when the normalized full repository is present in `repositories` or its organization is present in `organizations`. Stored entries are already normalized. Invalid input is never authorized.\n\n`add_authorization` inserts a valid normalized repository and returns whether the set changed. Invalid input leaves the policy unchanged and returns false. Repeated aliases that normalize to the same value must not create duplicates.\n\n`authorize_or_decide` first accepts already-authorized repositories. Otherwise, invalid repositories and non-interactive calls return false without mutation. In interactive mode, `Once` returns true without mutation, `Remember` inserts the repository and returns true, and `Reject` returns false. Preserve all unrelated entries and expose no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0553",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String> {\n    let mut parts = input.trim().split('/');\n    let organization = parts.next()?.trim();\n    let repository = parts.next()?.trim();\n    if organization.is_empty() || repository.is_empty() || parts.next().is_some() {\n        return None;\n    }\n    Some(format!(\"{}/{}\", organization.to_ascii_lowercase(), repository.to_ascii_lowercase()))\n}\n\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool {\n    let Some(repository) = normalize_repository(repository) else { return false; };\n    let organization = repository.split_once('/').unwrap().0;\n    policy.repositories.contains(&repository) || policy.organizations.contains(organization)\n}\n\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool {\n    match normalize_repository(repository) {\n        Some(repository) => policy.repositories.insert(repository),\n        None => false,\n    }\n}\n\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool {\n    if is_authorized(policy, repository) {\n        return true;\n    }\n    if normalize_repository(repository).is_none() {\n        return false;\n    }\n    match choice {\n        TrustChoice::Once => true,\n        TrustChoice::Remember => {\n            add_authorization(policy, repository);\n            true\n        }\n        TrustChoice::Reject => false,\n    }\n}\n",
+          "label": "Non-interactive authorization incorrectly honors the supplied choice and may mutate the policy.",
+          "sha256": "0c3d802fee3ccfb308ea229dc05d5a708fe25a7885feb21138015c37e20825f7"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct TrustPolicy {\n    pub organizations: BTreeSet<String>,\n    pub repositories: BTreeSet<String>,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum TrustChoice { Once, Remember, Reject }\n\npub fn normalize_repository(input: &str) -> Option<String> {\n    let mut parts = input.trim().split('/');\n    let organization = parts.next()?.trim();\n    let repository = parts.next()?.trim();\n    if organization.is_empty() || repository.is_empty() || parts.next().is_some() {\n        return None;\n    }\n    Some(format!(\"{}/{}\", organization.to_ascii_lowercase(), repository.to_ascii_lowercase()))\n}\n\npub fn is_authorized(policy: &TrustPolicy, repository: &str) -> bool {\n    let Some(repository) = normalize_repository(repository) else { return false; };\n    let organization = repository.split_once('/').unwrap().0;\n    policy.repositories.contains(&repository) || policy.organizations.contains(organization)\n}\n\npub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool {\n    match normalize_repository(repository) {\n        Some(repository) => policy.repositories.insert(repository),\n        None => false,\n    }\n}\n\npub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool {\n    if is_authorized(policy, repository) {\n        return true;\n    }\n    if !interactive || normalize_repository(repository).is_none() {\n        return false;\n    }\n    match choice {\n        TrustChoice::Once => true,\n        TrustChoice::Remember => {\n            add_authorization(policy, repository);\n            true\n        }\n        TrustChoice::Reject => false,\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b33728d423a41be7e33b059dfb7cd928c0f2ebc6eab6abb197e5403bd6d1a8b0"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 2 tests\ntest non_ascii_whitespace_is_part_of_repository_identity ... FAILED\ntest unicode_whitespace_alias_does_not_gain_authorization ... FAILED\n\nfailures:\n\n---- non_ascii_whitespace_is_part_of_repository_identity stdout ----\n\nthread 'non_ascii_whitespace_is_part_of_repository_identity' panicked at solution_test.rs:8:5:\nassertion `left == right` failed\n  left: Some(\"org/repo\")\n right: Some(\"\\u{2003}org/repo\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- unicode_whitespace_alias_does_not_gain_authorization stdout ----\n\nthread 'unicode_whitespace_alias_does_not_gain_authorization' panicked at solution_test.rs:17:5:\nassertion failed: !is_authorized(&policy, \"\\u{2003}org/repo\")\n\n\nfailures:\n    non_ascii_whitespace_is_part_of_repository_identity\n    unicode_whitespace_alias_does_not_gain_authorization\n\ntest result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "7186bbf0537492c6f0cd4be3393a47abba40e1fc0b6cd9ebea52c81baaddda52",
+    "stderr": "warning: variants `Once`, `Remember`, and `Reject` are never constructed\n  --> solution.rs:10:24\n   |\n10 | pub enum TrustChoice { Once, Remember, Reject }\n   |          -----------   ^^^^  ^^^^^^^^  ^^^^^^\n   |          |\n   |          variants in this enum\n   |\n   = note: `TrustChoice` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: function `add_authorization` is never used\n  --> solution.rs:28:8\n   |\n28 | pub fn add_authorization(policy: &mut TrustPolicy, repository: &str) -> bool {\n   |        ^^^^^^^^^^^^^^^^^\n\nwarning: function `authorize_or_decide` is never used\n  --> solution.rs:35:8\n   |\n35 | pub fn authorize_or_decide(policy: &mut TrustPolicy, repository: &str, interactive: bool, choice: TrustChoice) -> bool {\n   |        ^^^^^^^^^^^^^^^^^^^\n\nwarning: 3 warnings emitted\n\n",
+    "stderr_sha256": "c60f6c2e9104547488b398b5c00fd74b65fc0f4a56ebbcdbde6a134187cc6077",
+    "duration_ms": 1737,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

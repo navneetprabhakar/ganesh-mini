@@ -1,11 +1,11 @@
 # Quality follow-up decision
 
-Current checkpoint: **459 holds (456 additive plus historical three)**; 1,014
+Current checkpoint: **472 holds (469 additive plus historical three)**; 1,134
 unique outside-sample inspections. All 544 array queue positions inspected;
-Rust generation queue inspected through 465 of 684, continue 466.
-GCS verified through 454 holds / Rust batch 30 / 999 outside-sample inspections;
-batch 31 awaits backup. Scope v6 (11 groups, 14 strata, 3,085 review records).
-See RUST_STRATUM_REVIEW_31.md. Remaining strata and quality criteria are pending;
+Rust generation queue inspected through 585 of 684, continue 586.
+GCS verified through 472 holds / Rust batch 39 / 1,134 outside-sample inspections.
+See QUALITY_STRATUM_472_BACKUP.md. Scope v6 (11 groups, 14 strata, 3,085 review records).
+See RUST_STRATUM_REVIEW_39.md. Remaining strata and quality criteria are pending;
 inspection is not admission. All 97 data tooling tests pass.
 No training seal or new VM. Older entries are historical.
 

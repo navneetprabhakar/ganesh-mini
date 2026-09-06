@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0584",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "8cc1e105cb60e27ffae2df953aacc03d7ba22d5c5b0008d505c56f99f23a72d1",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\n#[test]\nfn below_character_limit_non_ascii_reports_first_rejected_byte() {\n    let input = \"\u00e9\".repeat(32768);\n    assert_eq!(input.chars().count(), 32768);\n    assert_eq!(solution::encode_banner(&input), Err(solution::CellError::NonPrintable { byte_index: 0 }));\n}\n",
+        "sha256": "790f33223c7718172f926674cd6df0fc0eb55a05d962f26f15c2cde6b262ea30"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6fe021cbe7c1a16c6c52e79f5e134c3f343697f4f6c10a33a489221491e52aef",
+      "text": "Implement a pure byte encoder for a legacy text-cell display in `solution.rs`, using only the Rust standard library and no assembly.\n\nExpose:\n\n- `pub enum CellError { NonPrintable { byte_index: usize }, TooLong }`\n- `pub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError>`\n\nEach accepted input byte must be printable ASCII in the inclusive range `0x20..=0x7e`. Encode every character as two bytes: the character byte followed by attribute byte `0xf3`. Return `NonPrintable` with the UTF-8 byte index of the first rejected byte. Accept an empty string. Reject more than `u16::MAX` characters with `TooLong`, checking this before allocating the result. The input must remain unchanged and output order must match input order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6fe021cbe7c1a16c6c52e79f5e134c3f343697f4f6c10a33a489221491e52aef",
+      "text": "Implement a pure byte encoder for a legacy text-cell display in `solution.rs`, using only the Rust standard library and no assembly.\n\nExpose:\n\n- `pub enum CellError { NonPrintable { byte_index: usize }, TooLong }`\n- `pub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError>`\n\nEach accepted input byte must be printable ASCII in the inclusive range `0x20..=0x7e`. Encode every character as two bytes: the character byte followed by attribute byte `0xf3`. Return `NonPrintable` with the UTF-8 byte index of the first rejected byte. Accept an empty string. Reject more than `u16::MAX` characters with `TooLong`, checking this before allocating the result. The input must remain unchanged and output order must match input order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0584",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum CellError {\n    NonPrintable { byte_index: usize },\n    TooLong,\n}\n\npub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError> {\n    if text.len() > u16::MAX as usize {\n        return Err(CellError::TooLong);\n    }\n    for (index, byte) in text.bytes().enumerate() {\n        if byte < 0x20 || byte > 0x7f {\n            return Err(CellError::NonPrintable { byte_index: index });\n        }\n    }\n    let mut output = Vec::with_capacity(text.len() * 2);\n    for byte in text.bytes() {\n        output.push(byte);\n        output.push(0xf3);\n    }\n    Ok(output)\n}\n",
+          "label": "The DEL byte 0x7f is incorrectly accepted as printable ASCII.",
+          "sha256": "a202e54e2b458b3b5fc4ececefd34531c40ed61a89d21934356c4399fe10562b"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum CellError {\n    NonPrintable { byte_index: usize },\n    TooLong,\n}\n\npub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError> {\n    if text.len() > u16::MAX as usize {\n        return Err(CellError::TooLong);\n    }\n    for (index, byte) in text.bytes().enumerate() {\n        if !(0x20..=0x7e).contains(&byte) {\n            return Err(CellError::NonPrintable { byte_index: index });\n        }\n    }\n    let mut output = Vec::with_capacity(text.len() * 2);\n    for byte in text.bytes() {\n        output.push(byte);\n        output.push(0xf3);\n    }\n    Ok(output)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0591a0cfb785877cab9b6abbcd5f27aab4658a5d6a22b98963301f57b54146ee"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{encode_banner, CellError};\n\nfn encoded(text: &str) -> Vec<u8> {\n    match encode_banner(text) {\n        Ok(value) => value,\n        Err(_) => panic!(\"expected successful encoding\"),\n    }\n}\n\n#[test]\nfn accepts_empty_and_printable_ascii_boundaries() {\n    assert!(encoded(\"\").is_empty());\n    assert_eq!(\n        encoded(\" ~A\"),\n        vec![0x20, 0xf3, 0x7e, 0xf3, b'A', 0xf3]\n    );\n}\n\n#[test]\nfn preserves_character_order_and_input() {\n    let input = String::from(\"Legacy 09!?\");\n    let original = input.clone();\n    let output = encoded(&input);\n\n    let mut expected = Vec::new();\n    for byte in input.bytes() {\n        expected.push(byte);\n        expected.push(0xf3);\n    }\n    assert_eq!(output, expected);\n    assert_eq!(input, original);\n}\n\n#[test]\nfn reports_utf8_byte_index_of_first_nonprintable_byte() {\n    match encode_banner(\"AB\\n\u00e9\") {\n        Err(CellError::NonPrintable { byte_index }) => assert_eq!(byte_index, 2),\n        _ => panic!(\"expected NonPrintable for newline\"),\n    }\n\n    match encode_banner(\"A\u00e9Z\") {\n        Err(CellError::NonPrintable { byte_index }) => assert_eq!(byte_index, 1),\n        _ => panic!(\"expected NonPrintable for non-ASCII UTF-8\"),\n    }\n\n    match encode_banner(\"\\u{7f}\") {\n        Err(CellError::NonPrintable { byte_index }) => assert_eq!(byte_index, 0),\n        _ => panic!(\"expected NonPrintable for DEL\"),\n    }\n}\n\n#[test]\nfn enforces_u16_character_limit() {\n    let maximum = \"A\".repeat(u16::MAX as usize);\n    let output = encoded(&maximum);\n    assert_eq!(output.len(), (u16::MAX as usize) * 2);\n    assert_eq!(&output[..4], &[b'A', 0xf3, b'A', 0xf3]);\n    assert_eq!(&output[output.len() - 2..], &[b'A', 0xf3]);\n\n    let too_long = \"B\".repeat(u16::MAX as usize + 1);\n    match encode_banner(&too_long) {\n        Err(CellError::TooLong) => {}\n        _ => panic!(\"expected TooLong\"),\n    }\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "d56a0d3f3f3317672755d53e82aaedd230b8c156f3e97c51d3f626cadb3f0a7f"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6fe021cbe7c1a16c6c52e79f5e134c3f343697f4f6c10a33a489221491e52aef",
+      "text": "Implement a pure byte encoder for a legacy text-cell display in `solution.rs`, using only the Rust standard library and no assembly.\n\nExpose:\n\n- `pub enum CellError { NonPrintable { byte_index: usize }, TooLong }`\n- `pub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError>`\n\nEach accepted input byte must be printable ASCII in the inclusive range `0x20..=0x7e`. Encode every character as two bytes: the character byte followed by attribute byte `0xf3`. Return `NonPrintable` with the UTF-8 byte index of the first rejected byte. Accept an empty string. Reject more than `u16::MAX` characters with `TooLong`, checking this before allocating the result. The input must remain unchanged and output order must match input order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6fe021cbe7c1a16c6c52e79f5e134c3f343697f4f6c10a33a489221491e52aef",
+      "text": "Implement a pure byte encoder for a legacy text-cell display in `solution.rs`, using only the Rust standard library and no assembly.\n\nExpose:\n\n- `pub enum CellError { NonPrintable { byte_index: usize }, TooLong }`\n- `pub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError>`\n\nEach accepted input byte must be printable ASCII in the inclusive range `0x20..=0x7e`. Encode every character as two bytes: the character byte followed by attribute byte `0xf3`. Return `NonPrintable` with the UTF-8 byte index of the first rejected byte. Accept an empty string. Reject more than `u16::MAX` characters with `TooLong`, checking this before allocating the result. The input must remain unchanged and output order must match input order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0584",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum CellError {\n    NonPrintable { byte_index: usize },\n    TooLong,\n}\n\npub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError> {\n    if text.len() > u16::MAX as usize {\n        return Err(CellError::TooLong);\n    }\n    for (index, byte) in text.bytes().enumerate() {\n        if byte < 0x20 || byte > 0x7f {\n            return Err(CellError::NonPrintable { byte_index: index });\n        }\n    }\n    let mut output = Vec::with_capacity(text.len() * 2);\n    for byte in text.bytes() {\n        output.push(byte);\n        output.push(0xf3);\n    }\n    Ok(output)\n}\n",
+          "label": "The DEL byte 0x7f is incorrectly accepted as printable ASCII.",
+          "sha256": "a202e54e2b458b3b5fc4ececefd34531c40ed61a89d21934356c4399fe10562b"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum CellError {\n    NonPrintable { byte_index: usize },\n    TooLong,\n}\n\npub fn encode_banner(text: &str) -> Result<Vec<u8>, CellError> {\n    if text.len() > u16::MAX as usize {\n        return Err(CellError::TooLong);\n    }\n    for (index, byte) in text.bytes().enumerate() {\n        if !(0x20..=0x7e).contains(&byte) {\n            return Err(CellError::NonPrintable { byte_index: index });\n        }\n    }\n    let mut output = Vec::with_capacity(text.len() * 2);\n    for byte in text.bytes() {\n        output.push(byte);\n        output.push(0xf3);\n    }\n    Ok(output)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0591a0cfb785877cab9b6abbcd5f27aab4658a5d6a22b98963301f57b54146ee"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest below_character_limit_non_ascii_reports_first_rejected_byte ... FAILED\n\nfailures:\n\n---- below_character_limit_non_ascii_reports_first_rejected_byte stdout ----\n\nthread 'below_character_limit_non_ascii_reports_first_rejected_byte' panicked at solution_test.rs:8:5:\nassertion `left == right` failed\n  left: Err(TooLong)\n right: Err(NonPrintable { byte_index: 0 })\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    below_character_limit_non_ascii_reports_first_rejected_byte\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "11bbfe3bbc5372c3e3ab891e3ea2ab1e76d6efd1f61f3afcc846c90470d26c2c",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1594,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

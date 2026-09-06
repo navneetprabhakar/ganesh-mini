@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0672",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "daa7f27524dec5e9e201cb2780da65755f6dfd4c2a674be6e1ada2ff6d0d5dad",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\n#[test]\nfn two_isolated_extreme_cubes_have_twelve_exterior_faces() {\n    let cells = [(i32::MIN, 0, 0), (i32::MAX, 0, 0)];\n    assert_eq!(solution::exterior_faces(&cells), 12);\n}\n",
+        "sha256": "db47cc93b8467e516344e2157d87fa9e0010904cc4753bada2197242ea18bbc6"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c56de327e76c4d7c2e52827581397fe431fca3e5f1a969b44ca182408cb49243",
+      "text": "Implement voxel geometry utilities in `solution.rs` using only the standard library. Expose `pub type Cell = (i32, i32, i32)`, `pub fn exposed_faces(cells: &[Cell]) -> usize`, and `pub fn exterior_faces(cells: &[Cell]) -> usize`. Duplicate cells represent one cube. Face adjacency differs by exactly one on one axis. `exposed_faces` counts every cube face not touching another cube, including faces bordering sealed cavities. `exterior_faces` counts only faces reachable by air from outside. It must work for negative coordinates and coordinates at `i32::MIN` or `i32::MAX` without overflowing. Empty input returns zero. Neither function may mutate the slice, and results must be independent of input ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c56de327e76c4d7c2e52827581397fe431fca3e5f1a969b44ca182408cb49243",
+      "text": "Implement voxel geometry utilities in `solution.rs` using only the standard library. Expose `pub type Cell = (i32, i32, i32)`, `pub fn exposed_faces(cells: &[Cell]) -> usize`, and `pub fn exterior_faces(cells: &[Cell]) -> usize`. Duplicate cells represent one cube. Face adjacency differs by exactly one on one axis. `exposed_faces` counts every cube face not touching another cube, including faces bordering sealed cavities. `exterior_faces` counts only faces reachable by air from outside. It must work for negative coordinates and coordinates at `i32::MIN` or `i32::MAX` without overflowing. Empty input returns zero. Neither function may mutate the slice, and results must be independent of input ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0672",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::{HashSet, VecDeque};\n\npub type Cell = (i32, i32, i32);\nconst DIRS: [(i64, i64, i64); 6] = [(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1)];\n\nfn widened(cells: &[Cell]) -> HashSet<(i64, i64, i64)> {\n    cells.iter().map(|&(x,y,z)| (x as i64, y as i64, z as i64)).collect()\n}\n\npub fn exposed_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    cubes.iter().map(|&(x,y,z)| {\n        DIRS.iter().filter(|&&(dx,dy,dz)| !cubes.contains(&(x+dx,y+dy,z+dz))).count()\n    }).sum()\n}\n\npub fn exterior_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    if cubes.is_empty() { return 0; }\n    let min_x = cubes.iter().map(|c| c.0).min().unwrap() - 1;\n    let max_x = cubes.iter().map(|c| c.0).max().unwrap() + 1;\n    let min_y = cubes.iter().map(|c| c.1).min().unwrap() - 1;\n    let max_y = cubes.iter().map(|c| c.1).max().unwrap() + 1;\n    let min_z = cubes.iter().map(|c| c.2).min().unwrap() - 1;\n    let max_z = cubes.iter().map(|c| c.2).max().unwrap() + 1;\n    let start = (min_x, min_y, min_z);\n    let mut seen = HashSet::from([start]);\n    let mut queue = VecDeque::from([start]);\n    let mut area = 0;\n    while let Some((x,y,z)) = queue.pop_front() {\n        for (dx,dy,dz) in DIRS {\n            let next = (x+dx,y+dy,z+dz);\n            if next.0 < min_x || next.0 > max_x || next.1 < min_y || next.1 > max_y || next.2 < min_z || next.2 > max_z { continue; }\n            if cubes.contains(&next) { area += 1; }\n            else if seen.insert(next) { queue.push_back(next); }\n        }\n    }\n    exposed_faces(cells)\n}\n",
+          "label": "The exterior calculation discards its flood-fill result and returns total exposed area, incorrectly counting sealed cavities.",
+          "sha256": "588d8506197f77d3da0b57d37445f94b0ae23d348931d5846446d611fa5ab63d"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::{HashSet, VecDeque};\n\npub type Cell = (i32, i32, i32);\nconst DIRS: [(i64, i64, i64); 6] = [(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1)];\n\nfn widened(cells: &[Cell]) -> HashSet<(i64, i64, i64)> {\n    cells.iter().map(|&(x,y,z)| (x as i64, y as i64, z as i64)).collect()\n}\n\npub fn exposed_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    cubes.iter().map(|&(x,y,z)| {\n        DIRS.iter().filter(|&&(dx,dy,dz)| !cubes.contains(&(x+dx,y+dy,z+dz))).count()\n    }).sum()\n}\n\npub fn exterior_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    if cubes.is_empty() { return 0; }\n    let min_x = cubes.iter().map(|c| c.0).min().unwrap() - 1;\n    let max_x = cubes.iter().map(|c| c.0).max().unwrap() + 1;\n    let min_y = cubes.iter().map(|c| c.1).min().unwrap() - 1;\n    let max_y = cubes.iter().map(|c| c.1).max().unwrap() + 1;\n    let min_z = cubes.iter().map(|c| c.2).min().unwrap() - 1;\n    let max_z = cubes.iter().map(|c| c.2).max().unwrap() + 1;\n    let start = (min_x, min_y, min_z);\n    let mut seen = HashSet::from([start]);\n    let mut queue = VecDeque::from([start]);\n    let mut area = 0;\n    while let Some((x,y,z)) = queue.pop_front() {\n        for (dx,dy,dz) in DIRS {\n            let next = (x+dx,y+dy,z+dz);\n            if next.0 < min_x || next.0 > max_x || next.1 < min_y || next.1 > max_y || next.2 < min_z || next.2 > max_z { continue; }\n            if cubes.contains(&next) { area += 1; }\n            else if seen.insert(next) { queue.push_back(next); }\n        }\n    }\n    area\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3376966050fa5877c47039d04d8db6158d64fbf11d018c100d1787a74695460a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{exposed_faces, exterior_faces, Cell};\n\n#[test]\nfn empty_and_duplicate_inputs_behave_as_sets() {\n    assert_eq!(exposed_faces(&[]), 0);\n    assert_eq!(exterior_faces(&[]), 0);\n    let cells: Vec<Cell> = vec![(1, 2, 3), (1, 2, 3), (1, 2, 3)];\n    assert_eq!(exposed_faces(&cells), 6);\n    assert_eq!(exterior_faces(&cells), 6);\n}\n\n#[test]\nfn adjacent_and_diagonal_cubes_have_correct_face_counts() {\n    let adjacent = [(0, 0, 0), (1, 0, 0)];\n    assert_eq!(exposed_faces(&adjacent), 10);\n    assert_eq!(exterior_faces(&adjacent), 10);\n\n    let diagonal = [(0, 0, 0), (1, 1, 0)];\n    assert_eq!(exposed_faces(&diagonal), 12);\n    assert_eq!(exterior_faces(&diagonal), 12);\n}\n\n#[test]\nfn sealed_cavity_is_included_only_by_exposed_faces() {\n    let mut shell = Vec::new();\n    for x in 0..3 {\n        for y in 0..3 {\n            for z in 0..3 {\n                if (x, y, z) != (1, 1, 1) {\n                    shell.push((x, y, z));\n                }\n            }\n        }\n    }\n    assert_eq!(exposed_faces(&shell), 60);\n    assert_eq!(exterior_faces(&shell), 54);\n}\n\n#[test]\nfn open_cavity_is_reachable_from_outside() {\n    let mut shell = Vec::new();\n    for x in 0..3 {\n        for y in 0..3 {\n            for z in 0..3 {\n                if (x, y, z) != (1, 1, 1) && (x, y, z) != (1, 1, 0) {\n                    shell.push((x, y, z));\n                }\n            }\n        }\n    }\n    assert_eq!(exterior_faces(&shell), exposed_faces(&shell));\n}\n\n#[test]\nfn handles_negative_and_extreme_coordinates_without_overflow() {\n    for cell in [(i32::MIN, 0, 0), (i32::MAX, 0, 0), (0, i32::MIN, i32::MAX)] {\n        assert_eq!(exposed_faces(&[cell]), 6);\n        assert_eq!(exterior_faces(&[cell]), 6);\n    }\n    let low_pair = [(i32::MIN, -1, 4), (i32::MIN + 1, -1, 4)];\n    let high_pair = [(i32::MAX, 5, -2), (i32::MAX - 1, 5, -2)];\n    assert_eq!(exposed_faces(&low_pair), 10);\n    assert_eq!(exterior_faces(&low_pair), 10);\n    assert_eq!(exposed_faces(&high_pair), 10);\n    assert_eq!(exterior_faces(&high_pair), 10);\n}\n\n#[test]\nfn results_are_order_independent_and_inputs_are_not_mutated() {\n    let cells = vec![(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 0, 0)];\n    let original = cells.clone();\n    let mut reversed = cells.clone();\n    reversed.reverse();\n    assert_eq!(exposed_faces(&cells), exposed_faces(&reversed));\n    assert_eq!(exterior_faces(&cells), exterior_faces(&reversed));\n    assert_eq!(cells, original);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "8a9223930cd5b992853cb5053920489756cb1ce3d9c78b6c9be1b40fe8d6b4a3"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c56de327e76c4d7c2e52827581397fe431fca3e5f1a969b44ca182408cb49243",
+      "text": "Implement voxel geometry utilities in `solution.rs` using only the standard library. Expose `pub type Cell = (i32, i32, i32)`, `pub fn exposed_faces(cells: &[Cell]) -> usize`, and `pub fn exterior_faces(cells: &[Cell]) -> usize`. Duplicate cells represent one cube. Face adjacency differs by exactly one on one axis. `exposed_faces` counts every cube face not touching another cube, including faces bordering sealed cavities. `exterior_faces` counts only faces reachable by air from outside. It must work for negative coordinates and coordinates at `i32::MIN` or `i32::MAX` without overflowing. Empty input returns zero. Neither function may mutate the slice, and results must be independent of input ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c56de327e76c4d7c2e52827581397fe431fca3e5f1a969b44ca182408cb49243",
+      "text": "Implement voxel geometry utilities in `solution.rs` using only the standard library. Expose `pub type Cell = (i32, i32, i32)`, `pub fn exposed_faces(cells: &[Cell]) -> usize`, and `pub fn exterior_faces(cells: &[Cell]) -> usize`. Duplicate cells represent one cube. Face adjacency differs by exactly one on one axis. `exposed_faces` counts every cube face not touching another cube, including faces bordering sealed cavities. `exterior_faces` counts only faces reachable by air from outside. It must work for negative coordinates and coordinates at `i32::MIN` or `i32::MAX` without overflowing. Empty input returns zero. Neither function may mutate the slice, and results must be independent of input ordering.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0672",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::{HashSet, VecDeque};\n\npub type Cell = (i32, i32, i32);\nconst DIRS: [(i64, i64, i64); 6] = [(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1)];\n\nfn widened(cells: &[Cell]) -> HashSet<(i64, i64, i64)> {\n    cells.iter().map(|&(x,y,z)| (x as i64, y as i64, z as i64)).collect()\n}\n\npub fn exposed_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    cubes.iter().map(|&(x,y,z)| {\n        DIRS.iter().filter(|&&(dx,dy,dz)| !cubes.contains(&(x+dx,y+dy,z+dz))).count()\n    }).sum()\n}\n\npub fn exterior_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    if cubes.is_empty() { return 0; }\n    let min_x = cubes.iter().map(|c| c.0).min().unwrap() - 1;\n    let max_x = cubes.iter().map(|c| c.0).max().unwrap() + 1;\n    let min_y = cubes.iter().map(|c| c.1).min().unwrap() - 1;\n    let max_y = cubes.iter().map(|c| c.1).max().unwrap() + 1;\n    let min_z = cubes.iter().map(|c| c.2).min().unwrap() - 1;\n    let max_z = cubes.iter().map(|c| c.2).max().unwrap() + 1;\n    let start = (min_x, min_y, min_z);\n    let mut seen = HashSet::from([start]);\n    let mut queue = VecDeque::from([start]);\n    let mut area = 0;\n    while let Some((x,y,z)) = queue.pop_front() {\n        for (dx,dy,dz) in DIRS {\n            let next = (x+dx,y+dy,z+dz);\n            if next.0 < min_x || next.0 > max_x || next.1 < min_y || next.1 > max_y || next.2 < min_z || next.2 > max_z { continue; }\n            if cubes.contains(&next) { area += 1; }\n            else if seen.insert(next) { queue.push_back(next); }\n        }\n    }\n    exposed_faces(cells)\n}\n",
+          "label": "The exterior calculation discards its flood-fill result and returns total exposed area, incorrectly counting sealed cavities.",
+          "sha256": "588d8506197f77d3da0b57d37445f94b0ae23d348931d5846446d611fa5ab63d"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::{HashSet, VecDeque};\n\npub type Cell = (i32, i32, i32);\nconst DIRS: [(i64, i64, i64); 6] = [(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1)];\n\nfn widened(cells: &[Cell]) -> HashSet<(i64, i64, i64)> {\n    cells.iter().map(|&(x,y,z)| (x as i64, y as i64, z as i64)).collect()\n}\n\npub fn exposed_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    cubes.iter().map(|&(x,y,z)| {\n        DIRS.iter().filter(|&&(dx,dy,dz)| !cubes.contains(&(x+dx,y+dy,z+dz))).count()\n    }).sum()\n}\n\npub fn exterior_faces(cells: &[Cell]) -> usize {\n    let cubes = widened(cells);\n    if cubes.is_empty() { return 0; }\n    let min_x = cubes.iter().map(|c| c.0).min().unwrap() - 1;\n    let max_x = cubes.iter().map(|c| c.0).max().unwrap() + 1;\n    let min_y = cubes.iter().map(|c| c.1).min().unwrap() - 1;\n    let max_y = cubes.iter().map(|c| c.1).max().unwrap() + 1;\n    let min_z = cubes.iter().map(|c| c.2).min().unwrap() - 1;\n    let max_z = cubes.iter().map(|c| c.2).max().unwrap() + 1;\n    let start = (min_x, min_y, min_z);\n    let mut seen = HashSet::from([start]);\n    let mut queue = VecDeque::from([start]);\n    let mut area = 0;\n    while let Some((x,y,z)) = queue.pop_front() {\n        for (dx,dy,dz) in DIRS {\n            let next = (x+dx,y+dy,z+dz);\n            if next.0 < min_x || next.0 > max_x || next.1 < min_y || next.1 > max_y || next.2 < min_z || next.2 > max_z { continue; }\n            if cubes.contains(&next) { area += 1; }\n            else if seen.insert(next) { queue.push_back(next); }\n        }\n    }\n    area\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3376966050fa5877c47039d04d8db6158d64fbf11d018c100d1787a74695460a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      137
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest two_isolated_extreme_cubes_have_twelve_exterior_faces ... ",
+    "stdout_sha256": "b5102ba297c49664d74420f0425254f9e985418c82db3d2385d2f109f8658b35",
+    "stderr": "warning: function `exposed_faces` is never used\n  --> solution.rs:10:8\n   |\n10 | pub fn exposed_faces(cells: &[Cell]) -> usize {\n   |        ^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: 1 warning emitted\n\n",
+    "stderr_sha256": "ea8878464a6c49a0daa083af74e1b00f0ce215b1d7e3262d9892e399399d1cc2",
+    "duration_ms": 49730,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

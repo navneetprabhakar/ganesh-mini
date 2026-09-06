@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0493",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "0be876bc421d8bfda9391c7ba166e0c4a71ace51695d08fafedb4f40a9070071",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import advance_cart\n\nactual = advance_cart({'x': 5.0, 'y': 5.0, 'heading': 0.0}, (1e308, 1e308), (10.0, 10.0))\nprint(repr(actual))\nassert actual == {'x': 10.0, 'y': 5.0, 'heading': 0.0}, 'straight motion must not change y'\n",
+        "sha256": "27d7bb000a751e3c79181fb8937f8592510ee40d0d9191db0907778bb438676c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9258f54fd4a2660693ab4762cdfd1404354c033d67c0e86716b31a49a0537c84",
+      "text": "In `solution.py`, implement `advance_cart(state, wheel_rates, area)`.\n\n`state` is a mapping containing finite numeric `x`, `y`, and `heading` values. `wheel_rates` must contain exactly two finite numbers, and `area` must be `(width, height)` with both dimensions positive and finite. Booleans are not valid numbers. Invalid values raise `TypeError` or `ValueError` as appropriate.\n\nCompute `speed = (left + right) / 2`. Turning is `(right - left) / 2`, multiplied by `1 + centrality`, where `centrality` is `max(0, 1 - distance_from_area_center / center_to_corner_distance)`. Add the adjusted turn to the heading, normalize it into `[0, 2*pi)`, then move by `speed` along that new heading. Clamp the resulting coordinates to the closed area bounds.\n\nReturn a deep copy of `state` with `x`, `y`, and `heading` replaced. Do not mutate `state`, `wheel_rates`, or `area`; nested values in the result must not alias nested values from `state`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9258f54fd4a2660693ab4762cdfd1404354c033d67c0e86716b31a49a0537c84",
+      "text": "In `solution.py`, implement `advance_cart(state, wheel_rates, area)`.\n\n`state` is a mapping containing finite numeric `x`, `y`, and `heading` values. `wheel_rates` must contain exactly two finite numbers, and `area` must be `(width, height)` with both dimensions positive and finite. Booleans are not valid numbers. Invalid values raise `TypeError` or `ValueError` as appropriate.\n\nCompute `speed = (left + right) / 2`. Turning is `(right - left) / 2`, multiplied by `1 + centrality`, where `centrality` is `max(0, 1 - distance_from_area_center / center_to_corner_distance)`. Add the adjusted turn to the heading, normalize it into `[0, 2*pi)`, then move by `speed` along that new heading. Clamp the resulting coordinates to the closed area bounds.\n\nReturn a deep copy of `state` with `x`, `y`, and `heading` replaced. Do not mutate `state`, `wheel_rates`, or `area`; nested values in the result must not alias nested values from `state`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0493",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport math\nfrom numbers import Real\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(f\"{name} must be a real number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef advance_cart(state, wheel_rates, area):\n    if not hasattr(state, \"__getitem__\"):\n        raise TypeError(\"state must be a mapping\")\n    try:\n        x = _finite_number(state[\"x\"], \"x\")\n        y = _finite_number(state[\"y\"], \"y\")\n        heading = _finite_number(state[\"heading\"], \"heading\")\n    except KeyError as exc:\n        raise ValueError(f\"missing state field: {exc.args[0]}\") from exc\n\n    try:\n        rates = tuple(wheel_rates)\n        dimensions = tuple(area)\n    except TypeError as exc:\n        raise TypeError(\"wheel_rates and area must be iterable\") from exc\n    if len(rates) != 2 or len(dimensions) != 2:\n        raise ValueError(\"wheel_rates and area must each contain two values\")\n\n    left = _finite_number(rates[0], \"left rate\")\n    right = _finite_number(rates[1], \"right rate\")\n    width = _finite_number(dimensions[0], \"width\")\n    height = _finite_number(dimensions[1], \"height\")\n    if width <= 0 or height <= 0:\n        raise ValueError(\"area dimensions must be positive\")\n\n    center_x, center_y = width / 2, height / 2\n    corner_distance = math.hypot(center_x, center_y)\n    distance = math.hypot(x - center_x, y - center_y)\n    centrality = max(0.0, 1.0 - distance / corner_distance)\n    speed = (left + right) / 2\n    turn = (right - left) / 2 * (1.0 + centrality)\n    new_heading = (heading + turn) % (2 * math.pi)\n    new_x = min(width, max(0.0, x + speed * math.cos(new_heading)))\n    new_y = min(height, max(0.0, y + speed * math.sin(new_heading)))\n\n    result = state.copy()\n    result.update(x=new_x, y=new_y, heading=new_heading)\n    return result\n",
+          "label": "Uses a shallow copy, so nested result values still alias the input state.",
+          "sha256": "15da3eb540660b92a355b58dd0b9d19c46df2b9529e5a7359a6503530f4db7c7"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport math\nfrom numbers import Real\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(f\"{name} must be a real number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef advance_cart(state, wheel_rates, area):\n    if not hasattr(state, \"__getitem__\"):\n        raise TypeError(\"state must be a mapping\")\n    try:\n        x = _finite_number(state[\"x\"], \"x\")\n        y = _finite_number(state[\"y\"], \"y\")\n        heading = _finite_number(state[\"heading\"], \"heading\")\n    except KeyError as exc:\n        raise ValueError(f\"missing state field: {exc.args[0]}\") from exc\n\n    try:\n        rates = tuple(wheel_rates)\n        dimensions = tuple(area)\n    except TypeError as exc:\n        raise TypeError(\"wheel_rates and area must be iterable\") from exc\n    if len(rates) != 2 or len(dimensions) != 2:\n        raise ValueError(\"wheel_rates and area must each contain two values\")\n\n    left = _finite_number(rates[0], \"left rate\")\n    right = _finite_number(rates[1], \"right rate\")\n    width = _finite_number(dimensions[0], \"width\")\n    height = _finite_number(dimensions[1], \"height\")\n    if width <= 0 or height <= 0:\n        raise ValueError(\"area dimensions must be positive\")\n\n    center_x, center_y = width / 2, height / 2\n    corner_distance = math.hypot(center_x, center_y)\n    distance = math.hypot(x - center_x, y - center_y)\n    centrality = max(0.0, 1.0 - distance / corner_distance)\n    speed = (left + right) / 2\n    turn = (right - left) / 2 * (1.0 + centrality)\n    new_heading = (heading + turn) % (2 * math.pi)\n    new_x = min(width, max(0.0, x + speed * math.cos(new_heading)))\n    new_y = min(height, max(0.0, y + speed * math.sin(new_heading)))\n\n    result = copy.deepcopy(state)\n    result.update(x=new_x, y=new_y, heading=new_heading)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eb6c684517a20f9acbb5ca02520308c4a466c5fbb52b91e2db8e332c27ad41b8"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport math\nimport unittest\n\nfrom solution import advance_cart\n\n\nclass AdvanceCartTests(unittest.TestCase):\n    def test_center_adjusts_turn_and_moves_on_new_heading(self):\n        state = {\"x\": 5.0, \"y\": 5.0, \"heading\": 0.0, \"meta\": {\"tags\": [\"a\"]}}\n        rates = [0.0, 2.0]\n        area = (10.0, 10.0)\n        original = copy.deepcopy(state)\n        result = advance_cart(state, rates, area)\n        self.assertAlmostEqual(result[\"heading\"], 2.0)\n        self.assertAlmostEqual(result[\"x\"], 5.0 + math.cos(2.0))\n        self.assertAlmostEqual(result[\"y\"], 5.0 + math.sin(2.0))\n        self.assertEqual(state, original)\n        self.assertEqual(rates, [0.0, 2.0])\n        self.assertEqual(area, (10.0, 10.0))\n        self.assertIsNot(result, state)\n        self.assertIsNot(result[\"meta\"], state[\"meta\"])\n        self.assertIsNot(result[\"meta\"][\"tags\"], state[\"meta\"][\"tags\"])\n\n    def test_corner_has_zero_centrality_and_coordinates_are_clamped(self):\n        result = advance_cart({\"x\": 0.0, \"y\": 0.0, \"heading\": 0.0}, (-2.0, 0.0), (10.0, 10.0))\n        self.assertAlmostEqual(result[\"heading\"], 1.0)\n        self.assertEqual(result[\"x\"], 0.0)\n        self.assertEqual(result[\"y\"], 0.0)\n\n    def test_heading_is_normalized(self):\n        result = advance_cart({\"x\": 1.0, \"y\": 1.0, \"heading\": 2 * math.pi - 0.25}, (1.0, -1.0), (2.0, 2.0))\n        self.assertGreaterEqual(result[\"heading\"], 0.0)\n        self.assertLess(result[\"heading\"], 2 * math.pi)\n        self.assertAlmostEqual(result[\"heading\"], 2 * math.pi - 2.25)\n        self.assertAlmostEqual(result[\"x\"], 1.0)\n        self.assertAlmostEqual(result[\"y\"], 1.0)\n\n    def test_straight_motion_and_closed_bounds(self):\n        result = advance_cart({\"x\": 9.5, \"y\": 5.0, \"heading\": 0.0}, (2, 2), (10, 10))\n        self.assertEqual(result[\"x\"], 10.0)\n        self.assertAlmostEqual(result[\"y\"], 5.0)\n        self.assertAlmostEqual(result[\"heading\"], 0.0)\n\n    def test_invalid_state_values(self):\n        for state in ({\"x\": True, \"y\": 0, \"heading\": 0}, {\"x\": 0, \"y\": math.inf, \"heading\": 0}, {\"x\": 0, \"y\": 0}, None):\n            with self.subTest(state=state):\n                with self.assertRaises((TypeError, ValueError, KeyError)):\n                    advance_cart(state, (1, 1), (10, 10))\n\n    def test_invalid_rates_and_area(self):\n        invalid_rates = [(1,), (1, 2, 3), (1, True), (1, math.nan), 3]\n        for rates in invalid_rates:\n            with self.subTest(rates=rates):\n                with self.assertRaises((TypeError, ValueError)):\n                    advance_cart({\"x\": 0, \"y\": 0, \"heading\": 0}, rates, (10, 10))\n        invalid_areas = [(0, 1), (-1, 1), (1, math.inf), (True, 1), (1,), 4]\n        for area in invalid_areas:\n            with self.subTest(area=area):\n                with self.assertRaises((TypeError, ValueError)):\n                    advance_cart({\"x\": 0, \"y\": 0, \"heading\": 0}, (1, 1), area)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "fba7ecb017b273a65cfe2d735a19b8da16e70015a3d80bb2646df89437001eee"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9258f54fd4a2660693ab4762cdfd1404354c033d67c0e86716b31a49a0537c84",
+      "text": "In `solution.py`, implement `advance_cart(state, wheel_rates, area)`.\n\n`state` is a mapping containing finite numeric `x`, `y`, and `heading` values. `wheel_rates` must contain exactly two finite numbers, and `area` must be `(width, height)` with both dimensions positive and finite. Booleans are not valid numbers. Invalid values raise `TypeError` or `ValueError` as appropriate.\n\nCompute `speed = (left + right) / 2`. Turning is `(right - left) / 2`, multiplied by `1 + centrality`, where `centrality` is `max(0, 1 - distance_from_area_center / center_to_corner_distance)`. Add the adjusted turn to the heading, normalize it into `[0, 2*pi)`, then move by `speed` along that new heading. Clamp the resulting coordinates to the closed area bounds.\n\nReturn a deep copy of `state` with `x`, `y`, and `heading` replaced. Do not mutate `state`, `wheel_rates`, or `area`; nested values in the result must not alias nested values from `state`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9258f54fd4a2660693ab4762cdfd1404354c033d67c0e86716b31a49a0537c84",
+      "text": "In `solution.py`, implement `advance_cart(state, wheel_rates, area)`.\n\n`state` is a mapping containing finite numeric `x`, `y`, and `heading` values. `wheel_rates` must contain exactly two finite numbers, and `area` must be `(width, height)` with both dimensions positive and finite. Booleans are not valid numbers. Invalid values raise `TypeError` or `ValueError` as appropriate.\n\nCompute `speed = (left + right) / 2`. Turning is `(right - left) / 2`, multiplied by `1 + centrality`, where `centrality` is `max(0, 1 - distance_from_area_center / center_to_corner_distance)`. Add the adjusted turn to the heading, normalize it into `[0, 2*pi)`, then move by `speed` along that new heading. Clamp the resulting coordinates to the closed area bounds.\n\nReturn a deep copy of `state` with `x`, `y`, and `heading` replaced. Do not mutate `state`, `wheel_rates`, or `area`; nested values in the result must not alias nested values from `state`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0493",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport math\nfrom numbers import Real\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(f\"{name} must be a real number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef advance_cart(state, wheel_rates, area):\n    if not hasattr(state, \"__getitem__\"):\n        raise TypeError(\"state must be a mapping\")\n    try:\n        x = _finite_number(state[\"x\"], \"x\")\n        y = _finite_number(state[\"y\"], \"y\")\n        heading = _finite_number(state[\"heading\"], \"heading\")\n    except KeyError as exc:\n        raise ValueError(f\"missing state field: {exc.args[0]}\") from exc\n\n    try:\n        rates = tuple(wheel_rates)\n        dimensions = tuple(area)\n    except TypeError as exc:\n        raise TypeError(\"wheel_rates and area must be iterable\") from exc\n    if len(rates) != 2 or len(dimensions) != 2:\n        raise ValueError(\"wheel_rates and area must each contain two values\")\n\n    left = _finite_number(rates[0], \"left rate\")\n    right = _finite_number(rates[1], \"right rate\")\n    width = _finite_number(dimensions[0], \"width\")\n    height = _finite_number(dimensions[1], \"height\")\n    if width <= 0 or height <= 0:\n        raise ValueError(\"area dimensions must be positive\")\n\n    center_x, center_y = width / 2, height / 2\n    corner_distance = math.hypot(center_x, center_y)\n    distance = math.hypot(x - center_x, y - center_y)\n    centrality = max(0.0, 1.0 - distance / corner_distance)\n    speed = (left + right) / 2\n    turn = (right - left) / 2 * (1.0 + centrality)\n    new_heading = (heading + turn) % (2 * math.pi)\n    new_x = min(width, max(0.0, x + speed * math.cos(new_heading)))\n    new_y = min(height, max(0.0, y + speed * math.sin(new_heading)))\n\n    result = state.copy()\n    result.update(x=new_x, y=new_y, heading=new_heading)\n    return result\n",
+          "label": "Uses a shallow copy, so nested result values still alias the input state.",
+          "sha256": "15da3eb540660b92a355b58dd0b9d19c46df2b9529e5a7359a6503530f4db7c7"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport math\nfrom numbers import Real\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(f\"{name} must be a real number\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef advance_cart(state, wheel_rates, area):\n    if not hasattr(state, \"__getitem__\"):\n        raise TypeError(\"state must be a mapping\")\n    try:\n        x = _finite_number(state[\"x\"], \"x\")\n        y = _finite_number(state[\"y\"], \"y\")\n        heading = _finite_number(state[\"heading\"], \"heading\")\n    except KeyError as exc:\n        raise ValueError(f\"missing state field: {exc.args[0]}\") from exc\n\n    try:\n        rates = tuple(wheel_rates)\n        dimensions = tuple(area)\n    except TypeError as exc:\n        raise TypeError(\"wheel_rates and area must be iterable\") from exc\n    if len(rates) != 2 or len(dimensions) != 2:\n        raise ValueError(\"wheel_rates and area must each contain two values\")\n\n    left = _finite_number(rates[0], \"left rate\")\n    right = _finite_number(rates[1], \"right rate\")\n    width = _finite_number(dimensions[0], \"width\")\n    height = _finite_number(dimensions[1], \"height\")\n    if width <= 0 or height <= 0:\n        raise ValueError(\"area dimensions must be positive\")\n\n    center_x, center_y = width / 2, height / 2\n    corner_distance = math.hypot(center_x, center_y)\n    distance = math.hypot(x - center_x, y - center_y)\n    centrality = max(0.0, 1.0 - distance / corner_distance)\n    speed = (left + right) / 2\n    turn = (right - left) / 2 * (1.0 + centrality)\n    new_heading = (heading + turn) % (2 * math.pi)\n    new_x = min(width, max(0.0, x + speed * math.cos(new_heading)))\n    new_y = min(height, max(0.0, y + speed * math.sin(new_heading)))\n\n    result = copy.deepcopy(state)\n    result.update(x=new_x, y=new_y, heading=new_heading)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "eb6c684517a20f9acbb5ca02520308c4a466c5fbb52b91e2db8e332c27ad41b8"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "{'x': 10.0, 'y': 0.0, 'heading': 0.0}\n",
+    "stdout_sha256": "c17ad03a126b037bd06c0cdc435897408d2778a45224a613f9be669499c9ce2f",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 5, in <module>\n    assert actual == {'x': 10.0, 'y': 5.0, 'heading': 0.0}, 'straight motion must not change y'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: straight motion must not change y\n",
+    "stderr_sha256": "54706310a32068c69a60929b90672de4e405257a2d83ed724a46681161525037",
+    "duration_ms": 331,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0466",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "682e4fb9f216f13bee79dedfabd51ff738f4b89cd4a823107d1d6ff13d3c3a4c",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import parse_cards\n\nsource = \"Q: First?\\r\\n- yes\\r\\n- no\\r\\nA: 1\\r\\n\\r\\nQ: Second?\\r\\n- left\\r\\n- right\\r\\nA: 2\"\nactual = parse_cards(source)\nassert [card[\"answer\"] for card in actual] == [\"yes\", \"right\"], repr(actual)\n",
+        "sha256": "687936817e617bca5eabc585593ea16ec9eb7d1c81f4b46959ea910a5278dfa0"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "016cfa685358ee5d2a229358bb688990f7df7fc3ab59ec608ac565f0d06e29bb",
+      "text": "Implement `parse_cards(source)` and `save_cards(cards, add_many)` in `solution.py`. `source` is a string containing blank-line-separated cards. Each card must contain, in order, one `Q: ` line, at least two `- ` option lines, and one final `A: N` line, where `N` is a one-based option number. Surrounding whitespace on the entire source and each extracted value is ignored, but empty questions/options are invalid. `parse_cards` returns dictionaries with keys `question`, `options`, and `answer`; `answer` is the selected option text. Empty or whitespace-only source returns `[]`. Any malformed card raises `ValueError`; a non-string source raises `TypeError`. `save_cards` validates that `cards` is a list of dictionaries having exactly those three keys, with a non-empty string question and answer and a list of non-empty string options. It calls callable `add_many` exactly once with a deep copy of the cards and returns the callback's result. Invalid data must not call the callback, and callback mutations must not affect `cards`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "016cfa685358ee5d2a229358bb688990f7df7fc3ab59ec608ac565f0d06e29bb",
+      "text": "Implement `parse_cards(source)` and `save_cards(cards, add_many)` in `solution.py`. `source` is a string containing blank-line-separated cards. Each card must contain, in order, one `Q: ` line, at least two `- ` option lines, and one final `A: N` line, where `N` is a one-based option number. Surrounding whitespace on the entire source and each extracted value is ignored, but empty questions/options are invalid. `parse_cards` returns dictionaries with keys `question`, `options`, and `answer`; `answer` is the selected option text. Empty or whitespace-only source returns `[]`. Any malformed card raises `ValueError`; a non-string source raises `TypeError`. `save_cards` validates that `cards` is a list of dictionaries having exactly those three keys, with a non-empty string question and answer and a list of non-empty string options. It calls callable `add_many` exactly once with a deep copy of the cards and returns the callback's result. Invalid data must not call the callback, and callback mutations must not affect `cards`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0466",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef parse_cards(source):\n    if not isinstance(source, str):\n        raise TypeError(\"source must be a string\")\n    if not source.strip():\n        return []\n\n    result = []\n    for block in source.strip().split(\"\\n\\n\"):\n        lines = [line.strip() for line in block.splitlines() if line.strip()]\n        if len(lines) < 4 or not lines[0].startswith(\"Q: \") or not lines[-1].startswith(\"A: \"):\n            raise ValueError(\"malformed card\")\n        question = lines[0][3:].strip()\n        option_lines = lines[1:-1]\n        if not question or len(option_lines) < 2 or any(not line.startswith(\"- \") for line in option_lines):\n            raise ValueError(\"malformed card\")\n        options = [line[2:].strip() for line in option_lines]\n        if any(not option for option in options):\n            raise ValueError(\"empty option\")\n        try:\n            answer_number = int(lines[-1][3:].strip())\n        except ValueError as exc:\n            raise ValueError(\"answer must be an integer\") from exc\n        if not 1 <= answer_number <= len(options):\n            raise ValueError(\"answer out of range\")\n        result.append({\n            \"question\": question,\n            \"options\": options,\n            \"answer\": options[answer_number],\n        })\n    return result\n\n\ndef _validate_cards(cards):\n    if not isinstance(cards, list):\n        raise TypeError(\"cards must be a list\")\n    for card in cards:\n        if not isinstance(card, dict) or set(card) != {\"question\", \"options\", \"answer\"}:\n            raise ValueError(\"invalid card shape\")\n        if not isinstance(card[\"question\"], str) or not card[\"question\"]:\n            raise ValueError(\"invalid question\")\n        if not isinstance(card[\"answer\"], str) or not card[\"answer\"]:\n            raise ValueError(\"invalid answer\")\n        if not isinstance(card[\"options\"], list) or any(\n            not isinstance(option, str) or not option for option in card[\"options\"]\n        ):\n            raise ValueError(\"invalid options\")\n\n\ndef save_cards(cards, add_many):\n    _validate_cards(cards)\n    if not callable(add_many):\n        raise TypeError(\"add_many must be callable\")\n    return add_many(deepcopy(cards))\n",
+          "label": "Uses a one-based answer number directly as a zero-based list index.",
+          "sha256": "b6fc525dabe93846f4e6b77f43bc68bd1077bb5fda1a919f092af0c7c9b132ab"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef parse_cards(source):\n    if not isinstance(source, str):\n        raise TypeError(\"source must be a string\")\n    if not source.strip():\n        return []\n\n    result = []\n    for block in source.strip().split(\"\\n\\n\"):\n        lines = [line.strip() for line in block.splitlines() if line.strip()]\n        if len(lines) < 4 or not lines[0].startswith(\"Q: \") or not lines[-1].startswith(\"A: \"):\n            raise ValueError(\"malformed card\")\n        question = lines[0][3:].strip()\n        option_lines = lines[1:-1]\n        if not question or len(option_lines) < 2 or any(not line.startswith(\"- \") for line in option_lines):\n            raise ValueError(\"malformed card\")\n        options = [line[2:].strip() for line in option_lines]\n        if any(not option for option in options):\n            raise ValueError(\"empty option\")\n        try:\n            answer_number = int(lines[-1][3:].strip())\n        except ValueError as exc:\n            raise ValueError(\"answer must be an integer\") from exc\n        if not 1 <= answer_number <= len(options):\n            raise ValueError(\"answer out of range\")\n        result.append({\n            \"question\": question,\n            \"options\": options,\n            \"answer\": options[answer_number - 1],\n        })\n    return result\n\n\ndef _validate_cards(cards):\n    if not isinstance(cards, list):\n        raise TypeError(\"cards must be a list\")\n    for card in cards:\n        if not isinstance(card, dict) or set(card) != {\"question\", \"options\", \"answer\"}:\n            raise ValueError(\"invalid card shape\")\n        if not isinstance(card[\"question\"], str) or not card[\"question\"]:\n            raise ValueError(\"invalid question\")\n        if not isinstance(card[\"answer\"], str) or not card[\"answer\"]:\n            raise ValueError(\"invalid answer\")\n        if not isinstance(card[\"options\"], list) or any(\n            not isinstance(option, str) or not option for option in card[\"options\"]\n        ):\n            raise ValueError(\"invalid options\")\n\n\ndef save_cards(cards, add_many):\n    _validate_cards(cards)\n    if not callable(add_many):\n        raise TypeError(\"add_many must be callable\")\n    return add_many(deepcopy(cards))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ff0dc54d16b191bbb6a4f9e76ec02f95de84ec1ccfa2f268961643409a5654b1"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import parse_cards, save_cards\n\n\nclass CardTests(unittest.TestCase):\n    def test_parse_multiple_cards_and_whitespace(self):\n        source = \"\"\"\n        Q: Capital of France?  \n        - London\n        -  Paris  \n        - Rome\n        A: 2\n\n        Q:  Two plus two? \n        - 3\n        - 4\n        A: 2\n        \"\"\"\n        self.assertEqual(parse_cards(source), [\n            {\"question\": \"Capital of France?\", \"options\": [\"London\", \"Paris\", \"Rome\"], \"answer\": \"Paris\"},\n            {\"question\": \"Two plus two?\", \"options\": [\"3\", \"4\"], \"answer\": \"4\"},\n        ])\n\n    def test_empty_source(self):\n        self.assertEqual(parse_cards(\"\"), [])\n        self.assertEqual(parse_cards(\" \\n\\t \"), [])\n\n    def test_malformed_cards(self):\n        malformed = [\n            \"Q: Q?\\n- only one\\nA: 1\",\n            \"Q: \\n- a\\n- b\\nA: 1\",\n            \"Q: Q?\\n- a\\n- \\nA: 1\",\n            \"Q: Q?\\n- a\\n- b\",\n            \"Q: Q?\\nA: 1\\n- a\\n- b\",\n            \"Q: Q?\\n- a\\n- b\\nA: 0\",\n            \"Q: Q?\\n- a\\n- b\\nA: 3\",\n            \"Q: Q?\\n- a\\n- b\\nA: x\",\n            \"Q: Q?\\n- a\\n- b\\nA: 1\\nextra\",\n        ]\n        for source in malformed:\n            with self.subTest(source=source):\n                with self.assertRaises(ValueError):\n                    parse_cards(source)\n        with self.assertRaises(TypeError):\n            parse_cards(12)\n\n    def test_save_calls_once_with_independent_deep_copy(self):\n        cards = [{\"question\": \"Q\", \"options\": [\"A\", \"B\"], \"answer\": \"B\"}]\n        calls = []\n        def callback(received):\n            calls.append(received)\n            received[0][\"options\"].append(\"mutated\")\n            received.append({\"question\": \"X\", \"options\": [\"Y\", \"Z\"], \"answer\": \"Y\"})\n            return \"saved\"\n        self.assertEqual(save_cards(cards, callback), \"saved\")\n        self.assertEqual(len(calls), 1)\n        self.assertEqual(cards, [{\"question\": \"Q\", \"options\": [\"A\", \"B\"], \"answer\": \"B\"}])\n        self.assertIsNot(calls[0], cards)\n\n    def test_invalid_save_data_never_calls_callback(self):\n        invalid = [\n            None,\n            [{}],\n            [{\"question\": \"Q\", \"options\": [\"A\", \"B\"], \"answer\": \"A\", \"extra\": 1}],\n            [{\"question\": \"\", \"options\": [\"A\", \"B\"], \"answer\": \"A\"}],\n            [{\"question\": \"Q\", \"options\": [\"A\", \"\"], \"answer\": \"A\"}],\n            [{\"question\": \"Q\", \"options\": \"AB\", \"answer\": \"A\"}],\n            [{\"question\": \"Q\", \"options\": [\"A\", \"B\"], \"answer\": \"\"}],\n        ]\n        for cards in invalid:\n            calls = []\n            with self.subTest(cards=cards):\n                with self.assertRaises((TypeError, ValueError)):\n                    save_cards(cards, lambda value: calls.append(value))\n                self.assertEqual(calls, [])\n        with self.assertRaises(TypeError):\n            save_cards([], 42)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "d187b2b7312355c103004322f82f7ad9f6f1a388bb480d528f0dc015f9723656"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "016cfa685358ee5d2a229358bb688990f7df7fc3ab59ec608ac565f0d06e29bb",
+      "text": "Implement `parse_cards(source)` and `save_cards(cards, add_many)` in `solution.py`. `source` is a string containing blank-line-separated cards. Each card must contain, in order, one `Q: ` line, at least two `- ` option lines, and one final `A: N` line, where `N` is a one-based option number. Surrounding whitespace on the entire source and each extracted value is ignored, but empty questions/options are invalid. `parse_cards` returns dictionaries with keys `question`, `options`, and `answer`; `answer` is the selected option text. Empty or whitespace-only source returns `[]`. Any malformed card raises `ValueError`; a non-string source raises `TypeError`. `save_cards` validates that `cards` is a list of dictionaries having exactly those three keys, with a non-empty string question and answer and a list of non-empty string options. It calls callable `add_many` exactly once with a deep copy of the cards and returns the callback's result. Invalid data must not call the callback, and callback mutations must not affect `cards`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "016cfa685358ee5d2a229358bb688990f7df7fc3ab59ec608ac565f0d06e29bb",
+      "text": "Implement `parse_cards(source)` and `save_cards(cards, add_many)` in `solution.py`. `source` is a string containing blank-line-separated cards. Each card must contain, in order, one `Q: ` line, at least two `- ` option lines, and one final `A: N` line, where `N` is a one-based option number. Surrounding whitespace on the entire source and each extracted value is ignored, but empty questions/options are invalid. `parse_cards` returns dictionaries with keys `question`, `options`, and `answer`; `answer` is the selected option text. Empty or whitespace-only source returns `[]`. Any malformed card raises `ValueError`; a non-string source raises `TypeError`. `save_cards` validates that `cards` is a list of dictionaries having exactly those three keys, with a non-empty string question and answer and a list of non-empty string options. It calls callable `add_many` exactly once with a deep copy of the cards and returns the callback's result. Invalid data must not call the callback, and callback mutations must not affect `cards`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0466",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef parse_cards(source):\n    if not isinstance(source, str):\n        raise TypeError(\"source must be a string\")\n    if not source.strip():\n        return []\n\n    result = []\n    for block in source.strip().split(\"\\n\\n\"):\n        lines = [line.strip() for line in block.splitlines() if line.strip()]\n        if len(lines) < 4 or not lines[0].startswith(\"Q: \") or not lines[-1].startswith(\"A: \"):\n            raise ValueError(\"malformed card\")\n        question = lines[0][3:].strip()\n        option_lines = lines[1:-1]\n        if not question or len(option_lines) < 2 or any(not line.startswith(\"- \") for line in option_lines):\n            raise ValueError(\"malformed card\")\n        options = [line[2:].strip() for line in option_lines]\n        if any(not option for option in options):\n            raise ValueError(\"empty option\")\n        try:\n            answer_number = int(lines[-1][3:].strip())\n        except ValueError as exc:\n            raise ValueError(\"answer must be an integer\") from exc\n        if not 1 <= answer_number <= len(options):\n            raise ValueError(\"answer out of range\")\n        result.append({\n            \"question\": question,\n            \"options\": options,\n            \"answer\": options[answer_number],\n        })\n    return result\n\n\ndef _validate_cards(cards):\n    if not isinstance(cards, list):\n        raise TypeError(\"cards must be a list\")\n    for card in cards:\n        if not isinstance(card, dict) or set(card) != {\"question\", \"options\", \"answer\"}:\n            raise ValueError(\"invalid card shape\")\n        if not isinstance(card[\"question\"], str) or not card[\"question\"]:\n            raise ValueError(\"invalid question\")\n        if not isinstance(card[\"answer\"], str) or not card[\"answer\"]:\n            raise ValueError(\"invalid answer\")\n        if not isinstance(card[\"options\"], list) or any(\n            not isinstance(option, str) or not option for option in card[\"options\"]\n        ):\n            raise ValueError(\"invalid options\")\n\n\ndef save_cards(cards, add_many):\n    _validate_cards(cards)\n    if not callable(add_many):\n        raise TypeError(\"add_many must be callable\")\n    return add_many(deepcopy(cards))\n",
+          "label": "Uses a one-based answer number directly as a zero-based list index.",
+          "sha256": "b6fc525dabe93846f4e6b77f43bc68bd1077bb5fda1a919f092af0c7c9b132ab"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef parse_cards(source):\n    if not isinstance(source, str):\n        raise TypeError(\"source must be a string\")\n    if not source.strip():\n        return []\n\n    result = []\n    for block in source.strip().split(\"\\n\\n\"):\n        lines = [line.strip() for line in block.splitlines() if line.strip()]\n        if len(lines) < 4 or not lines[0].startswith(\"Q: \") or not lines[-1].startswith(\"A: \"):\n            raise ValueError(\"malformed card\")\n        question = lines[0][3:].strip()\n        option_lines = lines[1:-1]\n        if not question or len(option_lines) < 2 or any(not line.startswith(\"- \") for line in option_lines):\n            raise ValueError(\"malformed card\")\n        options = [line[2:].strip() for line in option_lines]\n        if any(not option for option in options):\n            raise ValueError(\"empty option\")\n        try:\n            answer_number = int(lines[-1][3:].strip())\n        except ValueError as exc:\n            raise ValueError(\"answer must be an integer\") from exc\n        if not 1 <= answer_number <= len(options):\n            raise ValueError(\"answer out of range\")\n        result.append({\n            \"question\": question,\n            \"options\": options,\n            \"answer\": options[answer_number - 1],\n        })\n    return result\n\n\ndef _validate_cards(cards):\n    if not isinstance(cards, list):\n        raise TypeError(\"cards must be a list\")\n    for card in cards:\n        if not isinstance(card, dict) or set(card) != {\"question\", \"options\", \"answer\"}:\n            raise ValueError(\"invalid card shape\")\n        if not isinstance(card[\"question\"], str) or not card[\"question\"]:\n            raise ValueError(\"invalid question\")\n        if not isinstance(card[\"answer\"], str) or not card[\"answer\"]:\n            raise ValueError(\"invalid answer\")\n        if not isinstance(card[\"options\"], list) or any(\n            not isinstance(option, str) or not option for option in card[\"options\"]\n        ):\n            raise ValueError(\"invalid options\")\n\n\ndef save_cards(cards, add_many):\n    _validate_cards(cards)\n    if not callable(add_many):\n        raise TypeError(\"add_many must be callable\")\n    return add_many(deepcopy(cards))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ff0dc54d16b191bbb6a4f9e76ec02f95de84ec1ccfa2f268961643409a5654b1"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 4, in <module>\n    actual = parse_cards(source)\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 18, in parse_cards\n    raise ValueError(\"malformed card\")\nValueError: malformed card\n",
+    "stderr_sha256": "a4fe131e75bc03981d9057b4401bae19975a20be87ff94e56260467b010e81cb",
+    "duration_ms": 318,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

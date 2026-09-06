@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0475",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "435798309e4eaddde6a104ea9f33412f1fc1d3245db1dc9ed686d6b74e1a4e4d",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import scan_part_codes\n\nactual = list(scan_part_codes('part: \u017fAA-0000-U'))\nprint(repr(actual))\nassert actual == [], 'non-ASCII long s must not be accepted as an ASCII letter'\n",
+        "sha256": "caa2f3c9cc3a8f70b9312787303b014d9bbd1dab85369c633ffc48ab0dd697d2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1d9f6e8c352d58e76c2f8fe4ccbdf2e899cf14408df9b5d7e22917b7deef4291",
+      "text": "Implement `scan_part_codes(text)` in `solution.py`. It must return an iterator yielding normalized part-code strings in left-to-right order. A valid occurrence consists of the case-insensitive word `part`, optional whitespace, either `:` or `=`, optional whitespace, and a code of the form `AAA-0000-C`, where letters are ASCII A-Z and digits are ASCII 0-9. The final letter is a checksum: map A=1 through Z=26, add the three leading letter values and four digits, and require the total modulo 26 to equal the final letter value modulo 26. Yield valid codes as `AAA0000C` in uppercase. The code must not be embedded in a larger ASCII alphanumeric token. Return an empty iterator for an empty string or text containing no valid occurrence. Raise `TypeError` if `text` is not a string. Repeated occurrences must be preserved. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1d9f6e8c352d58e76c2f8fe4ccbdf2e899cf14408df9b5d7e22917b7deef4291",
+      "text": "Implement `scan_part_codes(text)` in `solution.py`. It must return an iterator yielding normalized part-code strings in left-to-right order. A valid occurrence consists of the case-insensitive word `part`, optional whitespace, either `:` or `=`, optional whitespace, and a code of the form `AAA-0000-C`, where letters are ASCII A-Z and digits are ASCII 0-9. The final letter is a checksum: map A=1 through Z=26, add the three leading letter values and four digits, and require the total modulo 26 to equal the final letter value modulo 26. Yield valid codes as `AAA0000C` in uppercase. The code must not be embedded in a larger ASCII alphanumeric token. Return an empty iterator for an empty string or text containing no valid occurrence. Raise `TypeError` if `text` is not a string. Repeated occurrences must be preserved. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0475",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\n\n_PATTERN = re.compile(\n    r\"(?i)(?<![A-Z0-9])part\\s*[:=]\\s*([A-Z]{3})-([0-9]{4})-([A-Z])(?![A-Z0-9])\"\n)\n\n\ndef scan_part_codes(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    def generate():\n        for match in _PATTERN.finditer(text):\n            prefix, digits, check = match.groups()\n            prefix = prefix.upper()\n            check = check.upper()\n            total = sum(ord(char) - ord(\"A\") for char in prefix)\n            total += sum(int(char) for char in digits)\n            check_value = ord(check) - ord(\"A\") + 1\n            if total % 26 == check_value % 26:\n                yield prefix + digits + check\n\n    return generate()\n",
+          "label": "Computes leading-letter checksum values with A=0 instead of the required A=1.",
+          "sha256": "462b20a7a091efea1d52d9ca28445b8ca3432c8aef0b30153553f4506f6daa8d"
+        }
+      ],
+      "reference": {
+        "code": "import re\n\n_PATTERN = re.compile(\n    r\"(?i)(?<![A-Z0-9])part\\s*[:=]\\s*([A-Z]{3})-([0-9]{4})-([A-Z])(?![A-Z0-9])\"\n)\n\n\ndef scan_part_codes(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    def generate():\n        for match in _PATTERN.finditer(text):\n            prefix, digits, check = match.groups()\n            prefix = prefix.upper()\n            check = check.upper()\n            total = sum(ord(char) - ord(\"A\") + 1 for char in prefix)\n            total += sum(int(char) for char in digits)\n            check_value = ord(check) - ord(\"A\") + 1\n            if total % 26 == check_value % 26:\n                yield prefix + digits + check\n\n    return generate()\n",
+        "label": "codex-teacher-reference",
+        "sha256": "84436910346038273d4b26c540567ac439aff2158ff1cab7b671a09411ff0225"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import scan_part_codes\n\n\nclass ScanPartCodesTests(unittest.TestCase):\n    def test_normalization_order_and_repetition(self):\n        text = \"Part: ABC-1234-P; PART = zzz-9999-j; part:ABC-1234-P\"\n        self.assertEqual(list(scan_part_codes(text)), [\"ABC1234P\", \"ZZZ9999J\", \"ABC1234P\"])\n\n    def test_empty_and_no_matches(self):\n        self.assertEqual(list(scan_part_codes(\"\")), [])\n        self.assertEqual(list(scan_part_codes(\"part: AAA-0000-D\")), [])\n        self.assertEqual(list(scan_part_codes(\"unrelated text\")), [])\n\n    def test_checksum_boundaries(self):\n        self.assertEqual(list(scan_part_codes(\"part=AAA-0000-C part: ZZZ-9999-J\")),\n                         [\"AAA0000C\", \"ZZZ9999J\"])\n\n    def test_rejects_embedded_tokens_and_malformed_codes(self):\n        text = (\n            \"xpart:AAA-0000-C \"\n            \"partx:AAA-0000-C \"\n            \"part:AAA-0000-C9 \"\n            \"part:AAA-0000-Cx \"\n            \"part:1AA-0000-C \"\n            \"part:AAA_0000_C \"\n            \"part:AAAA-0000-C\"\n        )\n        self.assertEqual(list(scan_part_codes(text)), [])\n\n    def test_ascii_only_letters_and_digits(self):\n        self.assertEqual(list(scan_part_codes(\"part: \u00c5AA-0000-C part: AAA-\u0660\u0660\u0660\u0660-C\")), [])\n\n    def test_returns_iterator_and_does_not_mutate_text(self):\n        text = \"part: ABC-1234-P\"\n        original = text\n        result = scan_part_codes(text)\n        self.assertIs(iter(result), result)\n        self.assertEqual(next(result), \"ABC1234P\")\n        with self.assertRaises(StopIteration):\n            next(result)\n        self.assertEqual(text, original)\n\n    def test_non_string_raises_type_error(self):\n        for value in (None, 123, b\"part: AAA-0000-C\", [\"part\"]):\n            with self.subTest(value=value):\n                with self.assertRaises(TypeError):\n                    scan_part_codes(value)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "9d0d42310f2a67a8a98dddeb6c2ecd78abf2c3e446cfb9ba10784c280aa37aac"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1d9f6e8c352d58e76c2f8fe4ccbdf2e899cf14408df9b5d7e22917b7deef4291",
+      "text": "Implement `scan_part_codes(text)` in `solution.py`. It must return an iterator yielding normalized part-code strings in left-to-right order. A valid occurrence consists of the case-insensitive word `part`, optional whitespace, either `:` or `=`, optional whitespace, and a code of the form `AAA-0000-C`, where letters are ASCII A-Z and digits are ASCII 0-9. The final letter is a checksum: map A=1 through Z=26, add the three leading letter values and four digits, and require the total modulo 26 to equal the final letter value modulo 26. Yield valid codes as `AAA0000C` in uppercase. The code must not be embedded in a larger ASCII alphanumeric token. Return an empty iterator for an empty string or text containing no valid occurrence. Raise `TypeError` if `text` is not a string. Repeated occurrences must be preserved. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1d9f6e8c352d58e76c2f8fe4ccbdf2e899cf14408df9b5d7e22917b7deef4291",
+      "text": "Implement `scan_part_codes(text)` in `solution.py`. It must return an iterator yielding normalized part-code strings in left-to-right order. A valid occurrence consists of the case-insensitive word `part`, optional whitespace, either `:` or `=`, optional whitespace, and a code of the form `AAA-0000-C`, where letters are ASCII A-Z and digits are ASCII 0-9. The final letter is a checksum: map A=1 through Z=26, add the three leading letter values and four digits, and require the total modulo 26 to equal the final letter value modulo 26. Yield valid codes as `AAA0000C` in uppercase. The code must not be embedded in a larger ASCII alphanumeric token. Return an empty iterator for an empty string or text containing no valid occurrence. Raise `TypeError` if `text` is not a string. Repeated occurrences must be preserved. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0475",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import re\n\n_PATTERN = re.compile(\n    r\"(?i)(?<![A-Z0-9])part\\s*[:=]\\s*([A-Z]{3})-([0-9]{4})-([A-Z])(?![A-Z0-9])\"\n)\n\n\ndef scan_part_codes(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    def generate():\n        for match in _PATTERN.finditer(text):\n            prefix, digits, check = match.groups()\n            prefix = prefix.upper()\n            check = check.upper()\n            total = sum(ord(char) - ord(\"A\") for char in prefix)\n            total += sum(int(char) for char in digits)\n            check_value = ord(check) - ord(\"A\") + 1\n            if total % 26 == check_value % 26:\n                yield prefix + digits + check\n\n    return generate()\n",
+          "label": "Computes leading-letter checksum values with A=0 instead of the required A=1.",
+          "sha256": "462b20a7a091efea1d52d9ca28445b8ca3432c8aef0b30153553f4506f6daa8d"
+        }
+      ],
+      "reference": {
+        "code": "import re\n\n_PATTERN = re.compile(\n    r\"(?i)(?<![A-Z0-9])part\\s*[:=]\\s*([A-Z]{3})-([0-9]{4})-([A-Z])(?![A-Z0-9])\"\n)\n\n\ndef scan_part_codes(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n\n    def generate():\n        for match in _PATTERN.finditer(text):\n            prefix, digits, check = match.groups()\n            prefix = prefix.upper()\n            check = check.upper()\n            total = sum(ord(char) - ord(\"A\") + 1 for char in prefix)\n            total += sum(int(char) for char in digits)\n            check_value = ord(check) - ord(\"A\") + 1\n            if total % 26 == check_value % 26:\n                yield prefix + digits + check\n\n    return generate()\n",
+        "label": "codex-teacher-reference",
+        "sha256": "84436910346038273d4b26c540567ac439aff2158ff1cab7b671a09411ff0225"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "['SAA0000U']\n",
+    "stdout_sha256": "d0f0e01fc7139a780c745105cbe578928a4c4b93e82cfd32adf1cf95fe4718e6",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 5, in <module>\n    assert actual == [], 'non-ASCII long s must not be accepted as an ASCII letter'\n           ^^^^^^^^^^^^\nAssertionError: non-ASCII long s must not be accepted as an ASCII letter\n",
+    "stderr_sha256": "8cc709db760845d2cfabed3cd90fdb7bc286f5c6154b7b86d65d2074c0fe2f29",
+    "duration_ms": 387,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

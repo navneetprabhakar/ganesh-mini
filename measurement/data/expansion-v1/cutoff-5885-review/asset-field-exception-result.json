@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0468",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "538b8e0a80b83bbfe5ad6006f66d53b3ea860111ed4963e8a70c50f53e75e195",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import AssetDraft\n\ntry:\n    AssetDraft('a', 1, 'IN', {})\nexcept ValueError:\n    pass\nexcept Exception as exc:\n    raise AssertionError(f'invalid label field requires ValueError, got {type(exc).__name__}') from exc\nelse:\n    raise AssertionError('invalid label accepted')\n",
+        "sha256": "0b3c75914c5e253e7955a4a4434a6255e39d990d08b9e64e30df683f835c28d2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b13417ae0a88cd055dd2c5c64eb035641aeaae325c667dbf37f92a3df47ffcc9",
+      "text": "Create a complete `solution.py` defining dataclasses `AssetDraft(code, label, region, metadata)`, `AssetPatch(code, label=None, region=None, metadata=None)`, and `AssetView(code, label, region, metadata)`, plus class `AssetRegistry`. `code`, `label`, and `region` must be non-empty strings; `metadata` must be a dictionary. The registry methods are `add(draft)`, `update(patch)`, `remove(code)`, and `list_all()`. `add` rejects an existing code with `ValueError`; `update` raises `KeyError` for a missing code and preserves fields whose patch value is `None`; `remove` returns `True` when present and `False` otherwise. `list_all` returns views in insertion order, and updating does not change that order. Inputs, returned views, metadata dictionaries, and internal state must be mutually deep-copy independent. Invalid object types raise `TypeError`, and invalid fields raise `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b13417ae0a88cd055dd2c5c64eb035641aeaae325c667dbf37f92a3df47ffcc9",
+      "text": "Create a complete `solution.py` defining dataclasses `AssetDraft(code, label, region, metadata)`, `AssetPatch(code, label=None, region=None, metadata=None)`, and `AssetView(code, label, region, metadata)`, plus class `AssetRegistry`. `code`, `label`, and `region` must be non-empty strings; `metadata` must be a dictionary. The registry methods are `add(draft)`, `update(patch)`, `remove(code)`, and `list_all()`. `add` rejects an existing code with `ValueError`; `update` raises `KeyError` for a missing code and preserves fields whose patch value is `None`; `remove` returns `True` when present and `False` otherwise. `list_all` returns views in insertion order, and updating does not change that order. Inputs, returned views, metadata dictionaries, and internal state must be mutually deep-copy independent. Invalid object types raise `TypeError`, and invalid fields raise `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0468",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom dataclasses import dataclass\n\n\ndef _text(value, field):\n    if not isinstance(value, str):\n        raise TypeError(f\"{field} must be a string\")\n    if not value:\n        raise ValueError(f\"{field} must be a non-empty string\")\n\n\ndef _metadata(value):\n    if not isinstance(value, dict):\n        raise ValueError(\"metadata must be a dictionary\")\n\n\n@dataclass\nclass AssetDraft:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetPatch:\n    code: str\n    label: str | None = None\n    region: str | None = None\n    metadata: dict | None = None\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        if self.label is not None:\n            _text(self.label, \"label\")\n        if self.region is not None:\n            _text(self.region, \"region\")\n        if self.metadata is not None:\n            _metadata(self.metadata)\n            self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetView:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\nclass AssetRegistry:\n    def __init__(self):\n        self._assets = {}\n\n    def add(self, draft):\n        if not isinstance(draft, AssetDraft):\n            raise TypeError(\"draft must be AssetDraft\")\n        if draft.code in self._assets:\n            raise ValueError(\"duplicate code\")\n        stored = AssetView(\n            draft.code,\n            draft.label,\n            draft.region,\n            deepcopy(draft.metadata),\n        )\n        self._assets[draft.code] = stored\n        return deepcopy(stored)\n\n    def update(self, patch):\n        if not isinstance(patch, AssetPatch):\n            raise TypeError(\"patch must be AssetPatch\")\n        if patch.code not in self._assets:\n            raise KeyError(patch.code)\n        current = self._assets[patch.code]\n        updated = AssetView(\n            patch.code,\n            current.label if patch.label is None else patch.label,\n            current.region if patch.region is None else patch.region,\n            current.metadata if patch.metadata is None else patch.metadata,\n        )\n        self._assets[patch.code] = updated\n        return deepcopy(updated)\n\n    def remove(self, code):\n        _text(code, \"code\")\n        return self._assets.pop(code, None) is not None\n\n    def list_all(self):\n        return list(self._assets.values())\n",
+          "label": "Returns references to internally stored views instead of deep copies.",
+          "sha256": "0f10f25540de6d826c6615b84d49c1de36de0f20578f11515e9f1e59729a90ab"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom dataclasses import dataclass\n\n\ndef _text(value, field):\n    if not isinstance(value, str):\n        raise TypeError(f\"{field} must be a string\")\n    if not value:\n        raise ValueError(f\"{field} must be a non-empty string\")\n\n\ndef _metadata(value):\n    if not isinstance(value, dict):\n        raise ValueError(\"metadata must be a dictionary\")\n\n\n@dataclass\nclass AssetDraft:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetPatch:\n    code: str\n    label: str | None = None\n    region: str | None = None\n    metadata: dict | None = None\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        if self.label is not None:\n            _text(self.label, \"label\")\n        if self.region is not None:\n            _text(self.region, \"region\")\n        if self.metadata is not None:\n            _metadata(self.metadata)\n            self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetView:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\nclass AssetRegistry:\n    def __init__(self):\n        self._assets = {}\n\n    def add(self, draft):\n        if not isinstance(draft, AssetDraft):\n            raise TypeError(\"draft must be AssetDraft\")\n        if draft.code in self._assets:\n            raise ValueError(\"duplicate code\")\n        stored = AssetView(\n            draft.code,\n            draft.label,\n            draft.region,\n            deepcopy(draft.metadata),\n        )\n        self._assets[draft.code] = stored\n        return deepcopy(stored)\n\n    def update(self, patch):\n        if not isinstance(patch, AssetPatch):\n            raise TypeError(\"patch must be AssetPatch\")\n        if patch.code not in self._assets:\n            raise KeyError(patch.code)\n        current = self._assets[patch.code]\n        updated = AssetView(\n            patch.code,\n            current.label if patch.label is None else patch.label,\n            current.region if patch.region is None else patch.region,\n            current.metadata if patch.metadata is None else patch.metadata,\n        )\n        self._assets[patch.code] = updated\n        return deepcopy(updated)\n\n    def remove(self, code):\n        _text(code, \"code\")\n        return self._assets.pop(code, None) is not None\n\n    def list_all(self):\n        return deepcopy(list(self._assets.values()))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c8d908fb9d4262e0bb873454844109ab6fd57ed38a3b031329b7d6b056c0fe8c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import AssetDraft, AssetPatch, AssetView, AssetRegistry\n\n\nclass AssetRegistryTests(unittest.TestCase):\n    def test_add_list_update_and_insertion_order(self):\n        registry = AssetRegistry()\n        first = AssetDraft(\"a\", \"Alpha\", \"IN\", {\"tags\": [\"one\"]})\n        second = AssetDraft(\"b\", \"Beta\", \"US\", {})\n        registry.add(first)\n        registry.add(second)\n        registry.update(AssetPatch(\"a\", label=\"Alpha 2\", metadata={\"tags\": [\"two\"]}))\n        views = registry.list_all()\n        self.assertEqual([v.code for v in views], [\"a\", \"b\"])\n        self.assertEqual(views[0], AssetView(\"a\", \"Alpha 2\", \"IN\", {\"tags\": [\"two\"]}))\n        self.assertEqual(views[1], AssetView(\"b\", \"Beta\", \"US\", {}))\n\n    def test_none_patch_fields_are_preserved(self):\n        registry = AssetRegistry()\n        registry.add(AssetDraft(\"a\", \"Alpha\", \"IN\", {\"x\": 1}))\n        registry.update(AssetPatch(\"a\"))\n        self.assertEqual(registry.list_all(), [AssetView(\"a\", \"Alpha\", \"IN\", {\"x\": 1})])\n\n    def test_deep_copy_independence_in_all_directions(self):\n        metadata = {\"nested\": {\"values\": [1]}}\n        draft = AssetDraft(\"a\", \"Alpha\", \"IN\", metadata)\n        registry = AssetRegistry()\n        registry.add(draft)\n        metadata[\"nested\"][\"values\"].append(2)\n        draft.metadata[\"nested\"][\"values\"].append(3)\n        first_view = registry.list_all()[0]\n        self.assertEqual(first_view.metadata, {\"nested\": {\"values\": [1]}})\n        first_view.metadata[\"nested\"][\"values\"].append(4)\n        second_view = registry.list_all()[0]\n        self.assertEqual(second_view.metadata, {\"nested\": {\"values\": [1]}})\n        self.assertIsNot(first_view, second_view)\n        patch_metadata = {\"items\": [\"x\"]}\n        patch = AssetPatch(\"a\", metadata=patch_metadata)\n        registry.update(patch)\n        patch_metadata[\"items\"].append(\"y\")\n        patch.metadata[\"items\"].append(\"z\")\n        self.assertEqual(registry.list_all()[0].metadata, {\"items\": [\"x\"]})\n\n    def test_duplicate_missing_and_remove(self):\n        registry = AssetRegistry()\n        registry.add(AssetDraft(\"a\", \"Alpha\", \"IN\", {}))\n        with self.assertRaises(ValueError):\n            registry.add(AssetDraft(\"a\", \"Again\", \"US\", {}))\n        with self.assertRaises(KeyError):\n            registry.update(AssetPatch(\"missing\", label=\"X\"))\n        self.assertFalse(registry.remove(\"missing\"))\n        self.assertTrue(registry.remove(\"a\"))\n        self.assertFalse(registry.remove(\"a\"))\n        self.assertEqual(registry.list_all(), [])\n\n    def test_invalid_object_types(self):\n        registry = AssetRegistry()\n        with self.assertRaises(TypeError):\n            registry.add({\"code\": \"a\"})\n        with self.assertRaises(TypeError):\n            registry.update(AssetDraft(\"a\", \"A\", \"IN\", {}))\n        for code in (None, 3):\n            with self.assertRaises(TypeError):\n                registry.remove(code)\n\n    def test_invalid_fields_on_dataclasses(self):\n        constructors = [\n            lambda: AssetDraft(\"\", \"A\", \"IN\", {}),\n            lambda: AssetDraft(\"a\", \"\", \"IN\", {}),\n            lambda: AssetDraft(\"a\", \"A\", \"\", {}),\n            lambda: AssetDraft(\"a\", \"A\", \"IN\", []),\n            lambda: AssetPatch(\"\", label=\"A\"),\n            lambda: AssetPatch(\"a\", label=\"\"),\n            lambda: AssetPatch(\"a\", region=\"\"),\n            lambda: AssetPatch(\"a\", metadata=[]),\n            lambda: AssetView(\"a\", \"A\", \"IN\", []),\n        ]\n        for constructor in constructors:\n            with self.subTest(constructor=constructor):\n                with self.assertRaises((TypeError, ValueError)):\n                    constructor()\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "d08ef5c47d28ee2d423b31da3521a4a953be937bb30a69310cf7d72f720a79cb"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b13417ae0a88cd055dd2c5c64eb035641aeaae325c667dbf37f92a3df47ffcc9",
+      "text": "Create a complete `solution.py` defining dataclasses `AssetDraft(code, label, region, metadata)`, `AssetPatch(code, label=None, region=None, metadata=None)`, and `AssetView(code, label, region, metadata)`, plus class `AssetRegistry`. `code`, `label`, and `region` must be non-empty strings; `metadata` must be a dictionary. The registry methods are `add(draft)`, `update(patch)`, `remove(code)`, and `list_all()`. `add` rejects an existing code with `ValueError`; `update` raises `KeyError` for a missing code and preserves fields whose patch value is `None`; `remove` returns `True` when present and `False` otherwise. `list_all` returns views in insertion order, and updating does not change that order. Inputs, returned views, metadata dictionaries, and internal state must be mutually deep-copy independent. Invalid object types raise `TypeError`, and invalid fields raise `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b13417ae0a88cd055dd2c5c64eb035641aeaae325c667dbf37f92a3df47ffcc9",
+      "text": "Create a complete `solution.py` defining dataclasses `AssetDraft(code, label, region, metadata)`, `AssetPatch(code, label=None, region=None, metadata=None)`, and `AssetView(code, label, region, metadata)`, plus class `AssetRegistry`. `code`, `label`, and `region` must be non-empty strings; `metadata` must be a dictionary. The registry methods are `add(draft)`, `update(patch)`, `remove(code)`, and `list_all()`. `add` rejects an existing code with `ValueError`; `update` raises `KeyError` for a missing code and preserves fields whose patch value is `None`; `remove` returns `True` when present and `False` otherwise. `list_all` returns views in insertion order, and updating does not change that order. Inputs, returned views, metadata dictionaries, and internal state must be mutually deep-copy independent. Invalid object types raise `TypeError`, and invalid fields raise `ValueError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0468",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom dataclasses import dataclass\n\n\ndef _text(value, field):\n    if not isinstance(value, str):\n        raise TypeError(f\"{field} must be a string\")\n    if not value:\n        raise ValueError(f\"{field} must be a non-empty string\")\n\n\ndef _metadata(value):\n    if not isinstance(value, dict):\n        raise ValueError(\"metadata must be a dictionary\")\n\n\n@dataclass\nclass AssetDraft:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetPatch:\n    code: str\n    label: str | None = None\n    region: str | None = None\n    metadata: dict | None = None\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        if self.label is not None:\n            _text(self.label, \"label\")\n        if self.region is not None:\n            _text(self.region, \"region\")\n        if self.metadata is not None:\n            _metadata(self.metadata)\n            self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetView:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\nclass AssetRegistry:\n    def __init__(self):\n        self._assets = {}\n\n    def add(self, draft):\n        if not isinstance(draft, AssetDraft):\n            raise TypeError(\"draft must be AssetDraft\")\n        if draft.code in self._assets:\n            raise ValueError(\"duplicate code\")\n        stored = AssetView(\n            draft.code,\n            draft.label,\n            draft.region,\n            deepcopy(draft.metadata),\n        )\n        self._assets[draft.code] = stored\n        return deepcopy(stored)\n\n    def update(self, patch):\n        if not isinstance(patch, AssetPatch):\n            raise TypeError(\"patch must be AssetPatch\")\n        if patch.code not in self._assets:\n            raise KeyError(patch.code)\n        current = self._assets[patch.code]\n        updated = AssetView(\n            patch.code,\n            current.label if patch.label is None else patch.label,\n            current.region if patch.region is None else patch.region,\n            current.metadata if patch.metadata is None else patch.metadata,\n        )\n        self._assets[patch.code] = updated\n        return deepcopy(updated)\n\n    def remove(self, code):\n        _text(code, \"code\")\n        return self._assets.pop(code, None) is not None\n\n    def list_all(self):\n        return list(self._assets.values())\n",
+          "label": "Returns references to internally stored views instead of deep copies.",
+          "sha256": "0f10f25540de6d826c6615b84d49c1de36de0f20578f11515e9f1e59729a90ab"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom dataclasses import dataclass\n\n\ndef _text(value, field):\n    if not isinstance(value, str):\n        raise TypeError(f\"{field} must be a string\")\n    if not value:\n        raise ValueError(f\"{field} must be a non-empty string\")\n\n\ndef _metadata(value):\n    if not isinstance(value, dict):\n        raise ValueError(\"metadata must be a dictionary\")\n\n\n@dataclass\nclass AssetDraft:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetPatch:\n    code: str\n    label: str | None = None\n    region: str | None = None\n    metadata: dict | None = None\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        if self.label is not None:\n            _text(self.label, \"label\")\n        if self.region is not None:\n            _text(self.region, \"region\")\n        if self.metadata is not None:\n            _metadata(self.metadata)\n            self.metadata = deepcopy(self.metadata)\n\n\n@dataclass\nclass AssetView:\n    code: str\n    label: str\n    region: str\n    metadata: dict\n\n    def __post_init__(self):\n        _text(self.code, \"code\")\n        _text(self.label, \"label\")\n        _text(self.region, \"region\")\n        _metadata(self.metadata)\n        self.metadata = deepcopy(self.metadata)\n\n\nclass AssetRegistry:\n    def __init__(self):\n        self._assets = {}\n\n    def add(self, draft):\n        if not isinstance(draft, AssetDraft):\n            raise TypeError(\"draft must be AssetDraft\")\n        if draft.code in self._assets:\n            raise ValueError(\"duplicate code\")\n        stored = AssetView(\n            draft.code,\n            draft.label,\n            draft.region,\n            deepcopy(draft.metadata),\n        )\n        self._assets[draft.code] = stored\n        return deepcopy(stored)\n\n    def update(self, patch):\n        if not isinstance(patch, AssetPatch):\n            raise TypeError(\"patch must be AssetPatch\")\n        if patch.code not in self._assets:\n            raise KeyError(patch.code)\n        current = self._assets[patch.code]\n        updated = AssetView(\n            patch.code,\n            current.label if patch.label is None else patch.label,\n            current.region if patch.region is None else patch.region,\n            current.metadata if patch.metadata is None else patch.metadata,\n        )\n        self._assets[patch.code] = updated\n        return deepcopy(updated)\n\n    def remove(self, code):\n        _text(code, \"code\")\n        return self._assets.pop(code, None) is not None\n\n    def list_all(self):\n        return deepcopy(list(self._assets.values()))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c8d908fb9d4262e0bb873454844109ab6fd57ed38a3b031329b7d6b056c0fe8c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"test_solution.py\", line 4, in <module>\n    AssetDraft('a', 1, 'IN', {})\n  File \"<string>\", line 7, in __init__\n  File \"/work/solution.py\", line 26, in __post_init__\n    _text(self.label, \"label\")\n  File \"/work/solution.py\", line 7, in _text\n    raise TypeError(f\"{field} must be a string\")\nTypeError: label must be a string\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 8, in <module>\n    raise AssertionError(f'invalid label field requires ValueError, got {type(exc).__name__}') from exc\nAssertionError: invalid label field requires ValueError, got TypeError\n",
+    "stderr_sha256": "58c8fc3e8805e4655f34063e50f1be1549d4eb79c62b8116835b44716ebc7b6b",
+    "duration_ms": 360,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0496",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3c4ffbeb8808f2f2d23ae176b567595e57abebbaa43261a82bc5bd348e4a522c",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from solution import MemoryCatalog\n\ncatalog = MemoryCatalog({'rows': [{}, {'v': None}]})\nactual = catalog.select('rows', {'v': None})\nprint(repr(actual))\nassert actual == [{'v': None}], 'a missing field is not a value equal to None'\n",
+        "sha256": "115a470ff6be665f1545b04e70bb96f06ebbbfd9b796f5a301e2c6bd118b91fb"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3dd8983f25b7689f6e5bf24e9b92dfcd5c8734f868892d5f25ccb3dc6def4dc5",
+      "text": "In `solution.py`, implement `MemoryCatalog`, `ResidentCatalog`, and `WorkerCatalog` as an in-memory record-query API.\n\n`MemoryCatalog(collections)` receives a mapping from nonempty string collection names to iterables of row mappings. Every row key must be a string. Deep-copy all input data. `collection_names()` returns names in ascending order. `fields(name)` returns the first row's field names in insertion order, or an empty tuple for an empty collection. `select(name, filters=None)` returns rows whose values equal every entry in the filter mapping; `None` means no filters. An unknown collection raises `KeyError`, and malformed names, rows, or filters raise `TypeError` or `ValueError`.\n\nAll returned rows must be deep copies and must not expose internal nested values.\n\n`ResidentCatalog.residents_in_zone(zone)` selects from `residents` using field `zone`. `WorkerCatalog.workers_with_role(role)` selects from `workers` using field `role`. Both arguments must be strings; empty strings are permitted and matched normally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3dd8983f25b7689f6e5bf24e9b92dfcd5c8734f868892d5f25ccb3dc6def4dc5",
+      "text": "In `solution.py`, implement `MemoryCatalog`, `ResidentCatalog`, and `WorkerCatalog` as an in-memory record-query API.\n\n`MemoryCatalog(collections)` receives a mapping from nonempty string collection names to iterables of row mappings. Every row key must be a string. Deep-copy all input data. `collection_names()` returns names in ascending order. `fields(name)` returns the first row's field names in insertion order, or an empty tuple for an empty collection. `select(name, filters=None)` returns rows whose values equal every entry in the filter mapping; `None` means no filters. An unknown collection raises `KeyError`, and malformed names, rows, or filters raise `TypeError` or `ValueError`.\n\nAll returned rows must be deep copies and must not expose internal nested values.\n\n`ResidentCatalog.residents_in_zone(zone)` selects from `residents` using field `zone`. `WorkerCatalog.workers_with_role(role)` selects from `workers` using field `role`. Both arguments must be strings; empty strings are permitted and matched normally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0496",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nfrom collections.abc import Mapping\n\n\nclass MemoryCatalog:\n    def __init__(self, collections):\n        if not isinstance(collections, Mapping):\n            raise TypeError(\"collections must be a mapping\")\n        prepared = {}\n        for name, source_rows in collections.items():\n            if not isinstance(name, str):\n                raise TypeError(\"collection names must be strings\")\n            if not name:\n                raise ValueError(\"collection names must not be empty\")\n            if isinstance(source_rows, (str, bytes)):\n                raise TypeError(\"rows must be an iterable of mappings\")\n            try:\n                rows = list(source_rows)\n            except TypeError as exc:\n                raise TypeError(\"rows must be iterable\") from exc\n            for row in rows:\n                if not isinstance(row, Mapping):\n                    raise TypeError(\"each row must be a mapping\")\n                if any(not isinstance(key, str) for key in row):\n                    raise TypeError(\"row keys must be strings\")\n            prepared[name] = copy.deepcopy(rows)\n        self._collections = prepared\n\n    def _rows(self, name):\n        if not isinstance(name, str):\n            raise TypeError(\"collection name must be a string\")\n        if not name:\n            raise ValueError(\"collection name must not be empty\")\n        if name not in self._collections:\n            raise KeyError(name)\n        return self._collections[name]\n\n    def collection_names(self):\n        return sorted(self._collections)\n\n    def fields(self, name):\n        rows = self._rows(name)\n        return tuple(rows[0]) if rows else ()\n\n    def select(self, name, filters=None):\n        rows = self._rows(name)\n        if filters is None:\n            filters = {}\n        if not isinstance(filters, Mapping):\n            raise TypeError(\"filters must be a mapping or None\")\n        if any(not isinstance(key, str) for key in filters):\n            raise TypeError(\"filter keys must be strings\")\n        matches = [row for row in rows if all(row.get(key) == value for key, value in filters.items())]\n        return matches\n\n\nclass ResidentCatalog(MemoryCatalog):\n    def residents_in_zone(self, zone):\n        if not isinstance(zone, str):\n            raise TypeError(\"zone must be a string\")\n        return self.select(\"residents\", {\"zone\": zone})\n\n\nclass WorkerCatalog(MemoryCatalog):\n    def workers_with_role(self, role):\n        if not isinstance(role, str):\n            raise TypeError(\"role must be a string\")\n        return self.select(\"workers\", {\"role\": role})\n",
+          "label": "Select returns references to internal rows instead of deep copies.",
+          "sha256": "0adba2feaef600913d391b950d4769764822b07933008f6ae55db5b60fcdb5f5"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nfrom collections.abc import Mapping\n\n\nclass MemoryCatalog:\n    def __init__(self, collections):\n        if not isinstance(collections, Mapping):\n            raise TypeError(\"collections must be a mapping\")\n        prepared = {}\n        for name, source_rows in collections.items():\n            if not isinstance(name, str):\n                raise TypeError(\"collection names must be strings\")\n            if not name:\n                raise ValueError(\"collection names must not be empty\")\n            if isinstance(source_rows, (str, bytes)):\n                raise TypeError(\"rows must be an iterable of mappings\")\n            try:\n                rows = list(source_rows)\n            except TypeError as exc:\n                raise TypeError(\"rows must be iterable\") from exc\n            for row in rows:\n                if not isinstance(row, Mapping):\n                    raise TypeError(\"each row must be a mapping\")\n                if any(not isinstance(key, str) for key in row):\n                    raise TypeError(\"row keys must be strings\")\n            prepared[name] = copy.deepcopy(rows)\n        self._collections = prepared\n\n    def _rows(self, name):\n        if not isinstance(name, str):\n            raise TypeError(\"collection name must be a string\")\n        if not name:\n            raise ValueError(\"collection name must not be empty\")\n        if name not in self._collections:\n            raise KeyError(name)\n        return self._collections[name]\n\n    def collection_names(self):\n        return sorted(self._collections)\n\n    def fields(self, name):\n        rows = self._rows(name)\n        return tuple(rows[0]) if rows else ()\n\n    def select(self, name, filters=None):\n        rows = self._rows(name)\n        if filters is None:\n            filters = {}\n        if not isinstance(filters, Mapping):\n            raise TypeError(\"filters must be a mapping or None\")\n        if any(not isinstance(key, str) for key in filters):\n            raise TypeError(\"filter keys must be strings\")\n        matches = [row for row in rows if all(row.get(key) == value for key, value in filters.items())]\n        return copy.deepcopy(matches)\n\n\nclass ResidentCatalog(MemoryCatalog):\n    def residents_in_zone(self, zone):\n        if not isinstance(zone, str):\n            raise TypeError(\"zone must be a string\")\n        return self.select(\"residents\", {\"zone\": zone})\n\n\nclass WorkerCatalog(MemoryCatalog):\n    def workers_with_role(self, role):\n        if not isinstance(role, str):\n            raise TypeError(\"role must be a string\")\n        return self.select(\"workers\", {\"role\": role})\n",
+        "label": "codex-teacher-reference",
+        "sha256": "387106da7af439d84c25eae1754c39fedb93f2683b0cf6c43d8eef5b42c6b119"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport unittest\n\nfrom solution import MemoryCatalog, ResidentCatalog, WorkerCatalog\n\n\nclass MemoryCatalogTests(unittest.TestCase):\n    def test_names_fields_selection_and_empty_collection(self):\n        source = {\n            \"zeta\": [],\n            \"people\": [\n                {\"name\": \"Ana\", \"zone\": \"east\", \"age\": 30},\n                {\"name\": \"Bo\", \"zone\": \"west\", \"age\": 30},\n                {\"name\": \"Cy\", \"zone\": \"east\", \"age\": 40},\n            ],\n        }\n        catalog = MemoryCatalog(source)\n        self.assertEqual(catalog.collection_names(), [\"people\", \"zeta\"])\n        self.assertEqual(catalog.fields(\"people\"), (\"name\", \"zone\", \"age\"))\n        self.assertEqual(catalog.fields(\"zeta\"), ())\n        self.assertEqual(catalog.select(\"people\", {\"zone\": \"east\", \"age\": 30}), [\n            {\"name\": \"Ana\", \"zone\": \"east\", \"age\": 30}\n        ])\n        self.assertEqual(catalog.select(\"people\", {}), source[\"people\"])\n        self.assertEqual(catalog.select(\"zeta\"), [])\n\n    def test_input_and_output_are_deep_copied(self):\n        nested = {\"labels\": [\"initial\"]}\n        source = {\"items\": [{\"id\": 1, \"data\": nested}]}\n        original = copy.deepcopy(source)\n        catalog = MemoryCatalog(source)\n        source[\"items\"][0][\"data\"][\"labels\"].append(\"changed\")\n        source[\"items\"].append({\"id\": 2})\n        self.assertEqual(catalog.select(\"items\"), original[\"items\"])\n        first = catalog.select(\"items\")\n        second = catalog.select(\"items\")\n        self.assertIsNot(first, second)\n        self.assertIsNot(first[0], second[0])\n        self.assertIsNot(first[0][\"data\"], second[0][\"data\"])\n        first[0][\"data\"][\"labels\"].append(\"leak\")\n        self.assertEqual(catalog.select(\"items\"), original[\"items\"])\n\n    def test_filter_values_use_equality(self):\n        catalog = MemoryCatalog({\"rows\": [{\"v\": [1, 2]}, {\"v\": [2, 3]}]})\n        filters = {\"v\": [1, 2]}\n        before = copy.deepcopy(filters)\n        self.assertEqual(catalog.select(\"rows\", filters), [{\"v\": [1, 2]}])\n        self.assertEqual(filters, before)\n\n    def test_unknown_collections(self):\n        catalog = MemoryCatalog({\"known\": []})\n        with self.assertRaises(KeyError):\n            catalog.fields(\"missing\")\n        with self.assertRaises(KeyError):\n            catalog.select(\"missing\")\n\n    def test_malformed_construction_and_queries(self):\n        invalid_collections = [\n            None,\n            [],\n            {\"\": []},\n            {1: []},\n            {\"x\": 3},\n            {\"x\": [1]},\n            {\"x\": [{1: \"bad\"}]},\n        ]\n        for value in invalid_collections:\n            with self.subTest(value=value):\n                with self.assertRaises((TypeError, ValueError)):\n                    MemoryCatalog(value)\n        catalog = MemoryCatalog({\"x\": [{\"a\": 1}]})\n        for name in (None, 1, \"\"):\n            with self.subTest(name=name):\n                with self.assertRaises((TypeError, ValueError, KeyError)):\n                    catalog.select(name)\n        for filters in ([], \"a=1\", {1: 1}):\n            with self.subTest(filters=filters):\n                with self.assertRaises((TypeError, ValueError)):\n                    catalog.select(\"x\", filters)\n\n    def test_specialized_catalogs(self):\n        residents = ResidentCatalog({\"residents\": [\n            {\"name\": \"A\", \"zone\": \"\"}, {\"name\": \"B\", \"zone\": \"north\"}\n        ]})\n        workers = WorkerCatalog({\"workers\": [\n            {\"name\": \"C\", \"role\": \"dev\"}, {\"name\": \"D\", \"role\": \"\"}\n        ]})\n        self.assertEqual(residents.residents_in_zone(\"\"), [{\"name\": \"A\", \"zone\": \"\"}])\n        self.assertEqual(workers.workers_with_role(\"dev\"), [{\"name\": \"C\", \"role\": \"dev\"}])\n        for bad in (None, 1, True):\n            with self.assertRaises(TypeError):\n                residents.residents_in_zone(bad)\n            with self.assertRaises(TypeError):\n                workers.workers_with_role(bad)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "ef9bcd497172ac20c857160d4c83ecc67ec752c4f965b04e89d83d057f14fa5d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3dd8983f25b7689f6e5bf24e9b92dfcd5c8734f868892d5f25ccb3dc6def4dc5",
+      "text": "In `solution.py`, implement `MemoryCatalog`, `ResidentCatalog`, and `WorkerCatalog` as an in-memory record-query API.\n\n`MemoryCatalog(collections)` receives a mapping from nonempty string collection names to iterables of row mappings. Every row key must be a string. Deep-copy all input data. `collection_names()` returns names in ascending order. `fields(name)` returns the first row's field names in insertion order, or an empty tuple for an empty collection. `select(name, filters=None)` returns rows whose values equal every entry in the filter mapping; `None` means no filters. An unknown collection raises `KeyError`, and malformed names, rows, or filters raise `TypeError` or `ValueError`.\n\nAll returned rows must be deep copies and must not expose internal nested values.\n\n`ResidentCatalog.residents_in_zone(zone)` selects from `residents` using field `zone`. `WorkerCatalog.workers_with_role(role)` selects from `workers` using field `role`. Both arguments must be strings; empty strings are permitted and matched normally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3dd8983f25b7689f6e5bf24e9b92dfcd5c8734f868892d5f25ccb3dc6def4dc5",
+      "text": "In `solution.py`, implement `MemoryCatalog`, `ResidentCatalog`, and `WorkerCatalog` as an in-memory record-query API.\n\n`MemoryCatalog(collections)` receives a mapping from nonempty string collection names to iterables of row mappings. Every row key must be a string. Deep-copy all input data. `collection_names()` returns names in ascending order. `fields(name)` returns the first row's field names in insertion order, or an empty tuple for an empty collection. `select(name, filters=None)` returns rows whose values equal every entry in the filter mapping; `None` means no filters. An unknown collection raises `KeyError`, and malformed names, rows, or filters raise `TypeError` or `ValueError`.\n\nAll returned rows must be deep copies and must not expose internal nested values.\n\n`ResidentCatalog.residents_in_zone(zone)` selects from `residents` using field `zone`. `WorkerCatalog.workers_with_role(role)` selects from `workers` using field `role`. Both arguments must be strings; empty strings are permitted and matched normally.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0496",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nfrom collections.abc import Mapping\n\n\nclass MemoryCatalog:\n    def __init__(self, collections):\n        if not isinstance(collections, Mapping):\n            raise TypeError(\"collections must be a mapping\")\n        prepared = {}\n        for name, source_rows in collections.items():\n            if not isinstance(name, str):\n                raise TypeError(\"collection names must be strings\")\n            if not name:\n                raise ValueError(\"collection names must not be empty\")\n            if isinstance(source_rows, (str, bytes)):\n                raise TypeError(\"rows must be an iterable of mappings\")\n            try:\n                rows = list(source_rows)\n            except TypeError as exc:\n                raise TypeError(\"rows must be iterable\") from exc\n            for row in rows:\n                if not isinstance(row, Mapping):\n                    raise TypeError(\"each row must be a mapping\")\n                if any(not isinstance(key, str) for key in row):\n                    raise TypeError(\"row keys must be strings\")\n            prepared[name] = copy.deepcopy(rows)\n        self._collections = prepared\n\n    def _rows(self, name):\n        if not isinstance(name, str):\n            raise TypeError(\"collection name must be a string\")\n        if not name:\n            raise ValueError(\"collection name must not be empty\")\n        if name not in self._collections:\n            raise KeyError(name)\n        return self._collections[name]\n\n    def collection_names(self):\n        return sorted(self._collections)\n\n    def fields(self, name):\n        rows = self._rows(name)\n        return tuple(rows[0]) if rows else ()\n\n    def select(self, name, filters=None):\n        rows = self._rows(name)\n        if filters is None:\n            filters = {}\n        if not isinstance(filters, Mapping):\n            raise TypeError(\"filters must be a mapping or None\")\n        if any(not isinstance(key, str) for key in filters):\n            raise TypeError(\"filter keys must be strings\")\n        matches = [row for row in rows if all(row.get(key) == value for key, value in filters.items())]\n        return matches\n\n\nclass ResidentCatalog(MemoryCatalog):\n    def residents_in_zone(self, zone):\n        if not isinstance(zone, str):\n            raise TypeError(\"zone must be a string\")\n        return self.select(\"residents\", {\"zone\": zone})\n\n\nclass WorkerCatalog(MemoryCatalog):\n    def workers_with_role(self, role):\n        if not isinstance(role, str):\n            raise TypeError(\"role must be a string\")\n        return self.select(\"workers\", {\"role\": role})\n",
+          "label": "Select returns references to internal rows instead of deep copies.",
+          "sha256": "0adba2feaef600913d391b950d4769764822b07933008f6ae55db5b60fcdb5f5"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nfrom collections.abc import Mapping\n\n\nclass MemoryCatalog:\n    def __init__(self, collections):\n        if not isinstance(collections, Mapping):\n            raise TypeError(\"collections must be a mapping\")\n        prepared = {}\n        for name, source_rows in collections.items():\n            if not isinstance(name, str):\n                raise TypeError(\"collection names must be strings\")\n            if not name:\n                raise ValueError(\"collection names must not be empty\")\n            if isinstance(source_rows, (str, bytes)):\n                raise TypeError(\"rows must be an iterable of mappings\")\n            try:\n                rows = list(source_rows)\n            except TypeError as exc:\n                raise TypeError(\"rows must be iterable\") from exc\n            for row in rows:\n                if not isinstance(row, Mapping):\n                    raise TypeError(\"each row must be a mapping\")\n                if any(not isinstance(key, str) for key in row):\n                    raise TypeError(\"row keys must be strings\")\n            prepared[name] = copy.deepcopy(rows)\n        self._collections = prepared\n\n    def _rows(self, name):\n        if not isinstance(name, str):\n            raise TypeError(\"collection name must be a string\")\n        if not name:\n            raise ValueError(\"collection name must not be empty\")\n        if name not in self._collections:\n            raise KeyError(name)\n        return self._collections[name]\n\n    def collection_names(self):\n        return sorted(self._collections)\n\n    def fields(self, name):\n        rows = self._rows(name)\n        return tuple(rows[0]) if rows else ()\n\n    def select(self, name, filters=None):\n        rows = self._rows(name)\n        if filters is None:\n            filters = {}\n        if not isinstance(filters, Mapping):\n            raise TypeError(\"filters must be a mapping or None\")\n        if any(not isinstance(key, str) for key in filters):\n            raise TypeError(\"filter keys must be strings\")\n        matches = [row for row in rows if all(row.get(key) == value for key, value in filters.items())]\n        return copy.deepcopy(matches)\n\n\nclass ResidentCatalog(MemoryCatalog):\n    def residents_in_zone(self, zone):\n        if not isinstance(zone, str):\n            raise TypeError(\"zone must be a string\")\n        return self.select(\"residents\", {\"zone\": zone})\n\n\nclass WorkerCatalog(MemoryCatalog):\n    def workers_with_role(self, role):\n        if not isinstance(role, str):\n            raise TypeError(\"role must be a string\")\n        return self.select(\"workers\", {\"role\": role})\n",
+        "label": "codex-teacher-reference",
+        "sha256": "387106da7af439d84c25eae1754c39fedb93f2683b0cf6c43d8eef5b42c6b119"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "[{}, {'v': None}]\n",
+    "stdout_sha256": "928b5a290a5b8f746f3670dcbd72118360b2ea171a4c62b999285fe3dadc8843",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 6, in <module>\n    assert actual == [{'v': None}], 'a missing field is not a value equal to None'\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: a missing field is not a value equal to None\n",
+    "stderr_sha256": "c09c3351a5a595e7438c52e7b2e3d51af080bd7c4c01f1c9944f4f920cecd5b9",
+    "duration_ms": 307,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

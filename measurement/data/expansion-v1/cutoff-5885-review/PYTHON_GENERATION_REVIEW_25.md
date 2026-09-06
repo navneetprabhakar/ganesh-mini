@@ -24,8 +24,8 @@ inspections. No seven-criterion approval. Continue position 376.
 | 375 | 0426 | Full validation precedes callbacks; row-major once calls, truth conversion and unchanged exception propagation agree ordinarily. Callback mutation of source during traversal remains pending; no new hold. |
 
 Candidate SHA-256: `680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec`.
-Original candidates/tests/sample/partition unchanged. This batch awaits backup;
-last verified backup is through 623 holds / Python position 360.
+Original candidates/tests/sample/partition unchanged. This batch is backed up
+under QUALITY_STRATUM_629_BACKUP.md, through Python position 390.
 
 Five pinned Python 3.11.15 probe runs, network disabled/resource limited, all
 exit 1 without timeout. Holds are review items, not final rejections.

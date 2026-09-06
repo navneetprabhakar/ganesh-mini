@@ -13,7 +13,7 @@ All five runtime checks failed without timeout; TypeScript compilation passed.
 Scoped negatives: TS generation0184 uses per-registration entries and snapshots
 active listeners; inactive-entry retention is a scalability concern, not a tested
 contract defect. TS repair0122 copies internally created toast and confirmation
-objects. JS repair0143/0142 validate with for-of and use internal dense records.
+objects. JS repair0143 and JS repair0142 validate with for-of and use internal dense records.
 TS generation0188 materializes missing sequence entries with Array.from before
 finite validation, so it does not share the skipped-hole defect. No approvals.
 Continue position 286. Earlier partial checkpoint follows.

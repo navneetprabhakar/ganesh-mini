@@ -1,5 +1,17 @@
 # Array-validation follow-up, batch 17
 
+Coverage reconciliation 2026-09-07: the result-prefix list below binds to these
+IDs through each preserved receipt's `id`, not a new inspection:
+session-render-missing = javascript-generation-0187;
+agenda-bullet-missing = javascript-generation-0193;
+facet-value-missing = javascript-generation-0195;
+catalog-alias-missing = javascript-generation-0197;
+interval-missing-endpoints = javascript-repair-0129;
+book-tags-missing = javascript-repair-0131;
+roster-required-id-copy = javascript-generation-0194;
+responsive-menu-missing = typescript-generation-0172;
+biography-key-collision = typescript-generation-0173.
+
 Completed positions 241–255: 15 new / 264 unique outside-sample inspections.
 Eleven new holds in batch: **197 additive / 200 including historical three**.
 Later diagnostics: session-render-missing, agenda-bullet-missing,

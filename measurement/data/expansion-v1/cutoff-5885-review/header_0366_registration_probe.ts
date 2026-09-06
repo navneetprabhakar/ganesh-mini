@@ -1,0 +1,11 @@
+import {PanelHeaderController} from './solution';
+const controller = new PanelHeaderController('P');
+const events:string[] = [];
+const a = () => {events.push('a');};
+controller.on('create',a);
+controller.on('create',() => {events.push('b');});
+const removeLast = controller.on('create',a);
+removeLast();
+controller.create();
+console.log(events.join(','));
+if(events.join(',') !== 'a,b') throw new Error('wrong registration removed');

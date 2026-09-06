@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0104",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "04d8fbfd46aee9aa238cfee20732a7171238be9107ed5cc3f8a9eed6399bb51f",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import carry_forward\n\n\nclass ReviewProbe(unittest.TestCase):\n    def test_finite_nested_nonmarker_cell(self):\n        value = []\n        cursor = value\n        for _ in range(600):\n            child = []\n            cursor.append(child)\n            cursor = child\n        error = None\n        try:\n            carry_forward([[value], [None]])\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "b9910b8e309f792c1af0ec88b539059ca40f30f46a2ead889c290aa4f3c09c81"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8e3b0da126ec00911a7e9545739231f9bbde183506fe87b73c44e6d97e95a308",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`carry_forward(table, marker=None) -> list[list[object]]` fills missing cells independently down each column. A cell is missing only when it is the same object as `marker`. Each missing cell after a non-missing value in its column is replaced by a deep copy of that most recent value. Leading missing cells remain the original marker object. Values from one column must never fill another column.\n\n`table` must be a list of lists with equal lengths; otherwise raise `ValueError`. Empty tables and zero-column tables are valid. The returned table must be newly allocated, and every non-marker value must be deep-copied so neither the rows nor mutable cell values alias the input. The input must not be mutated.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = marker\n    for row in table:\n        new_row = []\n        for value in row:\n            if value is marker and last is not marker:\n                new_row.append(copy.deepcopy(last))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last = copied\n        result.append(new_row)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8e3b0da126ec00911a7e9545739231f9bbde183506fe87b73c44e6d97e95a308",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`carry_forward(table, marker=None) -> list[list[object]]` fills missing cells independently down each column. A cell is missing only when it is the same object as `marker`. Each missing cell after a non-missing value in its column is replaced by a deep copy of that most recent value. Leading missing cells remain the original marker object. Values from one column must never fill another column.\n\n`table` must be a list of lists with equal lengths; otherwise raise `ValueError`. Empty tables and zero-column tables are valid. The returned table must be newly allocated, and every non-marker value must be deep-copied so neither the rows nor mutable cell values alias the input. The input must not be mutated.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = marker\n    for row in table:\n        new_row = []\n        for value in row:\n            if value is marker and last is not marker:\n                new_row.append(copy.deepcopy(last))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last = copied\n        result.append(new_row)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0104",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = marker\n    for row in table:\n        new_row = []\n        for value in row:\n            if value is marker and last is not marker:\n                new_row.append(copy.deepcopy(last))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last = copied\n        result.append(new_row)\n    return result\n",
+          "label": "Uses one shared previous value for the whole table, allowing values to carry across column boundaries.",
+          "sha256": "7866ecfbbed8d829d8d02ac350d513ae818ff54d031f5807d14a769ec3c34e45"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = [marker] * width\n    for row in table:\n        new_row = []\n        for column, value in enumerate(row):\n            if value is marker and last[column] is not marker:\n                new_row.append(copy.deepcopy(last[column]))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last[column] = copied\n        result.append(new_row)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "66afe13d95c27e45545ad5d09a923a300221b1f85ba91219bf583b535bf76317"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import carry_forward\n\n\nclass CarryForwardTests(unittest.TestCase):\n    def test_fills_each_column_independently(self):\n        table = [[1, None, \"a\"], [None, 2, None], [3, None, None]]\n        self.assertEqual(carry_forward(table), [[1, None, \"a\"], [1, 2, \"a\"], [3, 2, \"a\"]])\n\n    def test_leading_markers_remain_same_marker_object(self):\n        marker = object()\n        table = [[marker, 1], [marker, marker], [\"x\", marker]]\n        result = carry_forward(table, marker)\n        self.assertIs(result[0][0], marker)\n        self.assertIs(result[1][0], marker)\n        self.assertEqual(result[1][1], 1)\n        self.assertEqual(result[2], [\"x\", 1])\n\n    def test_marker_detection_uses_identity_not_equality(self):\n        marker = [0]\n        equal_but_distinct = [0]\n        table = [[equal_but_distinct], [marker]]\n        result = carry_forward(table, marker)\n        self.assertEqual(result, [[[0]], [[0]]])\n        self.assertIsNot(result[0][0], equal_but_distinct)\n        self.assertIsNot(result[1][0], marker)\n\n    def test_empty_and_zero_column_tables(self):\n        empty = carry_forward([])\n        self.assertEqual(empty, [])\n        self.assertIsNot(empty, [])\n        table = [[], [], []]\n        result = carry_forward(table)\n        self.assertEqual(result, [[], [], []])\n        for source_row, result_row in zip(table, result):\n            self.assertIsNot(source_row, result_row)\n\n    def test_returned_rows_and_non_marker_values_are_deep_copied(self):\n        first = {\"values\": [1]}\n        second = [2]\n        table = [[first, second], [None, {\"x\": [3]}]]\n        result = carry_forward(table)\n        self.assertIsNot(result, table)\n        self.assertIsNot(result[0], table[0])\n        self.assertIsNot(result[0][0], first)\n        self.assertIsNot(result[0][1], second)\n        first[\"values\"].append(9)\n        second.append(8)\n        table[1][1][\"x\"].append(7)\n        self.assertEqual(result, [[{\"values\": [1]}, [2]], [{\"values\": [1]}, {\"x\": [3]}]])\n\n    def test_each_filled_cell_is_a_deep_copy(self):\n        source = {\"items\": []}\n        result = carry_forward([[source], [None], [None]])\n        self.assertIsNot(result[0][0], source)\n        self.assertIsNot(result[1][0], result[0][0])\n        self.assertIsNot(result[2][0], result[1][0])\n        result[1][0][\"items\"].append(\"changed\")\n        self.assertEqual(result[0][0], {\"items\": []})\n        self.assertEqual(result[2][0], {\"items\": []})\n\n    def test_input_is_not_mutated(self):\n        table = [[1, None], [None, 2]]\n        carry_forward(table)\n        self.assertEqual(table, [[1, None], [None, 2]])\n\n    def test_invalid_table_shapes_and_types(self):\n        invalid = [None, (), \"text\", [1, 2], [[1], (2,)], [[1, 2], [3]], [[], [1]]]\n        for table in invalid:\n            with self.subTest(table=table):\n                with self.assertRaises(ValueError):\n                    carry_forward(table)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "8baded4d4df32db38bd01eb8f80a1a0a9338ec1879a0d0c87d47d4f5ce2b0a02"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8e3b0da126ec00911a7e9545739231f9bbde183506fe87b73c44e6d97e95a308",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`carry_forward(table, marker=None) -> list[list[object]]` fills missing cells independently down each column. A cell is missing only when it is the same object as `marker`. Each missing cell after a non-missing value in its column is replaced by a deep copy of that most recent value. Leading missing cells remain the original marker object. Values from one column must never fill another column.\n\n`table` must be a list of lists with equal lengths; otherwise raise `ValueError`. Empty tables and zero-column tables are valid. The returned table must be newly allocated, and every non-marker value must be deep-copied so neither the rows nor mutable cell values alias the input. The input must not be mutated.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = marker\n    for row in table:\n        new_row = []\n        for value in row:\n            if value is marker and last is not marker:\n                new_row.append(copy.deepcopy(last))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last = copied\n        result.append(new_row)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8e3b0da126ec00911a7e9545739231f9bbde183506fe87b73c44e6d97e95a308",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`carry_forward(table, marker=None) -> list[list[object]]` fills missing cells independently down each column. A cell is missing only when it is the same object as `marker`. Each missing cell after a non-missing value in its column is replaced by a deep copy of that most recent value. Leading missing cells remain the original marker object. Values from one column must never fill another column.\n\n`table` must be a list of lists with equal lengths; otherwise raise `ValueError`. Empty tables and zero-column tables are valid. The returned table must be newly allocated, and every non-marker value must be deep-copied so neither the rows nor mutable cell values alias the input. The input must not be mutated.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = marker\n    for row in table:\n        new_row = []\n        for value in row:\n            if value is marker and last is not marker:\n                new_row.append(copy.deepcopy(last))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last = copied\n        result.append(new_row)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0104",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = marker\n    for row in table:\n        new_row = []\n        for value in row:\n            if value is marker and last is not marker:\n                new_row.append(copy.deepcopy(last))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last = copied\n        result.append(new_row)\n    return result\n",
+          "label": "Uses one shared previous value for the whole table, allowing values to carry across column boundaries.",
+          "sha256": "7866ecfbbed8d829d8d02ac350d513ae818ff54d031f5807d14a769ec3c34e45"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef carry_forward(table, marker=None):\n    if not isinstance(table, list) or any(not isinstance(row, list) for row in table):\n        raise ValueError(\"table must be a list of lists\")\n    width = len(table[0]) if table else 0\n    if any(len(row) != width for row in table):\n        raise ValueError(\"table must be rectangular\")\n    result = []\n    last = [marker] * width\n    for row in table:\n        new_row = []\n        for column, value in enumerate(row):\n            if value is marker and last[column] is not marker:\n                new_row.append(copy.deepcopy(last[column]))\n            else:\n                copied = marker if value is marker else copy.deepcopy(value)\n                new_row.append(copied)\n                if value is not marker:\n                    last[column] = copied\n        result.append(new_row)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "66afe13d95c27e45545ad5d09a923a300221b1f85ba91219bf583b535bf76317"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_nested_nonmarker_cell (__main__.ReviewProbe.test_finite_nested_nonmarker_cell)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 18, in test_finite_nested_nonmarker_cell\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "15663e71ce7c4096f96f9617fc3d77c426b775cc53aa35a94a7ff5080fc2354b",
+    "duration_ms": 524,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0102",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "6f46fd958d062331735c654db3a6589df7e3f3aa7b87d432afb01066826c24c5",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import make_batches\n\n\nclass ReviewProbe(unittest.TestCase):\n    def test_finite_nested_item(self):\n        value = []\n        cursor = value\n        for _ in range(600):\n            child = []\n            cursor.append(child)\n            cursor = child\n        error = None\n        try:\n            make_batches([value], 1)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "0cb93bd35c0633bf647f06ecbe4824bab7d78f78bbb6ff8fd9cfb00c445cd8e1"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "57ca52c8a72cf50db97a779cc150c78ca332c613066dcef435b2938d6487d109",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_batches(items, limit) -> tuple[tuple[object, ...], ...]` divides a list into consecutive batches of at most `limit` items. `items` must be a list. `limit` must be a positive integer and must not be a boolean. Invalid arguments raise `ValueError`. An empty list returns an empty tuple. Input order is preserved, the input list is not mutated, and every item is deep-copied so nested mutable values in the result do not alias the input. Distinct references to the same input object need not preserve their shared identity in the result.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit + 1]))\n        batches.append(batch)\n    return tuple(batches)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "57ca52c8a72cf50db97a779cc150c78ca332c613066dcef435b2938d6487d109",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_batches(items, limit) -> tuple[tuple[object, ...], ...]` divides a list into consecutive batches of at most `limit` items. `items` must be a list. `limit` must be a positive integer and must not be a boolean. Invalid arguments raise `ValueError`. An empty list returns an empty tuple. Input order is preserved, the input list is not mutated, and every item is deep-copied so nested mutable values in the result do not alias the input. Distinct references to the same input object need not preserve their shared identity in the result.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit + 1]))\n        batches.append(batch)\n    return tuple(batches)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0102",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit + 1]))\n        batches.append(batch)\n    return tuple(batches)\n",
+          "label": "Slices one extra item into each batch, causing oversized and overlapping batches.",
+          "sha256": "72024af3a6e533fed5421522bb27336a836c8cf026b33076dc18f37d51839735"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit]))\n        batches.append(batch)\n    return tuple(batches)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d8474f997edbbebf59e1594d4d6516927a625f03c5264eb8c128406231ed6f89"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import make_batches\n\n\nclass MakeBatchesTests(unittest.TestCase):\n    def test_consecutive_batches_at_limit(self):\n        self.assertEqual(make_batches([1, 2, 3, 4, 5], 2), ((1, 2), (3, 4), (5,)))\n        self.assertEqual(make_batches([1, 2, 3, 4], 2), ((1, 2), (3, 4)))\n\n    def test_limit_larger_than_input(self):\n        self.assertEqual(make_batches([\"a\", \"b\"], 10), ((\"a\", \"b\"),))\n\n    def test_empty_list(self):\n        self.assertEqual(make_batches([], 1), ())\n        self.assertEqual(make_batches([], 100), ())\n\n    def test_order_and_input_list_are_unchanged(self):\n        items = [3, 1, 2]\n        result = make_batches(items, 1)\n        self.assertEqual(result, ((3,), (1,), (2,)))\n        self.assertEqual(items, [3, 1, 2])\n\n    def test_nested_values_are_deep_copied(self):\n        nested = {\"values\": [[1], {\"x\": 2}]}\n        items = [nested]\n        result = make_batches(items, 1)\n        self.assertIsNot(result[0][0], nested)\n        self.assertIsNot(result[0][0][\"values\"], nested[\"values\"])\n        nested[\"values\"][0].append(9)\n        nested[\"values\"][1][\"x\"] = 7\n        self.assertEqual(result, (({\"values\": [[1], {\"x\": 2}]},),))\n\n    def test_result_mutation_does_not_affect_input(self):\n        items = [{\"numbers\": [1]}]\n        result = make_batches(items, 1)\n        result[0][0][\"numbers\"].append(2)\n        self.assertEqual(items, [{\"numbers\": [1]}])\n\n    def test_items_must_be_list(self):\n        for items in [(), \"abc\", {1, 2}, {\"x\": 1}, None, iter([1])]:\n            with self.subTest(items=items):\n                with self.assertRaises(ValueError):\n                    make_batches(items, 2)\n\n    def test_limit_validation(self):\n        for limit in [0, -1, True, False, 1.5, \"2\", None]:\n            with self.subTest(limit=limit):\n                with self.assertRaises(ValueError):\n                    make_batches([1, 2], limit)\n        self.assertEqual(make_batches([1], 1), ((1,),))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "e503d827813c342b7abe2cdff03ba409d99b2535f0f2f13b902064300bb8678d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "57ca52c8a72cf50db97a779cc150c78ca332c613066dcef435b2938d6487d109",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_batches(items, limit) -> tuple[tuple[object, ...], ...]` divides a list into consecutive batches of at most `limit` items. `items` must be a list. `limit` must be a positive integer and must not be a boolean. Invalid arguments raise `ValueError`. An empty list returns an empty tuple. Input order is preserved, the input list is not mutated, and every item is deep-copied so nested mutable values in the result do not alias the input. Distinct references to the same input object need not preserve their shared identity in the result.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit + 1]))\n        batches.append(batch)\n    return tuple(batches)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "57ca52c8a72cf50db97a779cc150c78ca332c613066dcef435b2938d6487d109",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`make_batches(items, limit) -> tuple[tuple[object, ...], ...]` divides a list into consecutive batches of at most `limit` items. `items` must be a list. `limit` must be a positive integer and must not be a boolean. Invalid arguments raise `ValueError`. An empty list returns an empty tuple. Input order is preserved, the input list is not mutated, and every item is deep-copied so nested mutable values in the result do not alias the input. Distinct references to the same input object need not preserve their shared identity in the result.\n\nKnown-bad source:\n```python\nimport copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit + 1]))\n        batches.append(batch)\n    return tuple(batches)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0102",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit + 1]))\n        batches.append(batch)\n    return tuple(batches)\n",
+          "label": "Slices one extra item into each batch, causing oversized and overlapping batches.",
+          "sha256": "72024af3a6e533fed5421522bb27336a836c8cf026b33076dc18f37d51839735"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\ndef make_batches(items, limit):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    batches = []\n    for start in range(0, len(items), limit):\n        batch = tuple(copy.deepcopy(items[start:start + limit]))\n        batches.append(batch)\n    return tuple(batches)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d8474f997edbbebf59e1594d4d6516927a625f03c5264eb8c128406231ed6f89"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_nested_item (__main__.ReviewProbe.test_finite_nested_item)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 18, in test_finite_nested_item\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "8eb06e21ba0203301c61b68248717001bf517274522037757bd2ed50b1b391ea",
+    "duration_ms": 415,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

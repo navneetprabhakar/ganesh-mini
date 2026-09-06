@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0336",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7e38872e1d4cee441f48fb48934498ce5140b68e838ac917f5b26defa095c35c",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import SampleCatalog\n\nclass Probe(unittest.TestCase):\n    def test_arbitrary_label_is_isolated(self):\n        def label():\n            pass\n        label.items = [1]\n        catalog = SampleCatalog([dict(values=[1], points=[], label=label)])\n        catalog[0]['label'].items.append(2)\n        self.assertEqual(catalog[0]['label'].items, [1])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "5b0a887467d046bf4d39395b3836e889f3130d90f87791cdc17b55c6fa177f9e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a57a1f0723c20f80f344a21080f41fa120c8d12170154c8541d057fd2ffd419c",
+      "text": "Implement a new `SampleCatalog` class in `solution.py`.\n\nPublic API:\n- `SampleCatalog(samples, transform=None)`: `samples` must be a list of dictionaries, each with exactly `\"values\"`, `\"points\"`, and `\"label\"`. `values` must be a non-empty list of non-boolean numbers. `points` must be a list of two-element lists containing non-boolean numbers. `label` may be any object. `transform`, when supplied, must be callable. Malformed samples raise `ValueError`; an invalid transform raises `TypeError`.\n- `len(catalog)` returns the number of samples.\n- `catalog[index]` accepts ordinary integer indices, including valid negative indices. A `bool` or non-integer index raises `TypeError`; an out-of-range index raises `IndexError`.\n\nConstruction must deep-copy the complete samples structure, including labels, so later caller mutations cannot change the catalog. Item access must deep-copy the stored sample. If a transform exists, call it once with that copy; it must return a dictionary with exactly the same three keys, or `ValueError` is raised. Deep-copy the transform result before returning it, preventing aliases both to catalog state and transform-owned objects. Without a transform, return the copied sample. An empty sample list is valid. Do not expose any other mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a57a1f0723c20f80f344a21080f41fa120c8d12170154c8541d057fd2ffd419c",
+      "text": "Implement a new `SampleCatalog` class in `solution.py`.\n\nPublic API:\n- `SampleCatalog(samples, transform=None)`: `samples` must be a list of dictionaries, each with exactly `\"values\"`, `\"points\"`, and `\"label\"`. `values` must be a non-empty list of non-boolean numbers. `points` must be a list of two-element lists containing non-boolean numbers. `label` may be any object. `transform`, when supplied, must be callable. Malformed samples raise `ValueError`; an invalid transform raises `TypeError`.\n- `len(catalog)` returns the number of samples.\n- `catalog[index]` accepts ordinary integer indices, including valid negative indices. A `bool` or non-integer index raises `TypeError`; an out-of-range index raises `IndexError`.\n\nConstruction must deep-copy the complete samples structure, including labels, so later caller mutations cannot change the catalog. Item access must deep-copy the stored sample. If a transform exists, call it once with that copy; it must return a dictionary with exactly the same three keys, or `ValueError` is raised. Deep-copy the transform result before returning it, preventing aliases both to catalog state and transform-owned objects. Without a transform, return the copied sample. An empty sample list is valid. Do not expose any other mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0336",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom numbers import Real\n\n\nclass SampleCatalog:\n    def __init__(self, samples, transform=None):\n        if not isinstance(samples, list):\n            raise ValueError(\"samples must be a list\")\n        if transform is not None and not callable(transform):\n            raise TypeError(\"transform must be callable or None\")\n        required = {\"values\", \"points\", \"label\"}\n        for sample in samples:\n            if not isinstance(sample, dict) or set(sample) != required:\n                raise ValueError(\"invalid sample fields\")\n            values = sample[\"values\"]\n            points = sample[\"points\"]\n            if not isinstance(values, list) or not values:\n                raise ValueError(\"values must be a non-empty list\")\n            if any(isinstance(value, bool) or not isinstance(value, Real) for value in values):\n                raise ValueError(\"values must contain numbers\")\n            if not isinstance(points, list):\n                raise ValueError(\"points must be a list\")\n            for point in points:\n                if not isinstance(point, list) or len(point) != 2:\n                    raise ValueError(\"each point must have two coordinates\")\n                if any(isinstance(value, bool) or not isinstance(value, Real) for value in point):\n                    raise ValueError(\"coordinates must be numbers\")\n        self._samples = deepcopy(samples)\n        self._transform = transform\n\n    def __len__(self):\n        return len(self._samples)\n\n    def __getitem__(self, index):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if index < -len(self._samples) or index >= len(self._samples):\n            raise IndexError(\"sample index out of range\")\n        result = self._samples[index]\n        if self._transform is not None:\n            result = self._transform(result)\n            if not isinstance(result, dict) or set(result) != {\"values\", \"points\", \"label\"}:\n                raise ValueError(\"transform returned an invalid sample\")\n            result = deepcopy(result)\n        return result\n",
+          "label": "Passes the stored sample directly to the transform, allowing the transform to mutate catalog state.",
+          "sha256": "6ed9e8ee0d5c0c5011db2c47e4b19ca2ca143a4b019f46bda572068df8dc0539"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom numbers import Real\n\n\nclass SampleCatalog:\n    def __init__(self, samples, transform=None):\n        if not isinstance(samples, list):\n            raise ValueError(\"samples must be a list\")\n        if transform is not None and not callable(transform):\n            raise TypeError(\"transform must be callable or None\")\n        required = {\"values\", \"points\", \"label\"}\n        for sample in samples:\n            if not isinstance(sample, dict) or set(sample) != required:\n                raise ValueError(\"invalid sample fields\")\n            values = sample[\"values\"]\n            points = sample[\"points\"]\n            if not isinstance(values, list) or not values:\n                raise ValueError(\"values must be a non-empty list\")\n            if any(isinstance(value, bool) or not isinstance(value, Real) for value in values):\n                raise ValueError(\"values must contain numbers\")\n            if not isinstance(points, list):\n                raise ValueError(\"points must be a list\")\n            for point in points:\n                if not isinstance(point, list) or len(point) != 2:\n                    raise ValueError(\"each point must have two coordinates\")\n                if any(isinstance(value, bool) or not isinstance(value, Real) for value in point):\n                    raise ValueError(\"coordinates must be numbers\")\n        self._samples = deepcopy(samples)\n        self._transform = transform\n\n    def __len__(self):\n        return len(self._samples)\n\n    def __getitem__(self, index):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if index < -len(self._samples) or index >= len(self._samples):\n            raise IndexError(\"sample index out of range\")\n        result = deepcopy(self._samples[index])\n        if self._transform is not None:\n            result = self._transform(result)\n            if not isinstance(result, dict) or set(result) != {\"values\", \"points\", \"label\"}:\n                raise ValueError(\"transform returned an invalid sample\")\n            result = deepcopy(result)\n        return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f7b7039527838fee444b11870633ad09cc3089c8c8ed94a7aa74b5ad46c4ccb1"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import SampleCatalog\n\n\nclass SampleCatalogTests(unittest.TestCase):\n    def sample(self):\n        return {\"values\": [1, 2.5], \"points\": [[1, 2], [3.5, -4]],\n                \"label\": {\"name\": [\"original\"]}}\n\n    def test_empty_and_length(self):\n        self.assertEqual(len(SampleCatalog([])), 0)\n        self.assertEqual(len(SampleCatalog([self.sample(), self.sample()])), 2)\n\n    def test_construction_and_access_are_deeply_independent(self):\n        source = self.sample()\n        catalog = SampleCatalog([source])\n        source[\"values\"][0] = 999\n        source[\"points\"][0][0] = 999\n        source[\"label\"][\"name\"].append(\"changed\")\n        item = catalog[0]\n        self.assertEqual(item, self.sample())\n        item[\"values\"].append(8)\n        item[\"points\"][0][0] = 8\n        item[\"label\"][\"name\"].append(\"item mutation\")\n        self.assertEqual(catalog[0], self.sample())\n\n    def test_indices(self):\n        first = self.sample()\n        second = {\"values\": [9], \"points\": [], \"label\": \"second\"}\n        catalog = SampleCatalog([first, second])\n        self.assertEqual(catalog[-1], second)\n        self.assertEqual(catalog[-2], first)\n        for index in (True, False, 1.0, \"0\", None):\n            with self.subTest(index=index):\n                with self.assertRaises(TypeError):\n                    catalog[index]\n        for index in (2, -3):\n            with self.assertRaises(IndexError):\n                catalog[index]\n\n    def test_transform_called_once_on_copy_and_result_deep_copied(self):\n        calls = []\n        owned = {\"values\": [7], \"points\": [[8, 9]], \"label\": {\"x\": []}}\n        def transform(sample):\n            calls.append(sample)\n            sample[\"values\"][0] = 55\n            return owned\n        source = self.sample()\n        catalog = SampleCatalog([source], transform)\n        result = catalog[0]\n        self.assertEqual(len(calls), 1)\n        self.assertIsNot(calls[0], source)\n        self.assertEqual(result, owned)\n        self.assertIsNot(result, owned)\n        self.assertIsNot(result[\"values\"], owned[\"values\"])\n        self.assertIsNot(result[\"points\"], owned[\"points\"])\n        result[\"label\"][\"x\"].append(1)\n        owned[\"values\"][0] = 100\n        self.assertEqual(result[\"values\"], [7])\n        self.assertEqual(owned[\"label\"], {\"x\": []})\n        self.assertEqual(catalog[0][\"values\"], [100])\n        self.assertEqual(len(calls), 2)\n\n    def test_invalid_transform_and_transform_result(self):\n        for transform in (0, \"callable\", []):\n            with self.subTest(transform=transform):\n                with self.assertRaises(TypeError):\n                    SampleCatalog([], transform)\n        bad_results = [None, [], {}, {\"values\": [], \"points\": [], \"label\": None, \"extra\": 1}]\n        for bad in bad_results:\n            with self.subTest(bad=bad):\n                catalog = SampleCatalog([self.sample()], lambda sample, bad=bad: bad)\n                with self.assertRaises(ValueError):\n                    catalog[0]\n\n    def test_malformed_samples(self):\n        base = self.sample()\n        malformed = [\n            None, {},\n            {\"values\": [1], \"points\": [], \"label\": \"x\", \"extra\": 1},\n            {\"values\": [], \"points\": [], \"label\": \"x\"},\n            {\"values\": \"x\", \"points\": [], \"label\": \"x\"},\n            {\"values\": [True], \"points\": [], \"label\": \"x\"},\n            {\"values\": [object()], \"points\": [], \"label\": \"x\"},\n            {\"values\": [1], \"points\": None, \"label\": \"x\"},\n            {\"values\": [1], \"points\": [(1, 2)], \"label\": \"x\"},\n            {\"values\": [1], \"points\": [[1]], \"label\": \"x\"},\n            {\"values\": [1], \"points\": [[1, 2, 3]], \"label\": \"x\"},\n            {\"values\": [1], \"points\": [[False, 2]], \"label\": \"x\"},\n            {\"values\": [1], \"points\": [[object(), 2]], \"label\": \"x\"},\n        ]\n        with self.assertRaises(ValueError):\n            SampleCatalog((base,))\n        for sample in malformed:\n            with self.subTest(sample=sample):\n                with self.assertRaises(ValueError):\n                    SampleCatalog([sample])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "c5cbd937552322232f1ce1c257665b4f9768e812f60daa06b3d9cd8bb39410b5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a57a1f0723c20f80f344a21080f41fa120c8d12170154c8541d057fd2ffd419c",
+      "text": "Implement a new `SampleCatalog` class in `solution.py`.\n\nPublic API:\n- `SampleCatalog(samples, transform=None)`: `samples` must be a list of dictionaries, each with exactly `\"values\"`, `\"points\"`, and `\"label\"`. `values` must be a non-empty list of non-boolean numbers. `points` must be a list of two-element lists containing non-boolean numbers. `label` may be any object. `transform`, when supplied, must be callable. Malformed samples raise `ValueError`; an invalid transform raises `TypeError`.\n- `len(catalog)` returns the number of samples.\n- `catalog[index]` accepts ordinary integer indices, including valid negative indices. A `bool` or non-integer index raises `TypeError`; an out-of-range index raises `IndexError`.\n\nConstruction must deep-copy the complete samples structure, including labels, so later caller mutations cannot change the catalog. Item access must deep-copy the stored sample. If a transform exists, call it once with that copy; it must return a dictionary with exactly the same three keys, or `ValueError` is raised. Deep-copy the transform result before returning it, preventing aliases both to catalog state and transform-owned objects. Without a transform, return the copied sample. An empty sample list is valid. Do not expose any other mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a57a1f0723c20f80f344a21080f41fa120c8d12170154c8541d057fd2ffd419c",
+      "text": "Implement a new `SampleCatalog` class in `solution.py`.\n\nPublic API:\n- `SampleCatalog(samples, transform=None)`: `samples` must be a list of dictionaries, each with exactly `\"values\"`, `\"points\"`, and `\"label\"`. `values` must be a non-empty list of non-boolean numbers. `points` must be a list of two-element lists containing non-boolean numbers. `label` may be any object. `transform`, when supplied, must be callable. Malformed samples raise `ValueError`; an invalid transform raises `TypeError`.\n- `len(catalog)` returns the number of samples.\n- `catalog[index]` accepts ordinary integer indices, including valid negative indices. A `bool` or non-integer index raises `TypeError`; an out-of-range index raises `IndexError`.\n\nConstruction must deep-copy the complete samples structure, including labels, so later caller mutations cannot change the catalog. Item access must deep-copy the stored sample. If a transform exists, call it once with that copy; it must return a dictionary with exactly the same three keys, or `ValueError` is raised. Deep-copy the transform result before returning it, preventing aliases both to catalog state and transform-owned objects. Without a transform, return the copied sample. An empty sample list is valid. Do not expose any other mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0336",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom numbers import Real\n\n\nclass SampleCatalog:\n    def __init__(self, samples, transform=None):\n        if not isinstance(samples, list):\n            raise ValueError(\"samples must be a list\")\n        if transform is not None and not callable(transform):\n            raise TypeError(\"transform must be callable or None\")\n        required = {\"values\", \"points\", \"label\"}\n        for sample in samples:\n            if not isinstance(sample, dict) or set(sample) != required:\n                raise ValueError(\"invalid sample fields\")\n            values = sample[\"values\"]\n            points = sample[\"points\"]\n            if not isinstance(values, list) or not values:\n                raise ValueError(\"values must be a non-empty list\")\n            if any(isinstance(value, bool) or not isinstance(value, Real) for value in values):\n                raise ValueError(\"values must contain numbers\")\n            if not isinstance(points, list):\n                raise ValueError(\"points must be a list\")\n            for point in points:\n                if not isinstance(point, list) or len(point) != 2:\n                    raise ValueError(\"each point must have two coordinates\")\n                if any(isinstance(value, bool) or not isinstance(value, Real) for value in point):\n                    raise ValueError(\"coordinates must be numbers\")\n        self._samples = deepcopy(samples)\n        self._transform = transform\n\n    def __len__(self):\n        return len(self._samples)\n\n    def __getitem__(self, index):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if index < -len(self._samples) or index >= len(self._samples):\n            raise IndexError(\"sample index out of range\")\n        result = self._samples[index]\n        if self._transform is not None:\n            result = self._transform(result)\n            if not isinstance(result, dict) or set(result) != {\"values\", \"points\", \"label\"}:\n                raise ValueError(\"transform returned an invalid sample\")\n            result = deepcopy(result)\n        return result\n",
+          "label": "Passes the stored sample directly to the transform, allowing the transform to mutate catalog state.",
+          "sha256": "6ed9e8ee0d5c0c5011db2c47e4b19ca2ca143a4b019f46bda572068df8dc0539"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom numbers import Real\n\n\nclass SampleCatalog:\n    def __init__(self, samples, transform=None):\n        if not isinstance(samples, list):\n            raise ValueError(\"samples must be a list\")\n        if transform is not None and not callable(transform):\n            raise TypeError(\"transform must be callable or None\")\n        required = {\"values\", \"points\", \"label\"}\n        for sample in samples:\n            if not isinstance(sample, dict) or set(sample) != required:\n                raise ValueError(\"invalid sample fields\")\n            values = sample[\"values\"]\n            points = sample[\"points\"]\n            if not isinstance(values, list) or not values:\n                raise ValueError(\"values must be a non-empty list\")\n            if any(isinstance(value, bool) or not isinstance(value, Real) for value in values):\n                raise ValueError(\"values must contain numbers\")\n            if not isinstance(points, list):\n                raise ValueError(\"points must be a list\")\n            for point in points:\n                if not isinstance(point, list) or len(point) != 2:\n                    raise ValueError(\"each point must have two coordinates\")\n                if any(isinstance(value, bool) or not isinstance(value, Real) for value in point):\n                    raise ValueError(\"coordinates must be numbers\")\n        self._samples = deepcopy(samples)\n        self._transform = transform\n\n    def __len__(self):\n        return len(self._samples)\n\n    def __getitem__(self, index):\n        if isinstance(index, bool) or not isinstance(index, int):\n            raise TypeError(\"index must be an integer\")\n        if index < -len(self._samples) or index >= len(self._samples):\n            raise IndexError(\"sample index out of range\")\n        result = deepcopy(self._samples[index])\n        if self._transform is not None:\n            result = self._transform(result)\n            if not isinstance(result, dict) or set(result) != {\"values\", \"points\", \"label\"}:\n                raise ValueError(\"transform returned an invalid sample\")\n            result = deepcopy(result)\n        return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f7b7039527838fee444b11870633ad09cc3089c8c8ed94a7aa74b5ad46c4ccb1"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_arbitrary_label_is_isolated (__main__.Probe.test_arbitrary_label_is_isolated)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_arbitrary_label_is_isolated\n    self.assertEqual(catalog[0]['label'].items, [1])\nAssertionError: Lists differ: [1, 2] != [1]\n\nFirst list contains 1 additional elements.\nFirst extra element 1:\n2\n\n- [1, 2]\n+ [1]\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "ae8a2902facf8626868b1bb1e2299f28b21fff6554cb161519e68c15ccfc7c55",
+    "duration_ms": 601,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

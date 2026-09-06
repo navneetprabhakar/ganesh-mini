@@ -1,5 +1,8 @@
 # Checkpoint 599 — GCS reauthentication required
 
+Resolved after user reauthentication: see QUALITY_STRATUM_599_BACKUP.md.
+The failure details below are preserved historical evidence.
+
 The upload attempt for local archive
 `artifacts/verification/cutoff-5885-vm/quality-stratum-followup-599-20260906.tar.gz`
 failed before verification with:

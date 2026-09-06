@@ -2,15 +2,13 @@
 
 ## Quality review continuation — 2026-09-06
 
-Current checkpoint: **599 holds (596 additive plus historical three)**; 1,521
+Current checkpoint: **601 holds (598 additive plus historical three)**; 1,533
 unique outside-sample inspections. All 544 array queue positions inspected;
 Rust generation queue complete: 684 of 684 inspected.
-Python generation queue: 288 of 684 inspected, continue 289; batch 20 partial.
-Hard stop: GCS token refresh requires interactive reauthentication; run gcloud auth login.
-Archive through 285 preserved locally, not verified in GCS; latest three also await backup.
-See QUALITY_STRATUM_599_BACKUP_BLOCKED.md. No VM/resource mutation attempted.
-GCS verified through 596 holds / Python batch 18 / 1,503 outside-sample inspections.
-See QUALITY_STRATUM_596_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
+Python generation queue: 300 of 684 inspected, continue 301; batch 20 backed up.
+GCS authentication restored; preserved archive through 285 now verified.
+GCS verified through 601 holds / Python batch 20 / 1,533 outside-sample inspections.
+See QUALITY_STRATUM_601_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
 See PYTHON_GENERATION_REVIEW_20.md. Remaining strata and quality criteria are pending;
 inspection is not admission. All 97 data tooling tests pass.
 No training seal or new VM. Older entries are historical.

@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0076",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "25177dce2aabae08dcb93334fc4fc310034b9445ca23e3b765746bb92fd656d3",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createRepairDesk } = require('./solution');\nlet nested;\nlet entered = false;\nconst desk = createRepairDesk(() => {\n  if (!entered) {\n    entered = true;\n    nested = desk.open('Nested issue', 'Nested owner');\n  }\n});\nconst outer = desk.open('Outer issue', 'Outer owner');\nassert.notEqual(outer.ticketId, nested.ticketId, 'Successful opens must not share an ID');\nassert.equal(desk.list('all').length, 2, 'Both successfully opened tickets must remain');\n",
+        "sha256": "df0e3b4cc84947961bcce8f61e0f293a04fdfdc767ad7592feca52986f490234"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4dede838ce0ba0ee2cb9d33a531777a6ab4380ef72a725f9f65ca7893e41c42f",
+      "text": "Implement a CommonJS module exporting exactly `{ createRepairDesk }`. `createRepairDesk(notify)` requires a function and returns `open(summary, owner)`, `assign(ticketId, technician)`, `close(ticketId)`, `list(status)`, and `drainNotices()`. Text arguments must be non-empty strings after trimming. Ticket IDs are deterministic positive integers starting at 1. New tickets have status `open` and technician `null`; assignment changes status to `assigned`; closing changes it to `closed`. Assigning a closed ticket or closing an already closed ticket throws `RangeError`; an unknown ID throws `RangeError`. Every successful status change calls `notify` synchronously with a fresh `{ ticketId, owner, status }` object and queues an identical notice. If `notify` throws, the operation must leave all state unchanged. `list` accepts `all`, `open`, `assigned`, or `closed`, returns ID-ordered fresh ticket objects, and rejects other values. `drainNotices` returns fresh notice objects and clears the queue.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4dede838ce0ba0ee2cb9d33a531777a6ab4380ef72a725f9f65ca7893e41c42f",
+      "text": "Implement a CommonJS module exporting exactly `{ createRepairDesk }`. `createRepairDesk(notify)` requires a function and returns `open(summary, owner)`, `assign(ticketId, technician)`, `close(ticketId)`, `list(status)`, and `drainNotices()`. Text arguments must be non-empty strings after trimming. Ticket IDs are deterministic positive integers starting at 1. New tickets have status `open` and technician `null`; assignment changes status to `assigned`; closing changes it to `closed`. Assigning a closed ticket or closing an already closed ticket throws `RangeError`; an unknown ID throws `RangeError`. Every successful status change calls `notify` synchronously with a fresh `{ ticketId, owner, status }` object and queues an identical notice. If `notify` throws, the operation must leave all state unchanged. `list` accepts `all`, `open`, `assigned`, or `closed`, returns ID-ordered fresh ticket objects, and rejects other values. `drainNotices` returns fresh notice objects and clears the queue.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0076",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createRepairDesk(notify) {\n  if (typeof notify !== 'function') {\n    throw new TypeError('notify must be a function');\n  }\n\n  const tickets = new Map();\n  const notices = [];\n  let nextId = 1;\n\n  function text(value, name) {\n    if (typeof value !== 'string' || value.trim() === '') {\n      throw new TypeError(name + ' must be non-empty');\n    }\n    return value.trim();\n  }\n\n  function get(ticketId) {\n    if (!Number.isInteger(ticketId) || ticketId <= 0 || !tickets.has(ticketId)) {\n      throw new RangeError('unknown ticket');\n    }\n    return tickets.get(ticketId);\n  }\n\n  function copyTicket(ticket) {\n    return { ...ticket };\n  }\n\n  function commit(ticket) {\n    const notice = {\n      ticketId: ticket.ticketId,\n      owner: ticket.owner,\n      status: ticket.status\n    };\n\n    tickets.set(ticket.ticketId, ticket);\n    notify({ ...notice });\n    notices.push({ ...notice });\n    return copyTicket(ticket);\n  }\n\n  function open(summary, owner) {\n    const cleanSummary = text(summary, 'summary');\n    const cleanOwner = text(owner, 'owner');\n    const ticket = {\n      ticketId: nextId,\n      summary: cleanSummary,\n      owner: cleanOwner,\n      technician: null,\n      status: 'open'\n    };\n\n    const result = commit(ticket);\n    nextId += 1;\n    return result;\n  }\n\n  function assign(ticketId, technician) {\n    const cleanTechnician = text(technician, 'technician');\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({\n      ...current,\n      technician: cleanTechnician,\n      status: 'assigned'\n    });\n  }\n\n  function close(ticketId) {\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({ ...current, status: 'closed' });\n  }\n\n  function list(status) {\n    if (!['all', 'open', 'assigned', 'closed'].includes(status)) {\n      throw new TypeError('invalid status');\n    }\n\n    return [...tickets.values()]\n      .filter(ticket => status === 'all' || ticket.status === status)\n      .sort((a, b) => a.ticketId - b.ticketId)\n      .map(copyTicket);\n  }\n\n  function drainNotices() {\n    const result = notices.map(notice => ({ ...notice }));\n    notices.length = 0;\n    return result;\n  }\n\n  return { open, assign, close, list, drainNotices };\n}\n\nmodule.exports = { createRepairDesk };\n",
+          "label": "State is committed before notification, so a throwing notifier leaves a partial update.",
+          "sha256": "fc4f0b345d6fc604c7f8e514822191a6d9bcace510f7940ac1fbb418532e42af"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createRepairDesk(notify) {\n  if (typeof notify !== 'function') {\n    throw new TypeError('notify must be a function');\n  }\n\n  const tickets = new Map();\n  const notices = [];\n  let nextId = 1;\n\n  function text(value, name) {\n    if (typeof value !== 'string' || value.trim() === '') {\n      throw new TypeError(name + ' must be non-empty');\n    }\n    return value.trim();\n  }\n\n  function get(ticketId) {\n    if (!Number.isInteger(ticketId) || ticketId <= 0 || !tickets.has(ticketId)) {\n      throw new RangeError('unknown ticket');\n    }\n    return tickets.get(ticketId);\n  }\n\n  function copyTicket(ticket) {\n    return { ...ticket };\n  }\n\n  function commit(ticket) {\n    const notice = {\n      ticketId: ticket.ticketId,\n      owner: ticket.owner,\n      status: ticket.status\n    };\n\n    notify({ ...notice });\n    tickets.set(ticket.ticketId, ticket);\n    notices.push({ ...notice });\n    return copyTicket(ticket);\n  }\n\n  function open(summary, owner) {\n    const cleanSummary = text(summary, 'summary');\n    const cleanOwner = text(owner, 'owner');\n    const ticket = {\n      ticketId: nextId,\n      summary: cleanSummary,\n      owner: cleanOwner,\n      technician: null,\n      status: 'open'\n    };\n\n    const result = commit(ticket);\n    nextId += 1;\n    return result;\n  }\n\n  function assign(ticketId, technician) {\n    const cleanTechnician = text(technician, 'technician');\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({\n      ...current,\n      technician: cleanTechnician,\n      status: 'assigned'\n    });\n  }\n\n  function close(ticketId) {\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({ ...current, status: 'closed' });\n  }\n\n  function list(status) {\n    if (!['all', 'open', 'assigned', 'closed'].includes(status)) {\n      throw new TypeError('invalid status');\n    }\n\n    return [...tickets.values()]\n      .filter(ticket => status === 'all' || ticket.status === status)\n      .sort((a, b) => a.ticketId - b.ticketId)\n      .map(copyTicket);\n  }\n\n  function drainNotices() {\n    const result = notices.map(notice => ({ ...notice }));\n    notices.length = 0;\n    return result;\n  }\n\n  return { open, assign, close, list, drainNotices };\n}\n\nmodule.exports = { createRepairDesk };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7a25d43ebae456be808627fce130d0141d24b94b53a46508b3a6fc52af924023"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api).sort(), ['createRepairDesk']);\nconst { createRepairDesk } = api;\nassert.throws(() => createRepairDesk(null), TypeError);\n\nconst delivered = [];\nconst desk = createRepairDesk(notice => {\n  delivered.push(notice);\n  notice.owner = 'mutated by notifier';\n});\nconst first = desk.open('  Broken display  ', '  Alice  ');\nassert.deepStrictEqual(first, {\n  ticketId: 1, summary: 'Broken display', owner: 'Alice',\n  technician: null, status: 'open'\n});\nconst second = desk.open('No sound', 'Bob');\nassert.strictEqual(second.ticketId, 2);\nassert.deepStrictEqual(desk.assign(1, '  Tech One  '), {\n  ticketId: 1, summary: 'Broken display', owner: 'Alice',\n  technician: 'Tech One', status: 'assigned'\n});\nassert.deepStrictEqual(desk.close(1), {\n  ticketId: 1, summary: 'Broken display', owner: 'Alice',\n  technician: 'Tech One', status: 'closed'\n});\nassert.strictEqual(delivered.length, 4);\nassert.deepStrictEqual(desk.list('open').map(t => t.ticketId), [2]);\nassert.deepStrictEqual(desk.list('closed').map(t => t.ticketId), [1]);\nassert.deepStrictEqual(desk.list('assigned'), []);\nassert.deepStrictEqual(desk.list('all').map(t => t.ticketId), [1, 2]);\nassert.throws(() => desk.list('invalid'), TypeError);\nassert.throws(() => desk.assign(99, 'Tech'), RangeError);\nassert.throws(() => desk.assign(1, 'Tech'), RangeError);\nassert.throws(() => desk.close(1), RangeError);\nassert.throws(() => desk.open('', 'Owner'), TypeError);\nassert.throws(() => desk.open('Summary', ' '), TypeError);\nassert.throws(() => desk.assign(2, ''), TypeError);\n\nconst tickets = desk.list('all');\ntickets[0].owner = 'changed';\ntickets.pop();\nassert.strictEqual(desk.list('all')[0].owner, 'Alice');\nassert.strictEqual(desk.list('all').length, 2);\n\nconst notices = desk.drainNotices();\nassert.deepStrictEqual(notices, [\n  { ticketId: 1, owner: 'Alice', status: 'open' },\n  { ticketId: 2, owner: 'Bob', status: 'open' },\n  { ticketId: 1, owner: 'Alice', status: 'assigned' },\n  { ticketId: 1, owner: 'Alice', status: 'closed' }\n]);\nnotices[0].owner = 'changed';\nassert.deepStrictEqual(desk.drainNotices(), []);\n\nconst failure = new Error('notification failed');\nlet fail = true;\nconst atomic = createRepairDesk(() => { if (fail) throw failure; });\nassert.throws(() => atomic.open('Issue', 'Owner'), error => error === failure);\nassert.deepStrictEqual(atomic.list('all'), []);\nassert.deepStrictEqual(atomic.drainNotices(), []);\nfail = false;\nassert.strictEqual(atomic.open('Issue', 'Owner').ticketId, 1);\nfail = true;\nassert.throws(() => atomic.assign(1, 'Tech'), error => error === failure);\nassert.strictEqual(atomic.list('all')[0].status, 'open');\nassert.strictEqual(atomic.list('all')[0].technician, null);\nassert.deepStrictEqual(atomic.drainNotices(), [{ ticketId: 1, owner: 'Owner', status: 'open' }]);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "f15724e2e735805dc940fcbe48025128a19570bc0f74db0694ad2baa19e9aef8"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4dede838ce0ba0ee2cb9d33a531777a6ab4380ef72a725f9f65ca7893e41c42f",
+      "text": "Implement a CommonJS module exporting exactly `{ createRepairDesk }`. `createRepairDesk(notify)` requires a function and returns `open(summary, owner)`, `assign(ticketId, technician)`, `close(ticketId)`, `list(status)`, and `drainNotices()`. Text arguments must be non-empty strings after trimming. Ticket IDs are deterministic positive integers starting at 1. New tickets have status `open` and technician `null`; assignment changes status to `assigned`; closing changes it to `closed`. Assigning a closed ticket or closing an already closed ticket throws `RangeError`; an unknown ID throws `RangeError`. Every successful status change calls `notify` synchronously with a fresh `{ ticketId, owner, status }` object and queues an identical notice. If `notify` throws, the operation must leave all state unchanged. `list` accepts `all`, `open`, `assigned`, or `closed`, returns ID-ordered fresh ticket objects, and rejects other values. `drainNotices` returns fresh notice objects and clears the queue.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4dede838ce0ba0ee2cb9d33a531777a6ab4380ef72a725f9f65ca7893e41c42f",
+      "text": "Implement a CommonJS module exporting exactly `{ createRepairDesk }`. `createRepairDesk(notify)` requires a function and returns `open(summary, owner)`, `assign(ticketId, technician)`, `close(ticketId)`, `list(status)`, and `drainNotices()`. Text arguments must be non-empty strings after trimming. Ticket IDs are deterministic positive integers starting at 1. New tickets have status `open` and technician `null`; assignment changes status to `assigned`; closing changes it to `closed`. Assigning a closed ticket or closing an already closed ticket throws `RangeError`; an unknown ID throws `RangeError`. Every successful status change calls `notify` synchronously with a fresh `{ ticketId, owner, status }` object and queues an identical notice. If `notify` throws, the operation must leave all state unchanged. `list` accepts `all`, `open`, `assigned`, or `closed`, returns ID-ordered fresh ticket objects, and rejects other values. `drainNotices` returns fresh notice objects and clears the queue.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0076",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createRepairDesk(notify) {\n  if (typeof notify !== 'function') {\n    throw new TypeError('notify must be a function');\n  }\n\n  const tickets = new Map();\n  const notices = [];\n  let nextId = 1;\n\n  function text(value, name) {\n    if (typeof value !== 'string' || value.trim() === '') {\n      throw new TypeError(name + ' must be non-empty');\n    }\n    return value.trim();\n  }\n\n  function get(ticketId) {\n    if (!Number.isInteger(ticketId) || ticketId <= 0 || !tickets.has(ticketId)) {\n      throw new RangeError('unknown ticket');\n    }\n    return tickets.get(ticketId);\n  }\n\n  function copyTicket(ticket) {\n    return { ...ticket };\n  }\n\n  function commit(ticket) {\n    const notice = {\n      ticketId: ticket.ticketId,\n      owner: ticket.owner,\n      status: ticket.status\n    };\n\n    tickets.set(ticket.ticketId, ticket);\n    notify({ ...notice });\n    notices.push({ ...notice });\n    return copyTicket(ticket);\n  }\n\n  function open(summary, owner) {\n    const cleanSummary = text(summary, 'summary');\n    const cleanOwner = text(owner, 'owner');\n    const ticket = {\n      ticketId: nextId,\n      summary: cleanSummary,\n      owner: cleanOwner,\n      technician: null,\n      status: 'open'\n    };\n\n    const result = commit(ticket);\n    nextId += 1;\n    return result;\n  }\n\n  function assign(ticketId, technician) {\n    const cleanTechnician = text(technician, 'technician');\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({\n      ...current,\n      technician: cleanTechnician,\n      status: 'assigned'\n    });\n  }\n\n  function close(ticketId) {\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({ ...current, status: 'closed' });\n  }\n\n  function list(status) {\n    if (!['all', 'open', 'assigned', 'closed'].includes(status)) {\n      throw new TypeError('invalid status');\n    }\n\n    return [...tickets.values()]\n      .filter(ticket => status === 'all' || ticket.status === status)\n      .sort((a, b) => a.ticketId - b.ticketId)\n      .map(copyTicket);\n  }\n\n  function drainNotices() {\n    const result = notices.map(notice => ({ ...notice }));\n    notices.length = 0;\n    return result;\n  }\n\n  return { open, assign, close, list, drainNotices };\n}\n\nmodule.exports = { createRepairDesk };\n",
+          "label": "State is committed before notification, so a throwing notifier leaves a partial update.",
+          "sha256": "fc4f0b345d6fc604c7f8e514822191a6d9bcace510f7940ac1fbb418532e42af"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createRepairDesk(notify) {\n  if (typeof notify !== 'function') {\n    throw new TypeError('notify must be a function');\n  }\n\n  const tickets = new Map();\n  const notices = [];\n  let nextId = 1;\n\n  function text(value, name) {\n    if (typeof value !== 'string' || value.trim() === '') {\n      throw new TypeError(name + ' must be non-empty');\n    }\n    return value.trim();\n  }\n\n  function get(ticketId) {\n    if (!Number.isInteger(ticketId) || ticketId <= 0 || !tickets.has(ticketId)) {\n      throw new RangeError('unknown ticket');\n    }\n    return tickets.get(ticketId);\n  }\n\n  function copyTicket(ticket) {\n    return { ...ticket };\n  }\n\n  function commit(ticket) {\n    const notice = {\n      ticketId: ticket.ticketId,\n      owner: ticket.owner,\n      status: ticket.status\n    };\n\n    notify({ ...notice });\n    tickets.set(ticket.ticketId, ticket);\n    notices.push({ ...notice });\n    return copyTicket(ticket);\n  }\n\n  function open(summary, owner) {\n    const cleanSummary = text(summary, 'summary');\n    const cleanOwner = text(owner, 'owner');\n    const ticket = {\n      ticketId: nextId,\n      summary: cleanSummary,\n      owner: cleanOwner,\n      technician: null,\n      status: 'open'\n    };\n\n    const result = commit(ticket);\n    nextId += 1;\n    return result;\n  }\n\n  function assign(ticketId, technician) {\n    const cleanTechnician = text(technician, 'technician');\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({\n      ...current,\n      technician: cleanTechnician,\n      status: 'assigned'\n    });\n  }\n\n  function close(ticketId) {\n    const current = get(ticketId);\n    if (current.status === 'closed') {\n      throw new RangeError('ticket is closed');\n    }\n    return commit({ ...current, status: 'closed' });\n  }\n\n  function list(status) {\n    if (!['all', 'open', 'assigned', 'closed'].includes(status)) {\n      throw new TypeError('invalid status');\n    }\n\n    return [...tickets.values()]\n      .filter(ticket => status === 'all' || ticket.status === status)\n      .sort((a, b) => a.ticketId - b.ticketId)\n      .map(copyTicket);\n  }\n\n  function drainNotices() {\n    const result = notices.map(notice => ({ ...notice }));\n    notices.length = 0;\n    return result;\n  }\n\n  return { open, assign, close, list, drainNotices };\n}\n\nmodule.exports = { createRepairDesk };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7a25d43ebae456be808627fce130d0141d24b94b53a46508b3a6fc52af924023"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Successful opens must not share an ID\n    at Object.<anonymous> (/work/solution.test.js:13:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: 1,\n  expected: 1,\n  operator: 'notStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3d1e6a35cddaf916d408b2fce11c79020d3c9ab22eee3fc1355d6e2499218cfd",
+    "duration_ms": 330,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

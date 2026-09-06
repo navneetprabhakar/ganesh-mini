@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0069",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "84e6743f9e0bdeb3107829ebd1ed5c01e3693f8b4c3172e697f9447adb731220",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createLoanBook } = require('./solution');\nconst book = createLoanBook([\n  {member: 'late-a', credits: Number.MAX_VALUE},\n  {member: 'late-b', credits: Number.MAX_VALUE},\n  {member: 'active-a', credits: 0},\n  {member: 'active-b', credits: 0}\n]);\nbook.advance(1);\nbook.touch('active-a');\nbook.touch('active-b');\nassert.deepEqual(book.redistribute(1), ['late-a', 'late-b']);\nassert.equal(book.balance('active-a'), Number.MAX_VALUE);\nassert.equal(book.balance('active-b'), Number.MAX_VALUE);\n",
+        "sha256": "5f207c027ead5a648641ebc4b935603063d83ff35a57a40d2e9a06ef69fe15a6"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a49f5fffe18ceaabea5f973727c4aa1311438e447b00f8257d72ce01e5b2443a",
+      "text": "Implement a complete CommonJS module exporting exactly `{ createLoanBook }`.\n\n`createLoanBook(entries)` returns an object with methods `advance(days)`, `touch(member)`, `overdue(limit)`, `redistribute(limit)`, and `balance(member)`.\n\n`entries` must be an array of `{ member, credits }` records. A member is a non-empty trimmed string and credits is a non-negative integer. Duplicate trimmed members or malformed records throw `TypeError`. The input must not be mutated. The book starts at day 0, and every member's last-touch day starts at 0.\n\n- `advance(days)` requires a non-negative integer, adds it to the current day, and returns the new day.\n- `touch(member)` requires an existing valid member, records the current day, and returns that day; otherwise throw `TypeError`.\n- `overdue(limit)` requires a positive integer. A member is overdue when `currentDay - lastTouch >= limit`. Return member names in ascending ordinary string order.\n- `redistribute(limit)` uses the same validation and overdue boundary. Set every overdue member's credits to zero and divide the total removed credits equally among non-overdue members using integer division. Give one leftover credit at a time to active members in ascending name order. If there are no overdue members, change nothing. If there are no active members, change nothing, including overdue balances. Return the ordered overdue-name list.\n- `balance(member)` returns the current credits for an existing valid member and throws `TypeError` otherwise.\n\nNo method may expose internal mutable state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a49f5fffe18ceaabea5f973727c4aa1311438e447b00f8257d72ce01e5b2443a",
+      "text": "Implement a complete CommonJS module exporting exactly `{ createLoanBook }`.\n\n`createLoanBook(entries)` returns an object with methods `advance(days)`, `touch(member)`, `overdue(limit)`, `redistribute(limit)`, and `balance(member)`.\n\n`entries` must be an array of `{ member, credits }` records. A member is a non-empty trimmed string and credits is a non-negative integer. Duplicate trimmed members or malformed records throw `TypeError`. The input must not be mutated. The book starts at day 0, and every member's last-touch day starts at 0.\n\n- `advance(days)` requires a non-negative integer, adds it to the current day, and returns the new day.\n- `touch(member)` requires an existing valid member, records the current day, and returns that day; otherwise throw `TypeError`.\n- `overdue(limit)` requires a positive integer. A member is overdue when `currentDay - lastTouch >= limit`. Return member names in ascending ordinary string order.\n- `redistribute(limit)` uses the same validation and overdue boundary. Set every overdue member's credits to zero and divide the total removed credits equally among non-overdue members using integer division. Give one leftover credit at a time to active members in ascending name order. If there are no overdue members, change nothing. If there are no active members, change nothing, including overdue balances. Return the ordered overdue-name list.\n- `balance(member)` returns the current credits for an existing valid member and throws `TypeError` otherwise.\n\nNo method may expose internal mutable state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0069",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createLoanBook(entries) {\n  if (!Array.isArray(entries)) throw new TypeError('entries must be an array');\n  const accounts = new Map();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== 'object' || Array.isArray(entry) ||\n        typeof entry.member !== 'string' || entry.member.trim() === '' ||\n        !Number.isInteger(entry.credits) || entry.credits < 0) {\n      throw new TypeError('invalid entry');\n    }\n    const member = entry.member.trim();\n    if (accounts.has(member)) throw new TypeError('duplicate member');\n    accounts.set(member, { credits: entry.credits, lastTouch: 0 });\n  }\n  let day = 0;\n\n  function requireMember(member) {\n    if (typeof member !== 'string' || member.trim() === '' || !accounts.has(member.trim())) {\n      throw new TypeError('unknown member');\n    }\n    return member.trim();\n  }\n\n  function requireLimit(limit) {\n    if (!Number.isInteger(limit) || limit <= 0) throw new TypeError('invalid limit');\n  }\n\n  function overdue(limit) {\n    requireLimit(limit);\n    return Array.from(accounts.entries())\n      .filter(([, account]) => day - account.lastTouch > limit)\n      .map(([member]) => member)\n      .sort();\n  }\n\n  return {\n    advance(days) {\n      if (!Number.isInteger(days) || days < 0) throw new TypeError('invalid days');\n      day += days;\n      return day;\n    },\n    touch(member) {\n      const key = requireMember(member);\n      accounts.get(key).lastTouch = day;\n      return day;\n    },\n    overdue,\n    redistribute(limit) {\n      const late = overdue(limit);\n      const lateSet = new Set(late);\n      const active = Array.from(accounts.keys()).filter((name) => !lateSet.has(name)).sort();\n      if (late.length === 0 || active.length === 0) return late;\n      let pool = 0;\n      for (const name of late) {\n        pool += accounts.get(name).credits;\n        accounts.get(name).credits = 0;\n      }\n      const share = Math.floor(pool / active.length);\n      let remainder = pool % active.length;\n      for (const name of active) {\n        accounts.get(name).credits += share + (remainder > 0 ? 1 : 0);\n        if (remainder > 0) remainder--;\n      }\n      return late;\n    },\n    balance(member) {\n      return accounts.get(requireMember(member)).credits;\n    }\n  };\n}\n\nmodule.exports = { createLoanBook };\n",
+          "label": "The overdue check uses `>` instead of the required inclusive `>=` boundary.",
+          "sha256": "fe1c4c30fbdf8bdd42fd4b4a90ecb07a69148e9c46a2bb9bae001533251826bd"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createLoanBook(entries) {\n  if (!Array.isArray(entries)) throw new TypeError('entries must be an array');\n  const accounts = new Map();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== 'object' || Array.isArray(entry) ||\n        typeof entry.member !== 'string' || entry.member.trim() === '' ||\n        !Number.isInteger(entry.credits) || entry.credits < 0) {\n      throw new TypeError('invalid entry');\n    }\n    const member = entry.member.trim();\n    if (accounts.has(member)) throw new TypeError('duplicate member');\n    accounts.set(member, { credits: entry.credits, lastTouch: 0 });\n  }\n  let day = 0;\n\n  function requireMember(member) {\n    if (typeof member !== 'string' || member.trim() === '' || !accounts.has(member.trim())) {\n      throw new TypeError('unknown member');\n    }\n    return member.trim();\n  }\n\n  function requireLimit(limit) {\n    if (!Number.isInteger(limit) || limit <= 0) throw new TypeError('invalid limit');\n  }\n\n  function overdue(limit) {\n    requireLimit(limit);\n    return Array.from(accounts.entries())\n      .filter(([, account]) => day - account.lastTouch >= limit)\n      .map(([member]) => member)\n      .sort();\n  }\n\n  return {\n    advance(days) {\n      if (!Number.isInteger(days) || days < 0) throw new TypeError('invalid days');\n      day += days;\n      return day;\n    },\n    touch(member) {\n      const key = requireMember(member);\n      accounts.get(key).lastTouch = day;\n      return day;\n    },\n    overdue,\n    redistribute(limit) {\n      const late = overdue(limit);\n      const lateSet = new Set(late);\n      const active = Array.from(accounts.keys()).filter((name) => !lateSet.has(name)).sort();\n      if (late.length === 0 || active.length === 0) return late;\n      let pool = 0;\n      for (const name of late) {\n        pool += accounts.get(name).credits;\n        accounts.get(name).credits = 0;\n      }\n      const share = Math.floor(pool / active.length);\n      let remainder = pool % active.length;\n      for (const name of active) {\n        accounts.get(name).credits += share + (remainder > 0 ? 1 : 0);\n        if (remainder > 0) remainder--;\n      }\n      return late;\n    },\n    balance(member) {\n      return accounts.get(requireMember(member)).credits;\n    }\n  };\n}\n\nmodule.exports = { createLoanBook };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7ba4fe38d40a61f43cb2a9c5b22df119352ed9b0c8f8d21059fe288fc119f2b4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createLoanBook']);\nconst { createLoanBook } = api;\n\nconst entries = [\n  { member: '  Zoe  ', credits: 5 },\n  { member: 'Amy', credits: 1 },\n  { member: 'Moe', credits: 4 }\n];\nconst snapshot = JSON.parse(JSON.stringify(entries));\nconst book = createLoanBook(entries);\nassert.deepStrictEqual(entries, snapshot);\nassert.strictEqual(book.balance(' Zoe '), 5);\nassert.strictEqual(book.balance('Amy'), 1);\nassert.deepStrictEqual(book.overdue(1), []);\nassert.strictEqual(book.advance(2), 2);\nassert.strictEqual(book.touch('Moe'), 2);\nassert.deepStrictEqual(book.overdue(2), ['Amy', 'Zoe']);\nassert.deepStrictEqual(book.redistribute(2), ['Amy', 'Zoe']);\nassert.strictEqual(book.balance('Amy'), 0);\nassert.strictEqual(book.balance('Zoe'), 0);\nassert.strictEqual(book.balance('Moe'), 10);\nassert.deepStrictEqual(book.redistribute(2), ['Amy', 'Zoe']);\nassert.strictEqual(book.balance('Moe'), 10);\n\nassert.strictEqual(book.advance(2), 4);\nassert.deepStrictEqual(book.overdue(2), ['Amy', 'Moe', 'Zoe']);\nassert.deepStrictEqual(book.redistribute(2), ['Amy', 'Moe', 'Zoe']);\nassert.strictEqual(book.balance('Moe'), 10);\n\nconst split = createLoanBook([\n  { member: 'D', credits: 5 },\n  { member: 'B', credits: 0 },\n  { member: 'A', credits: 0 },\n  { member: 'C', credits: 0 }\n]);\nsplit.advance(3);\nsplit.touch('C');\nsplit.touch('A');\nassert.deepStrictEqual(split.redistribute(2), ['B', 'D']);\nassert.strictEqual(split.balance('A'), 3);\nassert.strictEqual(split.balance('C'), 2);\nassert.strictEqual(split.balance('B'), 0);\nassert.strictEqual(split.balance('D'), 0);\n\nconst empty = createLoanBook([]);\nassert.deepStrictEqual(empty.overdue(1), []);\nassert.deepStrictEqual(empty.redistribute(1), []);\nassert.strictEqual(empty.advance(0), 0);\n\nfor (const bad of [null, {}, 'x']) assert.throws(() => createLoanBook(bad), TypeError);\nfor (const bad of [\n  [null], [{}], [{ member: '', credits: 1 }], [{ member: 'x', credits: -1 }],\n  [{ member: 'x', credits: 1.5 }], [{ member: 'x', credits: NaN }],\n  [{ member: ' x ', credits: 1 }, { member: 'x', credits: 2 }]\n]) assert.throws(() => createLoanBook(bad), TypeError);\nfor (const value of [-1, 1.5, NaN, Infinity, '1']) assert.throws(() => book.advance(value), TypeError);\nfor (const value of [0, -1, 1.5, NaN, Infinity, '2']) {\n  assert.throws(() => book.overdue(value), TypeError);\n  assert.throws(() => book.redistribute(value), TypeError);\n}\nfor (const member of ['', '   ', 'unknown', null]) {\n  assert.throws(() => book.touch(member), TypeError);\n  assert.throws(() => book.balance(member), TypeError);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "a76c012762dbe01aff72da6a823bf3b00845f97cd04854cc74d65865a283f970"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a49f5fffe18ceaabea5f973727c4aa1311438e447b00f8257d72ce01e5b2443a",
+      "text": "Implement a complete CommonJS module exporting exactly `{ createLoanBook }`.\n\n`createLoanBook(entries)` returns an object with methods `advance(days)`, `touch(member)`, `overdue(limit)`, `redistribute(limit)`, and `balance(member)`.\n\n`entries` must be an array of `{ member, credits }` records. A member is a non-empty trimmed string and credits is a non-negative integer. Duplicate trimmed members or malformed records throw `TypeError`. The input must not be mutated. The book starts at day 0, and every member's last-touch day starts at 0.\n\n- `advance(days)` requires a non-negative integer, adds it to the current day, and returns the new day.\n- `touch(member)` requires an existing valid member, records the current day, and returns that day; otherwise throw `TypeError`.\n- `overdue(limit)` requires a positive integer. A member is overdue when `currentDay - lastTouch >= limit`. Return member names in ascending ordinary string order.\n- `redistribute(limit)` uses the same validation and overdue boundary. Set every overdue member's credits to zero and divide the total removed credits equally among non-overdue members using integer division. Give one leftover credit at a time to active members in ascending name order. If there are no overdue members, change nothing. If there are no active members, change nothing, including overdue balances. Return the ordered overdue-name list.\n- `balance(member)` returns the current credits for an existing valid member and throws `TypeError` otherwise.\n\nNo method may expose internal mutable state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a49f5fffe18ceaabea5f973727c4aa1311438e447b00f8257d72ce01e5b2443a",
+      "text": "Implement a complete CommonJS module exporting exactly `{ createLoanBook }`.\n\n`createLoanBook(entries)` returns an object with methods `advance(days)`, `touch(member)`, `overdue(limit)`, `redistribute(limit)`, and `balance(member)`.\n\n`entries` must be an array of `{ member, credits }` records. A member is a non-empty trimmed string and credits is a non-negative integer. Duplicate trimmed members or malformed records throw `TypeError`. The input must not be mutated. The book starts at day 0, and every member's last-touch day starts at 0.\n\n- `advance(days)` requires a non-negative integer, adds it to the current day, and returns the new day.\n- `touch(member)` requires an existing valid member, records the current day, and returns that day; otherwise throw `TypeError`.\n- `overdue(limit)` requires a positive integer. A member is overdue when `currentDay - lastTouch >= limit`. Return member names in ascending ordinary string order.\n- `redistribute(limit)` uses the same validation and overdue boundary. Set every overdue member's credits to zero and divide the total removed credits equally among non-overdue members using integer division. Give one leftover credit at a time to active members in ascending name order. If there are no overdue members, change nothing. If there are no active members, change nothing, including overdue balances. Return the ordered overdue-name list.\n- `balance(member)` returns the current credits for an existing valid member and throws `TypeError` otherwise.\n\nNo method may expose internal mutable state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0069",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createLoanBook(entries) {\n  if (!Array.isArray(entries)) throw new TypeError('entries must be an array');\n  const accounts = new Map();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== 'object' || Array.isArray(entry) ||\n        typeof entry.member !== 'string' || entry.member.trim() === '' ||\n        !Number.isInteger(entry.credits) || entry.credits < 0) {\n      throw new TypeError('invalid entry');\n    }\n    const member = entry.member.trim();\n    if (accounts.has(member)) throw new TypeError('duplicate member');\n    accounts.set(member, { credits: entry.credits, lastTouch: 0 });\n  }\n  let day = 0;\n\n  function requireMember(member) {\n    if (typeof member !== 'string' || member.trim() === '' || !accounts.has(member.trim())) {\n      throw new TypeError('unknown member');\n    }\n    return member.trim();\n  }\n\n  function requireLimit(limit) {\n    if (!Number.isInteger(limit) || limit <= 0) throw new TypeError('invalid limit');\n  }\n\n  function overdue(limit) {\n    requireLimit(limit);\n    return Array.from(accounts.entries())\n      .filter(([, account]) => day - account.lastTouch > limit)\n      .map(([member]) => member)\n      .sort();\n  }\n\n  return {\n    advance(days) {\n      if (!Number.isInteger(days) || days < 0) throw new TypeError('invalid days');\n      day += days;\n      return day;\n    },\n    touch(member) {\n      const key = requireMember(member);\n      accounts.get(key).lastTouch = day;\n      return day;\n    },\n    overdue,\n    redistribute(limit) {\n      const late = overdue(limit);\n      const lateSet = new Set(late);\n      const active = Array.from(accounts.keys()).filter((name) => !lateSet.has(name)).sort();\n      if (late.length === 0 || active.length === 0) return late;\n      let pool = 0;\n      for (const name of late) {\n        pool += accounts.get(name).credits;\n        accounts.get(name).credits = 0;\n      }\n      const share = Math.floor(pool / active.length);\n      let remainder = pool % active.length;\n      for (const name of active) {\n        accounts.get(name).credits += share + (remainder > 0 ? 1 : 0);\n        if (remainder > 0) remainder--;\n      }\n      return late;\n    },\n    balance(member) {\n      return accounts.get(requireMember(member)).credits;\n    }\n  };\n}\n\nmodule.exports = { createLoanBook };\n",
+          "label": "The overdue check uses `>` instead of the required inclusive `>=` boundary.",
+          "sha256": "fe1c4c30fbdf8bdd42fd4b4a90ecb07a69148e9c46a2bb9bae001533251826bd"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createLoanBook(entries) {\n  if (!Array.isArray(entries)) throw new TypeError('entries must be an array');\n  const accounts = new Map();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== 'object' || Array.isArray(entry) ||\n        typeof entry.member !== 'string' || entry.member.trim() === '' ||\n        !Number.isInteger(entry.credits) || entry.credits < 0) {\n      throw new TypeError('invalid entry');\n    }\n    const member = entry.member.trim();\n    if (accounts.has(member)) throw new TypeError('duplicate member');\n    accounts.set(member, { credits: entry.credits, lastTouch: 0 });\n  }\n  let day = 0;\n\n  function requireMember(member) {\n    if (typeof member !== 'string' || member.trim() === '' || !accounts.has(member.trim())) {\n      throw new TypeError('unknown member');\n    }\n    return member.trim();\n  }\n\n  function requireLimit(limit) {\n    if (!Number.isInteger(limit) || limit <= 0) throw new TypeError('invalid limit');\n  }\n\n  function overdue(limit) {\n    requireLimit(limit);\n    return Array.from(accounts.entries())\n      .filter(([, account]) => day - account.lastTouch >= limit)\n      .map(([member]) => member)\n      .sort();\n  }\n\n  return {\n    advance(days) {\n      if (!Number.isInteger(days) || days < 0) throw new TypeError('invalid days');\n      day += days;\n      return day;\n    },\n    touch(member) {\n      const key = requireMember(member);\n      accounts.get(key).lastTouch = day;\n      return day;\n    },\n    overdue,\n    redistribute(limit) {\n      const late = overdue(limit);\n      const lateSet = new Set(late);\n      const active = Array.from(accounts.keys()).filter((name) => !lateSet.has(name)).sort();\n      if (late.length === 0 || active.length === 0) return late;\n      let pool = 0;\n      for (const name of late) {\n        pool += accounts.get(name).credits;\n        accounts.get(name).credits = 0;\n      }\n      const share = Math.floor(pool / active.length);\n      let remainder = pool % active.length;\n      for (const name of active) {\n        accounts.get(name).credits += share + (remainder > 0 ? 1 : 0);\n        if (remainder > 0) remainder--;\n      }\n      return late;\n    },\n    balance(member) {\n      return accounts.get(requireMember(member)).credits;\n    }\n  };\n}\n\nmodule.exports = { createLoanBook };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7ba4fe38d40a61f43cb2a9c5b22df119352ed9b0c8f8d21059fe288fc119f2b4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ Infinity\n- 1.7976931348623157e+308\n\n    at Object.<anonymous> (/work/solution.test.js:14:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: Infinity,\n  expected: 1.7976931348623157e+308,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "26664b646865faeb56d2fa24647365327e492036e96e18cff5349bb08265c8e6",
+    "duration_ms": 362,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

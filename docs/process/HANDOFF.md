@@ -2,6 +2,28 @@
 
 ## Quality review continuation — 2026-09-06
 
+Backup update: evidence through 104 holds / array batch 7 passed exact-generation
+GCS download/hash comparison; see `QUALITY_STRATUM_104_BACKUP.md`. Resume array
+hit position 106; no change to frozen sample/partition or training readiness.
+
+Current: **104 holds (101 additive plus historical three)**. Array batch 7 adds
+15 inspections / eight holds / nine reproduced failures; 114 unique outside-
+sample targeted inspections. Continue at array-hit position 106. Initial 300
+unchanged. GCS verified through 96 holds (`QUALITY_STRATUM_96_BACKUP.md`); batch 7
+pending. No new VM, revised partition or training seal. Tooling: 97 tests pass.
+
+Current: **96 holds (93 additive plus historical three)**. Array batch 6 adds
+15 inspections / seven holds / eight reproduced failures; 99 unique outside-
+sample targeted inspections. Continue at array-hit position 91. Initial 300
+unchanged. GCS roundtrip verified through 89 holds (`QUALITY_STRATUM_89_BACKUP.md`);
+batch 6 pending. All 97 tooling tests pass. No new VM, partition or training seal.
+
+Current: **89 holds (86 additive plus historical three)**. Array batch 5 adds
+15 inspections / four holds / five reproduced failures and a passing control;
+84 unique outside-sample targeted inspections. Continue at array-hit position
+76. `ARRAY_STRATUM_REVIEW_5.md` distinguishes ambiguous inputs from defects.
+GCS verified through 78 holds; later batches pending. No training seal/new VM.
+
 Current: **85 holds (82 additive plus historical three)**. Array batch 4 adds
 15 inspections / seven holds / nine diagnostic failures; 69 unique outside-
 sample targeted inspections total. Initial sample still 300. Continue at array

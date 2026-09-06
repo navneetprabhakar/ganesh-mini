@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0072",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4a4a6d0f9bf22025ea247abac34a73fd21f2896e07725f7ee77f6c4dda5d2729",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { SubscriberStore, type Subscriber } from \"./solution\";\nconst subscriber: Subscriber = { id: \"a\", name: \"A\", email: \"a@example.test\", active: true };\nObject.defineProperty(subscriber, \"id\", {enumerable: false});\nconst store = new SubscriberStore([subscriber]);\nif (store.list()[0].id !== \"a\") throw new Error(\"Valid required non-enumerable ID lost during constructor copy\");\n",
+        "sha256": "b9f80e1e6749ec97e55b66dc950a37c8bcf306e46cdb63309c78e6dedf052124"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d60440f4bce9496322ea76e09ba8f648fca3be78f10050c8a6c2ada2c37a906d",
+      "text": "Implement an in-memory repository with versioned namespaces.\n\nExport `interface Subscriber { id: string; name: string; email: string; active: boolean }` and `class SubscriberStore` with:\n\n- `constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = [])`\n- `list(): Subscriber[]`\n- `add(value: Subscriber): Subscriber`\n- `remove(id: string): boolean`\n- `update(value: Subscriber): Subscriber`\n\n`list` reads only the V1 namespace and preserves constructor order. The other operations affect only V2. Empty IDs throw `RangeError`. `add` throws `Error(\"duplicate subscriber\")` if V2 already contains the ID. `update` throws `Error(\"subscriber not found\")` if V2 lacks it, and preserves its position. `remove` returns whether a V2 entry existed. Duplicate IDs in either constructor array throw `Error(\"duplicate subscriber\")`. Names and emails may be empty and are preserved exactly. Constructor inputs and returned objects/arrays must not alias stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d60440f4bce9496322ea76e09ba8f648fca3be78f10050c8a6c2ada2c37a906d",
+      "text": "Implement an in-memory repository with versioned namespaces.\n\nExport `interface Subscriber { id: string; name: string; email: string; active: boolean }` and `class SubscriberStore` with:\n\n- `constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = [])`\n- `list(): Subscriber[]`\n- `add(value: Subscriber): Subscriber`\n- `remove(id: string): boolean`\n- `update(value: Subscriber): Subscriber`\n\n`list` reads only the V1 namespace and preserves constructor order. The other operations affect only V2. Empty IDs throw `RangeError`. `add` throws `Error(\"duplicate subscriber\")` if V2 already contains the ID. `update` throws `Error(\"subscriber not found\")` if V2 lacks it, and preserves its position. `remove` returns whether a V2 entry existed. Duplicate IDs in either constructor array throw `Error(\"duplicate subscriber\")`. Names and emails may be empty and are preserved exactly. Constructor inputs and returned objects/arrays must not alias stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0072",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Subscriber {\n  id: string;\n  name: string;\n  email: string;\n  active: boolean;\n}\n\nfunction copy(value: Subscriber): Subscriber {\n  return { ...value };\n}\n\nfunction seed(values: readonly Subscriber[]): Subscriber[] {\n  const seen = new Set<string>();\n  return values.map(value => {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (seen.has(value.id)) throw new Error(\"duplicate subscriber\");\n    seen.add(value.id);\n    return copy(value);\n  });\n}\n\nexport class SubscriberStore {\n  private readonly v1: Subscriber[];\n  private readonly v2: Subscriber[];\n\n  constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = []) {\n    this.v1 = seed(v1);\n    this.v2 = seed(v2);\n  }\n\n  list(): Subscriber[] {\n    return this.v2.map(copy);\n  }\n\n  add(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (this.v2.some(item => item.id === value.id)) throw new Error(\"duplicate subscriber\");\n    const stored = copy(value);\n    this.v2.push(stored);\n    return copy(stored);\n  }\n\n  remove(id: string): boolean {\n    if (id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.v2.splice(index, 1);\n    return true;\n  }\n\n  update(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === value.id);\n    if (index < 0) throw new Error(\"subscriber not found\");\n    this.v2[index] = copy(value);\n    return copy(this.v2[index]);\n  }\n}\n",
+          "label": "list reads the V2 namespace even though the API requires listing only V1 records.",
+          "sha256": "9069d8e715792c1a487ef1f811dd522635c8c6150df57eea5c6e0320955a1266"
+        }
+      ],
+      "reference": {
+        "code": "export interface Subscriber {\n  id: string;\n  name: string;\n  email: string;\n  active: boolean;\n}\n\nfunction copy(value: Subscriber): Subscriber {\n  return { ...value };\n}\n\nfunction seed(values: readonly Subscriber[]): Subscriber[] {\n  const seen = new Set<string>();\n  return values.map(value => {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (seen.has(value.id)) throw new Error(\"duplicate subscriber\");\n    seen.add(value.id);\n    return copy(value);\n  });\n}\n\nexport class SubscriberStore {\n  private readonly v1: Subscriber[];\n  private readonly v2: Subscriber[];\n\n  constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = []) {\n    this.v1 = seed(v1);\n    this.v2 = seed(v2);\n  }\n\n  list(): Subscriber[] {\n    return this.v1.map(copy);\n  }\n\n  add(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (this.v2.some(item => item.id === value.id)) throw new Error(\"duplicate subscriber\");\n    const stored = copy(value);\n    this.v2.push(stored);\n    return copy(stored);\n  }\n\n  remove(id: string): boolean {\n    if (id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.v2.splice(index, 1);\n    return true;\n  }\n\n  update(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === value.id);\n    if (index < 0) throw new Error(\"subscriber not found\");\n    this.v2[index] = copy(value);\n    return copy(this.v2[index]);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c3ea85ca920bd9d9bdea47481ad2e1d627e0a2318c34680e5543d6db02fecb7f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { SubscriberStore } from \"./solution\";\nimport type { Subscriber } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);\n}\nfunction throwsRange(fn: () => unknown): void {\n  let error: unknown;\n  try { fn(); } catch (caught) { error = caught; }\n  assert(error instanceof RangeError, \"empty id rejected\");\n}\nfunction throwsMessage(fn: () => unknown, expected: string): void {\n  let error: unknown;\n  try { fn(); } catch (caught) { error = caught; }\n  assert(error instanceof Error && error.message === expected, expected);\n}\n\nconst v1: Subscriber[] = [\n  { id: \"a\", name: \"\", email: \"\", active: true },\n  { id: \"b\", name: \"Bee\", email: \"b@test\", active: false }\n];\nconst v2: Subscriber[] = [{ id: \"x\", name: \"Ex\", email: \"x@test\", active: true }];\nconst store = new SubscriberStore(v1, v2);\nv1[0].name = \"mutated\";\nv2[0].id = \"mutated\";\ndeepEqual(store.list(), [\n  { id: \"a\", name: \"\", email: \"\", active: true },\n  { id: \"b\", name: \"Bee\", email: \"b@test\", active: false }\n], \"list reads cloned V1 in constructor order\");\n\nconst listed1 = store.list();\nconst listed2 = store.list();\nassert(listed1 !== listed2 && listed1[0] !== listed2[0], \"list and entries are fresh\");\nlisted1[0].name = \"external\";\nassert(store.list()[0].name === \"\", \"listed objects do not alias state\");\n\nconst addedInput: Subscriber = { id: \"n\", name: \"\", email: \"\", active: false };\nconst added = store.add(addedInput);\nassert(added !== addedInput, \"add returns a fresh object\");\naddedInput.id = \"changed\";\nadded.id = \"also-changed\";\nthrowsMessage(() => store.add({ id: \"n\", name: \"duplicate\", email: \"\", active: true }), \"duplicate subscriber\");\nassert(store.remove(\"n\") === true && store.remove(\"n\") === false, \"remove affects V2 and reports existence\");\nassert(store.remove(\"a\") === false, \"V1 entries are not affected by V2 operations\");\n\nstore.add({ id: \"u\", name: \"before\", email: \"old\", active: false });\nconst updateInput: Subscriber = { id: \"u\", name: \"after\", email: \"\", active: true };\nconst updated = store.update(updateInput);\nassert(updated !== updateInput, \"update returns a clone\");\nupdateInput.name = \"external\";\nupdated.id = \"external\";\nconst updatedAgain = store.update({ id: \"u\", name: \"final\", email: \"mail\", active: false });\ndeepEqual(updatedAgain, { id: \"u\", name: \"final\", email: \"mail\", active: false }, \"update remains keyed by stored id\");\nthrowsMessage(() => store.update({ id: \"missing\", name: \"\", email: \"\", active: false }), \"subscriber not found\");\n\nthrowsRange(() => store.add({ id: \"\", name: \"\", email: \"\", active: false }));\nthrowsRange(() => store.update({ id: \"\", name: \"\", email: \"\", active: false }));\nthrowsRange(() => store.remove(\"\"));\nthrowsMessage(() => new SubscriberStore([v1[0], { ...v1[0] }]), \"duplicate subscriber\");\nthrowsMessage(() => new SubscriberStore([], [{ id: \"z\", name: \"\", email: \"\", active: true }, { id: \"z\", name: \"2\", email: \"\", active: false }]), \"duplicate subscriber\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "bbba50f13169cd379ac58f359e6ade4ee4aa4d183f360e2e707076680008496a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d60440f4bce9496322ea76e09ba8f648fca3be78f10050c8a6c2ada2c37a906d",
+      "text": "Implement an in-memory repository with versioned namespaces.\n\nExport `interface Subscriber { id: string; name: string; email: string; active: boolean }` and `class SubscriberStore` with:\n\n- `constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = [])`\n- `list(): Subscriber[]`\n- `add(value: Subscriber): Subscriber`\n- `remove(id: string): boolean`\n- `update(value: Subscriber): Subscriber`\n\n`list` reads only the V1 namespace and preserves constructor order. The other operations affect only V2. Empty IDs throw `RangeError`. `add` throws `Error(\"duplicate subscriber\")` if V2 already contains the ID. `update` throws `Error(\"subscriber not found\")` if V2 lacks it, and preserves its position. `remove` returns whether a V2 entry existed. Duplicate IDs in either constructor array throw `Error(\"duplicate subscriber\")`. Names and emails may be empty and are preserved exactly. Constructor inputs and returned objects/arrays must not alias stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d60440f4bce9496322ea76e09ba8f648fca3be78f10050c8a6c2ada2c37a906d",
+      "text": "Implement an in-memory repository with versioned namespaces.\n\nExport `interface Subscriber { id: string; name: string; email: string; active: boolean }` and `class SubscriberStore` with:\n\n- `constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = [])`\n- `list(): Subscriber[]`\n- `add(value: Subscriber): Subscriber`\n- `remove(id: string): boolean`\n- `update(value: Subscriber): Subscriber`\n\n`list` reads only the V1 namespace and preserves constructor order. The other operations affect only V2. Empty IDs throw `RangeError`. `add` throws `Error(\"duplicate subscriber\")` if V2 already contains the ID. `update` throws `Error(\"subscriber not found\")` if V2 lacks it, and preserves its position. `remove` returns whether a V2 entry existed. Duplicate IDs in either constructor array throw `Error(\"duplicate subscriber\")`. Names and emails may be empty and are preserved exactly. Constructor inputs and returned objects/arrays must not alias stored state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0072",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Subscriber {\n  id: string;\n  name: string;\n  email: string;\n  active: boolean;\n}\n\nfunction copy(value: Subscriber): Subscriber {\n  return { ...value };\n}\n\nfunction seed(values: readonly Subscriber[]): Subscriber[] {\n  const seen = new Set<string>();\n  return values.map(value => {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (seen.has(value.id)) throw new Error(\"duplicate subscriber\");\n    seen.add(value.id);\n    return copy(value);\n  });\n}\n\nexport class SubscriberStore {\n  private readonly v1: Subscriber[];\n  private readonly v2: Subscriber[];\n\n  constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = []) {\n    this.v1 = seed(v1);\n    this.v2 = seed(v2);\n  }\n\n  list(): Subscriber[] {\n    return this.v2.map(copy);\n  }\n\n  add(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (this.v2.some(item => item.id === value.id)) throw new Error(\"duplicate subscriber\");\n    const stored = copy(value);\n    this.v2.push(stored);\n    return copy(stored);\n  }\n\n  remove(id: string): boolean {\n    if (id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.v2.splice(index, 1);\n    return true;\n  }\n\n  update(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === value.id);\n    if (index < 0) throw new Error(\"subscriber not found\");\n    this.v2[index] = copy(value);\n    return copy(this.v2[index]);\n  }\n}\n",
+          "label": "list reads the V2 namespace even though the API requires listing only V1 records.",
+          "sha256": "9069d8e715792c1a487ef1f811dd522635c8c6150df57eea5c6e0320955a1266"
+        }
+      ],
+      "reference": {
+        "code": "export interface Subscriber {\n  id: string;\n  name: string;\n  email: string;\n  active: boolean;\n}\n\nfunction copy(value: Subscriber): Subscriber {\n  return { ...value };\n}\n\nfunction seed(values: readonly Subscriber[]): Subscriber[] {\n  const seen = new Set<string>();\n  return values.map(value => {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (seen.has(value.id)) throw new Error(\"duplicate subscriber\");\n    seen.add(value.id);\n    return copy(value);\n  });\n}\n\nexport class SubscriberStore {\n  private readonly v1: Subscriber[];\n  private readonly v2: Subscriber[];\n\n  constructor(v1: readonly Subscriber[] = [], v2: readonly Subscriber[] = []) {\n    this.v1 = seed(v1);\n    this.v2 = seed(v2);\n  }\n\n  list(): Subscriber[] {\n    return this.v1.map(copy);\n  }\n\n  add(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    if (this.v2.some(item => item.id === value.id)) throw new Error(\"duplicate subscriber\");\n    const stored = copy(value);\n    this.v2.push(stored);\n    return copy(stored);\n  }\n\n  remove(id: string): boolean {\n    if (id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.v2.splice(index, 1);\n    return true;\n  }\n\n  update(value: Subscriber): Subscriber {\n    if (value.id.length === 0) throw new RangeError(\"id must not be empty\");\n    const index = this.v2.findIndex(item => item.id === value.id);\n    if (index < 0) throw new Error(\"subscriber not found\");\n    this.v2[index] = copy(value);\n    return copy(this.v2[index]);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c3ea85ca920bd9d9bdea47481ad2e1d627e0a2318c34680e5543d6db02fecb7f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error(\"Valid required non-enumerable ID lost during constructor copy\");\n    ^\n\nError: Valid required non-enumerable ID lost during constructor copy\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3a58b82044e0b65795610170aefab0cc7afef7655ed0e698da73cdb82fc49d5b",
+    "duration_ms": 2039,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

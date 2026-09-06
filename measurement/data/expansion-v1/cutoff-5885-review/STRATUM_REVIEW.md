@@ -1,5 +1,11 @@
 # Quality follow-up decision
 
+Latest: **104 total holds** after array batch 7; initial sample unchanged.
+
+Latest: **96 total holds** after array batch 6; initial sample unchanged.
+
+Latest: **89 total holds** after array batch 5; initial sample unchanged.
+
 Latest: **85 total holds** after array batch 4; initial sample unchanged.
 
 Latest: **78 total holds** after array batch 3; initial sample unchanged.

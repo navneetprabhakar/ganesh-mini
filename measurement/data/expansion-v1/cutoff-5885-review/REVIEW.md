@@ -1,5 +1,14 @@
 # Cutoff quality review — in progress
 
+Current: **104 holds**, 101 additive plus historical three; 114 unique outside-
+sample targeted inspections. See `ARRAY_STRATUM_REVIEW_7.md`.
+
+Current: **96 holds**, 93 additive plus historical three; 99 unique outside-
+sample targeted inspections. See `ARRAY_STRATUM_REVIEW_6.md`.
+
+Current: **89 holds**, 86 additive plus historical three; 84 unique outside-
+sample targeted inspections. See `ARRAY_STRATUM_REVIEW_5.md`.
+
 Current: **85 holds**, 82 additive plus historical three; 69 unique outside-
 sample targeted inspections. See `ARRAY_STRATUM_REVIEW_4.md`.
 

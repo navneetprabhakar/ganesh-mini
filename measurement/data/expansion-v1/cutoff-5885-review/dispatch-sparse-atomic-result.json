@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-repair-0048",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f5544deae2ef298ee0543374315fba07322d8144baaac5d641e7128b9fb7ec60",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { dispatchMessage } = require('./solution');\n(async () => {\n  let calls = 0;\n  const handlers = [() => { calls++; return 'handled'; }];\n  handlers.length = 2;\n  await assert.rejects(dispatchMessage(handlers, 'message'), TypeError);\n  assert.equal(calls, 0);\n})().catch(error => { console.error(error); process.exitCode = 1; });\n",
+        "sha256": "49ba09eaad68570ffa2f7359b30baff50e409a0fefb695cec9d8103bc44fe62c"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d23cbf7bfad6a3dbcd3e524bd153de0ab308724b3a4808e047cb1774a0c5e674",
+      "text": "Repair the CommonJS module below. It must export exactly `{ dispatchMessage }`.\n\n`dispatchMessage(handlers, message)` processes handlers sequentially. `handlers` must be an array containing only functions; otherwise throw `TypeError` before invoking any handler. Each handler receives `message` and may return a value or a promise. Await each result before calling the next handler. Return a promise resolving to the first result that is not `undefined`; if every result is `undefined`, resolve to `undefined`. If a handler throws or rejects, stop and reject with the same error. The handlers array must not be mutated.\n\nThe current implementation fails to await handler results, so a promise resolving to `undefined` is mistaken for a handled result and later handlers are skipped. Return a corrected complete source file.\n\n```javascript\n'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d23cbf7bfad6a3dbcd3e524bd153de0ab308724b3a4808e047cb1774a0c5e674",
+      "text": "Repair the CommonJS module below. It must export exactly `{ dispatchMessage }`.\n\n`dispatchMessage(handlers, message)` processes handlers sequentially. `handlers` must be an array containing only functions; otherwise throw `TypeError` before invoking any handler. Each handler receives `message` and may return a value or a promise. Await each result before calling the next handler. Return a promise resolving to the first result that is not `undefined`; if every result is `undefined`, resolve to `undefined`. If a handler throws or rejects, stop and reject with the same error. The handlers array must not be mutated.\n\nThe current implementation fails to await handler results, so a promise resolving to `undefined` is mistaken for a handled result and later handlers are skipped. Return a corrected complete source file.\n\n```javascript\n'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-repair-0048",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n",
+          "label": "Handler results are not awaited before checking for `undefined`, causing premature termination on promises.",
+          "sha256": "e74e2a12e94dbc327ceb828c0a3167be323eca80ea2cdd0f9737b1e94cd5e26c"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = await handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fece1b918f7f8e3abd733f311763eab8f629acb01052b7131b000bb652295d79"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['dispatchMessage']);\nconst { dispatchMessage } = api;\n\n(async () => {\n  assert.strictEqual(await dispatchMessage([], 'x'), undefined);\n\n  const order = [];\n  const handlers = [\n    async (message) => {\n      order.push('first-start:' + message);\n      await Promise.resolve();\n      order.push('first-end');\n      return undefined;\n    },\n    (message) => {\n      order.push('second:' + message);\n      return 0;\n    },\n    () => {\n      order.push('third');\n      return 'wrong';\n    }\n  ];\n  const snapshot = handlers.slice();\n  assert.strictEqual(await dispatchMessage(handlers, 'hello'), 0);\n  assert.deepStrictEqual(order, ['first-start:hello', 'first-end', 'second:hello']);\n  assert.deepStrictEqual(handlers, snapshot);\n\n  let laterCalled = false;\n  assert.strictEqual(await dispatchMessage([\n    () => Promise.resolve(undefined),\n    () => false,\n    () => { laterCalled = true; }\n  ], {}), false);\n  assert.strictEqual(laterCalled, false);\n\n  assert.strictEqual(await dispatchMessage([() => undefined, async () => undefined], null), undefined);\n  assert.strictEqual(await dispatchMessage([() => null, () => 'later'], 1), null);\n\n  let invoked = 0;\n  await assert.rejects(dispatchMessage([() => { invoked++; }, 'bad', () => { invoked++; }], 'x'), TypeError);\n  assert.strictEqual(invoked, 0);\n  await assert.rejects(dispatchMessage(null, 'x'), TypeError);\n\n  const thrown = new Error('thrown');\n  let afterThrow = false;\n  await assert.rejects(dispatchMessage([\n    () => { throw thrown; },\n    () => { afterThrow = true; }\n  ], 'x'), (error) => error === thrown);\n  assert.strictEqual(afterThrow, false);\n\n  const rejected = new Error('rejected');\n  let afterReject = false;\n  await assert.rejects(dispatchMessage([\n    () => Promise.reject(rejected),\n    () => { afterReject = true; }\n  ], 'x'), (error) => error === rejected);\n  assert.strictEqual(afterReject, false);\n})().catch((error) => {\n  console.error(error);\n  process.exitCode = 1;\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "fb0d2f4b70299a98465de30884394d3d27bbe5d9a3c80def63822df0f63b5f98"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d23cbf7bfad6a3dbcd3e524bd153de0ab308724b3a4808e047cb1774a0c5e674",
+      "text": "Repair the CommonJS module below. It must export exactly `{ dispatchMessage }`.\n\n`dispatchMessage(handlers, message)` processes handlers sequentially. `handlers` must be an array containing only functions; otherwise throw `TypeError` before invoking any handler. Each handler receives `message` and may return a value or a promise. Await each result before calling the next handler. Return a promise resolving to the first result that is not `undefined`; if every result is `undefined`, resolve to `undefined`. If a handler throws or rejects, stop and reject with the same error. The handlers array must not be mutated.\n\nThe current implementation fails to await handler results, so a promise resolving to `undefined` is mistaken for a handled result and later handlers are skipped. Return a corrected complete source file.\n\n```javascript\n'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d23cbf7bfad6a3dbcd3e524bd153de0ab308724b3a4808e047cb1774a0c5e674",
+      "text": "Repair the CommonJS module below. It must export exactly `{ dispatchMessage }`.\n\n`dispatchMessage(handlers, message)` processes handlers sequentially. `handlers` must be an array containing only functions; otherwise throw `TypeError` before invoking any handler. Each handler receives `message` and may return a value or a promise. Await each result before calling the next handler. Return a promise resolving to the first result that is not `undefined`; if every result is `undefined`, resolve to `undefined`. If a handler throws or rejects, stop and reject with the same error. The handlers array must not be mutated.\n\nThe current implementation fails to await handler results, so a promise resolving to `undefined` is mistaken for a handled result and later handlers are skipped. Return a corrected complete source file.\n\n```javascript\n'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-repair-0048",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n",
+          "label": "Handler results are not awaited before checking for `undefined`, causing premature termination on promises.",
+          "sha256": "e74e2a12e94dbc327ceb828c0a3167be323eca80ea2cdd0f9737b1e94cd5e26c"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nasync function dispatchMessage(handlers, message) {\n  if (!Array.isArray(handlers) || handlers.some((handler) => typeof handler !== 'function')) {\n    throw new TypeError('handlers must be functions');\n  }\n  for (const handler of handlers) {\n    const result = await handler(message);\n    if (result !== undefined) return result;\n  }\n  return undefined;\n}\n\nmodule.exports = { dispatchMessage };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fece1b918f7f8e3abd733f311763eab8f629acb01052b7131b000bb652295d79"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "AssertionError [ERR_ASSERTION]: Missing expected rejection (TypeError).\n    at async /work/solution.test.js:8:3 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'rejects',\n  diff: 'simple'\n}\n",
+    "stderr_sha256": "0aae8a2ef5d52b5df3a1361a98acc82582e3278d8cddeab313e9c23138974a34",
+    "duration_ms": 395,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

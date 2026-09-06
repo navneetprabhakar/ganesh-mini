@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-repair-0051",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5ecf48de78e5bdc267bf7f0ff3de2b164614291491a1de990752d9360c833406",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { runPipeline } = require('./solution');\n(async () => {\n  let calls = 0;\n  const steps = [value => { calls++; return value; }];\n  steps.length = 2;\n  await assert.rejects(runPipeline(0, steps), TypeError);\n  assert.equal(calls, 0, 'Validation must precede every step invocation');\n})().catch(error => { console.error(error); process.exitCode = 1; });\n",
+        "sha256": "71dcb0c3a83ed65ea46bdfabcd2509e9f3a2fed9e3936dd65a1d3aceac29ba6f"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a1f32341eaf9f55a0d69cfde46f865a4df9468441f63a347b143c000acac662b",
+      "text": "Repair the complete CommonJS source below and return a corrected complete source file exporting exactly `{ runPipeline }`. `runPipeline(seed, steps)` must return a native Promise. `steps` must be an array of functions; otherwise it throws `TypeError` before invoking any step. Invoke steps sequentially in array order, passing each the fulfilled result of the preceding step. A step may return a plain value or a promise/thenable. The empty array resolves to the original seed. Stop immediately on synchronous throw or rejection and propagate that error; never invoke later steps. Do not mutate the steps array.\n\nKnown-bad source:\n```javascript\n'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a1f32341eaf9f55a0d69cfde46f865a4df9468441f63a347b143c000acac662b",
+      "text": "Repair the complete CommonJS source below and return a corrected complete source file exporting exactly `{ runPipeline }`. `runPipeline(seed, steps)` must return a native Promise. `steps` must be an array of functions; otherwise it throws `TypeError` before invoking any step. Invoke steps sequentially in array order, passing each the fulfilled result of the preceding step. A step may return a plain value or a promise/thenable. The empty array resolves to the original seed. Stop immediately on synchronous throw or rejection and propagate that error; never invoke later steps. Do not mutate the steps array.\n\nKnown-bad source:\n```javascript\n'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-repair-0051",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n",
+          "label": "Each asynchronous step's promise is passed directly to the next step instead of being awaited.",
+          "sha256": "2647a75e71810dc591c8276a3f76d2b58715cb3d4b361cdba471efa59fc62319"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = await step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a347c81786d0a072a047c3a0786d0c2d1e6b0afc9ae0fc79c0e9ed4378f86d48"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api).sort(), ['runPipeline']);\nconst { runPipeline } = api;\n\n(async () => {\n  const emptySteps = [];\n  const emptyPromise = runPipeline('seed', emptySteps);\n  assert.ok(emptyPromise instanceof Promise);\n  assert.strictEqual(await emptyPromise, 'seed');\n  assert.deepStrictEqual(emptySteps, []);\n\n  const order = [];\n  const steps = [\n    value => { order.push('one'); return value + 1; },\n    value => new Promise(resolve => setTimeout(() => {\n      order.push('two');\n      resolve(value * 3);\n    }, 5)),\n    value => { order.push('three'); return { then: resolve => resolve(value - 2) }; },\n    value => { order.push('four'); return value; }\n  ];\n  const snapshot = steps.slice();\n  const promise = runPipeline(2, steps);\n  assert.ok(promise instanceof Promise);\n  assert.strictEqual(await promise, 7);\n  assert.deepStrictEqual(order, ['one', 'two', 'three', 'four']);\n  assert.deepStrictEqual(steps, snapshot);\n\n  let invoked = false;\n  const invalidPromise = runPipeline(0, [() => { invoked = true; }, 3]);\n  assert.ok(invalidPromise instanceof Promise);\n  await assert.rejects(invalidPromise, TypeError);\n  assert.strictEqual(invoked, false);\n\n  const syncError = new Error('sync failure');\n  let later = false;\n  await assert.rejects(runPipeline(1, [\n    () => { throw syncError; },\n    () => { later = true; }\n  ]), error => error === syncError);\n  assert.strictEqual(later, false);\n\n  const rejection = new Error('rejected');\n  later = false;\n  await assert.rejects(runPipeline(1, [\n    value => Promise.resolve(value + 1),\n    () => Promise.reject(rejection),\n    () => { later = true; }\n  ]), error => error === rejection);\n  assert.strictEqual(later, false);\n\n  await assert.rejects(runPipeline(1, null), TypeError);\n})().catch(error => {\n  console.error(error);\n  process.exitCode = 1;\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "0160f4e41c39cff337d8e73ce3459cb7f2018aa9fbc6bdd3f8787aa2e624e3c0"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a1f32341eaf9f55a0d69cfde46f865a4df9468441f63a347b143c000acac662b",
+      "text": "Repair the complete CommonJS source below and return a corrected complete source file exporting exactly `{ runPipeline }`. `runPipeline(seed, steps)` must return a native Promise. `steps` must be an array of functions; otherwise it throws `TypeError` before invoking any step. Invoke steps sequentially in array order, passing each the fulfilled result of the preceding step. A step may return a plain value or a promise/thenable. The empty array resolves to the original seed. Stop immediately on synchronous throw or rejection and propagate that error; never invoke later steps. Do not mutate the steps array.\n\nKnown-bad source:\n```javascript\n'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a1f32341eaf9f55a0d69cfde46f865a4df9468441f63a347b143c000acac662b",
+      "text": "Repair the complete CommonJS source below and return a corrected complete source file exporting exactly `{ runPipeline }`. `runPipeline(seed, steps)` must return a native Promise. `steps` must be an array of functions; otherwise it throws `TypeError` before invoking any step. Invoke steps sequentially in array order, passing each the fulfilled result of the preceding step. A step may return a plain value or a promise/thenable. The empty array resolves to the original seed. Stop immediately on synchronous throw or rejection and propagate that error; never invoke later steps. Do not mutate the steps array.\n\nKnown-bad source:\n```javascript\n'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-repair-0051",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n",
+          "label": "Each asynchronous step's promise is passed directly to the next step instead of being awaited.",
+          "sha256": "2647a75e71810dc591c8276a3f76d2b58715cb3d4b361cdba471efa59fc62319"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nasync function runPipeline(seed, steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) throw new TypeError('steps must contain functions');\n  let value = seed;\n  for (const step of steps) {\n    value = await step(value);\n  }\n  return value;\n}\n\nmodule.exports = { runPipeline };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a347c81786d0a072a047c3a0786d0c2d1e6b0afc9ae0fc79c0e9ed4378f86d48"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "AssertionError [ERR_ASSERTION]: Validation must precede every step invocation\n\n1 !== 0\n\n    at /work/solution.test.js:9:10 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: 1,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n",
+    "stderr_sha256": "4be6978feaf672fc8aa718c9a70bda95a63eab43528b12b2e6c77ba799a091fc",
+    "duration_ms": 378,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

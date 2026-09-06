@@ -4,6 +4,24 @@ Last updated: 2026-09-06
 
 ## Current gate
 
+Backup update: 104-hold checkpoint (through array batch 7) is GCS roundtrip
+verified. See `QUALITY_STRATUM_104_BACKUP.md`; later evidence remains separate.
+
+Current: **104 holds (101 additive plus historical three)**; 114 unique outside-
+sample targeted inspections plus unchanged 300 sample. Array batch 7 preserved.
+GCS verified through 96 holds; batch 7 pending. All 97 tooling tests pass.
+No new VM, revised partition or training seal.
+
+Current: **96 holds (93 additive plus historical three)**; 99 unique outside-
+sample targeted inspections plus unchanged 300 sample. See array batch 6.
+GCS roundtrip verified through 89 holds; batch 6 pending. All 97 tooling tests
+pass. No new VM, revised partition or training seal.
+
+Current: **89 holds (86 additive plus historical three)**; 84 unique outside-
+sample targeted inspections plus unchanged 300 sample. Array batch 5 records
+four new holds and a passing regex control; unresolved API scope is separate.
+GCS verified through 78 holds; later batches pending. No seal or new VM.
+
 Current: **85 holds (82 additive plus historical three)**; 69 unique outside-
 sample targeted inspections plus unchanged 300 sample. Array batch 4 preserves
 latest findings. GCS verified through 78 holds and v2 scope; later batch pending.

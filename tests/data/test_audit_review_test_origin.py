@@ -5,6 +5,7 @@ import pytest
 
 from scripts.data.audit_review_test_origin import check_run, digest
 from scripts.data.generate_expansion_qualification import test_prompt as make_test_prompt
+from scripts.data.generate_expansion_qualification import critic_test_prompt
 
 
 def run_evidence():
@@ -53,3 +54,40 @@ def test_non_ephemeral_execution_rejected():
     run['command_identity'].remove('--ephemeral')
     with pytest.raises(ValueError, match='isolation flags'):
         check_run(run)
+
+
+def critic_evidence():
+    run = run_evidence()
+    visible = [{'id': 'x', 'problem': 'Implement X.', 'test_code': 'test X'}]
+    run['prompt'] = critic_test_prompt('go', visible, visible)
+    run['prompt_sha256'] = digest(run['prompt'].encode())
+    return run
+
+
+def test_critic_sees_only_specification_and_proposed_tests():
+    assert check_run(critic_evidence(), critic=True) == {
+        'x': {'id': 'x', 'problem': 'Implement X.', 'test_code': 'test X'}}
+
+
+def test_critic_reference_suffix_rejected():
+    run = critic_evidence()
+    run['prompt'] += '\nReference: return 1'
+    run['prompt_sha256'] = digest(run['prompt'].encode())
+    with pytest.raises(ValueError, match='template'):
+        check_run(run, critic=True)
+
+
+def test_critic_extra_visible_field_rejected():
+    run = critic_evidence()
+    run['prompt'] = run['prompt'].replace('"test_code":"test X"',
+                                        '"test_code":"test X","reference_code":"return 1"')
+    run['prompt_sha256'] = digest(run['prompt'].encode())
+    with pytest.raises(ValueError, match='unexpected test-author input'):
+        check_run(run, critic=True)
+
+
+def test_critic_wrong_sandbox_rejected():
+    run = critic_evidence()
+    run['command_identity'][run['command_identity'].index('--sandbox') + 1] = 'danger-full-access'
+    with pytest.raises(ValueError, match='wrong sandbox'):
+        check_run(run, critic=True)

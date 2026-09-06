@@ -2,18 +2,24 @@
 
 ## Quality review continuation — 2026-09-06
 
-Semantic inspection is now 13/300: first twelve frozen rows plus Go repair
-0465 (atomicity follow-up). Archived original-test provenance matched 295/300;
-five require critic-chain/source-pilot tracing, not automatic rejection.
-See `measurement/data/expansion-v1/cutoff-5885-review/FIRST_BATCH_REVIEW.md`.
+Semantic inspection is now 100/300: frozen indices 0–99. Go repair 0465 at
+index 37 is counted once. Archived provenance now traces all 300: 297 unchanged
+specification-only original tests and three specification-only critic chains.
+Nine focused provenance tests pass. See the review directory's
+`SECOND_BATCH_REVIEW.md` and `test-origin-all300-chains.json`.
 
 New hold: Go generation 0058 has nondeterministic known-bad rejection. Its
 unchanged original tests passed the known-bad 2/64 times in fresh sandboxed
 processes; the reference passed 64/64. Preserve the original VM evidence.
 The v1 5,882-row partition is unchanged and still contains this additional
-hold; removing it would leave 5,881. No revised training seal exists. Continue
-sample order at index 12 and audit related atomic-map/temporal cases. No new
-cloud compute was used for this review.
+hold. Additional sandbox-confirmed reference defects: Go 0330, 0720, 0791;
+Java 0514, 0794. Static contract/test holds: Java 0549, 0080. Eleven total holds
+including the historical three would leave 5,874 before open findings are
+adjudicated. No revised partition or training seal exists. Continue sample
+order at index 100; do not end work at this checkpoint. Repeated API/exception
+ambiguities and elementary-task non-triviality questions remain open. Audit
+related atomic-map/temporal/early-return-validation cases. No new cloud compute
+was used for this review; local probes use pinned network-disabled sandboxes.
 
 ## Completed verification and separate review — 2026-09-06
 

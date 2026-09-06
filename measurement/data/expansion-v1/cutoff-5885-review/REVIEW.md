@@ -5,14 +5,25 @@ Population: 5,885; deterministic sample: 300. Cutoff corpus SHA-256:
 Prepared manifest SHA-256:
 `0a58d3d30f98202bd6fd87fafb1c7ddb415a2fabbfa21f6378da0399e72b6623`.
 
-This is a partial review, not a passed sample. Thirteen candidate specifications,
+This is a partial review, not a passed sample. One hundred candidate specifications,
 reference implementations, original tests, and known-bad implementations have
-been read: the first twelve in frozen sample order and Go repair 0465, selected
-for follow-up on atomicity. The remaining 287 have not had semantic review.
-Archived test-origin checks matched 295/300 samples to exact specification-only
-test-author prompts and unchanged test outputs; five need additional provenance
-tracing. This automated trace is not 295 semantic reviews or a quality seal.
-See `test-origin-all300.json` and `FIRST_BATCH_REVIEW.md`.
+been read: frozen sample indices 0–99. The earlier Go repair 0465 follow-up is
+index 37 and counted only once. The remaining 200 have not had semantic review.
+Archived test-origin checks now trace all 300: 297 unchanged specification-only
+test-author outputs and three specification-only test-critic chains. The earlier
+295/300 audit remains unchanged. This automated trace is not 300 semantic
+reviews or a quality seal. See `test-origin-all300-chains.json`.
+See `test-origin-all300.json`, `FIRST_BATCH_REVIEW.md`, and
+`SECOND_BATCH_REVIEW.md`. New sandbox-confirmed holds: Go 0330 (label keys),
+0720 (ready-step order), and 0791 (JSON key case); Java 0514 (null suffix) and
+0794 (final no-swap pass). Static contract/test holds:
+Java 0549 (missing-ID lookup) and 0080 (configuration preservation). These are
+additive exclusions in `additional-holds.json`, not changes to original records.
+Together with the three historical partition holds, eleven records are held;
+excluding those eleven would leave 5,874 before other open findings are adjudicated.
+No revised partition or training seal has been created. Repeated exception/API
+ambiguities and elementary tasks require criterion-specific adjudication and
+affected-stratum review; passing execution does not clear them.
 
 ## Confirmed gap: exp-v1-go-generation-0165
 

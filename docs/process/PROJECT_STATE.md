@@ -4,12 +4,16 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Quality continuation: 13/300 records inspected, with archived original-test
-provenance matched for 295/300 (five tracing follow-ups). Go generation 0058
-is an additional hold after its known-bad passed the original tests 2/64 times
-in a pinned sandbox repeatability probe; reference control passed 64/64.
+Quality continuation: 100/300 records inspected (frozen indices 0–99), with
+archived test provenance traced for all 300: 297 original unchanged tests and
+three specification-only critic chains. Go generation 0058 is held after its
+known-bad passed the original tests 2/64 times in a pinned sandbox repeatability
+probe; reference control passed 64/64. New confirmed reference defects: Go
+0330/0720/0791 and Java 0514/0794. Static contract/test holds: Java 0549/0080.
+Eleven total holds including historical exceptions imply 5,874 remaining before
+open findings are adjudicated; this is not a new partition or admission count.
 The historical v1 partition remains unchanged and cannot be sealed as-is.
-See `cutoff-5885-review/FIRST_BATCH_REVIEW.md`; 287 semantic reviews remain.
+See `cutoff-5885-review/SECOND_BATCH_REVIEW.md`; 200 semantic reviews remain.
 
 Latest override, 2026-09-06: native CPU verification completed all 5,885 rows
 in 12,031.077 seconds. 5,883 passed; two Rust reference executions timed out.
@@ -17,7 +21,7 @@ Navneet directed separate review of flagged records, not treating the campaign
 as an overall failure. The original strict-seal report remains unchanged.
 An independent Go quality defect is also held out, leaving 5,882 rows in
 `datasets/cache/expansion-v1/review-partition-v1/review-eligible.jsonl`.
-This partition is not training-ready; only 3/300 quality samples are reviewed.
+This historical partition is not training-ready; current review counts are above.
 Do not restart generation or the superseded laptop final-admission job below.
 
 All 13 VM artifacts were checksum-verified from GCS before the campaign VM,

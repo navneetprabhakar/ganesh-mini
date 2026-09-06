@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-repair-0063",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "31d1f3c92144021d8badec85031da2f118460ec384dd3205975bb0b561bf7c68",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { createTransitionRunner } = require('./solution');\nvoid (async () => {\n const runner = createTransitionRunner(value => value);\n const sequence = [1];\n const marker = new Error('snapshot read failed');\n Object.defineProperty(sequence, 0, {get() {throw marker;}});\n await assert.rejects(runner.run(sequence), error => error === marker);\n assert.equal(runner.isBusy(), false, 'snapshot failure before try/finally leaves runner busy');\n assert.deepEqual(await runner.run([]), {accepted:true,results:[]});\n})();\n",
+        "sha256": "65fd8e36ed80b0f1a072cbc652a0121ebfc2d65d0c89624e5f1ef8dee43f6ef3"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "976cebd79a482cd3d57ffc063d25709e0ed54f255b3d41b1ef0e361ddb96aef4",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ createTransitionRunner }`.\n\n`createTransitionRunner(executor)` requires a function and returns `{ run, isBusy }`. `run(sequence)` requires an array. If another run is active, it resolves to `{ accepted: false, results: [] }`. Otherwise it snapshots the sequence, calls `await executor(item, index)` sequentially, and resolves to `{ accepted: true, results }`. If the executor throws or rejects, `run` must propagate that failure. In every success or failure path the runner must become available for a later call. `isBusy()` reports the current state. The input array must not be mutated.\n\nKnown-bad source:\n```javascript\nfunction createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    for (let index = 0; index < snapshot.length; index += 1) {\n      results.push(await executor(snapshot[index], index));\n    }\n    busy = false;\n    return { accepted: true, results };\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "976cebd79a482cd3d57ffc063d25709e0ed54f255b3d41b1ef0e361ddb96aef4",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ createTransitionRunner }`.\n\n`createTransitionRunner(executor)` requires a function and returns `{ run, isBusy }`. `run(sequence)` requires an array. If another run is active, it resolves to `{ accepted: false, results: [] }`. Otherwise it snapshots the sequence, calls `await executor(item, index)` sequentially, and resolves to `{ accepted: true, results }`. If the executor throws or rejects, `run` must propagate that failure. In every success or failure path the runner must become available for a later call. `isBusy()` reports the current state. The input array must not be mutated.\n\nKnown-bad source:\n```javascript\nfunction createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    for (let index = 0; index < snapshot.length; index += 1) {\n      results.push(await executor(snapshot[index], index));\n    }\n    busy = false;\n    return { accepted: true, results };\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-repair-0063",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    for (let index = 0; index < snapshot.length; index += 1) {\n      results.push(await executor(snapshot[index], index));\n    }\n    busy = false;\n    return { accepted: true, results };\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n",
+          "label": "The busy flag is not cleared when the executor rejects, permanently blocking subsequent runs.",
+          "sha256": "fd3c6a9e0d1254e352842b5eecbb4010f80276341d393ce851dcc7301638feda"
+        }
+      ],
+      "reference": {
+        "code": "function createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    try {\n      for (let index = 0; index < snapshot.length; index += 1) {\n        results.push(await executor(snapshot[index], index));\n      }\n      return { accepted: true, results };\n    } finally {\n      busy = false;\n    }\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ed98cc713129df25d7a5c89824dbb7420014ee4537ba0e9078c1eb90603203c9"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createTransitionRunner']);\nconst { createTransitionRunner } = api;\n\n(async () => {\n  assert.throws(() => createTransitionRunner(null), TypeError);\n  assert.throws(() => createTransitionRunner({}), TypeError);\n\n  const order = [];\n  let releaseFirst;\n  const gate = new Promise(resolve => { releaseFirst = resolve; });\n  const runner = createTransitionRunner(async (item, index) => {\n    order.push(`start:${item}:${index}`);\n    if (index === 0) await gate;\n    order.push(`end:${item}:${index}`);\n    return item * 2;\n  });\n  assert.strictEqual(runner.isBusy(), false);\n  const sequence = [2, 3];\n  const active = runner.run(sequence);\n  assert.strictEqual(runner.isBusy(), true);\n  sequence[1] = 99;\n  sequence.push(100);\n  const rejected = await runner.run([8]);\n  assert.deepStrictEqual(rejected, { accepted: false, results: [] });\n  assert.strictEqual(runner.isBusy(), true);\n  releaseFirst();\n  assert.deepStrictEqual(await active, { accepted: true, results: [4, 6] });\n  assert.deepStrictEqual(order, ['start:2:0', 'end:2:0', 'start:3:1', 'end:3:1']);\n  assert.strictEqual(runner.isBusy(), false);\n\n  assert.deepStrictEqual(await runner.run([]), { accepted: true, results: [] });\n  assert.strictEqual(runner.isBusy(), false);\n  await assert.rejects(runner.run(null), TypeError);\n  assert.strictEqual(runner.isBusy(), false);\n\n  const sentinel = new Error('executor failed');\n  let attempts = 0;\n  const failing = createTransitionRunner(async item => {\n    attempts += 1;\n    if (item === 'fail') throw sentinel;\n    return item;\n  });\n  await assert.rejects(failing.run(['ok', 'fail', 'never']), error => error === sentinel);\n  assert.strictEqual(attempts, 2);\n  assert.strictEqual(failing.isBusy(), false);\n  assert.deepStrictEqual(await failing.run(['later']), { accepted: true, results: ['later'] });\n  assert.strictEqual(failing.isBusy(), false);\n})().catch(error => {\n  console.error(error);\n  process.exitCode = 1;\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "33b5df7a17b649b54edeee363d67fa6116732ed881ba85baaa30fdc7f14f1bdf"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "976cebd79a482cd3d57ffc063d25709e0ed54f255b3d41b1ef0e361ddb96aef4",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ createTransitionRunner }`.\n\n`createTransitionRunner(executor)` requires a function and returns `{ run, isBusy }`. `run(sequence)` requires an array. If another run is active, it resolves to `{ accepted: false, results: [] }`. Otherwise it snapshots the sequence, calls `await executor(item, index)` sequentially, and resolves to `{ accepted: true, results }`. If the executor throws or rejects, `run` must propagate that failure. In every success or failure path the runner must become available for a later call. `isBusy()` reports the current state. The input array must not be mutated.\n\nKnown-bad source:\n```javascript\nfunction createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    for (let index = 0; index < snapshot.length; index += 1) {\n      results.push(await executor(snapshot[index], index));\n    }\n    busy = false;\n    return { accepted: true, results };\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "976cebd79a482cd3d57ffc063d25709e0ed54f255b3d41b1ef0e361ddb96aef4",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ createTransitionRunner }`.\n\n`createTransitionRunner(executor)` requires a function and returns `{ run, isBusy }`. `run(sequence)` requires an array. If another run is active, it resolves to `{ accepted: false, results: [] }`. Otherwise it snapshots the sequence, calls `await executor(item, index)` sequentially, and resolves to `{ accepted: true, results }`. If the executor throws or rejects, `run` must propagate that failure. In every success or failure path the runner must become available for a later call. `isBusy()` reports the current state. The input array must not be mutated.\n\nKnown-bad source:\n```javascript\nfunction createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    for (let index = 0; index < snapshot.length; index += 1) {\n      results.push(await executor(snapshot[index], index));\n    }\n    busy = false;\n    return { accepted: true, results };\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-repair-0063",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    for (let index = 0; index < snapshot.length; index += 1) {\n      results.push(await executor(snapshot[index], index));\n    }\n    busy = false;\n    return { accepted: true, results };\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n",
+          "label": "The busy flag is not cleared when the executor rejects, permanently blocking subsequent runs.",
+          "sha256": "fd3c6a9e0d1254e352842b5eecbb4010f80276341d393ce851dcc7301638feda"
+        }
+      ],
+      "reference": {
+        "code": "function createTransitionRunner(executor) {\n  if (typeof executor !== 'function') throw new TypeError('executor must be a function');\n  let busy = false;\n\n  async function run(sequence) {\n    if (!Array.isArray(sequence)) throw new TypeError('sequence must be an array');\n    if (busy) return { accepted: false, results: [] };\n    busy = true;\n    const snapshot = sequence.slice();\n    const results = [];\n    try {\n      for (let index = 0; index < snapshot.length; index += 1) {\n        results.push(await executor(snapshot[index], index));\n      }\n      return { accepted: true, results };\n    } finally {\n      busy = false;\n    }\n  }\n\n  function isBusy() {\n    return busy;\n  }\n\n  return { run, isBusy };\n}\n\nmodule.exports = { createTransitionRunner };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ed98cc713129df25d7a5c89824dbb7420014ee4537ba0e9078c1eb90603203c9"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\nAssertionError [ERR_ASSERTION]: snapshot failure before try/finally leaves runner busy\n\ntrue !== false\n\n    at /work/solution.test.js:9:9 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: true,\n  expected: false,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3eadee6e28d31de21b312cba99d8bed8b9de977f915117f2f3b007ed9386c2a8",
+    "duration_ms": 856,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

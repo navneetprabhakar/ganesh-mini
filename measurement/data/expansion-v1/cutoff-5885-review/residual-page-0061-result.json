@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-repair-0061",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "56f9d597017ab482634677d4907658a1d15c4cc12689e259a27f4bef588a5b4e",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { selectPage } = require('./solution');\nconst pages = {};\nObject.defineProperty(pages, 'x', {value:7, enumerable:false});\nassert.throws(() => selectPage('x', pages), TypeError);\n",
+        "sha256": "d530e417a4779e8af9381b48d825f9bb658d88db30c64aa300ad70cfb653d712"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5ef607b7b366f9c7a3058d7cd975a1f53404fd7255f681a89e841e48fc52f7a6",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ selectPage }`.\n\n`selectPage(route, pages)` must require a string route and a non-null, non-array object whose values are strings. It removes every leading and trailing slash from the route while preserving internal slashes, then returns the matching own-property value or `null`. Empty normalized routes are valid keys. It must not mutate either argument.\n\nKnown-bad source:\n```javascript\nfunction selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/|\\/$/, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5ef607b7b366f9c7a3058d7cd975a1f53404fd7255f681a89e841e48fc52f7a6",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ selectPage }`.\n\n`selectPage(route, pages)` must require a string route and a non-null, non-array object whose values are strings. It removes every leading and trailing slash from the route while preserving internal slashes, then returns the matching own-property value or `null`. Empty normalized routes are valid keys. It must not mutate either argument.\n\nKnown-bad source:\n```javascript\nfunction selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/|\\/$/, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-repair-0061",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/|\\/$/, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n",
+          "label": "Route normalization removes only one boundary slash because the alternation is not global and does not match repeated slashes.",
+          "sha256": "e3b4e6caa59c92aa4a121e89d257ee3a3eeb3d0d077685607e58129fa56083a1"
+        }
+      ],
+      "reference": {
+        "code": "function selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/+|\\/+$/g, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "40ec815323cb9be8c5b2a10598f964ff8236df0a87426a89b438537965ddccc4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['selectPage']);\nconst { selectPage } = api;\n\nconst pages = {\n  '': 'home',\n  users: 'users page',\n  'users/detail': 'detail page',\n  '/internal/': 'literal slash key'\n};\nconst before = { ...pages };\nassert.strictEqual(selectPage('', pages), 'home');\nassert.strictEqual(selectPage('/', pages), 'home');\nassert.strictEqual(selectPage('////', pages), 'home');\nassert.strictEqual(selectPage('/users/', pages), 'users page');\nassert.strictEqual(selectPage('////users////', pages), 'users page');\nassert.strictEqual(selectPage('///users/detail///', pages), 'detail page');\nassert.strictEqual(selectPage('users//detail', pages), null);\nassert.strictEqual(selectPage('/missing/', pages), null);\nassert.deepStrictEqual(pages, before);\n\nconst inherited = Object.create({ inherited: 'prototype page' });\ninherited.own = 'own page';\nassert.strictEqual(selectPage('own', inherited), 'own page');\nassert.strictEqual(selectPage('inherited', inherited), null);\nconst nullPrototype = Object.create(null);\nnullPrototype.x = 'X';\nassert.strictEqual(selectPage('/x/', nullPrototype), 'X');\n\nfor (const route of [null, undefined, 3, {}]) {\n  assert.throws(() => selectPage(route, pages), TypeError);\n}\nfor (const invalidPages of [null, undefined, [], 'pages', { good: 'yes', bad: 1 }]) {\n  assert.throws(() => selectPage('/good/', invalidPages), TypeError);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "c75991842876263b258b3f715a66d01a51077a2f460b80b2b9d31af0851c807d"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5ef607b7b366f9c7a3058d7cd975a1f53404fd7255f681a89e841e48fc52f7a6",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ selectPage }`.\n\n`selectPage(route, pages)` must require a string route and a non-null, non-array object whose values are strings. It removes every leading and trailing slash from the route while preserving internal slashes, then returns the matching own-property value or `null`. Empty normalized routes are valid keys. It must not mutate either argument.\n\nKnown-bad source:\n```javascript\nfunction selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/|\\/$/, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5ef607b7b366f9c7a3058d7cd975a1f53404fd7255f681a89e841e48fc52f7a6",
+      "text": "Repair the following CommonJS module. Return a corrected complete source file exporting exactly `{ selectPage }`.\n\n`selectPage(route, pages)` must require a string route and a non-null, non-array object whose values are strings. It removes every leading and trailing slash from the route while preserving internal slashes, then returns the matching own-property value or `null`. Empty normalized routes are valid keys. It must not mutate either argument.\n\nKnown-bad source:\n```javascript\nfunction selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/|\\/$/, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-repair-0061",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/|\\/$/, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n",
+          "label": "Route normalization removes only one boundary slash because the alternation is not global and does not match repeated slashes.",
+          "sha256": "e3b4e6caa59c92aa4a121e89d257ee3a3eeb3d0d077685607e58129fa56083a1"
+        }
+      ],
+      "reference": {
+        "code": "function selectPage(route, pages) {\n  if (typeof route !== 'string') throw new TypeError('route must be a string');\n  if (!pages || typeof pages !== 'object' || Array.isArray(pages)) throw new TypeError('pages must be an object');\n  for (const value of Object.values(pages)) {\n    if (typeof value !== 'string') throw new TypeError('page values must be strings');\n  }\n  const normalized = route.replace(/^\\/+|\\/+$/g, '');\n  return Object.prototype.hasOwnProperty.call(pages, normalized) ? pages[normalized] : null;\n}\n\nmodule.exports = { selectPage };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "40ec815323cb9be8c5b2a10598f964ff8236df0a87426a89b438537965ddccc4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:5:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3a58ca05975c2db2db7517ef1cc8764513ec383a724c8c0b9945be6166005f45",
+    "duration_ms": 1152,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

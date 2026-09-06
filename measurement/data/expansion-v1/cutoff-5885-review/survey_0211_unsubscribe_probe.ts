@@ -1,0 +1,12 @@
+import {SurveyFlow} from './solution';
+const flow = new SurveyFlow();
+let calls = 0;
+const listener = () => { calls++; };
+const oldUnsubscribe = flow.subscribe(listener);
+oldUnsubscribe();
+flow.subscribe(listener);
+oldUnsubscribe();
+flow.setAnswer('name','N'); flow.setAnswer('region','R');
+flow.next(); flow.next();
+console.log('calls', calls);
+if (calls !== 1) throw new Error('repeated old unsubscribe removed new subscription');

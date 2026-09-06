@@ -1,0 +1,145 @@
+{
+  "id": "exp-v1-typescript-generation-0320",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "eb76ef10047b684b8aa24a4a507dd3898f5e9331f54d945fa30fba3974c8af52",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import {ChannelHub} from './solution';\nconst values: number[] = [];\nconst length: number = values.push(1);\nif (length !== 1 || new ChannelHub<number>().publish('x', 1) !== 0) throw new Error('unexpected result');\n",
+        "sha256": "f54e9bf95e71addd5462e07d5e8e694cc2874d55d162dbee8e3b4dde099b9e7a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a9f4590d6d7daf8f431e1e5f6e0efa1bdabfad71501ebf39ffdbd739ef0def2e",
+      "text": "Implement a self-contained TypeScript module exporting a `ChannelHub` class:\n\n```ts\nexport type ChannelListener<T> = (payload: T) => void;\n\nexport class ChannelHub<T> {\n  attach(channel: string, listener: ChannelListener<T>): number;\n  detach(channel: string, token: number): boolean;\n  clear(channel: string): number;\n  publish(channel: string, payload: T): number;\n}\n```\n\nChannel names must be non-empty after trimming; invalid names throw `TypeError`. The original, untrimmed name is the identity of a valid channel. `attach` returns a positive token unique within the hub. Duplicate listener functions are separate registrations. `detach` removes only the registration matching both channel and token and reports whether it existed. `clear` removes all listeners for a channel and returns the number removed. Publishing an unknown channel returns zero.\n\nListeners run synchronously in registration order. `publish` returns the number invoked. It must use a snapshot: attachments and removals made during publication affect only later publications. If a listener throws, stop immediately and propagate that error. Payloads are passed through unchanged. No method may expose or mutate a caller-owned collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a9f4590d6d7daf8f431e1e5f6e0efa1bdabfad71501ebf39ffdbd739ef0def2e",
+      "text": "Implement a self-contained TypeScript module exporting a `ChannelHub` class:\n\n```ts\nexport type ChannelListener<T> = (payload: T) => void;\n\nexport class ChannelHub<T> {\n  attach(channel: string, listener: ChannelListener<T>): number;\n  detach(channel: string, token: number): boolean;\n  clear(channel: string): number;\n  publish(channel: string, payload: T): number;\n}\n```\n\nChannel names must be non-empty after trimming; invalid names throw `TypeError`. The original, untrimmed name is the identity of a valid channel. `attach` returns a positive token unique within the hub. Duplicate listener functions are separate registrations. `detach` removes only the registration matching both channel and token and reports whether it existed. `clear` removes all listeners for a channel and returns the number removed. Publishing an unknown channel returns zero.\n\nListeners run synchronously in registration order. `publish` returns the number invoked. It must use a snapshot: attachments and removals made during publication affect only later publications. If a listener throws, stop immediately and propagate that error. Payloads are passed through unchanged. No method may expose or mutate a caller-owned collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0320",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ChannelListener<T> = (payload: T) => void;\n\ndeclare global {\n  interface Array<T> {\n    push(...items: T[]): void;\n  }\n}\n\ninterface Registration<T> {\n  readonly token: number;\n  readonly listener: ChannelListener<T>;\n}\n\nexport class ChannelHub<T> {\n  private readonly channels = new Map<string, Registration<T>[]>();\n  private nextToken = 1;\n\n  private validate(channel: string): void {\n    if (typeof channel !== \"string\" || channel.trim().length === 0) {\n      throw new TypeError(\"channel must be non-empty\");\n    }\n  }\n\n  attach(channel: string, listener: ChannelListener<T>): number {\n    this.validate(channel);\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n\n    const token = this.nextToken++;\n    const registrations = this.channels.get(channel);\n    const registration = { token, listener };\n\n    if (registrations) {\n      registrations.push(registration);\n    } else {\n      this.channels.set(channel, [registration]);\n    }\n\n    return token;\n  }\n\n  detach(channel: string, token: number): boolean {\n    this.validate(channel);\n    const registrations = this.channels.get(channel);\n    if (!registrations) return false;\n\n    const index = registrations.findIndex(entry => entry.token === token);\n    if (index < 0) return false;\n\n    registrations.splice(index, 1);\n    if (registrations.length === 0) {\n      this.channels.delete(channel);\n    }\n    return true;\n  }\n\n  clear(channel: string): number {\n    this.validate(channel);\n    const count = this.channels.get(channel)?.length ?? 0;\n    this.channels.delete(channel);\n    return count;\n  }\n\n  publish(channel: string, payload: T): number {\n    this.validate(channel);\n    const registrations = this.channels.get(channel) ?? [];\n    let invoked = 0;\n\n    for (const entry of registrations) {\n      entry.listener(payload);\n      invoked += 1;\n    }\n\n    return invoked;\n  }\n}\n",
+          "label": "Publication iterates the live registration array, so listeners attached during publication can run immediately.",
+          "sha256": "d50c33b0d541e09fc2261a2f82639d3252176d5264a513a5c287ecb2e0454339"
+        }
+      ],
+      "reference": {
+        "code": "export type ChannelListener<T> = (payload: T) => void;\n\ndeclare global {\n  interface Array<T> {\n    push(...items: T[]): void;\n  }\n}\n\ninterface Registration<T> {\n  readonly token: number;\n  readonly listener: ChannelListener<T>;\n}\n\nexport class ChannelHub<T> {\n  private readonly channels = new Map<string, Registration<T>[]>();\n  private nextToken = 1;\n\n  private validate(channel: string): void {\n    if (typeof channel !== \"string\" || channel.trim().length === 0) {\n      throw new TypeError(\"channel must be non-empty\");\n    }\n  }\n\n  attach(channel: string, listener: ChannelListener<T>): number {\n    this.validate(channel);\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n\n    const token = this.nextToken++;\n    const registrations = this.channels.get(channel);\n    const registration = { token, listener };\n\n    if (registrations) {\n      registrations.push(registration);\n    } else {\n      this.channels.set(channel, [registration]);\n    }\n\n    return token;\n  }\n\n  detach(channel: string, token: number): boolean {\n    this.validate(channel);\n    const registrations = this.channels.get(channel);\n    if (!registrations) return false;\n\n    const index = registrations.findIndex(entry => entry.token === token);\n    if (index < 0) return false;\n\n    registrations.splice(index, 1);\n    if (registrations.length === 0) {\n      this.channels.delete(channel);\n    }\n    return true;\n  }\n\n  clear(channel: string): number {\n    this.validate(channel);\n    const count = this.channels.get(channel)?.length ?? 0;\n    this.channels.delete(channel);\n    return count;\n  }\n\n  publish(channel: string, payload: T): number {\n    this.validate(channel);\n    const snapshot = [...(this.channels.get(channel) ?? [])];\n    let invoked = 0;\n\n    for (const entry of snapshot) {\n      entry.listener(payload);\n      invoked += 1;\n    }\n\n    return invoked;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "778b92475234909952cab3529b61d6c97a2ce7c9c8e543df5c8aab67dde69267"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ChannelHub } from './solution';\n\nfunction ok(value: boolean, message: string): void {\n  if (!value) throw new Error(message);\n}\n\nfunction equal<T>(actual: T, expected: T, message: string): void {\n  if (actual !== expected) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\n\nfunction throwsTypeError(fn: () => void, message: string): void {\n  try {\n    fn();\n  } catch (error) {\n    if (error instanceof TypeError) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: did not throw`);\n}\n\nconst hub = new ChannelHub<{ value: number }>();\nconst calls: string[] = [];\nconst payload = { value: 7 };\nconst listener = (received: { value: number }): void => {\n  ok(received === payload, 'payload must pass through unchanged');\n  calls.push('duplicate');\n};\nconst first = hub.attach('news', received => {\n  ok(received === payload, 'first listener receives original payload');\n  calls.push('first');\n});\nconst second = hub.attach('news', listener);\nconst third = hub.attach('news', listener);\nok(first > 0 && second > 0 && third > 0, 'tokens must be positive');\nok(first !== second && first !== third && second !== third, 'tokens must be unique');\nequal(hub.publish('news', payload), 3, 'publish count');\nequal(calls.join(','), 'first,duplicate,duplicate', 'registration order and duplicates');\nok(hub.detach('news', second), 'matching registration must detach');\nok(!hub.detach('news', second), 'detaching twice must report false');\nok(!hub.detach('other', third), 'channel and token must both match');\ncalls.length = 0;\nequal(hub.publish('news', payload), 2, 'remaining listener count');\nequal(calls.join(','), 'first,duplicate', 'only selected registration is removed');\nequal(hub.publish('missing', payload), 0, 'unknown channel publishes to zero listeners');\n\nconst spacedCalls: string[] = [];\nhub.attach(' room ', () => spacedCalls.push('spaced'));\nhub.attach('room', () => spacedCalls.push('plain'));\nequal(hub.publish(' room ', payload), 1, 'untrimmed channel identity is preserved');\nequal(spacedCalls.join(','), 'spaced', 'distinct valid names remain distinct');\n\nconst snapshotHub = new ChannelHub<number>();\nconst snapshotCalls: string[] = [];\nlet lateToken = 0;\nconst removable = (): void => snapshotCalls.push('removable');\nsnapshotHub.attach('c', () => {\n  snapshotCalls.push('first');\n  snapshotHub.detach('c', lateToken);\n  snapshotHub.attach('c', () => snapshotCalls.push('attached-later'));\n});\nlateToken = snapshotHub.attach('c', removable);\nequal(snapshotHub.publish('c', 1), 2, 'snapshot includes listeners removed during publication');\nequal(snapshotCalls.join(','), 'first,removable', 'snapshot excludes listeners attached during publication');\nsnapshotCalls.length = 0;\nequal(snapshotHub.publish('c', 2), 2, 'later publication sees mutations');\nequal(snapshotCalls.join(','), 'first,attached-later', 'later snapshot has updated registrations');\n\nequal(snapshotHub.clear('c'), 3, 'clear returns all current registrations');\nequal(snapshotHub.clear('c'), 0, 'clearing empty channel returns zero');\nequal(snapshotHub.publish('c', 3), 0, 'clear removes listeners');\n\nconst throwingHub = new ChannelHub<number>();\nconst boom = new Error('boom');\nlet afterThrow = false;\nthrowingHub.attach('x', () => { throw boom; });\nthrowingHub.attach('x', () => { afterThrow = true; });\ntry {\n  throwingHub.publish('x', 1);\n  throw new Error('throwing listener was not propagated');\n} catch (error) {\n  ok(error === boom, 'the exact listener error must propagate');\n}\nok(!afterThrow, 'publication must stop after a listener throws');\n\nfor (const invalid of ['', ' ', '\\t\\n']) {\n  throwsTypeError(() => hub.attach(invalid, () => undefined), 'attach rejects blank channel');\n  throwsTypeError(() => hub.detach(invalid, first), 'detach rejects blank channel');\n  throwsTypeError(() => hub.clear(invalid), 'clear rejects blank channel');\n  throwsTypeError(() => hub.publish(invalid, payload), 'publish rejects blank channel');\n}\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "4bab953fbf89661e7b72d1719322af04be4a81d1039e99363693d1cdedcb5753"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a9f4590d6d7daf8f431e1e5f6e0efa1bdabfad71501ebf39ffdbd739ef0def2e",
+      "text": "Implement a self-contained TypeScript module exporting a `ChannelHub` class:\n\n```ts\nexport type ChannelListener<T> = (payload: T) => void;\n\nexport class ChannelHub<T> {\n  attach(channel: string, listener: ChannelListener<T>): number;\n  detach(channel: string, token: number): boolean;\n  clear(channel: string): number;\n  publish(channel: string, payload: T): number;\n}\n```\n\nChannel names must be non-empty after trimming; invalid names throw `TypeError`. The original, untrimmed name is the identity of a valid channel. `attach` returns a positive token unique within the hub. Duplicate listener functions are separate registrations. `detach` removes only the registration matching both channel and token and reports whether it existed. `clear` removes all listeners for a channel and returns the number removed. Publishing an unknown channel returns zero.\n\nListeners run synchronously in registration order. `publish` returns the number invoked. It must use a snapshot: attachments and removals made during publication affect only later publications. If a listener throws, stop immediately and propagate that error. Payloads are passed through unchanged. No method may expose or mutate a caller-owned collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a9f4590d6d7daf8f431e1e5f6e0efa1bdabfad71501ebf39ffdbd739ef0def2e",
+      "text": "Implement a self-contained TypeScript module exporting a `ChannelHub` class:\n\n```ts\nexport type ChannelListener<T> = (payload: T) => void;\n\nexport class ChannelHub<T> {\n  attach(channel: string, listener: ChannelListener<T>): number;\n  detach(channel: string, token: number): boolean;\n  clear(channel: string): number;\n  publish(channel: string, payload: T): number;\n}\n```\n\nChannel names must be non-empty after trimming; invalid names throw `TypeError`. The original, untrimmed name is the identity of a valid channel. `attach` returns a positive token unique within the hub. Duplicate listener functions are separate registrations. `detach` removes only the registration matching both channel and token and reports whether it existed. `clear` removes all listeners for a channel and returns the number removed. Publishing an unknown channel returns zero.\n\nListeners run synchronously in registration order. `publish` returns the number invoked. It must use a snapshot: attachments and removals made during publication affect only later publications. If a listener throws, stop immediately and propagate that error. Payloads are passed through unchanged. No method may expose or mutate a caller-owned collection.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0320",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ChannelListener<T> = (payload: T) => void;\n\ndeclare global {\n  interface Array<T> {\n    push(...items: T[]): void;\n  }\n}\n\ninterface Registration<T> {\n  readonly token: number;\n  readonly listener: ChannelListener<T>;\n}\n\nexport class ChannelHub<T> {\n  private readonly channels = new Map<string, Registration<T>[]>();\n  private nextToken = 1;\n\n  private validate(channel: string): void {\n    if (typeof channel !== \"string\" || channel.trim().length === 0) {\n      throw new TypeError(\"channel must be non-empty\");\n    }\n  }\n\n  attach(channel: string, listener: ChannelListener<T>): number {\n    this.validate(channel);\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n\n    const token = this.nextToken++;\n    const registrations = this.channels.get(channel);\n    const registration = { token, listener };\n\n    if (registrations) {\n      registrations.push(registration);\n    } else {\n      this.channels.set(channel, [registration]);\n    }\n\n    return token;\n  }\n\n  detach(channel: string, token: number): boolean {\n    this.validate(channel);\n    const registrations = this.channels.get(channel);\n    if (!registrations) return false;\n\n    const index = registrations.findIndex(entry => entry.token === token);\n    if (index < 0) return false;\n\n    registrations.splice(index, 1);\n    if (registrations.length === 0) {\n      this.channels.delete(channel);\n    }\n    return true;\n  }\n\n  clear(channel: string): number {\n    this.validate(channel);\n    const count = this.channels.get(channel)?.length ?? 0;\n    this.channels.delete(channel);\n    return count;\n  }\n\n  publish(channel: string, payload: T): number {\n    this.validate(channel);\n    const registrations = this.channels.get(channel) ?? [];\n    let invoked = 0;\n\n    for (const entry of registrations) {\n      entry.listener(payload);\n      invoked += 1;\n    }\n\n    return invoked;\n  }\n}\n",
+          "label": "Publication iterates the live registration array, so listeners attached during publication can run immediately.",
+          "sha256": "d50c33b0d541e09fc2261a2f82639d3252176d5264a513a5c287ecb2e0454339"
+        }
+      ],
+      "reference": {
+        "code": "export type ChannelListener<T> = (payload: T) => void;\n\ndeclare global {\n  interface Array<T> {\n    push(...items: T[]): void;\n  }\n}\n\ninterface Registration<T> {\n  readonly token: number;\n  readonly listener: ChannelListener<T>;\n}\n\nexport class ChannelHub<T> {\n  private readonly channels = new Map<string, Registration<T>[]>();\n  private nextToken = 1;\n\n  private validate(channel: string): void {\n    if (typeof channel !== \"string\" || channel.trim().length === 0) {\n      throw new TypeError(\"channel must be non-empty\");\n    }\n  }\n\n  attach(channel: string, listener: ChannelListener<T>): number {\n    this.validate(channel);\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n\n    const token = this.nextToken++;\n    const registrations = this.channels.get(channel);\n    const registration = { token, listener };\n\n    if (registrations) {\n      registrations.push(registration);\n    } else {\n      this.channels.set(channel, [registration]);\n    }\n\n    return token;\n  }\n\n  detach(channel: string, token: number): boolean {\n    this.validate(channel);\n    const registrations = this.channels.get(channel);\n    if (!registrations) return false;\n\n    const index = registrations.findIndex(entry => entry.token === token);\n    if (index < 0) return false;\n\n    registrations.splice(index, 1);\n    if (registrations.length === 0) {\n      this.channels.delete(channel);\n    }\n    return true;\n  }\n\n  clear(channel: string): number {\n    this.validate(channel);\n    const count = this.channels.get(channel)?.length ?? 0;\n    this.channels.delete(channel);\n    return count;\n  }\n\n  publish(channel: string, payload: T): number {\n    this.validate(channel);\n    const snapshot = [...(this.channels.get(channel) ?? [])];\n    let invoked = 0;\n\n    for (const entry of snapshot) {\n      entry.listener(payload);\n      invoked += 1;\n    }\n\n    return invoked;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "778b92475234909952cab3529b61d6c97a2ce7c9c8e543df5c8aab67dde69267"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      2
+    ],
+    "timed_out": false,
+    "stdout": "solution.test.ts(3,7): error TS2322: Type 'void' is not assignable to type 'number'.\n",
+    "stdout_sha256": "3b80e799cd0fe80c0c26f39f5e71a6a5f2b3fd003272ed9b4588ee167386d07a",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1788,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-repair-0211",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a0f31f22a8d704c068cf3b5ce3673fd2fc5c977c83534fd3b208f98ca18db16c",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import {SurveyFlow} from './solution';\nconst flow = new SurveyFlow();\nlet calls = 0;\nconst listener = () => { calls++; };\nconst oldUnsubscribe = flow.subscribe(listener);\noldUnsubscribe();\nflow.subscribe(listener);\noldUnsubscribe();\nflow.setAnswer('name','N'); flow.setAnswer('region','R');\nflow.next(); flow.next();\nconsole.log('calls', calls);\nif (calls !== 1) throw new Error('repeated old unsubscribe removed new subscription');\n",
+        "sha256": "7530cf3527280d660a4f761b9f2c6c09c5ea53d77639531cc6df42d6be9430ca"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c62997224d2c85bb33daa30e3fad606aa00ea495d0d9da99a9ec14c65f8fa999",
+      "text": "Repair the complete TypeScript source below. Return a corrected complete source file with the same exported API.\n\n`SurveyFlow` has stages `draft`, `review`, and `sent`, starts at `draft`, and stores required answers `name` and `region`. `setAnswer` is allowed only in draft, trims its value, and stores it. `next()` from draft may proceed only when both stored answers are non-blank; otherwise it throws `Error(\"Incomplete survey\")`. From review, `next()` moves to sent and invokes every subscribed listener once with a fresh answer object in subscription order. Calling `next()` when sent is a no-op. `previous()` moves review to draft and otherwise does nothing. `reset()` returns to draft and clears answers without removing listeners. `subscribe` returns an idempotent unsubscribe function. Listener mutation of its argument must not affect stored state or other listeners. `snapshot()` returns a defensive copy.\n\nKnown-bad source:\n```ts\nexport type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 && this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c62997224d2c85bb33daa30e3fad606aa00ea495d0d9da99a9ec14c65f8fa999",
+      "text": "Repair the complete TypeScript source below. Return a corrected complete source file with the same exported API.\n\n`SurveyFlow` has stages `draft`, `review`, and `sent`, starts at `draft`, and stores required answers `name` and `region`. `setAnswer` is allowed only in draft, trims its value, and stores it. `next()` from draft may proceed only when both stored answers are non-blank; otherwise it throws `Error(\"Incomplete survey\")`. From review, `next()` moves to sent and invokes every subscribed listener once with a fresh answer object in subscription order. Calling `next()` when sent is a no-op. `previous()` moves review to draft and otherwise does nothing. `reset()` returns to draft and clears answers without removing listeners. `subscribe` returns an idempotent unsubscribe function. Listener mutation of its argument must not affect stored state or other listeners. `snapshot()` returns a defensive copy.\n\nKnown-bad source:\n```ts\nexport type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 && this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-repair-0211",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 && this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n",
+          "label": "Draft validation fails only when both answers are empty, allowing one required answer to be missing.",
+          "sha256": "d2846b2b489022a2c287a090a29551b1cf49b0ab916c05e9cbdefec0cae9e891"
+        }
+      ],
+      "reference": {
+        "code": "export type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 || this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8f8c487159adf6ac45237063b0a5687ef458813cd13004996c484b9a6737a6ce"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { SurveyFlow } from \"./solution\";\nimport type { SurveyAnswers, SurveyListener, SurveySnapshot, SurveyStage } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction expectMessage(action: () => void, message: string): void {\n  let thrown: unknown;\n  try { action(); } catch (error) { thrown = error; }\n  assert(thrown instanceof Error, \"expected Error\");\n  if (thrown.message !== message) throw new Error(`expected ${message}, got ${thrown.message}`);\n}\n\nconst draft: SurveyStage = \"draft\";\nconst flow = new SurveyFlow();\nlet snapshot: SurveySnapshot = flow.snapshot();\nif (snapshot.stage !== draft || snapshot.answers.name !== \"\" || snapshot.answers.region !== \"\") {\n  throw new Error(\"incorrect initial snapshot\");\n}\nsnapshot.answers.name = \"external\";\nif (flow.snapshot().answers.name !== \"\") throw new Error(\"snapshot was not defensive\");\n\nflow.setAnswer(\"name\", \" Ada \");\nexpectMessage(() => flow.next(), \"Incomplete survey\");\nif (flow.snapshot().stage !== \"draft\") throw new Error(\"incomplete next changed stage\");\nflow.setAnswer(\"region\", \"  EU  \");\nflow.next();\nsnapshot = flow.snapshot();\nif (snapshot.stage !== \"review\" || snapshot.answers.name !== \"Ada\" || snapshot.answers.region !== \"EU\") {\n  throw new Error(\"answer normalization or draft transition incorrect\");\n}\nexpectMessage(() => flow.setAnswer(\"name\", \"Grace\"), \"Answers are locked\");\nflow.previous();\nif (flow.snapshot().stage !== \"draft\") throw new Error(\"review previous must return to draft\");\nflow.previous();\nif (flow.snapshot().stage !== \"draft\") throw new Error(\"draft previous must be a no-op\");\n\nconst calls: string[] = [];\nconst first: SurveyListener = (answers: SurveyAnswers) => {\n  calls.push(`first:${answers.name}:${answers.region}`);\n  answers.name = \"mutated-by-listener\";\n};\nconst second: SurveyListener = (answers) => calls.push(`second:${answers.name}:${answers.region}`);\nconst unsubscribeFirst = flow.subscribe(first);\nflow.subscribe(second);\nflow.next();\nflow.next();\nif (calls.join(\"|\") !== \"first:Ada:EU|second:Ada:EU\") throw new Error(\"listeners were not ordered or isolated\");\nif (flow.snapshot().answers.name !== \"Ada\") throw new Error(\"listener mutation affected stored state\");\nflow.next();\nif (calls.length !== 2 || flow.snapshot().stage !== \"sent\") throw new Error(\"sent next must be a no-op\");\n\nunsubscribeFirst();\nunsubscribeFirst();\nflow.reset();\nsnapshot = flow.snapshot();\nif (snapshot.stage !== \"draft\" || snapshot.answers.name !== \"\" || snapshot.answers.region !== \"\") {\n  throw new Error(\"reset did not clear stage and answers\");\n}\nflow.setAnswer(\"name\", \"N\");\nflow.setAnswer(\"region\", \"R\");\nflow.next();\nflow.next();\nif (calls.join(\"|\") !== \"first:Ada:EU|second:Ada:EU|second:N:R\") {\n  throw new Error(\"reset removed listener or unsubscribe was not idempotent\");\n}\n\nconst blank = new SurveyFlow();\nblank.setAnswer(\"name\", \"  \");\nblank.setAnswer(\"region\", \"R\");\nexpectMessage(() => blank.next(), \"Incomplete survey\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "4a6a237dbfc418adade2643ae68c5ba146c453cc9b11ad11bd8a595975662324"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c62997224d2c85bb33daa30e3fad606aa00ea495d0d9da99a9ec14c65f8fa999",
+      "text": "Repair the complete TypeScript source below. Return a corrected complete source file with the same exported API.\n\n`SurveyFlow` has stages `draft`, `review`, and `sent`, starts at `draft`, and stores required answers `name` and `region`. `setAnswer` is allowed only in draft, trims its value, and stores it. `next()` from draft may proceed only when both stored answers are non-blank; otherwise it throws `Error(\"Incomplete survey\")`. From review, `next()` moves to sent and invokes every subscribed listener once with a fresh answer object in subscription order. Calling `next()` when sent is a no-op. `previous()` moves review to draft and otherwise does nothing. `reset()` returns to draft and clears answers without removing listeners. `subscribe` returns an idempotent unsubscribe function. Listener mutation of its argument must not affect stored state or other listeners. `snapshot()` returns a defensive copy.\n\nKnown-bad source:\n```ts\nexport type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 && this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c62997224d2c85bb33daa30e3fad606aa00ea495d0d9da99a9ec14c65f8fa999",
+      "text": "Repair the complete TypeScript source below. Return a corrected complete source file with the same exported API.\n\n`SurveyFlow` has stages `draft`, `review`, and `sent`, starts at `draft`, and stores required answers `name` and `region`. `setAnswer` is allowed only in draft, trims its value, and stores it. `next()` from draft may proceed only when both stored answers are non-blank; otherwise it throws `Error(\"Incomplete survey\")`. From review, `next()` moves to sent and invokes every subscribed listener once with a fresh answer object in subscription order. Calling `next()` when sent is a no-op. `previous()` moves review to draft and otherwise does nothing. `reset()` returns to draft and clears answers without removing listeners. `subscribe` returns an idempotent unsubscribe function. Listener mutation of its argument must not affect stored state or other listeners. `snapshot()` returns a defensive copy.\n\nKnown-bad source:\n```ts\nexport type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 && this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-repair-0211",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 && this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n",
+          "label": "Draft validation fails only when both answers are empty, allowing one required answer to be missing.",
+          "sha256": "d2846b2b489022a2c287a090a29551b1cf49b0ab916c05e9cbdefec0cae9e891"
+        }
+      ],
+      "reference": {
+        "code": "export type SurveyStage = \"draft\" | \"review\" | \"sent\";\nexport interface SurveyAnswers { name: string; region: string; }\nexport interface SurveySnapshot { stage: SurveyStage; answers: SurveyAnswers; }\nexport type SurveyListener = (answers: SurveyAnswers) => void;\n\nexport class SurveyFlow {\n  private stage: SurveyStage = \"draft\";\n  private answers: SurveyAnswers = { name: \"\", region: \"\" };\n  private readonly listeners = new Set<SurveyListener>();\n\n  setAnswer(field: keyof SurveyAnswers, value: string): void {\n    if (this.stage !== \"draft\") throw new Error(\"Answers are locked\");\n    this.answers = { ...this.answers, [field]: value.trim() };\n  }\n\n  next(): void {\n    if (this.stage === \"draft\") {\n      if (this.answers.name.length === 0 || this.answers.region.length === 0) {\n        throw new Error(\"Incomplete survey\");\n      }\n      this.stage = \"review\";\n    } else if (this.stage === \"review\") {\n      this.stage = \"sent\";\n      for (const listener of this.listeners) listener({ ...this.answers });\n    }\n  }\n\n  previous(): void {\n    if (this.stage === \"review\") this.stage = \"draft\";\n  }\n\n  reset(): void {\n    this.stage = \"draft\";\n    this.answers = { name: \"\", region: \"\" };\n  }\n\n  subscribe(listener: SurveyListener): () => void {\n    this.listeners.add(listener);\n    return () => { this.listeners.delete(listener); };\n  }\n\n  snapshot(): SurveySnapshot {\n    return { stage: this.stage, answers: { ...this.answers } };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8f8c487159adf6ac45237063b0a5687ef458813cd13004996c484b9a6737a6ce"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "calls 0\n",
+    "stdout_sha256": "3870ec689fd7b7edb27d3843e52975d6e095be7e3adb7a0020e6049269dcb73a",
+    "stderr": "/work/solution.test.js:17\n    throw new Error('repeated old unsubscribe removed new subscription');\n    ^\n\nError: repeated old unsubscribe removed new subscription\n    at Object.<anonymous> (/work/solution.test.js:17:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "4a15e58a29881ba43d7ceda520078fc244a880c2002d09471db7462fd5d2a8b0",
+    "duration_ms": 2222,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

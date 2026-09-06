@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-repair-0193",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c4b630a3ec2cd7077ed78dc80d32fc989fd4c49ee2624afcecff88945bf46989",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { maskCredential } from './solution';\nconst value = '\\uD83D\\uDE00abc';\nconst result = maskCredential(value);\nconsole.log(JSON.stringify(result));\nif (!result.ok || result.masked !== '*' + value.slice(-4)) throw new Error('not exactly final four UTF-16 units');\n",
+        "sha256": "e5a58f68d287b7843ac29657da08b455b7424241e8141da21c2066f04efda7a7"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48d6b5780dafb8d55c3eba0a80529a01fed3cd33ed98c77b1665c63b743f1200",
+      "text": "Repair the complete source below and return a corrected complete TypeScript source file. Preserve the exact exported API.\n\n`maskCredential` must throw `TypeError` for a non-string input. It trims the credential; an empty trimmed credential returns `{ ok: false, message: \"credential is empty\" }`. A non-empty credential of four or fewer UTF-16 code units is completely replaced by the same number of `*` characters. A longer credential keeps exactly its final four code units and masks every preceding code unit. It must not mutate any external state.\n\nKnown-bad source:\n\n```ts\nexport type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n  const visible = value.slice(-3);\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 3) + visible,\n  };\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48d6b5780dafb8d55c3eba0a80529a01fed3cd33ed98c77b1665c63b743f1200",
+      "text": "Repair the complete source below and return a corrected complete TypeScript source file. Preserve the exact exported API.\n\n`maskCredential` must throw `TypeError` for a non-string input. It trims the credential; an empty trimmed credential returns `{ ok: false, message: \"credential is empty\" }`. A non-empty credential of four or fewer UTF-16 code units is completely replaced by the same number of `*` characters. A longer credential keeps exactly its final four code units and masks every preceding code unit. It must not mutate any external state.\n\nKnown-bad source:\n\n```ts\nexport type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n  const visible = value.slice(-3);\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 3) + visible,\n  };\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-repair-0193",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n\n  let visibleStart = value.length - 3;\n  if (\n    visibleStart > 0 &&\n    /[\\uDC00-\\uDFFF]/.test(value[visibleStart]) &&\n    /[\\uD800-\\uDBFF]/.test(value[visibleStart - 1])\n  ) {\n    visibleStart--;\n  }\n\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 3) + value.slice(visibleStart),\n  };\n}\n",
+          "label": "Long credentials expose only three trailing UTF-16 code units instead of the required four.",
+          "sha256": "b8cf445efba8b3627365f65f327ac139bdd7248c35bcccacfdaa55783aa2f2cf"
+        }
+      ],
+      "reference": {
+        "code": "export type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n\n  let visibleStart = value.length - 4;\n  if (\n    visibleStart > 0 &&\n    /[\\uDC00-\\uDFFF]/.test(value[visibleStart]) &&\n    /[\\uD800-\\uDBFF]/.test(value[visibleStart - 1])\n  ) {\n    visibleStart--;\n  }\n\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 4) + value.slice(visibleStart),\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "13ea710e17e207662ee020e28de74e1d553fb1554ad42755951dc441c949a75d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { maskCredential } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\n\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (actual !== expected) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\n\nfunction masked(input: string, expected: string): void {\n  const result = maskCredential(input);\n  assert(result.ok === true, `expected successful result for ${JSON.stringify(input)}`);\n  equal(result.masked, expected, `mask for ${JSON.stringify(input)}`);\n}\n\nmasked(\"a\", \"*\");\nmasked(\"abcd\", \"****\");\nmasked(\"abcde\", \"*bcde\");\nmasked(\"  secret1234  \", \"******1234\");\nmasked(\"\ud83d\ude00abc\", \"*\ud83d\ude00abc\");\n\nconst empty = maskCredential(\" \\t\\n \");\nassert(empty.ok === false, \"trimmed empty credential fails\");\nequal(empty.message, \"credential is empty\", \"empty credential message\");\n\ntry {\n  maskCredential(123 as unknown as string);\n  throw new Error(\"non-string credential did not throw\");\n} catch (error) {\n  assert(error instanceof TypeError, \"non-string credential throws TypeError\");\n}\n\nconst first = maskCredential(\"abcdef\");\nconst second = maskCredential(\"abcdef\");\nassert(first !== second, \"returns fresh result objects\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "1fbca5eb6629624f812a4c1153aab54dde83ea5f32b083dbac415fcb2c55010c"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48d6b5780dafb8d55c3eba0a80529a01fed3cd33ed98c77b1665c63b743f1200",
+      "text": "Repair the complete source below and return a corrected complete TypeScript source file. Preserve the exact exported API.\n\n`maskCredential` must throw `TypeError` for a non-string input. It trims the credential; an empty trimmed credential returns `{ ok: false, message: \"credential is empty\" }`. A non-empty credential of four or fewer UTF-16 code units is completely replaced by the same number of `*` characters. A longer credential keeps exactly its final four code units and masks every preceding code unit. It must not mutate any external state.\n\nKnown-bad source:\n\n```ts\nexport type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n  const visible = value.slice(-3);\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 3) + visible,\n  };\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48d6b5780dafb8d55c3eba0a80529a01fed3cd33ed98c77b1665c63b743f1200",
+      "text": "Repair the complete source below and return a corrected complete TypeScript source file. Preserve the exact exported API.\n\n`maskCredential` must throw `TypeError` for a non-string input. It trims the credential; an empty trimmed credential returns `{ ok: false, message: \"credential is empty\" }`. A non-empty credential of four or fewer UTF-16 code units is completely replaced by the same number of `*` characters. A longer credential keeps exactly its final four code units and masks every preceding code unit. It must not mutate any external state.\n\nKnown-bad source:\n\n```ts\nexport type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n  const visible = value.slice(-3);\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 3) + visible,\n  };\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-repair-0193",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n\n  let visibleStart = value.length - 3;\n  if (\n    visibleStart > 0 &&\n    /[\\uDC00-\\uDFFF]/.test(value[visibleStart]) &&\n    /[\\uD800-\\uDBFF]/.test(value[visibleStart - 1])\n  ) {\n    visibleStart--;\n  }\n\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 3) + value.slice(visibleStart),\n  };\n}\n",
+          "label": "Long credentials expose only three trailing UTF-16 code units instead of the required four.",
+          "sha256": "b8cf445efba8b3627365f65f327ac139bdd7248c35bcccacfdaa55783aa2f2cf"
+        }
+      ],
+      "reference": {
+        "code": "export type MaskResult =\n  | { ok: true; masked: string }\n  | { ok: false; message: string };\n\nexport function maskCredential(credential: string): MaskResult {\n  if (typeof credential !== \"string\") {\n    throw new TypeError(\"credential must be a string\");\n  }\n  const value = credential.trim();\n  if (value.length === 0) {\n    return { ok: false, message: \"credential is empty\" };\n  }\n  if (value.length <= 4) {\n    return { ok: true, masked: \"*\".repeat(value.length) };\n  }\n\n  let visibleStart = value.length - 4;\n  if (\n    visibleStart > 0 &&\n    /[\\uDC00-\\uDFFF]/.test(value[visibleStart]) &&\n    /[\\uD800-\\uDBFF]/.test(value[visibleStart - 1])\n  ) {\n    visibleStart--;\n  }\n\n  return {\n    ok: true,\n    masked: \"*\".repeat(value.length - 4) + value.slice(visibleStart),\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "13ea710e17e207662ee020e28de74e1d553fb1554ad42755951dc441c949a75d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "{\"ok\":true,\"masked\":\"*\ud83d\ude00abc\"}\n",
+    "stdout_sha256": "9dd653d8746ce26d55afc8ba05b7870ec7346b49dddc47284661a02b29d6c98a",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('not exactly final four UTF-16 units');\n    ^\n\nError: not exactly final four UTF-16 units\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "abf1c70cc80968cf085bf222079b43cf7347a748c05bebd90fb7b4d405938565",
+    "duration_ms": 2951,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

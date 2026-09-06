@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0063",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b064d4aec3a7de115990eab9116edbb5f8d63ab16722a01381ea7be991ba83ff",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import extract_preload_and_image_links\n\n\nclass PreloadRecoveryTests(unittest.TestCase):\n    def test_valueless_rel_does_not_abort_recoverable_document(self):\n        self.assertEqual(\n            extract_preload_and_image_links('<img src=\"a\"><link rel href=\"ignored\"><img src=\"b\">'),\n            [\"a\", \"b\"],\n        )\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "cfd811fb2dd7964a476f687c966e3a8211f0b2db87dfa4e250785fd18816dcc3"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d08e2c87d1765592c39b0d92d7fcccf71e0e84ab53a5f8c60760e8951f779337",
+      "text": "Create `solution.py` with a top-level function `extract_preload_and_image_links(document)` using only the standard library.\n\n`document` must be a string containing HTML-like markup; otherwise raise `TypeError`. Collect the trimmed `src` value from every `img` element and the trimmed `href` value from every `link` element whose whitespace-separated `rel` tokens include `preload`, case-insensitively. Ignore missing and empty attributes. Remove exact duplicate URLs while preserving their first-document order. Relative references must remain unchanged. Parsing incomplete or malformed markup must return whatever links the standard-library parser can recover rather than raising a custom parsing error. Return a new list and retain no mutable alias to caller data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d08e2c87d1765592c39b0d92d7fcccf71e0e84ab53a5f8c60760e8951f779337",
+      "text": "Create `solution.py` with a top-level function `extract_preload_and_image_links(document)` using only the standard library.\n\n`document` must be a string containing HTML-like markup; otherwise raise `TypeError`. Collect the trimmed `src` value from every `img` element and the trimmed `href` value from every `link` element whose whitespace-separated `rel` tokens include `preload`, case-insensitively. Ignore missing and empty attributes. Remove exact duplicate URLs while preserving their first-document order. Relative references must remain unchanged. Parsing incomplete or malformed markup must return whatever links the standard-library parser can recover rather than raising a custom parsing error. Return a new list and retain no mutable alias to caller data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0063",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from html.parser import HTMLParser\n\n\nclass _ResourceParser(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        value = None\n        if tag == \"img\":\n            value = attributes.get(\"src\")\n        elif tag == \"link\":\n            rel = attributes.get(\"rel\", \"\")\n            if \"preload\" in rel.lower().split():\n                value = attributes.get(\"href\")\n        if value is not None:\n            value = value.strip()\n            if value and value not in self.seen:\n                self.seen.add(value)\n                self.links.append(value)\n\n\ndef extract_preload_and_image_links(document):\n    if not isinstance(document, str):\n        raise TypeError(\"document must be a string\")\n    parser = _ResourceParser()\n    parser.feed(document)\n    parser.close()\n    return list(set(parser.links))\n",
+          "label": "Converts the ordered result to a set, losing first-document ordering.",
+          "sha256": "3f0c7532506d8ac991e4d76ed71e3a8e61c094300c46e4854e2f356087458297"
+        }
+      ],
+      "reference": {
+        "code": "from html.parser import HTMLParser\n\n\nclass _ResourceParser(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        value = None\n        if tag == \"img\":\n            value = attributes.get(\"src\")\n        elif tag == \"link\":\n            rel = attributes.get(\"rel\", \"\")\n            if \"preload\" in rel.lower().split():\n                value = attributes.get(\"href\")\n        if value is not None:\n            value = value.strip()\n            if value and value not in self.seen:\n                self.seen.add(value)\n                self.links.append(value)\n\n\ndef extract_preload_and_image_links(document):\n    if not isinstance(document, str):\n        raise TypeError(\"document must be a string\")\n    parser = _ResourceParser()\n    parser.feed(document)\n    parser.close()\n    return list(parser.links)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bd7e11039e02a86ac3715e3ff1e4b63b1c6ce8f42cb3ae8afa567a41f5605198"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import extract_preload_and_image_links\n\n\nclass ExtractLinksTests(unittest.TestCase):\n    def test_collects_in_document_order_and_deduplicates(self):\n        document = \"\"\"\n            <link href=\" /early.css \" rel=\"stylesheet PRELOAD\">\n            <img alt=\"x\" src=\" images/a.png \">\n            <link rel=\"preload\" href=\"/early.css\">\n            <img src=\"images/a.png\">\n            <link rel=\"modulepreload\" href=\"ignored.js\">\n            <IMG SRC=\"/upper.png\">\n            <link rel=\"PreLoAd fetch\" href=\" relative/data.json \">\n        \"\"\"\n        self.assertEqual(\n            extract_preload_and_image_links(document),\n            [\"/early.css\", \"images/a.png\", \"/upper.png\", \"relative/data.json\"],\n        )\n\n    def test_ignores_missing_and_trimmed_empty_attributes(self):\n        document = (\n            \"<img><img src='   '>\"\n            \"<link rel='preload'><link href='x' rel='stylesheet'>\"\n            \"<link href='  ' rel='preload'>\"\n        )\n        self.assertEqual(extract_preload_and_image_links(document), [])\n\n    def test_rel_is_split_on_whitespace_and_matching_is_case_insensitive(self):\n        document = \"<link rel='prefetch\\tPRELOAD\\nstylesheet' href='asset.css'>\"\n        self.assertEqual(extract_preload_and_image_links(document), [\"asset.css\"])\n\n    def test_relative_and_fragment_references_are_not_resolved(self):\n        document = \"<img src='../a.png'><link rel='preload' href='#fragment'>\"\n        self.assertEqual(extract_preload_and_image_links(document), [\"../a.png\", \"#fragment\"])\n\n    def test_recovers_from_incomplete_markup(self):\n        document = \"<section><img src='a.png'><div><link rel='preload' href='b.css'>\"\n        self.assertEqual(extract_preload_and_image_links(document), [\"a.png\", \"b.css\"])\n\n    def test_requires_string_and_returns_fresh_lists(self):\n        for malformed in (None, b\"<img src='a'>\", [\"<img>\"]):\n            with self.subTest(malformed=malformed):\n                with self.assertRaises(TypeError):\n                    extract_preload_and_image_links(malformed)\n        first = extract_preload_and_image_links(\"<img src='a'>\")\n        second = extract_preload_and_image_links(\"<img src='a'>\")\n        self.assertIsNot(first, second)\n        first.append(\"changed\")\n        self.assertEqual(second, [\"a\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "937e3b0191eed70102940275686b1fd0d6ddf085900ad02a0e619430a5994516"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d08e2c87d1765592c39b0d92d7fcccf71e0e84ab53a5f8c60760e8951f779337",
+      "text": "Create `solution.py` with a top-level function `extract_preload_and_image_links(document)` using only the standard library.\n\n`document` must be a string containing HTML-like markup; otherwise raise `TypeError`. Collect the trimmed `src` value from every `img` element and the trimmed `href` value from every `link` element whose whitespace-separated `rel` tokens include `preload`, case-insensitively. Ignore missing and empty attributes. Remove exact duplicate URLs while preserving their first-document order. Relative references must remain unchanged. Parsing incomplete or malformed markup must return whatever links the standard-library parser can recover rather than raising a custom parsing error. Return a new list and retain no mutable alias to caller data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d08e2c87d1765592c39b0d92d7fcccf71e0e84ab53a5f8c60760e8951f779337",
+      "text": "Create `solution.py` with a top-level function `extract_preload_and_image_links(document)` using only the standard library.\n\n`document` must be a string containing HTML-like markup; otherwise raise `TypeError`. Collect the trimmed `src` value from every `img` element and the trimmed `href` value from every `link` element whose whitespace-separated `rel` tokens include `preload`, case-insensitively. Ignore missing and empty attributes. Remove exact duplicate URLs while preserving their first-document order. Relative references must remain unchanged. Parsing incomplete or malformed markup must return whatever links the standard-library parser can recover rather than raising a custom parsing error. Return a new list and retain no mutable alias to caller data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0063",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from html.parser import HTMLParser\n\n\nclass _ResourceParser(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        value = None\n        if tag == \"img\":\n            value = attributes.get(\"src\")\n        elif tag == \"link\":\n            rel = attributes.get(\"rel\", \"\")\n            if \"preload\" in rel.lower().split():\n                value = attributes.get(\"href\")\n        if value is not None:\n            value = value.strip()\n            if value and value not in self.seen:\n                self.seen.add(value)\n                self.links.append(value)\n\n\ndef extract_preload_and_image_links(document):\n    if not isinstance(document, str):\n        raise TypeError(\"document must be a string\")\n    parser = _ResourceParser()\n    parser.feed(document)\n    parser.close()\n    return list(set(parser.links))\n",
+          "label": "Converts the ordered result to a set, losing first-document ordering.",
+          "sha256": "3f0c7532506d8ac991e4d76ed71e3a8e61c094300c46e4854e2f356087458297"
+        }
+      ],
+      "reference": {
+        "code": "from html.parser import HTMLParser\n\n\nclass _ResourceParser(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        value = None\n        if tag == \"img\":\n            value = attributes.get(\"src\")\n        elif tag == \"link\":\n            rel = attributes.get(\"rel\", \"\")\n            if \"preload\" in rel.lower().split():\n                value = attributes.get(\"href\")\n        if value is not None:\n            value = value.strip()\n            if value and value not in self.seen:\n                self.seen.add(value)\n                self.links.append(value)\n\n\ndef extract_preload_and_image_links(document):\n    if not isinstance(document, str):\n        raise TypeError(\"document must be a string\")\n    parser = _ResourceParser()\n    parser.feed(document)\n    parser.close()\n    return list(parser.links)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bd7e11039e02a86ac3715e3ff1e4b63b1c6ce8f42cb3ae8afa567a41f5605198"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_valueless_rel_does_not_abort_recoverable_document (__main__.PreloadRecoveryTests.test_valueless_rel_does_not_abort_recoverable_document)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_valueless_rel_does_not_abort_recoverable_document\n    extract_preload_and_image_links('<img src=\"a\"><link rel href=\"ignored\"><img src=\"b\">'),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 30, in extract_preload_and_image_links\n    parser.feed(document)\n  File \"/usr/local/lib/python3.11/html/parser.py\", line 149, in feed\n    self.goahead(0)\n  File \"/usr/local/lib/python3.11/html/parser.py\", line 231, in goahead\n    k = self.parse_starttag(i)\n        ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/html/parser.py\", line 446, in parse_starttag\n    self.handle_starttag(tag, attrs)\n  File \"/work/solution.py\", line 17, in handle_starttag\n    if \"preload\" in rel.lower().split():\n                    ^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'lower'\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "bffb848d80c9eb07ec7374bf30a3ab909b206c9c03f1431f7e64e93168f67e29",
+    "duration_ms": 444,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

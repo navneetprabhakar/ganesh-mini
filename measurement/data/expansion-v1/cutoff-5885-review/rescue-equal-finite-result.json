@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0111",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "0d6944b74e429b8d20319c291dc95cc99f7aa76aa587869e1011fc45e6030e6f",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import plan_rescue\n\n\nclass RescueFiniteTests(unittest.TestCase):\n    def test_equal_finite_halves_have_zero_turn(self):\n        self.assertEqual(plan_rescue(True, [[1e308] * 4])[0], (\"TURN\", 0.0))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "5c26d1cdbd7bb7eb764877c3a560f0ef0272337e4c7f0fb5bff0e7e30ce68ccb"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b791d3feb14bff2f2e321cfe69b85e01bc61b0edf30fa29a4608f427cce39a53",
+      "text": "Create `solution.py` with a top-level function `plan_rescue(start, sensor_batches, *, threshold=100.0)`. `start` must be a boolean. `sensor_batches` must be a list of non-empty lists containing finite, non-negative numbers; booleans are invalid. `threshold` must be finite and strictly positive. Validate all inputs even when `start` is false. If `start` is false, return an empty list. Otherwise, process batches in order. For every batch whose maximum reading is not greater than the threshold, append `(\"SEARCH\", batch_index)`. At the first batch whose maximum is greater than the threshold, divide readings at `len(batch)//2`; calculate each side's arithmetic mean, using `0.0` for an empty side. Append `(\"TURN\", value)`, where value is `(right_mean-left_mean)/(abs(left_mean)+abs(right_mean))`, or zero when the denominator is zero, rounded to six decimals. Then append `(\"APPROACH\", maximum_reading)` and `(\"EXTINGUISH\",)`, and stop processing. If no batch crosses the threshold, return only the search actions. Return a new list and tuples, preserve ordering, and do not mutate or alias nested input lists. Raise `TypeError` for incorrect types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b791d3feb14bff2f2e321cfe69b85e01bc61b0edf30fa29a4608f427cce39a53",
+      "text": "Create `solution.py` with a top-level function `plan_rescue(start, sensor_batches, *, threshold=100.0)`. `start` must be a boolean. `sensor_batches` must be a list of non-empty lists containing finite, non-negative numbers; booleans are invalid. `threshold` must be finite and strictly positive. Validate all inputs even when `start` is false. If `start` is false, return an empty list. Otherwise, process batches in order. For every batch whose maximum reading is not greater than the threshold, append `(\"SEARCH\", batch_index)`. At the first batch whose maximum is greater than the threshold, divide readings at `len(batch)//2`; calculate each side's arithmetic mean, using `0.0` for an empty side. Append `(\"TURN\", value)`, where value is `(right_mean-left_mean)/(abs(left_mean)+abs(right_mean))`, or zero when the denominator is zero, rounded to six decimals. Then append `(\"APPROACH\", maximum_reading)` and `(\"EXTINGUISH\",)`, and stop processing. If no batch crosses the threshold, return only the search actions. Return a new list and tuples, preserve ordering, and do not mutate or alias nested input lists. Raise `TypeError` for incorrect types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0111",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be numeric\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef plan_rescue(start, sensor_batches, *, threshold=100.0):\n    if not isinstance(start, bool):\n        raise TypeError(\"start must be a boolean\")\n    if not isinstance(sensor_batches, list):\n        raise TypeError(\"sensor_batches must be a list\")\n    threshold = _finite_number(threshold, \"threshold\")\n    if threshold <= 0:\n        raise ValueError(\"threshold must be positive\")\n\n    batches = []\n    for batch in sensor_batches:\n        if not isinstance(batch, list):\n            raise TypeError(\"each batch must be a list\")\n        if not batch:\n            raise ValueError(\"sensor batches cannot be empty\")\n        values = [_finite_number(value, \"reading\") for value in batch]\n        if any(value < 0 for value in values):\n            raise ValueError(\"readings cannot be negative\")\n        batches.append(tuple(values))\n\n    if not start:\n        return []\n\n    actions = []\n    for index, batch in enumerate(batches):\n        peak = max(batch)\n        if peak >= threshold:\n            middle = len(batch) // 2\n            left = batch[:middle]\n            right = batch[middle:]\n            left_mean = sum(left) / len(left) if left else 0.0\n            right_mean = sum(right) / len(right) if right else 0.0\n            denominator = abs(left_mean) + abs(right_mean)\n            turn = (right_mean - left_mean) / denominator if denominator else 0.0\n            actions.append((\"TURN\", round(turn, 6)))\n            actions.append((\"APPROACH\", peak))\n            actions.append((\"EXTINGUISH\",))\n            break\n        actions.append((\"SEARCH\", index))\n    return actions\n",
+          "label": "A reading equal to the threshold incorrectly triggers the rescue sequence.",
+          "sha256": "6e54c6933503b8ea6e6ac63b715c9ed4fd294a338bd12b7da5338285958108ca"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be numeric\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef plan_rescue(start, sensor_batches, *, threshold=100.0):\n    if not isinstance(start, bool):\n        raise TypeError(\"start must be a boolean\")\n    if not isinstance(sensor_batches, list):\n        raise TypeError(\"sensor_batches must be a list\")\n    threshold = _finite_number(threshold, \"threshold\")\n    if threshold <= 0:\n        raise ValueError(\"threshold must be positive\")\n\n    batches = []\n    for batch in sensor_batches:\n        if not isinstance(batch, list):\n            raise TypeError(\"each batch must be a list\")\n        if not batch:\n            raise ValueError(\"sensor batches cannot be empty\")\n        values = [_finite_number(value, \"reading\") for value in batch]\n        if any(value < 0 for value in values):\n            raise ValueError(\"readings cannot be negative\")\n        batches.append(tuple(values))\n\n    if not start:\n        return []\n\n    actions = []\n    for index, batch in enumerate(batches):\n        peak = max(batch)\n        if peak > threshold:\n            middle = len(batch) // 2\n            left = batch[:middle]\n            right = batch[middle:]\n            left_mean = sum(left) / len(left) if left else 0.0\n            right_mean = sum(right) / len(right) if right else 0.0\n            denominator = abs(left_mean) + abs(right_mean)\n            turn = (right_mean - left_mean) / denominator if denominator else 0.0\n            actions.append((\"TURN\", round(turn, 6)))\n            actions.append((\"APPROACH\", peak))\n            actions.append((\"EXTINGUISH\",))\n            break\n        actions.append((\"SEARCH\", index))\n    return actions\n",
+        "label": "codex-teacher-reference",
+        "sha256": "acc72d59b6c48e84a054a01ea73ece36f46a47d07b051d21861ff6e19164642b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport math\nimport unittest\n\nimport solution\n\n\nclass PlanRescueTests(unittest.TestCase):\n    def test_false_start_returns_new_empty_list(self):\n        batches = [[150]]\n        first = solution.plan_rescue(False, batches)\n        second = solution.plan_rescue(False, batches)\n        self.assertEqual(first, [])\n        self.assertIsNot(first, second)\n\n    def test_search_then_rescue_and_stop(self):\n        batches = [[10, 100], [20, 40, 160], [999]]\n        self.assertEqual(\n            solution.plan_rescue(True, batches),\n            [(\"SEARCH\", 0), (\"TURN\", 0.666667), (\"APPROACH\", 160), (\"EXTINGUISH\",)],\n        )\n\n    def test_threshold_equality_is_search_and_no_crossing(self):\n        self.assertEqual(\n            solution.plan_rescue(True, [[100], [0, 99]], threshold=100),\n            [(\"SEARCH\", 0), (\"SEARCH\", 1)],\n        )\n\n    def test_single_reading_uses_empty_left_mean(self):\n        self.assertEqual(\n            solution.plan_rescue(True, [[101]]),\n            [(\"TURN\", 1.0), (\"APPROACH\", 101), (\"EXTINGUISH\",)],\n        )\n\n    def test_input_is_not_mutated(self):\n        batches = [[1, 2], [200, 3]]\n        before = copy.deepcopy(batches)\n        result = solution.plan_rescue(True, batches)\n        self.assertEqual(batches, before)\n        self.assertIsInstance(result, list)\n        self.assertTrue(all(isinstance(action, tuple) for action in result))\n\n    def test_validates_even_when_start_is_false(self):\n        with self.assertRaises(ValueError):\n            solution.plan_rescue(False, [[]])\n        with self.assertRaises(ValueError):\n            solution.plan_rescue(False, [[-1]])\n        with self.assertRaises(TypeError):\n            solution.plan_rescue(False, [[True]])\n\n    def test_type_errors(self):\n        calls = [\n            lambda: solution.plan_rescue(1, [[1]]),\n            lambda: solution.plan_rescue(True, ()),\n            lambda: solution.plan_rescue(True, [(1,)]),\n            lambda: solution.plan_rescue(True, [[\"1\"]]),\n            lambda: solution.plan_rescue(True, [[1]], threshold=True),\n        ]\n        for call in calls:\n            with self.subTest(call=call):\n                with self.assertRaises(TypeError):\n                    call()\n\n    def test_value_errors(self):\n        calls = [\n            lambda: solution.plan_rescue(True, [[]]),\n            lambda: solution.plan_rescue(True, [[-0.1]]),\n            lambda: solution.plan_rescue(True, [[math.nan]]),\n            lambda: solution.plan_rescue(True, [[1]], threshold=0),\n            lambda: solution.plan_rescue(True, [[1]], threshold=math.inf),\n        ]\n        for call in calls:\n            with self.subTest(call=call):\n                with self.assertRaises(ValueError):\n                    call()\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "f9e50beae349681cd3f8a79311d5e90b7ac8599c7dabd93cf52e31cd8dbe2cb7"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b791d3feb14bff2f2e321cfe69b85e01bc61b0edf30fa29a4608f427cce39a53",
+      "text": "Create `solution.py` with a top-level function `plan_rescue(start, sensor_batches, *, threshold=100.0)`. `start` must be a boolean. `sensor_batches` must be a list of non-empty lists containing finite, non-negative numbers; booleans are invalid. `threshold` must be finite and strictly positive. Validate all inputs even when `start` is false. If `start` is false, return an empty list. Otherwise, process batches in order. For every batch whose maximum reading is not greater than the threshold, append `(\"SEARCH\", batch_index)`. At the first batch whose maximum is greater than the threshold, divide readings at `len(batch)//2`; calculate each side's arithmetic mean, using `0.0` for an empty side. Append `(\"TURN\", value)`, where value is `(right_mean-left_mean)/(abs(left_mean)+abs(right_mean))`, or zero when the denominator is zero, rounded to six decimals. Then append `(\"APPROACH\", maximum_reading)` and `(\"EXTINGUISH\",)`, and stop processing. If no batch crosses the threshold, return only the search actions. Return a new list and tuples, preserve ordering, and do not mutate or alias nested input lists. Raise `TypeError` for incorrect types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b791d3feb14bff2f2e321cfe69b85e01bc61b0edf30fa29a4608f427cce39a53",
+      "text": "Create `solution.py` with a top-level function `plan_rescue(start, sensor_batches, *, threshold=100.0)`. `start` must be a boolean. `sensor_batches` must be a list of non-empty lists containing finite, non-negative numbers; booleans are invalid. `threshold` must be finite and strictly positive. Validate all inputs even when `start` is false. If `start` is false, return an empty list. Otherwise, process batches in order. For every batch whose maximum reading is not greater than the threshold, append `(\"SEARCH\", batch_index)`. At the first batch whose maximum is greater than the threshold, divide readings at `len(batch)//2`; calculate each side's arithmetic mean, using `0.0` for an empty side. Append `(\"TURN\", value)`, where value is `(right_mean-left_mean)/(abs(left_mean)+abs(right_mean))`, or zero when the denominator is zero, rounded to six decimals. Then append `(\"APPROACH\", maximum_reading)` and `(\"EXTINGUISH\",)`, and stop processing. If no batch crosses the threshold, return only the search actions. Return a new list and tuples, preserve ordering, and do not mutate or alias nested input lists. Raise `TypeError` for incorrect types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0111",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be numeric\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef plan_rescue(start, sensor_batches, *, threshold=100.0):\n    if not isinstance(start, bool):\n        raise TypeError(\"start must be a boolean\")\n    if not isinstance(sensor_batches, list):\n        raise TypeError(\"sensor_batches must be a list\")\n    threshold = _finite_number(threshold, \"threshold\")\n    if threshold <= 0:\n        raise ValueError(\"threshold must be positive\")\n\n    batches = []\n    for batch in sensor_batches:\n        if not isinstance(batch, list):\n            raise TypeError(\"each batch must be a list\")\n        if not batch:\n            raise ValueError(\"sensor batches cannot be empty\")\n        values = [_finite_number(value, \"reading\") for value in batch]\n        if any(value < 0 for value in values):\n            raise ValueError(\"readings cannot be negative\")\n        batches.append(tuple(values))\n\n    if not start:\n        return []\n\n    actions = []\n    for index, batch in enumerate(batches):\n        peak = max(batch)\n        if peak >= threshold:\n            middle = len(batch) // 2\n            left = batch[:middle]\n            right = batch[middle:]\n            left_mean = sum(left) / len(left) if left else 0.0\n            right_mean = sum(right) / len(right) if right else 0.0\n            denominator = abs(left_mean) + abs(right_mean)\n            turn = (right_mean - left_mean) / denominator if denominator else 0.0\n            actions.append((\"TURN\", round(turn, 6)))\n            actions.append((\"APPROACH\", peak))\n            actions.append((\"EXTINGUISH\",))\n            break\n        actions.append((\"SEARCH\", index))\n    return actions\n",
+          "label": "A reading equal to the threshold incorrectly triggers the rescue sequence.",
+          "sha256": "6e54c6933503b8ea6e6ac63b715c9ed4fd294a338bd12b7da5338285958108ca"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _finite_number(value, name):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(f\"{name} must be numeric\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(f\"{name} must be finite\")\n    return value\n\n\ndef plan_rescue(start, sensor_batches, *, threshold=100.0):\n    if not isinstance(start, bool):\n        raise TypeError(\"start must be a boolean\")\n    if not isinstance(sensor_batches, list):\n        raise TypeError(\"sensor_batches must be a list\")\n    threshold = _finite_number(threshold, \"threshold\")\n    if threshold <= 0:\n        raise ValueError(\"threshold must be positive\")\n\n    batches = []\n    for batch in sensor_batches:\n        if not isinstance(batch, list):\n            raise TypeError(\"each batch must be a list\")\n        if not batch:\n            raise ValueError(\"sensor batches cannot be empty\")\n        values = [_finite_number(value, \"reading\") for value in batch]\n        if any(value < 0 for value in values):\n            raise ValueError(\"readings cannot be negative\")\n        batches.append(tuple(values))\n\n    if not start:\n        return []\n\n    actions = []\n    for index, batch in enumerate(batches):\n        peak = max(batch)\n        if peak > threshold:\n            middle = len(batch) // 2\n            left = batch[:middle]\n            right = batch[middle:]\n            left_mean = sum(left) / len(left) if left else 0.0\n            right_mean = sum(right) / len(right) if right else 0.0\n            denominator = abs(left_mean) + abs(right_mean)\n            turn = (right_mean - left_mean) / denominator if denominator else 0.0\n            actions.append((\"TURN\", round(turn, 6)))\n            actions.append((\"APPROACH\", peak))\n            actions.append((\"EXTINGUISH\",))\n            break\n        actions.append((\"SEARCH\", index))\n    return actions\n",
+        "label": "codex-teacher-reference",
+        "sha256": "acc72d59b6c48e84a054a01ea73ece36f46a47d07b051d21861ff6e19164642b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_equal_finite_halves_have_zero_turn (__main__.RescueFiniteTests.test_equal_finite_halves_have_zero_turn)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_equal_finite_halves_have_zero_turn\n    self.assertEqual(plan_rescue(True, [[1e308] * 4])[0], (\"TURN\", 0.0))\nAssertionError: Tuples differ: ('TURN', nan) != ('TURN', 0.0)\n\nFirst differing element 1:\nnan\n0.0\n\n- ('TURN', nan)\n?          ^^^\n\n+ ('TURN', 0.0)\n?          ^^^\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "c9d5324347d139843e8de4ba88d468eca49abed4531848980e2a3052fe95c60d",
+    "duration_ms": 409,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

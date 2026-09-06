@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0050",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5978efe75c5d4ded73400622d97665a1445371ece9ec80a7a15120f7277e4de1",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import PermitDesk, AuthenticationError\n\nclass PermitHashProbe(unittest.TestCase):\n    def test_nonmatching_nonascii_stored_hash_is_authentication_error(self):\n        desk = PermitDesk([{'identifier': 'a', 'pin_hash': '\u00e9', 'profile': {}}])\n        with self.assertRaises(AuthenticationError):\n            desk.login('a', 'pin')\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "0cf6159e51d2f6eaa15b13726243de9b1d6f07b87706a21936c45b7dc0465bef"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "de3653ac8b7590952383810c5cbac4aa542961dce87777221235aaa8f2c6a361",
+      "text": "Create `solution.py` implementing `AuthenticationError` and `PermitDesk`. `PermitDesk(records)` accepts a list of dictionaries with exactly `identifier`, `pin_hash`, and `profile`. Identifiers and hashes must be non-empty strings, profiles must be dictionaries, and identifiers must be unique. Invalid types raise `TypeError`; invalid content raises `ValueError`. The desk must deep-copy all supplied data.\n\n`login(identifier, pin)` accepts strings, compares the lowercase hexadecimal SHA-256 digest of `pin` with the stored hash using `hmac.compare_digest`, and raises `AuthenticationError` for an unknown identifier or mismatch. On success it returns `{\"access\": \"A<n>\", \"refresh\": \"R<n>\", \"profile\": <deep copy>}`, where successful logins use consecutive positive integers beginning at 1. `renew(refresh)` requires a previously issued refresh string and returns the next access string using an independent consecutive access counter; unknown or malformed tokens raise `AuthenticationError`. Refresh tokens remain valid. Returned profiles must never alias internal or caller-owned objects. Neither public method may mutate its arguments. Implement the complete API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "de3653ac8b7590952383810c5cbac4aa542961dce87777221235aaa8f2c6a361",
+      "text": "Create `solution.py` implementing `AuthenticationError` and `PermitDesk`. `PermitDesk(records)` accepts a list of dictionaries with exactly `identifier`, `pin_hash`, and `profile`. Identifiers and hashes must be non-empty strings, profiles must be dictionaries, and identifiers must be unique. Invalid types raise `TypeError`; invalid content raises `ValueError`. The desk must deep-copy all supplied data.\n\n`login(identifier, pin)` accepts strings, compares the lowercase hexadecimal SHA-256 digest of `pin` with the stored hash using `hmac.compare_digest`, and raises `AuthenticationError` for an unknown identifier or mismatch. On success it returns `{\"access\": \"A<n>\", \"refresh\": \"R<n>\", \"profile\": <deep copy>}`, where successful logins use consecutive positive integers beginning at 1. `renew(refresh)` requires a previously issued refresh string and returns the next access string using an independent consecutive access counter; unknown or malformed tokens raise `AuthenticationError`. Refresh tokens remain valid. Returned profiles must never alias internal or caller-owned objects. Neither public method may mutate its arguments. Implement the complete API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0050",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport hashlib\nimport hmac\n\n\nclass AuthenticationError(Exception):\n    pass\n\n\nclass PermitDesk:\n    def __init__(self, records):\n        if not isinstance(records, list):\n            raise TypeError(\"records must be a list\")\n        self._records = {}\n        for record in records:\n            if not isinstance(record, dict):\n                raise TypeError(\"records must contain dictionaries\")\n            if set(record) != {\"identifier\", \"pin_hash\", \"profile\"}:\n                raise ValueError(\"record fields are invalid\")\n            identifier = record[\"identifier\"]\n            pin_hash = record[\"pin_hash\"]\n            profile = record[\"profile\"]\n            if not isinstance(identifier, str) or not isinstance(pin_hash, str):\n                raise TypeError(\"identifier and pin_hash must be strings\")\n            if not isinstance(profile, dict):\n                raise TypeError(\"profile must be a dictionary\")\n            if not identifier or not pin_hash or identifier in self._records:\n                raise ValueError(\"record content is invalid\")\n            self._records[identifier] = copy.deepcopy(record)\n        self._login_number = 0\n        self._renew_access_number = 0\n        self._refresh_tokens = set()\n\n    def login(self, identifier, pin):\n        if not isinstance(identifier, str) or not isinstance(pin, str):\n            raise TypeError(\"identifier and pin must be strings\")\n        record = self._records.get(identifier)\n        digest = hashlib.sha256(pin.encode(\"utf-8\")).hexdigest()\n        if record is None or not hmac.compare_digest(digest, record[\"pin_hash\"].lower()):\n            raise AuthenticationError(\"invalid credentials\")\n        self._login_number += 1\n        refresh = f\"R{self._login_number}\"\n        self._refresh_tokens.add(refresh)\n        return {\"access\": f\"A{self._login_number}\", \"refresh\": refresh,\n                \"profile\": record[\"profile\"]}\n\n    def renew(self, refresh):\n        if not isinstance(refresh, str) or refresh not in self._refresh_tokens:\n            raise AuthenticationError(\"invalid refresh token\")\n        self._renew_access_number += 1\n        return f\"A{self._renew_access_number}\"\n",
+          "label": "Returns an alias to the internally stored profile instead of a deep copy.",
+          "sha256": "43ed6f9d7562ac0674eedb7b014e7146833113ff2be953b8bd295e9cbe77f1f0"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport hashlib\nimport hmac\n\n\nclass AuthenticationError(Exception):\n    pass\n\n\nclass PermitDesk:\n    def __init__(self, records):\n        if not isinstance(records, list):\n            raise TypeError(\"records must be a list\")\n        self._records = {}\n        for record in records:\n            if not isinstance(record, dict):\n                raise TypeError(\"records must contain dictionaries\")\n            if set(record) != {\"identifier\", \"pin_hash\", \"profile\"}:\n                raise ValueError(\"record fields are invalid\")\n            identifier = record[\"identifier\"]\n            pin_hash = record[\"pin_hash\"]\n            profile = record[\"profile\"]\n            if not isinstance(identifier, str) or not isinstance(pin_hash, str):\n                raise TypeError(\"identifier and pin_hash must be strings\")\n            if not isinstance(profile, dict):\n                raise TypeError(\"profile must be a dictionary\")\n            if not identifier or not pin_hash or identifier in self._records:\n                raise ValueError(\"record content is invalid\")\n            self._records[identifier] = copy.deepcopy(record)\n        self._login_number = 0\n        self._renew_access_number = 0\n        self._refresh_tokens = set()\n\n    def login(self, identifier, pin):\n        if not isinstance(identifier, str) or not isinstance(pin, str):\n            raise TypeError(\"identifier and pin must be strings\")\n        record = self._records.get(identifier)\n        digest = hashlib.sha256(pin.encode(\"utf-8\")).hexdigest()\n        if record is None or not hmac.compare_digest(digest, record[\"pin_hash\"].lower()):\n            raise AuthenticationError(\"invalid credentials\")\n        self._login_number += 1\n        refresh = f\"R{self._login_number}\"\n        self._refresh_tokens.add(refresh)\n        return {\"access\": f\"A{self._login_number}\", \"refresh\": refresh,\n                \"profile\": copy.deepcopy(record[\"profile\"])}\n\n    def renew(self, refresh):\n        if not isinstance(refresh, str) or refresh not in self._refresh_tokens:\n            raise AuthenticationError(\"invalid refresh token\")\n        self._renew_access_number += 1\n        return f\"A{self._renew_access_number}\"\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d789130cd5a2ae0f8180605b64263edbb003921dacf3c7245399ee548300a281"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import hashlib\nimport unittest\n\nfrom solution import AuthenticationError, PermitDesk\n\n\ndef digest(pin):\n    return hashlib.sha256(pin.encode()).hexdigest()\n\n\nclass PermitDeskTests(unittest.TestCase):\n    def test_login_tokens_profiles_and_failed_login_counter(self):\n        desk = PermitDesk([\n            {\"identifier\": \"alice\", \"pin_hash\": digest(\"1234\"), \"profile\": {\"roles\": [\"reader\"]}},\n            {\"identifier\": \"bob\", \"pin_hash\": digest(\"xyz\"), \"profile\": {}},\n        ])\n        with self.assertRaises(AuthenticationError):\n            desk.login(\"alice\", \"wrong\")\n        with self.assertRaises(AuthenticationError):\n            desk.login(\"missing\", \"1234\")\n\n        first = desk.login(\"alice\", \"1234\")\n        second = desk.login(\"bob\", \"xyz\")\n        self.assertEqual(first, {\"access\": \"A1\", \"refresh\": \"R1\", \"profile\": {\"roles\": [\"reader\"]}})\n        self.assertEqual(second, {\"access\": \"A2\", \"refresh\": \"R2\", \"profile\": {}})\n\n    def test_renew_has_independent_counter_and_refresh_remains_valid(self):\n        desk = PermitDesk([\n            {\"identifier\": \"alice\", \"pin_hash\": digest(\"pin\"), \"profile\": {}}\n        ])\n        tokens = desk.login(\"alice\", \"pin\")\n        self.assertEqual(desk.renew(tokens[\"refresh\"]), \"A1\")\n        self.assertEqual(desk.renew(tokens[\"refresh\"]), \"A2\")\n        desk.login(\"alice\", \"pin\")\n        self.assertEqual(desk.renew(tokens[\"refresh\"]), \"A3\")\n\n    def test_unknown_and_malformed_refresh_tokens(self):\n        desk = PermitDesk([])\n        for token in (\"R1\", \"\", None, 1, b\"R1\"):\n            with self.subTest(token=token):\n                with self.assertRaises(AuthenticationError):\n                    desk.renew(token)\n\n    def test_deep_copy_on_construction_and_return(self):\n        profile = {\"settings\": {\"colors\": [\"red\"]}}\n        records = [{\"identifier\": \"a\", \"pin_hash\": digest(\"p\"), \"profile\": profile}]\n        desk = PermitDesk(records)\n        profile[\"settings\"][\"colors\"].append(\"blue\")\n        records[0][\"profile\"][\"extra\"] = True\n\n        first = desk.login(\"a\", \"p\")\n        self.assertEqual(first[\"profile\"], {\"settings\": {\"colors\": [\"red\"]}})\n        first[\"profile\"][\"settings\"][\"colors\"].append(\"green\")\n        first[\"profile\"][\"changed\"] = True\n        second = desk.login(\"a\", \"p\")\n        self.assertEqual(second[\"profile\"], {\"settings\": {\"colors\": [\"red\"]}})\n        self.assertIsNot(first[\"profile\"], second[\"profile\"])\n\n    def test_constructor_type_errors(self):\n        for records in (None, (), {}, \"records\"):\n            with self.subTest(records=records):\n                with self.assertRaises(TypeError):\n                    PermitDesk(records)\n        with self.assertRaises(TypeError):\n            PermitDesk([[]])\n        with self.assertRaises(TypeError):\n            PermitDesk([{\"identifier\": 1, \"pin_hash\": \"x\", \"profile\": {}}])\n        with self.assertRaises(TypeError):\n            PermitDesk([{\"identifier\": \"a\", \"pin_hash\": 1, \"profile\": {}}])\n        with self.assertRaises(TypeError):\n            PermitDesk([{\"identifier\": \"a\", \"pin_hash\": \"x\", \"profile\": []}])\n\n    def test_constructor_content_errors(self):\n        valid = {\"identifier\": \"a\", \"pin_hash\": \"x\", \"profile\": {}}\n        for record in (\n            {\"identifier\": \"a\", \"pin_hash\": \"x\"},\n            {\"identifier\": \"a\", \"pin_hash\": \"x\", \"profile\": {}, \"extra\": 1},\n            {\"identifier\": \"\", \"pin_hash\": \"x\", \"profile\": {}},\n            {\"identifier\": \"a\", \"pin_hash\": \"\", \"profile\": {}},\n        ):\n            with self.subTest(record=record):\n                with self.assertRaises(ValueError):\n                    PermitDesk([record])\n        with self.assertRaises(ValueError):\n            PermitDesk([valid, {\"identifier\": \"a\", \"pin_hash\": \"y\", \"profile\": {}}])\n\n    def test_login_argument_types(self):\n        desk = PermitDesk([])\n        for identifier, pin in ((1, \"p\"), (\"a\", 1), (None, \"p\"), (\"a\", None)):\n            with self.subTest(identifier=identifier, pin=pin):\n                with self.assertRaises(TypeError):\n                    desk.login(identifier, pin)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "5bc54a21741988110a478520108f0a85bed5e126ed1ab7ddd5aba6cf68245ce3"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "de3653ac8b7590952383810c5cbac4aa542961dce87777221235aaa8f2c6a361",
+      "text": "Create `solution.py` implementing `AuthenticationError` and `PermitDesk`. `PermitDesk(records)` accepts a list of dictionaries with exactly `identifier`, `pin_hash`, and `profile`. Identifiers and hashes must be non-empty strings, profiles must be dictionaries, and identifiers must be unique. Invalid types raise `TypeError`; invalid content raises `ValueError`. The desk must deep-copy all supplied data.\n\n`login(identifier, pin)` accepts strings, compares the lowercase hexadecimal SHA-256 digest of `pin` with the stored hash using `hmac.compare_digest`, and raises `AuthenticationError` for an unknown identifier or mismatch. On success it returns `{\"access\": \"A<n>\", \"refresh\": \"R<n>\", \"profile\": <deep copy>}`, where successful logins use consecutive positive integers beginning at 1. `renew(refresh)` requires a previously issued refresh string and returns the next access string using an independent consecutive access counter; unknown or malformed tokens raise `AuthenticationError`. Refresh tokens remain valid. Returned profiles must never alias internal or caller-owned objects. Neither public method may mutate its arguments. Implement the complete API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "de3653ac8b7590952383810c5cbac4aa542961dce87777221235aaa8f2c6a361",
+      "text": "Create `solution.py` implementing `AuthenticationError` and `PermitDesk`. `PermitDesk(records)` accepts a list of dictionaries with exactly `identifier`, `pin_hash`, and `profile`. Identifiers and hashes must be non-empty strings, profiles must be dictionaries, and identifiers must be unique. Invalid types raise `TypeError`; invalid content raises `ValueError`. The desk must deep-copy all supplied data.\n\n`login(identifier, pin)` accepts strings, compares the lowercase hexadecimal SHA-256 digest of `pin` with the stored hash using `hmac.compare_digest`, and raises `AuthenticationError` for an unknown identifier or mismatch. On success it returns `{\"access\": \"A<n>\", \"refresh\": \"R<n>\", \"profile\": <deep copy>}`, where successful logins use consecutive positive integers beginning at 1. `renew(refresh)` requires a previously issued refresh string and returns the next access string using an independent consecutive access counter; unknown or malformed tokens raise `AuthenticationError`. Refresh tokens remain valid. Returned profiles must never alias internal or caller-owned objects. Neither public method may mutate its arguments. Implement the complete API using only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0050",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport hashlib\nimport hmac\n\n\nclass AuthenticationError(Exception):\n    pass\n\n\nclass PermitDesk:\n    def __init__(self, records):\n        if not isinstance(records, list):\n            raise TypeError(\"records must be a list\")\n        self._records = {}\n        for record in records:\n            if not isinstance(record, dict):\n                raise TypeError(\"records must contain dictionaries\")\n            if set(record) != {\"identifier\", \"pin_hash\", \"profile\"}:\n                raise ValueError(\"record fields are invalid\")\n            identifier = record[\"identifier\"]\n            pin_hash = record[\"pin_hash\"]\n            profile = record[\"profile\"]\n            if not isinstance(identifier, str) or not isinstance(pin_hash, str):\n                raise TypeError(\"identifier and pin_hash must be strings\")\n            if not isinstance(profile, dict):\n                raise TypeError(\"profile must be a dictionary\")\n            if not identifier or not pin_hash or identifier in self._records:\n                raise ValueError(\"record content is invalid\")\n            self._records[identifier] = copy.deepcopy(record)\n        self._login_number = 0\n        self._renew_access_number = 0\n        self._refresh_tokens = set()\n\n    def login(self, identifier, pin):\n        if not isinstance(identifier, str) or not isinstance(pin, str):\n            raise TypeError(\"identifier and pin must be strings\")\n        record = self._records.get(identifier)\n        digest = hashlib.sha256(pin.encode(\"utf-8\")).hexdigest()\n        if record is None or not hmac.compare_digest(digest, record[\"pin_hash\"].lower()):\n            raise AuthenticationError(\"invalid credentials\")\n        self._login_number += 1\n        refresh = f\"R{self._login_number}\"\n        self._refresh_tokens.add(refresh)\n        return {\"access\": f\"A{self._login_number}\", \"refresh\": refresh,\n                \"profile\": record[\"profile\"]}\n\n    def renew(self, refresh):\n        if not isinstance(refresh, str) or refresh not in self._refresh_tokens:\n            raise AuthenticationError(\"invalid refresh token\")\n        self._renew_access_number += 1\n        return f\"A{self._renew_access_number}\"\n",
+          "label": "Returns an alias to the internally stored profile instead of a deep copy.",
+          "sha256": "43ed6f9d7562ac0674eedb7b014e7146833113ff2be953b8bd295e9cbe77f1f0"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport hashlib\nimport hmac\n\n\nclass AuthenticationError(Exception):\n    pass\n\n\nclass PermitDesk:\n    def __init__(self, records):\n        if not isinstance(records, list):\n            raise TypeError(\"records must be a list\")\n        self._records = {}\n        for record in records:\n            if not isinstance(record, dict):\n                raise TypeError(\"records must contain dictionaries\")\n            if set(record) != {\"identifier\", \"pin_hash\", \"profile\"}:\n                raise ValueError(\"record fields are invalid\")\n            identifier = record[\"identifier\"]\n            pin_hash = record[\"pin_hash\"]\n            profile = record[\"profile\"]\n            if not isinstance(identifier, str) or not isinstance(pin_hash, str):\n                raise TypeError(\"identifier and pin_hash must be strings\")\n            if not isinstance(profile, dict):\n                raise TypeError(\"profile must be a dictionary\")\n            if not identifier or not pin_hash or identifier in self._records:\n                raise ValueError(\"record content is invalid\")\n            self._records[identifier] = copy.deepcopy(record)\n        self._login_number = 0\n        self._renew_access_number = 0\n        self._refresh_tokens = set()\n\n    def login(self, identifier, pin):\n        if not isinstance(identifier, str) or not isinstance(pin, str):\n            raise TypeError(\"identifier and pin must be strings\")\n        record = self._records.get(identifier)\n        digest = hashlib.sha256(pin.encode(\"utf-8\")).hexdigest()\n        if record is None or not hmac.compare_digest(digest, record[\"pin_hash\"].lower()):\n            raise AuthenticationError(\"invalid credentials\")\n        self._login_number += 1\n        refresh = f\"R{self._login_number}\"\n        self._refresh_tokens.add(refresh)\n        return {\"access\": f\"A{self._login_number}\", \"refresh\": refresh,\n                \"profile\": copy.deepcopy(record[\"profile\"])}\n\n    def renew(self, refresh):\n        if not isinstance(refresh, str) or refresh not in self._refresh_tokens:\n            raise AuthenticationError(\"invalid refresh token\")\n        self._renew_access_number += 1\n        return f\"A{self._renew_access_number}\"\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d789130cd5a2ae0f8180605b64263edbb003921dacf3c7245399ee548300a281"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_nonmatching_nonascii_stored_hash_is_authentication_error (__main__.PermitHashProbe.test_nonmatching_nonascii_stored_hash_is_authentication_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_nonmatching_nonascii_stored_hash_is_authentication_error\n    desk.login('a', 'pin')\n  File \"/work/solution.py\", line 39, in login\n    if record is None or not hmac.compare_digest(digest, record[\"pin_hash\"].lower()):\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: comparing strings with non-ASCII characters is not supported\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "ff572bc4365dcbcdbd00e97e6c6522e7fe49786d014e5908c82168cf6198f0db",
+    "duration_ms": 567,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

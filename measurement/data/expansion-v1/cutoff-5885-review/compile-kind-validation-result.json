@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0025",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7cf255b2ca4128cfe275dc0f250ce87343d85d01387d781b6545e9ea995f20c6",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import compile_record\n\nclass KindValidationProbe(unittest.TestCase):\n    def test_unhashable_kind_is_malformed_specification(self):\n        with self.assertRaises(ValueError):\n            compile_record([{'name': 'x', 'kind': []}], {})\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "c243fce4a73111ece7e3d39f8b78e80270ee5c7036be4a5075847d1534fe18e5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9f43349ba5d133c1a987e60ea57d037cd5f07c9c1df6b98331cd241fc548f8d1",
+      "text": "In `solution.py`, implement `compile_record(field_specs, raw_values)` using only the standard library.\n\n`field_specs` must be a list of dictionaries in declaration order. Every specification must contain a unique non-empty string `name`, a `kind` equal to `\"text\"`, `\"integer\"`, or `\"labels\"`, and may contain a Boolean `required` flag, defaulting to `False`. No other keys are allowed. Malformed specifications must raise `ValueError`.\n\n`raw_values` must be a mapping; otherwise raise `TypeError`. Return `(record, errors)`, where both values are new dictionaries. Process fields in specification order:\n\n- A missing required field produces the error `\"required\"`; a missing optional field is omitted.\n- `text` accepts only strings. Strip surrounding whitespace. A required text value that becomes empty produces `\"required\"`.\n- `integer` accepts integers but not Booleans.\n- `labels` accepts only a list of strings and preserves its order and duplicates. The returned list must be a fresh copy.\n- A supplied value of the wrong type produces `\"invalid type\"` and is omitted from `record`.\n\nUnknown input names must be reported as a sorted list under `errors[\"__extra__\"]`. Inputs and nested lists must never be mutated, and no mutable value in the result may alias an input value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9f43349ba5d133c1a987e60ea57d037cd5f07c9c1df6b98331cd241fc548f8d1",
+      "text": "In `solution.py`, implement `compile_record(field_specs, raw_values)` using only the standard library.\n\n`field_specs` must be a list of dictionaries in declaration order. Every specification must contain a unique non-empty string `name`, a `kind` equal to `\"text\"`, `\"integer\"`, or `\"labels\"`, and may contain a Boolean `required` flag, defaulting to `False`. No other keys are allowed. Malformed specifications must raise `ValueError`.\n\n`raw_values` must be a mapping; otherwise raise `TypeError`. Return `(record, errors)`, where both values are new dictionaries. Process fields in specification order:\n\n- A missing required field produces the error `\"required\"`; a missing optional field is omitted.\n- `text` accepts only strings. Strip surrounding whitespace. A required text value that becomes empty produces `\"required\"`.\n- `integer` accepts integers but not Booleans.\n- `labels` accepts only a list of strings and preserves its order and duplicates. The returned list must be a fresh copy.\n- A supplied value of the wrong type produces `\"invalid type\"` and is omitted from `record`.\n\nUnknown input names must be reported as a sorted list under `errors[\"__extra__\"]`. Inputs and nested lists must never be mutated, and no mutable value in the result may alias an input value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0025",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\n\n\ndef _check_specs(field_specs):\n    if not isinstance(field_specs, list):\n        raise ValueError(\"field_specs must be a list\")\n    seen = set()\n    allowed = {\"name\", \"kind\", \"required\"}\n    for spec in field_specs:\n        if not isinstance(spec, dict) or set(spec) - allowed:\n            raise ValueError(\"invalid field specification\")\n        name = spec.get(\"name\")\n        kind = spec.get(\"kind\")\n        required = spec.get(\"required\", False)\n        if not isinstance(name, str) or not name or name in seen:\n            raise ValueError(\"invalid or duplicate field name\")\n        if kind not in {\"text\", \"integer\", \"labels\"}:\n            raise ValueError(\"invalid field kind\")\n        if not isinstance(required, bool):\n            raise ValueError(\"required must be Boolean\")\n        seen.add(name)\n    return seen\n\n\ndef compile_record(field_specs, raw_values):\n    names = _check_specs(field_specs)\n    if not isinstance(raw_values, Mapping):\n        raise TypeError(\"raw_values must be a mapping\")\n\n    record = {}\n    errors = {}\n    for spec in field_specs:\n        name = spec[\"name\"]\n        required = spec.get(\"required\", False)\n        if name not in raw_values:\n            if required:\n                errors[name] = \"required\"\n            continue\n\n        value = raw_values[name]\n        kind = spec[\"kind\"]\n        if kind == \"text\":\n            if not isinstance(value, str):\n                errors[name] = \"invalid type\"\n                continue\n            value = value.strip()\n            if required and not value:\n                errors[name] = \"required\"\n                continue\n            record[name] = value\n        elif kind == \"integer\":\n            if not isinstance(value, int) or isinstance(value, bool):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = value\n        else:\n            if not isinstance(value, list) or any(not isinstance(x, str) for x in value):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = value\n\n    extra = sorted(key for key in raw_values if key not in names)\n    if extra:\n        errors[\"__extra__\"] = extra\n    return record, errors\n",
+          "label": "The labels result aliases the caller's mutable input list instead of copying it.",
+          "sha256": "ad128855f5a68c1f4eb493c65454bac99dd0a429c4a6eee07b533e440d9ecee8"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\n\n\ndef _check_specs(field_specs):\n    if not isinstance(field_specs, list):\n        raise ValueError(\"field_specs must be a list\")\n    seen = set()\n    allowed = {\"name\", \"kind\", \"required\"}\n    for spec in field_specs:\n        if not isinstance(spec, dict) or set(spec) - allowed:\n            raise ValueError(\"invalid field specification\")\n        name = spec.get(\"name\")\n        kind = spec.get(\"kind\")\n        required = spec.get(\"required\", False)\n        if not isinstance(name, str) or not name or name in seen:\n            raise ValueError(\"invalid or duplicate field name\")\n        if kind not in {\"text\", \"integer\", \"labels\"}:\n            raise ValueError(\"invalid field kind\")\n        if not isinstance(required, bool):\n            raise ValueError(\"required must be Boolean\")\n        seen.add(name)\n    return seen\n\n\ndef compile_record(field_specs, raw_values):\n    names = _check_specs(field_specs)\n    if not isinstance(raw_values, Mapping):\n        raise TypeError(\"raw_values must be a mapping\")\n\n    record = {}\n    errors = {}\n    for spec in field_specs:\n        name = spec[\"name\"]\n        required = spec.get(\"required\", False)\n        if name not in raw_values:\n            if required:\n                errors[name] = \"required\"\n            continue\n\n        value = raw_values[name]\n        kind = spec[\"kind\"]\n        if kind == \"text\":\n            if not isinstance(value, str):\n                errors[name] = \"invalid type\"\n                continue\n            value = value.strip()\n            if required and not value:\n                errors[name] = \"required\"\n                continue\n            record[name] = value\n        elif kind == \"integer\":\n            if not isinstance(value, int) or isinstance(value, bool):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = value\n        else:\n            if not isinstance(value, list) or any(not isinstance(x, str) for x in value):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = list(value)\n\n    extra = sorted(key for key in raw_values if key not in names)\n    if extra:\n        errors[\"__extra__\"] = extra\n    return record, errors\n",
+        "label": "codex-teacher-reference",
+        "sha256": "93e9cf586b0ff4a6fd0afa0d33b4800cab3fd0846bc2a04e21bff2926024441d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import UserDict\n\nfrom solution import compile_record\n\n\nclass CompileRecordTests(unittest.TestCase):\n    def test_normal_conversion_order_extras_and_no_aliasing(self):\n        labels = [\"red\", \"red\", \"blue\"]\n        raw = {\"age\": 7, \"tags\": labels, \"title\": \"  Hello  \", \"z\": 1, \"a\": 2}\n        specs = [\n            {\"name\": \"title\", \"kind\": \"text\", \"required\": True},\n            {\"name\": \"age\", \"kind\": \"integer\"},\n            {\"name\": \"tags\", \"kind\": \"labels\"},\n        ]\n        specs_before = [dict(item) for item in specs]\n        raw_before = {**raw, \"tags\": list(labels)}\n        record, errors = compile_record(specs, raw)\n        self.assertEqual(record, {\"title\": \"Hello\", \"age\": 7, \"tags\": [\"red\", \"red\", \"blue\"]})\n        self.assertEqual(list(record), [\"title\", \"age\", \"tags\"])\n        self.assertEqual(errors, {\"__extra__\": [\"a\", \"z\"]})\n        self.assertIsNot(record[\"tags\"], labels)\n        record[\"tags\"].append(\"new\")\n        self.assertEqual(labels, [\"red\", \"red\", \"blue\"])\n        self.assertEqual(specs, specs_before)\n        self.assertEqual(raw, raw_before)\n\n    def test_missing_empty_and_wrong_types(self):\n        specs = [\n            {\"name\": \"required_missing\", \"kind\": \"integer\", \"required\": True},\n            {\"name\": \"optional_missing\", \"kind\": \"text\"},\n            {\"name\": \"blank\", \"kind\": \"text\", \"required\": True},\n            {\"name\": \"count\", \"kind\": \"integer\"},\n            {\"name\": \"labels\", \"kind\": \"labels\"},\n            {\"name\": \"bad_labels\", \"kind\": \"labels\"},\n        ]\n        record, errors = compile_record(specs, {\n            \"blank\": \" \\t \", \"count\": True, \"labels\": [], \"bad_labels\": [\"ok\", 3]\n        })\n        self.assertEqual(record, {\"labels\": []})\n        self.assertEqual(errors, {\n            \"required_missing\": \"required\", \"blank\": \"required\",\n            \"count\": \"invalid type\", \"bad_labels\": \"invalid type\"\n        })\n\n    def test_optional_empty_text_is_retained(self):\n        record, errors = compile_record([{\"name\": \"x\", \"kind\": \"text\"}], {\"x\": \"   \"})\n        self.assertEqual(record, {\"x\": \"\"})\n        self.assertEqual(errors, {})\n\n    def test_mapping_subclass_and_empty_specs(self):\n        self.assertEqual(compile_record([], UserDict({\"x\": 1})), ({}, {\"__extra__\": [\"x\"]}))\n\n    def test_raw_values_must_be_mapping(self):\n        for value in (None, [], [(\"x\", 1)], \"x\"):\n            with self.subTest(value=value), self.assertRaises(TypeError):\n                compile_record([], value)\n\n    def test_malformed_specifications(self):\n        invalid = [\n            None, {}, {\"name\": \"\", \"kind\": \"text\"}, {\"name\": 1, \"kind\": \"text\"},\n            {\"name\": \"x\"}, {\"name\": \"x\", \"kind\": \"float\"},\n            {\"name\": \"x\", \"kind\": \"text\", \"required\": 1},\n            {\"name\": \"x\", \"kind\": \"text\", \"extra\": False},\n        ]\n        for spec in invalid:\n            with self.subTest(spec=spec), self.assertRaises(ValueError):\n                compile_record([spec], {})\n        with self.assertRaises(ValueError):\n            compile_record(\"not a list\", {})\n        with self.assertRaises(ValueError):\n            compile_record([{\"name\": \"x\", \"kind\": \"text\"}, {\"name\": \"x\", \"kind\": \"integer\"}], {})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "12f2a9c73527fb7c7fa60105d82f818712143ce948d58ce8d85955ab2544cd33"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9f43349ba5d133c1a987e60ea57d037cd5f07c9c1df6b98331cd241fc548f8d1",
+      "text": "In `solution.py`, implement `compile_record(field_specs, raw_values)` using only the standard library.\n\n`field_specs` must be a list of dictionaries in declaration order. Every specification must contain a unique non-empty string `name`, a `kind` equal to `\"text\"`, `\"integer\"`, or `\"labels\"`, and may contain a Boolean `required` flag, defaulting to `False`. No other keys are allowed. Malformed specifications must raise `ValueError`.\n\n`raw_values` must be a mapping; otherwise raise `TypeError`. Return `(record, errors)`, where both values are new dictionaries. Process fields in specification order:\n\n- A missing required field produces the error `\"required\"`; a missing optional field is omitted.\n- `text` accepts only strings. Strip surrounding whitespace. A required text value that becomes empty produces `\"required\"`.\n- `integer` accepts integers but not Booleans.\n- `labels` accepts only a list of strings and preserves its order and duplicates. The returned list must be a fresh copy.\n- A supplied value of the wrong type produces `\"invalid type\"` and is omitted from `record`.\n\nUnknown input names must be reported as a sorted list under `errors[\"__extra__\"]`. Inputs and nested lists must never be mutated, and no mutable value in the result may alias an input value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9f43349ba5d133c1a987e60ea57d037cd5f07c9c1df6b98331cd241fc548f8d1",
+      "text": "In `solution.py`, implement `compile_record(field_specs, raw_values)` using only the standard library.\n\n`field_specs` must be a list of dictionaries in declaration order. Every specification must contain a unique non-empty string `name`, a `kind` equal to `\"text\"`, `\"integer\"`, or `\"labels\"`, and may contain a Boolean `required` flag, defaulting to `False`. No other keys are allowed. Malformed specifications must raise `ValueError`.\n\n`raw_values` must be a mapping; otherwise raise `TypeError`. Return `(record, errors)`, where both values are new dictionaries. Process fields in specification order:\n\n- A missing required field produces the error `\"required\"`; a missing optional field is omitted.\n- `text` accepts only strings. Strip surrounding whitespace. A required text value that becomes empty produces `\"required\"`.\n- `integer` accepts integers but not Booleans.\n- `labels` accepts only a list of strings and preserves its order and duplicates. The returned list must be a fresh copy.\n- A supplied value of the wrong type produces `\"invalid type\"` and is omitted from `record`.\n\nUnknown input names must be reported as a sorted list under `errors[\"__extra__\"]`. Inputs and nested lists must never be mutated, and no mutable value in the result may alias an input value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0025",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\n\n\ndef _check_specs(field_specs):\n    if not isinstance(field_specs, list):\n        raise ValueError(\"field_specs must be a list\")\n    seen = set()\n    allowed = {\"name\", \"kind\", \"required\"}\n    for spec in field_specs:\n        if not isinstance(spec, dict) or set(spec) - allowed:\n            raise ValueError(\"invalid field specification\")\n        name = spec.get(\"name\")\n        kind = spec.get(\"kind\")\n        required = spec.get(\"required\", False)\n        if not isinstance(name, str) or not name or name in seen:\n            raise ValueError(\"invalid or duplicate field name\")\n        if kind not in {\"text\", \"integer\", \"labels\"}:\n            raise ValueError(\"invalid field kind\")\n        if not isinstance(required, bool):\n            raise ValueError(\"required must be Boolean\")\n        seen.add(name)\n    return seen\n\n\ndef compile_record(field_specs, raw_values):\n    names = _check_specs(field_specs)\n    if not isinstance(raw_values, Mapping):\n        raise TypeError(\"raw_values must be a mapping\")\n\n    record = {}\n    errors = {}\n    for spec in field_specs:\n        name = spec[\"name\"]\n        required = spec.get(\"required\", False)\n        if name not in raw_values:\n            if required:\n                errors[name] = \"required\"\n            continue\n\n        value = raw_values[name]\n        kind = spec[\"kind\"]\n        if kind == \"text\":\n            if not isinstance(value, str):\n                errors[name] = \"invalid type\"\n                continue\n            value = value.strip()\n            if required and not value:\n                errors[name] = \"required\"\n                continue\n            record[name] = value\n        elif kind == \"integer\":\n            if not isinstance(value, int) or isinstance(value, bool):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = value\n        else:\n            if not isinstance(value, list) or any(not isinstance(x, str) for x in value):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = value\n\n    extra = sorted(key for key in raw_values if key not in names)\n    if extra:\n        errors[\"__extra__\"] = extra\n    return record, errors\n",
+          "label": "The labels result aliases the caller's mutable input list instead of copying it.",
+          "sha256": "ad128855f5a68c1f4eb493c65454bac99dd0a429c4a6eee07b533e440d9ecee8"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\n\n\ndef _check_specs(field_specs):\n    if not isinstance(field_specs, list):\n        raise ValueError(\"field_specs must be a list\")\n    seen = set()\n    allowed = {\"name\", \"kind\", \"required\"}\n    for spec in field_specs:\n        if not isinstance(spec, dict) or set(spec) - allowed:\n            raise ValueError(\"invalid field specification\")\n        name = spec.get(\"name\")\n        kind = spec.get(\"kind\")\n        required = spec.get(\"required\", False)\n        if not isinstance(name, str) or not name or name in seen:\n            raise ValueError(\"invalid or duplicate field name\")\n        if kind not in {\"text\", \"integer\", \"labels\"}:\n            raise ValueError(\"invalid field kind\")\n        if not isinstance(required, bool):\n            raise ValueError(\"required must be Boolean\")\n        seen.add(name)\n    return seen\n\n\ndef compile_record(field_specs, raw_values):\n    names = _check_specs(field_specs)\n    if not isinstance(raw_values, Mapping):\n        raise TypeError(\"raw_values must be a mapping\")\n\n    record = {}\n    errors = {}\n    for spec in field_specs:\n        name = spec[\"name\"]\n        required = spec.get(\"required\", False)\n        if name not in raw_values:\n            if required:\n                errors[name] = \"required\"\n            continue\n\n        value = raw_values[name]\n        kind = spec[\"kind\"]\n        if kind == \"text\":\n            if not isinstance(value, str):\n                errors[name] = \"invalid type\"\n                continue\n            value = value.strip()\n            if required and not value:\n                errors[name] = \"required\"\n                continue\n            record[name] = value\n        elif kind == \"integer\":\n            if not isinstance(value, int) or isinstance(value, bool):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = value\n        else:\n            if not isinstance(value, list) or any(not isinstance(x, str) for x in value):\n                errors[name] = \"invalid type\"\n                continue\n            record[name] = list(value)\n\n    extra = sorted(key for key in raw_values if key not in names)\n    if extra:\n        errors[\"__extra__\"] = extra\n    return record, errors\n",
+        "label": "codex-teacher-reference",
+        "sha256": "93e9cf586b0ff4a6fd0afa0d33b4800cab3fd0846bc2a04e21bff2926024441d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_unhashable_kind_is_malformed_specification (__main__.KindValidationProbe.test_unhashable_kind_is_malformed_specification)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_unhashable_kind_is_malformed_specification\n    compile_record([{'name': 'x', 'kind': []}], {})\n  File \"/work/solution.py\", line 26, in compile_record\n    names = _check_specs(field_specs)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 17, in _check_specs\n    if kind not in {\"text\", \"integer\", \"labels\"}:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "d11e9bfcb4890ab0c4c01abb87cc5b9692fa9d4f6233756fc91ef173a163c248",
+    "duration_ms": 413,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

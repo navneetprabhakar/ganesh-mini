@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0109",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bbbe314a00a9309dca7931269c15b4e02dedcb0e90f1449a8d598403ae4447e8",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import export_model\n\n\nclass ModelOffsetTests(unittest.TestCase):\n    def test_integer_offset_cancellation_precedes_scaling(self):\n        objects = [{\"name\": \"x\", \"vertices\": [(2**53 + 1, 0, 0)], \"offset\": (-2**53, 0, 0)}]\n        self.assertEqual(export_model(objects, apply_offsets=True), \"MODEL 1\\nOBJECT x 1\\nV 1 0 0\\n\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "9e834d18e49d8ed13abcb35cc62e3988dbd9085c4a4457a081f3bae6a531ff62"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "673d46c931607805272a18cbfbfb74416085b3749b715b600890b9b50717dcaa",
+      "text": "Create `solution.py` with a top-level function `export_model(objects, *, scale=1.0, apply_offsets=False)`. `objects` must be a list of dictionaries, each containing a non-empty string `name` and a `vertices` list of numeric `(x, y, z)` triples. Names containing newlines are malformed. An optional `offset` must be a numeric triple and defaults to `(0, 0, 0)`. Booleans and non-finite numbers are invalid. `scale` must be finite and greater than zero, and `apply_offsets` must be a boolean. Raise `TypeError` for incorrect container or scalar types and `ValueError` for invalid values or shapes. Return a string beginning with `MODEL 1\\n`; for each object in input order, append `OBJECT <name> <vertex-count>\\n`, followed by one `V <x> <y> <z>\\n` line per vertex. Format coordinates with `.6g`. If offsets are enabled, add the offset before scaling. Empty input returns only the header. Do not mutate or retain aliases to any input object or nested value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "673d46c931607805272a18cbfbfb74416085b3749b715b600890b9b50717dcaa",
+      "text": "Create `solution.py` with a top-level function `export_model(objects, *, scale=1.0, apply_offsets=False)`. `objects` must be a list of dictionaries, each containing a non-empty string `name` and a `vertices` list of numeric `(x, y, z)` triples. Names containing newlines are malformed. An optional `offset` must be a numeric triple and defaults to `(0, 0, 0)`. Booleans and non-finite numbers are invalid. `scale` must be finite and greater than zero, and `apply_offsets` must be a boolean. Raise `TypeError` for incorrect container or scalar types and `ValueError` for invalid values or shapes. Return a string beginning with `MODEL 1\\n`; for each object in input order, append `OBJECT <name> <vertex-count>\\n`, followed by one `V <x> <y> <z>\\n` line per vertex. Format coordinates with `.6g`. If offsets are enabled, add the offset before scaling. Empty input returns only the header. Do not mutate or retain aliases to any input object or nested value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0109",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"coordinates must be numbers\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"coordinates must be finite\")\n    return value\n\n\ndef _triple(value, field):\n    if not isinstance(value, (list, tuple)):\n        raise TypeError(f\"{field} must be a sequence\")\n    if len(value) != 3:\n        raise ValueError(f\"{field} must contain three values\")\n    return tuple(_number(item) for item in value)\n\n\ndef export_model(objects, *, scale=1.0, apply_offsets=False):\n    if not isinstance(objects, list):\n        raise TypeError(\"objects must be a list\")\n    scale = _number(scale)\n    if scale <= 0:\n        raise ValueError(\"scale must be positive\")\n    if not isinstance(apply_offsets, bool):\n        raise TypeError(\"apply_offsets must be a boolean\")\n\n    prepared = []\n    for obj in objects:\n        if not isinstance(obj, dict):\n            raise TypeError(\"each object must be a dictionary\")\n        name = obj.get(\"name\")\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or \"\\n\" in name or \"\\r\" in name:\n            raise ValueError(\"invalid object name\")\n        vertices = obj.get(\"vertices\")\n        if not isinstance(vertices, list):\n            raise TypeError(\"vertices must be a list\")\n        offset = _triple(obj.get(\"offset\", (0, 0, 0)), \"offset\")\n        prepared.append((name, [_triple(v, \"vertex\") for v in vertices], offset))\n\n    output = [\"MODEL 1\\n\"]\n    for name, vertices, offset in prepared:\n        output.append(f\"OBJECT {name} {len(vertices)}\\n\")\n        ox, oy, oz = offset if apply_offsets else (0.0, 0.0, 0.0)\n        for x, y, z in vertices:\n            output.append(f\"V {(x + ox) * scale:.6g} {(y + oy) * scale:.6g} {z + oz:.6g}\\n\")\n    return \"\".join(output)\n",
+          "label": "The z coordinate is not multiplied by the requested scale.",
+          "sha256": "69ed4c13a051497976d0ce417e1ae9e3f2b2762e1e26652b981ef2b4a9cdc3a5"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"coordinates must be numbers\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"coordinates must be finite\")\n    return value\n\n\ndef _triple(value, field):\n    if not isinstance(value, (list, tuple)):\n        raise TypeError(f\"{field} must be a sequence\")\n    if len(value) != 3:\n        raise ValueError(f\"{field} must contain three values\")\n    return tuple(_number(item) for item in value)\n\n\ndef export_model(objects, *, scale=1.0, apply_offsets=False):\n    if not isinstance(objects, list):\n        raise TypeError(\"objects must be a list\")\n    scale = _number(scale)\n    if scale <= 0:\n        raise ValueError(\"scale must be positive\")\n    if not isinstance(apply_offsets, bool):\n        raise TypeError(\"apply_offsets must be a boolean\")\n\n    prepared = []\n    for obj in objects:\n        if not isinstance(obj, dict):\n            raise TypeError(\"each object must be a dictionary\")\n        name = obj.get(\"name\")\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or \"\\n\" in name or \"\\r\" in name:\n            raise ValueError(\"invalid object name\")\n        vertices = obj.get(\"vertices\")\n        if not isinstance(vertices, list):\n            raise TypeError(\"vertices must be a list\")\n        offset = _triple(obj.get(\"offset\", (0, 0, 0)), \"offset\")\n        prepared.append((name, [_triple(v, \"vertex\") for v in vertices], offset))\n\n    output = [\"MODEL 1\\n\"]\n    for name, vertices, offset in prepared:\n        output.append(f\"OBJECT {name} {len(vertices)}\\n\")\n        ox, oy, oz = offset if apply_offsets else (0.0, 0.0, 0.0)\n        for x, y, z in vertices:\n            output.append(f\"V {(x + ox) * scale:.6g} {(y + oy) * scale:.6g} {(z + oz) * scale:.6g}\\n\")\n    return \"\".join(output)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "aa73e29b68496d7c8c6bf13d1c13771cfac9444d0d4e573b7332672313fba33c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport math\nimport unittest\n\nimport solution\n\n\nclass ExportModelTests(unittest.TestCase):\n    def test_empty_and_normal_export(self):\n        self.assertEqual(solution.export_model([]), \"MODEL 1\\n\")\n        objects = [\n            {\"name\": \"first\", \"vertices\": [(1, 2.5, -3), (1.234567, 0, 10)]},\n            {\"name\": \"empty\", \"vertices\": []},\n        ]\n        expected = (\n            \"MODEL 1\\n\"\n            \"OBJECT first 2\\n\"\n            \"V 1 2.5 -3\\n\"\n            \"V 1.23457 0 10\\n\"\n            \"OBJECT empty 0\\n\"\n        )\n        self.assertEqual(solution.export_model(objects), expected)\n\n    def test_offsets_are_optional_and_applied_before_scale(self):\n        objects = [{\"name\": \"shifted\", \"vertices\": [(1, 2, 3)], \"offset\": (4, -2, 0.5)}]\n        self.assertEqual(\n            solution.export_model(objects, scale=2, apply_offsets=True),\n            \"MODEL 1\\nOBJECT shifted 1\\nV 10 0 7\\n\",\n        )\n        self.assertEqual(\n            solution.export_model(objects, scale=2, apply_offsets=False),\n            \"MODEL 1\\nOBJECT shifted 1\\nV 2 4 6\\n\",\n        )\n\n    def test_inputs_are_not_mutated(self):\n        objects = [{\"name\": \"a\", \"vertices\": [[1, 2, 3]], \"offset\": [4, 5, 6]}]\n        before = copy.deepcopy(objects)\n        solution.export_model(objects, scale=0.5, apply_offsets=True)\n        self.assertEqual(objects, before)\n\n    def test_container_and_scalar_type_errors(self):\n        bad_calls = [\n            lambda: solution.export_model(()),\n            lambda: solution.export_model([[]]),\n            lambda: solution.export_model([{\"name\": 1, \"vertices\": []}]),\n            lambda: solution.export_model([{\"name\": \"a\", \"vertices\": ()}]),\n            lambda: solution.export_model([{\"name\": \"a\", \"vertices\": [(1, True, 3)]}]),\n            lambda: solution.export_model([{\"name\": \"a\", \"vertices\": [], \"offset\": (0, \"x\", 0)}]),\n            lambda: solution.export_model([], scale=True),\n            lambda: solution.export_model([], apply_offsets=1),\n        ]\n        for call in bad_calls:\n            with self.subTest(call=call):\n                with self.assertRaises(TypeError):\n                    call()\n\n    def test_value_and_shape_errors(self):\n        bad_calls = [\n            lambda: solution.export_model([{\"name\": \"\", \"vertices\": []}]),\n            lambda: solution.export_model([{\"name\": \"a\\nb\", \"vertices\": []}]),\n            lambda: solution.export_model([{\"name\": \"a\", \"vertices\": [(1, 2)]}]),\n            lambda: solution.export_model([{\"name\": \"a\", \"vertices\": [(1, math.inf, 3)]}]),\n            lambda: solution.export_model([{\"name\": \"a\", \"vertices\": [], \"offset\": (1, 2)}]),\n            lambda: solution.export_model([], scale=0),\n            lambda: solution.export_model([], scale=-1),\n            lambda: solution.export_model([], scale=math.nan),\n        ]\n        for call in bad_calls:\n            with self.subTest(call=call):\n                with self.assertRaises(ValueError):\n                    call()\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "541e5f0a12a549d2d00a28aaa194b7217f1473c3ac79dba6187e8164b585e72e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "673d46c931607805272a18cbfbfb74416085b3749b715b600890b9b50717dcaa",
+      "text": "Create `solution.py` with a top-level function `export_model(objects, *, scale=1.0, apply_offsets=False)`. `objects` must be a list of dictionaries, each containing a non-empty string `name` and a `vertices` list of numeric `(x, y, z)` triples. Names containing newlines are malformed. An optional `offset` must be a numeric triple and defaults to `(0, 0, 0)`. Booleans and non-finite numbers are invalid. `scale` must be finite and greater than zero, and `apply_offsets` must be a boolean. Raise `TypeError` for incorrect container or scalar types and `ValueError` for invalid values or shapes. Return a string beginning with `MODEL 1\\n`; for each object in input order, append `OBJECT <name> <vertex-count>\\n`, followed by one `V <x> <y> <z>\\n` line per vertex. Format coordinates with `.6g`. If offsets are enabled, add the offset before scaling. Empty input returns only the header. Do not mutate or retain aliases to any input object or nested value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "673d46c931607805272a18cbfbfb74416085b3749b715b600890b9b50717dcaa",
+      "text": "Create `solution.py` with a top-level function `export_model(objects, *, scale=1.0, apply_offsets=False)`. `objects` must be a list of dictionaries, each containing a non-empty string `name` and a `vertices` list of numeric `(x, y, z)` triples. Names containing newlines are malformed. An optional `offset` must be a numeric triple and defaults to `(0, 0, 0)`. Booleans and non-finite numbers are invalid. `scale` must be finite and greater than zero, and `apply_offsets` must be a boolean. Raise `TypeError` for incorrect container or scalar types and `ValueError` for invalid values or shapes. Return a string beginning with `MODEL 1\\n`; for each object in input order, append `OBJECT <name> <vertex-count>\\n`, followed by one `V <x> <y> <z>\\n` line per vertex. Format coordinates with `.6g`. If offsets are enabled, add the offset before scaling. Empty input returns only the header. Do not mutate or retain aliases to any input object or nested value.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0109",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"coordinates must be numbers\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"coordinates must be finite\")\n    return value\n\n\ndef _triple(value, field):\n    if not isinstance(value, (list, tuple)):\n        raise TypeError(f\"{field} must be a sequence\")\n    if len(value) != 3:\n        raise ValueError(f\"{field} must contain three values\")\n    return tuple(_number(item) for item in value)\n\n\ndef export_model(objects, *, scale=1.0, apply_offsets=False):\n    if not isinstance(objects, list):\n        raise TypeError(\"objects must be a list\")\n    scale = _number(scale)\n    if scale <= 0:\n        raise ValueError(\"scale must be positive\")\n    if not isinstance(apply_offsets, bool):\n        raise TypeError(\"apply_offsets must be a boolean\")\n\n    prepared = []\n    for obj in objects:\n        if not isinstance(obj, dict):\n            raise TypeError(\"each object must be a dictionary\")\n        name = obj.get(\"name\")\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or \"\\n\" in name or \"\\r\" in name:\n            raise ValueError(\"invalid object name\")\n        vertices = obj.get(\"vertices\")\n        if not isinstance(vertices, list):\n            raise TypeError(\"vertices must be a list\")\n        offset = _triple(obj.get(\"offset\", (0, 0, 0)), \"offset\")\n        prepared.append((name, [_triple(v, \"vertex\") for v in vertices], offset))\n\n    output = [\"MODEL 1\\n\"]\n    for name, vertices, offset in prepared:\n        output.append(f\"OBJECT {name} {len(vertices)}\\n\")\n        ox, oy, oz = offset if apply_offsets else (0.0, 0.0, 0.0)\n        for x, y, z in vertices:\n            output.append(f\"V {(x + ox) * scale:.6g} {(y + oy) * scale:.6g} {z + oz:.6g}\\n\")\n    return \"\".join(output)\n",
+          "label": "The z coordinate is not multiplied by the requested scale.",
+          "sha256": "69ed4c13a051497976d0ce417e1ae9e3f2b2762e1e26652b981ef2b4a9cdc3a5"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef _number(value):\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise TypeError(\"coordinates must be numbers\")\n    value = float(value)\n    if not math.isfinite(value):\n        raise ValueError(\"coordinates must be finite\")\n    return value\n\n\ndef _triple(value, field):\n    if not isinstance(value, (list, tuple)):\n        raise TypeError(f\"{field} must be a sequence\")\n    if len(value) != 3:\n        raise ValueError(f\"{field} must contain three values\")\n    return tuple(_number(item) for item in value)\n\n\ndef export_model(objects, *, scale=1.0, apply_offsets=False):\n    if not isinstance(objects, list):\n        raise TypeError(\"objects must be a list\")\n    scale = _number(scale)\n    if scale <= 0:\n        raise ValueError(\"scale must be positive\")\n    if not isinstance(apply_offsets, bool):\n        raise TypeError(\"apply_offsets must be a boolean\")\n\n    prepared = []\n    for obj in objects:\n        if not isinstance(obj, dict):\n            raise TypeError(\"each object must be a dictionary\")\n        name = obj.get(\"name\")\n        if not isinstance(name, str):\n            raise TypeError(\"name must be a string\")\n        if not name or \"\\n\" in name or \"\\r\" in name:\n            raise ValueError(\"invalid object name\")\n        vertices = obj.get(\"vertices\")\n        if not isinstance(vertices, list):\n            raise TypeError(\"vertices must be a list\")\n        offset = _triple(obj.get(\"offset\", (0, 0, 0)), \"offset\")\n        prepared.append((name, [_triple(v, \"vertex\") for v in vertices], offset))\n\n    output = [\"MODEL 1\\n\"]\n    for name, vertices, offset in prepared:\n        output.append(f\"OBJECT {name} {len(vertices)}\\n\")\n        ox, oy, oz = offset if apply_offsets else (0.0, 0.0, 0.0)\n        for x, y, z in vertices:\n            output.append(f\"V {(x + ox) * scale:.6g} {(y + oy) * scale:.6g} {(z + oz) * scale:.6g}\\n\")\n    return \"\".join(output)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "aa73e29b68496d7c8c6bf13d1c13771cfac9444d0d4e573b7332672313fba33c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_integer_offset_cancellation_precedes_scaling (__main__.ModelOffsetTests.test_integer_offset_cancellation_precedes_scaling)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_integer_offset_cancellation_precedes_scaling\n    self.assertEqual(export_model(objects, apply_offsets=True), \"MODEL 1\\nOBJECT x 1\\nV 1 0 0\\n\")\nAssertionError: 'MODEL 1\\nOBJECT x 1\\nV 0 0 0\\n' != 'MODEL 1\\nOBJECT x 1\\nV 1 0 0\\n'\n  MODEL 1\n  OBJECT x 1\n- V 0 0 0\n?    --\n+ V 1 0 0\n?   ++\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "0c4ded81a84fe4a06d129798851d9faf858146c6bdd324ff3233551cdfaa41ba",
+    "duration_ms": 426,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

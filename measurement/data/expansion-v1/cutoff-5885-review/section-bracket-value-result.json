@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0070",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "408af975a047e2c7c813c957335ff3c3f4b12b7efc3b003257943fed5edfe8fa",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import parse_sections\n\n\nclass AssignmentBracketTests(unittest.TestCase):\n    def test_assignment_value_may_end_with_bracket(self):\n        self.assertEqual(parse_sections([\"[main]\", \"value=items[0]\"]), [{\"name\": \"main\", \"values\": {\"value\": \"items[0]\"}}])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "4ee3a029f2a70a88a6174f70d575deabcedda3d2ab0101bff0d0e645ab4e22f7"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0c166f0c74e1afa1b377409f4f49e19e01d397d7371812bbfb28d17fd2ecd074",
+      "text": "Create a complete `solution.py` defining `parse_sections(lines)`.\n\n`lines` is an iterable of strings describing named sections. Ignore blank lines and lines whose first non-whitespace character is `#`. A section begins with a trimmed header of the exact form `[name]`, where `name` is nonempty and has no leading or trailing whitespace. Other significant lines are assignments of the form `key=value`. Trim whitespace around the key and value; the key must be nonempty, while the value may be empty. An assignment belongs to the most recent section.\n\nReturn a list of fresh dictionaries in section order. Each dictionary has `name` and `values`, where `values` is a dictionary preserving the first-occurrence order of keys. Repeated assignments within a section replace the previous value without changing key order. Section names must be unique.\n\nRaise `TypeError` if `lines` is not iterable or any line is not a string. Raise `ValueError` for malformed headers, duplicate sections, assignments before a header, significant lines without `=`, or empty keys. Validate the complete input before returning. Do not mutate or alias input-owned mutable objects. Empty or comment-only input returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0c166f0c74e1afa1b377409f4f49e19e01d397d7371812bbfb28d17fd2ecd074",
+      "text": "Create a complete `solution.py` defining `parse_sections(lines)`.\n\n`lines` is an iterable of strings describing named sections. Ignore blank lines and lines whose first non-whitespace character is `#`. A section begins with a trimmed header of the exact form `[name]`, where `name` is nonempty and has no leading or trailing whitespace. Other significant lines are assignments of the form `key=value`. Trim whitespace around the key and value; the key must be nonempty, while the value may be empty. An assignment belongs to the most recent section.\n\nReturn a list of fresh dictionaries in section order. Each dictionary has `name` and `values`, where `values` is a dictionary preserving the first-occurrence order of keys. Repeated assignments within a section replace the previous value without changing key order. Section names must be unique.\n\nRaise `TypeError` if `lines` is not iterable or any line is not a string. Raise `ValueError` for malformed headers, duplicate sections, assignments before a header, significant lines without `=`, or empty keys. Validate the complete input before returning. Do not mutate or alias input-owned mutable objects. Empty or comment-only input returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0070",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def parse_sections(lines):\n    try:\n        pending = list(lines)\n    except TypeError as exc:\n        raise TypeError(\"lines must be iterable\") from exc\n    if any(not isinstance(line, str) for line in pending):\n        raise TypeError(\"every line must be a string\")\n\n    result = []\n    names = set()\n    current = None\n\n    for original in pending:\n        stripped = original.strip()\n        if not stripped or stripped.startswith(\"#\"):\n            continue\n\n        if stripped.startswith(\"[\") or stripped.endswith(\"]\"):\n            if not (stripped.startswith(\"[\") and stripped.endswith(\"]\")):\n                raise ValueError(\"malformed section header\")\n            name = stripped[1:-1]\n            if not name or name != name.strip() or \"[\" in name or \"]\" in name:\n                raise ValueError(\"malformed section header\")\n            if name in names:\n                raise ValueError(\"duplicate section\")\n            current = {\"name\": name, \"values\": {}}\n            result.append(current)\n            names.add(name)\n            continue\n\n        if current is None:\n            raise ValueError(\"assignment appears before a section\")\n        if \"=\" not in stripped:\n            raise ValueError(\"assignment is missing equals sign\")\n        key, value = stripped.split(\"=\", 1)\n        key = key.strip()\n        value = value.strip()\n        if not key:\n            raise ValueError(\"assignment key is empty\")\n        current[\"values\"].setdefault(key, value)\n\n    return result\n",
+          "label": "Keeps the first value of a repeated key instead of replacing it with the last assignment.",
+          "sha256": "96625b82cc9161ae01074442906693172ef5abc76bf0fb856cf9b1e67b003e4c"
+        }
+      ],
+      "reference": {
+        "code": "def parse_sections(lines):\n    try:\n        pending = list(lines)\n    except TypeError as exc:\n        raise TypeError(\"lines must be iterable\") from exc\n    if any(not isinstance(line, str) for line in pending):\n        raise TypeError(\"every line must be a string\")\n\n    result = []\n    names = set()\n    current = None\n\n    for original in pending:\n        stripped = original.strip()\n        if not stripped or stripped.startswith(\"#\"):\n            continue\n\n        if stripped.startswith(\"[\") or stripped.endswith(\"]\"):\n            if not (stripped.startswith(\"[\") and stripped.endswith(\"]\")):\n                raise ValueError(\"malformed section header\")\n            name = stripped[1:-1]\n            if not name or name != name.strip() or \"[\" in name or \"]\" in name:\n                raise ValueError(\"malformed section header\")\n            if name in names:\n                raise ValueError(\"duplicate section\")\n            current = {\"name\": name, \"values\": {}}\n            result.append(current)\n            names.add(name)\n            continue\n\n        if current is None:\n            raise ValueError(\"assignment appears before a section\")\n        if \"=\" not in stripped:\n            raise ValueError(\"assignment is missing equals sign\")\n        key, value = stripped.split(\"=\", 1)\n        key = key.strip()\n        value = value.strip()\n        if not key:\n            raise ValueError(\"assignment key is empty\")\n        current[\"values\"][key] = value\n\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f73bbe182ed1401f85a2c22fe373076e0639ffc9526ef2c505cf42ae7daa70ed"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import parse_sections\n\n\nclass ParseSectionsTests(unittest.TestCase):\n    def test_parsing_order_replacement_comments_and_blanks(self):\n        lines = [\n            \"  # ignored\", \"\", \" [first] \", \" a = one \", \"b=\", \"a=two\",\n            \"\\t# ignored too\", \"[second]\", \" x = y=z \",\n        ]\n        original = lines[:]\n        result = parse_sections(lines)\n        self.assertEqual(result, [\n            {\"name\": \"first\", \"values\": {\"a\": \"two\", \"b\": \"\"}},\n            {\"name\": \"second\", \"values\": {\"x\": \"y=z\"}},\n        ])\n        self.assertEqual(list(result[0][\"values\"]), [\"a\", \"b\"])\n        self.assertEqual(lines, original)\n        self.assertIsNot(result[0], result[1])\n        self.assertIsNot(result[0][\"values\"], result[1][\"values\"])\n\n    def test_empty_comment_only_and_iterator(self):\n        self.assertEqual(parse_sections([]), [])\n        self.assertEqual(parse_sections(iter([\" \", \"# x\", \" \\t # y\"])), [])\n\n    def test_container_and_element_types(self):\n        with self.assertRaises(TypeError):\n            parse_sections(None)\n        with self.assertRaises(TypeError):\n            parse_sections([\"[ok]\", 3])\n\n    def test_malformed_headers_and_duplicate_sections(self):\n        for line in [\"[]\", \"[ name]\", \"[name ]\", \"[a] trailing\", \"[[a]]\"]:\n            with self.subTest(line=line):\n                with self.assertRaises(ValueError):\n                    parse_sections([line])\n        with self.assertRaises(ValueError):\n            parse_sections([\"[a]\", \"x=1\", \"[a]\"])\n\n    def test_assignment_errors(self):\n        with self.assertRaises(ValueError):\n            parse_sections([\"x=1\", \"[later]\"])\n        with self.assertRaises(ValueError):\n            parse_sections([\"[a]\", \"not an assignment\"])\n        for line in [\"=value\", \"   = value\"]:\n            with self.subTest(line=line):\n                with self.assertRaises(ValueError):\n                    parse_sections([\"[a]\", line])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "db8912a9cd0ad9fd6060eec2773e3f5ffb72f5f11d488e19eff04e65d4b1b4fd"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0c166f0c74e1afa1b377409f4f49e19e01d397d7371812bbfb28d17fd2ecd074",
+      "text": "Create a complete `solution.py` defining `parse_sections(lines)`.\n\n`lines` is an iterable of strings describing named sections. Ignore blank lines and lines whose first non-whitespace character is `#`. A section begins with a trimmed header of the exact form `[name]`, where `name` is nonempty and has no leading or trailing whitespace. Other significant lines are assignments of the form `key=value`. Trim whitespace around the key and value; the key must be nonempty, while the value may be empty. An assignment belongs to the most recent section.\n\nReturn a list of fresh dictionaries in section order. Each dictionary has `name` and `values`, where `values` is a dictionary preserving the first-occurrence order of keys. Repeated assignments within a section replace the previous value without changing key order. Section names must be unique.\n\nRaise `TypeError` if `lines` is not iterable or any line is not a string. Raise `ValueError` for malformed headers, duplicate sections, assignments before a header, significant lines without `=`, or empty keys. Validate the complete input before returning. Do not mutate or alias input-owned mutable objects. Empty or comment-only input returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0c166f0c74e1afa1b377409f4f49e19e01d397d7371812bbfb28d17fd2ecd074",
+      "text": "Create a complete `solution.py` defining `parse_sections(lines)`.\n\n`lines` is an iterable of strings describing named sections. Ignore blank lines and lines whose first non-whitespace character is `#`. A section begins with a trimmed header of the exact form `[name]`, where `name` is nonempty and has no leading or trailing whitespace. Other significant lines are assignments of the form `key=value`. Trim whitespace around the key and value; the key must be nonempty, while the value may be empty. An assignment belongs to the most recent section.\n\nReturn a list of fresh dictionaries in section order. Each dictionary has `name` and `values`, where `values` is a dictionary preserving the first-occurrence order of keys. Repeated assignments within a section replace the previous value without changing key order. Section names must be unique.\n\nRaise `TypeError` if `lines` is not iterable or any line is not a string. Raise `ValueError` for malformed headers, duplicate sections, assignments before a header, significant lines without `=`, or empty keys. Validate the complete input before returning. Do not mutate or alias input-owned mutable objects. Empty or comment-only input returns an empty list.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0070",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def parse_sections(lines):\n    try:\n        pending = list(lines)\n    except TypeError as exc:\n        raise TypeError(\"lines must be iterable\") from exc\n    if any(not isinstance(line, str) for line in pending):\n        raise TypeError(\"every line must be a string\")\n\n    result = []\n    names = set()\n    current = None\n\n    for original in pending:\n        stripped = original.strip()\n        if not stripped or stripped.startswith(\"#\"):\n            continue\n\n        if stripped.startswith(\"[\") or stripped.endswith(\"]\"):\n            if not (stripped.startswith(\"[\") and stripped.endswith(\"]\")):\n                raise ValueError(\"malformed section header\")\n            name = stripped[1:-1]\n            if not name or name != name.strip() or \"[\" in name or \"]\" in name:\n                raise ValueError(\"malformed section header\")\n            if name in names:\n                raise ValueError(\"duplicate section\")\n            current = {\"name\": name, \"values\": {}}\n            result.append(current)\n            names.add(name)\n            continue\n\n        if current is None:\n            raise ValueError(\"assignment appears before a section\")\n        if \"=\" not in stripped:\n            raise ValueError(\"assignment is missing equals sign\")\n        key, value = stripped.split(\"=\", 1)\n        key = key.strip()\n        value = value.strip()\n        if not key:\n            raise ValueError(\"assignment key is empty\")\n        current[\"values\"].setdefault(key, value)\n\n    return result\n",
+          "label": "Keeps the first value of a repeated key instead of replacing it with the last assignment.",
+          "sha256": "96625b82cc9161ae01074442906693172ef5abc76bf0fb856cf9b1e67b003e4c"
+        }
+      ],
+      "reference": {
+        "code": "def parse_sections(lines):\n    try:\n        pending = list(lines)\n    except TypeError as exc:\n        raise TypeError(\"lines must be iterable\") from exc\n    if any(not isinstance(line, str) for line in pending):\n        raise TypeError(\"every line must be a string\")\n\n    result = []\n    names = set()\n    current = None\n\n    for original in pending:\n        stripped = original.strip()\n        if not stripped or stripped.startswith(\"#\"):\n            continue\n\n        if stripped.startswith(\"[\") or stripped.endswith(\"]\"):\n            if not (stripped.startswith(\"[\") and stripped.endswith(\"]\")):\n                raise ValueError(\"malformed section header\")\n            name = stripped[1:-1]\n            if not name or name != name.strip() or \"[\" in name or \"]\" in name:\n                raise ValueError(\"malformed section header\")\n            if name in names:\n                raise ValueError(\"duplicate section\")\n            current = {\"name\": name, \"values\": {}}\n            result.append(current)\n            names.add(name)\n            continue\n\n        if current is None:\n            raise ValueError(\"assignment appears before a section\")\n        if \"=\" not in stripped:\n            raise ValueError(\"assignment is missing equals sign\")\n        key, value = stripped.split(\"=\", 1)\n        key = key.strip()\n        value = value.strip()\n        if not key:\n            raise ValueError(\"assignment key is empty\")\n        current[\"values\"][key] = value\n\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f73bbe182ed1401f85a2c22fe373076e0639ffc9526ef2c505cf42ae7daa70ed"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_assignment_value_may_end_with_bracket (__main__.AssignmentBracketTests.test_assignment_value_may_end_with_bracket)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_assignment_value_may_end_with_bracket\n    self.assertEqual(parse_sections([\"[main]\", \"value=items[0]\"]), [{\"name\": \"main\", \"values\": {\"value\": \"items[0]\"}}])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 20, in parse_sections\n    raise ValueError(\"malformed section header\")\nValueError: malformed section header\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "1141ad1a49b2fb543cdb33b808b8c1a32a12bc236f063e5f1e67da20574d294c",
+    "duration_ms": 400,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

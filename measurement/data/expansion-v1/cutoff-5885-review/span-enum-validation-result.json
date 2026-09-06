@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0045",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4d09fe164f92616cf88da07e192034aeec4ad1f4cc784d871ecd6e88cbbb220b",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import summarize_spans\n\nclass SpanEnumProbe(unittest.TestCase):\n    def test_unhashable_kind_and_level_raise_value_error(self):\n        for field in ['kind', 'level']:\n            event = {'name': 'x', 'kind': 'begin', 'tick': 0, 'level': 'info'}\n            event[field] = []\n            with self.subTest(field=field), self.assertRaises(ValueError):\n                summarize_spans([event])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "00f6221b7467ba343155e04a80e6fc0d7b3c295f68df93154b7fbd53abbbee16"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "445e9b8910b5d82f0c461a476fcd141895bb4974c920bc61fecffd14b22578da",
+      "text": "Create `solution.py` with a top-level function `summarize_spans(events)`. `events` must be a list of dictionaries having exactly `name`, `kind`, `tick`, and `level`. A name is a nonempty string; kind is `\"begin\"` or `\"finish\"`; tick is a nonnegative integer other than bool; and level is one of `\"debug\"`, `\"info\"`, `\"warning\"`, or `\"error\"`. Ticks must be nondecreasing across the input. Spans with the same name may be nested and must pair in last-in-first-out order. Every finish must have a pending begin of the same name, and no begin may remain unmatched. Return a new list in finish-event order. Each element is `{\"name\": name, \"start\": begin_tick, \"end\": finish_tick, \"elapsed\": finish_tick - begin_tick, \"start_level\": begin_level, \"end_level\": finish_level}`. Empty input returns a new empty list. Reject malformed or unbalanced input with `ValueError`, without mutating or aliasing the input. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "445e9b8910b5d82f0c461a476fcd141895bb4974c920bc61fecffd14b22578da",
+      "text": "Create `solution.py` with a top-level function `summarize_spans(events)`. `events` must be a list of dictionaries having exactly `name`, `kind`, `tick`, and `level`. A name is a nonempty string; kind is `\"begin\"` or `\"finish\"`; tick is a nonnegative integer other than bool; and level is one of `\"debug\"`, `\"info\"`, `\"warning\"`, or `\"error\"`. Ticks must be nondecreasing across the input. Spans with the same name may be nested and must pair in last-in-first-out order. Every finish must have a pending begin of the same name, and no begin may remain unmatched. Return a new list in finish-event order. Each element is `{\"name\": name, \"start\": begin_tick, \"end\": finish_tick, \"elapsed\": finish_tick - begin_tick, \"start_level\": begin_level, \"end_level\": finish_level}`. Empty input returns a new empty list. Reject malformed or unbalanced input with `ValueError`, without mutating or aliasing the input. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0045",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def summarize_spans(events):\n    if not isinstance(events, list):\n        raise ValueError(\"events must be a list\")\n\n    allowed_levels = {\"debug\", \"info\", \"warning\", \"error\"}\n    stacks = {}\n    result = []\n    previous_tick = -1\n\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"name\", \"kind\", \"tick\", \"level\"}:\n            raise ValueError(\"invalid event\")\n        name = event[\"name\"]\n        kind = event[\"kind\"]\n        tick = event[\"tick\"]\n        level = event[\"level\"]\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"invalid name\")\n        if kind not in {\"begin\", \"finish\"}:\n            raise ValueError(\"invalid kind\")\n        if type(tick) is not int or tick < 0 or tick < previous_tick:\n            raise ValueError(\"invalid tick ordering\")\n        if level not in allowed_levels:\n            raise ValueError(\"invalid level\")\n        previous_tick = tick\n\n        stack = stacks.setdefault(name, [])\n        if kind == \"begin\":\n            stack.append((tick, level))\n        else:\n            if not stack:\n                raise ValueError(\"finish without begin\")\n            start, start_level = stack.pop(0)\n            result.append({\n                \"name\": name,\n                \"start\": start,\n                \"end\": tick,\n                \"elapsed\": tick - start,\n                \"start_level\": start_level,\n                \"end_level\": level,\n            })\n\n    if any(stack for stack in stacks.values()):\n        raise ValueError(\"unmatched begin\")\n    return result\n",
+          "label": "Pairs nested spans in FIFO order instead of last-in-first-out order.",
+          "sha256": "2463573cbeb10402b92a2c3992a569a486bef2c5d34cbb6eb8a93aa6ffc8a652"
+        }
+      ],
+      "reference": {
+        "code": "def summarize_spans(events):\n    if not isinstance(events, list):\n        raise ValueError(\"events must be a list\")\n\n    allowed_levels = {\"debug\", \"info\", \"warning\", \"error\"}\n    stacks = {}\n    result = []\n    previous_tick = -1\n\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"name\", \"kind\", \"tick\", \"level\"}:\n            raise ValueError(\"invalid event\")\n        name = event[\"name\"]\n        kind = event[\"kind\"]\n        tick = event[\"tick\"]\n        level = event[\"level\"]\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"invalid name\")\n        if kind not in {\"begin\", \"finish\"}:\n            raise ValueError(\"invalid kind\")\n        if type(tick) is not int or tick < 0 or tick < previous_tick:\n            raise ValueError(\"invalid tick ordering\")\n        if level not in allowed_levels:\n            raise ValueError(\"invalid level\")\n        previous_tick = tick\n\n        stack = stacks.setdefault(name, [])\n        if kind == \"begin\":\n            stack.append((tick, level))\n        else:\n            if not stack:\n                raise ValueError(\"finish without begin\")\n            start, start_level = stack.pop()\n            result.append({\n                \"name\": name,\n                \"start\": start,\n                \"end\": tick,\n                \"elapsed\": tick - start,\n                \"start_level\": start_level,\n                \"end_level\": level,\n            })\n\n    if any(stack for stack in stacks.values()):\n        raise ValueError(\"unmatched begin\")\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e1bffde674a3613a35b3c8e89221801d57f59522170688573637dec718029604"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom copy import deepcopy\nfrom solution import summarize_spans\n\n\nclass SummarizeSpansTests(unittest.TestCase):\n    def test_nested_same_name_pairs_lifo_and_uses_finish_order(self):\n        events = [\n            {\"name\": \"job\", \"kind\": \"begin\", \"tick\": 1, \"level\": \"info\"},\n            {\"name\": \"other\", \"kind\": \"begin\", \"tick\": 2, \"level\": \"debug\"},\n            {\"name\": \"job\", \"kind\": \"begin\", \"tick\": 2, \"level\": \"warning\"},\n            {\"name\": \"job\", \"kind\": \"finish\", \"tick\": 5, \"level\": \"error\"},\n            {\"name\": \"other\", \"kind\": \"finish\", \"tick\": 5, \"level\": \"info\"},\n            {\"name\": \"job\", \"kind\": \"finish\", \"tick\": 8, \"level\": \"warning\"},\n        ]\n        original = deepcopy(events)\n        self.assertEqual(summarize_spans(events), [\n            {\"name\": \"job\", \"start\": 2, \"end\": 5, \"elapsed\": 3,\n             \"start_level\": \"warning\", \"end_level\": \"error\"},\n            {\"name\": \"other\", \"start\": 2, \"end\": 5, \"elapsed\": 3,\n             \"start_level\": \"debug\", \"end_level\": \"info\"},\n            {\"name\": \"job\", \"start\": 1, \"end\": 8, \"elapsed\": 7,\n             \"start_level\": \"info\", \"end_level\": \"warning\"},\n        ])\n        self.assertEqual(events, original)\n\n    def test_zero_elapsed_and_empty(self):\n        events = [\n            {\"name\": \"x\", \"kind\": \"begin\", \"tick\": 0, \"level\": \"debug\"},\n            {\"name\": \"x\", \"kind\": \"finish\", \"tick\": 0, \"level\": \"error\"},\n        ]\n        self.assertEqual(summarize_spans(events)[0][\"elapsed\"], 0)\n        self.assertEqual(summarize_spans([]), [])\n        self.assertIsNot(summarize_spans([]), summarize_spans([]))\n\n    def test_invalid_event_shapes_and_fields(self):\n        good = {\"name\": \"x\", \"kind\": \"begin\", \"tick\": 0, \"level\": \"info\"}\n        bad = [\n            None, {}, dict(good, extra=1), dict(good, name=\"\"),\n            dict(good, name=1), dict(good, kind=\"start\"),\n            dict(good, tick=True), dict(good, tick=-1), dict(good, tick=1.5),\n            dict(good, level=\"fatal\"),\n        ]\n        with self.assertRaises(ValueError):\n            summarize_spans((good,))\n        for event in bad:\n            with self.subTest(event=event), self.assertRaises(ValueError):\n                summarize_spans([event])\n\n    def test_decreasing_ticks_and_unbalanced_sequences(self):\n        with self.assertRaises(ValueError):\n            summarize_spans([\n                {\"name\": \"x\", \"kind\": \"begin\", \"tick\": 2, \"level\": \"info\"},\n                {\"name\": \"x\", \"kind\": \"finish\", \"tick\": 1, \"level\": \"info\"},\n            ])\n        with self.assertRaises(ValueError):\n            summarize_spans([{\"name\": \"x\", \"kind\": \"finish\", \"tick\": 0, \"level\": \"info\"}])\n        with self.assertRaises(ValueError):\n            summarize_spans([{\"name\": \"x\", \"kind\": \"begin\", \"tick\": 0, \"level\": \"info\"}])\n        with self.assertRaises(ValueError):\n            summarize_spans([\n                {\"name\": \"x\", \"kind\": \"begin\", \"tick\": 0, \"level\": \"info\"},\n                {\"name\": \"y\", \"kind\": \"finish\", \"tick\": 1, \"level\": \"info\"},\n            ])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "fc1264c47c5b309a9eda2916e81cbe917be56557642dc7c0923de5ca975b9096"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "445e9b8910b5d82f0c461a476fcd141895bb4974c920bc61fecffd14b22578da",
+      "text": "Create `solution.py` with a top-level function `summarize_spans(events)`. `events` must be a list of dictionaries having exactly `name`, `kind`, `tick`, and `level`. A name is a nonempty string; kind is `\"begin\"` or `\"finish\"`; tick is a nonnegative integer other than bool; and level is one of `\"debug\"`, `\"info\"`, `\"warning\"`, or `\"error\"`. Ticks must be nondecreasing across the input. Spans with the same name may be nested and must pair in last-in-first-out order. Every finish must have a pending begin of the same name, and no begin may remain unmatched. Return a new list in finish-event order. Each element is `{\"name\": name, \"start\": begin_tick, \"end\": finish_tick, \"elapsed\": finish_tick - begin_tick, \"start_level\": begin_level, \"end_level\": finish_level}`. Empty input returns a new empty list. Reject malformed or unbalanced input with `ValueError`, without mutating or aliasing the input. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "445e9b8910b5d82f0c461a476fcd141895bb4974c920bc61fecffd14b22578da",
+      "text": "Create `solution.py` with a top-level function `summarize_spans(events)`. `events` must be a list of dictionaries having exactly `name`, `kind`, `tick`, and `level`. A name is a nonempty string; kind is `\"begin\"` or `\"finish\"`; tick is a nonnegative integer other than bool; and level is one of `\"debug\"`, `\"info\"`, `\"warning\"`, or `\"error\"`. Ticks must be nondecreasing across the input. Spans with the same name may be nested and must pair in last-in-first-out order. Every finish must have a pending begin of the same name, and no begin may remain unmatched. Return a new list in finish-event order. Each element is `{\"name\": name, \"start\": begin_tick, \"end\": finish_tick, \"elapsed\": finish_tick - begin_tick, \"start_level\": begin_level, \"end_level\": finish_level}`. Empty input returns a new empty list. Reject malformed or unbalanced input with `ValueError`, without mutating or aliasing the input. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0045",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def summarize_spans(events):\n    if not isinstance(events, list):\n        raise ValueError(\"events must be a list\")\n\n    allowed_levels = {\"debug\", \"info\", \"warning\", \"error\"}\n    stacks = {}\n    result = []\n    previous_tick = -1\n\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"name\", \"kind\", \"tick\", \"level\"}:\n            raise ValueError(\"invalid event\")\n        name = event[\"name\"]\n        kind = event[\"kind\"]\n        tick = event[\"tick\"]\n        level = event[\"level\"]\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"invalid name\")\n        if kind not in {\"begin\", \"finish\"}:\n            raise ValueError(\"invalid kind\")\n        if type(tick) is not int or tick < 0 or tick < previous_tick:\n            raise ValueError(\"invalid tick ordering\")\n        if level not in allowed_levels:\n            raise ValueError(\"invalid level\")\n        previous_tick = tick\n\n        stack = stacks.setdefault(name, [])\n        if kind == \"begin\":\n            stack.append((tick, level))\n        else:\n            if not stack:\n                raise ValueError(\"finish without begin\")\n            start, start_level = stack.pop(0)\n            result.append({\n                \"name\": name,\n                \"start\": start,\n                \"end\": tick,\n                \"elapsed\": tick - start,\n                \"start_level\": start_level,\n                \"end_level\": level,\n            })\n\n    if any(stack for stack in stacks.values()):\n        raise ValueError(\"unmatched begin\")\n    return result\n",
+          "label": "Pairs nested spans in FIFO order instead of last-in-first-out order.",
+          "sha256": "2463573cbeb10402b92a2c3992a569a486bef2c5d34cbb6eb8a93aa6ffc8a652"
+        }
+      ],
+      "reference": {
+        "code": "def summarize_spans(events):\n    if not isinstance(events, list):\n        raise ValueError(\"events must be a list\")\n\n    allowed_levels = {\"debug\", \"info\", \"warning\", \"error\"}\n    stacks = {}\n    result = []\n    previous_tick = -1\n\n    for event in events:\n        if not isinstance(event, dict) or set(event) != {\"name\", \"kind\", \"tick\", \"level\"}:\n            raise ValueError(\"invalid event\")\n        name = event[\"name\"]\n        kind = event[\"kind\"]\n        tick = event[\"tick\"]\n        level = event[\"level\"]\n        if not isinstance(name, str) or not name:\n            raise ValueError(\"invalid name\")\n        if kind not in {\"begin\", \"finish\"}:\n            raise ValueError(\"invalid kind\")\n        if type(tick) is not int or tick < 0 or tick < previous_tick:\n            raise ValueError(\"invalid tick ordering\")\n        if level not in allowed_levels:\n            raise ValueError(\"invalid level\")\n        previous_tick = tick\n\n        stack = stacks.setdefault(name, [])\n        if kind == \"begin\":\n            stack.append((tick, level))\n        else:\n            if not stack:\n                raise ValueError(\"finish without begin\")\n            start, start_level = stack.pop()\n            result.append({\n                \"name\": name,\n                \"start\": start,\n                \"end\": tick,\n                \"elapsed\": tick - start,\n                \"start_level\": start_level,\n                \"end_level\": level,\n            })\n\n    if any(stack for stack in stacks.values()):\n        raise ValueError(\"unmatched begin\")\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e1bffde674a3613a35b3c8e89221801d57f59522170688573637dec718029604"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "EE\n======================================================================\nERROR: test_unhashable_kind_and_level_raise_value_error (__main__.SpanEnumProbe.test_unhashable_kind_and_level_raise_value_error) (field='kind')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_unhashable_kind_and_level_raise_value_error\n    summarize_spans([event])\n  File \"/work/solution.py\", line 19, in summarize_spans\n    if kind not in {\"begin\", \"finish\"}:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n======================================================================\nERROR: test_unhashable_kind_and_level_raise_value_error (__main__.SpanEnumProbe.test_unhashable_kind_and_level_raise_value_error) (field='level')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_unhashable_kind_and_level_raise_value_error\n    summarize_spans([event])\n  File \"/work/solution.py\", line 23, in summarize_spans\n    if level not in allowed_levels:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: unhashable type: 'list'\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=2)\n",
+    "stderr_sha256": "93762f755a155300d22a98fa142b01339206b62326a404e7a178cd2ceb5db9d4",
+    "duration_ms": 476,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

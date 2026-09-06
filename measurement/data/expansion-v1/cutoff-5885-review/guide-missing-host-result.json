@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0114",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3745ed18c78acd9a9dc54422b12e744881b38c5bf60eea3879a5cad3bad0ba64",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import extract_guide_links\n\n\nclass GuideHostTests(unittest.TestCase):\n    def test_base_requires_host_not_only_netloc(self):\n        with self.assertRaises(ValueError):\n            extract_guide_links(\"\", \"https://user@:80/path\")\n\n    def test_resolved_link_without_host_is_filtered(self):\n        html = '<article data-kind=\"guide\"><a href=\"https://user@:80/path\">x</a></article>'\n        self.assertEqual(extract_guide_links(html, \"https://valid.test/\"), [])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "4c459e346b3fa5a31ba0589dd5c7ba4e9bd55142beaeb0619769a4abf4a8375f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f53ed25d665981a50f4969147715392bc6fd6f67058621c77d48d24de6b1f193",
+      "text": "Create `solution.py` with a top-level function `extract_guide_links(html, base_url)`. Do not perform network or filesystem access. Both arguments must be strings. `base_url` must be an absolute HTTP or HTTPS URL with a host; otherwise raise `ValueError`. Parse `html` using the standard library. Collect `href` values from anchor elements located inside an `article` element whose `data-kind` attribute is exactly `guide`. Resolve relative references against `base_url`, remove URL fragments, and retain only resolved HTTP or HTTPS URLs with a host. Return unique URLs in first-occurrence document order. Nested qualifying articles are valid, malformed markup should be handled using the parser's normal recovery behavior, and absent or empty links are ignored. Empty HTML returns an empty list. Return a new list without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f53ed25d665981a50f4969147715392bc6fd6f67058621c77d48d24de6b1f193",
+      "text": "Create `solution.py` with a top-level function `extract_guide_links(html, base_url)`. Do not perform network or filesystem access. Both arguments must be strings. `base_url` must be an absolute HTTP or HTTPS URL with a host; otherwise raise `ValueError`. Parse `html` using the standard library. Collect `href` values from anchor elements located inside an `article` element whose `data-kind` attribute is exactly `guide`. Resolve relative references against `base_url`, remove URL fragments, and retain only resolved HTTP or HTTPS URLs with a host. Return unique URLs in first-occurrence document order. Nested qualifying articles are valid, malformed markup should be handled using the parser's normal recovery behavior, and absent or empty links are ignored. Empty HTML returns an empty list. Return a new list without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0114",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from html.parser import HTMLParser\nfrom urllib.parse import urldefrag, urljoin, urlparse\n\n\nclass _GuideParser(HTMLParser):\n    def __init__(self, base_url):\n        super().__init__(convert_charrefs=True)\n        self.base_url = base_url\n        self.guide_depth = 0\n        self.article_stack = []\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        if tag == \"article\":\n            qualified = attributes.get(\"data-kind\") == \"guide\"\n            self.article_stack.append(qualified)\n            if qualified:\n                self.guide_depth += 1\n        elif tag == \"a\" and self.guide_depth:\n            href = attributes.get(\"href\")\n            if not href:\n                return\n            resolved, _ = urldefrag(urljoin(self.base_url, href))\n            parsed = urlparse(resolved)\n            if parsed.scheme in (\"http\", \"https\") and parsed.netloc:\n                self.seen.add(resolved)\n                self.links.append(resolved)\n\n    def handle_endtag(self, tag):\n        if tag == \"article\" and self.article_stack:\n            if self.article_stack.pop():\n                self.guide_depth -= 1\n\n\ndef extract_guide_links(html, base_url):\n    if not isinstance(html, str) or not isinstance(base_url, str):\n        raise TypeError(\"html and base_url must be strings\")\n    parsed = urlparse(base_url)\n    if parsed.scheme not in (\"http\", \"https\") or not parsed.netloc:\n        raise ValueError(\"base_url must be an absolute HTTP URL\")\n    parser = _GuideParser(base_url)\n    parser.feed(html)\n    parser.close()\n    return list(parser.links)\n",
+          "label": "Duplicate resolved URLs are appended even though the API requires first-occurrence uniqueness.",
+          "sha256": "79f4f19ff99167c272218b389fe9fe71e9ba4545e0d1c63ad2b6c285df355029"
+        }
+      ],
+      "reference": {
+        "code": "from html.parser import HTMLParser\nfrom urllib.parse import urldefrag, urljoin, urlparse\n\n\nclass _GuideParser(HTMLParser):\n    def __init__(self, base_url):\n        super().__init__(convert_charrefs=True)\n        self.base_url = base_url\n        self.guide_depth = 0\n        self.article_stack = []\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        if tag == \"article\":\n            qualified = attributes.get(\"data-kind\") == \"guide\"\n            self.article_stack.append(qualified)\n            if qualified:\n                self.guide_depth += 1\n        elif tag == \"a\" and self.guide_depth:\n            href = attributes.get(\"href\")\n            if not href:\n                return\n            resolved, _ = urldefrag(urljoin(self.base_url, href))\n            parsed = urlparse(resolved)\n            if parsed.scheme in (\"http\", \"https\") and parsed.netloc and resolved not in self.seen:\n                self.seen.add(resolved)\n                self.links.append(resolved)\n\n    def handle_endtag(self, tag):\n        if tag == \"article\" and self.article_stack:\n            if self.article_stack.pop():\n                self.guide_depth -= 1\n\n\ndef extract_guide_links(html, base_url):\n    if not isinstance(html, str) or not isinstance(base_url, str):\n        raise TypeError(\"html and base_url must be strings\")\n    parsed = urlparse(base_url)\n    if parsed.scheme not in (\"http\", \"https\") or not parsed.netloc:\n        raise ValueError(\"base_url must be an absolute HTTP URL\")\n    parser = _GuideParser(base_url)\n    parser.feed(html)\n    parser.close()\n    return list(parser.links)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2567ddf0b4ec903576e3b575e34955257d34ee395731d9f5af374b35cad27411"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nimport solution\n\n\nclass ExtractGuideLinksTests(unittest.TestCase):\n    def test_collects_only_links_in_qualifying_articles(self):\n        html = \"\"\"\n        <a href='/outside'>outside</a>\n        <article data-kind='other'><a href='/wrong'>wrong</a></article>\n        <article data-kind='guide'>\n          <a href='page.html#part'>one</a>\n          <div><a href='/absolute?q=1&amp;x=2#frag'>two</a></div>\n          <a>missing</a><a href=''>empty</a>\n          <a href='mailto:a@example.com'>mail</a>\n          <a href='javascript:void(0)'>script</a>\n        </article>\n        \"\"\"\n        self.assertEqual(\n            solution.extract_guide_links(html, \"https://example.com/docs/index.html\"),\n            [\"https://example.com/docs/page.html\", \"https://example.com/absolute?q=1&x=2\"],\n        )\n\n    def test_deduplicates_after_resolution_and_fragment_removal(self):\n        html = \"\"\"\n        <article data-kind='guide'>\n          <a href='/a#one'>first</a>\n          <a href='https://example.com/a#two'>duplicate</a>\n          <a href='//other.test/x#f'>other</a>\n        </article>\n        \"\"\"\n        self.assertEqual(\n            solution.extract_guide_links(html, \"https://example.com/base/\"),\n            [\"https://example.com/a\", \"https://other.test/x\"],\n        )\n\n    def test_nested_qualifying_article_and_parser_recovery(self):\n        html = (\n            \"<article data-kind=guide><div><a href='one'>One\"\n            \"<article data-kind='guide'><a href='two#x'>Two</article>\"\n        )\n        self.assertEqual(\n            solution.extract_guide_links(html, \"http://host.test/root/\"),\n            [\"http://host.test/root/one\", \"http://host.test/root/two\"],\n        )\n\n    def test_empty_html_and_fresh_result(self):\n        first = solution.extract_guide_links(\"\", \"https://example.com\")\n        second = solution.extract_guide_links(\"\", \"https://example.com\")\n        self.assertEqual(first, [])\n        self.assertIsNot(first, second)\n\n    def test_argument_types(self):\n        for html, base in ((None, \"https://x.test\"), (\"\", None), (b\"\", \"https://x.test\")):\n            with self.subTest(html=html, base=base):\n                with self.assertRaises(TypeError):\n                    solution.extract_guide_links(html, base)\n\n    def test_invalid_base_urls(self):\n        for base in (\"\", \"/relative\", \"example.com/path\", \"ftp://example.com/x\", \"https:///missing\"):\n            with self.subTest(base=base):\n                with self.assertRaises(ValueError):\n                    solution.extract_guide_links(\"\", base)\n\n    def test_resolved_urls_without_http_host_are_filtered(self):\n        html = \"<article data-kind='guide'><a href='http:///bad'>bad</a><a href='#only'>base</a></article>\"\n        self.assertEqual(\n            solution.extract_guide_links(html, \"https://valid.test/path\"),\n            [\"https://valid.test/path\"],\n        )\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "39c1cec63c87112376327cf564260d35629286277f4e43a9f0df2174f9ec9e3b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f53ed25d665981a50f4969147715392bc6fd6f67058621c77d48d24de6b1f193",
+      "text": "Create `solution.py` with a top-level function `extract_guide_links(html, base_url)`. Do not perform network or filesystem access. Both arguments must be strings. `base_url` must be an absolute HTTP or HTTPS URL with a host; otherwise raise `ValueError`. Parse `html` using the standard library. Collect `href` values from anchor elements located inside an `article` element whose `data-kind` attribute is exactly `guide`. Resolve relative references against `base_url`, remove URL fragments, and retain only resolved HTTP or HTTPS URLs with a host. Return unique URLs in first-occurrence document order. Nested qualifying articles are valid, malformed markup should be handled using the parser's normal recovery behavior, and absent or empty links are ignored. Empty HTML returns an empty list. Return a new list without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f53ed25d665981a50f4969147715392bc6fd6f67058621c77d48d24de6b1f193",
+      "text": "Create `solution.py` with a top-level function `extract_guide_links(html, base_url)`. Do not perform network or filesystem access. Both arguments must be strings. `base_url` must be an absolute HTTP or HTTPS URL with a host; otherwise raise `ValueError`. Parse `html` using the standard library. Collect `href` values from anchor elements located inside an `article` element whose `data-kind` attribute is exactly `guide`. Resolve relative references against `base_url`, remove URL fragments, and retain only resolved HTTP or HTTPS URLs with a host. Return unique URLs in first-occurrence document order. Nested qualifying articles are valid, malformed markup should be handled using the parser's normal recovery behavior, and absent or empty links are ignored. Empty HTML returns an empty list. Return a new list without retaining aliases.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0114",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from html.parser import HTMLParser\nfrom urllib.parse import urldefrag, urljoin, urlparse\n\n\nclass _GuideParser(HTMLParser):\n    def __init__(self, base_url):\n        super().__init__(convert_charrefs=True)\n        self.base_url = base_url\n        self.guide_depth = 0\n        self.article_stack = []\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        if tag == \"article\":\n            qualified = attributes.get(\"data-kind\") == \"guide\"\n            self.article_stack.append(qualified)\n            if qualified:\n                self.guide_depth += 1\n        elif tag == \"a\" and self.guide_depth:\n            href = attributes.get(\"href\")\n            if not href:\n                return\n            resolved, _ = urldefrag(urljoin(self.base_url, href))\n            parsed = urlparse(resolved)\n            if parsed.scheme in (\"http\", \"https\") and parsed.netloc:\n                self.seen.add(resolved)\n                self.links.append(resolved)\n\n    def handle_endtag(self, tag):\n        if tag == \"article\" and self.article_stack:\n            if self.article_stack.pop():\n                self.guide_depth -= 1\n\n\ndef extract_guide_links(html, base_url):\n    if not isinstance(html, str) or not isinstance(base_url, str):\n        raise TypeError(\"html and base_url must be strings\")\n    parsed = urlparse(base_url)\n    if parsed.scheme not in (\"http\", \"https\") or not parsed.netloc:\n        raise ValueError(\"base_url must be an absolute HTTP URL\")\n    parser = _GuideParser(base_url)\n    parser.feed(html)\n    parser.close()\n    return list(parser.links)\n",
+          "label": "Duplicate resolved URLs are appended even though the API requires first-occurrence uniqueness.",
+          "sha256": "79f4f19ff99167c272218b389fe9fe71e9ba4545e0d1c63ad2b6c285df355029"
+        }
+      ],
+      "reference": {
+        "code": "from html.parser import HTMLParser\nfrom urllib.parse import urldefrag, urljoin, urlparse\n\n\nclass _GuideParser(HTMLParser):\n    def __init__(self, base_url):\n        super().__init__(convert_charrefs=True)\n        self.base_url = base_url\n        self.guide_depth = 0\n        self.article_stack = []\n        self.links = []\n        self.seen = set()\n\n    def handle_starttag(self, tag, attrs):\n        attributes = dict(attrs)\n        if tag == \"article\":\n            qualified = attributes.get(\"data-kind\") == \"guide\"\n            self.article_stack.append(qualified)\n            if qualified:\n                self.guide_depth += 1\n        elif tag == \"a\" and self.guide_depth:\n            href = attributes.get(\"href\")\n            if not href:\n                return\n            resolved, _ = urldefrag(urljoin(self.base_url, href))\n            parsed = urlparse(resolved)\n            if parsed.scheme in (\"http\", \"https\") and parsed.netloc and resolved not in self.seen:\n                self.seen.add(resolved)\n                self.links.append(resolved)\n\n    def handle_endtag(self, tag):\n        if tag == \"article\" and self.article_stack:\n            if self.article_stack.pop():\n                self.guide_depth -= 1\n\n\ndef extract_guide_links(html, base_url):\n    if not isinstance(html, str) or not isinstance(base_url, str):\n        raise TypeError(\"html and base_url must be strings\")\n    parsed = urlparse(base_url)\n    if parsed.scheme not in (\"http\", \"https\") or not parsed.netloc:\n        raise ValueError(\"base_url must be an absolute HTTP URL\")\n    parser = _GuideParser(base_url)\n    parser.feed(html)\n    parser.close()\n    return list(parser.links)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2567ddf0b4ec903576e3b575e34955257d34ee395731d9f5af374b35cad27411"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "FF\n======================================================================\nFAIL: test_base_requires_host_not_only_netloc (__main__.GuideHostTests.test_base_requires_host_not_only_netloc)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_base_requires_host_not_only_netloc\n    with self.assertRaises(ValueError):\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_resolved_link_without_host_is_filtered (__main__.GuideHostTests.test_resolved_link_without_host_is_filtered)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 12, in test_resolved_link_without_host_is_filtered\n    self.assertEqual(extract_guide_links(html, \"https://valid.test/\"), [])\nAssertionError: Lists differ: ['https://user@:80/path'] != []\n\nFirst list contains 1 additional elements.\nFirst extra element 0:\n'https://user@:80/path'\n\n- ['https://user@:80/path']\n+ []\n\n----------------------------------------------------------------------\nRan 2 tests in 0.010s\n\nFAILED (failures=2)\n",
+    "stderr_sha256": "0ef27cc052016f922df09109c7af20a3a5fcff88d198f906173cf89bbc315b9a",
+    "duration_ms": 516,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

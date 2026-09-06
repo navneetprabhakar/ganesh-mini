@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0234",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "2ba8495711b2a5b4f807664b6fe38c29442f20bcb1c9584b9b9cca110e07d915",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import parse_measurements\n\nclass Probe(unittest.TestCase):\n    def test_cr_record_separator(self):\n        self.assertEqual(parse_measurements('a,b\\rc,d\\r'), [('a', 'b'), ('c', 'd')])\n\n    def test_valid_large_field(self):\n        text = 'x' * 140000\n        self.assertEqual(parse_measurements(text), [(text,)])\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "753a547cb09ffca717ff7eded42e0753d0d3ad5f547b6fe97ec45466fe4eb51f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a0e387953a4a1f4f3e2c6934c996401ac4ad26da01f6798a341f1df44989fd04",
+      "text": "Repair this complete `solution.py`:\n\n```python\nimport csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n```\n\nSubmit a corrected complete source file preserving `parse_measurements(text)`. It must parse standard CSV using the standard library, trim surrounding whitespace from every cell, preserve row and column order, and return rows as tuples in a new list. Completely blank records and records whose cells are all whitespace must be omitted; a record containing at least one non-whitespace cell must be retained, including its empty cells. Empty input returns `[]`. Non-string input raises `TypeError`, and malformed CSV raises `ValueError`. The function must not retain aliases or mutate caller-owned data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a0e387953a4a1f4f3e2c6934c996401ac4ad26da01f6798a341f1df44989fd04",
+      "text": "Repair this complete `solution.py`:\n\n```python\nimport csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n```\n\nSubmit a corrected complete source file preserving `parse_measurements(text)`. It must parse standard CSV using the standard library, trim surrounding whitespace from every cell, preserve row and column order, and return rows as tuples in a new list. Completely blank records and records whose cells are all whitespace must be omitted; a record containing at least one non-whitespace cell must be retained, including its empty cells. Empty input returns `[]`. Non-string input raises `TypeError`, and malformed CSV raises `ValueError`. The function must not retain aliases or mutate caller-owned data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0234",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n",
+          "label": "Retains CSV records whose cells become entirely empty after trimming.",
+          "sha256": "66060bcba5a56bdda0edbc01d8d5433cd05d20f36d75e4fcf5b96fbfe08bc436"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            if not any(cleaned):\n                continue\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n",
+        "label": "codex-teacher-reference",
+        "sha256": "145002a9ddf57730652d70d7058ce8e91fb6aba92b02be6e5f28f0112cc001ad"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import parse_measurements\n\n\nclass ParseMeasurementsTests(unittest.TestCase):\n    def test_standard_csv_trimming_and_order(self):\n        text = ' name , value , unit\\r\\n\"a,b\",  12 , kg\\r\\nplain,, tail '\n        self.assertEqual(parse_measurements(text), [\n            (\"name\", \"value\", \"unit\"),\n            (\"a,b\", \"12\", \"kg\"),\n            (\"plain\", \"\", \"tail\"),\n        ])\n\n    def test_empty_input_and_blank_records_are_omitted(self):\n        self.assertEqual(parse_measurements(\"\"), [])\n        text = '\\n   \\n  , \\t,   \\nvalue, ,\\n\\n'\n        self.assertEqual(parse_measurements(text), [(\"value\", \"\", \"\")])\n\n    def test_record_with_one_non_whitespace_cell_is_retained(self):\n        self.assertEqual(parse_measurements(' , x , \\n'), [(\"\", \"x\", \"\")])\n\n    def test_quoted_newline_and_escaped_quote(self):\n        text = '\"line one\\nline two\",\"a\"\"b\"\\n'\n        self.assertEqual(parse_measurements(text), [\n            (\"line one\\nline two\", 'a\"b')\n        ])\n\n    def test_each_result_is_new_independent_data(self):\n        first = parse_measurements(\"a,b\\n\")\n        second = parse_measurements(\"a,b\\n\")\n        first.append((\"changed\",))\n        self.assertEqual(second, [(\"a\", \"b\")])\n\n    def test_non_string_input_raises_type_error(self):\n        for value in (None, b\"a,b\", 1, [\"a,b\"]):\n            with self.subTest(value=value):\n                with self.assertRaises(TypeError):\n                    parse_measurements(value)\n\n    def test_malformed_csv_raises_value_error(self):\n        with self.assertRaises(ValueError):\n            parse_measurements('\"unterminated')\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "2a51cb1d81f968cb19e7394086fcb90ba830cfef82b6e566eb9bbacc708e695d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a0e387953a4a1f4f3e2c6934c996401ac4ad26da01f6798a341f1df44989fd04",
+      "text": "Repair this complete `solution.py`:\n\n```python\nimport csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n```\n\nSubmit a corrected complete source file preserving `parse_measurements(text)`. It must parse standard CSV using the standard library, trim surrounding whitespace from every cell, preserve row and column order, and return rows as tuples in a new list. Completely blank records and records whose cells are all whitespace must be omitted; a record containing at least one non-whitespace cell must be retained, including its empty cells. Empty input returns `[]`. Non-string input raises `TypeError`, and malformed CSV raises `ValueError`. The function must not retain aliases or mutate caller-owned data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a0e387953a4a1f4f3e2c6934c996401ac4ad26da01f6798a341f1df44989fd04",
+      "text": "Repair this complete `solution.py`:\n\n```python\nimport csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n```\n\nSubmit a corrected complete source file preserving `parse_measurements(text)`. It must parse standard CSV using the standard library, trim surrounding whitespace from every cell, preserve row and column order, and return rows as tuples in a new list. Completely blank records and records whose cells are all whitespace must be omitted; a record containing at least one non-whitespace cell must be retained, including its empty cells. Empty input returns `[]`. Non-string input raises `TypeError`, and malformed CSV raises `ValueError`. The function must not retain aliases or mutate caller-owned data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0234",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n",
+          "label": "Retains CSV records whose cells become entirely empty after trimming.",
+          "sha256": "66060bcba5a56bdda0edbc01d8d5433cd05d20f36d75e4fcf5b96fbfe08bc436"
+        }
+      ],
+      "reference": {
+        "code": "import csv\nimport io\n\n\ndef parse_measurements(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    try:\n        rows = csv.reader(io.StringIO(text), strict=True)\n        result = []\n        for row in rows:\n            if not row:\n                continue\n            cleaned = tuple(cell.strip() for cell in row)\n            if not any(cleaned):\n                continue\n            result.append(cleaned)\n        return result\n    except csv.Error as exc:\n        raise ValueError(\"malformed CSV\") from exc\n",
+        "label": "codex-teacher-reference",
+        "sha256": "145002a9ddf57730652d70d7058ce8e91fb6aba92b02be6e5f28f0112cc001ad"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "EE\n======================================================================\nERROR: test_cr_record_separator (__main__.Probe.test_cr_record_separator)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/work/solution.py\", line 11, in parse_measurements\n    for row in rows:\n_csv.Error: new-line character seen in unquoted field - do you need to open the file with newline=''?\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"test_solution.py\", line 6, in test_cr_record_separator\n    self.assertEqual(parse_measurements('a,b\\rc,d\\r'), [('a', 'b'), ('c', 'd')])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 20, in parse_measurements\n    raise ValueError(\"malformed CSV\") from exc\nValueError: malformed CSV\n\n======================================================================\nERROR: test_valid_large_field (__main__.Probe.test_valid_large_field)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/work/solution.py\", line 11, in parse_measurements\n    for row in rows:\n_csv.Error: field larger than field limit (131072)\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_valid_large_field\n    self.assertEqual(parse_measurements(text), [(text,)])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 20, in parse_measurements\n    raise ValueError(\"malformed CSV\") from exc\nValueError: malformed CSV\n\n----------------------------------------------------------------------\nRan 2 tests in 0.005s\n\nFAILED (errors=2)\n",
+    "stderr_sha256": "23fd85288bf4360d1167ee01b585e4847e34d26d2ea82e349ec06dabaa9b7084",
+    "duration_ms": 679,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

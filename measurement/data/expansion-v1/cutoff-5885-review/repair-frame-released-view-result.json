@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0238",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "d426beb2b290ce186f42c8e4949e606545a7df832e95c87591d0ce99dd54f662",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import FrameBuffer\n\nclass Probe(unittest.TestCase):\n    def test_contract(self):\n        buffer = FrameBuffer()\n        buffer.feed(b'\\x02a')\n        view = memoryview(b'b')\n        view.release()\n        with self.assertRaises(TypeError):\n            buffer.feed(view)\n        self.assertEqual(buffer.pending, b'\\x02a')\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "77f69ff299dc7b060e5116c886ef0d362750256e0d66d8820d215ae69c67a86b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "780cfcaa5b9e3fd27bac48e7bb2564c3c4d8374c14eb495a61a6117cb61cb434",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`FrameBuffer` incrementally decodes frames whose first byte is an unsigned payload length followed by exactly that many payload bytes. `feed(chunk)` accepts any bytes-like object, copies it, appends it to pending input, and returns all newly completed payloads as independent `bytes` objects. Complete frames must be returned immediately, including zero-length frames. Incomplete data remains pending for later calls. `feed` must not mutate its argument, and invalid chunks raise `TypeError` without changing pending data. The read-only `pending` property returns an immutable snapshot. Different instances must never share buffers.\n\nKnown-bad source:\n\n```python\nclass FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) <= size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "780cfcaa5b9e3fd27bac48e7bb2564c3c4d8374c14eb495a61a6117cb61cb434",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`FrameBuffer` incrementally decodes frames whose first byte is an unsigned payload length followed by exactly that many payload bytes. `feed(chunk)` accepts any bytes-like object, copies it, appends it to pending input, and returns all newly completed payloads as independent `bytes` objects. Complete frames must be returned immediately, including zero-length frames. Incomplete data remains pending for later calls. `feed` must not mutate its argument, and invalid chunks raise `TypeError` without changing pending data. The read-only `pending` property returns an immutable snapshot. Different instances must never share buffers.\n\nKnown-bad source:\n\n```python\nclass FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) <= size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0238",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) <= size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n",
+          "label": "The completeness boundary uses `<=`, so an exactly complete frame is retained until an extra byte arrives.",
+          "sha256": "7c98d3896f3db31bdc01df63ca4f16dd5d39c021ac8a951e50bd8ccd381f10fd"
+        }
+      ],
+      "reference": {
+        "code": "class FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) < size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cd1c1b6e77b9bd1af3ef74fcca0bc00931f8309a34ef870320d98306417b990d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import FrameBuffer\n\n\nclass FrameBufferTests(unittest.TestCase):\n    def test_complete_and_multiple_frames(self):\n        buffer = FrameBuffer()\n        frames = buffer.feed(b\"\\x03abc\\x02de\")\n        self.assertEqual(frames, [b\"abc\", b\"de\"])\n        self.assertTrue(all(type(frame) is bytes for frame in frames))\n        self.assertEqual(buffer.pending, b\"\")\n\n    def test_exact_boundary_frame_is_immediate(self):\n        buffer = FrameBuffer()\n        self.assertEqual(buffer.feed(b\"\\x01x\"), [b\"x\"])\n        self.assertEqual(buffer.pending, b\"\")\n\n    def test_zero_length_frames(self):\n        buffer = FrameBuffer()\n        self.assertEqual(buffer.feed(b\"\\x00\\x00\\x01z\"), [b\"\", b\"\", b\"z\"])\n        self.assertEqual(buffer.pending, b\"\")\n\n    def test_fragmented_input_and_pending_snapshot(self):\n        buffer = FrameBuffer()\n        self.assertEqual(buffer.feed(b\"\\x04ab\"), [])\n        snapshot = buffer.pending\n        self.assertEqual(snapshot, b\"\\x04ab\")\n        self.assertIs(type(snapshot), bytes)\n        self.assertEqual(buffer.feed(b\"cd\\x03x\"), [b\"abcd\"])\n        self.assertEqual(snapshot, b\"\\x04ab\")\n        self.assertEqual(buffer.pending, b\"\\x03x\")\n        self.assertEqual(buffer.feed(b\"yz\"), [b\"xyz\"])\n        self.assertEqual(buffer.pending, b\"\")\n\n    def test_chunk_is_copied_and_not_mutated(self):\n        chunk = bytearray(b\"\\x02hi\")\n        before = chunk[:]\n        buffer = FrameBuffer()\n        self.assertEqual(buffer.feed(chunk), [b\"hi\"])\n        self.assertEqual(chunk, before)\n        partial = bytearray(b\"\\x03a\")\n        self.assertEqual(buffer.feed(partial), [])\n        partial[:] = b\"\\x00x\"\n        self.assertEqual(buffer.pending, b\"\\x03a\")\n        self.assertEqual(buffer.feed(memoryview(b\"bc\")), [b\"abc\"])\n\n    def test_empty_feed(self):\n        buffer = FrameBuffer()\n        self.assertEqual(buffer.feed(b\"\"), [])\n        self.assertEqual(buffer.pending, b\"\")\n\n    def test_invalid_feed_does_not_change_pending(self):\n        buffer = FrameBuffer()\n        buffer.feed(b\"\\x05ab\")\n        before = buffer.pending\n        for chunk in [None, \"abc\", 3, [1, 2]]:\n            with self.subTest(chunk=chunk):\n                with self.assertRaises(TypeError):\n                    buffer.feed(chunk)\n                self.assertEqual(buffer.pending, before)\n\n    def test_instances_do_not_share_buffers(self):\n        first = FrameBuffer()\n        second = FrameBuffer()\n        first.feed(b\"\\x02a\")\n        self.assertEqual(first.pending, b\"\\x02a\")\n        self.assertEqual(second.pending, b\"\")\n        self.assertEqual(second.feed(b\"\\x01z\"), [b\"z\"])\n        self.assertEqual(first.pending, b\"\\x02a\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "8925cf733cba9e7b855ba8207fde4fdbcce3798005b282cad756679072047753"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "780cfcaa5b9e3fd27bac48e7bb2564c3c4d8374c14eb495a61a6117cb61cb434",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`FrameBuffer` incrementally decodes frames whose first byte is an unsigned payload length followed by exactly that many payload bytes. `feed(chunk)` accepts any bytes-like object, copies it, appends it to pending input, and returns all newly completed payloads as independent `bytes` objects. Complete frames must be returned immediately, including zero-length frames. Incomplete data remains pending for later calls. `feed` must not mutate its argument, and invalid chunks raise `TypeError` without changing pending data. The read-only `pending` property returns an immutable snapshot. Different instances must never share buffers.\n\nKnown-bad source:\n\n```python\nclass FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) <= size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "780cfcaa5b9e3fd27bac48e7bb2564c3c4d8374c14eb495a61a6117cb61cb434",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`FrameBuffer` incrementally decodes frames whose first byte is an unsigned payload length followed by exactly that many payload bytes. `feed(chunk)` accepts any bytes-like object, copies it, appends it to pending input, and returns all newly completed payloads as independent `bytes` objects. Complete frames must be returned immediately, including zero-length frames. Incomplete data remains pending for later calls. `feed` must not mutate its argument, and invalid chunks raise `TypeError` without changing pending data. The read-only `pending` property returns an immutable snapshot. Different instances must never share buffers.\n\nKnown-bad source:\n\n```python\nclass FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) <= size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0238",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) <= size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n",
+          "label": "The completeness boundary uses `<=`, so an exactly complete frame is retained until an extra byte arrives.",
+          "sha256": "7c98d3896f3db31bdc01df63ca4f16dd5d39c021ac8a951e50bd8ccd381f10fd"
+        }
+      ],
+      "reference": {
+        "code": "class FrameBuffer:\n    def __init__(self):\n        self._buffer = bytearray()\n\n    @property\n    def pending(self):\n        return bytes(self._buffer)\n\n    def feed(self, chunk):\n        try:\n            incoming = bytes(memoryview(chunk))\n        except TypeError as exc:\n            raise TypeError(\"chunk must be bytes-like\") from exc\n        self._buffer.extend(incoming)\n        frames = []\n        while self._buffer:\n            size = self._buffer[0]\n            if len(self._buffer) < size + 1:\n                break\n            frames.append(bytes(self._buffer[1:size + 1]))\n            del self._buffer[:size + 1]\n        return frames\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cd1c1b6e77b9bd1af3ef74fcca0bc00931f8309a34ef870320d98306417b990d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_contract (__main__.Probe.test_contract)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_contract\n    buffer.feed(view)\n  File \"/work/solution.py\", line 11, in feed\n    incoming = bytes(memoryview(chunk))\n                     ^^^^^^^^^^^^^^^^^\nValueError: operation forbidden on released memoryview object\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "ae1f757efd4efc4ce651babccec07597d602e77273c4527a225eec1a37174845",
+    "duration_ms": 863,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

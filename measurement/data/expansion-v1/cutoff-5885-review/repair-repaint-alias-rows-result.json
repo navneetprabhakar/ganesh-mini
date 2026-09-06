@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0212",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "2e40935bde300be7472b78c13357363dbce25a932e6b9afb110ed87ebeb01882",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import repaint_exterior\n\nclass Probe(unittest.TestCase):\n    def test_independent_replacements_shared_input_rows(self):\n        row = [1]\n        result = repaint_exterior([row, row], 1, {'items': []})\n        self.assertIsNot(result[0][0], result[1][0])\n\n    def test_finite_deep_cell(self):\n        value = []\n        for _ in range(600):\n            value = [value]\n        error = None\n        try:\n            repaint_exterior([[value]], 1, 2)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "743fa064cb428bcf7e85d04d92d9858901668169cadb5332b9a9ad5383776ebb"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "59c34eb91a37add6b29dc027e729018f269c156dd53632cb2d24eadef3c3fbe4",
+      "text": "The following complete `solution.py` should implement `repaint_exterior(grid, old, new)`. `grid` must be a list of equally sized lists; an empty grid and zero-width rows are valid. Return a deep copy in which only cells equal to `old` that are connected orthogonally to a boundary cell equal to `old` are replaced with independent deep copies of `new`. Enclosed matching regions must remain unchanged. If `old == new`, still return a deep copy. Never mutate or alias mutable cells from the input. The implementation has one semantic bug. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    for row in range(len(result)):\n        for column in range(width):\n            if result[row][column] == old:\n                result[row][column] = deepcopy(new)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "59c34eb91a37add6b29dc027e729018f269c156dd53632cb2d24eadef3c3fbe4",
+      "text": "The following complete `solution.py` should implement `repaint_exterior(grid, old, new)`. `grid` must be a list of equally sized lists; an empty grid and zero-width rows are valid. Return a deep copy in which only cells equal to `old` that are connected orthogonally to a boundary cell equal to `old` are replaced with independent deep copies of `new`. Enclosed matching regions must remain unchanged. If `old == new`, still return a deep copy. Never mutate or alias mutable cells from the input. The implementation has one semantic bug. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    for row in range(len(result)):\n        for column in range(width):\n            if result[row][column] == old:\n                result[row][column] = deepcopy(new)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0212",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    for row in range(len(result)):\n        for column in range(width):\n            if result[row][column] == old:\n                result[row][column] = deepcopy(new)\n    return result\n",
+          "label": "all matching cells are repainted, including regions not connected to the boundary",
+          "sha256": "7abb0c5eb5cf63a7d5c22bfd3d2ba114f4608f916a0e6ef16b2978f0134b7e79"
+        }
+      ],
+      "reference": {
+        "code": "from collections import deque\nfrom copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    height = len(result)\n    if width == 0:\n        return result\n\n    queue = deque()\n    visited = set()\n    for row in range(height):\n        queue.append((row, 0))\n        queue.append((row, width - 1))\n    for column in range(width):\n        queue.append((0, column))\n        queue.append((height - 1, column))\n\n    while queue:\n        row, column = queue.popleft()\n        if (row, column) in visited:\n            continue\n        visited.add((row, column))\n        if result[row][column] != old:\n            continue\n        result[row][column] = deepcopy(new)\n        for next_row, next_column in (\n            (row - 1, column),\n            (row + 1, column),\n            (row, column - 1),\n            (row, column + 1),\n        ):\n            if 0 <= next_row < height and 0 <= next_column < width:\n                queue.append((next_row, next_column))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4e99145201a963f7407ce508144359968277d2e6102d4e7d4dead12d639b2512"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import repaint_exterior\n\n\nclass RepaintExteriorTests(unittest.TestCase):\n    def test_repaints_only_boundary_connected_regions(self):\n        grid = [\n            [1, 0, 0, 0, 0],\n            [1, 1, 0, 1, 0],\n            [0, 0, 0, 1, 0],\n            [0, 1, 1, 1, 0],\n            [0, 0, 0, 0, 0],\n        ]\n        expected = [\n            [9, 0, 0, 0, 0],\n            [9, 9, 0, 1, 0],\n            [0, 0, 0, 1, 0],\n            [0, 1, 1, 1, 0],\n            [0, 0, 0, 0, 0],\n        ]\n        self.assertEqual(repaint_exterior(grid, 1, 9), expected)\n\n    def test_orthogonal_but_not_diagonal_connectivity(self):\n        grid = [\n            [1, 0, 0],\n            [0, 1, 0],\n            [0, 0, 0],\n        ]\n        self.assertEqual(repaint_exterior(grid, 1, 2), [\n            [2, 0, 0],\n            [0, 1, 0],\n            [0, 0, 0],\n        ])\n\n    def test_empty_and_zero_width_grids(self):\n        self.assertEqual(repaint_exterior([], 1, 2), [])\n        grid = [[], [], []]\n        result = repaint_exterior(grid, 1, 2)\n        self.assertEqual(result, grid)\n        self.assertIsNot(result, grid)\n        for returned_row, input_row in zip(result, grid):\n            self.assertIsNot(returned_row, input_row)\n\n    def test_old_equal_new_still_returns_deep_copy(self):\n        mutable_cell = [\"x\"]\n        grid = [[mutable_cell]]\n        result = repaint_exterior(grid, mutable_cell, mutable_cell)\n\n        self.assertEqual(result, grid)\n        self.assertIsNot(result, grid)\n        self.assertIsNot(result[0], grid[0])\n        self.assertIsNot(result[0][0], mutable_cell)\n        result[0][0].append(\"changed\")\n        self.assertEqual(grid, [[[\"x\"]]])\n\n    def test_each_replacement_is_an_independent_deep_copy(self):\n        new = {\"items\": []}\n        grid = [[1, 1]]\n        result = repaint_exterior(grid, 1, new)\n\n        self.assertEqual(result, [[{\"items\": []}, {\"items\": []}]])\n        self.assertIsNot(result[0][0], new)\n        self.assertIsNot(result[0][1], new)\n        self.assertIsNot(result[0][0], result[0][1])\n        self.assertIsNot(result[0][0][\"items\"], result[0][1][\"items\"])\n        result[0][0][\"items\"].append(\"x\")\n        self.assertEqual(result[0][1], {\"items\": []})\n        self.assertEqual(new, {\"items\": []})\n\n    def test_non_replaced_mutable_cells_do_not_alias_input(self):\n        cell = {\"value\": []}\n        grid = [[cell, 1]]\n        result = repaint_exterior(grid, 1, 2)\n        self.assertIsNot(result[0][0], cell)\n        self.assertIsNot(result[0][0][\"value\"], cell[\"value\"])\n        result[0][0][\"value\"].append(3)\n        self.assertEqual(cell, {\"value\": []})\n\n    def test_input_is_not_mutated(self):\n        grid = [[1, 0], [1, 1]]\n        original = [[1, 0], [1, 1]]\n        repaint_exterior(grid, 1, 7)\n        self.assertEqual(grid, original)\n\n    def test_rejects_invalid_grid_shapes(self):\n        with self.assertRaises(TypeError):\n            repaint_exterior(([],), 1, 2)\n        with self.assertRaises(TypeError):\n            repaint_exterior([[1], (2,)], 1, 2)\n        with self.assertRaises(ValueError):\n            repaint_exterior([[1, 2], [3]], 1, 2)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "4a0b757478a8b99378742276ca8ff01efaf4d6d6f41ba6dc7fbc5d251e3a117c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "59c34eb91a37add6b29dc027e729018f269c156dd53632cb2d24eadef3c3fbe4",
+      "text": "The following complete `solution.py` should implement `repaint_exterior(grid, old, new)`. `grid` must be a list of equally sized lists; an empty grid and zero-width rows are valid. Return a deep copy in which only cells equal to `old` that are connected orthogonally to a boundary cell equal to `old` are replaced with independent deep copies of `new`. Enclosed matching regions must remain unchanged. If `old == new`, still return a deep copy. Never mutate or alias mutable cells from the input. The implementation has one semantic bug. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    for row in range(len(result)):\n        for column in range(width):\n            if result[row][column] == old:\n                result[row][column] = deepcopy(new)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "59c34eb91a37add6b29dc027e729018f269c156dd53632cb2d24eadef3c3fbe4",
+      "text": "The following complete `solution.py` should implement `repaint_exterior(grid, old, new)`. `grid` must be a list of equally sized lists; an empty grid and zero-width rows are valid. Return a deep copy in which only cells equal to `old` that are connected orthogonally to a boundary cell equal to `old` are replaced with independent deep copies of `new`. Enclosed matching regions must remain unchanged. If `old == new`, still return a deep copy. Never mutate or alias mutable cells from the input. The implementation has one semantic bug. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    for row in range(len(result)):\n        for column in range(width):\n            if result[row][column] == old:\n                result[row][column] = deepcopy(new)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0212",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    for row in range(len(result)):\n        for column in range(width):\n            if result[row][column] == old:\n                result[row][column] = deepcopy(new)\n    return result\n",
+          "label": "all matching cells are repainted, including regions not connected to the boundary",
+          "sha256": "7abb0c5eb5cf63a7d5c22bfd3d2ba114f4608f916a0e6ef16b2978f0134b7e79"
+        }
+      ],
+      "reference": {
+        "code": "from collections import deque\nfrom copy import deepcopy\n\n\ndef repaint_exterior(grid, old, new):\n    if not isinstance(grid, list):\n        raise TypeError(\"grid must be a list\")\n    if any(not isinstance(row, list) for row in grid):\n        raise TypeError(\"rows must be lists\")\n    if not grid:\n        return []\n    width = len(grid[0])\n    if any(len(row) != width for row in grid):\n        raise ValueError(\"grid must be rectangular\")\n\n    result = deepcopy(grid)\n    height = len(result)\n    if width == 0:\n        return result\n\n    queue = deque()\n    visited = set()\n    for row in range(height):\n        queue.append((row, 0))\n        queue.append((row, width - 1))\n    for column in range(width):\n        queue.append((0, column))\n        queue.append((height - 1, column))\n\n    while queue:\n        row, column = queue.popleft()\n        if (row, column) in visited:\n            continue\n        visited.add((row, column))\n        if result[row][column] != old:\n            continue\n        result[row][column] = deepcopy(new)\n        for next_row, next_column in (\n            (row - 1, column),\n            (row + 1, column),\n            (row, column - 1),\n            (row, column + 1),\n        ):\n            if 0 <= next_row < height and 0 <= next_column < width:\n                queue.append((next_row, next_column))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4e99145201a963f7407ce508144359968277d2e6102d4e7d4dead12d639b2512"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "FF\n======================================================================\nFAIL: test_finite_deep_cell (__main__.Probe.test_finite_deep_cell)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 19, in test_finite_deep_cell\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n======================================================================\nFAIL: test_independent_replacements_shared_input_rows (__main__.Probe.test_independent_replacements_shared_input_rows)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_independent_replacements_shared_input_rows\n    self.assertIsNot(result[0][0], result[1][0])\nAssertionError: unexpectedly identical: {'items': []}\n\n----------------------------------------------------------------------\nRan 2 tests in 0.007s\n\nFAILED (failures=2)\n",
+    "stderr_sha256": "efb6006239670d1a407a5e1bff00556fa9ee1c19b1f64917007e0f6693b5ed65",
+    "duration_ms": 1137,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

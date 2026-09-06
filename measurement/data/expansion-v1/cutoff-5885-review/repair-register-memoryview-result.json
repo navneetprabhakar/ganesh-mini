@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0223",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9eff50de4b0e353e476ba0dd26557765394b4c877b6201c29c7f14acc6457e16",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import encode_register_write\n\nclass Probe(unittest.TestCase):\n    def test_bytes_like_memoryview_rejected(self):\n        with self.assertRaises(ValueError):\n            encode_register_write(0, memoryview(b'a'))\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "a51a61e9d6131c6953be89ecb1f564360a96cb4938e206376c6416693840f804"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f7631c90ed8d08cedb2bc59de03296f83dbc27700303081b2a82bcecf42d8cad",
+      "text": "The complete `solution.py` below defines `encode_register_write(register, values)`, which must return an immutable command packet.\n\nRequirements:\n- `register` must be a non-boolean integer from 0 through 255; otherwise raise `ValueError`.\n- `values` must be an iterable of non-boolean integers from 0 through 255. Text strings and bytes-like objects are malformed and must raise `ValueError`.\n- There must be from 1 through 255 values; otherwise raise `ValueError`.\n- Return `bytes([0xA5, register, count, *values, checksum])`, where `checksum` is the sum of `register`, `count`, and every value, reduced modulo 256.\n- Consume a one-shot iterable only once and do not mutate any input.\n\nThe implementation contains one semantic bug. Return the corrected complete source file without changing the API.\n\n```python\ndef encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = sum(data) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f7631c90ed8d08cedb2bc59de03296f83dbc27700303081b2a82bcecf42d8cad",
+      "text": "The complete `solution.py` below defines `encode_register_write(register, values)`, which must return an immutable command packet.\n\nRequirements:\n- `register` must be a non-boolean integer from 0 through 255; otherwise raise `ValueError`.\n- `values` must be an iterable of non-boolean integers from 0 through 255. Text strings and bytes-like objects are malformed and must raise `ValueError`.\n- There must be from 1 through 255 values; otherwise raise `ValueError`.\n- Return `bytes([0xA5, register, count, *values, checksum])`, where `checksum` is the sum of `register`, `count`, and every value, reduced modulo 256.\n- Consume a one-shot iterable only once and do not mutate any input.\n\nThe implementation contains one semantic bug. Return the corrected complete source file without changing the API.\n\n```python\ndef encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = sum(data) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0223",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = sum(data) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n",
+          "label": "Calculates the checksum without including the register and value-count fields.",
+          "sha256": "cb14c5809b3ccbc045dbe5438f3dc46f4e0d5c4f2bcb3b0abbd7ad5a98c148fd"
+        }
+      ],
+      "reference": {
+        "code": "def encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = (register + len(data) + sum(data)) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "95883f117ab7e0fe24eb17feb10b5e082cf4804d5688a3e81e1161829e1654d9"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import encode_register_write\n\n\nclass RegisterWriteTests(unittest.TestCase):\n    def test_packet_and_checksum_include_register_and_count(self):\n        self.assertEqual(encode_register_write(1, [2, 3]), bytes([0xA5, 1, 2, 2, 3, 8]))\n        self.assertEqual(encode_register_write(255, [255]), bytes([0xA5, 255, 1, 255, 255]))\n        self.assertIsInstance(encode_register_write(0, [0]), bytes)\n\n    def test_boundary_count_and_one_shot_iterable(self):\n        consumed = []\n        def values():\n            for value in range(255):\n                consumed.append(value)\n                yield value\n        packet = encode_register_write(0, values())\n        self.assertEqual(consumed, list(range(255)))\n        self.assertEqual(packet[:3], bytes([0xA5, 0, 255]))\n        self.assertEqual(packet[3:-1], bytes(range(255)))\n        self.assertEqual(packet[-1], (255 + sum(range(255))) % 256)\n\n    def test_does_not_mutate_input(self):\n        values = [1, 2, 3]\n        before = values[:]\n        encode_register_write(4, values)\n        self.assertEqual(values, before)\n\n    def test_invalid_register(self):\n        for register in (-1, 256, True, False, 1.0, \"1\", None):\n            with self.subTest(register=register):\n                with self.assertRaises(ValueError):\n                    encode_register_write(register, [1])\n\n    def test_invalid_values_container_count_or_element(self):\n        cases = [\"12\", b\"12\", bytearray(b\"12\"), None, 4, [], range(256),\n                 [True], [False], [-1], [256], [1.0], [\"1\"]]\n        for values in cases:\n            with self.subTest(values=values):\n                with self.assertRaises(ValueError):\n                    encode_register_write(0, values)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "ca561cf2db854c060e5c1edfd66d175e16fd2016cd2e029c26d0007ba1dbc886"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f7631c90ed8d08cedb2bc59de03296f83dbc27700303081b2a82bcecf42d8cad",
+      "text": "The complete `solution.py` below defines `encode_register_write(register, values)`, which must return an immutable command packet.\n\nRequirements:\n- `register` must be a non-boolean integer from 0 through 255; otherwise raise `ValueError`.\n- `values` must be an iterable of non-boolean integers from 0 through 255. Text strings and bytes-like objects are malformed and must raise `ValueError`.\n- There must be from 1 through 255 values; otherwise raise `ValueError`.\n- Return `bytes([0xA5, register, count, *values, checksum])`, where `checksum` is the sum of `register`, `count`, and every value, reduced modulo 256.\n- Consume a one-shot iterable only once and do not mutate any input.\n\nThe implementation contains one semantic bug. Return the corrected complete source file without changing the API.\n\n```python\ndef encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = sum(data) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f7631c90ed8d08cedb2bc59de03296f83dbc27700303081b2a82bcecf42d8cad",
+      "text": "The complete `solution.py` below defines `encode_register_write(register, values)`, which must return an immutable command packet.\n\nRequirements:\n- `register` must be a non-boolean integer from 0 through 255; otherwise raise `ValueError`.\n- `values` must be an iterable of non-boolean integers from 0 through 255. Text strings and bytes-like objects are malformed and must raise `ValueError`.\n- There must be from 1 through 255 values; otherwise raise `ValueError`.\n- Return `bytes([0xA5, register, count, *values, checksum])`, where `checksum` is the sum of `register`, `count`, and every value, reduced modulo 256.\n- Consume a one-shot iterable only once and do not mutate any input.\n\nThe implementation contains one semantic bug. Return the corrected complete source file without changing the API.\n\n```python\ndef encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = sum(data) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0223",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = sum(data) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n",
+          "label": "Calculates the checksum without including the register and value-count fields.",
+          "sha256": "cb14c5809b3ccbc045dbe5438f3dc46f4e0d5c4f2bcb3b0abbd7ad5a98c148fd"
+        }
+      ],
+      "reference": {
+        "code": "def encode_register_write(register, values):\n    if isinstance(register, bool) or not isinstance(register, int) or not 0 <= register <= 255:\n        raise ValueError(\"invalid register\")\n    if isinstance(values, (str, bytes, bytearray)):\n        raise ValueError(\"values must be an integer iterable\")\n    try:\n        data = list(values)\n    except TypeError as exc:\n        raise ValueError(\"values must be iterable\") from exc\n    if not 1 <= len(data) <= 255:\n        raise ValueError(\"invalid value count\")\n    if any(isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255 for value in data):\n        raise ValueError(\"invalid value\")\n    checksum = (register + len(data) + sum(data)) % 256\n    return bytes([0xA5, register, len(data), *data, checksum])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "95883f117ab7e0fe24eb17feb10b5e082cf4804d5688a3e81e1161829e1654d9"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_bytes_like_memoryview_rejected (__main__.Probe.test_bytes_like_memoryview_rejected)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 6, in test_bytes_like_memoryview_rejected\n    with self.assertRaises(ValueError):\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "25cdbfae29edaa92adda09168a84abe7cc4285e8da72e4ecf788f36bc7027c64",
+    "duration_ms": 444,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

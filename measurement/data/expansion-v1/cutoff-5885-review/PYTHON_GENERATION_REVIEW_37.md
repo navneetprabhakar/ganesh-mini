@@ -24,8 +24,8 @@ inspections. No seven-criterion approval. Continue position 556.
 | 555 | 0654 | Ordinary stage suffix, option validation/overrides and separate mutable containers agree. Scalar-subclass copying and unspecified bool position wording pending; no new hold. |
 
 Candidate SHA-256: `680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec`.
-Original candidates/tests/sample/partition unchanged. This batch awaits backup;
-last verified backup is through 674 holds / Python position 540.
+Original candidates/tests/sample/partition unchanged. This batch is backed up
+through 682 holds / Python position 570; see QUALITY_STRATUM_682_BACKUP.md.
 
 Six pinned Python 3.11.15 probes, network disabled/resource limited; all
 exit 1 without timeout. Holds are review items, not final rejections.

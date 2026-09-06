@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0687",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3213d97c81d3e9bbb48c42fc475ad74d36bb3c83bb53b2a514d7f68e8dbff51c",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import extract_dataset\n\n\nclass FrameIsolationTests(unittest.TestCase):\n    def test_extractor_cannot_mutate_caller_frame_through_argument(self):\n        frame = {\"values\": [1]}\n\n        def extractor(value):\n            value[\"values\"].append(2)\n            return value\n\n        extract_dataset([(\"x\", [frame])], extractor)\n        self.assertEqual(frame, {\"values\": [1]})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "cc768f267c9eb966898e29e85423d1f562256918ed3f8e6f6b8228bf493a39e4"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fe7ff2e17b49e81a430670cacb9301b8cf7bfe7947aec8851df247ac9b01310d",
+      "text": "Create `solution.py` with `extract_dataset(videos, extractor, actions=None) -> dict[str, list[object]]`. `videos` is an iterable of `(label, frames)` pairs, where `label` is a non-empty string and `frames` is iterable. For every frame, call `extractor(frame)`; a result of `None` is ignored, while any other result is saved under the label. `actions` is an optional mapping from `(video_index, frame_index)` to `\"save\"`, `\"skip\"`, or `\"quit\"`, with missing entries meaning `\"save\"`. `\"skip\"` stops the current video before processing that frame; `\"quit\"` stops all processing before that frame. Unknown actions raise `ValueError`, as do empty labels. Preserve video and frame order, merge repeated labels, and include a valid label with an empty list even if it produces no samples. Every saved sample must be deep-copied because the extractor may reuse and mutate the same object. Do not mutate or retain aliases to `videos`, `actions`, frames, or extractor results. Define this exact top-level API in `solution.py`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fe7ff2e17b49e81a430670cacb9301b8cf7bfe7947aec8851df247ac9b01310d",
+      "text": "Create `solution.py` with `extract_dataset(videos, extractor, actions=None) -> dict[str, list[object]]`. `videos` is an iterable of `(label, frames)` pairs, where `label` is a non-empty string and `frames` is iterable. For every frame, call `extractor(frame)`; a result of `None` is ignored, while any other result is saved under the label. `actions` is an optional mapping from `(video_index, frame_index)` to `\"save\"`, `\"skip\"`, or `\"quit\"`, with missing entries meaning `\"save\"`. `\"skip\"` stops the current video before processing that frame; `\"quit\"` stops all processing before that frame. Unknown actions raise `ValueError`, as do empty labels. Preserve video and frame order, merge repeated labels, and include a valid label with an empty list even if it produces no samples. Every saved sample must be deep-copied because the extractor may reuse and mutate the same object. Do not mutate or retain aliases to `videos`, `actions`, frames, or extractor results. Define this exact top-level API in `solution.py`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0687",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Callable, Iterable, Mapping\nfrom typing import Any\n\n\ndef extract_dataset(\n    videos: Iterable[tuple[str, Iterable[Any]]],\n    extractor: Callable[[Any], Any],\n    actions: Mapping[tuple[int, int], str] | None = None,\n) -> dict[str, list[object]]:\n    action_map = {} if actions is None else actions\n    result: dict[str, list[object]] = {}\n    quitting = False\n    for video_index, (label, frames) in enumerate(videos):\n        if not isinstance(label, str) or not label:\n            raise ValueError(\"labels must be non-empty strings\")\n        result.setdefault(label, [])\n        for frame_index, frame in enumerate(frames):\n            action = action_map.get((video_index, frame_index), \"save\")\n            if action not in {\"save\", \"skip\", \"quit\"}:\n                raise ValueError(f\"unknown action: {action}\")\n            if action == \"quit\":\n                quitting = True\n                break\n            if action == \"skip\":\n                break\n            sample = extractor(frame)\n            if sample is not None:\n                result[label].append(sample)\n        if quitting:\n            break\n    return result\n",
+          "label": "Saved extractor results are not deep-copied, so reuse of one mutable result object corrupts previously collected samples.",
+          "sha256": "2acd786c7456b7839274730e6e30baa79befbec3c56aa19457c4771e5caf1af6"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Callable, Iterable, Mapping\nfrom typing import Any\n\n\ndef extract_dataset(\n    videos: Iterable[tuple[str, Iterable[Any]]],\n    extractor: Callable[[Any], Any],\n    actions: Mapping[tuple[int, int], str] | None = None,\n) -> dict[str, list[object]]:\n    action_map = {} if actions is None else actions\n    result: dict[str, list[object]] = {}\n    quitting = False\n    for video_index, (label, frames) in enumerate(videos):\n        if not isinstance(label, str) or not label:\n            raise ValueError(\"labels must be non-empty strings\")\n        result.setdefault(label, [])\n        for frame_index, frame in enumerate(frames):\n            action = action_map.get((video_index, frame_index), \"save\")\n            if action not in {\"save\", \"skip\", \"quit\"}:\n                raise ValueError(f\"unknown action: {action}\")\n            if action == \"quit\":\n                quitting = True\n                break\n            if action == \"skip\":\n                break\n            sample = extractor(frame)\n            if sample is not None:\n                result[label].append(deepcopy(sample))\n        if quitting:\n            break\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "adc84b04bb414d2c9e76ec4c1743952dc3e6fbf12214d7d02fbf92bafbf9d633"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import extract_dataset\n\n\nclass ExtractDatasetTests(unittest.TestCase):\n    def test_extracts_in_order_merges_labels_and_ignores_none(self):\n        videos = [\n            (\"cat\", [1, 2, 3]),\n            (\"dog\", [4]),\n            (\"cat\", [5]),\n            (\"empty\", []),\n        ]\n        result = extract_dataset(videos, lambda frame: None if frame % 2 == 0 else frame * 10)\n        self.assertEqual(result, {\"cat\": [10, 30, 50], \"dog\": [], \"empty\": []})\n\n    def test_skip_stops_current_video_before_target_frame(self):\n        calls = []\n        videos = [(\"a\", [\"a0\", \"a1\", \"a2\"]), (\"b\", [\"b0\", \"b1\"])]\n        result = extract_dataset(\n            videos, lambda frame: calls.append(frame) or frame,\n            actions={(0, 1): \"skip\"}\n        )\n        self.assertEqual(calls, [\"a0\", \"b0\", \"b1\"])\n        self.assertEqual(result, {\"a\": [\"a0\"], \"b\": [\"b0\", \"b1\"]})\n\n    def test_quit_stops_all_processing_before_target_frame(self):\n        calls = []\n        videos = [(\"a\", [0, 1]), (\"b\", [2])]\n        result = extract_dataset(\n            videos, lambda frame: calls.append(frame) or frame,\n            actions={(0, 1): \"quit\"}\n        )\n        self.assertEqual(calls, [0])\n        self.assertEqual(result, {\"a\": [0]})\n\n    def test_missing_action_means_save_and_unknown_action_raises(self):\n        self.assertEqual(extract_dataset([(\"x\", [1])], lambda x: x, {}), {\"x\": [1]})\n        calls = []\n        with self.assertRaises(ValueError):\n            extract_dataset([(\"x\", [1])], lambda x: calls.append(x), {(0, 0): \"pause\"})\n        self.assertEqual(calls, [])\n\n    def test_empty_label_raises_even_for_empty_video(self):\n        with self.assertRaises(ValueError):\n            extract_dataset([(\"\", [])], lambda x: x)\n\n    def test_each_saved_sample_is_deep_copied(self):\n        shared = {\"values\": []}\n\n        def extractor(frame):\n            shared[\"values\"].clear()\n            shared[\"values\"].append(frame)\n            return shared\n\n        frames = [1, 2]\n        result = extract_dataset([(\"x\", frames)], extractor)\n        self.assertEqual(result, {\"x\": [{\"values\": [1]}, {\"values\": [2]}]})\n        shared[\"values\"].append(3)\n        frames.append(4)\n        self.assertEqual(result, {\"x\": [{\"values\": [1]}, {\"values\": [2]}]})\n        result[\"x\"][0][\"values\"].append(9)\n        self.assertEqual(result[\"x\"][1], {\"values\": [2]})\n\n    def test_accepts_one_shot_iterables(self):\n        videos = ((label, (x for x in frames)) for label, frames in [(\"x\", [1, 2])])\n        self.assertEqual(extract_dataset(videos, lambda x: x), {\"x\": [1, 2]})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "cc9f1dcdf3f02543eae7ace2c6b9142a66921d16dfa29626dc6cd3cc43e3d85e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fe7ff2e17b49e81a430670cacb9301b8cf7bfe7947aec8851df247ac9b01310d",
+      "text": "Create `solution.py` with `extract_dataset(videos, extractor, actions=None) -> dict[str, list[object]]`. `videos` is an iterable of `(label, frames)` pairs, where `label` is a non-empty string and `frames` is iterable. For every frame, call `extractor(frame)`; a result of `None` is ignored, while any other result is saved under the label. `actions` is an optional mapping from `(video_index, frame_index)` to `\"save\"`, `\"skip\"`, or `\"quit\"`, with missing entries meaning `\"save\"`. `\"skip\"` stops the current video before processing that frame; `\"quit\"` stops all processing before that frame. Unknown actions raise `ValueError`, as do empty labels. Preserve video and frame order, merge repeated labels, and include a valid label with an empty list even if it produces no samples. Every saved sample must be deep-copied because the extractor may reuse and mutate the same object. Do not mutate or retain aliases to `videos`, `actions`, frames, or extractor results. Define this exact top-level API in `solution.py`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fe7ff2e17b49e81a430670cacb9301b8cf7bfe7947aec8851df247ac9b01310d",
+      "text": "Create `solution.py` with `extract_dataset(videos, extractor, actions=None) -> dict[str, list[object]]`. `videos` is an iterable of `(label, frames)` pairs, where `label` is a non-empty string and `frames` is iterable. For every frame, call `extractor(frame)`; a result of `None` is ignored, while any other result is saved under the label. `actions` is an optional mapping from `(video_index, frame_index)` to `\"save\"`, `\"skip\"`, or `\"quit\"`, with missing entries meaning `\"save\"`. `\"skip\"` stops the current video before processing that frame; `\"quit\"` stops all processing before that frame. Unknown actions raise `ValueError`, as do empty labels. Preserve video and frame order, merge repeated labels, and include a valid label with an empty list even if it produces no samples. Every saved sample must be deep-copied because the extractor may reuse and mutate the same object. Do not mutate or retain aliases to `videos`, `actions`, frames, or extractor results. Define this exact top-level API in `solution.py`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0687",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Callable, Iterable, Mapping\nfrom typing import Any\n\n\ndef extract_dataset(\n    videos: Iterable[tuple[str, Iterable[Any]]],\n    extractor: Callable[[Any], Any],\n    actions: Mapping[tuple[int, int], str] | None = None,\n) -> dict[str, list[object]]:\n    action_map = {} if actions is None else actions\n    result: dict[str, list[object]] = {}\n    quitting = False\n    for video_index, (label, frames) in enumerate(videos):\n        if not isinstance(label, str) or not label:\n            raise ValueError(\"labels must be non-empty strings\")\n        result.setdefault(label, [])\n        for frame_index, frame in enumerate(frames):\n            action = action_map.get((video_index, frame_index), \"save\")\n            if action not in {\"save\", \"skip\", \"quit\"}:\n                raise ValueError(f\"unknown action: {action}\")\n            if action == \"quit\":\n                quitting = True\n                break\n            if action == \"skip\":\n                break\n            sample = extractor(frame)\n            if sample is not None:\n                result[label].append(sample)\n        if quitting:\n            break\n    return result\n",
+          "label": "Saved extractor results are not deep-copied, so reuse of one mutable result object corrupts previously collected samples.",
+          "sha256": "2acd786c7456b7839274730e6e30baa79befbec3c56aa19457c4771e5caf1af6"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Callable, Iterable, Mapping\nfrom typing import Any\n\n\ndef extract_dataset(\n    videos: Iterable[tuple[str, Iterable[Any]]],\n    extractor: Callable[[Any], Any],\n    actions: Mapping[tuple[int, int], str] | None = None,\n) -> dict[str, list[object]]:\n    action_map = {} if actions is None else actions\n    result: dict[str, list[object]] = {}\n    quitting = False\n    for video_index, (label, frames) in enumerate(videos):\n        if not isinstance(label, str) or not label:\n            raise ValueError(\"labels must be non-empty strings\")\n        result.setdefault(label, [])\n        for frame_index, frame in enumerate(frames):\n            action = action_map.get((video_index, frame_index), \"save\")\n            if action not in {\"save\", \"skip\", \"quit\"}:\n                raise ValueError(f\"unknown action: {action}\")\n            if action == \"quit\":\n                quitting = True\n                break\n            if action == \"skip\":\n                break\n            sample = extractor(frame)\n            if sample is not None:\n                result[label].append(deepcopy(sample))\n        if quitting:\n            break\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "adc84b04bb414d2c9e76ec4c1743952dc3e6fbf12214d7d02fbf92bafbf9d633"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_extractor_cannot_mutate_caller_frame_through_argument (__main__.FrameIsolationTests.test_extractor_cannot_mutate_caller_frame_through_argument)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_extractor_cannot_mutate_caller_frame_through_argument\n    self.assertEqual(frame, {\"values\": [1]})\nAssertionError: {'values': [1, 2]} != {'values': [1]}\n- {'values': [1, 2]}\n?              ---\n\n+ {'values': [1]}\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "afe8e430e57f5923932133692aded777673386163222a5146b1d2c165db5ef2d",
+    "duration_ms": 471,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

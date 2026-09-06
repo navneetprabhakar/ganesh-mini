@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0675",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a0e7d237dba62c8e6a269064ba1b655b4a87aaa36f56142523f3c3487fd748da",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import advance_actors\n\n\nclass ActorIdTypeTests(unittest.TestCase):\n    def test_nonstring_id_raises_type_error(self):\n        with self.assertRaises(TypeError):\n            advance_actors(2, 2, [{\"id\": 1, \"x\": 0, \"y\": 0}], {})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "e3e3fbddb015dc5b1b4dbf007ae826b7edc24576a32daae336112ce3aefeb6e6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "47b0900a714cb0b38430a7fd4d7925fe890c7481d1d5c536fa5dd2c4937482df",
+      "text": "Implement `advance_actors(width, height, actors, deltas)` in `solution.py`.\n\nThe board contains integer coordinates `0 <= x < width` and `0 <= y < height`; both dimensions must be positive non-boolean integers. `actors` is an iterable of dictionaries having exactly the keys `id`, `x`, and `y`. IDs must be unique non-empty strings and coordinates must be non-boolean integers already inside the board. `deltas` is a mapping from actor IDs to two-item integer sequences `(dx, dy)`; booleans are invalid, and unknown IDs are malformed.\n\nProcess actors in input order. An absent delta means `(0, 0)`. Apply both components atomically when the destination is inside the board; otherwise leave that actor at its original position. Actors do not block each other. Return a new list of new dictionaries in the original order. The function must not mutate its inputs, and no returned dictionary may alias an input dictionary. Empty actors and deltas are valid. Raise `TypeError` for wrong types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "47b0900a714cb0b38430a7fd4d7925fe890c7481d1d5c536fa5dd2c4937482df",
+      "text": "Implement `advance_actors(width, height, actors, deltas)` in `solution.py`.\n\nThe board contains integer coordinates `0 <= x < width` and `0 <= y < height`; both dimensions must be positive non-boolean integers. `actors` is an iterable of dictionaries having exactly the keys `id`, `x`, and `y`. IDs must be unique non-empty strings and coordinates must be non-boolean integers already inside the board. `deltas` is a mapping from actor IDs to two-item integer sequences `(dx, dy)`; booleans are invalid, and unknown IDs are malformed.\n\nProcess actors in input order. An absent delta means `(0, 0)`. Apply both components atomically when the destination is inside the board; otherwise leave that actor at its original position. Actors do not block each other. Return a new list of new dictionaries in the original order. The function must not mutate its inputs, and no returned dictionary may alias an input dictionary. Empty actors and deltas are valid. Raise `TypeError` for wrong types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0675",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\n\n\ndef advance_actors(width, height, actors, deltas):\n    for name, value in ((\"width\", width), (\"height\", height)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value <= 0:\n            raise ValueError(f\"{name} must be positive\")\n    if not isinstance(deltas, Mapping):\n        raise TypeError(\"deltas must be a mapping\")\n    try:\n        source = list(actors)\n    except TypeError as exc:\n        raise TypeError(\"actors must be iterable\") from exc\n    parsed = []\n    ids = set()\n    for actor in source:\n        if not isinstance(actor, dict):\n            raise TypeError(\"each actor must be a dictionary\")\n        if set(actor) != {\"id\", \"x\", \"y\"}:\n            raise ValueError(\"actor keys must be id, x, and y\")\n        actor_id, x, y = actor[\"id\"], actor[\"x\"], actor[\"y\"]\n        if not isinstance(actor_id, str) or not actor_id or actor_id in ids:\n            raise ValueError(\"actor IDs must be unique non-empty strings\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in (x, y)):\n            raise TypeError(\"coordinates must be integers\")\n        if not (0 <= x < width and 0 <= y < height):\n            raise ValueError(\"actor is outside the board\")\n        ids.add(actor_id)\n        parsed.append((actor_id, x, y))\n    if any(actor_id not in ids for actor_id in deltas):\n        raise ValueError(\"delta references an unknown actor\")\n    moves = {}\n    for actor_id, delta in deltas.items():\n        if isinstance(delta, (str, bytes)):\n            raise TypeError(\"delta must be a pair\")\n        try:\n            pair = tuple(delta)\n        except TypeError as exc:\n            raise TypeError(\"delta must be a pair\") from exc\n        if len(pair) != 2:\n            raise ValueError(\"delta must contain two values\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in pair):\n            raise TypeError(\"delta values must be integers\")\n        moves[actor_id] = pair\n    result = []\n    for actor_id, x, y in parsed:\n        dx, dy = moves.get(actor_id, (0, 0))\n        nx, ny = x + dx, y + dy\n        if 0 <= nx <= width and 0 <= ny <= height:\n            x, y = nx, ny\n        result.append({\"id\": actor_id, \"x\": x, \"y\": y})\n    return result\n",
+          "label": "Movement incorrectly treats coordinates equal to the board dimensions as in bounds.",
+          "sha256": "e3eb0036cf4d1743191552335d653ee05bd461266ac3a4f4d62f2c4354d94bcb"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\n\n\ndef advance_actors(width, height, actors, deltas):\n    for name, value in ((\"width\", width), (\"height\", height)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value <= 0:\n            raise ValueError(f\"{name} must be positive\")\n    if not isinstance(deltas, Mapping):\n        raise TypeError(\"deltas must be a mapping\")\n    try:\n        source = list(actors)\n    except TypeError as exc:\n        raise TypeError(\"actors must be iterable\") from exc\n    parsed = []\n    ids = set()\n    for actor in source:\n        if not isinstance(actor, dict):\n            raise TypeError(\"each actor must be a dictionary\")\n        if set(actor) != {\"id\", \"x\", \"y\"}:\n            raise ValueError(\"actor keys must be id, x, and y\")\n        actor_id, x, y = actor[\"id\"], actor[\"x\"], actor[\"y\"]\n        if not isinstance(actor_id, str) or not actor_id or actor_id in ids:\n            raise ValueError(\"actor IDs must be unique non-empty strings\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in (x, y)):\n            raise TypeError(\"coordinates must be integers\")\n        if not (0 <= x < width and 0 <= y < height):\n            raise ValueError(\"actor is outside the board\")\n        ids.add(actor_id)\n        parsed.append((actor_id, x, y))\n    if any(actor_id not in ids for actor_id in deltas):\n        raise ValueError(\"delta references an unknown actor\")\n    moves = {}\n    for actor_id, delta in deltas.items():\n        if isinstance(delta, (str, bytes)):\n            raise TypeError(\"delta must be a pair\")\n        try:\n            pair = tuple(delta)\n        except TypeError as exc:\n            raise TypeError(\"delta must be a pair\") from exc\n        if len(pair) != 2:\n            raise ValueError(\"delta must contain two values\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in pair):\n            raise TypeError(\"delta values must be integers\")\n        moves[actor_id] = pair\n    result = []\n    for actor_id, x, y in parsed:\n        dx, dy = moves.get(actor_id, (0, 0))\n        nx, ny = x + dx, y + dy\n        if 0 <= nx < width and 0 <= ny < height:\n            x, y = nx, ny\n        result.append({\"id\": actor_id, \"x\": x, \"y\": y})\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "de295f0031c47ceab84e35be2ad4ded53b9e6595fbe5f77dfec0aaef4fe5bf89"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import UserDict\n\nfrom solution import advance_actors\n\n\nclass AdvanceActorsTests(unittest.TestCase):\n    def test_moves_are_atomic_ordered_and_nonblocking(self):\n        actors = [\n            {\"id\": \"a\", \"x\": 0, \"y\": 0},\n            {\"id\": \"b\", \"x\": 1, \"y\": 1},\n            {\"id\": \"c\", \"x\": 2, \"y\": 2},\n        ]\n        deltas = {\"a\": (1, 1), \"b\": [1, 0], \"c\": (1, -1)}\n        actors_before = [item.copy() for item in actors]\n        deltas_before = {key: value[:] if isinstance(value, list) else value for key, value in deltas.items()}\n\n        result = advance_actors(3, 3, actors, deltas)\n        self.assertEqual(result, [\n            {\"id\": \"a\", \"x\": 1, \"y\": 1},\n            {\"id\": \"b\", \"x\": 2, \"y\": 1},\n            {\"id\": \"c\", \"x\": 2, \"y\": 2},\n        ])\n        self.assertEqual(actors, actors_before)\n        self.assertEqual(deltas, deltas_before)\n        self.assertTrue(all(out is not source for out, source in zip(result, actors)))\n\n    def test_absent_delta_generators_and_empty_inputs(self):\n        actors = ({\"id\": str(i), \"x\": i, \"y\": 0} for i in range(2))\n        self.assertEqual(advance_actors(2, 1, actors, UserDict({\"0\": (0, 0)})), [\n            {\"id\": \"0\", \"x\": 0, \"y\": 0},\n            {\"id\": \"1\", \"x\": 1, \"y\": 0},\n        ])\n        self.assertEqual(advance_actors(1, 1, [], {}), [])\n\n    def test_invalid_dimensions_and_top_level_types(self):\n        for width, height in ((0, 1), (1, 0), (-1, 2)):\n            with self.assertRaises(ValueError):\n                advance_actors(width, height, [], {})\n        for width, height in ((True, 1), (1, False), (1.0, 1), (1, \"2\")):\n            with self.assertRaises(TypeError):\n                advance_actors(width, height, [], {})\n        with self.assertRaises(TypeError):\n            advance_actors(2, 2, None, {})\n        with self.assertRaises(TypeError):\n            advance_actors(2, 2, [], [])\n\n    def test_malformed_actors(self):\n        cases = (\n            [{\"id\": \"\", \"x\": 0, \"y\": 0}],\n            [{\"id\": 1, \"x\": 0, \"y\": 0}],\n            [{\"id\": \"a\", \"x\": True, \"y\": 0}],\n            [{\"id\": \"a\", \"x\": 2, \"y\": 0}],\n            [{\"id\": \"a\", \"x\": 0}],\n            [{\"id\": \"a\", \"x\": 0, \"y\": 0, \"extra\": 1}],\n            [{\"id\": \"a\", \"x\": 0, \"y\": 0}, {\"id\": \"a\", \"x\": 1, \"y\": 1}],\n        )\n        for actors in cases:\n            with self.assertRaises((TypeError, ValueError)):\n                advance_actors(2, 2, actors, {})\n        with self.assertRaises(TypeError):\n            advance_actors(2, 2, [(\"a\", 0, 0)], {})\n\n    def test_malformed_deltas(self):\n        actor = [{\"id\": \"a\", \"x\": 0, \"y\": 0}]\n        for deltas in (\n            {\"unknown\": (0, 0)},\n            {\"a\": (1,)},\n            {\"a\": (1, 2, 3)},\n            {\"a\": (True, 0)},\n            {\"a\": (1.0, 0)},\n            {\"a\": None},\n        ):\n            with self.assertRaises((TypeError, ValueError)):\n                advance_actors(2, 2, actor, deltas)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "aa94895f356a391e2cb0aa4902accaeb5f048d08a28b07ebb4c21c4514e67a4c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "47b0900a714cb0b38430a7fd4d7925fe890c7481d1d5c536fa5dd2c4937482df",
+      "text": "Implement `advance_actors(width, height, actors, deltas)` in `solution.py`.\n\nThe board contains integer coordinates `0 <= x < width` and `0 <= y < height`; both dimensions must be positive non-boolean integers. `actors` is an iterable of dictionaries having exactly the keys `id`, `x`, and `y`. IDs must be unique non-empty strings and coordinates must be non-boolean integers already inside the board. `deltas` is a mapping from actor IDs to two-item integer sequences `(dx, dy)`; booleans are invalid, and unknown IDs are malformed.\n\nProcess actors in input order. An absent delta means `(0, 0)`. Apply both components atomically when the destination is inside the board; otherwise leave that actor at its original position. Actors do not block each other. Return a new list of new dictionaries in the original order. The function must not mutate its inputs, and no returned dictionary may alias an input dictionary. Empty actors and deltas are valid. Raise `TypeError` for wrong types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "47b0900a714cb0b38430a7fd4d7925fe890c7481d1d5c536fa5dd2c4937482df",
+      "text": "Implement `advance_actors(width, height, actors, deltas)` in `solution.py`.\n\nThe board contains integer coordinates `0 <= x < width` and `0 <= y < height`; both dimensions must be positive non-boolean integers. `actors` is an iterable of dictionaries having exactly the keys `id`, `x`, and `y`. IDs must be unique non-empty strings and coordinates must be non-boolean integers already inside the board. `deltas` is a mapping from actor IDs to two-item integer sequences `(dx, dy)`; booleans are invalid, and unknown IDs are malformed.\n\nProcess actors in input order. An absent delta means `(0, 0)`. Apply both components atomically when the destination is inside the board; otherwise leave that actor at its original position. Actors do not block each other. Return a new list of new dictionaries in the original order. The function must not mutate its inputs, and no returned dictionary may alias an input dictionary. Empty actors and deltas are valid. Raise `TypeError` for wrong types and `ValueError` for malformed values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0675",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\n\n\ndef advance_actors(width, height, actors, deltas):\n    for name, value in ((\"width\", width), (\"height\", height)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value <= 0:\n            raise ValueError(f\"{name} must be positive\")\n    if not isinstance(deltas, Mapping):\n        raise TypeError(\"deltas must be a mapping\")\n    try:\n        source = list(actors)\n    except TypeError as exc:\n        raise TypeError(\"actors must be iterable\") from exc\n    parsed = []\n    ids = set()\n    for actor in source:\n        if not isinstance(actor, dict):\n            raise TypeError(\"each actor must be a dictionary\")\n        if set(actor) != {\"id\", \"x\", \"y\"}:\n            raise ValueError(\"actor keys must be id, x, and y\")\n        actor_id, x, y = actor[\"id\"], actor[\"x\"], actor[\"y\"]\n        if not isinstance(actor_id, str) or not actor_id or actor_id in ids:\n            raise ValueError(\"actor IDs must be unique non-empty strings\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in (x, y)):\n            raise TypeError(\"coordinates must be integers\")\n        if not (0 <= x < width and 0 <= y < height):\n            raise ValueError(\"actor is outside the board\")\n        ids.add(actor_id)\n        parsed.append((actor_id, x, y))\n    if any(actor_id not in ids for actor_id in deltas):\n        raise ValueError(\"delta references an unknown actor\")\n    moves = {}\n    for actor_id, delta in deltas.items():\n        if isinstance(delta, (str, bytes)):\n            raise TypeError(\"delta must be a pair\")\n        try:\n            pair = tuple(delta)\n        except TypeError as exc:\n            raise TypeError(\"delta must be a pair\") from exc\n        if len(pair) != 2:\n            raise ValueError(\"delta must contain two values\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in pair):\n            raise TypeError(\"delta values must be integers\")\n        moves[actor_id] = pair\n    result = []\n    for actor_id, x, y in parsed:\n        dx, dy = moves.get(actor_id, (0, 0))\n        nx, ny = x + dx, y + dy\n        if 0 <= nx <= width and 0 <= ny <= height:\n            x, y = nx, ny\n        result.append({\"id\": actor_id, \"x\": x, \"y\": y})\n    return result\n",
+          "label": "Movement incorrectly treats coordinates equal to the board dimensions as in bounds.",
+          "sha256": "e3eb0036cf4d1743191552335d653ee05bd461266ac3a4f4d62f2c4354d94bcb"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\n\n\ndef advance_actors(width, height, actors, deltas):\n    for name, value in ((\"width\", width), (\"height\", height)):\n        if isinstance(value, bool) or not isinstance(value, int):\n            raise TypeError(f\"{name} must be an integer\")\n        if value <= 0:\n            raise ValueError(f\"{name} must be positive\")\n    if not isinstance(deltas, Mapping):\n        raise TypeError(\"deltas must be a mapping\")\n    try:\n        source = list(actors)\n    except TypeError as exc:\n        raise TypeError(\"actors must be iterable\") from exc\n    parsed = []\n    ids = set()\n    for actor in source:\n        if not isinstance(actor, dict):\n            raise TypeError(\"each actor must be a dictionary\")\n        if set(actor) != {\"id\", \"x\", \"y\"}:\n            raise ValueError(\"actor keys must be id, x, and y\")\n        actor_id, x, y = actor[\"id\"], actor[\"x\"], actor[\"y\"]\n        if not isinstance(actor_id, str) or not actor_id or actor_id in ids:\n            raise ValueError(\"actor IDs must be unique non-empty strings\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in (x, y)):\n            raise TypeError(\"coordinates must be integers\")\n        if not (0 <= x < width and 0 <= y < height):\n            raise ValueError(\"actor is outside the board\")\n        ids.add(actor_id)\n        parsed.append((actor_id, x, y))\n    if any(actor_id not in ids for actor_id in deltas):\n        raise ValueError(\"delta references an unknown actor\")\n    moves = {}\n    for actor_id, delta in deltas.items():\n        if isinstance(delta, (str, bytes)):\n            raise TypeError(\"delta must be a pair\")\n        try:\n            pair = tuple(delta)\n        except TypeError as exc:\n            raise TypeError(\"delta must be a pair\") from exc\n        if len(pair) != 2:\n            raise ValueError(\"delta must contain two values\")\n        if any(isinstance(v, bool) or not isinstance(v, int) for v in pair):\n            raise TypeError(\"delta values must be integers\")\n        moves[actor_id] = pair\n    result = []\n    for actor_id, x, y in parsed:\n        dx, dy = moves.get(actor_id, (0, 0))\n        nx, ny = x + dx, y + dy\n        if 0 <= nx < width and 0 <= ny < height:\n            x, y = nx, ny\n        result.append({\"id\": actor_id, \"x\": x, \"y\": y})\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "de295f0031c47ceab84e35be2ad4ded53b9e6595fbe5f77dfec0aaef4fe5bf89"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_nonstring_id_raises_type_error (__main__.ActorIdTypeTests.test_nonstring_id_raises_type_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_nonstring_id_raises_type_error\n    advance_actors(2, 2, [{\"id\": 1, \"x\": 0, \"y\": 0}], {})\n  File \"/work/solution.py\", line 25, in advance_actors\n    raise ValueError(\"actor IDs must be unique non-empty strings\")\nValueError: actor IDs must be unique non-empty strings\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "16e80b09c0408abf6ff52d4039d10a3151ac6717c84c76fb39aa4b9ed0bd70ae",
+    "duration_ms": 406,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

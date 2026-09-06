@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0665",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b31899a540db0201cdec95e9a00001ad7b6b94f76c7cf6f895b7dff1db6fdefe",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import upgrade_rows\n\n\nclass DistinctRowIdTests(unittest.TestCase):\n    def test_repeated_input_record_receives_distinct_position_ids(self):\n        shared = {\"name\": \"same\"}\n        result = upgrade_rows([shared, shared])\n        self.assertEqual([row[\"unique_id\"] for row in result], [\"I\" + \"0\" * 31, \"I\" + \"0\" * 30 + \"1\"])\n        self.assertEqual(shared, {\"name\": \"same\"})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "a7941c7fa30870a64e05773f9292b1bf5752e016f1e3bd3cc707a014e83dbdcc"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "928a7c76342bd264f2bda35ea41250a6e1ffd723c788f494b1dc8f9528c51009",
+      "text": "Create `solution.py` with `upgrade_rows(rows)` and `downgrade_rows(rows)`. `rows` must be a list of dictionaries. `upgrade_rows` must return a deep-copied list in the same order, adding a `unique_id` to each row. Reject input rows already containing that key with `ValueError`. IDs must be deterministic, distinct, and exactly 32 characters: uppercase `I` followed by the row's zero-based index encoded as 31 lowercase hexadecimal digits. `downgrade_rows` must return a deep-copied list in the same order with `unique_id` removed when present. Raise `TypeError` for a non-list or non-dictionary row. Neither function may mutate, retain, or alias any part of its input, including nested values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "928a7c76342bd264f2bda35ea41250a6e1ffd723c788f494b1dc8f9528c51009",
+      "text": "Create `solution.py` with `upgrade_rows(rows)` and `downgrade_rows(rows)`. `rows` must be a list of dictionaries. `upgrade_rows` must return a deep-copied list in the same order, adding a `unique_id` to each row. Reject input rows already containing that key with `ValueError`. IDs must be deterministic, distinct, and exactly 32 characters: uppercase `I` followed by the row's zero-based index encoded as 31 lowercase hexadecimal digits. `downgrade_rows` must return a deep-copied list in the same order with `unique_id` removed when present. Raise `TypeError` for a non-list or non-dictionary row. Neither function may mutate, retain, or alias any part of its input, including nested values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0665",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef _validate_rows(rows):\n    if type(rows) is not list:\n        raise TypeError(\"rows must be a list\")\n    if any(type(row) is not dict for row in rows):\n        raise TypeError(\"each row must be a dictionary\")\n\n\ndef upgrade_rows(rows):\n    _validate_rows(rows)\n    if any(\"unique_id\" in row for row in rows):\n        raise ValueError(\"row already has unique_id\")\n    result = list(rows)\n    for index, row in enumerate(result):\n        encoded = format(index, \"031x\")\n        if len(encoded) != 31:\n            raise ValueError(\"too many rows to encode\")\n        row[\"unique_id\"] = \"I\" + encoded\n    return result\n\n\ndef downgrade_rows(rows):\n    _validate_rows(rows)\n    result = deepcopy(rows)\n    for row in result:\n        row.pop(\"unique_id\", None)\n    return result\n",
+          "label": "The upgrade makes only a shallow list copy, so adding identifiers mutates the caller's row dictionaries.",
+          "sha256": "5758e663573f17223d405c2ce5a3496fd718b0027f55f7f178bfa802132ab48e"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef _validate_rows(rows):\n    if type(rows) is not list:\n        raise TypeError(\"rows must be a list\")\n    if any(type(row) is not dict for row in rows):\n        raise TypeError(\"each row must be a dictionary\")\n\n\ndef upgrade_rows(rows):\n    _validate_rows(rows)\n    if any(\"unique_id\" in row for row in rows):\n        raise ValueError(\"row already has unique_id\")\n    result = deepcopy(rows)\n    for index, row in enumerate(result):\n        encoded = format(index, \"031x\")\n        if len(encoded) != 31:\n            raise ValueError(\"too many rows to encode\")\n        row[\"unique_id\"] = \"I\" + encoded\n    return result\n\n\ndef downgrade_rows(rows):\n    _validate_rows(rows)\n    result = deepcopy(rows)\n    for row in result:\n        row.pop(\"unique_id\", None)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a5171fa1e09837832c4b5a0d33d84857173d5b320e05b84a4bc3bc0525d3b0cf"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import downgrade_rows, upgrade_rows\n\n\nclass RowMigrationTests(unittest.TestCase):\n    def test_upgrade_adds_deterministic_ids_in_order(self):\n        rows = [{\"name\": \"alpha\"}, {\"name\": \"beta\"}, {}]\n        result = upgrade_rows(rows)\n        self.assertEqual(result, [\n            {\"name\": \"alpha\", \"unique_id\": \"I\" + \"0\" * 31},\n            {\"name\": \"beta\", \"unique_id\": \"I\" + \"0\" * 30 + \"1\"},\n            {\"unique_id\": \"I\" + \"0\" * 30 + \"2\"},\n        ])\n        ids = [row[\"unique_id\"] for row in result]\n        self.assertEqual(len(set(ids)), 3)\n        for value in ids:\n            self.assertEqual(len(value), 32)\n            self.assertEqual(value[0], \"I\")\n            self.assertEqual(value[1:], value[1:].lower())\n            int(value[1:], 16)\n\n    def test_hexadecimal_index_encoding(self):\n        result = upgrade_rows([{} for _ in range(17)])\n        self.assertEqual(result[15][\"unique_id\"], \"I\" + \"0\" * 30 + \"f\")\n        self.assertEqual(result[16][\"unique_id\"], \"I\" + \"0\" * 29 + \"10\")\n\n    def test_downgrade_removes_ids_when_present(self):\n        rows = [\n            {\"unique_id\": \"anything\", \"name\": \"a\"},\n            {\"name\": \"b\"},\n            {\"unique_id\": None},\n        ]\n        self.assertEqual(downgrade_rows(rows), [{\"name\": \"a\"}, {\"name\": \"b\"}, {}])\n\n    def test_empty_lists(self):\n        self.assertEqual(upgrade_rows([]), [])\n        self.assertEqual(downgrade_rows([]), [])\n\n    def test_upgrade_rejects_existing_key_without_mutation(self):\n        rows = [{\"name\": \"ok\"}, {\"unique_id\": \"existing\", \"nested\": [1]}]\n        snapshot = [{\"name\": \"ok\"}, {\"unique_id\": \"existing\", \"nested\": [1]}]\n        with self.assertRaises(ValueError):\n            upgrade_rows(rows)\n        self.assertEqual(rows, snapshot)\n\n    def test_container_validation(self):\n        for function in (upgrade_rows, downgrade_rows):\n            for bad in (None, (), {}, \"rows\"):\n                with self.subTest(function=function.__name__, bad=bad):\n                    with self.assertRaises(TypeError):\n                        function(bad)\n            for bad_row in (None, [], \"row\", 1):\n                with self.subTest(function=function.__name__, bad_row=bad_row):\n                    with self.assertRaises(TypeError):\n                        function([{}, bad_row])\n\n    def test_upgrade_deep_copies_without_aliasing_input(self):\n        nested = {\"items\": [[1, 2], {\"key\": [3]}]}\n        rows = [{\"nested\": nested}]\n        result = upgrade_rows(rows)\n        self.assertIsNot(result, rows)\n        self.assertIsNot(result[0], rows[0])\n        self.assertIsNot(result[0][\"nested\"], nested)\n        result[0][\"nested\"][\"items\"][0].append(99)\n        result[0][\"nested\"][\"items\"][1][\"key\"].append(88)\n        self.assertEqual(rows, [{\"nested\": {\"items\": [[1, 2], {\"key\": [3]}]}}])\n        rows[0][\"nested\"][\"items\"][0].append(77)\n        self.assertEqual(result[0][\"nested\"][\"items\"][0], [1, 2, 99])\n\n    def test_downgrade_deep_copies_without_aliasing_input(self):\n        rows = [{\"unique_id\": \"id\", \"nested\": {\"values\": [1, 2]}}]\n        result = downgrade_rows(rows)\n        result[0][\"nested\"][\"values\"].append(3)\n        self.assertEqual(rows, [{\"unique_id\": \"id\", \"nested\": {\"values\": [1, 2]}}])\n        rows[0][\"nested\"][\"values\"].append(4)\n        self.assertEqual(result, [{\"nested\": {\"values\": [1, 2, 3]}}])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "db26114166870ccf890ab2e51a54a32b430ac4ba8121cc268cfa15b762c8235f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "928a7c76342bd264f2bda35ea41250a6e1ffd723c788f494b1dc8f9528c51009",
+      "text": "Create `solution.py` with `upgrade_rows(rows)` and `downgrade_rows(rows)`. `rows` must be a list of dictionaries. `upgrade_rows` must return a deep-copied list in the same order, adding a `unique_id` to each row. Reject input rows already containing that key with `ValueError`. IDs must be deterministic, distinct, and exactly 32 characters: uppercase `I` followed by the row's zero-based index encoded as 31 lowercase hexadecimal digits. `downgrade_rows` must return a deep-copied list in the same order with `unique_id` removed when present. Raise `TypeError` for a non-list or non-dictionary row. Neither function may mutate, retain, or alias any part of its input, including nested values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "928a7c76342bd264f2bda35ea41250a6e1ffd723c788f494b1dc8f9528c51009",
+      "text": "Create `solution.py` with `upgrade_rows(rows)` and `downgrade_rows(rows)`. `rows` must be a list of dictionaries. `upgrade_rows` must return a deep-copied list in the same order, adding a `unique_id` to each row. Reject input rows already containing that key with `ValueError`. IDs must be deterministic, distinct, and exactly 32 characters: uppercase `I` followed by the row's zero-based index encoded as 31 lowercase hexadecimal digits. `downgrade_rows` must return a deep-copied list in the same order with `unique_id` removed when present. Raise `TypeError` for a non-list or non-dictionary row. Neither function may mutate, retain, or alias any part of its input, including nested values.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0665",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef _validate_rows(rows):\n    if type(rows) is not list:\n        raise TypeError(\"rows must be a list\")\n    if any(type(row) is not dict for row in rows):\n        raise TypeError(\"each row must be a dictionary\")\n\n\ndef upgrade_rows(rows):\n    _validate_rows(rows)\n    if any(\"unique_id\" in row for row in rows):\n        raise ValueError(\"row already has unique_id\")\n    result = list(rows)\n    for index, row in enumerate(result):\n        encoded = format(index, \"031x\")\n        if len(encoded) != 31:\n            raise ValueError(\"too many rows to encode\")\n        row[\"unique_id\"] = \"I\" + encoded\n    return result\n\n\ndef downgrade_rows(rows):\n    _validate_rows(rows)\n    result = deepcopy(rows)\n    for row in result:\n        row.pop(\"unique_id\", None)\n    return result\n",
+          "label": "The upgrade makes only a shallow list copy, so adding identifiers mutates the caller's row dictionaries.",
+          "sha256": "5758e663573f17223d405c2ce5a3496fd718b0027f55f7f178bfa802132ab48e"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef _validate_rows(rows):\n    if type(rows) is not list:\n        raise TypeError(\"rows must be a list\")\n    if any(type(row) is not dict for row in rows):\n        raise TypeError(\"each row must be a dictionary\")\n\n\ndef upgrade_rows(rows):\n    _validate_rows(rows)\n    if any(\"unique_id\" in row for row in rows):\n        raise ValueError(\"row already has unique_id\")\n    result = deepcopy(rows)\n    for index, row in enumerate(result):\n        encoded = format(index, \"031x\")\n        if len(encoded) != 31:\n            raise ValueError(\"too many rows to encode\")\n        row[\"unique_id\"] = \"I\" + encoded\n    return result\n\n\ndef downgrade_rows(rows):\n    _validate_rows(rows)\n    result = deepcopy(rows)\n    for row in result:\n        row.pop(\"unique_id\", None)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a5171fa1e09837832c4b5a0d33d84857173d5b320e05b84a4bc3bc0525d3b0cf"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_repeated_input_record_receives_distinct_position_ids (__main__.DistinctRowIdTests.test_repeated_input_record_receives_distinct_position_ids)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_repeated_input_record_receives_distinct_position_ids\n    self.assertEqual([row[\"unique_id\"] for row in result], [\"I\" + \"0\" * 31, \"I\" + \"0\" * 30 + \"1\"])\nAssertionError: Lists differ: ['I0000000000000000000000000000001', 'I0000000000000000000000000000001'] != ['I0000000000000000000000000000000', 'I0000000000000000000000000000001']\n\nFirst differing element 0:\n'I0000000000000000000000000000001'\n'I0000000000000000000000000000000'\n\n- ['I0000000000000000000000000000001', 'I0000000000000000000000000000001']\n?                                  ^\n\n+ ['I0000000000000000000000000000000', 'I0000000000000000000000000000001']\n?                                  ^\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "9aa83db3cdf07e84bf0ed5555168bd9a35c8ba8dca011d072112390b15e81497",
+    "duration_ms": 430,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

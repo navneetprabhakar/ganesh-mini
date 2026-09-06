@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0661",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "99f12441d2dfdda2fabeb9927288baa14439f4130d957f0e5ec9f15625db43ea",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import sys\nimport unittest\n\nfrom solution import TokenRule\n\n\nclass ComplexityTests(unittest.TestCase):\n    def test_adversarial_suffix_does_not_repeat_quadratic_work(self):\n        counts = []\n        target = TokenRule.accepts.__code__\n        for size in (128, 256, 512):\n            count = 0\n\n            def trace(frame, event, arg):\n                nonlocal count\n                if frame.f_code is target and event == \"line\":\n                    count += 1\n                return trace\n\n            sys.settrace(trace)\n            try:\n                result = TokenRule().accepts([\"a\"] * (2 * size), [Ellipsis] + [\"a\"] * size + [\"b\"])\n            finally:\n                sys.settrace(None)\n            self.assertFalse(result)\n            counts.append(count)\n        print(\"accepts line events at suffix sizes 128,256,512:\", counts)\n        # Both input dimensions double. Near-fourfold repeated work contradicts\n        # the required linear bound; this is an operation-count probe, not timing.\n        self.assertLess(counts[2], 2.5 * counts[1])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "b1ddd8e9b5b56bdf88cd4641ede70004ee0981cdcb91eac00b794abf24a9ed1f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "47999f9707f898532b0194838490ed12cf28180c9c32a77b915bda4b1dc3c24f",
+      "text": "Create `solution.py` with a class `TokenRule` exposing `accepts(self, tokens, rule) -> bool`. `tokens` must be a list of non-empty strings. `rule` must be a list whose elements are non-empty string literals, `None`, or the singleton `Ellipsis`. A literal matches itself, `None` matches exactly one token, and `Ellipsis` matches any number of tokens, including zero. Matching must consume both lists completely. Empty lists are valid. Raise `TypeError` for non-lists or elements of the wrong type, and `ValueError` for empty string elements. Do not mutate or retain either argument. Use O(len(tokens) + len(rule)) time and O(1) auxiliary space.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "47999f9707f898532b0194838490ed12cf28180c9c32a77b915bda4b1dc3c24f",
+      "text": "Create `solution.py` with a class `TokenRule` exposing `accepts(self, tokens, rule) -> bool`. `tokens` must be a list of non-empty strings. `rule` must be a list whose elements are non-empty string literals, `None`, or the singleton `Ellipsis`. A literal matches itself, `None` matches exactly one token, and `Ellipsis` matches any number of tokens, including zero. Matching must consume both lists completely. Empty lists are valid. Raise `TypeError` for non-lists or elements of the wrong type, and `ValueError` for empty string elements. Do not mutate or retain either argument. Use O(len(tokens) + len(rule)) time and O(1) auxiliary space.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0661",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class TokenRule:\n    def accepts(self, tokens, rule):\n        self._validate(tokens, rule)\n        token_index = 0\n        rule_index = 0\n        wildcard_index = -1\n        retry_token = 0\n\n        while token_index < len(tokens):\n            if rule_index < len(rule) and (\n                rule[rule_index] is None\n                or rule[rule_index] == tokens[token_index]\n            ):\n                token_index += 1\n                rule_index += 1\n            elif rule_index < len(rule) and rule[rule_index] is Ellipsis:\n                wildcard_index = rule_index\n                retry_token = token_index + 1\n                rule_index += 1\n            elif wildcard_index != -1:\n                retry_token += 1\n                token_index = retry_token\n                rule_index = wildcard_index + 1\n            else:\n                return False\n\n        while rule_index < len(rule) and rule[rule_index] is Ellipsis:\n            rule_index += 1\n        return rule_index == len(rule)\n\n    @staticmethod\n    def _validate(tokens, rule):\n        if type(tokens) is not list or type(rule) is not list:\n            raise TypeError(\"tokens and rule must be lists\")\n        for token in tokens:\n            if type(token) is not str:\n                raise TypeError(\"tokens must contain strings\")\n            if not token:\n                raise ValueError(\"tokens cannot contain empty strings\")\n        for part in rule:\n            if part is None or part is Ellipsis:\n                continue\n            if type(part) is not str:\n                raise TypeError(\"invalid rule element\")\n            if not part:\n                raise ValueError(\"rule cannot contain empty literals\")\n",
+          "label": "The multi-token wildcard starts its retry position one token too far ahead, so it cannot initially match an empty sequence correctly.",
+          "sha256": "80cc2bac5a80fa906a1858427179302e28fd166cd71ef048f927a8e02d1f39ac"
+        }
+      ],
+      "reference": {
+        "code": "class TokenRule:\n    def accepts(self, tokens, rule):\n        self._validate(tokens, rule)\n        token_index = 0\n        rule_index = 0\n        wildcard_index = -1\n        retry_token = 0\n\n        while token_index < len(tokens):\n            if rule_index < len(rule) and (\n                rule[rule_index] is None\n                or rule[rule_index] == tokens[token_index]\n            ):\n                token_index += 1\n                rule_index += 1\n            elif rule_index < len(rule) and rule[rule_index] is Ellipsis:\n                wildcard_index = rule_index\n                retry_token = token_index\n                rule_index += 1\n            elif wildcard_index != -1:\n                retry_token += 1\n                token_index = retry_token\n                rule_index = wildcard_index + 1\n            else:\n                return False\n\n        while rule_index < len(rule) and rule[rule_index] is Ellipsis:\n            rule_index += 1\n        return rule_index == len(rule)\n\n    @staticmethod\n    def _validate(tokens, rule):\n        if type(tokens) is not list or type(rule) is not list:\n            raise TypeError(\"tokens and rule must be lists\")\n        for token in tokens:\n            if type(token) is not str:\n                raise TypeError(\"tokens must contain strings\")\n            if not token:\n                raise ValueError(\"tokens cannot contain empty strings\")\n        for part in rule:\n            if part is None or part is Ellipsis:\n                continue\n            if type(part) is not str:\n                raise TypeError(\"invalid rule element\")\n            if not part:\n                raise ValueError(\"rule cannot contain empty literals\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ae52143a5dfaa4b53e37f513f1b36df9f0b9dc77720c3977ffd6b61048f01f8f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import TokenRule\n\n\nclass TokenRuleTests(unittest.TestCase):\n    def setUp(self):\n        self.matcher = TokenRule()\n\n    def test_literals_and_single_token_wildcard(self):\n        self.assertTrue(self.matcher.accepts([\"a\", \"b\", \"c\"], [\"a\", None, \"c\"]))\n        self.assertFalse(self.matcher.accepts([\"a\", \"b\", \"c\"], [\"a\", None, \"b\"]))\n        self.assertFalse(self.matcher.accepts([\"a\", \"c\"], [\"a\", None, \"c\"]))\n\n    def test_ellipsis_matches_zero_one_or_many_tokens(self):\n        self.assertTrue(self.matcher.accepts([\"a\", \"b\"], [\"a\", Ellipsis, \"b\"]))\n        self.assertTrue(self.matcher.accepts([\"a\", \"x\", \"y\", \"b\"], [\"a\", Ellipsis, \"b\"]))\n        self.assertTrue(self.matcher.accepts([\"x\", \"y\"], [Ellipsis]))\n        self.assertTrue(self.matcher.accepts([], [Ellipsis]))\n        self.assertTrue(self.matcher.accepts([\"a\", \"b\"], [Ellipsis, \"a\", Ellipsis, \"b\", Ellipsis]))\n\n    def test_complete_consumption_and_ambiguous_suffixes(self):\n        self.assertFalse(self.matcher.accepts([\"a\", \"b\", \"extra\"], [\"a\", \"b\"]))\n        self.assertFalse(self.matcher.accepts([\"a\"], [\"a\", None]))\n        self.assertTrue(self.matcher.accepts([\"a\", \"x\", \"a\", \"b\"], [Ellipsis, \"a\", \"b\"]))\n        self.assertFalse(self.matcher.accepts([\"a\", \"x\", \"a\", \"c\"], [Ellipsis, \"a\", \"b\"]))\n\n    def test_empty_inputs(self):\n        self.assertTrue(self.matcher.accepts([], []))\n        self.assertFalse(self.matcher.accepts([\"a\"], []))\n        self.assertFalse(self.matcher.accepts([], [None]))\n        self.assertTrue(self.matcher.accepts([], [Ellipsis, Ellipsis]))\n\n    def test_argument_and_element_validation(self):\n        for tokens in (None, (), \"abc\", {\"a\"}):\n            with self.subTest(tokens=tokens):\n                with self.assertRaises(TypeError):\n                    self.matcher.accepts(tokens, [])\n        for rule in (None, (), \"abc\", {}):\n            with self.subTest(rule=rule):\n                with self.assertRaises(TypeError):\n                    self.matcher.accepts([], rule)\n        for bad in (None, 1, True, Ellipsis, [\"nested\"]):\n            with self.subTest(bad_token=bad):\n                with self.assertRaises(TypeError):\n                    self.matcher.accepts([bad], [])\n        for bad in (1, True, 1.5, object()):\n            with self.subTest(bad_rule=bad):\n                with self.assertRaises(TypeError):\n                    self.matcher.accepts([], [bad])\n\n    def test_empty_strings_raise_value_error(self):\n        with self.assertRaises(ValueError):\n            self.matcher.accepts([\"\"], [])\n        with self.assertRaises(ValueError):\n            self.matcher.accepts([], [\"\"])\n\n    def test_inputs_are_not_mutated_or_retained(self):\n        tokens = [\"start\", \"middle\", \"end\"]\n        rule = [\"start\", Ellipsis, \"end\"]\n        tokens_snapshot = list(tokens)\n        rule_snapshot = list(rule)\n        self.assertTrue(self.matcher.accepts(tokens, rule))\n        self.assertEqual(tokens, tokens_snapshot)\n        self.assertEqual(rule, rule_snapshot)\n        tokens[:] = [\"different\"]\n        rule[:] = [\"different\"]\n        self.assertTrue(self.matcher.accepts([], []))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "d1949f289ca1b1dffb9d182309f641b7df71436590551d1d40772bd87e9e26f2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "47999f9707f898532b0194838490ed12cf28180c9c32a77b915bda4b1dc3c24f",
+      "text": "Create `solution.py` with a class `TokenRule` exposing `accepts(self, tokens, rule) -> bool`. `tokens` must be a list of non-empty strings. `rule` must be a list whose elements are non-empty string literals, `None`, or the singleton `Ellipsis`. A literal matches itself, `None` matches exactly one token, and `Ellipsis` matches any number of tokens, including zero. Matching must consume both lists completely. Empty lists are valid. Raise `TypeError` for non-lists or elements of the wrong type, and `ValueError` for empty string elements. Do not mutate or retain either argument. Use O(len(tokens) + len(rule)) time and O(1) auxiliary space.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "47999f9707f898532b0194838490ed12cf28180c9c32a77b915bda4b1dc3c24f",
+      "text": "Create `solution.py` with a class `TokenRule` exposing `accepts(self, tokens, rule) -> bool`. `tokens` must be a list of non-empty strings. `rule` must be a list whose elements are non-empty string literals, `None`, or the singleton `Ellipsis`. A literal matches itself, `None` matches exactly one token, and `Ellipsis` matches any number of tokens, including zero. Matching must consume both lists completely. Empty lists are valid. Raise `TypeError` for non-lists or elements of the wrong type, and `ValueError` for empty string elements. Do not mutate or retain either argument. Use O(len(tokens) + len(rule)) time and O(1) auxiliary space.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0661",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class TokenRule:\n    def accepts(self, tokens, rule):\n        self._validate(tokens, rule)\n        token_index = 0\n        rule_index = 0\n        wildcard_index = -1\n        retry_token = 0\n\n        while token_index < len(tokens):\n            if rule_index < len(rule) and (\n                rule[rule_index] is None\n                or rule[rule_index] == tokens[token_index]\n            ):\n                token_index += 1\n                rule_index += 1\n            elif rule_index < len(rule) and rule[rule_index] is Ellipsis:\n                wildcard_index = rule_index\n                retry_token = token_index + 1\n                rule_index += 1\n            elif wildcard_index != -1:\n                retry_token += 1\n                token_index = retry_token\n                rule_index = wildcard_index + 1\n            else:\n                return False\n\n        while rule_index < len(rule) and rule[rule_index] is Ellipsis:\n            rule_index += 1\n        return rule_index == len(rule)\n\n    @staticmethod\n    def _validate(tokens, rule):\n        if type(tokens) is not list or type(rule) is not list:\n            raise TypeError(\"tokens and rule must be lists\")\n        for token in tokens:\n            if type(token) is not str:\n                raise TypeError(\"tokens must contain strings\")\n            if not token:\n                raise ValueError(\"tokens cannot contain empty strings\")\n        for part in rule:\n            if part is None or part is Ellipsis:\n                continue\n            if type(part) is not str:\n                raise TypeError(\"invalid rule element\")\n            if not part:\n                raise ValueError(\"rule cannot contain empty literals\")\n",
+          "label": "The multi-token wildcard starts its retry position one token too far ahead, so it cannot initially match an empty sequence correctly.",
+          "sha256": "80cc2bac5a80fa906a1858427179302e28fd166cd71ef048f927a8e02d1f39ac"
+        }
+      ],
+      "reference": {
+        "code": "class TokenRule:\n    def accepts(self, tokens, rule):\n        self._validate(tokens, rule)\n        token_index = 0\n        rule_index = 0\n        wildcard_index = -1\n        retry_token = 0\n\n        while token_index < len(tokens):\n            if rule_index < len(rule) and (\n                rule[rule_index] is None\n                or rule[rule_index] == tokens[token_index]\n            ):\n                token_index += 1\n                rule_index += 1\n            elif rule_index < len(rule) and rule[rule_index] is Ellipsis:\n                wildcard_index = rule_index\n                retry_token = token_index\n                rule_index += 1\n            elif wildcard_index != -1:\n                retry_token += 1\n                token_index = retry_token\n                rule_index = wildcard_index + 1\n            else:\n                return False\n\n        while rule_index < len(rule) and rule[rule_index] is Ellipsis:\n            rule_index += 1\n        return rule_index == len(rule)\n\n    @staticmethod\n    def _validate(tokens, rule):\n        if type(tokens) is not list or type(rule) is not list:\n            raise TypeError(\"tokens and rule must be lists\")\n        for token in tokens:\n            if type(token) is not str:\n                raise TypeError(\"tokens must contain strings\")\n            if not token:\n                raise ValueError(\"tokens cannot contain empty strings\")\n        for part in rule:\n            if part is None or part is Ellipsis:\n                continue\n            if type(part) is not str:\n                raise TypeError(\"invalid rule element\")\n            if not part:\n                raise ValueError(\"rule cannot contain empty literals\")\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ae52143a5dfaa4b53e37f513f1b36df9f0b9dc77720c3977ffd6b61048f01f8f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "accepts line events at suffix sizes 128,256,512: [100240, 397072, 1580560]\n",
+    "stdout_sha256": "654aaf19e908c838ab5658f2f1295ef158505878dec7c274a08134ab52ad5e44",
+    "stderr": "F\n======================================================================\nFAIL: test_adversarial_suffix_does_not_repeat_quadratic_work (__main__.ComplexityTests.test_adversarial_suffix_does_not_repeat_quadratic_work)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 30, in test_adversarial_suffix_does_not_repeat_quadratic_work\n    self.assertLess(counts[2], 2.5 * counts[1])\nAssertionError: 1580560 not less than 992680.0\n\n----------------------------------------------------------------------\nRan 1 test in 0.378s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "d045ed4f434f5da70b74ca63a6120fc00a8f5c2943e636be3c6441ec07869073",
+    "duration_ms": 781,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

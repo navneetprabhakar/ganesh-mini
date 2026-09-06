@@ -4,14 +4,14 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Current checkpoint: **680 holds (677 additive plus historical three)**; 1,788
+Current checkpoint: **687 holds (684 additive plus historical three)**; 1,818
 unique outside-sample inspections. All 544 array queue positions inspected;
 Rust generation queue complete: 684 of 684 inspected.
-Python generation queue: 555 of 684 inspected, continue 556; batch 37 awaits backup.
+Python generation queue: 585 of 684 inspected, continue 586; batch 39 awaits backup.
 GCS authentication restored; preserved archive through 285 now verified.
-GCS verified through 674 holds / Python batch 36 / 1,773 outside-sample inspections.
-See QUALITY_STRATUM_674_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
-See PYTHON_GENERATION_REVIEW_37.md. Remaining strata and quality criteria are pending;
+GCS verified through 682 holds / Python batch 38 / 1,803 outside-sample inspections.
+See QUALITY_STRATUM_682_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
+See PYTHON_GENERATION_REVIEW_39.md. Remaining strata and quality criteria are pending;
 inspection is not admission. All 97 data tooling tests pass.
 No training seal or new VM. Older entries are historical.
 

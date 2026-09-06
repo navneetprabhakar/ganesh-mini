@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0470",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "d14f3b8a97fd2442e5521a23a1f97c86f80731f5231bab42b0ac49d4d66d5f66",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import apply_overrides\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_nested_value(self):\n        value = []\n        for _ in range(600):\n            value = [value]\n        error = None\n        try:\n            apply_overrides({'x': value}, {})\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "9815105b03455b5b1695126d121f55bce64268bdd68a35a1014e8710536e28ae"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "15b3d5e5e53dab310500c2ae9cc23f951daa7ec47f7d4c7a5481183faa8054e1",
+      "text": "Repair the source below and return a corrected complete `solution.py`.\n\nThe required top-level API is `apply_overrides(base, overrides)`. Both arguments must be dictionaries or raise `TypeError`. Begin with a deep copy of `base`, then process `overrides` in dictionary iteration order. An override value of `Ellipsis` means leave that key unchanged. A value of `None` means delete the key if present. Every other value replaces or creates the key using a deep copy.\n\nReturn a dictionary sharing no nested mutable values with either input. Do not mutate either input. Empty dictionaries are valid, and deleting an absent key has no effect.\n\nKnown-bad source:\n```python\nfrom copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is None or value is Ellipsis:\n            continue\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "15b3d5e5e53dab310500c2ae9cc23f951daa7ec47f7d4c7a5481183faa8054e1",
+      "text": "Repair the source below and return a corrected complete `solution.py`.\n\nThe required top-level API is `apply_overrides(base, overrides)`. Both arguments must be dictionaries or raise `TypeError`. Begin with a deep copy of `base`, then process `overrides` in dictionary iteration order. An override value of `Ellipsis` means leave that key unchanged. A value of `None` means delete the key if present. Every other value replaces or creates the key using a deep copy.\n\nReturn a dictionary sharing no nested mutable values with either input. Do not mutate either input. Empty dictionaries are valid, and deleting an absent key has no effect.\n\nKnown-bad source:\n```python\nfrom copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is None or value is Ellipsis:\n            continue\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0470",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is None or value is Ellipsis:\n            continue\n        result[key] = deepcopy(value)\n    return result\n",
+          "label": "Treats None like Ellipsis instead of using None to delete the key.",
+          "sha256": "25ed267dc4a006416b861277b83dcfab9681151ddb5973da2dacf97894ed088c"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is Ellipsis:\n            continue\n        if value is None:\n            result.pop(key, None)\n            continue\n        result[key] = deepcopy(value)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b6946d9cb462d512f1d69bfbb1c7115044b63d0bc45b8164951b59ce4c4fbb9e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import copy\nimport unittest\nimport solution\n\n\nclass ApplyOverridesTests(unittest.TestCase):\n    def test_replace_create_delete_ignore_in_order(self):\n        base = {'keep': {'x': [1]}, 'replace': [1], 'delete': {'z': 2}}\n        overrides = {'keep': Ellipsis, 'replace': {'new': [3]}, 'delete': None, 'created': [4]}\n        base_before = copy.deepcopy(base)\n        overrides_before = copy.deepcopy(overrides)\n        result = solution.apply_overrides(base, overrides)\n        self.assertEqual(result, {'keep': {'x': [1]}, 'replace': {'new': [3]}, 'created': [4]})\n        self.assertEqual(base, base_before)\n        self.assertEqual(overrides, overrides_before)\n\n    def test_delete_absent_and_ellipsis_absent(self):\n        self.assertEqual(solution.apply_overrides({'a': 1}, {'missing': None, 'other': Ellipsis}), {'a': 1})\n\n    def test_empty_and_deep_copy_independence(self):\n        base = {'a': [{'b': [1]}]}\n        overrides = {'c': {'d': [2]}}\n        result = solution.apply_overrides(base, overrides)\n        result['a'][0]['b'].append(9)\n        result['c']['d'].append(9)\n        self.assertEqual(base, {'a': [{'b': [1]}]})\n        self.assertEqual(overrides, {'c': {'d': [2]}})\n        base['a'][0]['b'].append(8)\n        overrides['c']['d'].append(8)\n        self.assertEqual(result, {'a': [{'b': [1, 9]}], 'c': {'d': [2, 9]}})\n        empty = {}\n        empty_result = solution.apply_overrides(empty, {})\n        self.assertEqual(empty_result, {})\n        self.assertIsNot(empty_result, empty)\n\n    def test_invalid_types(self):\n        invalid = (None, [], (), 'x', 1)\n        for base in invalid:\n            with self.subTest(base=base):\n                with self.assertRaises(TypeError):\n                    solution.apply_overrides(base, {})\n        for overrides in invalid:\n            with self.subTest(overrides=overrides):\n                with self.assertRaises(TypeError):\n                    solution.apply_overrides({}, overrides)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "80c211bc6c03f5b63c012499e02657caed551399eaafbfd7274026df490f8259"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "15b3d5e5e53dab310500c2ae9cc23f951daa7ec47f7d4c7a5481183faa8054e1",
+      "text": "Repair the source below and return a corrected complete `solution.py`.\n\nThe required top-level API is `apply_overrides(base, overrides)`. Both arguments must be dictionaries or raise `TypeError`. Begin with a deep copy of `base`, then process `overrides` in dictionary iteration order. An override value of `Ellipsis` means leave that key unchanged. A value of `None` means delete the key if present. Every other value replaces or creates the key using a deep copy.\n\nReturn a dictionary sharing no nested mutable values with either input. Do not mutate either input. Empty dictionaries are valid, and deleting an absent key has no effect.\n\nKnown-bad source:\n```python\nfrom copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is None or value is Ellipsis:\n            continue\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "15b3d5e5e53dab310500c2ae9cc23f951daa7ec47f7d4c7a5481183faa8054e1",
+      "text": "Repair the source below and return a corrected complete `solution.py`.\n\nThe required top-level API is `apply_overrides(base, overrides)`. Both arguments must be dictionaries or raise `TypeError`. Begin with a deep copy of `base`, then process `overrides` in dictionary iteration order. An override value of `Ellipsis` means leave that key unchanged. A value of `None` means delete the key if present. Every other value replaces or creates the key using a deep copy.\n\nReturn a dictionary sharing no nested mutable values with either input. Do not mutate either input. Empty dictionaries are valid, and deleting an absent key has no effect.\n\nKnown-bad source:\n```python\nfrom copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is None or value is Ellipsis:\n            continue\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0470",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is None or value is Ellipsis:\n            continue\n        result[key] = deepcopy(value)\n    return result\n",
+          "label": "Treats None like Ellipsis instead of using None to delete the key.",
+          "sha256": "25ed267dc4a006416b861277b83dcfab9681151ddb5973da2dacf97894ed088c"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef apply_overrides(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        if value is Ellipsis:\n            continue\n        if value is None:\n            result.pop(key, None)\n            continue\n        result[key] = deepcopy(value)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b6946d9cb462d512f1d69bfbb1c7115044b63d0bc45b8164951b59ce4c4fbb9e"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_nested_value (__main__.Probe.test_finite_nested_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_finite_nested_value\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "bdcb1b3fa22bd94bb5ae3465ae0b5d47c0c0ce63d30e00f887bdb50fc983a624",
+    "duration_ms": 794,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

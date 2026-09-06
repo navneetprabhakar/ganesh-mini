@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0462",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e886b0164026a89bb1c5f951307a30506bfae10d9c6f6de8d43b2079f40ddf9a",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import MemoTable\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_nested_value(self):\n        value = []\n        for _ in range(600):\n            value = [value]\n        error = None\n        try:\n            MemoTable().get_or_compute('x', lambda: value)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "86b3f14edd550d6e646728d8d517a59e904e6f39cdda0d731a080fa1ecefb3c2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "55bf922522f788b12b27dfe754b84734ab0c9ebc4c6f9d0744f72e12c2ff54d3",
+      "text": "The source below is the complete current `solution.py`. `MemoTable.get_or_compute(key, producer)` must return a cached value when the key is present, including when that value is false, zero, an empty container, or `None`. On a miss it must call the zero-argument callable `producer` exactly once and cache its result. Keys must be hashable; unhashable keys raise `TypeError` without calling `producer`. A non-callable producer raises `TypeError`, even on a cache hit. Values must be deep-copied on insertion and retrieval so neither producer-owned objects nor returned objects alias internal cached data. `clear()` empties the table. The empty table is valid.\n\nCorrect the single semantic bug and return a complete replacement source file.\n\n```python\nfrom copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        cached = self._values.get(key)\n        if cached:\n            return deepcopy(cached)\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "55bf922522f788b12b27dfe754b84734ab0c9ebc4c6f9d0744f72e12c2ff54d3",
+      "text": "The source below is the complete current `solution.py`. `MemoTable.get_or_compute(key, producer)` must return a cached value when the key is present, including when that value is false, zero, an empty container, or `None`. On a miss it must call the zero-argument callable `producer` exactly once and cache its result. Keys must be hashable; unhashable keys raise `TypeError` without calling `producer`. A non-callable producer raises `TypeError`, even on a cache hit. Values must be deep-copied on insertion and retrieval so neither producer-owned objects nor returned objects alias internal cached data. `clear()` empties the table. The empty table is valid.\n\nCorrect the single semantic bug and return a complete replacement source file.\n\n```python\nfrom copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        cached = self._values.get(key)\n        if cached:\n            return deepcopy(cached)\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0462",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        cached = self._values.get(key)\n        if cached:\n            return deepcopy(cached)\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n",
+          "label": "Cache presence is tested by truthiness, causing cached falsey values to be recomputed.",
+          "sha256": "531d62eff2c1b8d422aa71a639bee2ede0a41ccc3f59222ec40d9f598635e450"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        if key in self._values:\n            return deepcopy(self._values[key])\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b5dba1a54d9520fc21f82ededd5e9b3e85b62f646e304c522eee52fad0e9a9c7"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import MemoTable\n\n\nclass MemoTableTests(unittest.TestCase):\n    def test_falsey_values_are_cached(self):\n        for value in (False, 0, '', [], {}, None):\n            with self.subTest(value=value):\n                table = MemoTable()\n                calls = []\n\n                def producer():\n                    calls.append(True)\n                    return value\n\n                self.assertEqual(table.get_or_compute('key', producer), value)\n                self.assertEqual(table.get_or_compute('key', producer), value)\n                self.assertEqual(len(calls), 1)\n\n    def test_hit_does_not_call_new_producer(self):\n        table = MemoTable()\n        self.assertEqual(table.get_or_compute('key', lambda: 12), 12)\n\n        def must_not_run():\n            raise AssertionError('producer called on cache hit')\n\n        self.assertEqual(table.get_or_compute('key', must_not_run), 12)\n\n    def test_values_are_deep_copied_on_insertion_and_retrieval(self):\n        table = MemoTable()\n        produced = {'items': [{'value': 1}]}\n        first = table.get_or_compute('key', lambda: produced)\n        produced['items'][0]['value'] = 99\n        first['items'][0]['value'] = 50\n        second = table.get_or_compute('key', lambda: None)\n        self.assertEqual(second, {'items': [{'value': 1}]})\n        self.assertIsNot(first, second)\n        self.assertIsNot(first['items'], second['items'])\n        second['items'].append({'value': 2})\n        self.assertEqual(table.get_or_compute('key', lambda: None), {'items': [{'value': 1}]})\n\n    def test_non_callable_is_rejected_even_on_hit(self):\n        table = MemoTable()\n        table.get_or_compute('key', lambda: 'value')\n        with self.assertRaises(TypeError):\n            table.get_or_compute('key', None)\n\n    def test_unhashable_key_does_not_call_producer(self):\n        table = MemoTable()\n        calls = []\n\n        def producer():\n            calls.append(True)\n            return 1\n\n        with self.assertRaises(TypeError):\n            table.get_or_compute([], producer)\n        self.assertEqual(calls, [])\n\n    def test_clear_empties_cache(self):\n        table = MemoTable()\n        calls = []\n\n        def producer():\n            calls.append(True)\n            return len(calls)\n\n        self.assertEqual(table.get_or_compute('key', producer), 1)\n        self.assertIsNone(table.clear())\n        self.assertEqual(table.get_or_compute('key', producer), 2)\n        self.assertEqual(len(calls), 2)\n\n    def test_empty_table_accepts_hashable_falsey_keys(self):\n        table = MemoTable()\n        self.assertEqual(table.get_or_compute(None, lambda: 'none'), 'none')\n        self.assertEqual(table.get_or_compute(0, lambda: 'zero'), 'zero')\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "f4e9597ecc06899ab69b5f353e9469ec41a929d9face61953d96759a433f0ffe"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "55bf922522f788b12b27dfe754b84734ab0c9ebc4c6f9d0744f72e12c2ff54d3",
+      "text": "The source below is the complete current `solution.py`. `MemoTable.get_or_compute(key, producer)` must return a cached value when the key is present, including when that value is false, zero, an empty container, or `None`. On a miss it must call the zero-argument callable `producer` exactly once and cache its result. Keys must be hashable; unhashable keys raise `TypeError` without calling `producer`. A non-callable producer raises `TypeError`, even on a cache hit. Values must be deep-copied on insertion and retrieval so neither producer-owned objects nor returned objects alias internal cached data. `clear()` empties the table. The empty table is valid.\n\nCorrect the single semantic bug and return a complete replacement source file.\n\n```python\nfrom copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        cached = self._values.get(key)\n        if cached:\n            return deepcopy(cached)\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "55bf922522f788b12b27dfe754b84734ab0c9ebc4c6f9d0744f72e12c2ff54d3",
+      "text": "The source below is the complete current `solution.py`. `MemoTable.get_or_compute(key, producer)` must return a cached value when the key is present, including when that value is false, zero, an empty container, or `None`. On a miss it must call the zero-argument callable `producer` exactly once and cache its result. Keys must be hashable; unhashable keys raise `TypeError` without calling `producer`. A non-callable producer raises `TypeError`, even on a cache hit. Values must be deep-copied on insertion and retrieval so neither producer-owned objects nor returned objects alias internal cached data. `clear()` empties the table. The empty table is valid.\n\nCorrect the single semantic bug and return a complete replacement source file.\n\n```python\nfrom copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        cached = self._values.get(key)\n        if cached:\n            return deepcopy(cached)\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0462",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        cached = self._values.get(key)\n        if cached:\n            return deepcopy(cached)\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n",
+          "label": "Cache presence is tested by truthiness, causing cached falsey values to be recomputed.",
+          "sha256": "531d62eff2c1b8d422aa71a639bee2ede0a41ccc3f59222ec40d9f598635e450"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass MemoTable:\n    def __init__(self):\n        self._values = {}\n\n    def get_or_compute(self, key, producer):\n        if not callable(producer):\n            raise TypeError(\"producer must be callable\")\n        try:\n            hash(key)\n        except TypeError:\n            raise TypeError(\"key must be hashable\") from None\n        if key in self._values:\n            return deepcopy(self._values[key])\n        value = producer()\n        self._values[key] = deepcopy(value)\n        return deepcopy(value)\n\n    def clear(self):\n        self._values.clear()\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b5dba1a54d9520fc21f82ededd5e9b3e85b62f646e304c522eee52fad0e9a9c7"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_nested_value (__main__.Probe.test_finite_nested_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_finite_nested_value\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "0a4a5c5c68b66be350049c9e871b47030fe0bc3022e45041eedc54d27a922ade",
+    "duration_ms": 655,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

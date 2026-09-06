@@ -1,5 +1,27 @@
 # Quality follow-up decision
 
+Current checkpoint: **212 holds (209 additive plus historical three)**; 284
+unique outside-sample inspections. Batch 19 partial through position 275;
+continue 276. GCS verified through 209 holds / batch 18 / scope v5 (10 groups,
+14 strata, 3,085 review records). Latest five inspections await backup.
+No training seal or new VM. Older entries are historical.
+
+V5 adds JS generation0204 to the existing JavaScript test-accommodation group.
+Scope remains 10 groups / 14 strata / 3,085 records, not rejections.
+Decision SHA-256: `f21e0ac56134e94b135c2543019875bd7855d4e44221e1e71612c04fdcc9cdf3`.
+Report SHA-256: `7adfccbdb8504cc62e5cc086ce421dcf022c64e56bd7a2f4500bb06cf27432de`.
+Previous inventories remain preserved.
+
+Current checkpoint: **209 holds (206 additive plus historical three)**; 279
+unique outside-sample inspections. Batch 18 complete through position 270;
+continue 271. GCS verified through 200 holds / batch 17; batch 18 awaits backup.
+No training seal or new VM. Older entries are historical.
+
+Current checkpoint: **200 holds (197 additive plus historical three)**; 264
+unique outside-sample inspections. Batch 17 complete through position 255;
+continue 256. GCS verified through 189 holds / batch 16. Batch 17 pending backup.
+No training seal or new VM. Older entries are historical.
+
 Current checkpoint: **191 holds (188 additive plus historical three)**; 254
 unique outside-sample inspections. Batch 17 partial through position 245;
 continue 246. GCS verified through 189 holds / completed batch 16. Latest five

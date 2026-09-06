@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0176",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "29fc01b678791aeb2c6a613d3d82989ace43b8ee1576123b04ee69af38877526",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import {SubmissionGate} from './solution';\nlet rejected=false;try { new SubmissionGate(1,1,new Array<string>(1)); } catch(e) { if(!(e instanceof TypeError)) throw e;rejected=true; }\nif(!rejected) throw new Error('Missing allowed kind accepted');\n",
+        "sha256": "76c0c56cddb0c89349ef5108331e3fd23d6e0b9c2fe861cad23679adbbd26adf"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e54de3755bb7e9154f322b410be3eede068ad802cf6c132fd23ba36652f09f36",
+      "text": "Implement a complete TypeScript source file exporting `Submission`, `GateDecision`, and `SubmissionGate`. A submission has `id`, `bytes`, and `kind` fields. The constructor is `constructor(maxTotalBytes: number, maxItems: number, allowedKinds?: readonly string[])`; both limits must be non-negative safe integers, and every allowed kind must be a non-empty string, otherwise throw `TypeError` or `RangeError` as appropriate. An omitted or empty allowed-kind list permits every kind. Export `assess(entries: readonly Submission[]): GateDecision`. Every entry must have a non-empty string ID and kind and a non-negative safe-integer byte count; malformed entries throw `TypeError`. Duplicate IDs return `{ ok: false, reason: 'duplicate-id' }`. Too many entries return reason `item-count`; a total exceeding the byte limit returns `total-bytes`; a disallowed kind returns `kind`. Limits are inclusive, an empty batch is valid when limits permit it, and checks use the preceding reason priority. Successful output preserves order and duplicates of non-ID fields, contains copied objects, and must not alias the input. Assessment never mutates its argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e54de3755bb7e9154f322b410be3eede068ad802cf6c132fd23ba36652f09f36",
+      "text": "Implement a complete TypeScript source file exporting `Submission`, `GateDecision`, and `SubmissionGate`. A submission has `id`, `bytes`, and `kind` fields. The constructor is `constructor(maxTotalBytes: number, maxItems: number, allowedKinds?: readonly string[])`; both limits must be non-negative safe integers, and every allowed kind must be a non-empty string, otherwise throw `TypeError` or `RangeError` as appropriate. An omitted or empty allowed-kind list permits every kind. Export `assess(entries: readonly Submission[]): GateDecision`. Every entry must have a non-empty string ID and kind and a non-negative safe-integer byte count; malformed entries throw `TypeError`. Duplicate IDs return `{ ok: false, reason: 'duplicate-id' }`. Too many entries return reason `item-count`; a total exceeding the byte limit returns `total-bytes`; a disallowed kind returns `kind`. Limits are inclusive, an empty batch is valid when limits permit it, and checks use the preceding reason priority. Successful output preserves order and duplicates of non-ID fields, contains copied objects, and must not alias the input. Assessment never mutates its argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0176",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Submission {\n  id: string;\n  bytes: number;\n  kind: string;\n}\n\nexport type GateDecision =\n  | { ok: true; accepted: Submission[]; entries: Submission[] }\n  | { ok: false; reason: 'duplicate-id' | 'item-count' | 'total-bytes' | 'kind' };\n\nexport class SubmissionGate {\n  private readonly allowed: Set<string>;\n\n  public constructor(\n    private readonly maxTotalBytes: number,\n    private readonly maxItems: number,\n    allowedKinds: readonly string[] = [],\n  ) {\n    SubmissionGate.validateLimit(maxTotalBytes);\n    SubmissionGate.validateLimit(maxItems);\n    if (!Array.isArray(allowedKinds) || allowedKinds.some(\n      (kind: string) => typeof kind !== 'string' || kind.trim().length === 0,\n    )) {\n      throw new TypeError('Allowed kinds must be non-empty strings');\n    }\n    this.allowed = new Set(allowedKinds);\n  }\n\n  public assess(entries: readonly Submission[]): GateDecision {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    for (const entry of entries) {\n      if (\n        entry === null ||\n        typeof entry !== 'object' ||\n        typeof entry.id !== 'string' ||\n        entry.id.trim().length === 0 ||\n        typeof entry.kind !== 'string' ||\n        entry.kind.trim().length === 0 ||\n        typeof entry.bytes !== 'number' ||\n        !Number.isSafeInteger(entry.bytes) ||\n        entry.bytes < 0\n      ) {\n        throw new TypeError('Malformed submission');\n      }\n    }\n\n    const ids = new Set<string>();\n    for (const entry of entries) {\n      if (ids.has(entry.id)) return { ok: false, reason: 'duplicate-id' };\n      ids.add(entry.id);\n    }\n\n    if (entries.length > this.maxItems) return { ok: false, reason: 'item-count' };\n\n    let total = 0;\n    for (const entry of entries) {\n      if (total > Number.MAX_SAFE_INTEGER - entry.bytes) {\n        return { ok: false, reason: 'total-bytes' };\n      }\n      total += entry.bytes;\n    }\n    if (total >= this.maxTotalBytes) return { ok: false, reason: 'total-bytes' };\n\n    if (this.allowed.size > 0 && entries.some((entry: Submission) => !this.allowed.has(entry.kind))) {\n      return { ok: false, reason: 'kind' };\n    }\n\n    const accepted = entries.map((entry: Submission) => ({\n      id: entry.id,\n      bytes: entry.bytes,\n      kind: entry.kind,\n    }));\n    return { ok: true, accepted, entries: accepted };\n  }\n\n  private static validateLimit(value: number): void {\n    if (typeof value !== 'number') throw new TypeError('Limits must be numbers');\n    if (!Number.isSafeInteger(value) || value < 0) {\n      throw new RangeError('Limits must be non-negative safe integers');\n    }\n  }\n}\n",
+          "label": "The byte-limit comparison is exclusive, incorrectly rejecting batches whose total exactly equals the configured limit.",
+          "sha256": "236580fdd23b388e9a8f00cfc17d667ec9687ed2b8a7dad398dd8bc3a1fa2645"
+        }
+      ],
+      "reference": {
+        "code": "export interface Submission {\n  id: string;\n  bytes: number;\n  kind: string;\n}\n\nexport type GateDecision =\n  | { ok: true; accepted: Submission[]; entries: Submission[] }\n  | { ok: false; reason: 'duplicate-id' | 'item-count' | 'total-bytes' | 'kind' };\n\nexport class SubmissionGate {\n  private readonly allowed: Set<string>;\n\n  public constructor(\n    private readonly maxTotalBytes: number,\n    private readonly maxItems: number,\n    allowedKinds: readonly string[] = [],\n  ) {\n    SubmissionGate.validateLimit(maxTotalBytes);\n    SubmissionGate.validateLimit(maxItems);\n    if (!Array.isArray(allowedKinds) || allowedKinds.some(\n      (kind: string) => typeof kind !== 'string' || kind.trim().length === 0,\n    )) {\n      throw new TypeError('Allowed kinds must be non-empty strings');\n    }\n    this.allowed = new Set(allowedKinds);\n  }\n\n  public assess(entries: readonly Submission[]): GateDecision {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    for (const entry of entries) {\n      if (\n        entry === null ||\n        typeof entry !== 'object' ||\n        typeof entry.id !== 'string' ||\n        entry.id.trim().length === 0 ||\n        typeof entry.kind !== 'string' ||\n        entry.kind.trim().length === 0 ||\n        typeof entry.bytes !== 'number' ||\n        !Number.isSafeInteger(entry.bytes) ||\n        entry.bytes < 0\n      ) {\n        throw new TypeError('Malformed submission');\n      }\n    }\n\n    const ids = new Set<string>();\n    for (const entry of entries) {\n      if (ids.has(entry.id)) return { ok: false, reason: 'duplicate-id' };\n      ids.add(entry.id);\n    }\n\n    if (entries.length > this.maxItems) return { ok: false, reason: 'item-count' };\n\n    let total = 0;\n    for (const entry of entries) {\n      if (total > Number.MAX_SAFE_INTEGER - entry.bytes) {\n        return { ok: false, reason: 'total-bytes' };\n      }\n      total += entry.bytes;\n    }\n    if (total > this.maxTotalBytes) return { ok: false, reason: 'total-bytes' };\n\n    if (this.allowed.size > 0 && entries.some((entry: Submission) => !this.allowed.has(entry.kind))) {\n      return { ok: false, reason: 'kind' };\n    }\n\n    const accepted = entries.map((entry: Submission) => ({\n      id: entry.id,\n      bytes: entry.bytes,\n      kind: entry.kind,\n    }));\n    return { ok: true, accepted, entries: accepted };\n  }\n\n  private static validateLimit(value: number): void {\n    if (typeof value !== 'number') throw new TypeError('Limits must be numbers');\n    if (!Number.isSafeInteger(value) || value < 0) {\n      throw new RangeError('Limits must be non-negative safe integers');\n    }\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c2b04733ad38c1a6d0f793a08afd00625617ebb3c99e035557174e59f415b4e4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { SubmissionGate } from './solution';\nimport type { Submission } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction throws(action: () => void, ctor: Function, message: string): void {\n  let error: unknown;\n  try { action(); } catch (caught) { error = caught; }\n  assert(error instanceof (ctor as new (...args: never[]) => Error), message);\n}\n\nthrows(() => new SubmissionGate(-1, 1), RangeError, 'negative byte limit');\nthrows(() => new SubmissionGate(1.5, 1), RangeError, 'fractional byte limit');\nthrows(() => new SubmissionGate(Number.MAX_SAFE_INTEGER + 1, 1), RangeError, 'unsafe byte limit');\nthrows(() => new SubmissionGate(1, -1), RangeError, 'negative item limit');\nthrows(() => new SubmissionGate('1' as unknown as number, 1), TypeError, 'non-number limit');\nthrows(() => new SubmissionGate(1, 1, ['ok', '  ']), TypeError, 'blank allowed kind');\n\nconst unrestricted = new SubmissionGate(0, 0, []);\nconst empty = unrestricted.assess([]) as { ok: boolean; entries?: Submission[] };\nequal(empty.ok, true, 'empty batch is valid at zero limits');\nassert(Array.isArray(empty.entries), 'successful decision contains entries');\nequal(empty.entries.length, 0, 'successful empty entries');\n\nconst input: Submission[] = [\n  { id: 'a', bytes: 2, kind: 'image' },\n  { id: 'b', bytes: 3, kind: 'image' },\n];\nconst gate = new SubmissionGate(5, 2, ['image']);\nconst success = gate.assess(input) as { ok: boolean; entries: Submission[] };\nequal(success.ok, true, 'inclusive limits succeed');\nequal(success.entries.length, 2, 'successful count');\nequal(success.entries[0].id, 'a', 'order preserved');\nequal(success.entries[1].bytes, 3, 'fields preserved');\nassert(success.entries !== input, 'result array must be copied');\nassert(success.entries[0] !== input[0], 'result objects must be copied');\ninput[0].kind = 'changed';\nequal(success.entries[0].kind, 'image', 'input mutation must not affect output');\nsuccess.entries[1].bytes = 99;\nequal(input[1].bytes, 3, 'output mutation must not affect input');\n\nconst duplicate = gate.assess([\n  { id: 'same', bytes: 4, kind: 'bad' },\n  { id: 'same', bytes: 4, kind: 'bad' },\n]);\nequal(duplicate.ok, false, 'duplicate decision');\nif (!duplicate.ok) equal(duplicate.reason, 'duplicate-id', 'duplicate priority');\n\nconst count = gate.assess([\n  { id: '1', bytes: 4, kind: 'bad' },\n  { id: '2', bytes: 4, kind: 'bad' },\n  { id: '3', bytes: 4, kind: 'bad' },\n]);\nequal(count.ok, false, 'count decision');\nif (!count.ok) equal(count.reason, 'item-count', 'item count priority');\n\nconst bytes = gate.assess([\n  { id: '1', bytes: 3, kind: 'bad' },\n  { id: '2', bytes: 3, kind: 'bad' },\n]);\nif (!bytes.ok) equal(bytes.reason, 'total-bytes', 'total byte priority');\nelse throw new Error('byte overflow must fail');\n\nconst kind = gate.assess([{ id: '1', bytes: 1, kind: 'video' }]);\nif (!kind.ok) equal(kind.reason, 'kind', 'disallowed kind');\nelse throw new Error('disallowed kind must fail');\n\nthrows(() => gate.assess([{ id: ' ', bytes: 0, kind: 'image' }]), TypeError, 'blank id');\nthrows(() => gate.assess([{ id: 'x', bytes: -1, kind: 'image' }]), TypeError, 'negative bytes');\nthrows(() => gate.assess([{ id: 'x', bytes: 1.2, kind: 'image' }]), TypeError, 'fractional bytes');\nthrows(() => gate.assess([{ id: 'x', bytes: 0, kind: '' }]), TypeError, 'blank kind');\nthrows(() => gate.assess(null as unknown as readonly Submission[]), TypeError, 'entries must be an array');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "19751b7bfb5b62223563ce6c9b98033190e20259f1c4b50b236d91692b78646a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e54de3755bb7e9154f322b410be3eede068ad802cf6c132fd23ba36652f09f36",
+      "text": "Implement a complete TypeScript source file exporting `Submission`, `GateDecision`, and `SubmissionGate`. A submission has `id`, `bytes`, and `kind` fields. The constructor is `constructor(maxTotalBytes: number, maxItems: number, allowedKinds?: readonly string[])`; both limits must be non-negative safe integers, and every allowed kind must be a non-empty string, otherwise throw `TypeError` or `RangeError` as appropriate. An omitted or empty allowed-kind list permits every kind. Export `assess(entries: readonly Submission[]): GateDecision`. Every entry must have a non-empty string ID and kind and a non-negative safe-integer byte count; malformed entries throw `TypeError`. Duplicate IDs return `{ ok: false, reason: 'duplicate-id' }`. Too many entries return reason `item-count`; a total exceeding the byte limit returns `total-bytes`; a disallowed kind returns `kind`. Limits are inclusive, an empty batch is valid when limits permit it, and checks use the preceding reason priority. Successful output preserves order and duplicates of non-ID fields, contains copied objects, and must not alias the input. Assessment never mutates its argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e54de3755bb7e9154f322b410be3eede068ad802cf6c132fd23ba36652f09f36",
+      "text": "Implement a complete TypeScript source file exporting `Submission`, `GateDecision`, and `SubmissionGate`. A submission has `id`, `bytes`, and `kind` fields. The constructor is `constructor(maxTotalBytes: number, maxItems: number, allowedKinds?: readonly string[])`; both limits must be non-negative safe integers, and every allowed kind must be a non-empty string, otherwise throw `TypeError` or `RangeError` as appropriate. An omitted or empty allowed-kind list permits every kind. Export `assess(entries: readonly Submission[]): GateDecision`. Every entry must have a non-empty string ID and kind and a non-negative safe-integer byte count; malformed entries throw `TypeError`. Duplicate IDs return `{ ok: false, reason: 'duplicate-id' }`. Too many entries return reason `item-count`; a total exceeding the byte limit returns `total-bytes`; a disallowed kind returns `kind`. Limits are inclusive, an empty batch is valid when limits permit it, and checks use the preceding reason priority. Successful output preserves order and duplicates of non-ID fields, contains copied objects, and must not alias the input. Assessment never mutates its argument.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0176",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Submission {\n  id: string;\n  bytes: number;\n  kind: string;\n}\n\nexport type GateDecision =\n  | { ok: true; accepted: Submission[]; entries: Submission[] }\n  | { ok: false; reason: 'duplicate-id' | 'item-count' | 'total-bytes' | 'kind' };\n\nexport class SubmissionGate {\n  private readonly allowed: Set<string>;\n\n  public constructor(\n    private readonly maxTotalBytes: number,\n    private readonly maxItems: number,\n    allowedKinds: readonly string[] = [],\n  ) {\n    SubmissionGate.validateLimit(maxTotalBytes);\n    SubmissionGate.validateLimit(maxItems);\n    if (!Array.isArray(allowedKinds) || allowedKinds.some(\n      (kind: string) => typeof kind !== 'string' || kind.trim().length === 0,\n    )) {\n      throw new TypeError('Allowed kinds must be non-empty strings');\n    }\n    this.allowed = new Set(allowedKinds);\n  }\n\n  public assess(entries: readonly Submission[]): GateDecision {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    for (const entry of entries) {\n      if (\n        entry === null ||\n        typeof entry !== 'object' ||\n        typeof entry.id !== 'string' ||\n        entry.id.trim().length === 0 ||\n        typeof entry.kind !== 'string' ||\n        entry.kind.trim().length === 0 ||\n        typeof entry.bytes !== 'number' ||\n        !Number.isSafeInteger(entry.bytes) ||\n        entry.bytes < 0\n      ) {\n        throw new TypeError('Malformed submission');\n      }\n    }\n\n    const ids = new Set<string>();\n    for (const entry of entries) {\n      if (ids.has(entry.id)) return { ok: false, reason: 'duplicate-id' };\n      ids.add(entry.id);\n    }\n\n    if (entries.length > this.maxItems) return { ok: false, reason: 'item-count' };\n\n    let total = 0;\n    for (const entry of entries) {\n      if (total > Number.MAX_SAFE_INTEGER - entry.bytes) {\n        return { ok: false, reason: 'total-bytes' };\n      }\n      total += entry.bytes;\n    }\n    if (total >= this.maxTotalBytes) return { ok: false, reason: 'total-bytes' };\n\n    if (this.allowed.size > 0 && entries.some((entry: Submission) => !this.allowed.has(entry.kind))) {\n      return { ok: false, reason: 'kind' };\n    }\n\n    const accepted = entries.map((entry: Submission) => ({\n      id: entry.id,\n      bytes: entry.bytes,\n      kind: entry.kind,\n    }));\n    return { ok: true, accepted, entries: accepted };\n  }\n\n  private static validateLimit(value: number): void {\n    if (typeof value !== 'number') throw new TypeError('Limits must be numbers');\n    if (!Number.isSafeInteger(value) || value < 0) {\n      throw new RangeError('Limits must be non-negative safe integers');\n    }\n  }\n}\n",
+          "label": "The byte-limit comparison is exclusive, incorrectly rejecting batches whose total exactly equals the configured limit.",
+          "sha256": "236580fdd23b388e9a8f00cfc17d667ec9687ed2b8a7dad398dd8bc3a1fa2645"
+        }
+      ],
+      "reference": {
+        "code": "export interface Submission {\n  id: string;\n  bytes: number;\n  kind: string;\n}\n\nexport type GateDecision =\n  | { ok: true; accepted: Submission[]; entries: Submission[] }\n  | { ok: false; reason: 'duplicate-id' | 'item-count' | 'total-bytes' | 'kind' };\n\nexport class SubmissionGate {\n  private readonly allowed: Set<string>;\n\n  public constructor(\n    private readonly maxTotalBytes: number,\n    private readonly maxItems: number,\n    allowedKinds: readonly string[] = [],\n  ) {\n    SubmissionGate.validateLimit(maxTotalBytes);\n    SubmissionGate.validateLimit(maxItems);\n    if (!Array.isArray(allowedKinds) || allowedKinds.some(\n      (kind: string) => typeof kind !== 'string' || kind.trim().length === 0,\n    )) {\n      throw new TypeError('Allowed kinds must be non-empty strings');\n    }\n    this.allowed = new Set(allowedKinds);\n  }\n\n  public assess(entries: readonly Submission[]): GateDecision {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    for (const entry of entries) {\n      if (\n        entry === null ||\n        typeof entry !== 'object' ||\n        typeof entry.id !== 'string' ||\n        entry.id.trim().length === 0 ||\n        typeof entry.kind !== 'string' ||\n        entry.kind.trim().length === 0 ||\n        typeof entry.bytes !== 'number' ||\n        !Number.isSafeInteger(entry.bytes) ||\n        entry.bytes < 0\n      ) {\n        throw new TypeError('Malformed submission');\n      }\n    }\n\n    const ids = new Set<string>();\n    for (const entry of entries) {\n      if (ids.has(entry.id)) return { ok: false, reason: 'duplicate-id' };\n      ids.add(entry.id);\n    }\n\n    if (entries.length > this.maxItems) return { ok: false, reason: 'item-count' };\n\n    let total = 0;\n    for (const entry of entries) {\n      if (total > Number.MAX_SAFE_INTEGER - entry.bytes) {\n        return { ok: false, reason: 'total-bytes' };\n      }\n      total += entry.bytes;\n    }\n    if (total > this.maxTotalBytes) return { ok: false, reason: 'total-bytes' };\n\n    if (this.allowed.size > 0 && entries.some((entry: Submission) => !this.allowed.has(entry.kind))) {\n      return { ok: false, reason: 'kind' };\n    }\n\n    const accepted = entries.map((entry: Submission) => ({\n      id: entry.id,\n      bytes: entry.bytes,\n      kind: entry.kind,\n    }));\n    return { ok: true, accepted, entries: accepted };\n  }\n\n  private static validateLimit(value: number): void {\n    if (typeof value !== 'number') throw new TypeError('Limits must be numbers');\n    if (!Number.isSafeInteger(value) || value < 0) {\n      throw new RangeError('Limits must be non-negative safe integers');\n    }\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c2b04733ad38c1a6d0f793a08afd00625617ebb3c99e035557174e59f415b4e4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:14\n    throw new Error('Missing allowed kind accepted');\n    ^\n\nError: Missing allowed kind accepted\n    at Object.<anonymous> (/work/solution.test.js:14:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "73599ae095358b3a20d64c13eac51a120ff4ab8df53fc8f3dac8b01ec7d57557",
+    "duration_ms": 2951,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

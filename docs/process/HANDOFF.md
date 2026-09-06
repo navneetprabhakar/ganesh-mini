@@ -2,6 +2,22 @@
 
 ## Quality review continuation — 2026-09-06
 
+Current checkpoint: **212 holds (209 additive plus historical three)**; 284
+unique outside-sample inspections. Batch 19 partial through position 275;
+continue 276. GCS verified through 209 holds / batch 18 / scope v5 (10 groups,
+14 strata, 3,085 review records). Latest five inspections await backup.
+No training seal or new VM. Older entries are historical.
+
+Current checkpoint: **209 holds (206 additive plus historical three)**; 279
+unique outside-sample inspections. Batch 18 complete through position 270;
+continue 271. GCS verified through 200 holds / batch 17; batch 18 awaits backup.
+No training seal or new VM. Older entries are historical.
+
+Current checkpoint: **200 holds (197 additive plus historical three)**; 264
+unique outside-sample inspections. Batch 17 complete through position 255;
+continue 256. GCS verified through 189 holds / batch 16. Batch 17 pending backup.
+No training seal or new VM. Older entries are historical.
+
 Current checkpoint: **191 holds (188 additive plus historical three)**; 254
 unique outside-sample inspections. Batch 17 partial through position 245;
 continue 246. GCS verified through 189 holds / completed batch 16. Latest five

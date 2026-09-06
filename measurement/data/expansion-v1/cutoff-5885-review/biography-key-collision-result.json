@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0173",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c7697884c68a67eaa8130b5a9a8281da9be0c444b23c813b617f78b73be8410b",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import {buildProfileView} from './solution';\nconst lines=buildProfileView({image:'x',biography:['A','A','A#2']}).lines;\nif(new Set(lines.map(l=>l.key)).size !== lines.length) throw new Error('Biography keys are not unique');\n",
+        "sha256": "de884ee4702a25cd2a2bcee6e3ba99d88e1f8658be39c1d2cc3cca4e8d004f58"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b961f96fbcc679c3534d394617fd8f15220027bec7fd98db6c032a06f010af6b",
+      "text": "Create a new, rendering-independent profile transformation module. Export `ProfileSource`, `BiographyLine`, `ProfileView`, and `buildProfileView(source)`. The image identifier must be trimmed and nonempty. Biography entries must each be trimmed and nonempty; an empty biography array is valid. Preserve paragraph order. Each output line contains the trimmed text and a stable unique key: the first occurrence uses the text itself, and later duplicates use `text#2`, `text#3`, and so on. Validation failure throws `TypeError`. The function must neither mutate nor retain aliases to its input, and every returned nested object must be newly created.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b961f96fbcc679c3534d394617fd8f15220027bec7fd98db6c032a06f010af6b",
+      "text": "Create a new, rendering-independent profile transformation module. Export `ProfileSource`, `BiographyLine`, `ProfileView`, and `buildProfileView(source)`. The image identifier must be trimmed and nonempty. Biography entries must each be trimmed and nonempty; an empty biography array is valid. Preserve paragraph order. Each output line contains the trimmed text and a stable unique key: the first occurrence uses the text itself, and later duplicates use `text#2`, `text#3`, and so on. Validation failure throws `TypeError`. The function must neither mutate nor retain aliases to its input, and every returned nested object must be newly created.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0173",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ProfileSource { readonly image: string; readonly biography: readonly string[]; }\nexport interface BiographyLine { readonly key: string; readonly text: string; }\nexport interface ProfileView { readonly image: string; readonly lines: readonly BiographyLine[]; }\n\nexport function buildProfileView(source: ProfileSource): ProfileView {\n  const image = source.image.trim();\n  if (!image) throw new TypeError(\"image required\");\n  const counts = new Map<string, number>();\n  const lines = source.biography.map(raw => {\n    const text = raw.trim();\n    if (!text) throw new TypeError(\"blank biography line\");\n    const count = (counts.get(text) ?? 0) + 1;\n    counts.set(text, count);\n    return { key: text, text };\n  });\n  return { image, lines };\n}\n",
+          "label": "Duplicate biography lines receive the same key instead of the required occurrence-suffixed unique keys.",
+          "sha256": "a47d7bb4ceb96b6dc9d1747fc02b1dc96d9c14752b0f5f59e455e6f67bf69500"
+        }
+      ],
+      "reference": {
+        "code": "export interface ProfileSource { readonly image: string; readonly biography: readonly string[]; }\nexport interface BiographyLine { readonly key: string; readonly text: string; }\nexport interface ProfileView { readonly image: string; readonly lines: readonly BiographyLine[]; }\n\nexport function buildProfileView(source: ProfileSource): ProfileView {\n  const image = source.image.trim();\n  if (!image) throw new TypeError(\"image required\");\n  const counts = new Map<string, number>();\n  const lines = source.biography.map(raw => {\n    const text = raw.trim();\n    if (!text) throw new TypeError(\"blank biography line\");\n    const count = (counts.get(text) ?? 0) + 1;\n    counts.set(text, count);\n    return { key: count === 1 ? text : `${text}#${count}`, text };\n  });\n  return { image, lines };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "dbeac3059f3c94340f8b5b0f0ae16f47c616aee3850fa999bd9d58fc3bb767ff"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { buildProfileView } from './solution';\n\nfunction eq(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message + ': ' + JSON.stringify(actual));\n}\nfunction throwsType(fn: () => unknown, message: string): void {\n  try { fn(); } catch (error) { if (error instanceof TypeError) return; throw error; }\n  throw new Error(message);\n}\n\nconst source: any = {\n  image: '  portrait-1  ',\n  imageId: '  portrait-1  ',\n  biography: ['  Engineer  ', 'Reader', 'Engineer', ' Engineer ', '  Parent  ']\n};\nconst view: any = buildProfileView(source);\nconst imageValue = view.image === undefined ? view.imageId : view.image;\neq(imageValue, 'portrait-1', 'image identifier trimmed');\nconst lines: any[] = view.biography === undefined ? view.lines : view.biography;\neq(lines, [\n  { key: 'Engineer', text: 'Engineer' },\n  { key: 'Reader', text: 'Reader' },\n  { key: 'Engineer#2', text: 'Engineer' },\n  { key: 'Engineer#3', text: 'Engineer' },\n  { key: 'Parent', text: 'Parent' }\n], 'biography order, trimming, and duplicate keys');\n\nsource.image = 'changed';\nsource.imageId = 'changed';\nsource.biography[0] = 'changed';\nsource.biography.push('extra');\nconst viewImage = view.image === undefined ? view.imageId : view.image;\neq(viewImage, 'portrait-1', 'result does not retain image input');\neq(lines.length, 5, 'result does not retain biography array');\neq(lines[0].text, 'Engineer', 'result does not retain biography entry');\n\nlines[0].text = 'mutated';\nlines[1].key = 'mutated';\nconst fresh: any = buildProfileView({ image: 'portrait-1', imageId: 'portrait-1', biography: ['Engineer', 'Reader'] } as any);\nconst freshLines: any[] = fresh.biography === undefined ? fresh.lines : fresh.biography;\neq(freshLines, [{ key: 'Engineer', text: 'Engineer' }, { key: 'Reader', text: 'Reader' }], 'each call creates fresh nested objects');\n\nconst empty: any = buildProfileView({ image: ' icon ', imageId: ' icon ', biography: [] } as any);\nconst emptyLines = empty.biography === undefined ? empty.lines : empty.biography;\neq(emptyLines, [], 'empty biography accepted');\n\nthrowsType(() => buildProfileView({ image: '   ', imageId: '   ', biography: [] } as any), 'blank image rejected');\nthrowsType(() => buildProfileView({ image: 'ok', imageId: 'ok', biography: ['valid', '   '] } as any), 'blank biography entry rejected');\nthrowsType(() => buildProfileView({ image: 'ok', imageId: 'ok', biography: [12] } as any), 'non-string biography entry rejected');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "151a8c4daf60bc94292d7c01cee2e2d5141778d2b572a136875339925ddfd9d7"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b961f96fbcc679c3534d394617fd8f15220027bec7fd98db6c032a06f010af6b",
+      "text": "Create a new, rendering-independent profile transformation module. Export `ProfileSource`, `BiographyLine`, `ProfileView`, and `buildProfileView(source)`. The image identifier must be trimmed and nonempty. Biography entries must each be trimmed and nonempty; an empty biography array is valid. Preserve paragraph order. Each output line contains the trimmed text and a stable unique key: the first occurrence uses the text itself, and later duplicates use `text#2`, `text#3`, and so on. Validation failure throws `TypeError`. The function must neither mutate nor retain aliases to its input, and every returned nested object must be newly created.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b961f96fbcc679c3534d394617fd8f15220027bec7fd98db6c032a06f010af6b",
+      "text": "Create a new, rendering-independent profile transformation module. Export `ProfileSource`, `BiographyLine`, `ProfileView`, and `buildProfileView(source)`. The image identifier must be trimmed and nonempty. Biography entries must each be trimmed and nonempty; an empty biography array is valid. Preserve paragraph order. Each output line contains the trimmed text and a stable unique key: the first occurrence uses the text itself, and later duplicates use `text#2`, `text#3`, and so on. Validation failure throws `TypeError`. The function must neither mutate nor retain aliases to its input, and every returned nested object must be newly created.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0173",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ProfileSource { readonly image: string; readonly biography: readonly string[]; }\nexport interface BiographyLine { readonly key: string; readonly text: string; }\nexport interface ProfileView { readonly image: string; readonly lines: readonly BiographyLine[]; }\n\nexport function buildProfileView(source: ProfileSource): ProfileView {\n  const image = source.image.trim();\n  if (!image) throw new TypeError(\"image required\");\n  const counts = new Map<string, number>();\n  const lines = source.biography.map(raw => {\n    const text = raw.trim();\n    if (!text) throw new TypeError(\"blank biography line\");\n    const count = (counts.get(text) ?? 0) + 1;\n    counts.set(text, count);\n    return { key: text, text };\n  });\n  return { image, lines };\n}\n",
+          "label": "Duplicate biography lines receive the same key instead of the required occurrence-suffixed unique keys.",
+          "sha256": "a47d7bb4ceb96b6dc9d1747fc02b1dc96d9c14752b0f5f59e455e6f67bf69500"
+        }
+      ],
+      "reference": {
+        "code": "export interface ProfileSource { readonly image: string; readonly biography: readonly string[]; }\nexport interface BiographyLine { readonly key: string; readonly text: string; }\nexport interface ProfileView { readonly image: string; readonly lines: readonly BiographyLine[]; }\n\nexport function buildProfileView(source: ProfileSource): ProfileView {\n  const image = source.image.trim();\n  if (!image) throw new TypeError(\"image required\");\n  const counts = new Map<string, number>();\n  const lines = source.biography.map(raw => {\n    const text = raw.trim();\n    if (!text) throw new TypeError(\"blank biography line\");\n    const count = (counts.get(text) ?? 0) + 1;\n    counts.set(text, count);\n    return { key: count === 1 ? text : `${text}#${count}`, text };\n  });\n  return { image, lines };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "dbeac3059f3c94340f8b5b0f0ae16f47c616aee3850fa999bd9d58fc3bb767ff"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:6\n    throw new Error('Biography keys are not unique');\n    ^\n\nError: Biography keys are not unique\n    at Object.<anonymous> (/work/solution.test.js:6:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "544ab09594024d0555e7eda6907053c4dc47effd523745ea73f2dcf03d4b409e",
+    "duration_ms": 2735,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,5 +1,19 @@
 # Array-validation follow-up, batch 17
 
+Completed positions 241–255: 15 new / 264 unique outside-sample inspections.
+Eleven new holds in batch: **197 additive / 200 including historical three**.
+Later diagnostics: session-render-missing, agenda-bullet-missing,
+facet-value-missing, catalog-alias-missing, interval-missing-endpoints,
+book-tags-missing, roster-required-id-copy, responsive-menu-missing,
+biography-key-collision (each suffixed -result.json). All runtime assertions
+failed without timeout; both later TypeScript compilations succeeded.
+
+The biography finding is a contradictory task contract, not merely a reference
+implementation error: required keys for ['A','A','A#2'] are ['A','A#2','A#2'],
+which cannot also be unique. No new naming convention is imposed by the probe.
+JS repair0125 uses dense string segments and BigInt comparison; no new hold.
+Continue position 256. Earlier partial checkpoint follows.
+
 Partial: positions 241–245 inspected; five new / 254 unique outside-sample
 inspections. Two new holds: **188 additive / 191 including historical three**.
 

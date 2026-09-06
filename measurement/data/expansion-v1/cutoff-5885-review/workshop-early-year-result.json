@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0368",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "43e7ee667f90b4114ca95e22c9285b47ef45665412de87fd76c7f23fc762b9a0",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { buildWorkshopSubmission } from './solution';\nconst result = buildWorkshopSubmission({ organizer: 'A', email: 'a@b', title: 'T', format: 'onsite', venue: 'V', summary: 'S', registrationCloses: '0099-01-01' }, '0099-01-01');\nif (!result.ok) throw new Error('Real Gregorian year 0099 must be accepted: ' + result.errors.join(','));\n",
+        "sha256": "f0470f2e903c13f05be3f857c4dc0edeee6b60890454012cd4b3e43c76ca9264"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "23910463ceac6581da65a37806a63b1120762f6429793c3384a83cd6c003c4c3",
+      "text": "Implement a new TypeScript function `buildWorkshopSubmission(input, earliestDate)` that validates and normalizes a workshop proposal.\n\nExport `WorkshopDraft`, `WorkshopSubmission`, `ValidationResult`, and the function. A draft contains `organizer`, `email`, `title`, `format` (`\"online\"` or `\"onsite\"`), `venue`, `summary`, and `registrationCloses`. A successful submission contains the same fields after trimming surrounding whitespace.\n\nAll string fields must be strings and non-empty after trimming. An email is valid only when its trimmed form contains exactly one `@`, with non-empty text on both sides. Dates use the exact `YYYY-MM-DD` format and must represent real Gregorian dates. `registrationCloses` may equal `earliestDate` but cannot precede it. For online workshops, normalize `venue` to `\"Remote\"`; for onsite workshops, retain the trimmed non-empty venue.\n\nReturn `{ ok: true, value }` on success or `{ ok: false, errors }` on failure. Errors must be unique and ordered by validation order: organizer, email, title, format, venue, summary, registrationCloses, earliestDate. Invalid `earliestDate` must be reported rather than throwing. Do not mutate or alias the input. Produce one complete strict TypeScript source file using no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "23910463ceac6581da65a37806a63b1120762f6429793c3384a83cd6c003c4c3",
+      "text": "Implement a new TypeScript function `buildWorkshopSubmission(input, earliestDate)` that validates and normalizes a workshop proposal.\n\nExport `WorkshopDraft`, `WorkshopSubmission`, `ValidationResult`, and the function. A draft contains `organizer`, `email`, `title`, `format` (`\"online\"` or `\"onsite\"`), `venue`, `summary`, and `registrationCloses`. A successful submission contains the same fields after trimming surrounding whitespace.\n\nAll string fields must be strings and non-empty after trimming. An email is valid only when its trimmed form contains exactly one `@`, with non-empty text on both sides. Dates use the exact `YYYY-MM-DD` format and must represent real Gregorian dates. `registrationCloses` may equal `earliestDate` but cannot precede it. For online workshops, normalize `venue` to `\"Remote\"`; for onsite workshops, retain the trimmed non-empty venue.\n\nReturn `{ ok: true, value }` on success or `{ ok: false, errors }` on failure. Errors must be unique and ordered by validation order: organizer, email, title, format, venue, summary, registrationCloses, earliestDate. Invalid `earliestDate` must be reported rather than throwing. Do not mutate or alias the input. Produce one complete strict TypeScript source file using no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0368",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface WorkshopDraft {\n  readonly organizer: string;\n  readonly email: string;\n  readonly title: string;\n  readonly format: \"online\" | \"onsite\";\n  readonly venue: string;\n  readonly summary: string;\n  readonly registrationCloses: string;\n}\n\nexport interface WorkshopSubmission extends WorkshopDraft {}\n\nexport type ValidationResult =\n  | { readonly ok: true; readonly value: WorkshopSubmission }\n  | { readonly ok: false; readonly errors: readonly string[] };\n\nfunction validDate(value: unknown): value is string {\n  if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;\n  const [year, month, day] = value.split(\"-\").map(Number);\n  const date = new Date(Date.UTC(year, month - 1, day));\n  return date.getUTCFullYear() === year &&\n    date.getUTCMonth() === month - 1 &&\n    date.getUTCDate() === day;\n}\n\nexport function buildWorkshopSubmission(\n  input: WorkshopDraft,\n  earliestDate: string\n): ValidationResult {\n  const errors: string[] = [];\n  const text = (value: unknown): string =>\n    typeof value === \"string\" ? value.trim() : \"\";\n\n  const organizer = text(input.organizer);\n  const email = text(input.email);\n  const title = text(input.title);\n  const venue = text(input.venue);\n  const summary = text(input.summary);\n  const registrationCloses = text(input.registrationCloses);\n\n  if (!organizer) errors.push(\"invalid organizer\");\n\n  const at = email.indexOf(\"@\");\n  if (!email || at <= 0 || at !== email.lastIndexOf(\"@\") || at === email.length - 1) {\n    errors.push(\"invalid email\");\n  }\n\n  if (!title) errors.push(\"invalid title\");\n  if (input.format !== \"online\" && input.format !== \"onsite\") {\n    errors.push(\"invalid format\");\n  }\n  if (!venue) errors.push(\"invalid venue\");\n  if (!summary) errors.push(\"invalid summary\");\n\n  const closesValid = validDate(registrationCloses);\n  const earliestValid = validDate(earliestDate);\n  if (!closesValid || (earliestValid && registrationCloses <= earliestDate)) {\n    errors.push(\"invalid registrationCloses\");\n  }\n  if (!earliestValid) errors.push(\"invalid earliestDate\");\n\n  if (errors.length > 0) return { ok: false, errors };\n\n  return {\n    ok: true,\n    value: {\n      organizer,\n      email,\n      title,\n      format: input.format,\n      venue: input.format === \"online\" ? \"Remote\" : venue,\n      summary,\n      registrationCloses\n    }\n  };\n}\n",
+          "label": "Rejects a closing date equal to the allowed earliest date.",
+          "sha256": "ae64ebeb0b365ec4e996410fc583a388d0a04bb43ad36077b7f94eef1fc8a684"
+        }
+      ],
+      "reference": {
+        "code": "export interface WorkshopDraft {\n  readonly organizer: string;\n  readonly email: string;\n  readonly title: string;\n  readonly format: \"online\" | \"onsite\";\n  readonly venue: string;\n  readonly summary: string;\n  readonly registrationCloses: string;\n}\n\nexport interface WorkshopSubmission extends WorkshopDraft {}\n\nexport type ValidationResult =\n  | { readonly ok: true; readonly value: WorkshopSubmission }\n  | { readonly ok: false; readonly errors: readonly string[] };\n\nfunction validDate(value: unknown): value is string {\n  if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;\n  const [year, month, day] = value.split(\"-\").map(Number);\n  const date = new Date(Date.UTC(year, month - 1, day));\n  return date.getUTCFullYear() === year &&\n    date.getUTCMonth() === month - 1 &&\n    date.getUTCDate() === day;\n}\n\nexport function buildWorkshopSubmission(\n  input: WorkshopDraft,\n  earliestDate: string\n): ValidationResult {\n  const errors: string[] = [];\n  const text = (value: unknown): string =>\n    typeof value === \"string\" ? value.trim() : \"\";\n\n  const organizer = text(input.organizer);\n  const email = text(input.email);\n  const title = text(input.title);\n  const venue = text(input.venue);\n  const summary = text(input.summary);\n  const registrationCloses = text(input.registrationCloses);\n\n  if (!organizer) errors.push(\"invalid organizer\");\n\n  const at = email.indexOf(\"@\");\n  if (!email || at <= 0 || at !== email.lastIndexOf(\"@\") || at === email.length - 1) {\n    errors.push(\"invalid email\");\n  }\n\n  if (!title) errors.push(\"invalid title\");\n  if (input.format !== \"online\" && input.format !== \"onsite\") {\n    errors.push(\"invalid format\");\n  }\n  if (!venue) errors.push(\"invalid venue\");\n  if (!summary) errors.push(\"invalid summary\");\n\n  const closesValid = validDate(registrationCloses);\n  const earliestValid = validDate(earliestDate);\n  if (!closesValid || (earliestValid && registrationCloses < earliestDate)) {\n    errors.push(\"invalid registrationCloses\");\n  }\n  if (!earliestValid) errors.push(\"invalid earliestDate\");\n\n  if (errors.length > 0) return { ok: false, errors };\n\n  return {\n    ok: true,\n    value: {\n      organizer,\n      email,\n      title,\n      format: input.format,\n      venue: input.format === \"online\" ? \"Remote\" : venue,\n      summary,\n      registrationCloses\n    }\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2163414e32cce1677952064fe35c40474f02364920e82a3253ca5ad63baf23dc"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { buildWorkshopSubmission } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) {\n    throw new Error(`${message}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);\n  }\n}\n\nconst valid = {\n  organizer: '  Ada  ',\n  email: ' ada@example.com ',\n  title: ' Type Systems ',\n  format: 'onsite' as const,\n  venue: ' Hall A ',\n  summary: ' Practical workshop ',\n  registrationCloses: '2024-02-29'\n};\nconst success = buildWorkshopSubmission(valid, '2024-02-29');\nassert(success.ok, 'valid draft should succeed');\nif (success.ok) {\n  equal(success.value, {\n    organizer: 'Ada', email: 'ada@example.com', title: 'Type Systems', format: 'onsite',\n    venue: 'Hall A', summary: 'Practical workshop', registrationCloses: '2024-02-29'\n  }, 'successful fields should be trimmed');\n  assert(success.value !== valid, 'submission must not alias input');\n}\nequal(valid, {\n  organizer: '  Ada  ', email: ' ada@example.com ', title: ' Type Systems ', format: 'onsite',\n  venue: ' Hall A ', summary: ' Practical workshop ', registrationCloses: '2024-02-29'\n}, 'input must not be mutated');\n\nconst online = buildWorkshopSubmission({ ...valid, format: 'online', venue: ' ignored place ' }, '2024-01-01');\nassert(online.ok && online.value.venue === 'Remote', 'online venue should normalize to Remote');\n\nfunction errorsFor(patch: Record<string, unknown>, earliest = '2024-01-01'): readonly string[] {\n  const result = buildWorkshopSubmission({ ...valid, ...patch } as typeof valid, earliest);\n  assert(!result.ok, 'case should fail validation');\n  return result.ok ? [] : result.errors;\n}\nconst organizerError = errorsFor({ organizer: '   ' });\nconst emailError = errorsFor({ email: 'a@@b' });\nconst titleError = errorsFor({ title: '' });\nconst formatError = errorsFor({ format: 'hybrid' });\nconst venueError = errorsFor({ venue: ' ' });\nconst summaryError = errorsFor({ summary: ' ' });\nconst closesError = errorsFor({ registrationCloses: '2023-12-31' });\nconst earliestResult = buildWorkshopSubmission(valid, '2023-02-29');\nassert(!earliestResult.ok, 'invalid earliest date should be reported');\nconst earliestError = earliestResult.ok ? [] : earliestResult.errors;\nfor (const errors of [organizerError, emailError, titleError, formatError, venueError, summaryError, closesError, earliestError]) {\n  assert(errors.length === 1, 'one invalid field should yield one error');\n}\nconst allInvalid = buildWorkshopSubmission({\n  organizer: ' ', email: 'bad', title: ' ', format: 'hybrid' as never,\n  venue: ' ', summary: ' ', registrationCloses: '2023-02-29'\n}, '2023-02-29');\nassert(!allInvalid.ok, 'fully invalid draft should fail');\nif (!allInvalid.ok) {\n  const expected = [organizerError[0], emailError[0], titleError[0], formatError[0], venueError[0], summaryError[0], closesError[0], earliestError[0]];\n  equal(allInvalid.errors, expected, 'errors should be unique and follow validation order');\n  assert(new Set(allInvalid.errors).size === allInvalid.errors.length, 'errors must be unique');\n}\n\nassert(errorsFor({ email: '@example.com' }).length === 1, 'email needs text before @');\nassert(errorsFor({ email: 'a@' }).length === 1, 'email needs text after @');\nassert(errorsFor({ registrationCloses: '2024-2-01' }).length === 1, 'date format must be exact');\nassert(errorsFor({ registrationCloses: '2024-04-31' }).length === 1, 'date must be Gregorian');\nassert(errorsFor({ organizer: 4 }).length === 1, 'non-string fields must be rejected');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "e1eda4d9dd69fc4baa816887ac1b0de53226eba8826cf1a612821e411024cd46"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "23910463ceac6581da65a37806a63b1120762f6429793c3384a83cd6c003c4c3",
+      "text": "Implement a new TypeScript function `buildWorkshopSubmission(input, earliestDate)` that validates and normalizes a workshop proposal.\n\nExport `WorkshopDraft`, `WorkshopSubmission`, `ValidationResult`, and the function. A draft contains `organizer`, `email`, `title`, `format` (`\"online\"` or `\"onsite\"`), `venue`, `summary`, and `registrationCloses`. A successful submission contains the same fields after trimming surrounding whitespace.\n\nAll string fields must be strings and non-empty after trimming. An email is valid only when its trimmed form contains exactly one `@`, with non-empty text on both sides. Dates use the exact `YYYY-MM-DD` format and must represent real Gregorian dates. `registrationCloses` may equal `earliestDate` but cannot precede it. For online workshops, normalize `venue` to `\"Remote\"`; for onsite workshops, retain the trimmed non-empty venue.\n\nReturn `{ ok: true, value }` on success or `{ ok: false, errors }` on failure. Errors must be unique and ordered by validation order: organizer, email, title, format, venue, summary, registrationCloses, earliestDate. Invalid `earliestDate` must be reported rather than throwing. Do not mutate or alias the input. Produce one complete strict TypeScript source file using no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "23910463ceac6581da65a37806a63b1120762f6429793c3384a83cd6c003c4c3",
+      "text": "Implement a new TypeScript function `buildWorkshopSubmission(input, earliestDate)` that validates and normalizes a workshop proposal.\n\nExport `WorkshopDraft`, `WorkshopSubmission`, `ValidationResult`, and the function. A draft contains `organizer`, `email`, `title`, `format` (`\"online\"` or `\"onsite\"`), `venue`, `summary`, and `registrationCloses`. A successful submission contains the same fields after trimming surrounding whitespace.\n\nAll string fields must be strings and non-empty after trimming. An email is valid only when its trimmed form contains exactly one `@`, with non-empty text on both sides. Dates use the exact `YYYY-MM-DD` format and must represent real Gregorian dates. `registrationCloses` may equal `earliestDate` but cannot precede it. For online workshops, normalize `venue` to `\"Remote\"`; for onsite workshops, retain the trimmed non-empty venue.\n\nReturn `{ ok: true, value }` on success or `{ ok: false, errors }` on failure. Errors must be unique and ordered by validation order: organizer, email, title, format, venue, summary, registrationCloses, earliestDate. Invalid `earliestDate` must be reported rather than throwing. Do not mutate or alias the input. Produce one complete strict TypeScript source file using no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0368",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface WorkshopDraft {\n  readonly organizer: string;\n  readonly email: string;\n  readonly title: string;\n  readonly format: \"online\" | \"onsite\";\n  readonly venue: string;\n  readonly summary: string;\n  readonly registrationCloses: string;\n}\n\nexport interface WorkshopSubmission extends WorkshopDraft {}\n\nexport type ValidationResult =\n  | { readonly ok: true; readonly value: WorkshopSubmission }\n  | { readonly ok: false; readonly errors: readonly string[] };\n\nfunction validDate(value: unknown): value is string {\n  if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;\n  const [year, month, day] = value.split(\"-\").map(Number);\n  const date = new Date(Date.UTC(year, month - 1, day));\n  return date.getUTCFullYear() === year &&\n    date.getUTCMonth() === month - 1 &&\n    date.getUTCDate() === day;\n}\n\nexport function buildWorkshopSubmission(\n  input: WorkshopDraft,\n  earliestDate: string\n): ValidationResult {\n  const errors: string[] = [];\n  const text = (value: unknown): string =>\n    typeof value === \"string\" ? value.trim() : \"\";\n\n  const organizer = text(input.organizer);\n  const email = text(input.email);\n  const title = text(input.title);\n  const venue = text(input.venue);\n  const summary = text(input.summary);\n  const registrationCloses = text(input.registrationCloses);\n\n  if (!organizer) errors.push(\"invalid organizer\");\n\n  const at = email.indexOf(\"@\");\n  if (!email || at <= 0 || at !== email.lastIndexOf(\"@\") || at === email.length - 1) {\n    errors.push(\"invalid email\");\n  }\n\n  if (!title) errors.push(\"invalid title\");\n  if (input.format !== \"online\" && input.format !== \"onsite\") {\n    errors.push(\"invalid format\");\n  }\n  if (!venue) errors.push(\"invalid venue\");\n  if (!summary) errors.push(\"invalid summary\");\n\n  const closesValid = validDate(registrationCloses);\n  const earliestValid = validDate(earliestDate);\n  if (!closesValid || (earliestValid && registrationCloses <= earliestDate)) {\n    errors.push(\"invalid registrationCloses\");\n  }\n  if (!earliestValid) errors.push(\"invalid earliestDate\");\n\n  if (errors.length > 0) return { ok: false, errors };\n\n  return {\n    ok: true,\n    value: {\n      organizer,\n      email,\n      title,\n      format: input.format,\n      venue: input.format === \"online\" ? \"Remote\" : venue,\n      summary,\n      registrationCloses\n    }\n  };\n}\n",
+          "label": "Rejects a closing date equal to the allowed earliest date.",
+          "sha256": "ae64ebeb0b365ec4e996410fc583a388d0a04bb43ad36077b7f94eef1fc8a684"
+        }
+      ],
+      "reference": {
+        "code": "export interface WorkshopDraft {\n  readonly organizer: string;\n  readonly email: string;\n  readonly title: string;\n  readonly format: \"online\" | \"onsite\";\n  readonly venue: string;\n  readonly summary: string;\n  readonly registrationCloses: string;\n}\n\nexport interface WorkshopSubmission extends WorkshopDraft {}\n\nexport type ValidationResult =\n  | { readonly ok: true; readonly value: WorkshopSubmission }\n  | { readonly ok: false; readonly errors: readonly string[] };\n\nfunction validDate(value: unknown): value is string {\n  if (typeof value !== \"string\" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;\n  const [year, month, day] = value.split(\"-\").map(Number);\n  const date = new Date(Date.UTC(year, month - 1, day));\n  return date.getUTCFullYear() === year &&\n    date.getUTCMonth() === month - 1 &&\n    date.getUTCDate() === day;\n}\n\nexport function buildWorkshopSubmission(\n  input: WorkshopDraft,\n  earliestDate: string\n): ValidationResult {\n  const errors: string[] = [];\n  const text = (value: unknown): string =>\n    typeof value === \"string\" ? value.trim() : \"\";\n\n  const organizer = text(input.organizer);\n  const email = text(input.email);\n  const title = text(input.title);\n  const venue = text(input.venue);\n  const summary = text(input.summary);\n  const registrationCloses = text(input.registrationCloses);\n\n  if (!organizer) errors.push(\"invalid organizer\");\n\n  const at = email.indexOf(\"@\");\n  if (!email || at <= 0 || at !== email.lastIndexOf(\"@\") || at === email.length - 1) {\n    errors.push(\"invalid email\");\n  }\n\n  if (!title) errors.push(\"invalid title\");\n  if (input.format !== \"online\" && input.format !== \"onsite\") {\n    errors.push(\"invalid format\");\n  }\n  if (!venue) errors.push(\"invalid venue\");\n  if (!summary) errors.push(\"invalid summary\");\n\n  const closesValid = validDate(registrationCloses);\n  const earliestValid = validDate(earliestDate);\n  if (!closesValid || (earliestValid && registrationCloses < earliestDate)) {\n    errors.push(\"invalid registrationCloses\");\n  }\n  if (!earliestValid) errors.push(\"invalid earliestDate\");\n\n  if (errors.length > 0) return { ok: false, errors };\n\n  return {\n    ok: true,\n    value: {\n      organizer,\n      email,\n      title,\n      format: input.format,\n      venue: input.format === \"online\" ? \"Remote\" : venue,\n      summary,\n      registrationCloses\n    }\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2163414e32cce1677952064fe35c40474f02364920e82a3253ca5ad63baf23dc"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:6\n    throw new Error('Real Gregorian year 0099 must be accepted: ' + result.errors.join(','));\n    ^\n\nError: Real Gregorian year 0099 must be accepted: invalid registrationCloses,invalid earliestDate\n    at Object.<anonymous> (/work/solution.test.js:6:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "5bc7887a311ac6c6c5ea34c85079e318e57fb8bc5ae5d748d60e32df365ca09f",
+    "duration_ms": 2060,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

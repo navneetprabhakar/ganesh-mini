@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0389",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9bdeb582f0ca1f89604b43ba0f65849f45cfdca4e72012d2e1d5e3ed44ea654b",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { EntityKey, NoteSnapshot, NoteRevisedRecord } from './solution';\nconst note: NoteSnapshot = { key: new EntityKey('n1'), body: 'before', revision: 0 };\nObject.defineProperty(note, 'body', { enumerable: false });\nconst event = new NoteRevisedRecord(0, note, { body: 'after' });\nif (event.note.body !== 'before') throw new Error('Event snapshot must preserve required body');\n",
+        "sha256": "01feaa8dd21e2bc2a765e8aba495cd0dbeafbca2e67738c58ca2424b2bc86272"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c88406dff368a255024e3dc46ecabb8e4f19b75a44c0e597bbe40c2803a6f8e0",
+      "text": "Implement a complete TypeScript domain-event module exporting `EntityKey`, `NoteSnapshot`, `DomainRecord`, `NoteRevisedRecord`, and `RevisionValue`.\n\n`EntityKey` is a class constructed with a nonblank string and exposes `toString(): string`. `NoteSnapshot` has `key: EntityKey`, `body: string`, and `revision: number`. `RevisionValue` is `string | number | boolean | null`. `DomainRecord` requires readonly `occurredAt: number` and `getEntityKey(): EntityKey`.\n\n`NoteRevisedRecord` implements `DomainRecord`. Its constructor accepts `(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>)`. Require `occurredAt` to be a finite nonnegative number, `note.body` to be a string, `note.revision` to be a nonnegative integer, and every change key to be nonblank; reject invalid data. At least one change is required. The event must expose readonly `note` and `changes` snapshots and return the note key from `getEntityKey`.\n\nCopy and freeze the note snapshot and changes map without freezing or mutating caller-owned objects. Later mutation of objects originally passed to the constructor must not affect the event. Preserve the insertion order of change keys.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c88406dff368a255024e3dc46ecabb8e4f19b75a44c0e597bbe40c2803a6f8e0",
+      "text": "Implement a complete TypeScript domain-event module exporting `EntityKey`, `NoteSnapshot`, `DomainRecord`, `NoteRevisedRecord`, and `RevisionValue`.\n\n`EntityKey` is a class constructed with a nonblank string and exposes `toString(): string`. `NoteSnapshot` has `key: EntityKey`, `body: string`, and `revision: number`. `RevisionValue` is `string | number | boolean | null`. `DomainRecord` requires readonly `occurredAt: number` and `getEntityKey(): EntityKey`.\n\n`NoteRevisedRecord` implements `DomainRecord`. Its constructor accepts `(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>)`. Require `occurredAt` to be a finite nonnegative number, `note.body` to be a string, `note.revision` to be a nonnegative integer, and every change key to be nonblank; reject invalid data. At least one change is required. The event must expose readonly `note` and `changes` snapshots and return the note key from `getEntityKey`.\n\nCopy and freeze the note snapshot and changes map without freezing or mutating caller-owned objects. Later mutation of objects originally passed to the constructor must not affect the event. Preserve the insertion order of change keys.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0389",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export class EntityKey {\n  private readonly value: string;\n  constructor(value: string) {\n    if (typeof value !== \"string\" || !value.trim()) throw new TypeError(\"key must be nonblank\");\n    this.value = value;\n  }\n  toString(): string { return this.value; }\n}\n\nexport interface NoteSnapshot { key: EntityKey; body: string; revision: number }\nexport type RevisionValue = string | number | boolean | null;\nexport interface DomainRecord { readonly occurredAt: number; getEntityKey(): EntityKey }\n\nexport class NoteRevisedRecord implements DomainRecord {\n  readonly occurredAt: number;\n  readonly note: Readonly<NoteSnapshot>;\n  readonly changes: Readonly<Record<string, RevisionValue>>;\n\n  constructor(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>) {\n    if (!Number.isFinite(occurredAt) || occurredAt < 0) throw new RangeError(\"invalid occurrence value\");\n    if (typeof note.body !== \"string\") throw new TypeError(\"body must be a string\");\n    if (!Number.isInteger(note.revision) || note.revision < 0) throw new RangeError(\"invalid revision\");\n    const entries = Object.entries(changes);\n    if (entries.length === 0) throw new TypeError(\"changes must not be empty\");\n    if (entries.some(([key]) => !key.trim())) throw new TypeError(\"change keys must be nonblank\");\n    this.occurredAt = occurredAt;\n    this.note = Object.freeze({ ...note });\n    this.changes = changes;\n  }\n\n  getEntityKey(): EntityKey { return this.note.key; }\n}\n",
+          "label": "Retains the caller's changes object instead of taking an immutable snapshot.",
+          "sha256": "ea75ed3c82966a6c5147d106f72fc8a48e4ee27792430c8307022d83c3ba0d40"
+        }
+      ],
+      "reference": {
+        "code": "export class EntityKey {\n  private readonly value: string;\n  constructor(value: string) {\n    if (typeof value !== \"string\" || !value.trim()) throw new TypeError(\"key must be nonblank\");\n    this.value = value;\n  }\n  toString(): string { return this.value; }\n}\n\nexport interface NoteSnapshot { key: EntityKey; body: string; revision: number }\nexport type RevisionValue = string | number | boolean | null;\nexport interface DomainRecord { readonly occurredAt: number; getEntityKey(): EntityKey }\n\nexport class NoteRevisedRecord implements DomainRecord {\n  readonly occurredAt: number;\n  readonly note: Readonly<NoteSnapshot>;\n  readonly changes: Readonly<Record<string, RevisionValue>>;\n\n  constructor(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>) {\n    if (!Number.isFinite(occurredAt) || occurredAt < 0) throw new RangeError(\"invalid occurrence value\");\n    if (typeof note.body !== \"string\") throw new TypeError(\"body must be a string\");\n    if (!Number.isInteger(note.revision) || note.revision < 0) throw new RangeError(\"invalid revision\");\n    const entries = Object.entries(changes);\n    if (entries.length === 0) throw new TypeError(\"changes must not be empty\");\n    if (entries.some(([key]) => !key.trim())) throw new TypeError(\"change keys must be nonblank\");\n    this.occurredAt = occurredAt;\n    this.note = Object.freeze({ ...note });\n    this.changes = Object.freeze(Object.fromEntries(entries) as Record<string, RevisionValue>);\n  }\n\n  getEntityKey(): EntityKey { return this.note.key; }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ec48e559965ad66e349d65a108a5da863f0c8b90ab7edc73c3eff0904a956980"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { EntityKey, NoteRevisedRecord } from './solution';\nimport type { NoteSnapshot, RevisionValue } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction throws(fn: () => unknown, ctor: Function, message: string): void {\n  try { fn(); } catch (error) {\n    if (error instanceof (ctor as any)) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: did not throw`);\n}\n\nthrows(() => new EntityKey(''), TypeError, 'empty key');\nthrows(() => new EntityKey(' \\t '), TypeError, 'whitespace key');\nconst key = new EntityKey('note-1');\nequal(key.toString(), 'note-1', 'key string');\n\nconst note: NoteSnapshot = { key, body: 'before', revision: 2 };\nconst changes: Record<string, RevisionValue> = {};\nchanges.body = 'after';\nchanges.reviewed = true;\nchanges.count = 3;\nchanges.optional = null;\nconst event = new NoteRevisedRecord(42.5, note, changes);\nequal(event.occurredAt, 42.5, 'occurredAt');\nassert(event.getEntityKey() === key, 'returns note key');\nassert(event.note !== note, 'note snapshot copied');\nassert(event.changes !== changes, 'changes map copied');\nassert(Object.isFrozen(event.note), 'note snapshot frozen');\nassert(Object.isFrozen(event.changes), 'changes map frozen');\nequal(Object.keys(event.changes).join(','), 'body,reviewed,count,optional', 'change insertion order');\n\nnote.body = 'caller changed';\nnote.revision = 99;\nchanges.body = 'caller changed';\nchanges.extra = 'new';\nequal(event.note.body, 'before', 'note mutation isolated');\nequal(event.note.revision, 2, 'revision mutation isolated');\nequal(event.changes.body, 'after', 'change mutation isolated');\nassert(!Object.prototype.hasOwnProperty.call(event.changes, 'extra'), 'later change key isolated');\n\nnew NoteRevisedRecord(0, { key, body: '', revision: 0 }, { x: false });\nfor (const occurredAt of [-1, Infinity, -Infinity, NaN]) {\n  throws(() => new NoteRevisedRecord(occurredAt, { key, body: 'x', revision: 0 }, { x: 1 }), RangeError, 'invalid occurredAt');\n}\nfor (const revision of [-1, 1.5, Infinity, NaN]) {\n  throws(() => new NoteRevisedRecord(0, { key, body: 'x', revision }, { x: 1 }), RangeError, 'invalid revision');\n}\nthrows(() => new NoteRevisedRecord(0, { key, body: 3 as unknown as string, revision: 0 }, { x: 1 }), TypeError, 'non-string body');\nthrows(() => new NoteRevisedRecord(0, { key, body: 'x', revision: 0 }, {}), TypeError, 'changes required');\nthrows(() => new NoteRevisedRecord(0, { key, body: 'x', revision: 0 }, { '  ': 1 }), TypeError, 'blank change key');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "94f6650c49e58b9a9fe5cf8e67e1beceaecb0dbb1f81bb67efc864f2dbab909e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c88406dff368a255024e3dc46ecabb8e4f19b75a44c0e597bbe40c2803a6f8e0",
+      "text": "Implement a complete TypeScript domain-event module exporting `EntityKey`, `NoteSnapshot`, `DomainRecord`, `NoteRevisedRecord`, and `RevisionValue`.\n\n`EntityKey` is a class constructed with a nonblank string and exposes `toString(): string`. `NoteSnapshot` has `key: EntityKey`, `body: string`, and `revision: number`. `RevisionValue` is `string | number | boolean | null`. `DomainRecord` requires readonly `occurredAt: number` and `getEntityKey(): EntityKey`.\n\n`NoteRevisedRecord` implements `DomainRecord`. Its constructor accepts `(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>)`. Require `occurredAt` to be a finite nonnegative number, `note.body` to be a string, `note.revision` to be a nonnegative integer, and every change key to be nonblank; reject invalid data. At least one change is required. The event must expose readonly `note` and `changes` snapshots and return the note key from `getEntityKey`.\n\nCopy and freeze the note snapshot and changes map without freezing or mutating caller-owned objects. Later mutation of objects originally passed to the constructor must not affect the event. Preserve the insertion order of change keys.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c88406dff368a255024e3dc46ecabb8e4f19b75a44c0e597bbe40c2803a6f8e0",
+      "text": "Implement a complete TypeScript domain-event module exporting `EntityKey`, `NoteSnapshot`, `DomainRecord`, `NoteRevisedRecord`, and `RevisionValue`.\n\n`EntityKey` is a class constructed with a nonblank string and exposes `toString(): string`. `NoteSnapshot` has `key: EntityKey`, `body: string`, and `revision: number`. `RevisionValue` is `string | number | boolean | null`. `DomainRecord` requires readonly `occurredAt: number` and `getEntityKey(): EntityKey`.\n\n`NoteRevisedRecord` implements `DomainRecord`. Its constructor accepts `(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>)`. Require `occurredAt` to be a finite nonnegative number, `note.body` to be a string, `note.revision` to be a nonnegative integer, and every change key to be nonblank; reject invalid data. At least one change is required. The event must expose readonly `note` and `changes` snapshots and return the note key from `getEntityKey`.\n\nCopy and freeze the note snapshot and changes map without freezing or mutating caller-owned objects. Later mutation of objects originally passed to the constructor must not affect the event. Preserve the insertion order of change keys.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0389",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export class EntityKey {\n  private readonly value: string;\n  constructor(value: string) {\n    if (typeof value !== \"string\" || !value.trim()) throw new TypeError(\"key must be nonblank\");\n    this.value = value;\n  }\n  toString(): string { return this.value; }\n}\n\nexport interface NoteSnapshot { key: EntityKey; body: string; revision: number }\nexport type RevisionValue = string | number | boolean | null;\nexport interface DomainRecord { readonly occurredAt: number; getEntityKey(): EntityKey }\n\nexport class NoteRevisedRecord implements DomainRecord {\n  readonly occurredAt: number;\n  readonly note: Readonly<NoteSnapshot>;\n  readonly changes: Readonly<Record<string, RevisionValue>>;\n\n  constructor(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>) {\n    if (!Number.isFinite(occurredAt) || occurredAt < 0) throw new RangeError(\"invalid occurrence value\");\n    if (typeof note.body !== \"string\") throw new TypeError(\"body must be a string\");\n    if (!Number.isInteger(note.revision) || note.revision < 0) throw new RangeError(\"invalid revision\");\n    const entries = Object.entries(changes);\n    if (entries.length === 0) throw new TypeError(\"changes must not be empty\");\n    if (entries.some(([key]) => !key.trim())) throw new TypeError(\"change keys must be nonblank\");\n    this.occurredAt = occurredAt;\n    this.note = Object.freeze({ ...note });\n    this.changes = changes;\n  }\n\n  getEntityKey(): EntityKey { return this.note.key; }\n}\n",
+          "label": "Retains the caller's changes object instead of taking an immutable snapshot.",
+          "sha256": "ea75ed3c82966a6c5147d106f72fc8a48e4ee27792430c8307022d83c3ba0d40"
+        }
+      ],
+      "reference": {
+        "code": "export class EntityKey {\n  private readonly value: string;\n  constructor(value: string) {\n    if (typeof value !== \"string\" || !value.trim()) throw new TypeError(\"key must be nonblank\");\n    this.value = value;\n  }\n  toString(): string { return this.value; }\n}\n\nexport interface NoteSnapshot { key: EntityKey; body: string; revision: number }\nexport type RevisionValue = string | number | boolean | null;\nexport interface DomainRecord { readonly occurredAt: number; getEntityKey(): EntityKey }\n\nexport class NoteRevisedRecord implements DomainRecord {\n  readonly occurredAt: number;\n  readonly note: Readonly<NoteSnapshot>;\n  readonly changes: Readonly<Record<string, RevisionValue>>;\n\n  constructor(occurredAt: number, note: NoteSnapshot, changes: Readonly<Record<string, RevisionValue>>) {\n    if (!Number.isFinite(occurredAt) || occurredAt < 0) throw new RangeError(\"invalid occurrence value\");\n    if (typeof note.body !== \"string\") throw new TypeError(\"body must be a string\");\n    if (!Number.isInteger(note.revision) || note.revision < 0) throw new RangeError(\"invalid revision\");\n    const entries = Object.entries(changes);\n    if (entries.length === 0) throw new TypeError(\"changes must not be empty\");\n    if (entries.some(([key]) => !key.trim())) throw new TypeError(\"change keys must be nonblank\");\n    this.occurredAt = occurredAt;\n    this.note = Object.freeze({ ...note });\n    this.changes = Object.freeze(Object.fromEntries(entries) as Record<string, RevisionValue>);\n  }\n\n  getEntityKey(): EntityKey { return this.note.key; }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ec48e559965ad66e349d65a108a5da863f0c8b90ab7edc73c3eff0904a956980"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('Event snapshot must preserve required body');\n    ^\n\nError: Event snapshot must preserve required body\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "198505a403edac5724a234d50c7023a4aaaa22cd8c8dc835c7529b1ff982fc15",
+    "duration_ms": 2477,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

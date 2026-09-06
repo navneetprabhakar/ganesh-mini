@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0358",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5acf60b09611a450973498c3ffe9f34c355b2a742449c060c77d31ddb2fe84f6",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { GapValue, expandGaps } from './solution';\nlet caught: unknown;\ntry { expandGaps({ outerGap: [1] as unknown as GapValue }); } catch (error) { caught = error; }\nif (!(caught instanceof RangeError)) throw new Error('Array shorthand must have two or four members, not one');\n",
+        "sha256": "b09f2c8d1c926422db04e708f2eba3dec427a913bdd401ff8bb3fa084b7ea791"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "08261ad6c5cebc7d3a1c692c45be82839fb3939a862f76e2363d1da6376cdeab",
+      "text": "Implement a complete TypeScript source file exporting `GapValue`, `GapStyle`, and `expandGaps`.\n\n`GapValue` is a number, a readonly pair of numbers, or a readonly four-number tuple. `GapStyle` supports `outerGap`, `innerGap`, the directional properties `outerTop`, `outerRight`, `outerBottom`, `outerLeft`, `innerTop`, `innerRight`, `innerBottom`, and `innerLeft`, plus arbitrary string-keyed properties.\n\n`expandGaps(style: Readonly<GapStyle>): GapStyle` returns a new object. A scalar shorthand applies to all sides; a pair applies vertical then horizontal; four values apply top, right, bottom, left. All supplied spacing numbers must be finite, and any shorthand array of another length is malformed; throw `RangeError` in either case. Preserve shorthand and unrelated properties. A directional property that is an own property of the input must never be replaced, even when its value is explicitly `undefined`. Inherited properties do not count as explicit directional values. Do not mutate or return the input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "08261ad6c5cebc7d3a1c692c45be82839fb3939a862f76e2363d1da6376cdeab",
+      "text": "Implement a complete TypeScript source file exporting `GapValue`, `GapStyle`, and `expandGaps`.\n\n`GapValue` is a number, a readonly pair of numbers, or a readonly four-number tuple. `GapStyle` supports `outerGap`, `innerGap`, the directional properties `outerTop`, `outerRight`, `outerBottom`, `outerLeft`, `innerTop`, `innerRight`, `innerBottom`, and `innerLeft`, plus arbitrary string-keyed properties.\n\n`expandGaps(style: Readonly<GapStyle>): GapStyle` returns a new object. A scalar shorthand applies to all sides; a pair applies vertical then horizontal; four values apply top, right, bottom, left. All supplied spacing numbers must be finite, and any shorthand array of another length is malformed; throw `RangeError` in either case. Preserve shorthand and unrelated properties. A directional property that is an own property of the input must never be replaced, even when its value is explicitly `undefined`. Inherited properties do not count as explicit directional values. Do not mutate or return the input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0358",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type GapValue = number | readonly [number, number] | readonly [number, number, number, number];\n\nexport interface GapStyle {\n  outerGap?: GapValue;\n  innerGap?: GapValue;\n  outerTop?: number;\n  outerRight?: number;\n  outerBottom?: number;\n  outerLeft?: number;\n  innerTop?: number;\n  innerRight?: number;\n  innerBottom?: number;\n  innerLeft?: number;\n  [key: string]: unknown;\n}\n\nconst directionalProperties = [\n  \"outerTop\",\n  \"outerRight\",\n  \"outerBottom\",\n  \"outerLeft\",\n  \"innerTop\",\n  \"innerRight\",\n  \"innerBottom\",\n  \"innerLeft\"\n] as const;\n\nfunction sides(value: GapValue): readonly [number, number, number, number] {\n  const values = typeof value === \"number\" ? [value] : [...value];\n  if (values.length !== 1 && values.length !== 2 && values.length !== 4) {\n    throw new RangeError(\"gap must contain one, two, or four values\");\n  }\n  if (values.some((item) => !Number.isFinite(item))) {\n    throw new RangeError(\"gap values must be finite\");\n  }\n  if (values.length === 1) return [values[0], values[0], values[0], values[0]];\n  if (values.length === 2) return [values[0], values[1], values[0], values[1]];\n  return [values[0], values[1], values[2], values[3]];\n}\n\nexport function expandGaps(style: Readonly<GapStyle>): GapStyle {\n  for (const property of directionalProperties) {\n    if (Object.prototype.hasOwnProperty.call(style, property)) {\n      const value = style[property];\n      if (value !== undefined && !Number.isFinite(value)) {\n        throw new RangeError(\"gap values must be finite\");\n      }\n    }\n  }\n\n  const result: GapStyle = { ...style };\n  const expand = (name: \"outerGap\" | \"innerGap\", prefix: \"outer\" | \"inner\"): void => {\n    const value = style[name];\n    if (value === undefined) return;\n    const values = sides(value);\n    const names = [prefix + \"Top\", prefix + \"Right\", prefix + \"Bottom\", prefix + \"Left\"];\n    names.forEach((property, index) => {\n      if (result[property] === undefined) result[property] = values[index];\n    });\n  };\n\n  expand(\"outerGap\", \"outer\");\n  expand(\"innerGap\", \"inner\");\n  return result;\n}\n",
+          "label": "The expansion overwrites an explicitly present directional property when its value is `undefined`.",
+          "sha256": "8de5b01ab6963beb28e94f3920ca362e40d97a121e73e77469271a6ccfde886b"
+        }
+      ],
+      "reference": {
+        "code": "export type GapValue = number | readonly [number, number] | readonly [number, number, number, number];\n\nexport interface GapStyle {\n  outerGap?: GapValue;\n  innerGap?: GapValue;\n  outerTop?: number;\n  outerRight?: number;\n  outerBottom?: number;\n  outerLeft?: number;\n  innerTop?: number;\n  innerRight?: number;\n  innerBottom?: number;\n  innerLeft?: number;\n  [key: string]: unknown;\n}\n\nconst directionalProperties = [\n  \"outerTop\",\n  \"outerRight\",\n  \"outerBottom\",\n  \"outerLeft\",\n  \"innerTop\",\n  \"innerRight\",\n  \"innerBottom\",\n  \"innerLeft\"\n] as const;\n\nfunction sides(value: GapValue): readonly [number, number, number, number] {\n  const values = typeof value === \"number\" ? [value] : [...value];\n  if (values.length !== 1 && values.length !== 2 && values.length !== 4) {\n    throw new RangeError(\"gap must contain one, two, or four values\");\n  }\n  if (values.some((item) => !Number.isFinite(item))) {\n    throw new RangeError(\"gap values must be finite\");\n  }\n  if (values.length === 1) return [values[0], values[0], values[0], values[0]];\n  if (values.length === 2) return [values[0], values[1], values[0], values[1]];\n  return [values[0], values[1], values[2], values[3]];\n}\n\nexport function expandGaps(style: Readonly<GapStyle>): GapStyle {\n  for (const property of directionalProperties) {\n    if (Object.prototype.hasOwnProperty.call(style, property)) {\n      const value = style[property];\n      if (value !== undefined && !Number.isFinite(value)) {\n        throw new RangeError(\"gap values must be finite\");\n      }\n    }\n  }\n\n  const result: GapStyle = { ...style };\n  const expand = (name: \"outerGap\" | \"innerGap\", prefix: \"outer\" | \"inner\"): void => {\n    const value = style[name];\n    if (value === undefined) return;\n    const values = sides(value);\n    const names = [prefix + \"Top\", prefix + \"Right\", prefix + \"Bottom\", prefix + \"Left\"];\n    names.forEach((property, index) => {\n      if (!Object.prototype.hasOwnProperty.call(style, property)) result[property] = values[index];\n    });\n  };\n\n  expand(\"outerGap\", \"outer\");\n  expand(\"innerGap\", \"inner\");\n  return result;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "62fce64e9fdceaeb4236ddc93562ac34b48182c412a9fa39b15e802ee60b8c5c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { expandGaps } from './solution';\nimport type { GapStyle } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal<T>(actual: T, expected: T, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction throwsRange(action: () => void, message: string): void {\n  let error: unknown;\n  try { action(); } catch (caught) { error = caught; }\n  assert(error instanceof RangeError, message);\n}\n\nconst source: GapStyle = {\n  outerGap: [1, 2],\n  innerGap: [3, 4, 5, 6],\n  outerLeft: 9,\n  innerTop: undefined,\n  color: 'red'\n};\nconst expanded = expandGaps(source);\nassert(expanded !== source, 'returns a new object');\nequal(expanded.outerGap, source.outerGap, 'outer shorthand is preserved');\nequal(expanded.innerGap, source.innerGap, 'inner shorthand is preserved');\nequal(expanded.color, 'red', 'unrelated property is preserved');\nequal(expanded.outerTop, 1, 'pair vertical top');\nequal(expanded.outerRight, 2, 'pair horizontal right');\nequal(expanded.outerBottom, 1, 'pair vertical bottom');\nequal(expanded.outerLeft, 9, 'explicit directional value wins');\nassert(Object.prototype.hasOwnProperty.call(expanded, 'innerTop'), 'explicit undefined remains an own property');\nequal(expanded.innerTop, undefined, 'explicit undefined is not replaced');\nequal(expanded.innerRight, 4, 'four-value right');\nequal(expanded.innerBottom, 5, 'four-value bottom');\nequal(expanded.innerLeft, 6, 'four-value left');\nequal(source.outerTop, undefined, 'input is not mutated');\nequal(source.innerRight, undefined, 'input receives no expanded values');\n\nconst scalar = expandGaps({ outerGap: 7, innerGap: 0 });\nfor (const key of ['outerTop', 'outerRight', 'outerBottom', 'outerLeft'] as const) equal(scalar[key], 7, `scalar outer ${key}`);\nfor (const key of ['innerTop', 'innerRight', 'innerBottom', 'innerLeft'] as const) equal(scalar[key], 0, `scalar inner ${key}`);\n\nconst proto = { outerTop: 99 };\nconst inherited = Object.create(proto) as GapStyle;\n(inherited as { outerGap: number }).outerGap = 4;\nconst inheritedResult = expandGaps(inherited);\nequal(inheritedResult.outerTop, 4, 'inherited directional value is not explicit');\nassert(Object.prototype.hasOwnProperty.call(inheritedResult, 'outerTop'), 'expanded directional value is own');\n\nthrowsRange(() => expandGaps({ outerGap: [] as unknown as readonly [number, number] }), 'empty shorthand rejected');\nthrowsRange(() => expandGaps({ outerGap: [1, 2, 3] as unknown as readonly [number, number] }), 'three-value shorthand rejected');\nthrowsRange(() => expandGaps({ innerGap: [1, 2, 3, 4, 5] as unknown as readonly [number, number, number, number] }), 'five-value shorthand rejected');\nthrowsRange(() => expandGaps({ outerGap: Number.NaN }), 'non-finite scalar rejected');\nthrowsRange(() => expandGaps({ innerGap: [1, Number.POSITIVE_INFINITY] }), 'non-finite shorthand member rejected');\nthrowsRange(() => expandGaps({ outerRight: Number.NEGATIVE_INFINITY }), 'non-finite directional value rejected');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "bf8dcb5b54ab490b649eb41b2991cded69177f9f43bd33346d8fca63859cf892"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "08261ad6c5cebc7d3a1c692c45be82839fb3939a862f76e2363d1da6376cdeab",
+      "text": "Implement a complete TypeScript source file exporting `GapValue`, `GapStyle`, and `expandGaps`.\n\n`GapValue` is a number, a readonly pair of numbers, or a readonly four-number tuple. `GapStyle` supports `outerGap`, `innerGap`, the directional properties `outerTop`, `outerRight`, `outerBottom`, `outerLeft`, `innerTop`, `innerRight`, `innerBottom`, and `innerLeft`, plus arbitrary string-keyed properties.\n\n`expandGaps(style: Readonly<GapStyle>): GapStyle` returns a new object. A scalar shorthand applies to all sides; a pair applies vertical then horizontal; four values apply top, right, bottom, left. All supplied spacing numbers must be finite, and any shorthand array of another length is malformed; throw `RangeError` in either case. Preserve shorthand and unrelated properties. A directional property that is an own property of the input must never be replaced, even when its value is explicitly `undefined`. Inherited properties do not count as explicit directional values. Do not mutate or return the input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "08261ad6c5cebc7d3a1c692c45be82839fb3939a862f76e2363d1da6376cdeab",
+      "text": "Implement a complete TypeScript source file exporting `GapValue`, `GapStyle`, and `expandGaps`.\n\n`GapValue` is a number, a readonly pair of numbers, or a readonly four-number tuple. `GapStyle` supports `outerGap`, `innerGap`, the directional properties `outerTop`, `outerRight`, `outerBottom`, `outerLeft`, `innerTop`, `innerRight`, `innerBottom`, and `innerLeft`, plus arbitrary string-keyed properties.\n\n`expandGaps(style: Readonly<GapStyle>): GapStyle` returns a new object. A scalar shorthand applies to all sides; a pair applies vertical then horizontal; four values apply top, right, bottom, left. All supplied spacing numbers must be finite, and any shorthand array of another length is malformed; throw `RangeError` in either case. Preserve shorthand and unrelated properties. A directional property that is an own property of the input must never be replaced, even when its value is explicitly `undefined`. Inherited properties do not count as explicit directional values. Do not mutate or return the input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0358",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type GapValue = number | readonly [number, number] | readonly [number, number, number, number];\n\nexport interface GapStyle {\n  outerGap?: GapValue;\n  innerGap?: GapValue;\n  outerTop?: number;\n  outerRight?: number;\n  outerBottom?: number;\n  outerLeft?: number;\n  innerTop?: number;\n  innerRight?: number;\n  innerBottom?: number;\n  innerLeft?: number;\n  [key: string]: unknown;\n}\n\nconst directionalProperties = [\n  \"outerTop\",\n  \"outerRight\",\n  \"outerBottom\",\n  \"outerLeft\",\n  \"innerTop\",\n  \"innerRight\",\n  \"innerBottom\",\n  \"innerLeft\"\n] as const;\n\nfunction sides(value: GapValue): readonly [number, number, number, number] {\n  const values = typeof value === \"number\" ? [value] : [...value];\n  if (values.length !== 1 && values.length !== 2 && values.length !== 4) {\n    throw new RangeError(\"gap must contain one, two, or four values\");\n  }\n  if (values.some((item) => !Number.isFinite(item))) {\n    throw new RangeError(\"gap values must be finite\");\n  }\n  if (values.length === 1) return [values[0], values[0], values[0], values[0]];\n  if (values.length === 2) return [values[0], values[1], values[0], values[1]];\n  return [values[0], values[1], values[2], values[3]];\n}\n\nexport function expandGaps(style: Readonly<GapStyle>): GapStyle {\n  for (const property of directionalProperties) {\n    if (Object.prototype.hasOwnProperty.call(style, property)) {\n      const value = style[property];\n      if (value !== undefined && !Number.isFinite(value)) {\n        throw new RangeError(\"gap values must be finite\");\n      }\n    }\n  }\n\n  const result: GapStyle = { ...style };\n  const expand = (name: \"outerGap\" | \"innerGap\", prefix: \"outer\" | \"inner\"): void => {\n    const value = style[name];\n    if (value === undefined) return;\n    const values = sides(value);\n    const names = [prefix + \"Top\", prefix + \"Right\", prefix + \"Bottom\", prefix + \"Left\"];\n    names.forEach((property, index) => {\n      if (result[property] === undefined) result[property] = values[index];\n    });\n  };\n\n  expand(\"outerGap\", \"outer\");\n  expand(\"innerGap\", \"inner\");\n  return result;\n}\n",
+          "label": "The expansion overwrites an explicitly present directional property when its value is `undefined`.",
+          "sha256": "8de5b01ab6963beb28e94f3920ca362e40d97a121e73e77469271a6ccfde886b"
+        }
+      ],
+      "reference": {
+        "code": "export type GapValue = number | readonly [number, number] | readonly [number, number, number, number];\n\nexport interface GapStyle {\n  outerGap?: GapValue;\n  innerGap?: GapValue;\n  outerTop?: number;\n  outerRight?: number;\n  outerBottom?: number;\n  outerLeft?: number;\n  innerTop?: number;\n  innerRight?: number;\n  innerBottom?: number;\n  innerLeft?: number;\n  [key: string]: unknown;\n}\n\nconst directionalProperties = [\n  \"outerTop\",\n  \"outerRight\",\n  \"outerBottom\",\n  \"outerLeft\",\n  \"innerTop\",\n  \"innerRight\",\n  \"innerBottom\",\n  \"innerLeft\"\n] as const;\n\nfunction sides(value: GapValue): readonly [number, number, number, number] {\n  const values = typeof value === \"number\" ? [value] : [...value];\n  if (values.length !== 1 && values.length !== 2 && values.length !== 4) {\n    throw new RangeError(\"gap must contain one, two, or four values\");\n  }\n  if (values.some((item) => !Number.isFinite(item))) {\n    throw new RangeError(\"gap values must be finite\");\n  }\n  if (values.length === 1) return [values[0], values[0], values[0], values[0]];\n  if (values.length === 2) return [values[0], values[1], values[0], values[1]];\n  return [values[0], values[1], values[2], values[3]];\n}\n\nexport function expandGaps(style: Readonly<GapStyle>): GapStyle {\n  for (const property of directionalProperties) {\n    if (Object.prototype.hasOwnProperty.call(style, property)) {\n      const value = style[property];\n      if (value !== undefined && !Number.isFinite(value)) {\n        throw new RangeError(\"gap values must be finite\");\n      }\n    }\n  }\n\n  const result: GapStyle = { ...style };\n  const expand = (name: \"outerGap\" | \"innerGap\", prefix: \"outer\" | \"inner\"): void => {\n    const value = style[name];\n    if (value === undefined) return;\n    const values = sides(value);\n    const names = [prefix + \"Top\", prefix + \"Right\", prefix + \"Bottom\", prefix + \"Left\"];\n    names.forEach((property, index) => {\n      if (!Object.prototype.hasOwnProperty.call(style, property)) result[property] = values[index];\n    });\n  };\n\n  expand(\"outerGap\", \"outer\");\n  expand(\"innerGap\", \"inner\");\n  return result;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "62fce64e9fdceaeb4236ddc93562ac34b48182c412a9fa39b15e802ee60b8c5c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Array shorthand must have two or four members, not one');\n    ^\n\nError: Array shorthand must have two or four members, not one\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "bef1fca050cb29df220c5091ff4eb944c5ba593218f4505be4bf9152bad36fe7",
+    "duration_ms": 2127,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0379",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "fed44a5990caa49781e555157c2c1687ee2ad475d6a899867e392a09661eee8b",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ParticipantAudio, AudioRoomState } from './solution';\nconst local: ParticipantAudio = { participantId: 'p', streamKey: 'stream', muted: false };\nObject.defineProperty(local, 'streamKey', { value: 'stream', enumerable: false });\nconst room = new AudioRoomState('', 'relay'); room.join(local);\nif (room.snapshot().participants[0].streamKey !== 'stream') throw new Error('Required stream key must survive copying');\n",
+        "sha256": "2c7d5ae014eb339c1edbad79337e3fdd4f135416ca475c8f06d8daeec1935780"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "754dca55987ae6def1ad7069ee185324374526c0fadd02dc10b4f4b38f887545",
+      "text": "Implement a complete TypeScript source file exporting `ConnectionMode`, `ParticipantAudio`, `RoomSnapshot`, and `AudioRoomState`. `ConnectionMode` is `'relay' | 'direct'`. `ParticipantAudio` has `participantId`, `streamKey`, and `muted`. The constructor accepts `(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio)`. Parse an optional query string without decoding: `mode=relay` or `mode=direct` overrides the default; `join=yes` automatically joins using `local`, and must throw if `local` is absent. Unknown or malformed pairs are ignored, and the first recognized `mode` value wins. Provide `join`, `leave`, `setMicrophoneMuted`, `setSpeakersMuted`, `setRemote`, `removeRemote`, and `snapshot`. Joining twice, changing mute state while absent, or adding a remote while absent must throw. Participant IDs and stream keys must be nonempty after trimming. A remote cannot use the local ID. Replacing a remote preserves insertion order. `leave` clears all remotes and mute flags. Snapshots list the local participant first, followed by remotes in insertion order, and must not expose mutable internal state. `participantCount` includes the local participant while joined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "754dca55987ae6def1ad7069ee185324374526c0fadd02dc10b4f4b38f887545",
+      "text": "Implement a complete TypeScript source file exporting `ConnectionMode`, `ParticipantAudio`, `RoomSnapshot`, and `AudioRoomState`. `ConnectionMode` is `'relay' | 'direct'`. `ParticipantAudio` has `participantId`, `streamKey`, and `muted`. The constructor accepts `(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio)`. Parse an optional query string without decoding: `mode=relay` or `mode=direct` overrides the default; `join=yes` automatically joins using `local`, and must throw if `local` is absent. Unknown or malformed pairs are ignored, and the first recognized `mode` value wins. Provide `join`, `leave`, `setMicrophoneMuted`, `setSpeakersMuted`, `setRemote`, `removeRemote`, and `snapshot`. Joining twice, changing mute state while absent, or adding a remote while absent must throw. Participant IDs and stream keys must be nonempty after trimming. A remote cannot use the local ID. Replacing a remote preserves insertion order. `leave` clears all remotes and mute flags. Snapshots list the local participant first, followed by remotes in insertion order, and must not expose mutable internal state. `participantCount` includes the local participant while joined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0379",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ConnectionMode = 'relay' | 'direct';\nexport interface ParticipantAudio { participantId: string; streamKey: string; muted: boolean; }\nexport interface RoomSnapshot { mode: ConnectionMode; joined: boolean; microphoneMuted: boolean; speakersMuted: boolean; participantCount: number; participants: ParticipantAudio[]; }\n\nfunction valid(p: ParticipantAudio): ParticipantAudio {\n  if (!p.participantId.trim() || !p.streamKey.trim()) throw new Error('Invalid participant');\n  return { ...p };\n}\nfunction pairs(query: string): string[] {\n  const text = query.startsWith('?') ? query.slice(1) : query;\n  return text.split('&');\n}\nfunction queryMode(query: string): ConnectionMode | undefined {\n  for (const pair of pairs(query)) {\n    const parts = pair.split('=');\n    if (parts.length === 2 && parts[0] === 'mode' && (parts[1] === 'relay' || parts[1] === 'direct')) return parts[1];\n  }\n  return undefined;\n}\nfunction autoJoin(query: string): boolean {\n  return pairs(query).some(pair => pair === 'join=yes');\n}\nexport class AudioRoomState {\n  private local?: ParticipantAudio;\n  private readonly remotes = new Map<string, ParticipantAudio>();\n  private micMuted = false;\n  private outputMuted = false;\n  readonly mode: ConnectionMode;\n  constructor(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio) {\n    this.mode = queryMode(query) ?? defaultMode;\n    if (autoJoin(query)) {\n      if (!local) throw new Error('Local participant required');\n      this.join(local);\n    }\n  }\n  join(local: ParticipantAudio): void {\n    if (this.local) throw new Error('Already joined');\n    const copy = valid(local);\n    this.local = copy;\n    this.micMuted = copy.muted;\n  }\n  leave(): void {\n    this.local = undefined;\n    this.remotes.clear();\n    this.micMuted = false;\n    this.outputMuted = false;\n  }\n  setMicrophoneMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.micMuted = value;\n  }\n  setSpeakersMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.outputMuted = value;\n  }\n  setRemote(remote: ParticipantAudio): void {\n    if (!this.local) throw new Error('Not joined');\n    const copy = valid(remote);\n    if (copy.participantId === this.local.participantId) throw new Error('Duplicate local id');\n    this.remotes.set(copy.participantId, copy);\n  }\n  removeRemote(id: string): boolean { return this.remotes.delete(id); }\n  snapshot(): RoomSnapshot {\n    const participants = this.local\n      ? [{ ...this.local, muted: this.micMuted }, ...Array.from(this.remotes.values(), remote => ({ ...remote }))]\n      : [];\n    return {\n      mode: this.mode,\n      joined: this.local !== undefined,\n      microphoneMuted: this.micMuted,\n      speakersMuted: this.outputMuted,\n      participantCount: this.remotes.size,\n      participants\n    };\n  }\n}\n",
+          "label": "The snapshot participant count omits the joined local participant.",
+          "sha256": "41e2b1f5bea5d7e2cd32300f5efbc6d9b68a391a22dcb804b3e9d1d5240fc19e"
+        }
+      ],
+      "reference": {
+        "code": "export type ConnectionMode = 'relay' | 'direct';\nexport interface ParticipantAudio { participantId: string; streamKey: string; muted: boolean; }\nexport interface RoomSnapshot { mode: ConnectionMode; joined: boolean; microphoneMuted: boolean; speakersMuted: boolean; participantCount: number; participants: ParticipantAudio[]; }\n\nfunction valid(p: ParticipantAudio): ParticipantAudio {\n  if (!p.participantId.trim() || !p.streamKey.trim()) throw new Error('Invalid participant');\n  return { ...p };\n}\nfunction pairs(query: string): string[] {\n  const text = query.startsWith('?') ? query.slice(1) : query;\n  return text.split('&');\n}\nfunction queryMode(query: string): ConnectionMode | undefined {\n  for (const pair of pairs(query)) {\n    const parts = pair.split('=');\n    if (parts.length === 2 && parts[0] === 'mode' && (parts[1] === 'relay' || parts[1] === 'direct')) return parts[1];\n  }\n  return undefined;\n}\nfunction autoJoin(query: string): boolean {\n  return pairs(query).some(pair => pair === 'join=yes');\n}\nexport class AudioRoomState {\n  private local?: ParticipantAudio;\n  private readonly remotes = new Map<string, ParticipantAudio>();\n  private micMuted = false;\n  private outputMuted = false;\n  readonly mode: ConnectionMode;\n  constructor(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio) {\n    this.mode = queryMode(query) ?? defaultMode;\n    if (autoJoin(query)) {\n      if (!local) throw new Error('Local participant required');\n      this.join(local);\n    }\n  }\n  join(local: ParticipantAudio): void {\n    if (this.local) throw new Error('Already joined');\n    const copy = valid(local);\n    this.local = copy;\n    this.micMuted = copy.muted;\n  }\n  leave(): void {\n    this.local = undefined;\n    this.remotes.clear();\n    this.micMuted = false;\n    this.outputMuted = false;\n  }\n  setMicrophoneMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.micMuted = value;\n  }\n  setSpeakersMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.outputMuted = value;\n  }\n  setRemote(remote: ParticipantAudio): void {\n    if (!this.local) throw new Error('Not joined');\n    const copy = valid(remote);\n    if (copy.participantId === this.local.participantId) throw new Error('Duplicate local id');\n    this.remotes.set(copy.participantId, copy);\n  }\n  removeRemote(id: string): boolean { return this.remotes.delete(id); }\n  snapshot(): RoomSnapshot {\n    const participants = this.local\n      ? [{ ...this.local, muted: this.micMuted }, ...Array.from(this.remotes.values(), remote => ({ ...remote }))]\n      : [];\n    return {\n      mode: this.mode,\n      joined: this.local !== undefined,\n      microphoneMuted: this.micMuted,\n      speakersMuted: this.outputMuted,\n      participantCount: participants.length,\n      participants\n    };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6602f331345485fd8d585d06011391e00bfdeac1e096910133638697ad5ec40a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { AudioRoomState, ParticipantAudio } from './solution';\n\nfunction assert(value: boolean, message: string): void { if (!value) throw new Error(message); }\nfunction equal(actual: unknown, expected: unknown, message: string): void { if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`); }\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void { if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${message}: ${JSON.stringify(actual)}`); }\nfunction throws(action: () => unknown, message: string): void { let didThrow = false; try { action(); } catch { didThrow = true; } if (!didThrow) throw new Error(message); }\n\nconst local: ParticipantAudio = { participantId: 'local', streamKey: 'local-stream', muted: false };\nconst room = new AudioRoomState('unknown=x&mode=direct&mode=relay', 'relay');\nequal(room.snapshot().mode, 'direct', 'first recognized mode wins');\ndeepEqual(room.snapshot().participants, [], 'new room is absent');\nequal(room.snapshot().participantCount, 0, 'absent count');\n\nroom.join(local);\nlocal.participantId = 'changed-outside';\nlet snap = room.snapshot();\nequal(snap.participantCount, 1, 'joined count includes local');\nequal(snap.participants[0].participantId, 'local', 'join copies local');\nthrows(() => room.join({ participantId: 'other', streamKey: 's', muted: false }), 'joining twice must throw');\n\nroom.setRemote({ participantId: 'r1', streamKey: 'one', muted: false });\nconst remoteInput: ParticipantAudio = { participantId: 'r2', streamKey: 'two', muted: true };\nroom.setRemote(remoteInput);\nremoteInput.streamKey = 'mutated';\nroom.setRemote({ participantId: 'r1', streamKey: 'replacement', muted: true });\nsnap = room.snapshot();\ndeepEqual(snap.participants.map(p => p.participantId), ['local', 'r1', 'r2'], 'replacement preserves insertion order');\nequal(snap.participants[1].streamKey, 'replacement', 'remote replaced');\nequal(snap.participants[2].streamKey, 'two', 'remote input copied');\nequal(snap.participantCount, 3, 'all participants counted');\n\nroom.setMicrophoneMuted(true);\nroom.setSpeakersMuted(true);\nsnap = room.snapshot();\nequal(snap.participants[0].muted, true, 'microphone mute updates local');\nequal(snap.speakersMuted, true, 'speaker mute updated');\nsnap.participants[0].muted = false;\nsnap.participants.push({ participantId: 'injected', streamKey: 'x', muted: false });\nequal(room.snapshot().participants[0].muted, true, 'snapshot participant is copied');\nequal(room.snapshot().participantCount, 3, 'snapshot array is copied');\n\nassert(room.removeRemote('r1'), 'known remote removed');\nassert(!room.removeRemote('missing'), 'unknown remote removal is false');\nthrows(() => room.setRemote({ participantId: 'local', streamKey: 'x', muted: false }), 'remote cannot use local id');\nthrows(() => room.setRemote({ participantId: '   ', streamKey: 'x', muted: false }), 'blank remote id rejected');\nthrows(() => room.setRemote({ participantId: 'r3', streamKey: '   ', muted: false }), 'blank stream key rejected');\n\nroom.leave();\nsnap = room.snapshot();\ndeepEqual(snap.participants, [], 'leave clears participants');\nequal(snap.participantCount, 0, 'leave clears count');\nequal(snap.speakersMuted, false, 'leave clears speaker mute');\nthrows(() => room.setMicrophoneMuted(true), 'microphone change while absent throws');\nthrows(() => room.setSpeakersMuted(true), 'speaker change while absent throws');\nthrows(() => room.setRemote({ participantId: 'r', streamKey: 's', muted: false }), 'remote while absent throws');\nthrows(() => room.join({ participantId: '', streamKey: 's', muted: false }), 'blank local id rejected');\nthrows(() => new AudioRoomState('join=yes', 'relay'), 'automatic join requires local');\n\nconst automaticLocal: ParticipantAudio = { participantId: 'auto', streamKey: 'stream', muted: true };\nconst automatic = new AudioRoomState('mode=bad&join=yes&mode=direct', 'relay', automaticLocal);\nautomaticLocal.muted = false;\nequal(automatic.snapshot().mode, 'direct', 'valid mode after malformed value is used');\nequal(automatic.snapshot().participantCount, 1, 'join=yes joins');\nequal(automatic.snapshot().participants[0].muted, true, 'automatic local is copied');\n\nconst undecoded = new AudioRoomState('mode%3Ddirect=x&mode=relay=extra', 'direct');\nequal(undecoded.snapshot().mode, 'direct', 'encoded and malformed pairs ignored');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "46e5d5153f0255234f7e87f2f94e1299a1a361b6f518eb8c761dd59601af10ce"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "754dca55987ae6def1ad7069ee185324374526c0fadd02dc10b4f4b38f887545",
+      "text": "Implement a complete TypeScript source file exporting `ConnectionMode`, `ParticipantAudio`, `RoomSnapshot`, and `AudioRoomState`. `ConnectionMode` is `'relay' | 'direct'`. `ParticipantAudio` has `participantId`, `streamKey`, and `muted`. The constructor accepts `(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio)`. Parse an optional query string without decoding: `mode=relay` or `mode=direct` overrides the default; `join=yes` automatically joins using `local`, and must throw if `local` is absent. Unknown or malformed pairs are ignored, and the first recognized `mode` value wins. Provide `join`, `leave`, `setMicrophoneMuted`, `setSpeakersMuted`, `setRemote`, `removeRemote`, and `snapshot`. Joining twice, changing mute state while absent, or adding a remote while absent must throw. Participant IDs and stream keys must be nonempty after trimming. A remote cannot use the local ID. Replacing a remote preserves insertion order. `leave` clears all remotes and mute flags. Snapshots list the local participant first, followed by remotes in insertion order, and must not expose mutable internal state. `participantCount` includes the local participant while joined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "754dca55987ae6def1ad7069ee185324374526c0fadd02dc10b4f4b38f887545",
+      "text": "Implement a complete TypeScript source file exporting `ConnectionMode`, `ParticipantAudio`, `RoomSnapshot`, and `AudioRoomState`. `ConnectionMode` is `'relay' | 'direct'`. `ParticipantAudio` has `participantId`, `streamKey`, and `muted`. The constructor accepts `(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio)`. Parse an optional query string without decoding: `mode=relay` or `mode=direct` overrides the default; `join=yes` automatically joins using `local`, and must throw if `local` is absent. Unknown or malformed pairs are ignored, and the first recognized `mode` value wins. Provide `join`, `leave`, `setMicrophoneMuted`, `setSpeakersMuted`, `setRemote`, `removeRemote`, and `snapshot`. Joining twice, changing mute state while absent, or adding a remote while absent must throw. Participant IDs and stream keys must be nonempty after trimming. A remote cannot use the local ID. Replacing a remote preserves insertion order. `leave` clears all remotes and mute flags. Snapshots list the local participant first, followed by remotes in insertion order, and must not expose mutable internal state. `participantCount` includes the local participant while joined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0379",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ConnectionMode = 'relay' | 'direct';\nexport interface ParticipantAudio { participantId: string; streamKey: string; muted: boolean; }\nexport interface RoomSnapshot { mode: ConnectionMode; joined: boolean; microphoneMuted: boolean; speakersMuted: boolean; participantCount: number; participants: ParticipantAudio[]; }\n\nfunction valid(p: ParticipantAudio): ParticipantAudio {\n  if (!p.participantId.trim() || !p.streamKey.trim()) throw new Error('Invalid participant');\n  return { ...p };\n}\nfunction pairs(query: string): string[] {\n  const text = query.startsWith('?') ? query.slice(1) : query;\n  return text.split('&');\n}\nfunction queryMode(query: string): ConnectionMode | undefined {\n  for (const pair of pairs(query)) {\n    const parts = pair.split('=');\n    if (parts.length === 2 && parts[0] === 'mode' && (parts[1] === 'relay' || parts[1] === 'direct')) return parts[1];\n  }\n  return undefined;\n}\nfunction autoJoin(query: string): boolean {\n  return pairs(query).some(pair => pair === 'join=yes');\n}\nexport class AudioRoomState {\n  private local?: ParticipantAudio;\n  private readonly remotes = new Map<string, ParticipantAudio>();\n  private micMuted = false;\n  private outputMuted = false;\n  readonly mode: ConnectionMode;\n  constructor(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio) {\n    this.mode = queryMode(query) ?? defaultMode;\n    if (autoJoin(query)) {\n      if (!local) throw new Error('Local participant required');\n      this.join(local);\n    }\n  }\n  join(local: ParticipantAudio): void {\n    if (this.local) throw new Error('Already joined');\n    const copy = valid(local);\n    this.local = copy;\n    this.micMuted = copy.muted;\n  }\n  leave(): void {\n    this.local = undefined;\n    this.remotes.clear();\n    this.micMuted = false;\n    this.outputMuted = false;\n  }\n  setMicrophoneMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.micMuted = value;\n  }\n  setSpeakersMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.outputMuted = value;\n  }\n  setRemote(remote: ParticipantAudio): void {\n    if (!this.local) throw new Error('Not joined');\n    const copy = valid(remote);\n    if (copy.participantId === this.local.participantId) throw new Error('Duplicate local id');\n    this.remotes.set(copy.participantId, copy);\n  }\n  removeRemote(id: string): boolean { return this.remotes.delete(id); }\n  snapshot(): RoomSnapshot {\n    const participants = this.local\n      ? [{ ...this.local, muted: this.micMuted }, ...Array.from(this.remotes.values(), remote => ({ ...remote }))]\n      : [];\n    return {\n      mode: this.mode,\n      joined: this.local !== undefined,\n      microphoneMuted: this.micMuted,\n      speakersMuted: this.outputMuted,\n      participantCount: this.remotes.size,\n      participants\n    };\n  }\n}\n",
+          "label": "The snapshot participant count omits the joined local participant.",
+          "sha256": "41e2b1f5bea5d7e2cd32300f5efbc6d9b68a391a22dcb804b3e9d1d5240fc19e"
+        }
+      ],
+      "reference": {
+        "code": "export type ConnectionMode = 'relay' | 'direct';\nexport interface ParticipantAudio { participantId: string; streamKey: string; muted: boolean; }\nexport interface RoomSnapshot { mode: ConnectionMode; joined: boolean; microphoneMuted: boolean; speakersMuted: boolean; participantCount: number; participants: ParticipantAudio[]; }\n\nfunction valid(p: ParticipantAudio): ParticipantAudio {\n  if (!p.participantId.trim() || !p.streamKey.trim()) throw new Error('Invalid participant');\n  return { ...p };\n}\nfunction pairs(query: string): string[] {\n  const text = query.startsWith('?') ? query.slice(1) : query;\n  return text.split('&');\n}\nfunction queryMode(query: string): ConnectionMode | undefined {\n  for (const pair of pairs(query)) {\n    const parts = pair.split('=');\n    if (parts.length === 2 && parts[0] === 'mode' && (parts[1] === 'relay' || parts[1] === 'direct')) return parts[1];\n  }\n  return undefined;\n}\nfunction autoJoin(query: string): boolean {\n  return pairs(query).some(pair => pair === 'join=yes');\n}\nexport class AudioRoomState {\n  private local?: ParticipantAudio;\n  private readonly remotes = new Map<string, ParticipantAudio>();\n  private micMuted = false;\n  private outputMuted = false;\n  readonly mode: ConnectionMode;\n  constructor(query: string, defaultMode: ConnectionMode, local?: ParticipantAudio) {\n    this.mode = queryMode(query) ?? defaultMode;\n    if (autoJoin(query)) {\n      if (!local) throw new Error('Local participant required');\n      this.join(local);\n    }\n  }\n  join(local: ParticipantAudio): void {\n    if (this.local) throw new Error('Already joined');\n    const copy = valid(local);\n    this.local = copy;\n    this.micMuted = copy.muted;\n  }\n  leave(): void {\n    this.local = undefined;\n    this.remotes.clear();\n    this.micMuted = false;\n    this.outputMuted = false;\n  }\n  setMicrophoneMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.micMuted = value;\n  }\n  setSpeakersMuted(value: boolean): void {\n    if (!this.local) throw new Error('Not joined');\n    this.outputMuted = value;\n  }\n  setRemote(remote: ParticipantAudio): void {\n    if (!this.local) throw new Error('Not joined');\n    const copy = valid(remote);\n    if (copy.participantId === this.local.participantId) throw new Error('Duplicate local id');\n    this.remotes.set(copy.participantId, copy);\n  }\n  removeRemote(id: string): boolean { return this.remotes.delete(id); }\n  snapshot(): RoomSnapshot {\n    const participants = this.local\n      ? [{ ...this.local, muted: this.micMuted }, ...Array.from(this.remotes.values(), remote => ({ ...remote }))]\n      : [];\n    return {\n      mode: this.mode,\n      joined: this.local !== undefined,\n      microphoneMuted: this.micMuted,\n      speakersMuted: this.outputMuted,\n      participantCount: participants.length,\n      participants\n    };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6602f331345485fd8d585d06011391e00bfdeac1e096910133638697ad5ec40a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:9\n    throw new Error('Required stream key must survive copying');\n    ^\n\nError: Required stream key must survive copying\n    at Object.<anonymous> (/work/solution.test.js:9:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3e0f4e6ac40593bdf713ff5f17a6daea2580d7c708769d2622cfeaccab86bafd",
+    "duration_ms": 2628,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

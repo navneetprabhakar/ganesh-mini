@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0388",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "de9323de77e625fc18cc6314d8200edc80da637b488d4db223b80790fb3b2174",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { DeviceCatalog, Device, DeviceKind, DeviceState } from './solution';\nconst device: Device = { id: 'd1', ownerCode: 'owner', label: 'Device', kind: DeviceKind.Sensor, state: DeviceState.Ready, unitCost: 1, ports: 0 };\nObject.defineProperty(device, 'ownerCode', { enumerable: false });\nconst catalog = new DeviceCatalog();\ncatalog.add(device);\nif (catalog.find('d1')?.ownerCode !== 'owner') throw new Error('Device copy must preserve required ownerCode');\n",
+        "sha256": "4366e8bce0e2574da051c2aff93988c6d967cc24c15f280526ebbc9ff9b97413"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ce06fefdf4f5b223149b96137e8dffaa3747d7391d1cc463d99f398ef7ef74a9",
+      "text": "Implement a complete TypeScript source file exporting `DeviceKind`, `DeviceState`, `Device`, and `DeviceCatalog`.\n\n`DeviceKind` is a string enum with `Sensor`, `Gateway`, and `Display`. `DeviceState` is a string enum with `Ready`, `Assigned`, `Retired`. `Device` contains `id`, `ownerCode`, `label`, `kind`, `state`, `unitCost`, and `ports`, where textual fields are strings and the last two fields are numbers.\n\n`DeviceCatalog` exposes:\n\n- `add(device: Device): void`\n- `revise(id: string, patch: Omit<Partial<Device>, \"id\">): void`\n- `remove(id: string): boolean`\n- `find(id: string): Device | undefined`\n- `list(): Device[]`\n\nReject devices with blank textual fields, non-finite negative `unitCost`, or nonnegative-noninteger `ports` using `TypeError` or `RangeError` as appropriate. Reject duplicate IDs and revisions of missing IDs with `Error`. Validate the fully merged device before committing a revision. `remove` returns whether anything was removed. Preserve insertion order, including after revisions. Copy objects on input and output: caller mutation of added objects, patches, `find` results, or `list` results must never alter stored data. An empty catalog lists as `[]`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ce06fefdf4f5b223149b96137e8dffaa3747d7391d1cc463d99f398ef7ef74a9",
+      "text": "Implement a complete TypeScript source file exporting `DeviceKind`, `DeviceState`, `Device`, and `DeviceCatalog`.\n\n`DeviceKind` is a string enum with `Sensor`, `Gateway`, and `Display`. `DeviceState` is a string enum with `Ready`, `Assigned`, `Retired`. `Device` contains `id`, `ownerCode`, `label`, `kind`, `state`, `unitCost`, and `ports`, where textual fields are strings and the last two fields are numbers.\n\n`DeviceCatalog` exposes:\n\n- `add(device: Device): void`\n- `revise(id: string, patch: Omit<Partial<Device>, \"id\">): void`\n- `remove(id: string): boolean`\n- `find(id: string): Device | undefined`\n- `list(): Device[]`\n\nReject devices with blank textual fields, non-finite negative `unitCost`, or nonnegative-noninteger `ports` using `TypeError` or `RangeError` as appropriate. Reject duplicate IDs and revisions of missing IDs with `Error`. Validate the fully merged device before committing a revision. `remove` returns whether anything was removed. Preserve insertion order, including after revisions. Copy objects on input and output: caller mutation of added objects, patches, `find` results, or `list` results must never alter stored data. An empty catalog lists as `[]`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0388",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export enum DeviceKind { Sensor = \"sensor\", Gateway = \"gateway\", Display = \"display\" }\nexport enum DeviceState { Ready = \"ready\", Assigned = \"assigned\", Retired = \"retired\" }\n\nexport interface Device {\n  id: string;\n  ownerCode: string;\n  label: string;\n  kind: DeviceKind;\n  state: DeviceState;\n  unitCost: number;\n  ports: number;\n}\n\nfunction validate(device: Device): void {\n  if (![device.id, device.ownerCode, device.label].every(v => typeof v === \"string\" && v.trim().length > 0)) {\n    throw new TypeError(\"text fields must be nonblank\");\n  }\n  if (!Number.isFinite(device.unitCost) || device.unitCost < 0) throw new RangeError(\"invalid unitCost\");\n  if (!Number.isInteger(device.ports) || device.ports < 0) throw new RangeError(\"invalid ports\");\n  if (!Object.values(DeviceKind).includes(device.kind) || !Object.values(DeviceState).includes(device.state)) throw new TypeError(\"invalid enum value\");\n}\n\nexport class DeviceCatalog {\n  private readonly devices = new Map<string, Device>();\n\n  add(device: Device): void {\n    validate(device);\n    if (this.devices.has(device.id)) throw new Error(\"duplicate device id\");\n    this.devices.set(device.id, { ...device });\n  }\n\n  revise(id: string, patch: Omit<Partial<Device>, \"id\">): void {\n    const current = this.devices.get(id);\n    if (!current) throw new Error(\"unknown device id\");\n    const merged = { ...current, ...patch, id };\n    validate(merged);\n    this.devices.set(id, merged);\n  }\n\n  remove(id: string): boolean { return this.devices.delete(id); }\n\n  find(id: string): Device | undefined {\n    return this.devices.get(id);\n  }\n\n  list(): Device[] { return Array.from(this.devices.values(), device => ({ ...device })); }\n}\n",
+          "label": "Returns the internally stored object from find, allowing callers to mutate catalog state through the result.",
+          "sha256": "895adf4b865934c478e3547203f303d429394f99f5c18e247e1e0f26ff5ce6de"
+        }
+      ],
+      "reference": {
+        "code": "export enum DeviceKind { Sensor = \"sensor\", Gateway = \"gateway\", Display = \"display\" }\nexport enum DeviceState { Ready = \"ready\", Assigned = \"assigned\", Retired = \"retired\" }\n\nexport interface Device {\n  id: string;\n  ownerCode: string;\n  label: string;\n  kind: DeviceKind;\n  state: DeviceState;\n  unitCost: number;\n  ports: number;\n}\n\nfunction validate(device: Device): void {\n  if (![device.id, device.ownerCode, device.label].every(v => typeof v === \"string\" && v.trim().length > 0)) {\n    throw new TypeError(\"text fields must be nonblank\");\n  }\n  if (!Number.isFinite(device.unitCost) || device.unitCost < 0) throw new RangeError(\"invalid unitCost\");\n  if (!Number.isInteger(device.ports) || device.ports < 0) throw new RangeError(\"invalid ports\");\n  if (!Object.values(DeviceKind).includes(device.kind) || !Object.values(DeviceState).includes(device.state)) throw new TypeError(\"invalid enum value\");\n}\n\nexport class DeviceCatalog {\n  private readonly devices = new Map<string, Device>();\n\n  add(device: Device): void {\n    validate(device);\n    if (this.devices.has(device.id)) throw new Error(\"duplicate device id\");\n    this.devices.set(device.id, { ...device });\n  }\n\n  revise(id: string, patch: Omit<Partial<Device>, \"id\">): void {\n    const current = this.devices.get(id);\n    if (!current) throw new Error(\"unknown device id\");\n    const merged = { ...current, ...patch, id };\n    validate(merged);\n    this.devices.set(id, merged);\n  }\n\n  remove(id: string): boolean { return this.devices.delete(id); }\n\n  find(id: string): Device | undefined {\n    const device = this.devices.get(id);\n    return device ? { ...device } : undefined;\n  }\n\n  list(): Device[] { return Array.from(this.devices.values(), device => ({ ...device })); }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6542bc14ec69ce8a8672027c4cf20dc0774820af19a6d7c1d1779484f4c4fb90"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { DeviceCatalog, DeviceKind, DeviceState } from './solution';\nimport type { Device } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction throws(fn: () => unknown, ctor: Function, message: string): void {\n  try { fn(); } catch (error) {\n    if (error instanceof (ctor as any)) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: did not throw`);\n}\n\nfunction device(id: string, label = 'Sensor'): Device {\n  return { id, ownerCode: 'OWN', label, kind: DeviceKind.Sensor, state: DeviceState.Ready, unitCost: 12.5, ports: 0 };\n}\n\nconst catalog = new DeviceCatalog();\nequal(catalog.list().length, 0, 'empty catalog');\nconst original = device('d1');\ncatalog.add(original);\noriginal.label = 'caller mutation';\nequal(catalog.find('d1')!.label, 'Sensor', 'add input copied');\n\nconst found = catalog.find('d1')!;\nfound.label = 'find mutation';\nequal(catalog.find('d1')!.label, 'Sensor', 'find output copied');\nassert(catalog.find('missing') === undefined, 'missing find');\n\ncatalog.add({ ...device('d2', 'Gateway'), kind: DeviceKind.Gateway, ports: 4 });\nconst listed = catalog.list();\nequal(listed.length, 2, 'list size');\nequal(listed[0].id, 'd1', 'insertion order first');\nequal(listed[1].id, 'd2', 'insertion order second');\nlisted[0].label = 'list mutation';\nlisted.pop();\nequal(catalog.list().length, 2, 'list array copied');\nequal(catalog.find('d1')!.label, 'Sensor', 'list objects copied');\n\nconst patch = { label: 'Revised', unitCost: 20 };\ncatalog.revise('d1', patch);\npatch.label = 'mutated patch';\nequal(catalog.find('d1')!.label, 'Revised', 'patch copied');\nequal(catalog.list()[0].id, 'd1', 'revision preserves position');\nequal(catalog.find('d1')!.ownerCode, 'OWN', 'revision merges existing fields');\n\nthrows(() => catalog.add(device('d1')), Error, 'duplicate id');\nthrows(() => catalog.revise('absent', { label: 'x' }), Error, 'missing revision');\nfor (const field of ['id', 'ownerCode', 'label'] as const) {\n  const bad = device(`bad-${field}`);\n  bad[field] = ' \\t ';\n  throws(() => catalog.add(bad), TypeError, `blank ${field}`);\n}\nfor (const cost of [-1, Infinity, -Infinity, NaN]) {\n  throws(() => catalog.add({ ...device(`cost-${String(cost)}`), unitCost: cost }), RangeError, `invalid cost ${String(cost)}`);\n}\nfor (const ports of [-1, 1.5, Infinity, NaN]) {\n  throws(() => catalog.add({ ...device(`ports-${String(ports)}`), ports }), RangeError, `invalid ports ${String(ports)}`);\n}\nconst beforeFailedRevision = catalog.find('d2')!;\nthrows(() => catalog.revise('d2', { ports: 2.5, label: 'should not commit' }), RangeError, 'invalid merged revision');\nconst afterFailedRevision = catalog.find('d2')!;\nequal(afterFailedRevision.label, beforeFailedRevision.label, 'failed revision is atomic');\nequal(afterFailedRevision.ports, beforeFailedRevision.ports, 'failed revision preserves ports');\n\nequal(catalog.remove('missing'), false, 'remove missing');\nequal(catalog.remove('d1'), true, 'remove existing');\nassert(catalog.find('d1') === undefined, 'removed device absent');\nequal(catalog.list()[0].id, 'd2', 'remaining order');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "e745cbd526a111da1910a5f081586d42d2810f3d5d7c2e81346a01706ed2ead1"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ce06fefdf4f5b223149b96137e8dffaa3747d7391d1cc463d99f398ef7ef74a9",
+      "text": "Implement a complete TypeScript source file exporting `DeviceKind`, `DeviceState`, `Device`, and `DeviceCatalog`.\n\n`DeviceKind` is a string enum with `Sensor`, `Gateway`, and `Display`. `DeviceState` is a string enum with `Ready`, `Assigned`, `Retired`. `Device` contains `id`, `ownerCode`, `label`, `kind`, `state`, `unitCost`, and `ports`, where textual fields are strings and the last two fields are numbers.\n\n`DeviceCatalog` exposes:\n\n- `add(device: Device): void`\n- `revise(id: string, patch: Omit<Partial<Device>, \"id\">): void`\n- `remove(id: string): boolean`\n- `find(id: string): Device | undefined`\n- `list(): Device[]`\n\nReject devices with blank textual fields, non-finite negative `unitCost`, or nonnegative-noninteger `ports` using `TypeError` or `RangeError` as appropriate. Reject duplicate IDs and revisions of missing IDs with `Error`. Validate the fully merged device before committing a revision. `remove` returns whether anything was removed. Preserve insertion order, including after revisions. Copy objects on input and output: caller mutation of added objects, patches, `find` results, or `list` results must never alter stored data. An empty catalog lists as `[]`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ce06fefdf4f5b223149b96137e8dffaa3747d7391d1cc463d99f398ef7ef74a9",
+      "text": "Implement a complete TypeScript source file exporting `DeviceKind`, `DeviceState`, `Device`, and `DeviceCatalog`.\n\n`DeviceKind` is a string enum with `Sensor`, `Gateway`, and `Display`. `DeviceState` is a string enum with `Ready`, `Assigned`, `Retired`. `Device` contains `id`, `ownerCode`, `label`, `kind`, `state`, `unitCost`, and `ports`, where textual fields are strings and the last two fields are numbers.\n\n`DeviceCatalog` exposes:\n\n- `add(device: Device): void`\n- `revise(id: string, patch: Omit<Partial<Device>, \"id\">): void`\n- `remove(id: string): boolean`\n- `find(id: string): Device | undefined`\n- `list(): Device[]`\n\nReject devices with blank textual fields, non-finite negative `unitCost`, or nonnegative-noninteger `ports` using `TypeError` or `RangeError` as appropriate. Reject duplicate IDs and revisions of missing IDs with `Error`. Validate the fully merged device before committing a revision. `remove` returns whether anything was removed. Preserve insertion order, including after revisions. Copy objects on input and output: caller mutation of added objects, patches, `find` results, or `list` results must never alter stored data. An empty catalog lists as `[]`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0388",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export enum DeviceKind { Sensor = \"sensor\", Gateway = \"gateway\", Display = \"display\" }\nexport enum DeviceState { Ready = \"ready\", Assigned = \"assigned\", Retired = \"retired\" }\n\nexport interface Device {\n  id: string;\n  ownerCode: string;\n  label: string;\n  kind: DeviceKind;\n  state: DeviceState;\n  unitCost: number;\n  ports: number;\n}\n\nfunction validate(device: Device): void {\n  if (![device.id, device.ownerCode, device.label].every(v => typeof v === \"string\" && v.trim().length > 0)) {\n    throw new TypeError(\"text fields must be nonblank\");\n  }\n  if (!Number.isFinite(device.unitCost) || device.unitCost < 0) throw new RangeError(\"invalid unitCost\");\n  if (!Number.isInteger(device.ports) || device.ports < 0) throw new RangeError(\"invalid ports\");\n  if (!Object.values(DeviceKind).includes(device.kind) || !Object.values(DeviceState).includes(device.state)) throw new TypeError(\"invalid enum value\");\n}\n\nexport class DeviceCatalog {\n  private readonly devices = new Map<string, Device>();\n\n  add(device: Device): void {\n    validate(device);\n    if (this.devices.has(device.id)) throw new Error(\"duplicate device id\");\n    this.devices.set(device.id, { ...device });\n  }\n\n  revise(id: string, patch: Omit<Partial<Device>, \"id\">): void {\n    const current = this.devices.get(id);\n    if (!current) throw new Error(\"unknown device id\");\n    const merged = { ...current, ...patch, id };\n    validate(merged);\n    this.devices.set(id, merged);\n  }\n\n  remove(id: string): boolean { return this.devices.delete(id); }\n\n  find(id: string): Device | undefined {\n    return this.devices.get(id);\n  }\n\n  list(): Device[] { return Array.from(this.devices.values(), device => ({ ...device })); }\n}\n",
+          "label": "Returns the internally stored object from find, allowing callers to mutate catalog state through the result.",
+          "sha256": "895adf4b865934c478e3547203f303d429394f99f5c18e247e1e0f26ff5ce6de"
+        }
+      ],
+      "reference": {
+        "code": "export enum DeviceKind { Sensor = \"sensor\", Gateway = \"gateway\", Display = \"display\" }\nexport enum DeviceState { Ready = \"ready\", Assigned = \"assigned\", Retired = \"retired\" }\n\nexport interface Device {\n  id: string;\n  ownerCode: string;\n  label: string;\n  kind: DeviceKind;\n  state: DeviceState;\n  unitCost: number;\n  ports: number;\n}\n\nfunction validate(device: Device): void {\n  if (![device.id, device.ownerCode, device.label].every(v => typeof v === \"string\" && v.trim().length > 0)) {\n    throw new TypeError(\"text fields must be nonblank\");\n  }\n  if (!Number.isFinite(device.unitCost) || device.unitCost < 0) throw new RangeError(\"invalid unitCost\");\n  if (!Number.isInteger(device.ports) || device.ports < 0) throw new RangeError(\"invalid ports\");\n  if (!Object.values(DeviceKind).includes(device.kind) || !Object.values(DeviceState).includes(device.state)) throw new TypeError(\"invalid enum value\");\n}\n\nexport class DeviceCatalog {\n  private readonly devices = new Map<string, Device>();\n\n  add(device: Device): void {\n    validate(device);\n    if (this.devices.has(device.id)) throw new Error(\"duplicate device id\");\n    this.devices.set(device.id, { ...device });\n  }\n\n  revise(id: string, patch: Omit<Partial<Device>, \"id\">): void {\n    const current = this.devices.get(id);\n    if (!current) throw new Error(\"unknown device id\");\n    const merged = { ...current, ...patch, id };\n    validate(merged);\n    this.devices.set(id, merged);\n  }\n\n  remove(id: string): boolean { return this.devices.delete(id); }\n\n  find(id: string): Device | undefined {\n    const device = this.devices.get(id);\n    return device ? { ...device } : undefined;\n  }\n\n  list(): Device[] { return Array.from(this.devices.values(), device => ({ ...device })); }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6542bc14ec69ce8a8672027c4cf20dc0774820af19a6d7c1d1779484f4c4fb90"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:9\n    throw new Error('Device copy must preserve required ownerCode');\n    ^\n\nError: Device copy must preserve required ownerCode\n    at Object.<anonymous> (/work/solution.test.js:9:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "ba7d4e1fd62a1dd5c5935f511b2b6f105ba434bea0737a61e6cc02352a8d1614",
+    "duration_ms": 2729,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

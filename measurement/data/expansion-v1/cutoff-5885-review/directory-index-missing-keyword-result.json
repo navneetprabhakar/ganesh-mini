@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0365",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3aa56f9f484b3809f0656e99cad83bec4817121cc541a5eb57237362c38d8088",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { DirectoryIndex } from './solution';\nlet caught: unknown;\ntry { new DirectoryIndex([{ id: 'a', label: 'A', keywords: new Array<string>(1) }]); } catch (error) { caught = error; }\nif (!(caught instanceof TypeError)) throw new Error('Missing keyword must be rejected');\n",
+        "sha256": "14a7df7c4204af6930e5430f2281454aa47297f45a12ee2e3bb3bb2a8e4cc0fe"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "09b681f31606f9a17102832cce0db826d73332eb8d676b243c52c6ed200d3ede",
+      "text": "Implement a complete TypeScript source file exporting `DirectoryEntry` and class `DirectoryIndex`. An entry contains string `id`, `label`, and readonly string array `keywords`. The constructor accepts readonly entries, rejects blank IDs or labels, duplicate IDs, malformed keywords, and malformed arrays with `TypeError`, and stores defensive copies. `get(id)` returns a fresh copy or null. `search(text, limit)` trims and lowercases the query, splits it on one-or-more whitespace characters, and returns entries whose label-and-keyword combined text contains every token. Empty search text matches all entries. Results are sorted by label using ordinary code-unit comparison, then by ID, and truncated to `limit`. Limit must be a nonnegative safe integer; zero returns an empty array. Returned entries and keyword arrays must be fresh copies. Inputs must never be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "09b681f31606f9a17102832cce0db826d73332eb8d676b243c52c6ed200d3ede",
+      "text": "Implement a complete TypeScript source file exporting `DirectoryEntry` and class `DirectoryIndex`. An entry contains string `id`, `label`, and readonly string array `keywords`. The constructor accepts readonly entries, rejects blank IDs or labels, duplicate IDs, malformed keywords, and malformed arrays with `TypeError`, and stores defensive copies. `get(id)` returns a fresh copy or null. `search(text, limit)` trims and lowercases the query, splits it on one-or-more whitespace characters, and returns entries whose label-and-keyword combined text contains every token. Empty search text matches all entries. Results are sorted by label using ordinary code-unit comparison, then by ID, and truncated to `limit`. Limit must be a nonnegative safe integer; zero returns an empty array. Returned entries and keyword arrays must be fresh copies. Inputs must never be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0365",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n  keywords: string[];\n}\n\nfunction copyEntry(entry: DirectoryEntry): DirectoryEntry {\n  return { id: entry.id, label: entry.label, keywords: [...entry.keywords] };\n}\n\nexport class DirectoryIndex {\n  private readonly entries: DirectoryEntry[];\n  private readonly byId = new Map<string, DirectoryEntry>();\n\n  constructor(entries: readonly DirectoryEntry[]) {\n    if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n    this.entries = [];\n    for (const entry of entries) {\n      if (typeof entry !== \"object\" || entry === null ||\n          typeof entry.id !== \"string\" || entry.id.trim() === \"\" ||\n          typeof entry.label !== \"string\" || entry.label.trim() === \"\" ||\n          !Array.isArray(entry.keywords) ||\n          entry.keywords.some((word: unknown) => typeof word !== \"string\")) {\n        throw new TypeError(\"malformed entry\");\n      }\n      if (this.byId.has(entry.id)) throw new TypeError(\"duplicate id\");\n      const copied: DirectoryEntry = {\n        id: entry.id,\n        label: entry.label,\n        keywords: [...entry.keywords],\n      };\n      this.entries.push(copied);\n      this.byId.set(copied.id, copied);\n    }\n  }\n\n  get(id: string): DirectoryEntry | null {\n    if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n    const entry = this.byId.get(id);\n    return entry === undefined ? null : copyEntry(entry);\n  }\n\n  search(text: string, limit: number): DirectoryEntry[] {\n    if (typeof text !== \"string\") throw new TypeError(\"text must be a string\");\n    if (!Number.isSafeInteger(limit) || limit < 0) {\n      throw new TypeError(\"invalid limit\");\n    }\n    const normalized = text.trim();\n    const tokens = normalized === \"\" ? [] : normalized.split(/\\s+/);\n    return this.entries\n      .filter((entry) => {\n        const haystack = `${entry.label} ${entry.keywords.join(\" \")}`.toLowerCase();\n        return tokens.every((token) => haystack.includes(token));\n      })\n      .slice()\n      .sort((a, b) =>\n        a.label < b.label ? -1 :\n        a.label > b.label ? 1 :\n        a.id < b.id ? -1 :\n        a.id > b.id ? 1 : 0)\n      .slice(0, limit)\n      .map(copyEntry);\n  }\n}\n",
+          "label": "Does not lowercase query tokens, making searches with uppercase input incorrectly case-sensitive.",
+          "sha256": "100edbdae4dbadec3986ea22400b4c4b26f7b8cfcd53096081fa4787a7941584"
+        }
+      ],
+      "reference": {
+        "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n  keywords: string[];\n}\n\nfunction copyEntry(entry: DirectoryEntry): DirectoryEntry {\n  return { id: entry.id, label: entry.label, keywords: [...entry.keywords] };\n}\n\nexport class DirectoryIndex {\n  private readonly entries: DirectoryEntry[];\n  private readonly byId = new Map<string, DirectoryEntry>();\n\n  constructor(entries: readonly DirectoryEntry[]) {\n    if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n    this.entries = [];\n    for (const entry of entries) {\n      if (typeof entry !== \"object\" || entry === null ||\n          typeof entry.id !== \"string\" || entry.id.trim() === \"\" ||\n          typeof entry.label !== \"string\" || entry.label.trim() === \"\" ||\n          !Array.isArray(entry.keywords) ||\n          entry.keywords.some((word: unknown) => typeof word !== \"string\")) {\n        throw new TypeError(\"malformed entry\");\n      }\n      if (this.byId.has(entry.id)) throw new TypeError(\"duplicate id\");\n      const copied: DirectoryEntry = {\n        id: entry.id,\n        label: entry.label,\n        keywords: [...entry.keywords],\n      };\n      this.entries.push(copied);\n      this.byId.set(copied.id, copied);\n    }\n  }\n\n  get(id: string): DirectoryEntry | null {\n    if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n    const entry = this.byId.get(id);\n    return entry === undefined ? null : copyEntry(entry);\n  }\n\n  search(text: string, limit: number): DirectoryEntry[] {\n    if (typeof text !== \"string\") throw new TypeError(\"text must be a string\");\n    if (!Number.isSafeInteger(limit) || limit < 0) {\n      throw new TypeError(\"invalid limit\");\n    }\n    const normalized = text.trim().toLowerCase();\n    const tokens = normalized === \"\" ? [] : normalized.split(/\\s+/);\n    return this.entries\n      .filter((entry) => {\n        const haystack = `${entry.label} ${entry.keywords.join(\" \")}`.toLowerCase();\n        return tokens.every((token) => haystack.includes(token));\n      })\n      .slice()\n      .sort((a, b) =>\n        a.label < b.label ? -1 :\n        a.label > b.label ? 1 :\n        a.id < b.id ? -1 :\n        a.id > b.id ? 1 : 0)\n      .slice(0, limit)\n      .map(copyEntry);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fd08fb59a845da1217d257cd96a178817bf4987ea42cf17b076138a580c9c743"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { DirectoryIndex } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  assert(JSON.stringify(actual) === JSON.stringify(expected), `${message}: ${JSON.stringify(actual)}`);\n}\nfunction throwsTypeError(action: () => void, message: string): void {\n  let error: unknown;\n  try { action(); } catch (caught) { error = caught; }\n  assert(error instanceof TypeError, message);\n}\n\nconst keywords = ['Red Fruit', 'food'];\nconst entries = [\n  { id: 'z', label: 'apple', keywords },\n  { id: 'a', label: 'Banana', keywords: ['yellow fruit'] },\n  { id: 'b', label: 'apple', keywords: ['green'] },\n];\nconst index = new DirectoryIndex(entries);\nkeywords[0] = 'changed';\nentries[0].label = 'changed';\nequal(index.get('z'), { id: 'z', label: 'apple', keywords: ['Red Fruit', 'food'] }, 'constructor copies input');\nassert(index.get('missing') === null, 'missing ID');\n\nconst first = index.get('z')!;\nconst second = index.get('z')!;\nassert(first !== second && first.keywords !== second.keywords, 'get returns fresh copies');\nfirst.label = 'mutated';\nfirst.keywords.push('mutated');\nassert(index.get('z')!.label === 'apple' && index.get('z')!.keywords.length === 2, 'get result isolated');\n\nequal(index.search('', 10).map((entry) => entry.id), ['a', 'b', 'z'], 'empty query and code-unit sorting');\nequal(index.search('  FRUIT   red ', 10).map((entry) => entry.id), ['z'], 'all normalized tokens required');\nequal(index.search('apple', 1).map((entry) => entry.id), ['b'], 'label match, tie sort, and limit');\nassert(index.search('anything', 0).length === 0, 'zero limit');\nconst results = index.search('fruit', 10);\nconst later = index.search('fruit', 10);\nassert(results !== later && results[0] !== later[0] && results[0].keywords !== later[0].keywords, 'search copies results');\n\nthrowsTypeError(() => new DirectoryIndex(null as any), 'entries array required');\nthrowsTypeError(() => new DirectoryIndex([{ id: ' ', label: 'x', keywords: [] }]), 'blank ID rejected');\nthrowsTypeError(() => new DirectoryIndex([{ id: 'x', label: ' ', keywords: [] }]), 'blank label rejected');\nthrowsTypeError(() => new DirectoryIndex([{ id: 'x', label: 'x', keywords: [2] as any }]), 'malformed keyword rejected');\nthrowsTypeError(() => new DirectoryIndex([{ id: 'x', label: 'x', keywords: [] }, { id: 'x', label: 'y', keywords: [] }]), 'duplicate ID rejected');\nfor (const limit of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {\n  throwsTypeError(() => index.search('', limit), 'invalid limit rejected');\n}\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "0bd172d0a43f2ceafe6ef3e88c67829c8db4a60e93dd7ac1d995059e610ada4d"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "09b681f31606f9a17102832cce0db826d73332eb8d676b243c52c6ed200d3ede",
+      "text": "Implement a complete TypeScript source file exporting `DirectoryEntry` and class `DirectoryIndex`. An entry contains string `id`, `label`, and readonly string array `keywords`. The constructor accepts readonly entries, rejects blank IDs or labels, duplicate IDs, malformed keywords, and malformed arrays with `TypeError`, and stores defensive copies. `get(id)` returns a fresh copy or null. `search(text, limit)` trims and lowercases the query, splits it on one-or-more whitespace characters, and returns entries whose label-and-keyword combined text contains every token. Empty search text matches all entries. Results are sorted by label using ordinary code-unit comparison, then by ID, and truncated to `limit`. Limit must be a nonnegative safe integer; zero returns an empty array. Returned entries and keyword arrays must be fresh copies. Inputs must never be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "09b681f31606f9a17102832cce0db826d73332eb8d676b243c52c6ed200d3ede",
+      "text": "Implement a complete TypeScript source file exporting `DirectoryEntry` and class `DirectoryIndex`. An entry contains string `id`, `label`, and readonly string array `keywords`. The constructor accepts readonly entries, rejects blank IDs or labels, duplicate IDs, malformed keywords, and malformed arrays with `TypeError`, and stores defensive copies. `get(id)` returns a fresh copy or null. `search(text, limit)` trims and lowercases the query, splits it on one-or-more whitespace characters, and returns entries whose label-and-keyword combined text contains every token. Empty search text matches all entries. Results are sorted by label using ordinary code-unit comparison, then by ID, and truncated to `limit`. Limit must be a nonnegative safe integer; zero returns an empty array. Returned entries and keyword arrays must be fresh copies. Inputs must never be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0365",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n  keywords: string[];\n}\n\nfunction copyEntry(entry: DirectoryEntry): DirectoryEntry {\n  return { id: entry.id, label: entry.label, keywords: [...entry.keywords] };\n}\n\nexport class DirectoryIndex {\n  private readonly entries: DirectoryEntry[];\n  private readonly byId = new Map<string, DirectoryEntry>();\n\n  constructor(entries: readonly DirectoryEntry[]) {\n    if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n    this.entries = [];\n    for (const entry of entries) {\n      if (typeof entry !== \"object\" || entry === null ||\n          typeof entry.id !== \"string\" || entry.id.trim() === \"\" ||\n          typeof entry.label !== \"string\" || entry.label.trim() === \"\" ||\n          !Array.isArray(entry.keywords) ||\n          entry.keywords.some((word: unknown) => typeof word !== \"string\")) {\n        throw new TypeError(\"malformed entry\");\n      }\n      if (this.byId.has(entry.id)) throw new TypeError(\"duplicate id\");\n      const copied: DirectoryEntry = {\n        id: entry.id,\n        label: entry.label,\n        keywords: [...entry.keywords],\n      };\n      this.entries.push(copied);\n      this.byId.set(copied.id, copied);\n    }\n  }\n\n  get(id: string): DirectoryEntry | null {\n    if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n    const entry = this.byId.get(id);\n    return entry === undefined ? null : copyEntry(entry);\n  }\n\n  search(text: string, limit: number): DirectoryEntry[] {\n    if (typeof text !== \"string\") throw new TypeError(\"text must be a string\");\n    if (!Number.isSafeInteger(limit) || limit < 0) {\n      throw new TypeError(\"invalid limit\");\n    }\n    const normalized = text.trim();\n    const tokens = normalized === \"\" ? [] : normalized.split(/\\s+/);\n    return this.entries\n      .filter((entry) => {\n        const haystack = `${entry.label} ${entry.keywords.join(\" \")}`.toLowerCase();\n        return tokens.every((token) => haystack.includes(token));\n      })\n      .slice()\n      .sort((a, b) =>\n        a.label < b.label ? -1 :\n        a.label > b.label ? 1 :\n        a.id < b.id ? -1 :\n        a.id > b.id ? 1 : 0)\n      .slice(0, limit)\n      .map(copyEntry);\n  }\n}\n",
+          "label": "Does not lowercase query tokens, making searches with uppercase input incorrectly case-sensitive.",
+          "sha256": "100edbdae4dbadec3986ea22400b4c4b26f7b8cfcd53096081fa4787a7941584"
+        }
+      ],
+      "reference": {
+        "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n  keywords: string[];\n}\n\nfunction copyEntry(entry: DirectoryEntry): DirectoryEntry {\n  return { id: entry.id, label: entry.label, keywords: [...entry.keywords] };\n}\n\nexport class DirectoryIndex {\n  private readonly entries: DirectoryEntry[];\n  private readonly byId = new Map<string, DirectoryEntry>();\n\n  constructor(entries: readonly DirectoryEntry[]) {\n    if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n    this.entries = [];\n    for (const entry of entries) {\n      if (typeof entry !== \"object\" || entry === null ||\n          typeof entry.id !== \"string\" || entry.id.trim() === \"\" ||\n          typeof entry.label !== \"string\" || entry.label.trim() === \"\" ||\n          !Array.isArray(entry.keywords) ||\n          entry.keywords.some((word: unknown) => typeof word !== \"string\")) {\n        throw new TypeError(\"malformed entry\");\n      }\n      if (this.byId.has(entry.id)) throw new TypeError(\"duplicate id\");\n      const copied: DirectoryEntry = {\n        id: entry.id,\n        label: entry.label,\n        keywords: [...entry.keywords],\n      };\n      this.entries.push(copied);\n      this.byId.set(copied.id, copied);\n    }\n  }\n\n  get(id: string): DirectoryEntry | null {\n    if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n    const entry = this.byId.get(id);\n    return entry === undefined ? null : copyEntry(entry);\n  }\n\n  search(text: string, limit: number): DirectoryEntry[] {\n    if (typeof text !== \"string\") throw new TypeError(\"text must be a string\");\n    if (!Number.isSafeInteger(limit) || limit < 0) {\n      throw new TypeError(\"invalid limit\");\n    }\n    const normalized = text.trim().toLowerCase();\n    const tokens = normalized === \"\" ? [] : normalized.split(/\\s+/);\n    return this.entries\n      .filter((entry) => {\n        const haystack = `${entry.label} ${entry.keywords.join(\" \")}`.toLowerCase();\n        return tokens.every((token) => haystack.includes(token));\n      })\n      .slice()\n      .sort((a, b) =>\n        a.label < b.label ? -1 :\n        a.label > b.label ? 1 :\n        a.id < b.id ? -1 :\n        a.id > b.id ? 1 : 0)\n      .slice(0, limit)\n      .map(copyEntry);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fd08fb59a845da1217d257cd96a178817bf4987ea42cf17b076138a580c9c743"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Missing keyword must be rejected');\n    ^\n\nError: Missing keyword must be rejected\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "5f4ed1b314aeac75e77b4d757846add73cfddd8f1b2022824773579c32b08bd4",
+    "duration_ms": 2411,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0004",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "349bbafd5f659ff0ca7c00acff0260897351eeeb536d74f58539b897bf7df865",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{Sample, Segment, SegmentSet};\n#[test]\nfn newly_added_sample_wins_even_when_its_boundary_sorts_first() {\n    let mut set = SegmentSet::new();\n    set.add(Segment::new(5, 10, vec![Sample { position: 6, value: 1 }]).unwrap());\n    set.add(Segment::new(0, 8, vec![Sample { position: 6, value: 2 }]).unwrap());\n    assert_eq!(set.segments()[0].samples[0].value, 2);\n}\n",
+        "sha256": "12e207821607876bdfd033e383fc8fa6c5b0341dabc69868e62971e2d14579aa"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "57b6a522d384dc2255e0f3349f7810c7d12e24daeb88c6bd33f4ab904215f28a",
+      "text": "Implement a normalized collection of sampled integer spans in `solution.rs`, using only the standard library. Expose public `Sample`, `Segment`, and `SegmentSet` types with the reference API. `Segment::new(start,end,samples)` rejects `start > end`, samples outside the inclusive boundary, and duplicate sample positions. It sorts samples by position. `SegmentSet::add` inserts a segment and merges every overlapping or touching segment (touching means `left.end + 1 == right.start`, without overflow). The merged boundary is the union. If multiple samples share a position, the value from the newly added segment wins; when existing segments are merged among themselves, later segments in normalized boundary order win. `normalize` sorts and performs the same transitive merging. `subset(start,end)` returns an empty set when `start > end`; otherwise it intersects boundaries and retains only samples inside each intersection. `segments`, `is_empty`, and `subset` must not mutate the source. Output segments and samples are always ascending.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "57b6a522d384dc2255e0f3349f7810c7d12e24daeb88c6bd33f4ab904215f28a",
+      "text": "Implement a normalized collection of sampled integer spans in `solution.rs`, using only the standard library. Expose public `Sample`, `Segment`, and `SegmentSet` types with the reference API. `Segment::new(start,end,samples)` rejects `start > end`, samples outside the inclusive boundary, and duplicate sample positions. It sorts samples by position. `SegmentSet::add` inserts a segment and merges every overlapping or touching segment (touching means `left.end + 1 == right.start`, without overflow). The merged boundary is the union. If multiple samples share a position, the value from the newly added segment wins; when existing segments are merged among themselves, later segments in normalized boundary order win. `normalize` sorts and performs the same transitive merging. `subset(start,end)` returns an empty set when `start > end`; otherwise it intersects boundaries and retains only samples inside each intersection. `segments`, `is_empty`, and `subset` must not mutate the source. Output segments and samples are always ascending.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0004",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Sample {\n    pub position: i64,\n    pub value: i64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Segment {\n    pub start: i64,\n    pub end: i64,\n    pub samples: Vec<Sample>,\n}\n\nimpl Segment {\n    pub fn new(start: i64, end: i64, mut samples: Vec<Sample>) -> Option<Self> {\n        if start > end || samples.iter().any(|s| s.position < start || s.position > end) {\n            return None;\n        }\n        samples.sort_by_key(|s| s.position);\n        if samples.windows(2).any(|w| w[0].position == w[1].position) {\n            return None;\n        }\n        Some(Self { start, end, samples })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct SegmentSet {\n    segments: Vec<Segment>,\n}\n\nimpl SegmentSet {\n    pub fn new() -> Self { Self::default() }\n\n    pub fn add(&mut self, segment: Segment) {\n        self.segments.push(segment);\n        self.normalize();\n    }\n\n    pub fn normalize(&mut self) {\n        self.segments.sort_by_key(|s| (s.start, s.end));\n        let mut output: Vec<Segment> = Vec::new();\n        for segment in self.segments.drain(..) {\n            if let Some(last) = output.last_mut() {\n                if segment.start <= last.end {\n                    last.end = last.end.max(segment.end);\n                    let mut values: BTreeMap<i64, i64> = last.samples.iter().map(|s| (s.position, s.value)).collect();\n                    for sample in segment.samples { values.insert(sample.position, sample.value); }\n                    last.samples = values.into_iter().map(|(position, value)| Sample { position, value }).collect();\n                    continue;\n                }\n            }\n            output.push(segment);\n        }\n        self.segments = output;\n    }\n\n    pub fn subset(&self, start: i64, end: i64) -> Self {\n        if start > end { return Self::new(); }\n        let segments = self.segments.iter().filter_map(|segment| {\n            let lo = segment.start.max(start);\n            let hi = segment.end.min(end);\n            if lo > hi { return None; }\n            let samples = segment.samples.iter().copied().filter(|s| s.position >= lo && s.position <= hi).collect();\n            Some(Segment { start: lo, end: hi, samples })\n        }).collect();\n        Self { segments }\n    }\n\n    pub fn is_empty(&self) -> bool { self.segments.is_empty() }\n    pub fn segments(&self) -> &[Segment] { &self.segments }\n}\n",
+          "label": "Normalization merges overlapping segments but fails to merge segments whose integer boundaries touch.",
+          "sha256": "1566550b7dcea6f7a54f0047ea9ea70582e2a8a4db7a6d48a9116948ea6a8bd3"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Sample {\n    pub position: i64,\n    pub value: i64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Segment {\n    pub start: i64,\n    pub end: i64,\n    pub samples: Vec<Sample>,\n}\n\nimpl Segment {\n    pub fn new(start: i64, end: i64, mut samples: Vec<Sample>) -> Option<Self> {\n        if start > end || samples.iter().any(|s| s.position < start || s.position > end) {\n            return None;\n        }\n        samples.sort_by_key(|s| s.position);\n        if samples.windows(2).any(|w| w[0].position == w[1].position) {\n            return None;\n        }\n        Some(Self { start, end, samples })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct SegmentSet {\n    segments: Vec<Segment>,\n}\n\nimpl SegmentSet {\n    pub fn new() -> Self { Self::default() }\n\n    pub fn add(&mut self, segment: Segment) {\n        self.segments.push(segment);\n        self.normalize();\n    }\n\n    pub fn normalize(&mut self) {\n        self.segments.sort_by_key(|s| (s.start, s.end));\n        let mut output: Vec<Segment> = Vec::new();\n        for segment in self.segments.drain(..) {\n            if let Some(last) = output.last_mut() {\n                let touches = last.end.checked_add(1) == Some(segment.start);\n                if segment.start <= last.end || touches {\n                    last.end = last.end.max(segment.end);\n                    let mut values: BTreeMap<i64, i64> = last.samples.iter().map(|s| (s.position, s.value)).collect();\n                    for sample in segment.samples { values.insert(sample.position, sample.value); }\n                    last.samples = values.into_iter().map(|(position, value)| Sample { position, value }).collect();\n                    continue;\n                }\n            }\n            output.push(segment);\n        }\n        self.segments = output;\n    }\n\n    pub fn subset(&self, start: i64, end: i64) -> Self {\n        if start > end { return Self::new(); }\n        let segments = self.segments.iter().filter_map(|segment| {\n            let lo = segment.start.max(start);\n            let hi = segment.end.min(end);\n            if lo > hi { return None; }\n            let samples = segment.samples.iter().copied().filter(|s| s.position >= lo && s.position <= hi).collect();\n            Some(Segment { start: lo, end: hi, samples })\n        }).collect();\n        Self { segments }\n    }\n\n    pub fn is_empty(&self) -> bool { self.segments.is_empty() }\n    pub fn segments(&self) -> &[Segment] { &self.segments }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ce1f799b13a3eecc0b92f389d85907159f82a3391ae53a7c9f921796a3615150"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{Segment, SegmentSet};\n\n#[test]\nfn segment_constructor_validates_boundaries() {\n    assert!(Segment::new(5, 4, vec![]).is_none());\n    assert!(Segment::new(5, 5, vec![]).is_some());\n    assert!(Segment::new(i64::MIN, i64::MAX, vec![]).is_some());\n}\n\n#[test]\nfn empty_sets_and_reversed_subsets_are_empty() {\n    let set = SegmentSet::new();\n    assert!(set.is_empty());\n    assert!(set.subset(0, 10).is_empty());\n    assert!(set.subset(10, 0).is_empty());\n    assert_eq!(set.segments().len(), 0);\n}\n\n#[test]\nfn add_transitively_merges_overlapping_and_touching_segments() {\n    let mut set = SegmentSet::new();\n    set.add(Segment::new(10, 12, vec![]).unwrap());\n    set.add(Segment::new(1, 3, vec![]).unwrap());\n    set.add(Segment::new(4, 9, vec![]).unwrap());\n\n    assert_eq!(set.segments().len(), 1);\n    assert_eq!(set.subset(1, 12).segments().len(), 1);\n    assert!(set.subset(13, 20).is_empty());\n}\n\n#[test]\nfn separated_segments_remain_separate_and_normalization_is_stable() {\n    let mut set = SegmentSet::new();\n    set.add(Segment::new(20, 25, vec![]).unwrap());\n    set.add(Segment::new(1, 2, vec![]).unwrap());\n    set.add(Segment::new(8, 10, vec![]).unwrap());\n    assert_eq!(set.segments().len(), 3);\n\n    set.normalize();\n    assert_eq!(set.segments().len(), 3);\n    set.normalize();\n    assert_eq!(set.segments().len(), 3);\n}\n\n#[test]\nfn subset_intersects_boundaries_without_mutating_source() {\n    let mut set = SegmentSet::new();\n    set.add(Segment::new(0, 10, vec![]).unwrap());\n    set.add(Segment::new(20, 30, vec![]).unwrap());\n\n    let subset = set.subset(5, 25);\n    assert_eq!(subset.segments().len(), 2);\n    assert_eq!(set.segments().len(), 2);\n    assert!(set.subset(11, 19).is_empty());\n}\n\n#[test]\nfn touching_check_does_not_overflow_at_integer_maximum() {\n    let mut set = SegmentSet::new();\n    set.add(Segment::new(i64::MAX, i64::MAX, vec![]).unwrap());\n    set.add(Segment::new(i64::MAX - 1, i64::MAX - 1, vec![]).unwrap());\n    assert_eq!(set.segments().len(), 1);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "c5af128dbef8a9a464e331efdcd0a3a0419979519c7fde8df36be664c76bf450"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "57b6a522d384dc2255e0f3349f7810c7d12e24daeb88c6bd33f4ab904215f28a",
+      "text": "Implement a normalized collection of sampled integer spans in `solution.rs`, using only the standard library. Expose public `Sample`, `Segment`, and `SegmentSet` types with the reference API. `Segment::new(start,end,samples)` rejects `start > end`, samples outside the inclusive boundary, and duplicate sample positions. It sorts samples by position. `SegmentSet::add` inserts a segment and merges every overlapping or touching segment (touching means `left.end + 1 == right.start`, without overflow). The merged boundary is the union. If multiple samples share a position, the value from the newly added segment wins; when existing segments are merged among themselves, later segments in normalized boundary order win. `normalize` sorts and performs the same transitive merging. `subset(start,end)` returns an empty set when `start > end`; otherwise it intersects boundaries and retains only samples inside each intersection. `segments`, `is_empty`, and `subset` must not mutate the source. Output segments and samples are always ascending.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "57b6a522d384dc2255e0f3349f7810c7d12e24daeb88c6bd33f4ab904215f28a",
+      "text": "Implement a normalized collection of sampled integer spans in `solution.rs`, using only the standard library. Expose public `Sample`, `Segment`, and `SegmentSet` types with the reference API. `Segment::new(start,end,samples)` rejects `start > end`, samples outside the inclusive boundary, and duplicate sample positions. It sorts samples by position. `SegmentSet::add` inserts a segment and merges every overlapping or touching segment (touching means `left.end + 1 == right.start`, without overflow). The merged boundary is the union. If multiple samples share a position, the value from the newly added segment wins; when existing segments are merged among themselves, later segments in normalized boundary order win. `normalize` sorts and performs the same transitive merging. `subset(start,end)` returns an empty set when `start > end`; otherwise it intersects boundaries and retains only samples inside each intersection. `segments`, `is_empty`, and `subset` must not mutate the source. Output segments and samples are always ascending.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0004",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Sample {\n    pub position: i64,\n    pub value: i64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Segment {\n    pub start: i64,\n    pub end: i64,\n    pub samples: Vec<Sample>,\n}\n\nimpl Segment {\n    pub fn new(start: i64, end: i64, mut samples: Vec<Sample>) -> Option<Self> {\n        if start > end || samples.iter().any(|s| s.position < start || s.position > end) {\n            return None;\n        }\n        samples.sort_by_key(|s| s.position);\n        if samples.windows(2).any(|w| w[0].position == w[1].position) {\n            return None;\n        }\n        Some(Self { start, end, samples })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct SegmentSet {\n    segments: Vec<Segment>,\n}\n\nimpl SegmentSet {\n    pub fn new() -> Self { Self::default() }\n\n    pub fn add(&mut self, segment: Segment) {\n        self.segments.push(segment);\n        self.normalize();\n    }\n\n    pub fn normalize(&mut self) {\n        self.segments.sort_by_key(|s| (s.start, s.end));\n        let mut output: Vec<Segment> = Vec::new();\n        for segment in self.segments.drain(..) {\n            if let Some(last) = output.last_mut() {\n                if segment.start <= last.end {\n                    last.end = last.end.max(segment.end);\n                    let mut values: BTreeMap<i64, i64> = last.samples.iter().map(|s| (s.position, s.value)).collect();\n                    for sample in segment.samples { values.insert(sample.position, sample.value); }\n                    last.samples = values.into_iter().map(|(position, value)| Sample { position, value }).collect();\n                    continue;\n                }\n            }\n            output.push(segment);\n        }\n        self.segments = output;\n    }\n\n    pub fn subset(&self, start: i64, end: i64) -> Self {\n        if start > end { return Self::new(); }\n        let segments = self.segments.iter().filter_map(|segment| {\n            let lo = segment.start.max(start);\n            let hi = segment.end.min(end);\n            if lo > hi { return None; }\n            let samples = segment.samples.iter().copied().filter(|s| s.position >= lo && s.position <= hi).collect();\n            Some(Segment { start: lo, end: hi, samples })\n        }).collect();\n        Self { segments }\n    }\n\n    pub fn is_empty(&self) -> bool { self.segments.is_empty() }\n    pub fn segments(&self) -> &[Segment] { &self.segments }\n}\n",
+          "label": "Normalization merges overlapping segments but fails to merge segments whose integer boundaries touch.",
+          "sha256": "1566550b7dcea6f7a54f0047ea9ea70582e2a8a4db7a6d48a9116948ea6a8bd3"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Sample {\n    pub position: i64,\n    pub value: i64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Segment {\n    pub start: i64,\n    pub end: i64,\n    pub samples: Vec<Sample>,\n}\n\nimpl Segment {\n    pub fn new(start: i64, end: i64, mut samples: Vec<Sample>) -> Option<Self> {\n        if start > end || samples.iter().any(|s| s.position < start || s.position > end) {\n            return None;\n        }\n        samples.sort_by_key(|s| s.position);\n        if samples.windows(2).any(|w| w[0].position == w[1].position) {\n            return None;\n        }\n        Some(Self { start, end, samples })\n    }\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct SegmentSet {\n    segments: Vec<Segment>,\n}\n\nimpl SegmentSet {\n    pub fn new() -> Self { Self::default() }\n\n    pub fn add(&mut self, segment: Segment) {\n        self.segments.push(segment);\n        self.normalize();\n    }\n\n    pub fn normalize(&mut self) {\n        self.segments.sort_by_key(|s| (s.start, s.end));\n        let mut output: Vec<Segment> = Vec::new();\n        for segment in self.segments.drain(..) {\n            if let Some(last) = output.last_mut() {\n                let touches = last.end.checked_add(1) == Some(segment.start);\n                if segment.start <= last.end || touches {\n                    last.end = last.end.max(segment.end);\n                    let mut values: BTreeMap<i64, i64> = last.samples.iter().map(|s| (s.position, s.value)).collect();\n                    for sample in segment.samples { values.insert(sample.position, sample.value); }\n                    last.samples = values.into_iter().map(|(position, value)| Sample { position, value }).collect();\n                    continue;\n                }\n            }\n            output.push(segment);\n        }\n        self.segments = output;\n    }\n\n    pub fn subset(&self, start: i64, end: i64) -> Self {\n        if start > end { return Self::new(); }\n        let segments = self.segments.iter().filter_map(|segment| {\n            let lo = segment.start.max(start);\n            let hi = segment.end.min(end);\n            if lo > hi { return None; }\n            let samples = segment.samples.iter().copied().filter(|s| s.position >= lo && s.position <= hi).collect();\n            Some(Segment { start: lo, end: hi, samples })\n        }).collect();\n        Self { segments }\n    }\n\n    pub fn is_empty(&self) -> bool { self.segments.is_empty() }\n    pub fn segments(&self) -> &[Segment] { &self.segments }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ce1f799b13a3eecc0b92f389d85907159f82a3391ae53a7c9f921796a3615150"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest newly_added_sample_wins_even_when_its_boundary_sorts_first ... FAILED\n\nfailures:\n\n---- newly_added_sample_wins_even_when_its_boundary_sorts_first stdout ----\n\nthread 'newly_added_sample_wins_even_when_its_boundary_sorts_first' panicked at solution_test.rs:9:5:\nassertion `left == right` failed\n  left: 1\n right: 2\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    newly_added_sample_wins_even_when_its_boundary_sorts_first\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "6fb732e9328ff0aeb424e92c36bcd27783f24c2b61a551f306cef11e3514a2f0",
+    "stderr": "warning: methods `subset` and `is_empty` are never used\n  --> solution.rs:61:12\n   |\n34 | impl SegmentSet {\n   | --------------- methods in this implementation\n...\n61 |     pub fn subset(&self, start: i64, end: i64) -> Self {\n   |            ^^^^^^\n...\n73 |     pub fn is_empty(&self) -> bool { self.segments.is_empty() }\n   |            ^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: 1 warning emitted\n\n",
+    "stderr_sha256": "798e9ce09280f1ea4771ce520545bbe7d96023ef9f4f42422ebf43ab0bad99fe",
+    "duration_ms": 1704,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

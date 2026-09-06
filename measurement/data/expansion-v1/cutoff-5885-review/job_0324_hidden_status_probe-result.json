@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0324",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "d33152632da793c7f6eb59c05ac945813af9bf6fa62c5a3221ce7b4e4a94222d",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const { applyJobEvent } = require('./solution');\nconst state = Object.defineProperty({ requestId: 'new', data: [], error: null }, 'status', { value: 'running', enumerable: false });\nconst result = applyJobEvent(state, { type: 'FAIL', requestId: 'old', error: 'late' });\nif (result.status !== 'running') throw new Error('Stale event copy lost unchanged status');\n",
+        "sha256": "59f986e53e007049f2ef8af354c4d99d7ec2df5dc92719607d820c8cd34a62e7"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f5faabaa130bf52d9dbb980777f9068fcf0b4e1c5ca6313a4aaa40c6810c0b8c",
+      "text": "Implement a CommonJS module exporting exactly `{ initialJobState, applyJobEvent }`. `initialJobState()` returns a fresh `{ status: 'idle', requestId: null, data: [], error: null }`. `applyJobEvent(state, event)` is a pure state transition function. Both arguments must be non-null, non-array objects or it throws `TypeError`. Supported events are: `START` with a non-empty string `requestId`; `SUCCEED` with a non-empty string `requestId` and array `data`; `FAIL` with a non-empty string `requestId` and string `error`; and `RESET` with no required payload. Unknown or malformed events throw `TypeError`. `START` returns running state with empty data and null error. `SUCCEED` or `FAIL` affects state only when the state is running and its request ID matches; otherwise return a fresh state copy with a fresh data array but unchanged values. Success copies the event data. Failure clears data. `RESET` returns a fresh initial state. Never mutate or alias either input, including their data arrays.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f5faabaa130bf52d9dbb980777f9068fcf0b4e1c5ca6313a4aaa40c6810c0b8c",
+      "text": "Implement a CommonJS module exporting exactly `{ initialJobState, applyJobEvent }`. `initialJobState()` returns a fresh `{ status: 'idle', requestId: null, data: [], error: null }`. `applyJobEvent(state, event)` is a pure state transition function. Both arguments must be non-null, non-array objects or it throws `TypeError`. Supported events are: `START` with a non-empty string `requestId`; `SUCCEED` with a non-empty string `requestId` and array `data`; `FAIL` with a non-empty string `requestId` and string `error`; and `RESET` with no required payload. Unknown or malformed events throw `TypeError`. `START` returns running state with empty data and null error. `SUCCEED` or `FAIL` affects state only when the state is running and its request ID matches; otherwise return a fresh state copy with a fresh data array but unchanged values. Success copies the event data. Failure clears data. `RESET` returns a fresh initial state. Never mutate or alias either input, including their data arrays.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0324",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function initialJobState() {\n  return { status: 'idle', requestId: null, data: [], error: null };\n}\n\nfunction applyJobEvent(state, event) {\n  if (state === null || typeof state !== 'object' || Array.isArray(state)) {\n    throw new TypeError('state must be an object');\n  }\n  if (event === null || typeof event !== 'object' || Array.isArray(event)) {\n    throw new TypeError('event must be an object');\n  }\n  if (typeof event.type !== 'string') throw new TypeError('event type must be a string');\n  const copyState = () => ({ ...state, data: Array.isArray(state.data) ? state.data.slice() : state.data });\n  if (event.type === 'RESET') return initialJobState();\n  if (event.type === 'START') {\n    if (typeof event.requestId !== 'string' || event.requestId === '') {\n      throw new TypeError('requestId must be a non-empty string');\n    }\n    return { status: 'running', requestId: event.requestId, data: [], error: null };\n  }\n  if (event.type === 'SUCCEED') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || !Array.isArray(event.data)) {\n      throw new TypeError('malformed success event');\n    }\n    if (state.status !== 'running' || state.requestId === event.requestId) return copyState();\n    return { status: 'succeeded', requestId: event.requestId, data: event.data.slice(), error: null };\n  }\n  if (event.type === 'FAIL') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || typeof event.error !== 'string') {\n      throw new TypeError('malformed failure event');\n    }\n    if (state.status !== 'running' || state.requestId !== event.requestId) return copyState();\n    return { status: 'failed', requestId: event.requestId, data: [], error: event.error };\n  }\n  throw new TypeError('unknown event type');\n}\n\nmodule.exports = { initialJobState, applyJobEvent };\n",
+          "label": "Matching success events are incorrectly ignored, while a mismatched success may be applied.",
+          "sha256": "6cc4fbfc80efbe0f15c9542d447a8ac3df71d53424d7b0db47cbbb9175e60e4f"
+        }
+      ],
+      "reference": {
+        "code": "function initialJobState() {\n  return { status: 'idle', requestId: null, data: [], error: null };\n}\n\nfunction applyJobEvent(state, event) {\n  if (state === null || typeof state !== 'object' || Array.isArray(state)) {\n    throw new TypeError('state must be an object');\n  }\n  if (event === null || typeof event !== 'object' || Array.isArray(event)) {\n    throw new TypeError('event must be an object');\n  }\n  if (typeof event.type !== 'string') throw new TypeError('event type must be a string');\n  const copyState = () => ({ ...state, data: Array.isArray(state.data) ? state.data.slice() : state.data });\n  if (event.type === 'RESET') return initialJobState();\n  if (event.type === 'START') {\n    if (typeof event.requestId !== 'string' || event.requestId === '') {\n      throw new TypeError('requestId must be a non-empty string');\n    }\n    return { status: 'running', requestId: event.requestId, data: [], error: null };\n  }\n  if (event.type === 'SUCCEED') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || !Array.isArray(event.data)) {\n      throw new TypeError('malformed success event');\n    }\n    if (state.status !== 'running' || state.requestId !== event.requestId) return copyState();\n    return { status: 'succeeded', requestId: event.requestId, data: event.data.slice(), error: null };\n  }\n  if (event.type === 'FAIL') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || typeof event.error !== 'string') {\n      throw new TypeError('malformed failure event');\n    }\n    if (state.status !== 'running' || state.requestId !== event.requestId) return copyState();\n    return { status: 'failed', requestId: event.requestId, data: [], error: event.error };\n  }\n  throw new TypeError('unknown event type');\n}\n\nmodule.exports = { initialJobState, applyJobEvent };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1eb832265f10bc1364577db17d4561eb48410519d50834e8d2897fdbad32b87d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Reflect.ownKeys(api).sort(), ['applyJobEvent', 'initialJobState']);\nconst { initialJobState, applyJobEvent } = api;\n\nconst initial1 = initialJobState();\nconst initial2 = initialJobState();\nassert.deepStrictEqual(initial1, { status: 'idle', requestId: null, data: [], error: null });\nassert.notStrictEqual(initial1, initial2);\nassert.notStrictEqual(initial1.data, initial2.data);\n\nconst running = applyJobEvent(initial1, { type: 'START', requestId: 'req-1' });\nassert.deepStrictEqual(running, { status: 'running', requestId: 'req-1', data: [], error: null });\nassert.deepStrictEqual(initial1, { status: 'idle', requestId: null, data: [], error: null });\nassert.notStrictEqual(running.data, initial1.data);\n\nconst eventData = [{ value: 1 }];\nconst successEvent = { type: 'SUCCEED', requestId: 'req-1', data: eventData };\nconst succeeded = applyJobEvent(running, successEvent);\nassert.deepStrictEqual(succeeded, { status: 'succeeded', requestId: 'req-1', data: [{ value: 1 }], error: null });\nassert.notStrictEqual(succeeded.data, eventData);\nassert.strictEqual(succeeded.data[0], eventData[0]);\neventData.push({ value: 2 });\nassert.strictEqual(succeeded.data.length, 1);\nassert.deepStrictEqual(running, { status: 'running', requestId: 'req-1', data: [], error: null });\n\nconst failed = applyJobEvent(running, { type: 'FAIL', requestId: 'req-1', error: 'boom' });\nassert.deepStrictEqual(failed, { status: 'failed', requestId: 'req-1', data: [], error: 'boom' });\nassert.notStrictEqual(failed.data, running.data);\n\nconst staleState = { status: 'running', requestId: 'new', data: [1, 2], error: null };\nconst stale = applyJobEvent(staleState, { type: 'SUCCEED', requestId: 'old', data: [9] });\nassert.deepStrictEqual(stale, staleState);\nassert.notStrictEqual(stale, staleState);\nassert.notStrictEqual(stale.data, staleState.data);\nstale.data.push(3);\nassert.deepStrictEqual(staleState.data, [1, 2]);\n\nconst ignoredFailure = applyJobEvent(succeeded, { type: 'FAIL', requestId: 'req-1', error: 'late' });\nassert.deepStrictEqual(ignoredFailure, succeeded);\nassert.notStrictEqual(ignoredFailure, succeeded);\nassert.notStrictEqual(ignoredFailure.data, succeeded.data);\n\nconst reset = applyJobEvent(failed, { type: 'RESET' });\nassert.deepStrictEqual(reset, initialJobState());\nassert.notStrictEqual(reset.data, failed.data);\n\nfor (const state of [null, [], 'x', 1]) assert.throws(() => applyJobEvent(state, { type: 'RESET' }), TypeError);\nfor (const event of [null, [], 'x', {}, { type: 'UNKNOWN' }, { type: 'START', requestId: '' }, { type: 'START', requestId: 1 }, { type: 'SUCCEED', requestId: 'x', data: null }, { type: 'FAIL', requestId: 'x', error: 1 }]) {\n  assert.throws(() => applyJobEvent(initialJobState(), event), TypeError);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "404a4cd5913ead423dc462004d7b9dc3a638c789f65070ef8b5341d80e13deb8"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f5faabaa130bf52d9dbb980777f9068fcf0b4e1c5ca6313a4aaa40c6810c0b8c",
+      "text": "Implement a CommonJS module exporting exactly `{ initialJobState, applyJobEvent }`. `initialJobState()` returns a fresh `{ status: 'idle', requestId: null, data: [], error: null }`. `applyJobEvent(state, event)` is a pure state transition function. Both arguments must be non-null, non-array objects or it throws `TypeError`. Supported events are: `START` with a non-empty string `requestId`; `SUCCEED` with a non-empty string `requestId` and array `data`; `FAIL` with a non-empty string `requestId` and string `error`; and `RESET` with no required payload. Unknown or malformed events throw `TypeError`. `START` returns running state with empty data and null error. `SUCCEED` or `FAIL` affects state only when the state is running and its request ID matches; otherwise return a fresh state copy with a fresh data array but unchanged values. Success copies the event data. Failure clears data. `RESET` returns a fresh initial state. Never mutate or alias either input, including their data arrays.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f5faabaa130bf52d9dbb980777f9068fcf0b4e1c5ca6313a4aaa40c6810c0b8c",
+      "text": "Implement a CommonJS module exporting exactly `{ initialJobState, applyJobEvent }`. `initialJobState()` returns a fresh `{ status: 'idle', requestId: null, data: [], error: null }`. `applyJobEvent(state, event)` is a pure state transition function. Both arguments must be non-null, non-array objects or it throws `TypeError`. Supported events are: `START` with a non-empty string `requestId`; `SUCCEED` with a non-empty string `requestId` and array `data`; `FAIL` with a non-empty string `requestId` and string `error`; and `RESET` with no required payload. Unknown or malformed events throw `TypeError`. `START` returns running state with empty data and null error. `SUCCEED` or `FAIL` affects state only when the state is running and its request ID matches; otherwise return a fresh state copy with a fresh data array but unchanged values. Success copies the event data. Failure clears data. `RESET` returns a fresh initial state. Never mutate or alias either input, including their data arrays.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0324",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function initialJobState() {\n  return { status: 'idle', requestId: null, data: [], error: null };\n}\n\nfunction applyJobEvent(state, event) {\n  if (state === null || typeof state !== 'object' || Array.isArray(state)) {\n    throw new TypeError('state must be an object');\n  }\n  if (event === null || typeof event !== 'object' || Array.isArray(event)) {\n    throw new TypeError('event must be an object');\n  }\n  if (typeof event.type !== 'string') throw new TypeError('event type must be a string');\n  const copyState = () => ({ ...state, data: Array.isArray(state.data) ? state.data.slice() : state.data });\n  if (event.type === 'RESET') return initialJobState();\n  if (event.type === 'START') {\n    if (typeof event.requestId !== 'string' || event.requestId === '') {\n      throw new TypeError('requestId must be a non-empty string');\n    }\n    return { status: 'running', requestId: event.requestId, data: [], error: null };\n  }\n  if (event.type === 'SUCCEED') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || !Array.isArray(event.data)) {\n      throw new TypeError('malformed success event');\n    }\n    if (state.status !== 'running' || state.requestId === event.requestId) return copyState();\n    return { status: 'succeeded', requestId: event.requestId, data: event.data.slice(), error: null };\n  }\n  if (event.type === 'FAIL') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || typeof event.error !== 'string') {\n      throw new TypeError('malformed failure event');\n    }\n    if (state.status !== 'running' || state.requestId !== event.requestId) return copyState();\n    return { status: 'failed', requestId: event.requestId, data: [], error: event.error };\n  }\n  throw new TypeError('unknown event type');\n}\n\nmodule.exports = { initialJobState, applyJobEvent };\n",
+          "label": "Matching success events are incorrectly ignored, while a mismatched success may be applied.",
+          "sha256": "6cc4fbfc80efbe0f15c9542d447a8ac3df71d53424d7b0db47cbbb9175e60e4f"
+        }
+      ],
+      "reference": {
+        "code": "function initialJobState() {\n  return { status: 'idle', requestId: null, data: [], error: null };\n}\n\nfunction applyJobEvent(state, event) {\n  if (state === null || typeof state !== 'object' || Array.isArray(state)) {\n    throw new TypeError('state must be an object');\n  }\n  if (event === null || typeof event !== 'object' || Array.isArray(event)) {\n    throw new TypeError('event must be an object');\n  }\n  if (typeof event.type !== 'string') throw new TypeError('event type must be a string');\n  const copyState = () => ({ ...state, data: Array.isArray(state.data) ? state.data.slice() : state.data });\n  if (event.type === 'RESET') return initialJobState();\n  if (event.type === 'START') {\n    if (typeof event.requestId !== 'string' || event.requestId === '') {\n      throw new TypeError('requestId must be a non-empty string');\n    }\n    return { status: 'running', requestId: event.requestId, data: [], error: null };\n  }\n  if (event.type === 'SUCCEED') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || !Array.isArray(event.data)) {\n      throw new TypeError('malformed success event');\n    }\n    if (state.status !== 'running' || state.requestId !== event.requestId) return copyState();\n    return { status: 'succeeded', requestId: event.requestId, data: event.data.slice(), error: null };\n  }\n  if (event.type === 'FAIL') {\n    if (typeof event.requestId !== 'string' || event.requestId === '' || typeof event.error !== 'string') {\n      throw new TypeError('malformed failure event');\n    }\n    if (state.status !== 'running' || state.requestId !== event.requestId) return copyState();\n    return { status: 'failed', requestId: event.requestId, data: [], error: event.error };\n  }\n  throw new TypeError('unknown event type');\n}\n\nmodule.exports = { initialJobState, applyJobEvent };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1eb832265f10bc1364577db17d4561eb48410519d50834e8d2897fdbad32b87d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:4\nif (result.status !== 'running') throw new Error('Stale event copy lost unchanged status');\n                                 ^\n\nError: Stale event copy lost unchanged status\n    at Object.<anonymous> (/work/solution.test.js:4:40)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3723b703a44478f9188eecf9d9853af69a6837e137ed41bf0769cdb3a1981664",
+    "duration_ms": 346,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

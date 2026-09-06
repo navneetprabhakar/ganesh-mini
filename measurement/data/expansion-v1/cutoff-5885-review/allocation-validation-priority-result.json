@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0449",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "def1e400f668b012b1a57a04089f1177895a6c4a38d228c4a126c70670d745f1",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{check_capacity, Allocation, DistributionError};\n\n#[test]\nfn late_allocation_error_precedes_earlier_sum_overflow() {\n    let allocations = [\n        Allocation { recipient: \"a\".into(), units: u64::MAX },\n        Allocation { recipient: \"b\".into(), units: 1 },\n        Allocation { recipient: \"\".into(), units: 1 },\n    ];\n    assert_eq!(check_capacity(u64::MAX, 0, &allocations, 0, 0, 0),\n        Err(DistributionError::EmptyRecipient));\n}\n",
+        "sha256": "ac141c58167953b5d018db3a88f36b42e5d6d449649e590b3e4e0593372888a0"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6d7a70dacc0a6117f4ed17d992a32009c6cd2dc0cfd249aa490b8199166147bb",
+      "text": "Create a complete `solution.rs` for deterministic credit allocation. Define public `Allocation { pub recipient: String, pub units: u64 }`, `Transfer { pub recipient: String, pub units: u64 }`, and enum `DistributionError` with variants `EmptyRecipient`, `ZeroAllocation`, `ArithmeticOverflow`, `InsufficientCredits`, and `InsufficientFees`. Expose `pub fn build_transfers(allocations: &[Allocation]) -> Result<Vec<Transfer>, DistributionError>` and `pub fn check_capacity(sender_credits: u64, fee_credits: u64, allocations: &[Allocation], fixed_fee: u64, new_recipient_count: u64, creation_fee: u64) -> Result<(), DistributionError>`. `build_transfers` rejects an empty recipient or zero units and otherwise returns transfers in input order, including duplicate recipients, without mutating the input. `check_capacity` applies the same allocation validation, sums units with checked arithmetic, and succeeds when sender credits exactly equal the total. Required fees are `fixed_fee + new_recipient_count * creation_fee`, all checked; exact fee funding succeeds. Allocation errors take precedence, then arithmetic overflow, then insufficient sender credits, then insufficient fees. Empty allocations require zero sender credits but still require the calculated fees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6d7a70dacc0a6117f4ed17d992a32009c6cd2dc0cfd249aa490b8199166147bb",
+      "text": "Create a complete `solution.rs` for deterministic credit allocation. Define public `Allocation { pub recipient: String, pub units: u64 }`, `Transfer { pub recipient: String, pub units: u64 }`, and enum `DistributionError` with variants `EmptyRecipient`, `ZeroAllocation`, `ArithmeticOverflow`, `InsufficientCredits`, and `InsufficientFees`. Expose `pub fn build_transfers(allocations: &[Allocation]) -> Result<Vec<Transfer>, DistributionError>` and `pub fn check_capacity(sender_credits: u64, fee_credits: u64, allocations: &[Allocation], fixed_fee: u64, new_recipient_count: u64, creation_fee: u64) -> Result<(), DistributionError>`. `build_transfers` rejects an empty recipient or zero units and otherwise returns transfers in input order, including duplicate recipients, without mutating the input. `check_capacity` applies the same allocation validation, sums units with checked arithmetic, and succeeds when sender credits exactly equal the total. Required fees are `fixed_fee + new_recipient_count * creation_fee`, all checked; exact fee funding succeeds. Allocation errors take precedence, then arithmetic overflow, then insufficient sender credits, then insufficient fees. Empty allocations require zero sender credits but still require the calculated fees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0449",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Allocation {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Transfer {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum DistributionError {\n    EmptyRecipient,\n    ZeroAllocation,\n    ArithmeticOverflow,\n    InsufficientCredits,\n    InsufficientFees,\n}\n\npub fn build_transfers(\n    allocations: &[Allocation],\n) -> Result<Vec<Transfer>, DistributionError> {\n    let mut transfers = Vec::with_capacity(allocations.len());\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        transfers.push(Transfer {\n            recipient: allocation.recipient.clone(),\n            units: allocation.units,\n        });\n    }\n    Ok(transfers)\n}\n\npub fn check_capacity(\n    sender_credits: u64,\n    fee_credits: u64,\n    allocations: &[Allocation],\n    fixed_fee: u64,\n    new_recipient_count: u64,\n    creation_fee: u64,\n) -> Result<(), DistributionError> {\n    let mut total = 0u64;\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        total = total\n            .checked_add(allocation.units)\n            .ok_or(DistributionError::ArithmeticOverflow)?;\n    }\n\n    let creation_total = new_recipient_count\n        .checked_mul(creation_fee)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n    let required_fees = fixed_fee\n        .checked_add(creation_total)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n\n    if total >= sender_credits {\n        return Err(DistributionError::InsufficientCredits);\n    }\n    if required_fees > fee_credits {\n        return Err(DistributionError::InsufficientFees);\n    }\n    Ok(())\n}\n",
+          "label": "Exact sender funding is incorrectly rejected as insufficient.",
+          "sha256": "085fcdf167b42116f4e7391f219e27514ea6a43ed0c9d8ab34ba89a1d66d0c47"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Allocation {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Transfer {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum DistributionError {\n    EmptyRecipient,\n    ZeroAllocation,\n    ArithmeticOverflow,\n    InsufficientCredits,\n    InsufficientFees,\n}\n\npub fn build_transfers(\n    allocations: &[Allocation],\n) -> Result<Vec<Transfer>, DistributionError> {\n    let mut transfers = Vec::with_capacity(allocations.len());\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        transfers.push(Transfer {\n            recipient: allocation.recipient.clone(),\n            units: allocation.units,\n        });\n    }\n    Ok(transfers)\n}\n\npub fn check_capacity(\n    sender_credits: u64,\n    fee_credits: u64,\n    allocations: &[Allocation],\n    fixed_fee: u64,\n    new_recipient_count: u64,\n    creation_fee: u64,\n) -> Result<(), DistributionError> {\n    let mut total = 0u64;\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        total = total\n            .checked_add(allocation.units)\n            .ok_or(DistributionError::ArithmeticOverflow)?;\n    }\n\n    let creation_total = new_recipient_count\n        .checked_mul(creation_fee)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n    let required_fees = fixed_fee\n        .checked_add(creation_total)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n\n    if total > sender_credits {\n        return Err(DistributionError::InsufficientCredits);\n    }\n    if required_fees > fee_credits {\n        return Err(DistributionError::InsufficientFees);\n    }\n    Ok(())\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "11098d7f7895a2ab90f9d7bbf31cc169976d72dffd0df361b98cd5f3339cf5a2"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{build_transfers, check_capacity, Allocation, DistributionError};\n\nfn allocation(recipient: &str, units: u64) -> Allocation {\n    Allocation { recipient: recipient.to_string(), units }\n}\n\n#[test]\nfn builds_transfers_in_order_and_keeps_duplicates() {\n    let allocations = vec![allocation(\"alice\", 3), allocation(\"bob\", 7), allocation(\"alice\", 2)];\n    let transfers = build_transfers(&allocations).expect(\"valid allocations\");\n\n    assert_eq!(transfers.len(), 3);\n    assert_eq!(transfers[0].recipient, \"alice\");\n    assert_eq!(transfers[0].units, 3);\n    assert_eq!(transfers[1].recipient, \"bob\");\n    assert_eq!(transfers[1].units, 7);\n    assert_eq!(transfers[2].recipient, \"alice\");\n    assert_eq!(transfers[2].units, 2);\n\n    assert_eq!(allocations[0].recipient, \"alice\");\n    assert_eq!(allocations[0].units, 3);\n    assert_eq!(allocations[2].recipient, \"alice\");\n}\n\n#[test]\nfn build_transfers_accepts_empty_input_and_rejects_invalid_allocations() {\n    assert!(build_transfers(&[]).expect(\"empty input is valid\").is_empty());\n\n    assert!(matches!(\n        build_transfers(&[allocation(\"\", 1)]),\n        Err(DistributionError::EmptyRecipient)\n    ));\n    assert!(matches!(\n        build_transfers(&[allocation(\"valid\", 0)]),\n        Err(DistributionError::ZeroAllocation)\n    ));\n}\n\n#[test]\nfn capacity_accepts_exact_and_surplus_funding() {\n    let allocations = [allocation(\"a\", 4), allocation(\"b\", 6)];\n    assert!(check_capacity(10, 11, &allocations, 5, 2, 3).is_ok());\n    assert!(check_capacity(20, 20, &allocations, 5, 2, 3).is_ok());\n}\n\n#[test]\nfn capacity_reports_insufficient_credits_before_insufficient_fees() {\n    let allocations = [allocation(\"a\", 5)];\n    assert!(matches!(\n        check_capacity(4, 0, &allocations, 10, 0, 0),\n        Err(DistributionError::InsufficientCredits)\n    ));\n    assert!(matches!(\n        check_capacity(5, 9, &allocations, 10, 0, 0),\n        Err(DistributionError::InsufficientFees)\n    ));\n}\n\n#[test]\nfn allocation_validation_has_highest_precedence() {\n    let invalid = [allocation(\"\", 0), allocation(\"ok\", u64::MAX)];\n    assert!(matches!(\n        check_capacity(0, 0, &invalid, u64::MAX, 2, u64::MAX),\n        Err(DistributionError::EmptyRecipient)\n    ));\n\n    let zero = [allocation(\"ok\", 0)];\n    assert!(matches!(\n        check_capacity(0, 0, &zero, u64::MAX, 2, u64::MAX),\n        Err(DistributionError::ZeroAllocation)\n    ));\n}\n\n#[test]\nfn checked_allocation_and_fee_arithmetic_reports_overflow() {\n    let overflowing_sum = [allocation(\"a\", u64::MAX), allocation(\"b\", 1)];\n    assert!(matches!(\n        check_capacity(u64::MAX, u64::MAX, &overflowing_sum, 0, 0, 0),\n        Err(DistributionError::ArithmeticOverflow)\n    ));\n\n    let valid = [allocation(\"a\", 1)];\n    assert!(matches!(\n        check_capacity(0, u64::MAX, &valid, u64::MAX, 1, 1),\n        Err(DistributionError::ArithmeticOverflow)\n    ));\n    assert!(matches!(\n        check_capacity(0, u64::MAX, &valid, 0, u64::MAX, 2),\n        Err(DistributionError::ArithmeticOverflow)\n    ));\n}\n\n#[test]\nfn empty_allocations_require_only_calculated_fees() {\n    assert!(check_capacity(0, 7, &[], 1, 2, 3).is_ok());\n    assert!(matches!(\n        check_capacity(0, 6, &[], 1, 2, 3),\n        Err(DistributionError::InsufficientFees)\n    ));\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "0dadc3f881752a14c0eec6c1c469960cf8e3789f389aec17ac08867c09f52885"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6d7a70dacc0a6117f4ed17d992a32009c6cd2dc0cfd249aa490b8199166147bb",
+      "text": "Create a complete `solution.rs` for deterministic credit allocation. Define public `Allocation { pub recipient: String, pub units: u64 }`, `Transfer { pub recipient: String, pub units: u64 }`, and enum `DistributionError` with variants `EmptyRecipient`, `ZeroAllocation`, `ArithmeticOverflow`, `InsufficientCredits`, and `InsufficientFees`. Expose `pub fn build_transfers(allocations: &[Allocation]) -> Result<Vec<Transfer>, DistributionError>` and `pub fn check_capacity(sender_credits: u64, fee_credits: u64, allocations: &[Allocation], fixed_fee: u64, new_recipient_count: u64, creation_fee: u64) -> Result<(), DistributionError>`. `build_transfers` rejects an empty recipient or zero units and otherwise returns transfers in input order, including duplicate recipients, without mutating the input. `check_capacity` applies the same allocation validation, sums units with checked arithmetic, and succeeds when sender credits exactly equal the total. Required fees are `fixed_fee + new_recipient_count * creation_fee`, all checked; exact fee funding succeeds. Allocation errors take precedence, then arithmetic overflow, then insufficient sender credits, then insufficient fees. Empty allocations require zero sender credits but still require the calculated fees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6d7a70dacc0a6117f4ed17d992a32009c6cd2dc0cfd249aa490b8199166147bb",
+      "text": "Create a complete `solution.rs` for deterministic credit allocation. Define public `Allocation { pub recipient: String, pub units: u64 }`, `Transfer { pub recipient: String, pub units: u64 }`, and enum `DistributionError` with variants `EmptyRecipient`, `ZeroAllocation`, `ArithmeticOverflow`, `InsufficientCredits`, and `InsufficientFees`. Expose `pub fn build_transfers(allocations: &[Allocation]) -> Result<Vec<Transfer>, DistributionError>` and `pub fn check_capacity(sender_credits: u64, fee_credits: u64, allocations: &[Allocation], fixed_fee: u64, new_recipient_count: u64, creation_fee: u64) -> Result<(), DistributionError>`. `build_transfers` rejects an empty recipient or zero units and otherwise returns transfers in input order, including duplicate recipients, without mutating the input. `check_capacity` applies the same allocation validation, sums units with checked arithmetic, and succeeds when sender credits exactly equal the total. Required fees are `fixed_fee + new_recipient_count * creation_fee`, all checked; exact fee funding succeeds. Allocation errors take precedence, then arithmetic overflow, then insufficient sender credits, then insufficient fees. Empty allocations require zero sender credits but still require the calculated fees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0449",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Allocation {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Transfer {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum DistributionError {\n    EmptyRecipient,\n    ZeroAllocation,\n    ArithmeticOverflow,\n    InsufficientCredits,\n    InsufficientFees,\n}\n\npub fn build_transfers(\n    allocations: &[Allocation],\n) -> Result<Vec<Transfer>, DistributionError> {\n    let mut transfers = Vec::with_capacity(allocations.len());\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        transfers.push(Transfer {\n            recipient: allocation.recipient.clone(),\n            units: allocation.units,\n        });\n    }\n    Ok(transfers)\n}\n\npub fn check_capacity(\n    sender_credits: u64,\n    fee_credits: u64,\n    allocations: &[Allocation],\n    fixed_fee: u64,\n    new_recipient_count: u64,\n    creation_fee: u64,\n) -> Result<(), DistributionError> {\n    let mut total = 0u64;\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        total = total\n            .checked_add(allocation.units)\n            .ok_or(DistributionError::ArithmeticOverflow)?;\n    }\n\n    let creation_total = new_recipient_count\n        .checked_mul(creation_fee)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n    let required_fees = fixed_fee\n        .checked_add(creation_total)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n\n    if total >= sender_credits {\n        return Err(DistributionError::InsufficientCredits);\n    }\n    if required_fees > fee_credits {\n        return Err(DistributionError::InsufficientFees);\n    }\n    Ok(())\n}\n",
+          "label": "Exact sender funding is incorrectly rejected as insufficient.",
+          "sha256": "085fcdf167b42116f4e7391f219e27514ea6a43ed0c9d8ab34ba89a1d66d0c47"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Allocation {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Transfer {\n    pub recipient: String,\n    pub units: u64,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum DistributionError {\n    EmptyRecipient,\n    ZeroAllocation,\n    ArithmeticOverflow,\n    InsufficientCredits,\n    InsufficientFees,\n}\n\npub fn build_transfers(\n    allocations: &[Allocation],\n) -> Result<Vec<Transfer>, DistributionError> {\n    let mut transfers = Vec::with_capacity(allocations.len());\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        transfers.push(Transfer {\n            recipient: allocation.recipient.clone(),\n            units: allocation.units,\n        });\n    }\n    Ok(transfers)\n}\n\npub fn check_capacity(\n    sender_credits: u64,\n    fee_credits: u64,\n    allocations: &[Allocation],\n    fixed_fee: u64,\n    new_recipient_count: u64,\n    creation_fee: u64,\n) -> Result<(), DistributionError> {\n    let mut total = 0u64;\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n        total = total\n            .checked_add(allocation.units)\n            .ok_or(DistributionError::ArithmeticOverflow)?;\n    }\n\n    let creation_total = new_recipient_count\n        .checked_mul(creation_fee)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n    let required_fees = fixed_fee\n        .checked_add(creation_total)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n\n    if total > sender_credits {\n        return Err(DistributionError::InsufficientCredits);\n    }\n    if required_fees > fee_credits {\n        return Err(DistributionError::InsufficientFees);\n    }\n    Ok(())\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "11098d7f7895a2ab90f9d7bbf31cc169976d72dffd0df361b98cd5f3339cf5a2"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest late_allocation_error_precedes_earlier_sum_overflow ... FAILED\n\nfailures:\n\n---- late_allocation_error_precedes_earlier_sum_overflow stdout ----\n\nthread 'late_allocation_error_precedes_earlier_sum_overflow' panicked at solution_test.rs:12:5:\nassertion `left == right` failed\n  left: Err(ArithmeticOverflow)\n right: Err(EmptyRecipient)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    late_allocation_error_precedes_earlier_sum_overflow\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "3dac25c99521dd2fbf1da8ae407f9b8bdd24c5e963924c08ffdb029a0cff036a",
+    "stderr": "warning: function `build_transfers` is never used\n  --> solution.rs:22:8\n   |\n22 | pub fn build_transfers(\n   |        ^^^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: 1 warning emitted\n\n",
+    "stderr_sha256": "641deb9441d8723a37029e2b065c35fb6e1530b7d9b34de2bee76521e8b4683b",
+    "duration_ms": 1771,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -4,12 +4,12 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Current checkpoint: **439 holds (436 additive plus historical three)**; 909
+Current checkpoint: **459 holds (456 additive plus historical three)**; 1,014
 unique outside-sample inspections. All 544 array queue positions inspected;
-Rust generation queue inspected through 360 of 684, continue 361.
-GCS verified through 439 holds / Rust batch 24 / 909 outside-sample inspections;
-scope v6 (11 groups, 14 strata, 3,085 review records).
-See RUST_STRATUM_REVIEW_24.md. Remaining strata and quality criteria are pending;
+Rust generation queue inspected through 465 of 684, continue 466.
+GCS verified through 454 holds / Rust batch 30 / 999 outside-sample inspections;
+batch 31 awaits backup. Scope v6 (11 groups, 14 strata, 3,085 review records).
+See RUST_STRATUM_REVIEW_31.md. Remaining strata and quality criteria are pending;
 inspection is not admission. All 97 data tooling tests pass.
 No training seal or new VM. Older entries are historical.
 

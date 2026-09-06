@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0485",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bc467b6b4bcbde42d1f4a3898911d22dafac5cce12dbcd57bb4919e835ce5827",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{eval, EvalError, Expr, Scope};\n\n#[test]\nfn failed_outer_assignment_preserves_target_despite_nested_write() {\n    let mut scope = Scope::new();\n    scope.insert(\"target\".into(), 9);\n    let expr = Expr::Assign(\"target\".into(), Box::new(Expr::Add(\n        Box::new(Expr::Assign(\"target\".into(), Box::new(Expr::Number(12)))),\n        Box::new(Expr::Name(\"missing\".into())),\n    )));\n    assert_eq!(eval(&expr, &mut scope), Err(EvalError::UnknownName(\"missing\".into())));\n    assert_eq!(scope.get(\"target\"), Some(&9));\n}\n",
+        "sha256": "5cd97cffca6a1742bded827a8f585cc7451268cf6e25187b658e0c1a5d53fa74"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "aaf062aab755714da8bbb0838186f489371c2a3a2399d0f8a99a9df49778dc36",
+      "text": "Create `solution.rs` for a small checked integer expression evaluator. Define public enums `Expr` and `EvalError`, both deriving `Debug`, `Clone`, `PartialEq`, and `Eq`. `Expr` must have `Number(i64)`, `Name(String)`, `Add(Box<Expr>, Box<Expr>)`, `Multiply(Box<Expr>, Box<Expr>)`, and `Assign(String, Box<Expr>)`. `EvalError` must have `UnknownName(String)`, `Overflow`, and `EmptyName`. Define `pub type Scope = std::collections::BTreeMap<String, i64>` and expose `pub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError>`. Numbers return themselves; names resolve existing bindings; arithmetic evaluates left before right and uses checked operations; assignment rejects an empty name, evaluates its value, then inserts or replaces the binding and returns that value. If any evaluation fails, assignment must not change its target binding. Arithmetic and name lookup must not mutate the scope. Provide no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "aaf062aab755714da8bbb0838186f489371c2a3a2399d0f8a99a9df49778dc36",
+      "text": "Create `solution.rs` for a small checked integer expression evaluator. Define public enums `Expr` and `EvalError`, both deriving `Debug`, `Clone`, `PartialEq`, and `Eq`. `Expr` must have `Number(i64)`, `Name(String)`, `Add(Box<Expr>, Box<Expr>)`, `Multiply(Box<Expr>, Box<Expr>)`, and `Assign(String, Box<Expr>)`. `EvalError` must have `UnknownName(String)`, `Overflow`, and `EmptyName`. Define `pub type Scope = std::collections::BTreeMap<String, i64>` and expose `pub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError>`. Numbers return themselves; names resolve existing bindings; arithmetic evaluates left before right and uses checked operations; assignment rejects an empty name, evaluates its value, then inserts or replaces the binding and returns that value. If any evaluation fails, assignment must not change its target binding. Arithmetic and name lookup must not mutate the scope. Provide no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0485",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\npub type Scope = BTreeMap<String, i64>;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum Expr {\n    Number(i64),\n    Name(String),\n    Add(Box<Expr>, Box<Expr>),\n    Multiply(Box<Expr>, Box<Expr>),\n    Assign(String, Box<Expr>),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum EvalError {\n    UnknownName(String),\n    Overflow,\n    EmptyName,\n}\n\npub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError> {\n    match expr {\n        Expr::Number(value) => Ok(*value),\n        Expr::Name(name) => scope\n            .get(name)\n            .copied()\n            .ok_or_else(|| EvalError::UnknownName(name.clone())),\n        Expr::Add(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            Ok(left.wrapping_add(right))\n        }\n        Expr::Multiply(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            left.checked_mul(right).ok_or(EvalError::Overflow)\n        }\n        Expr::Assign(name, value) => {\n            if name.is_empty() {\n                return Err(EvalError::EmptyName);\n            }\n            let evaluated = eval(value, scope)?;\n            scope.insert(name.clone(), evaluated);\n            Ok(evaluated)\n        }\n    }\n}\n",
+          "label": "Addition wraps on overflow instead of returning `EvalError::Overflow`.",
+          "sha256": "e2cb77dee82f44bc7c6a36d57107b09e182b2c5a7f2b604b02561a9a49a82202"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\npub type Scope = BTreeMap<String, i64>;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum Expr {\n    Number(i64),\n    Name(String),\n    Add(Box<Expr>, Box<Expr>),\n    Multiply(Box<Expr>, Box<Expr>),\n    Assign(String, Box<Expr>),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum EvalError {\n    UnknownName(String),\n    Overflow,\n    EmptyName,\n}\n\npub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError> {\n    match expr {\n        Expr::Number(value) => Ok(*value),\n        Expr::Name(name) => scope\n            .get(name)\n            .copied()\n            .ok_or_else(|| EvalError::UnknownName(name.clone())),\n        Expr::Add(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            left.checked_add(right).ok_or(EvalError::Overflow)\n        }\n        Expr::Multiply(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            left.checked_mul(right).ok_or(EvalError::Overflow)\n        }\n        Expr::Assign(name, value) => {\n            if name.is_empty() {\n                return Err(EvalError::EmptyName);\n            }\n            let evaluated = eval(value, scope)?;\n            scope.insert(name.clone(), evaluated);\n            Ok(evaluated)\n        }\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "73e5d803fd5eca80a46b2e4ca6dad101b50916edd5548c7022058a4080efa5ec"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{eval, EvalError, Expr, Scope};\n\nfn boxed(expr: Expr) -> Box<Expr> {\n    Box::new(expr)\n}\n\nfn assert_traits<T: std::fmt::Debug + Clone + PartialEq + Eq>() {}\n\n#[test]\nfn public_enums_have_required_traits() {\n    assert_traits::<Expr>();\n    assert_traits::<EvalError>();\n}\n\n#[test]\nfn numbers_and_names_evaluate_without_mutating_scope() {\n    let mut scope = Scope::new();\n    scope.insert(\"x\".to_string(), 12);\n    let before = scope.clone();\n    assert_eq!(eval(&Expr::Number(-7), &mut scope), Ok(-7));\n    assert_eq!(eval(&Expr::Name(\"x\".to_string()), &mut scope), Ok(12));\n    assert_eq!(scope, before);\n}\n\n#[test]\nfn unknown_names_are_reported_exactly_and_left_operand_is_first() {\n    let mut scope = Scope::new();\n    assert_eq!(eval(&Expr::Name(\"missing\".to_string()), &mut scope), Err(EvalError::UnknownName(\"missing\".to_string())));\n    let expr = Expr::Add(\n        boxed(Expr::Name(\"left\".to_string())),\n        boxed(Expr::Name(\"right\".to_string())),\n    );\n    assert_eq!(eval(&expr, &mut scope), Err(EvalError::UnknownName(\"left\".to_string())));\n    assert!(scope.is_empty());\n}\n\n#[test]\nfn checked_addition_and_multiplication_detect_overflow() {\n    let mut scope = Scope::new();\n    let add = Expr::Add(boxed(Expr::Number(i64::MAX)), boxed(Expr::Number(1)));\n    let multiply = Expr::Multiply(boxed(Expr::Number(i64::MIN)), boxed(Expr::Number(-1)));\n    assert_eq!(eval(&add, &mut scope), Err(EvalError::Overflow));\n    assert_eq!(eval(&multiply, &mut scope), Err(EvalError::Overflow));\n    assert!(scope.is_empty());\n\n    let valid = Expr::Multiply(\n        boxed(Expr::Add(boxed(Expr::Number(2)), boxed(Expr::Number(3)))),\n        boxed(Expr::Number(4)),\n    );\n    assert_eq!(eval(&valid, &mut scope), Ok(20));\n}\n\n#[test]\nfn assignment_inserts_replaces_and_returns_the_value() {\n    let mut scope = Scope::new();\n    let first = Expr::Assign(\"answer\".to_string(), boxed(Expr::Number(41)));\n    assert_eq!(eval(&first, &mut scope), Ok(41));\n    assert_eq!(scope.get(\"answer\"), Some(&41));\n\n    let replace = Expr::Assign(\n        \"answer\".to_string(),\n        boxed(Expr::Add(boxed(Expr::Number(20)), boxed(Expr::Number(22)))),\n    );\n    assert_eq!(eval(&replace, &mut scope), Ok(42));\n    assert_eq!(scope.get(\"answer\"), Some(&42));\n}\n\n#[test]\nfn failed_assignment_preserves_its_target_binding() {\n    let mut scope = Scope::new();\n    scope.insert(\"target\".to_string(), 9);\n    let expr = Expr::Assign(\n        \"target\".to_string(),\n        boxed(Expr::Add(boxed(Expr::Number(i64::MAX)), boxed(Expr::Number(1)))),\n    );\n    assert_eq!(eval(&expr, &mut scope), Err(EvalError::Overflow));\n    assert_eq!(scope.get(\"target\"), Some(&9));\n\n    let unknown = Expr::Assign(\"new\".to_string(), boxed(Expr::Name(\"absent\".to_string())));\n    assert_eq!(eval(&unknown, &mut scope), Err(EvalError::UnknownName(\"absent\".to_string())));\n    assert!(!scope.contains_key(\"new\"));\n}\n\n#[test]\nfn empty_assignment_name_is_rejected_without_evaluating_or_mutating() {\n    let mut scope = Scope::new();\n    scope.insert(\"kept\".to_string(), 3);\n    let before = scope.clone();\n    let expr = Expr::Assign(\n        String::new(),\n        boxed(Expr::Assign(\"side_effect\".to_string(), boxed(Expr::Number(8)))),\n    );\n    assert_eq!(eval(&expr, &mut scope), Err(EvalError::EmptyName));\n    assert_eq!(scope, before);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "1701c86283508d4024198c7b481bac479a5108b53b565f3586f0f0ae65eef71e"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "aaf062aab755714da8bbb0838186f489371c2a3a2399d0f8a99a9df49778dc36",
+      "text": "Create `solution.rs` for a small checked integer expression evaluator. Define public enums `Expr` and `EvalError`, both deriving `Debug`, `Clone`, `PartialEq`, and `Eq`. `Expr` must have `Number(i64)`, `Name(String)`, `Add(Box<Expr>, Box<Expr>)`, `Multiply(Box<Expr>, Box<Expr>)`, and `Assign(String, Box<Expr>)`. `EvalError` must have `UnknownName(String)`, `Overflow`, and `EmptyName`. Define `pub type Scope = std::collections::BTreeMap<String, i64>` and expose `pub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError>`. Numbers return themselves; names resolve existing bindings; arithmetic evaluates left before right and uses checked operations; assignment rejects an empty name, evaluates its value, then inserts or replaces the binding and returns that value. If any evaluation fails, assignment must not change its target binding. Arithmetic and name lookup must not mutate the scope. Provide no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "aaf062aab755714da8bbb0838186f489371c2a3a2399d0f8a99a9df49778dc36",
+      "text": "Create `solution.rs` for a small checked integer expression evaluator. Define public enums `Expr` and `EvalError`, both deriving `Debug`, `Clone`, `PartialEq`, and `Eq`. `Expr` must have `Number(i64)`, `Name(String)`, `Add(Box<Expr>, Box<Expr>)`, `Multiply(Box<Expr>, Box<Expr>)`, and `Assign(String, Box<Expr>)`. `EvalError` must have `UnknownName(String)`, `Overflow`, and `EmptyName`. Define `pub type Scope = std::collections::BTreeMap<String, i64>` and expose `pub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError>`. Numbers return themselves; names resolve existing bindings; arithmetic evaluates left before right and uses checked operations; assignment rejects an empty name, evaluates its value, then inserts or replaces the binding and returns that value. If any evaluation fails, assignment must not change its target binding. Arithmetic and name lookup must not mutate the scope. Provide no `main` function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0485",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\npub type Scope = BTreeMap<String, i64>;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum Expr {\n    Number(i64),\n    Name(String),\n    Add(Box<Expr>, Box<Expr>),\n    Multiply(Box<Expr>, Box<Expr>),\n    Assign(String, Box<Expr>),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum EvalError {\n    UnknownName(String),\n    Overflow,\n    EmptyName,\n}\n\npub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError> {\n    match expr {\n        Expr::Number(value) => Ok(*value),\n        Expr::Name(name) => scope\n            .get(name)\n            .copied()\n            .ok_or_else(|| EvalError::UnknownName(name.clone())),\n        Expr::Add(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            Ok(left.wrapping_add(right))\n        }\n        Expr::Multiply(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            left.checked_mul(right).ok_or(EvalError::Overflow)\n        }\n        Expr::Assign(name, value) => {\n            if name.is_empty() {\n                return Err(EvalError::EmptyName);\n            }\n            let evaluated = eval(value, scope)?;\n            scope.insert(name.clone(), evaluated);\n            Ok(evaluated)\n        }\n    }\n}\n",
+          "label": "Addition wraps on overflow instead of returning `EvalError::Overflow`.",
+          "sha256": "e2cb77dee82f44bc7c6a36d57107b09e182b2c5a7f2b604b02561a9a49a82202"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\npub type Scope = BTreeMap<String, i64>;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum Expr {\n    Number(i64),\n    Name(String),\n    Add(Box<Expr>, Box<Expr>),\n    Multiply(Box<Expr>, Box<Expr>),\n    Assign(String, Box<Expr>),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum EvalError {\n    UnknownName(String),\n    Overflow,\n    EmptyName,\n}\n\npub fn eval(expr: &Expr, scope: &mut Scope) -> Result<i64, EvalError> {\n    match expr {\n        Expr::Number(value) => Ok(*value),\n        Expr::Name(name) => scope\n            .get(name)\n            .copied()\n            .ok_or_else(|| EvalError::UnknownName(name.clone())),\n        Expr::Add(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            left.checked_add(right).ok_or(EvalError::Overflow)\n        }\n        Expr::Multiply(left, right) => {\n            let left = eval(left, scope)?;\n            let right = eval(right, scope)?;\n            left.checked_mul(right).ok_or(EvalError::Overflow)\n        }\n        Expr::Assign(name, value) => {\n            if name.is_empty() {\n                return Err(EvalError::EmptyName);\n            }\n            let evaluated = eval(value, scope)?;\n            scope.insert(name.clone(), evaluated);\n            Ok(evaluated)\n        }\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "73e5d803fd5eca80a46b2e4ca6dad101b50916edd5548c7022058a4080efa5ec"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest failed_outer_assignment_preserves_target_despite_nested_write ... FAILED\n\nfailures:\n\n---- failed_outer_assignment_preserves_target_despite_nested_write stdout ----\n\nthread 'failed_outer_assignment_preserves_target_despite_nested_write' panicked at solution_test.rs:14:5:\nassertion `left == right` failed\n  left: Some(12)\n right: Some(9)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    failed_outer_assignment_preserves_target_despite_nested_write\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n\n",
+    "stdout_sha256": "a25cf4856fb00e67763984c9663bf2657a89d065f4314ca5ea454a7f5bc95c1a",
+    "stderr": "warning: variant `Multiply` is never constructed\n  --> solution.rs:10:5\n   |\n6  | pub enum Expr {\n   |          ---- variant in this enum\n...\n10 |     Multiply(Box<Expr>, Box<Expr>),\n   |     ^^^^^^^^\n   |\n   = note: `Expr` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: 1 warning emitted\n\n",
+    "stderr_sha256": "646c67365da949151114ac004bdb4e8e19eb17f812a1fbee460b11def9422be1",
+    "duration_ms": 3370,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

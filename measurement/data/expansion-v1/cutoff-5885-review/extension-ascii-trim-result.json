@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0465",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b173a6e93f316bebe8bf35cd4a78ce9823c8cee54bff10c80fd177d5341902b4",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::build_factories;\n\n#[test]\nfn non_ascii_whitespace_is_literal_field_and_capability_data() {\n    let factories = build_factories(&[\"\\u{2003}id\\u{2003}|title|rev|\\u{2003}\"]).unwrap();\n    assert_eq!(factories[0].descriptor().id, \"\\u{2003}id\\u{2003}\");\n    assert_eq!(factories[0].descriptor().capabilities, vec![\"\\u{2003}\"]);\n}\n",
+        "sha256": "a152288a6e5902fafac52d6ac98ae92c9e2cb577e5a3ae2986e33561eafad3a9"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fd15aa529282bdcac026b22b4581ca27679c1527d6fab4d6a661b3156d0791d2",
+      "text": "Implement an in-memory extension catalog in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct ExtensionDescriptor { pub id: String, pub title: String, pub revision: String, pub capabilities: Vec<String> }`\n- `pub struct ExtensionInstance { pub descriptor: ExtensionDescriptor, pub serial: u64 }`\n- `pub struct ExtensionFactory`\n- `pub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String>`\n- Factory methods `descriptor(&self) -> &ExtensionDescriptor` and `create(&mut self) -> Result<ExtensionInstance, String>`.\n\nEach record has exactly four `|`-separated fields: ID, title, revision, and a comma-separated capability list. Trim surrounding ASCII whitespace from every field and capability. ID, title, and revision must be nonempty. Empty capability fields produce an empty list; otherwise empty capability names are malformed. Duplicate capabilities within one record and duplicate IDs across records are errors. Titles need not be unique. Preserve record order and capability order. On any error, return no partial catalog and do not mutate the input.\n\nA factory starts its serial counter at 1. Each successful `create` returns a cloned descriptor and the current serial, then increments it. If incrementing would overflow, that call returns an error without changing the counter.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fd15aa529282bdcac026b22b4581ca27679c1527d6fab4d6a661b3156d0791d2",
+      "text": "Implement an in-memory extension catalog in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct ExtensionDescriptor { pub id: String, pub title: String, pub revision: String, pub capabilities: Vec<String> }`\n- `pub struct ExtensionInstance { pub descriptor: ExtensionDescriptor, pub serial: u64 }`\n- `pub struct ExtensionFactory`\n- `pub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String>`\n- Factory methods `descriptor(&self) -> &ExtensionDescriptor` and `create(&mut self) -> Result<ExtensionInstance, String>`.\n\nEach record has exactly four `|`-separated fields: ID, title, revision, and a comma-separated capability list. Trim surrounding ASCII whitespace from every field and capability. ID, title, and revision must be nonempty. Empty capability fields produce an empty list; otherwise empty capability names are malformed. Duplicate capabilities within one record and duplicate IDs across records are errors. Titles need not be unique. Preserve record order and capability order. On any error, return no partial catalog and do not mutate the input.\n\nA factory starts its serial counter at 1. Each successful `create` returns a cloned descriptor and the current serial, then increments it. If incrementing would overflow, that call returns an error without changing the counter.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0465",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::HashSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionDescriptor {\n    pub id: String,\n    pub title: String,\n    pub revision: String,\n    pub capabilities: Vec<String>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionInstance {\n    pub descriptor: ExtensionDescriptor,\n    pub serial: u64,\n}\n\npub struct ExtensionFactory {\n    descriptor: ExtensionDescriptor,\n    next_serial: u64,\n}\n\nimpl ExtensionFactory {\n    pub fn descriptor(&self) -> &ExtensionDescriptor { &self.descriptor }\n\n    pub fn create(&mut self) -> Result<ExtensionInstance, String> {\n        let next = self.next_serial.checked_add(1).ok_or_else(|| \"serial overflow\".to_string())?;\n        let instance = ExtensionInstance { descriptor: self.descriptor.clone(), serial: self.next_serial };\n        self.next_serial = next;\n        Ok(instance)\n    }\n}\n\npub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String> {\n    let mut ids = HashSet::new();\n    let mut result = Vec::with_capacity(records.len());\n    for record in records {\n        let fields: Vec<&str> = record.split('|').collect();\n        if fields.len() != 4 { return Err(\"record must contain four fields\".into()); }\n        let id = fields[0].trim().to_string();\n        let title = fields[1].trim().to_string();\n        let revision = fields[2].trim().to_string();\n        if id.is_empty() || title.is_empty() || revision.is_empty() {\n            return Err(\"required field is empty\".into());\n        }\n        if !ids.insert(title.clone()) { return Err(\"duplicate extension id\".into()); }\n        let mut capabilities = Vec::new();\n        let mut seen = HashSet::new();\n        if !fields[3].trim().is_empty() {\n            for raw in fields[3].split(',') {\n                let capability = raw.trim().to_string();\n                if capability.is_empty() { return Err(\"empty capability\".into()); }\n                if !seen.insert(capability.clone()) { return Err(\"duplicate capability\".into()); }\n                capabilities.push(capability);\n            }\n        }\n        result.push(ExtensionFactory {\n            descriptor: ExtensionDescriptor { id, title, revision, capabilities },\n            next_serial: 1,\n        });\n    }\n    Ok(result)\n}\n",
+          "label": "Catalog-wide uniqueness is checked using titles instead of extension IDs.",
+          "sha256": "0003800dde887d912377f9e82766c7e1603f9f22a1cfc83809e882e4e1c417be"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::HashSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionDescriptor {\n    pub id: String,\n    pub title: String,\n    pub revision: String,\n    pub capabilities: Vec<String>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionInstance {\n    pub descriptor: ExtensionDescriptor,\n    pub serial: u64,\n}\n\npub struct ExtensionFactory {\n    descriptor: ExtensionDescriptor,\n    next_serial: u64,\n}\n\nimpl ExtensionFactory {\n    pub fn descriptor(&self) -> &ExtensionDescriptor { &self.descriptor }\n\n    pub fn create(&mut self) -> Result<ExtensionInstance, String> {\n        let next = self.next_serial.checked_add(1).ok_or_else(|| \"serial overflow\".to_string())?;\n        let instance = ExtensionInstance { descriptor: self.descriptor.clone(), serial: self.next_serial };\n        self.next_serial = next;\n        Ok(instance)\n    }\n}\n\npub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String> {\n    let mut ids = HashSet::new();\n    let mut result = Vec::with_capacity(records.len());\n    for record in records {\n        let fields: Vec<&str> = record.split('|').collect();\n        if fields.len() != 4 { return Err(\"record must contain four fields\".into()); }\n        let id = fields[0].trim().to_string();\n        let title = fields[1].trim().to_string();\n        let revision = fields[2].trim().to_string();\n        if id.is_empty() || title.is_empty() || revision.is_empty() {\n            return Err(\"required field is empty\".into());\n        }\n        if !ids.insert(id.clone()) { return Err(\"duplicate extension id\".into()); }\n        let mut capabilities = Vec::new();\n        let mut seen = HashSet::new();\n        if !fields[3].trim().is_empty() {\n            for raw in fields[3].split(',') {\n                let capability = raw.trim().to_string();\n                if capability.is_empty() { return Err(\"empty capability\".into()); }\n                if !seen.insert(capability.clone()) { return Err(\"duplicate capability\".into()); }\n                capabilities.push(capability);\n            }\n        }\n        result.push(ExtensionFactory {\n            descriptor: ExtensionDescriptor { id, title, revision, capabilities },\n            next_serial: 1,\n        });\n    }\n    Ok(result)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b2281e93dd6e8b7728202ed38a8f63450590d51d96e89714eaadbfdd92985cb0"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::build_factories;\n\n#[test]\nfn parses_trims_and_preserves_catalog_and_capability_order() {\n    let records = [\n        \" alpha | First Extension | 1.0 | read, write ,admin \",\n        \"beta|First Extension|2|\",\n    ];\n    let mut factories = build_factories(&records).unwrap();\n    assert_eq!(factories.len(), 2);\n\n    let first = factories[0].descriptor();\n    assert_eq!(first.id, \"alpha\");\n    assert_eq!(first.title, \"First Extension\");\n    assert_eq!(first.revision, \"1.0\");\n    assert_eq!(first.capabilities, vec![\"read\", \"write\", \"admin\"]);\n\n    let second = factories[1].descriptor();\n    assert_eq!(second.id, \"beta\");\n    assert_eq!(second.title, \"First Extension\");\n    assert_eq!(second.revision, \"2\");\n    assert!(second.capabilities.is_empty());\n\n    let instance = factories[0].create().unwrap();\n    assert_eq!(instance.serial, 1);\n    assert_eq!(instance.descriptor.id, \"alpha\");\n    assert_eq!(instance.descriptor.capabilities, vec![\"read\", \"write\", \"admin\"]);\n}\n\n#[test]\nfn serials_start_at_one_and_are_independent_per_factory() {\n    let records = [\"a|A|r|x\", \"b|B|r|y\"];\n    let mut factories = build_factories(&records).unwrap();\n    assert_eq!(factories[0].create().unwrap().serial, 1);\n    assert_eq!(factories[0].create().unwrap().serial, 2);\n    assert_eq!(factories[1].create().unwrap().serial, 1);\n    assert_eq!(factories[0].descriptor().id, \"a\");\n}\n\n#[test]\nfn empty_catalog_is_valid() {\n    let factories = build_factories(&[]).unwrap();\n    assert!(factories.is_empty());\n}\n\n#[test]\nfn rejects_bad_field_counts_and_empty_required_fields() {\n    for records in [\n        vec![\"a|title|rev\"],\n        vec![\"a|title|rev|cap|extra\"],\n        vec![\" |title|rev|cap\"],\n        vec![\"a|  |rev|cap\"],\n        vec![\"a|title|  |cap\"],\n    ] {\n        assert!(build_factories(&records).is_err());\n    }\n}\n\n#[test]\nfn rejects_empty_or_duplicate_capabilities_after_trimming() {\n    assert!(build_factories(&[\"a|A|1|read,,write\"]).is_err());\n    assert!(build_factories(&[\"a|A|1|read,   ,write\"]).is_err());\n    assert!(build_factories(&[\"a|A|1|read, write,read \"]).is_err());\n    assert!(build_factories(&[\"a|A|1|,read\"]).is_err());\n    assert!(build_factories(&[\"a|A|1|read,\"]).is_err());\n}\n\n#[test]\nfn duplicate_ids_are_rejected_after_field_trimming() {\n    let records = [\"same|One|1|\", \" same |Two|2|cap\"];\n    assert!(build_factories(&records).is_err());\n}\n\n#[test]\nfn building_and_creating_do_not_change_record_text() {\n    let owned = String::from(\" id | title | rev | one,two \");\n    let original = owned.clone();\n    {\n        let records = [owned.as_str()];\n        let mut factories = build_factories(&records).unwrap();\n        let _ = factories[0].create().unwrap();\n    }\n    assert_eq!(owned, original);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "4f0e50a63a994de96275a21aede288845e5f84568cc3d9023e19ece87337812c"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fd15aa529282bdcac026b22b4581ca27679c1527d6fab4d6a661b3156d0791d2",
+      "text": "Implement an in-memory extension catalog in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct ExtensionDescriptor { pub id: String, pub title: String, pub revision: String, pub capabilities: Vec<String> }`\n- `pub struct ExtensionInstance { pub descriptor: ExtensionDescriptor, pub serial: u64 }`\n- `pub struct ExtensionFactory`\n- `pub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String>`\n- Factory methods `descriptor(&self) -> &ExtensionDescriptor` and `create(&mut self) -> Result<ExtensionInstance, String>`.\n\nEach record has exactly four `|`-separated fields: ID, title, revision, and a comma-separated capability list. Trim surrounding ASCII whitespace from every field and capability. ID, title, and revision must be nonempty. Empty capability fields produce an empty list; otherwise empty capability names are malformed. Duplicate capabilities within one record and duplicate IDs across records are errors. Titles need not be unique. Preserve record order and capability order. On any error, return no partial catalog and do not mutate the input.\n\nA factory starts its serial counter at 1. Each successful `create` returns a cloned descriptor and the current serial, then increments it. If incrementing would overflow, that call returns an error without changing the counter.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fd15aa529282bdcac026b22b4581ca27679c1527d6fab4d6a661b3156d0791d2",
+      "text": "Implement an in-memory extension catalog in `solution.rs` using only the standard library.\n\nExpose:\n- `pub struct ExtensionDescriptor { pub id: String, pub title: String, pub revision: String, pub capabilities: Vec<String> }`\n- `pub struct ExtensionInstance { pub descriptor: ExtensionDescriptor, pub serial: u64 }`\n- `pub struct ExtensionFactory`\n- `pub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String>`\n- Factory methods `descriptor(&self) -> &ExtensionDescriptor` and `create(&mut self) -> Result<ExtensionInstance, String>`.\n\nEach record has exactly four `|`-separated fields: ID, title, revision, and a comma-separated capability list. Trim surrounding ASCII whitespace from every field and capability. ID, title, and revision must be nonempty. Empty capability fields produce an empty list; otherwise empty capability names are malformed. Duplicate capabilities within one record and duplicate IDs across records are errors. Titles need not be unique. Preserve record order and capability order. On any error, return no partial catalog and do not mutate the input.\n\nA factory starts its serial counter at 1. Each successful `create` returns a cloned descriptor and the current serial, then increments it. If incrementing would overflow, that call returns an error without changing the counter.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0465",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::HashSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionDescriptor {\n    pub id: String,\n    pub title: String,\n    pub revision: String,\n    pub capabilities: Vec<String>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionInstance {\n    pub descriptor: ExtensionDescriptor,\n    pub serial: u64,\n}\n\npub struct ExtensionFactory {\n    descriptor: ExtensionDescriptor,\n    next_serial: u64,\n}\n\nimpl ExtensionFactory {\n    pub fn descriptor(&self) -> &ExtensionDescriptor { &self.descriptor }\n\n    pub fn create(&mut self) -> Result<ExtensionInstance, String> {\n        let next = self.next_serial.checked_add(1).ok_or_else(|| \"serial overflow\".to_string())?;\n        let instance = ExtensionInstance { descriptor: self.descriptor.clone(), serial: self.next_serial };\n        self.next_serial = next;\n        Ok(instance)\n    }\n}\n\npub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String> {\n    let mut ids = HashSet::new();\n    let mut result = Vec::with_capacity(records.len());\n    for record in records {\n        let fields: Vec<&str> = record.split('|').collect();\n        if fields.len() != 4 { return Err(\"record must contain four fields\".into()); }\n        let id = fields[0].trim().to_string();\n        let title = fields[1].trim().to_string();\n        let revision = fields[2].trim().to_string();\n        if id.is_empty() || title.is_empty() || revision.is_empty() {\n            return Err(\"required field is empty\".into());\n        }\n        if !ids.insert(title.clone()) { return Err(\"duplicate extension id\".into()); }\n        let mut capabilities = Vec::new();\n        let mut seen = HashSet::new();\n        if !fields[3].trim().is_empty() {\n            for raw in fields[3].split(',') {\n                let capability = raw.trim().to_string();\n                if capability.is_empty() { return Err(\"empty capability\".into()); }\n                if !seen.insert(capability.clone()) { return Err(\"duplicate capability\".into()); }\n                capabilities.push(capability);\n            }\n        }\n        result.push(ExtensionFactory {\n            descriptor: ExtensionDescriptor { id, title, revision, capabilities },\n            next_serial: 1,\n        });\n    }\n    Ok(result)\n}\n",
+          "label": "Catalog-wide uniqueness is checked using titles instead of extension IDs.",
+          "sha256": "0003800dde887d912377f9e82766c7e1603f9f22a1cfc83809e882e4e1c417be"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::HashSet;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionDescriptor {\n    pub id: String,\n    pub title: String,\n    pub revision: String,\n    pub capabilities: Vec<String>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct ExtensionInstance {\n    pub descriptor: ExtensionDescriptor,\n    pub serial: u64,\n}\n\npub struct ExtensionFactory {\n    descriptor: ExtensionDescriptor,\n    next_serial: u64,\n}\n\nimpl ExtensionFactory {\n    pub fn descriptor(&self) -> &ExtensionDescriptor { &self.descriptor }\n\n    pub fn create(&mut self) -> Result<ExtensionInstance, String> {\n        let next = self.next_serial.checked_add(1).ok_or_else(|| \"serial overflow\".to_string())?;\n        let instance = ExtensionInstance { descriptor: self.descriptor.clone(), serial: self.next_serial };\n        self.next_serial = next;\n        Ok(instance)\n    }\n}\n\npub fn build_factories(records: &[&str]) -> Result<Vec<ExtensionFactory>, String> {\n    let mut ids = HashSet::new();\n    let mut result = Vec::with_capacity(records.len());\n    for record in records {\n        let fields: Vec<&str> = record.split('|').collect();\n        if fields.len() != 4 { return Err(\"record must contain four fields\".into()); }\n        let id = fields[0].trim().to_string();\n        let title = fields[1].trim().to_string();\n        let revision = fields[2].trim().to_string();\n        if id.is_empty() || title.is_empty() || revision.is_empty() {\n            return Err(\"required field is empty\".into());\n        }\n        if !ids.insert(id.clone()) { return Err(\"duplicate extension id\".into()); }\n        let mut capabilities = Vec::new();\n        let mut seen = HashSet::new();\n        if !fields[3].trim().is_empty() {\n            for raw in fields[3].split(',') {\n                let capability = raw.trim().to_string();\n                if capability.is_empty() { return Err(\"empty capability\".into()); }\n                if !seen.insert(capability.clone()) { return Err(\"duplicate capability\".into()); }\n                capabilities.push(capability);\n            }\n        }\n        result.push(ExtensionFactory {\n            descriptor: ExtensionDescriptor { id, title, revision, capabilities },\n            next_serial: 1,\n        });\n    }\n    Ok(result)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b2281e93dd6e8b7728202ed38a8f63450590d51d96e89714eaadbfdd92985cb0"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest non_ascii_whitespace_is_literal_field_and_capability_data ... FAILED\n\nfailures:\n\n---- non_ascii_whitespace_is_literal_field_and_capability_data stdout ----\n\nthread 'non_ascii_whitespace_is_literal_field_and_capability_data' panicked at solution_test.rs:8:5:\nassertion `left == right` failed\n  left: \"id\"\n right: \"\\u{2003}id\\u{2003}\"\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    non_ascii_whitespace_is_literal_field_and_capability_data\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "8c255016615ffcd751827ad0fd4a43d073fe1edb9e59a1ea2695e918480db34d",
+    "stderr": "warning: field `next_serial` is never read\n  --> solution.rs:19:5\n   |\n17 | pub struct ExtensionFactory {\n   |            ---------------- field in this struct\n18 |     descriptor: ExtensionDescriptor,\n19 |     next_serial: u64,\n   |     ^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: method `create` is never used\n  --> solution.rs:25:12\n   |\n22 | impl ExtensionFactory {\n   | --------------------- method in this implementation\n...\n25 |     pub fn create(&mut self) -> Result<ExtensionInstance, String> {\n   |            ^^^^^^\n\nwarning: 2 warnings emitted\n\n",
+    "stderr_sha256": "0dd8c27d58ee8ab3c96fe73e5b0dab6454c61534289e1249f6e2e35ef8bb2f1b",
+    "duration_ms": 2133,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

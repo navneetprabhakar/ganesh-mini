@@ -1,16 +1,20 @@
 # Cutoff quality review — in progress
 
-Current checkpoint: **1076 holds (1073 additive plus historical three)**; 2,930
+Current checkpoint: **1092 holds (1089 additive plus historical three)**; 2,960
 unique outside-sample inspections. All 544 array queue positions inspected;
 Rust generation queue complete: 684 of 684 inspected.
 Python generation queue complete: 684 of 684 inspected; batches 45–46 backed up.
 Python repair queue complete: 426 of 426 inspected; all 29 batches backed up.
 JS/TS residual queue complete: 587 of 587 checkpointed; all 40 batches backed up.
 GCS authentication restored; Python repair archive through 426 now verified.
-GCS verified through 1076 holds / residual batch40 / 2,930 outside-sample inspections.
-See QUALITY_STRATUM_1076_BACKUP.md. Scope v6: 11 groups, 14 strata, 3,085 records.
-Coverage reconciled: 155 sample + 2,930 outside = all 3,085 v6 scope records.
-See COVERAGE_RECONCILIATION.md; zero missing IDs. Resolve quality criteria next;
+GCS verified through 1092 holds / Go batch2 / 2,960 outside-sample inspections.
+See QUALITY_GO_1092_BACKUP.md, including its Go additive-probe prose correction.
+Historical v6 coverage reconciled: 155 sample + 2,930 outside = all 3,085 records.
+New scope v7: 12 groups, 16 strata, 3,883 records. Go first-pass generation/repair
+reopened for non-triviality: 30 of 757 outside-sample checks complete; 727 remain.
+Go sample dispositions: 39 seven-criterion positives, 17 holds (12 new).
+See SEVEN_CRITERIA_GO.md and GO_NONTRIVIALITY_REVIEW_2.md. Continue Go position31
+and other sample criteria; Go follow-up is criterion-scoped, not all-seven approval.
 inspection is not admission. All 100 data tooling tests pass.
 No training seal or new VM. Older entries are historical.
 

@@ -16,6 +16,11 @@ from scripts.data.admit_expansion import canonical_json
 ROOT = Path('datasets/cache/expansion-v1/cutoff-5885')
 KEYS = ('lane', 'source', 'task_type', 'rejection_history')
 GROUPS = {
+    'go_elementary_training_targets': [
+        'exp-v1-go-generation-0137', 'exp-v1-go-generation-0416',
+        'exp-v1-go-repair-0025', 'exp-v1-go-repair-0034',
+        'exp-v1-go-repair-0097', 'exp-v1-go-repair-0099',
+        'exp-v1-go-repair-0143', 'exp-v1-go-repair-0259'],
     'sparse_element_validation': [
         'exp-v1-javascript-generation-0233', 'exp-v1-javascript-generation-0173',
         'exp-v1-javascript-generation-0206', 'exp-v1-javascript-generation-0319',

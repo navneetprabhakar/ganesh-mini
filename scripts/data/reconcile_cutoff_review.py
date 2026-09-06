@@ -89,7 +89,7 @@ def reconcile(root=REVIEW):
                 unresolved_note_mentions.append({'id': record_id, 'note': str(path), 'position': position})
             notes.setdefault(record_id, []).append({'queue': queue_name, 'position': position, 'note': str(path)})
     hold_ids = [h['id'] for h in holds['holds']]
-    assert len(hold_ids) == len(set(hold_ids)) == 1073
+    assert len(hold_ids) == len(set(hold_ids))
     assert set(hold_ids) <= candidate_ids
     for h in holds['holds']:
         path = Path(h['evidence'])

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0362",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "eb149559933decee9a1150ecfe07ab0104e8136ea4d5c31ae1b8481ab5599e89",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import encode_records\n\n\nclass Probe(unittest.TestCase):\n    def test_non_json_values_rejected(self):\n        for value in ((1, 2), {1: 'x'}):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    encode_records([{'x': value}])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "9161d36e7fda4ea277e4d81ac6719aad61dbd9996a363557af3d6e6e1ce81de3"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "55320da1c7b74ba446ea8ded578eb41ace09be39d2fb90020537bce95093437e",
+      "text": "The complete `solution.py` below should encode records as compact JSON while preserving every dictionary's insertion order, including nested dictionaries. `records` must be a list whose elements are dictionaries with string keys; otherwise raise `TypeError`. Values must be standard JSON values, and non-finite floats or unsupported values must raise `ValueError`. The input must not be mutated. Empty input must produce `\"[]\"`.\n\nThe source has exactly one semantic bug. Return a corrected complete source file without changing `encode_records`.\n\n```python\nimport json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=True,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "55320da1c7b74ba446ea8ded578eb41ace09be39d2fb90020537bce95093437e",
+      "text": "The complete `solution.py` below should encode records as compact JSON while preserving every dictionary's insertion order, including nested dictionaries. `records` must be a list whose elements are dictionaries with string keys; otherwise raise `TypeError`. Values must be standard JSON values, and non-finite floats or unsupported values must raise `ValueError`. The input must not be mutated. Empty input must produce `\"[]\"`.\n\nThe source has exactly one semantic bug. Return a corrected complete source file without changing `encode_records`.\n\n```python\nimport json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=True,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0362",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=True,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n",
+          "label": "Enables key sorting, destroying dictionary insertion order in the JSON output.",
+          "sha256": "a3afc3a77fd508d933bfc76b17a9ea3da3f4199dea537a9230caedd3e54b6c0d"
+        }
+      ],
+      "reference": {
+        "code": "import json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=False,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n",
+        "label": "codex-teacher-reference",
+        "sha256": "441fc622f291578ea926c18fc5b9eacfdfe7e4f92a11b8496f7abcf1fba2e658"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import encode_records\n\n\nclass EncodeRecordsTests(unittest.TestCase):\n    def test_compact_json_preserves_top_level_and_nested_order(self):\n        records = [\n            {\"z\": 1, \"a\": {\"third\": 3, \"first\": 1}, \"m\": [{\"b\": 2, \"a\": 1}]},\n            {\"later\": True, \"earlier\": None},\n        ]\n        expected = '[{\"z\":1,\"a\":{\"third\":3,\"first\":1},\"m\":[{\"b\":2,\"a\":1}]},{\"later\":true,\"earlier\":null}]'\n        self.assertEqual(encode_records(records), expected)\n\n    def test_empty_and_standard_json_boundaries(self):\n        self.assertEqual(encode_records([]), \"[]\")\n        records = [{\"string\": \"x\", \"integer\": 2, \"float\": 1.5, \"false\": False, \"null\": None, \"array\": []}]\n        self.assertEqual(\n            encode_records(records),\n            '[{\"string\":\"x\",\"integer\":2,\"float\":1.5,\"false\":false,\"null\":null,\"array\":[]}]',\n        )\n\n    def test_does_not_mutate_input(self):\n        records = [{\"b\": {\"y\": [2, 1]}, \"a\": 0}]\n        snapshot = [{\"b\": {\"y\": [2, 1]}, \"a\": 0}]\n        encode_records(records)\n        self.assertEqual(records, snapshot)\n        self.assertEqual(list(records[0]), [\"b\", \"a\"])\n        self.assertEqual(list(records[0][\"b\"]), [\"y\"])\n\n    def test_rejects_invalid_container_records_and_keys(self):\n        for value in (None, (), {}, \"[]\", 1):\n            with self.subTest(value=value):\n                with self.assertRaises(TypeError):\n                    encode_records(value)\n        with self.assertRaises(TypeError):\n            encode_records([{\"ok\": 1}, []])\n        with self.assertRaises(TypeError):\n            encode_records([{1: \"bad\"}])\n\n    def test_non_json_and_non_finite_values_raise_value_error(self):\n        for value in ({1, 2}, object(), math.nan, math.inf, -math.inf):\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    encode_records([{\"value\": value}])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "700c137ec598c6777f62bb93ffaf96db707d8c23beb704bda945fb41bc78df08"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "55320da1c7b74ba446ea8ded578eb41ace09be39d2fb90020537bce95093437e",
+      "text": "The complete `solution.py` below should encode records as compact JSON while preserving every dictionary's insertion order, including nested dictionaries. `records` must be a list whose elements are dictionaries with string keys; otherwise raise `TypeError`. Values must be standard JSON values, and non-finite floats or unsupported values must raise `ValueError`. The input must not be mutated. Empty input must produce `\"[]\"`.\n\nThe source has exactly one semantic bug. Return a corrected complete source file without changing `encode_records`.\n\n```python\nimport json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=True,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "55320da1c7b74ba446ea8ded578eb41ace09be39d2fb90020537bce95093437e",
+      "text": "The complete `solution.py` below should encode records as compact JSON while preserving every dictionary's insertion order, including nested dictionaries. `records` must be a list whose elements are dictionaries with string keys; otherwise raise `TypeError`. Values must be standard JSON values, and non-finite floats or unsupported values must raise `ValueError`. The input must not be mutated. Empty input must produce `\"[]\"`.\n\nThe source has exactly one semantic bug. Return a corrected complete source file without changing `encode_records`.\n\n```python\nimport json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=True,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0362",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=True,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n",
+          "label": "Enables key sorting, destroying dictionary insertion order in the JSON output.",
+          "sha256": "a3afc3a77fd508d933bfc76b17a9ea3da3f4199dea537a9230caedd3e54b6c0d"
+        }
+      ],
+      "reference": {
+        "code": "import json\n\n\ndef encode_records(records):\n    if not isinstance(records, list):\n        raise TypeError(\"records must be a list\")\n    if any(not isinstance(record, dict) for record in records):\n        raise TypeError(\"each record must be a dictionary\")\n    if any(any(not isinstance(key, str) for key in record) for record in records):\n        raise TypeError(\"record keys must be strings\")\n    try:\n        return json.dumps(records, separators=(\",\", \":\"), sort_keys=False,\n                          allow_nan=False)\n    except (TypeError, ValueError) as exc:\n        raise ValueError(\"records contain a non-JSON value\") from exc\n",
+        "label": "codex-teacher-reference",
+        "sha256": "441fc622f291578ea926c18fc5b9eacfdfe7e4f92a11b8496f7abcf1fba2e658"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "FF\n======================================================================\nFAIL: test_non_json_values_rejected (__main__.Probe.test_non_json_values_rejected) (value=(1, 2))\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_non_json_values_rejected\n    with self.assertRaises(ValueError):\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_non_json_values_rejected (__main__.Probe.test_non_json_values_rejected) (value={1: 'x'})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_non_json_values_rejected\n    with self.assertRaises(ValueError):\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=2)\n",
+    "stderr_sha256": "fce84b1a3bd8633ebfaa357c96d9e5e314c28e30386287817592a06e6cf9d74c",
+    "duration_ms": 445,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

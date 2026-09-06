@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0369",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "1f21825a32b25f66b288bc9144e34c6ee1c7eb484f6533a53d42c45145464b9d",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import merge_channels\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_payload(self):\n        value = {}\n        for _ in range(600):\n            value = {'x': value}\n        error = None\n        try:\n            merge_channels([[value]])\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "6435c1fbf003f110ea1a3f577764bade84c9cd1ec97bc02935ec0b0798dcaa01"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "157be8fed5ac878775b7d9c7bdc1634c565603ab7c644d1cbfac4096fd8fa1f8",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`merge_channels(channels)` must accept a list of lists and return their elements in round-robin order: first element of each non-empty channel, then second element of each channel that has one, and so on. Empty outer and inner lists are valid. Malformed input raises `ValueError`. The function must terminate, must not mutate its input, and must deep-copy output elements so nested mutable values do not alias the input.\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "157be8fed5ac878775b7d9c7bdc1634c565603ab7c644d1cbfac4096fd8fa1f8",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`merge_channels(channels)` must accept a list of lists and return their elements in round-robin order: first element of each non-empty channel, then second element of each channel that has one, and so on. Empty outer and inner lists are valid. Malformed input raises `ValueError`. The function must terminate, must not mutate its input, and must deep-copy output elements so nested mutable values do not alias the input.\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0369",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n    return result\n",
+          "label": "Channel positions are never advanced, so any non-empty input causes an infinite loop.",
+          "sha256": "7c55b09c62cda154343742c93955b2b5a7276d446fb4a67acbf87ad3bb4beab6"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n                positions[index] += 1\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3d64acef60118d4e9d047b0f3cf75893447c41fd8e1b95ba0f6382f1d0ee02b2"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import merge_channels\n\n\nclass MergeChannelsTests(unittest.TestCase):\n    def test_round_robin_with_uneven_and_empty_channels(self):\n        channels = [[1, 2, 3], [], [\"a\"], [True, False]]\n        self.assertEqual(merge_channels(channels), [1, \"a\", True, 2, False, 3])\n        self.assertEqual(merge_channels([]), [])\n        self.assertEqual(merge_channels([[], []]), [])\n\n    def test_input_is_not_mutated(self):\n        channels = [[1, 2], [3]]\n        before = [channel[:] for channel in channels]\n        merge_channels(channels)\n        self.assertEqual(channels, before)\n\n    def test_output_elements_are_deep_copied_and_independent(self):\n        shared = {\"items\": [1]}\n        channels = [[shared, shared]]\n        first = merge_channels(channels)\n        first[0][\"items\"].append(2)\n        self.assertEqual(shared, {\"items\": [1]})\n        self.assertEqual(first[1], {\"items\": [1]})\n        self.assertIsNot(first[0], first[1])\n        second = merge_channels(channels)\n        first[1][\"items\"].append(3)\n        self.assertEqual(second, [{\"items\": [1]}, {\"items\": [1]}])\n\n    def test_rejects_non_list_structure(self):\n        for value in [None, (), [[], ()], [\"abc\"]]:\n            with self.subTest(value=value):\n                with self.assertRaises(ValueError):\n                    merge_channels(value)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "efe736d0aa59b170b8036a20b25f728790c7f1b47ce38fe8336600ed20c48eee"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "157be8fed5ac878775b7d9c7bdc1634c565603ab7c644d1cbfac4096fd8fa1f8",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`merge_channels(channels)` must accept a list of lists and return their elements in round-robin order: first element of each non-empty channel, then second element of each channel that has one, and so on. Empty outer and inner lists are valid. Malformed input raises `ValueError`. The function must terminate, must not mutate its input, and must deep-copy output elements so nested mutable values do not alias the input.\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "157be8fed5ac878775b7d9c7bdc1634c565603ab7c644d1cbfac4096fd8fa1f8",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`merge_channels(channels)` must accept a list of lists and return their elements in round-robin order: first element of each non-empty channel, then second element of each channel that has one, and so on. Empty outer and inner lists are valid. Malformed input raises `ValueError`. The function must terminate, must not mutate its input, and must deep-copy output elements so nested mutable values do not alias the input.\n\n```python\nfrom copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0369",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n    return result\n",
+          "label": "Channel positions are never advanced, so any non-empty input causes an infinite loop.",
+          "sha256": "7c55b09c62cda154343742c93955b2b5a7276d446fb4a67acbf87ad3bb4beab6"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef merge_channels(channels):\n    if not isinstance(channels, list) or any(\n        not isinstance(channel, list) for channel in channels\n    ):\n        raise ValueError(\"channels must be a list of lists\")\n\n    positions = [0] * len(channels)\n    result = []\n    while any(positions[index] < len(channels[index]) for index in range(len(channels))):\n        for index, channel in enumerate(channels):\n            if positions[index] < len(channel):\n                result.append(deepcopy(channel[positions[index]]))\n                positions[index] += 1\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3d64acef60118d4e9d047b0f3cf75893447c41fd8e1b95ba0f6382f1d0ee02b2"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_payload (__main__.Probe.test_finite_payload)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_finite_payload\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "4143b9eb0c3e8e06969b3d620107cfa0f6af5c2467f34565c3c82faee8419608",
+    "duration_ms": 407,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

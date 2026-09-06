@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0387",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f7be716260b07e9ab31032393d29245989adcb5de00dc52de50394dc7118b784",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import indexed_lookup\n\n\nclass Keys:\n    def __getitem__(self, index):\n        if index == 0:\n            return 'x'\n        raise IndexError\n\n\nclass Probe(unittest.TestCase):\n    def test_getitem_iterable(self):\n        self.assertEqual(indexed_lookup({'x': 1}, Keys()), [1])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "dab0500812e4eef0c6365e57b8490656f691d83e9dc7b0bd299c618a72fed91d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "32164fadcc9b363aa24d7f2c0ee97e3ee86fb69b07b32318e7bac0be6439cb39",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `indexed_lookup(index, keys, default=None)` requires `index` to be a mapping and `keys` to be a non-string iterable. Return a new list containing the mapped value for every key in key order, or `default` when a key is absent. Existing false-like values such as `0`, `False`, `None`, and empty containers must not be replaced. Returned values and the default must preserve their original identities; do not copy or mutate them or either input. Duplicate keys produce duplicate results. Empty keys return an empty list. Malformed inputs raise `TypeError`.\n\n```python\nfrom collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key) or default)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "32164fadcc9b363aa24d7f2c0ee97e3ee86fb69b07b32318e7bac0be6439cb39",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `indexed_lookup(index, keys, default=None)` requires `index` to be a mapping and `keys` to be a non-string iterable. Return a new list containing the mapped value for every key in key order, or `default` when a key is absent. Existing false-like values such as `0`, `False`, `None`, and empty containers must not be replaced. Returned values and the default must preserve their original identities; do not copy or mutate them or either input. Duplicate keys produce duplicate results. Empty keys return an empty list. Malformed inputs raise `TypeError`.\n\n```python\nfrom collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key) or default)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0387",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key) or default)\n    return result\n",
+          "label": "Truth-value fallback incorrectly replaces existing false-like mapping values with the default.",
+          "sha256": "be759e30d2be52daa26ec422bd666696612d75958ec2baa843341103555d86df"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key, default))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f40c72e27cf5efd35d1b3c5e14f072c04dfd7e45d16faaf13abd71e0dfda61c4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import UserDict\nfrom solution import indexed_lookup\n\n\nclass IndexedLookupTests(unittest.TestCase):\n    def test_lookup_order_duplicates_and_default(self):\n        zero = 0\n        false = False\n        none = None\n        empty_list = []\n        fallback = object()\n        index = {\"zero\": zero, \"false\": false, \"none\": none, \"empty\": empty_list}\n        keys = [\"empty\", \"zero\", \"missing\", \"false\", \"none\", \"empty\"]\n        result = indexed_lookup(index, keys, fallback)\n        self.assertEqual(result, [empty_list, 0, fallback, False, None, empty_list])\n        self.assertIs(result[0], empty_list)\n        self.assertIs(result[2], fallback)\n        self.assertIs(result[5], empty_list)\n\n    def test_preserves_existing_and_default_identities(self):\n        existing = {\"mutable\": True}\n        default = [\"default\"]\n        result = indexed_lookup({\"x\": existing}, [\"x\", \"y\", \"z\"], default)\n        self.assertIs(result[0], existing)\n        self.assertIs(result[1], default)\n        self.assertIs(result[2], default)\n\n    def test_empty_and_generator_keys(self):\n        self.assertEqual(indexed_lookup({}, []), [])\n        index = UserDict({1: \"one\", 2: \"two\"})\n        self.assertEqual(indexed_lookup(index, (key for key in [2, 1, 2])), [\"two\", \"one\", \"two\"])\n\n    def test_does_not_mutate_inputs(self):\n        value = []\n        index = {\"x\": value}\n        keys = [\"x\", \"missing\"]\n        result = indexed_lookup(index, keys, value)\n        self.assertEqual(index, {\"x\": []})\n        self.assertEqual(keys, [\"x\", \"missing\"])\n        self.assertIs(result[0], value)\n        self.assertIs(result[1], value)\n\n    def test_rejects_invalid_index(self):\n        for index in (None, [], [(\"x\", 1)], \"mapping\", 3):\n            with self.subTest(index=index):\n                with self.assertRaises(TypeError):\n                    indexed_lookup(index, [])\n\n    def test_rejects_string_or_noniterable_keys(self):\n        for keys in (\"abc\", b\"abc\", None, 3):\n            with self.subTest(keys=keys):\n                with self.assertRaises(TypeError):\n                    indexed_lookup({}, keys)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "9e2b85ce6cb7c3a804e73ee5e4c22deea7a63bc7932a98bf28b60a8876046ea2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "32164fadcc9b363aa24d7f2c0ee97e3ee86fb69b07b32318e7bac0be6439cb39",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `indexed_lookup(index, keys, default=None)` requires `index` to be a mapping and `keys` to be a non-string iterable. Return a new list containing the mapped value for every key in key order, or `default` when a key is absent. Existing false-like values such as `0`, `False`, `None`, and empty containers must not be replaced. Returned values and the default must preserve their original identities; do not copy or mutate them or either input. Duplicate keys produce duplicate results. Empty keys return an empty list. Malformed inputs raise `TypeError`.\n\n```python\nfrom collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key) or default)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "32164fadcc9b363aa24d7f2c0ee97e3ee86fb69b07b32318e7bac0be6439cb39",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `indexed_lookup(index, keys, default=None)` requires `index` to be a mapping and `keys` to be a non-string iterable. Return a new list containing the mapped value for every key in key order, or `default` when a key is absent. Existing false-like values such as `0`, `False`, `None`, and empty containers must not be replaced. Returned values and the default must preserve their original identities; do not copy or mutate them or either input. Duplicate keys produce duplicate results. Empty keys return an empty list. Malformed inputs raise `TypeError`.\n\n```python\nfrom collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key) or default)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0387",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key) or default)\n    return result\n",
+          "label": "Truth-value fallback incorrectly replaces existing false-like mapping values with the default.",
+          "sha256": "be759e30d2be52daa26ec422bd666696612d75958ec2baa843341103555d86df"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Iterable, Mapping\n\n\ndef indexed_lookup(index, keys, default=None):\n    if not isinstance(index, Mapping):\n        raise TypeError(\"index must be a mapping\")\n    if isinstance(keys, (str, bytes)) or not isinstance(keys, Iterable):\n        raise TypeError(\"keys must be a non-string iterable\")\n\n    result = []\n    for key in keys:\n        result.append(index.get(key, default))\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f40c72e27cf5efd35d1b3c5e14f072c04dfd7e45d16faaf13abd71e0dfda61c4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_getitem_iterable (__main__.Probe.test_getitem_iterable)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 14, in test_getitem_iterable\n    self.assertEqual(indexed_lookup({'x': 1}, Keys()), [1])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 8, in indexed_lookup\n    raise TypeError(\"keys must be a non-string iterable\")\nTypeError: keys must be a non-string iterable\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "d57782bd24cf928481eee2d07dffdc66cd4144460ef05916b465d3d9c3726e99",
+    "duration_ms": 805,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

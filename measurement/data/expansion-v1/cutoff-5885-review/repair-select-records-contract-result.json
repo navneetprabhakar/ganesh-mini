@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0385",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "10c67072fb37ff00c077ea4618031a7b5bc13516f203e4f4faa8a4173480db71",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import select_records\n\n\nclass LegacyIterable:\n    def __getitem__(self, index):\n        if index == 0:\n            return {'rank': 1}\n        raise IndexError\n\n\nclass Probe(unittest.TestCase):\n    def test_getitem_iterable(self):\n        self.assertEqual(select_records(LegacyIterable(), False), [{'rank': 1}])\n\n    def test_finite_payload(self):\n        value = {}\n        for _ in range(600):\n            value = {'x': value}\n        error = None\n        try:\n            select_records([{'rank': 1, 'extra': value}], False)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "b9fbc7b5b9d1afe0b6dc472421c8a6b609cc5e4848590c2810320aab7af79990"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c3c81e0e36e90f4a45f1a114044d3db01f527b4bee9feabf1ac5435965dbb0fe",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `select_records(records, descending)` accepts a non-string iterable of mappings and a real boolean. Every record must contain an integer `rank` that is not a boolean. Validate all records before sorting. Malformed inputs raise `TypeError`; a missing rank raises `ValueError`. Return newly allocated deep-copied dictionaries sorted by rank, stably preserving input order for ties. `descending=True` means highest rank first; `False` means lowest first. Empty input returns an empty list, and inputs must not be mutated.\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=(descending == \"true\"))\n    return copied\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c3c81e0e36e90f4a45f1a114044d3db01f527b4bee9feabf1ac5435965dbb0fe",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `select_records(records, descending)` accepts a non-string iterable of mappings and a real boolean. Every record must contain an integer `rank` that is not a boolean. Validate all records before sorting. Malformed inputs raise `TypeError`; a missing rank raises `ValueError`. Return newly allocated deep-copied dictionaries sorted by rank, stably preserving input order for ties. `descending=True` means highest rank first; `False` means lowest first. Empty input returns an empty list, and inputs must not be mutated.\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=(descending == \"true\"))\n    return copied\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0385",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=(descending == \"true\"))\n    return copied\n",
+          "label": "The boolean descending flag is incorrectly compared with a string, so descending order is never selected.",
+          "sha256": "9cc59ab57bfb8803b732d56ffcf195174b706b6771900f83e1f48d57e429103d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=descending)\n    return copied\n",
+        "label": "codex-teacher-reference",
+        "sha256": "39f693b0198a69cb6f6254aa81d2e7059ed078c31b5f5a9881a35e48fb049266"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import UserDict\nfrom solution import select_records\n\n\nclass SelectRecordsTests(unittest.TestCase):\n    def test_ascending_descending_and_stable_ties(self):\n        records = [\n            {\"rank\": 2, \"id\": \"first-two\"},\n            {\"rank\": 1, \"id\": \"one\"},\n            {\"rank\": 2, \"id\": \"second-two\"},\n        ]\n        ascending = select_records(records, False)\n        descending = select_records(records, True)\n        self.assertEqual([r[\"id\"] for r in ascending], [\"one\", \"first-two\", \"second-two\"])\n        self.assertEqual([r[\"id\"] for r in descending], [\"first-two\", \"second-two\", \"one\"])\n        self.assertEqual(records[0][\"id\"], \"first-two\")\n\n    def test_returns_new_deep_copied_dictionaries(self):\n        records = [UserDict({\"rank\": 1, \"nested\": {\"items\": [1]}})]\n        result = select_records(records, False)\n        self.assertIs(type(result[0]), dict)\n        self.assertIsNot(result[0], records[0])\n        self.assertIsNot(result[0][\"nested\"], records[0][\"nested\"])\n        self.assertIsNot(result[0][\"nested\"][\"items\"], records[0][\"nested\"][\"items\"])\n        records[0][\"nested\"][\"items\"].append(2)\n        self.assertEqual(result[0][\"nested\"][\"items\"], [1])\n        result[0][\"nested\"][\"items\"].append(3)\n        self.assertEqual(records[0][\"nested\"][\"items\"], [1, 2])\n\n    def test_empty_and_generator_inputs(self):\n        self.assertEqual(select_records([], False), [])\n        result = select_records((record for record in [{\"rank\": -1}, {\"rank\": 0}]), True)\n        self.assertEqual(result, [{\"rank\": 0}, {\"rank\": -1}])\n\n    def test_rejects_invalid_top_level_types(self):\n        for records in (\"records\", b\"records\", None, 3):\n            with self.subTest(records=records):\n                with self.assertRaises(TypeError):\n                    select_records(records, False)\n        for descending in (0, 1, None, \"true\"):\n            with self.subTest(descending=descending):\n                with self.assertRaises(TypeError):\n                    select_records([], descending)\n\n    def test_validates_all_records_before_sorting(self):\n        nested = [1]\n        records = [{\"rank\": 2, \"nested\": nested}, {\"missing\": 1}]\n        with self.assertRaises(ValueError):\n            select_records(records, False)\n        self.assertEqual(records, [{\"rank\": 2, \"nested\": [1]}, {\"missing\": 1}])\n        for bad in (None, [], 4):\n            with self.subTest(bad=bad):\n                with self.assertRaises(TypeError):\n                    select_records([{\"rank\": 1}, bad], False)\n\n    def test_rank_validation_excludes_boolean(self):\n        for rank in (True, False, 1.0, \"1\", None):\n            with self.subTest(rank=rank):\n                with self.assertRaises(TypeError):\n                    select_records([{\"rank\": rank}], False)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "c8703a83597d1460eeab0296fcbdac83ea11b8a9664a3e359fbb482b9099657e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c3c81e0e36e90f4a45f1a114044d3db01f527b4bee9feabf1ac5435965dbb0fe",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `select_records(records, descending)` accepts a non-string iterable of mappings and a real boolean. Every record must contain an integer `rank` that is not a boolean. Validate all records before sorting. Malformed inputs raise `TypeError`; a missing rank raises `ValueError`. Return newly allocated deep-copied dictionaries sorted by rank, stably preserving input order for ties. `descending=True` means highest rank first; `False` means lowest first. Empty input returns an empty list, and inputs must not be mutated.\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=(descending == \"true\"))\n    return copied\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c3c81e0e36e90f4a45f1a114044d3db01f527b4bee9feabf1ac5435965dbb0fe",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`. `select_records(records, descending)` accepts a non-string iterable of mappings and a real boolean. Every record must contain an integer `rank` that is not a boolean. Validate all records before sorting. Malformed inputs raise `TypeError`; a missing rank raises `ValueError`. Return newly allocated deep-copied dictionaries sorted by rank, stably preserving input order for ties. `descending=True` means highest rank first; `False` means lowest first. Empty input returns an empty list, and inputs must not be mutated.\n\n```python\nfrom copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=(descending == \"true\"))\n    return copied\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0385",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=(descending == \"true\"))\n    return copied\n",
+          "label": "The boolean descending flag is incorrectly compared with a string, so descending order is never selected.",
+          "sha256": "9cc59ab57bfb8803b732d56ffcf195174b706b6771900f83e1f48d57e429103d"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom collections.abc import Iterable, Mapping\n\n\ndef select_records(records, descending):\n    if isinstance(records, (str, bytes)) or not isinstance(records, Iterable):\n        raise TypeError(\"records must be a non-string iterable\")\n    if not isinstance(descending, bool):\n        raise TypeError(\"descending must be a boolean\")\n\n    copied = []\n    for record in records:\n        if not isinstance(record, Mapping):\n            raise TypeError(\"each record must be a mapping\")\n        if \"rank\" not in record:\n            raise ValueError(\"each record must contain rank\")\n        rank = record[\"rank\"]\n        if isinstance(rank, bool) or not isinstance(rank, int):\n            raise TypeError(\"rank must be an integer\")\n        copied.append(deepcopy(dict(record)))\n\n    copied.sort(key=lambda item: item[\"rank\"], reverse=descending)\n    return copied\n",
+        "label": "codex-teacher-reference",
+        "sha256": "39f693b0198a69cb6f6254aa81d2e7059ed078c31b5f5a9881a35e48fb049266"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "FE\n======================================================================\nERROR: test_getitem_iterable (__main__.Probe.test_getitem_iterable)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 14, in test_getitem_iterable\n    self.assertEqual(select_records(LegacyIterable(), False), [{'rank': 1}])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 7, in select_records\n    raise TypeError(\"records must be a non-string iterable\")\nTypeError: records must be a non-string iterable\n\n======================================================================\nFAIL: test_finite_payload (__main__.Probe.test_finite_payload)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 25, in test_finite_payload\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 2 tests in 0.008s\n\nFAILED (failures=1, errors=1)\n",
+    "stderr_sha256": "38d52869a61cbf1e0764c2f0112486dfce88899be7c083c14359e96c64e86990",
+    "duration_ms": 721,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

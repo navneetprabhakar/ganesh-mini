@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0371",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a3cb2243df8ffdb54f034885de38baf4bf0f54933d6c15d7dd4aee5a1217d63e",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import rename_fields\n\n\nclass Probe(unittest.TestCase):\n    def test_finite_payload(self):\n        value = {}\n        for _ in range(600):\n            value = {'x': value}\n        error = None\n        try:\n            rename_fields({'a': value}, {})\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "5f61422bf7ba91ec3f0dfb2aab2ba81286a8d331e148f837a35c0da964abb712"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3657be01adf31e3d024d6dfac0198abb9eebb77f9d23fcc9a381bb8dc7a74d9c",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`rename_fields(record, mapping)` must rename dictionary keys simultaneously. Both arguments must be dictionaries with string keys, and every mapping value must be a string. Malformed input raises `ValueError`. A mapping entry for a missing source key is ignored. Unmapped fields retain their keys.\n\nIf two original fields would have the same final key, raise `ValueError` without mutating either input. Otherwise, preserve the original record iteration order and deep-copy all values into a new dictionary. Simultaneous behavior means mappings such as `{\"a\": \"b\", \"b\": \"c\"}` move original `a` to `b` and original `b` to `c`.\n\n```python\nfrom copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    result = deepcopy(record)\n    for source, target in mapping.items():\n        if source in result:\n            result[target] = result.pop(source)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3657be01adf31e3d024d6dfac0198abb9eebb77f9d23fcc9a381bb8dc7a74d9c",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`rename_fields(record, mapping)` must rename dictionary keys simultaneously. Both arguments must be dictionaries with string keys, and every mapping value must be a string. Malformed input raises `ValueError`. A mapping entry for a missing source key is ignored. Unmapped fields retain their keys.\n\nIf two original fields would have the same final key, raise `ValueError` without mutating either input. Otherwise, preserve the original record iteration order and deep-copy all values into a new dictionary. Simultaneous behavior means mappings such as `{\"a\": \"b\", \"b\": \"c\"}` move original `a` to `b` and original `b` to `c`.\n\n```python\nfrom copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    result = deepcopy(record)\n    for source, target in mapping.items():\n        if source in result:\n            result[target] = result.pop(source)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0371",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    result = deepcopy(record)\n    for source, target in mapping.items():\n        if source in result:\n            result[target] = result.pop(source)\n    return result\n",
+          "label": "Renames are applied sequentially, allowing earlier renames to overwrite or become inputs to later renames.",
+          "sha256": "10af871b839cc66dd70868acaaec779e190c5d6411b516bbb0321e059bf8ccc2"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    destinations = [mapping.get(key, key) for key in record]\n    if len(set(destinations)) != len(destinations):\n        raise ValueError(\"renaming creates duplicate fields\")\n\n    return {\n        mapping.get(key, key): deepcopy(value)\n        for key, value in record.items()\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fe4bcc5278c5a73578c74978cbe02799a611053ba40f40c523733ecc5d6faaee"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import rename_fields\n\n\nclass RenameFieldsTests(unittest.TestCase):\n    def test_simultaneous_renaming_and_order(self):\n        record = {\"a\": 1, \"b\": 2, \"keep\": 3}\n        result = rename_fields(record, {\"a\": \"b\", \"b\": \"c\"})\n        self.assertEqual(result, {\"b\": 1, \"c\": 2, \"keep\": 3})\n        self.assertEqual(list(result), [\"b\", \"c\", \"keep\"])\n\n    def test_missing_mapping_sources_are_ignored(self):\n        record = {\"a\": 1, \"b\": 2}\n        self.assertEqual(rename_fields(record, {\"missing\": \"a\", \"a\": \"x\"}), {\"x\": 1, \"b\": 2})\n        self.assertEqual(rename_fields({}, {\"a\": \"b\"}), {})\n\n    def test_detects_final_key_collisions_without_mutation(self):\n        record = {\"a\": [1], \"b\": [2]}\n        mapping = {\"a\": \"b\"}\n        with self.assertRaises(ValueError):\n            rename_fields(record, mapping)\n        self.assertEqual(record, {\"a\": [1], \"b\": [2]})\n        self.assertEqual(mapping, {\"a\": \"b\"})\n        with self.assertRaises(ValueError):\n            rename_fields({\"a\": 1, \"b\": 2}, {\"a\": \"x\", \"b\": \"x\"})\n\n    def test_values_are_deep_copied(self):\n        shared = {\"nested\": [1]}\n        record = {\"a\": shared, \"b\": shared}\n        result = rename_fields(record, {\"a\": \"x\", \"b\": \"y\"})\n        result[\"x\"][\"nested\"].append(2)\n        self.assertEqual(record, {\"a\": {\"nested\": [1]}, \"b\": {\"nested\": [1]}})\n        self.assertEqual(result[\"y\"], {\"nested\": [1]})\n        self.assertIsNot(result[\"x\"], result[\"y\"])\n        self.assertEqual(rename_fields(record, {})[\"a\"], {\"nested\": [1]})\n\n    def test_rejects_malformed_arguments(self):\n        cases = [\n            ([], {}),\n            ({1: \"x\"}, {}),\n            ({}, []),\n            ({}, {1: \"x\"}),\n            ({}, {\"x\": 1}),\n        ]\n        for record, mapping in cases:\n            with self.subTest(record=record, mapping=mapping):\n                with self.assertRaises(ValueError):\n                    rename_fields(record, mapping)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "e763b923a47ef2de4e18d0cf88136d1ff61dc0f1e1564b9d9bb6ff2b64014a1e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "3657be01adf31e3d024d6dfac0198abb9eebb77f9d23fcc9a381bb8dc7a74d9c",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`rename_fields(record, mapping)` must rename dictionary keys simultaneously. Both arguments must be dictionaries with string keys, and every mapping value must be a string. Malformed input raises `ValueError`. A mapping entry for a missing source key is ignored. Unmapped fields retain their keys.\n\nIf two original fields would have the same final key, raise `ValueError` without mutating either input. Otherwise, preserve the original record iteration order and deep-copy all values into a new dictionary. Simultaneous behavior means mappings such as `{\"a\": \"b\", \"b\": \"c\"}` move original `a` to `b` and original `b` to `c`.\n\n```python\nfrom copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    result = deepcopy(record)\n    for source, target in mapping.items():\n        if source in result:\n            result[target] = result.pop(source)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "3657be01adf31e3d024d6dfac0198abb9eebb77f9d23fcc9a381bb8dc7a74d9c",
+      "text": "Repair the following complete `solution.py` source and return a corrected complete source file.\n\n`rename_fields(record, mapping)` must rename dictionary keys simultaneously. Both arguments must be dictionaries with string keys, and every mapping value must be a string. Malformed input raises `ValueError`. A mapping entry for a missing source key is ignored. Unmapped fields retain their keys.\n\nIf two original fields would have the same final key, raise `ValueError` without mutating either input. Otherwise, preserve the original record iteration order and deep-copy all values into a new dictionary. Simultaneous behavior means mappings such as `{\"a\": \"b\", \"b\": \"c\"}` move original `a` to `b` and original `b` to `c`.\n\n```python\nfrom copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    result = deepcopy(record)\n    for source, target in mapping.items():\n        if source in result:\n            result[target] = result.pop(source)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0371",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    result = deepcopy(record)\n    for source, target in mapping.items():\n        if source in result:\n            result[target] = result.pop(source)\n    return result\n",
+          "label": "Renames are applied sequentially, allowing earlier renames to overwrite or become inputs to later renames.",
+          "sha256": "10af871b839cc66dd70868acaaec779e190c5d6411b516bbb0321e059bf8ccc2"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef rename_fields(record, mapping):\n    if not isinstance(record, dict) or any(not isinstance(key, str) for key in record):\n        raise ValueError(\"record must have string keys\")\n    if not isinstance(mapping, dict) or any(\n        not isinstance(source, str) or not isinstance(target, str)\n        for source, target in mapping.items()\n    ):\n        raise ValueError(\"mapping must map strings to strings\")\n\n    destinations = [mapping.get(key, key) for key in record]\n    if len(set(destinations)) != len(destinations):\n        raise ValueError(\"renaming creates duplicate fields\")\n\n    return {\n        mapping.get(key, key): deepcopy(value)\n        for key, value in record.items()\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fe4bcc5278c5a73578c74978cbe02799a611053ba40f40c523733ecc5d6faaee"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_payload (__main__.Probe.test_finite_payload)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 15, in test_finite_payload\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "9a14cc58c25a96d8430e1da8b64b59decb0930b94e94f1e6a95f94cbdbed7644",
+    "duration_ms": 638,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

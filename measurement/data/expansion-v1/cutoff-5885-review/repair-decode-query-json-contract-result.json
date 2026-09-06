@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0419",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "51082006f1d9d4e6e74f3a6877262132ccf38cd3d2d8d60277e41da1b6b6a1da",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import decode_query\n\n\nclass Probe(unittest.TestCase):\n    def test_non_json_number_rejected(self):\n        for body in ('{\"x\":NaN}', '{\"x\":Infinity}'):\n            with self.subTest(body=body):\n                self.assertEqual(decode_query('GET', 'application/json', body), (400, None))\n\n    def test_finite_json_depth(self):\n        body = '{\"x\":'*600 + '0' + '}'*600\n        error = None\n        try:\n            result = decode_query('GET', 'application/json', body)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n        self.assertEqual(result[0], 200)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "35c2baafdb940662b0e22b990a0453b3ff991e2d08359a5169f01676c958bea6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0e449a5dc50b68fb83a40fb1b3a9aa69d0637bd56ecd7f275bab92764aeffe31",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`decode_query(method, content_type, body)` models request decoding without networking. All three arguments must be strings or `TypeError` is raised. Only the exact method `\"GET\"` is accepted; other methods return `(405, None)`. For GET requests, an empty or whitespace-only body means an empty query and must return `(200, {})` regardless of content type. A non-empty body requires a content type whose media type, before any `;` parameter and ignoring surrounding whitespace and ASCII case, is `application/json`; otherwise return `(415, None)`. Valid JSON must decode to a dictionary, returned as a deep copy. Malformed JSON or a non-dictionary JSON value returns `(400, None)`. Inputs must not be mutated.\n\nThe known-bad implementation checks the content type before recognizing an empty GET body.\n\nKnown-bad source:\n\n```python\nimport json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    if not body.strip():\n        return 200, {}\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0e449a5dc50b68fb83a40fb1b3a9aa69d0637bd56ecd7f275bab92764aeffe31",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`decode_query(method, content_type, body)` models request decoding without networking. All three arguments must be strings or `TypeError` is raised. Only the exact method `\"GET\"` is accepted; other methods return `(405, None)`. For GET requests, an empty or whitespace-only body means an empty query and must return `(200, {})` regardless of content type. A non-empty body requires a content type whose media type, before any `;` parameter and ignoring surrounding whitespace and ASCII case, is `application/json`; otherwise return `(415, None)`. Valid JSON must decode to a dictionary, returned as a deep copy. Malformed JSON or a non-dictionary JSON value returns `(400, None)`. Inputs must not be mutated.\n\nThe known-bad implementation checks the content type before recognizing an empty GET body.\n\nKnown-bad source:\n\n```python\nimport json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    if not body.strip():\n        return 200, {}\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0419",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    if not body.strip():\n        return 200, {}\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n",
+          "label": "Content-type validation runs before the empty-body rule, incorrectly returning 415 for bodyless GET queries.",
+          "sha256": "585068f047dccf2fc39fe5df7eb1427736800747880bc3d5a8177623058b0fd9"
+        }
+      ],
+      "reference": {
+        "code": "import json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    if not body.strip():\n        return 200, {}\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "abd247dbf135bad2fc4637d4ad3bc6bceebccfcaf26b2418ab83e64b4c4dd4c3"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import decode_query\n\n\nclass DecodeQueryTests(unittest.TestCase):\n    def test_empty_get_body_ignores_content_type(self):\n        for content_type in (\"\", \"text/plain\", \"application/xml\", \"nonsense\"):\n            for body in (\"\", \"   \", \"\\t\\r\\n\"):\n                with self.subTest(content_type=content_type, body=body):\n                    self.assertEqual(decode_query(\"GET\", content_type, body), (200, {}))\n\n    def test_json_media_type_parameters_case_and_deep_copy(self):\n        status, value = decode_query(\n            \"GET\", \"  Application/JSON ; charset=utf-8\", '{\"a\": [1, {\"b\": 2}]}'\n        )\n        self.assertEqual(status, 200)\n        self.assertEqual(value, {\"a\": [1, {\"b\": 2}]})\n        value[\"a\"][1][\"b\"] = 99\n        status2, value2 = decode_query(\n            \"GET\", \"application/json\", '{\"a\": [1, {\"b\": 2}]}'\n        )\n        self.assertEqual((status2, value2), (200, {\"a\": [1, {\"b\": 2}]}))\n\n    def test_non_get_precedes_body_and_content_checks(self):\n        for method in (\"POST\", \"get\", \" GET\"):\n            with self.subTest(method=method):\n                self.assertEqual(decode_query(method, \"application/json\", \"{\"), (405, None))\n\n    def test_nonempty_body_requires_json_content_type(self):\n        for content_type in (\"\", \"text/plain\", \"application/jsonish\"):\n            with self.subTest(content_type=content_type):\n                self.assertEqual(decode_query(\"GET\", content_type, \"{}\"), (415, None))\n\n    def test_malformed_and_non_dictionary_json(self):\n        for body in (\"{\", \"null\", \"[]\", '\"text\"', \"3\", \"true\"):\n            with self.subTest(body=body):\n                self.assertEqual(decode_query(\"GET\", \"application/json\", body), (400, None))\n\n    def test_argument_types(self):\n        for args in ((None, \"\", \"\"), (\"GET\", None, \"\"), (\"GET\", \"\", b\"\")):\n            with self.subTest(args=args):\n                with self.assertRaises(TypeError):\n                    decode_query(*args)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "999fb7c01a35bbfc33164f8ba4044bf29126b47591fa6178c2085a46a20b37ae"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0e449a5dc50b68fb83a40fb1b3a9aa69d0637bd56ecd7f275bab92764aeffe31",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`decode_query(method, content_type, body)` models request decoding without networking. All three arguments must be strings or `TypeError` is raised. Only the exact method `\"GET\"` is accepted; other methods return `(405, None)`. For GET requests, an empty or whitespace-only body means an empty query and must return `(200, {})` regardless of content type. A non-empty body requires a content type whose media type, before any `;` parameter and ignoring surrounding whitespace and ASCII case, is `application/json`; otherwise return `(415, None)`. Valid JSON must decode to a dictionary, returned as a deep copy. Malformed JSON or a non-dictionary JSON value returns `(400, None)`. Inputs must not be mutated.\n\nThe known-bad implementation checks the content type before recognizing an empty GET body.\n\nKnown-bad source:\n\n```python\nimport json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    if not body.strip():\n        return 200, {}\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0e449a5dc50b68fb83a40fb1b3a9aa69d0637bd56ecd7f275bab92764aeffe31",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\n`decode_query(method, content_type, body)` models request decoding without networking. All three arguments must be strings or `TypeError` is raised. Only the exact method `\"GET\"` is accepted; other methods return `(405, None)`. For GET requests, an empty or whitespace-only body means an empty query and must return `(200, {})` regardless of content type. A non-empty body requires a content type whose media type, before any `;` parameter and ignoring surrounding whitespace and ASCII case, is `application/json`; otherwise return `(415, None)`. Valid JSON must decode to a dictionary, returned as a deep copy. Malformed JSON or a non-dictionary JSON value returns `(400, None)`. Inputs must not be mutated.\n\nThe known-bad implementation checks the content type before recognizing an empty GET body.\n\nKnown-bad source:\n\n```python\nimport json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    if not body.strip():\n        return 200, {}\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0419",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    if not body.strip():\n        return 200, {}\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n",
+          "label": "Content-type validation runs before the empty-body rule, incorrectly returning 415 for bodyless GET queries.",
+          "sha256": "585068f047dccf2fc39fe5df7eb1427736800747880bc3d5a8177623058b0fd9"
+        }
+      ],
+      "reference": {
+        "code": "import json\nfrom copy import deepcopy\n\n\ndef decode_query(method, content_type, body):\n    if not all(isinstance(value, str) for value in (method, content_type, body)):\n        raise TypeError(\"arguments must be strings\")\n    if method != \"GET\":\n        return 405, None\n    if not body.strip():\n        return 200, {}\n    media_type = content_type.split(\";\", 1)[0].strip().lower()\n    if media_type != \"application/json\":\n        return 415, None\n    try:\n        value = json.loads(body)\n    except (json.JSONDecodeError, UnicodeError):\n        return 400, None\n    if not isinstance(value, dict):\n        return 400, None\n    return 200, deepcopy(value)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "abd247dbf135bad2fc4637d4ad3bc6bceebccfcaf26b2418ab83e64b4c4dd4c3"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "FFF\n======================================================================\nFAIL: test_finite_json_depth (__main__.Probe.test_finite_json_depth)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 18, in test_finite_json_depth\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n======================================================================\nFAIL: test_non_json_number_rejected (__main__.Probe.test_non_json_number_rejected) (body='{\"x\":NaN}')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_non_json_number_rejected\n    self.assertEqual(decode_query('GET', 'application/json', body), (400, None))\nAssertionError: Tuples differ: (200, {'x': nan}) != (400, None)\n\nFirst differing element 0:\n200\n400\n\n- (200, {'x': nan})\n+ (400, None)\n\n======================================================================\nFAIL: test_non_json_number_rejected (__main__.Probe.test_non_json_number_rejected) (body='{\"x\":Infinity}')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_non_json_number_rejected\n    self.assertEqual(decode_query('GET', 'application/json', body), (400, None))\nAssertionError: Tuples differ: (200, {'x': inf}) != (400, None)\n\nFirst differing element 0:\n200\n400\n\n- (200, {'x': inf})\n+ (400, None)\n\n----------------------------------------------------------------------\nRan 2 tests in 0.010s\n\nFAILED (failures=3)\n",
+    "stderr_sha256": "60c1573ce986edcb42f179f3ad6777c7f7af8e5c137b7e59e49c04b0fbbc070f",
+    "duration_ms": 686,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

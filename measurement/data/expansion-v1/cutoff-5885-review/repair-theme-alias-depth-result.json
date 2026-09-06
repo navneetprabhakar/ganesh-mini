@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0406",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "486e0ba95468a88b63f006ea93326e6cd286ea14e0940803b6669d832e55914c",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import combine_theme\n\n\nclass Key:\n    pass\n\n\nclass Probe(unittest.TestCase):\n    def test_override_key_not_aliased(self):\n        key = Key()\n        result = combine_theme({}, {key: 1})\n        self.assertIsNot(next(iter(result)), key)\n\n    def test_finite_payload(self):\n        value = {}\n        for _ in range(600):\n            value = {'x': value}\n        error = None\n        try:\n            combine_theme({'x': value}, {})\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "2a73fbdbc4919a7a977037cce9567af2db501538bdf3de7801089ea77159fbd5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "12905b5199409a7d4c129682f961d21b545567aed59663e488727c2f487c40a6",
+      "text": "The complete `solution.py` below should implement `combine_theme(base, overrides)`. Both arguments must be dictionaries. Return a deep copy of `base`, replacing each top-level key present in `overrides` with a deep copy of its value, in override iteration order. Existing keys retain their original positions under normal dictionary behavior, and new keys are appended. Neither input nor any nested object reachable through them may alias the result. The current implementation mutates and returns `base`. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = base\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "12905b5199409a7d4c129682f961d21b545567aed59663e488727c2f487c40a6",
+      "text": "The complete `solution.py` below should implement `combine_theme(base, overrides)`. Both arguments must be dictionaries. Return a deep copy of `base`, replacing each top-level key present in `overrides` with a deep copy of its value, in override iteration order. Existing keys retain their original positions under normal dictionary behavior, and new keys are appended. Neither input nor any nested object reachable through them may alias the result. The current implementation mutates and returns `base`. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = base\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0406",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = base\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n",
+          "label": "Aliases the result to base, causing the function to mutate its input.",
+          "sha256": "03d4ce291292c251641a867e1f366f3a2cd5c17835106910593bcab2b817f857"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f3cb0dac3daa8d7012ec19c5560d5c5921d31c19e8aacb7150a78768e9d57a9d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import combine_theme\n\n\nclass CombineThemeTests(unittest.TestCase):\n    def test_combines_without_mutating_inputs_and_preserves_order(self):\n        base = {\"color\": \"blue\", \"font\": \"serif\", \"spacing\": 4}\n        overrides = {\"font\": \"sans\", \"border\": \"thin\", \"color\": \"red\"}\n        base_before = base.copy()\n        overrides_before = overrides.copy()\n        result = combine_theme(base, overrides)\n        self.assertEqual(result, {\"color\": \"red\", \"font\": \"sans\", \"spacing\": 4, \"border\": \"thin\"})\n        self.assertEqual(list(result), [\"color\", \"font\", \"spacing\", \"border\"])\n        self.assertEqual(base, base_before)\n        self.assertEqual(overrides, overrides_before)\n        self.assertIsNot(result, base)\n        self.assertIsNot(result, overrides)\n\n    def test_deep_copies_values_from_both_inputs(self):\n        base_only = {\"layers\": [{\"name\": \"base\"}]}\n        overridden_in_base = {\"old\": [1]}\n        override_value = {\"new\": [{\"x\": 2}]}\n        base = {\"kept\": base_only, \"changed\": overridden_in_base}\n        overrides = {\"changed\": override_value}\n        result = combine_theme(base, overrides)\n\n        self.assertEqual(result, {\"kept\": base_only, \"changed\": override_value})\n        self.assertIsNot(result[\"kept\"], base_only)\n        self.assertIsNot(result[\"kept\"][\"layers\"], base_only[\"layers\"])\n        self.assertIsNot(result[\"changed\"], override_value)\n        self.assertIsNot(result[\"changed\"][\"new\"], override_value[\"new\"])\n\n        base_only[\"layers\"][0][\"name\"] = \"mutated\"\n        override_value[\"new\"][0][\"x\"] = 99\n        self.assertEqual(result[\"kept\"], {\"layers\": [{\"name\": \"base\"}]})\n        self.assertEqual(result[\"changed\"], {\"new\": [{\"x\": 2}]})\n\n    def test_empty_inputs(self):\n        result = combine_theme({}, {})\n        self.assertEqual(result, {})\n        self.assertIsInstance(result, dict)\n\n    def test_empty_overrides_still_returns_deep_copy(self):\n        nested = {\"items\": [1]}\n        base = {\"nested\": nested}\n        result = combine_theme(base, {})\n        self.assertEqual(result, base)\n        self.assertIsNot(result, base)\n        self.assertIsNot(result[\"nested\"], nested)\n        self.assertIsNot(result[\"nested\"][\"items\"], nested[\"items\"])\n\n    def test_non_dictionaries_raise_type_error_without_mutation(self):\n        base = {\"x\": [1]}\n        overrides = {\"y\": [2]}\n        cases = [(None, overrides), ([], overrides), (base, None), (base, [])]\n        for left, right in cases:\n            with self.subTest(left=left, right=right):\n                base_before = {\"x\": [1]}\n                overrides_before = {\"y\": [2]}\n                with self.assertRaises(TypeError):\n                    combine_theme(left, right)\n                self.assertEqual(base, base_before)\n                self.assertEqual(overrides, overrides_before)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "032f506ffc64f37ed7e3dec772b3a8c56b13ce980dda4f1762d083a87e283717"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "12905b5199409a7d4c129682f961d21b545567aed59663e488727c2f487c40a6",
+      "text": "The complete `solution.py` below should implement `combine_theme(base, overrides)`. Both arguments must be dictionaries. Return a deep copy of `base`, replacing each top-level key present in `overrides` with a deep copy of its value, in override iteration order. Existing keys retain their original positions under normal dictionary behavior, and new keys are appended. Neither input nor any nested object reachable through them may alias the result. The current implementation mutates and returns `base`. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = base\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "12905b5199409a7d4c129682f961d21b545567aed59663e488727c2f487c40a6",
+      "text": "The complete `solution.py` below should implement `combine_theme(base, overrides)`. Both arguments must be dictionaries. Return a deep copy of `base`, replacing each top-level key present in `overrides` with a deep copy of its value, in override iteration order. Existing keys retain their original positions under normal dictionary behavior, and new keys are appended. Neither input nor any nested object reachable through them may alias the result. The current implementation mutates and returns `base`. Return a corrected complete source file.\n\n```python\nfrom copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = base\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0406",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = base\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n",
+          "label": "Aliases the result to base, causing the function to mutate its input.",
+          "sha256": "03d4ce291292c251641a867e1f366f3a2cd5c17835106910593bcab2b817f857"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\ndef combine_theme(base, overrides):\n    if not isinstance(base, dict) or not isinstance(overrides, dict):\n        raise TypeError(\"base and overrides must be dictionaries\")\n    result = deepcopy(base)\n    for key, value in overrides.items():\n        result[key] = deepcopy(value)\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f3cb0dac3daa8d7012ec19c5560d5c5921d31c19e8aacb7150a78768e9d57a9d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "FF\n======================================================================\nFAIL: test_finite_payload (__main__.Probe.test_finite_payload)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 24, in test_finite_payload\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n======================================================================\nFAIL: test_override_key_not_aliased (__main__.Probe.test_override_key_not_aliased)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 13, in test_override_key_not_aliased\n    self.assertIsNot(next(iter(result)), key)\nAssertionError: unexpectedly identical: <__main__.Key object at 0x7ffffe87c5d0>\n\n----------------------------------------------------------------------\nRan 2 tests in 0.006s\n\nFAILED (failures=2)\n",
+    "stderr_sha256": "2558373a97b575f7a3a4bdb5a62d34137c7f0afbc055826492aa19f93672ae09",
+    "duration_ms": 810,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

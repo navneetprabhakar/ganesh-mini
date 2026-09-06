@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0057",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "8a240695da7ec596c1894155ecfa51e5f8e3a2020cfbd93381429ab2fa9d1c77",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import MessageBuffer\n\n\nclass ReviewProbe(unittest.TestCase):\n    def test_finite_nested_payload(self):\n        value = []\n        cursor = value\n        for _ in range(600):\n            child = []\n            cursor.append(child)\n            cursor = child\n        buffer = MessageBuffer()\n        error = None\n        try:\n            buffer.add('id', value)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n        self.assertEqual(buffer.pending_count(), 1)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "68bd47106abf7fc73dea5135fb0d1f3dd03b54d0b1364656d003b093a8eb017f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e985f1c26f9c8479d834eacb4e30046e54d42037963ff085b836d6c7bf077c1f",
+      "text": "Repair the complete source below. `MessageBuffer.add(message_id, payload)` must reject duplicate IDs with `ValueError` and deep-copy the payload. `claim(limit)` must require a positive non-boolean integer, move at most the oldest `limit` pending messages into the in-flight collection, and return deep-copied `(id, payload)` tuples in insertion order. Already in-flight messages cannot be claimed again. `acknowledge(ids)` removes matching in-flight messages, silently ignores unknown IDs, and must not affect pending messages. `pending_count()` and `inflight_count()` report their respective sizes. Returned or supplied mutable payloads must never alias internal state. Return a corrected complete `solution.py`.\n\n```python\nfrom copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        self._pending.clear()\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e985f1c26f9c8479d834eacb4e30046e54d42037963ff085b836d6c7bf077c1f",
+      "text": "Repair the complete source below. `MessageBuffer.add(message_id, payload)` must reject duplicate IDs with `ValueError` and deep-copy the payload. `claim(limit)` must require a positive non-boolean integer, move at most the oldest `limit` pending messages into the in-flight collection, and return deep-copied `(id, payload)` tuples in insertion order. Already in-flight messages cannot be claimed again. `acknowledge(ids)` removes matching in-flight messages, silently ignores unknown IDs, and must not affect pending messages. `pending_count()` and `inflight_count()` report their respective sizes. Returned or supplied mutable payloads must never alias internal state. Return a corrected complete `solution.py`.\n\n```python\nfrom copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        self._pending.clear()\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0057",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        self._pending.clear()\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n",
+          "label": "Claiming a limited batch clears every pending message, losing messages beyond the requested limit.",
+          "sha256": "ab5fb09c94b0008599b620ba5eaf42cf910dfd1de018f6133482e11c4e869a2e"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        del self._pending[:limit]\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6c1d9bb66029cdfbe3bdc5721f2b4da19ee1f121bbf1354afb7e7076cfed7cad"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import MessageBuffer\n\n\nclass MessageBufferTests(unittest.TestCase):\n    def test_claim_moves_only_requested_oldest_messages(self):\n        buffer = MessageBuffer()\n        buffer.add(\"one\", {\"value\": 1})\n        buffer.add(\"two\", {\"value\": 2})\n        buffer.add(\"three\", {\"value\": 3})\n\n        self.assertEqual(\n            buffer.claim(2),\n            [(\"one\", {\"value\": 1}), (\"two\", {\"value\": 2})],\n        )\n        self.assertEqual(buffer.pending_count(), 1)\n        self.assertEqual(buffer.inflight_count(), 2)\n        self.assertEqual(buffer.claim(5), [(\"three\", {\"value\": 3})])\n        self.assertEqual(buffer.pending_count(), 0)\n        self.assertEqual(buffer.inflight_count(), 3)\n        self.assertEqual(buffer.claim(1), [])\n\n    def test_inflight_messages_are_not_claimed_again(self):\n        buffer = MessageBuffer()\n        buffer.add(\"a\", 1)\n        buffer.add(\"b\", 2)\n        self.assertEqual(buffer.claim(1), [(\"a\", 1)])\n        self.assertEqual(buffer.claim(1), [(\"b\", 2)])\n        self.assertEqual(buffer.claim(1), [])\n\n    def test_duplicate_pending_or_inflight_id_is_rejected(self):\n        buffer = MessageBuffer()\n        buffer.add(\"id\", {\"x\": 1})\n        with self.assertRaises(ValueError):\n            buffer.add(\"id\", {\"x\": 2})\n        buffer.claim(1)\n        with self.assertRaises(ValueError):\n            buffer.add(\"id\", {\"x\": 3})\n\n    def test_acknowledge_only_removes_matching_inflight(self):\n        buffer = MessageBuffer()\n        for message_id in (\"a\", \"b\", \"c\"):\n            buffer.add(message_id, message_id)\n        buffer.claim(2)\n        buffer.acknowledge([\"a\", \"unknown\", \"c\"])\n        self.assertEqual(buffer.inflight_count(), 1)\n        self.assertEqual(buffer.pending_count(), 1)\n        self.assertEqual(buffer.claim(1), [(\"c\", \"c\")])\n\n    def test_acknowledged_identifier_can_be_added_again(self):\n        buffer = MessageBuffer()\n        buffer.add(\"id\", 1)\n        buffer.claim(1)\n        buffer.acknowledge([\"id\"])\n        buffer.add(\"id\", 2)\n        self.assertEqual(buffer.claim(1), [(\"id\", 2)])\n\n    def test_payload_is_deep_copied_on_add_and_claim(self):\n        payload = {\"nested\": [1]}\n        buffer = MessageBuffer()\n        buffer.add(\"id\", payload)\n        payload[\"nested\"].append(2)\n\n        claimed = buffer.claim(1)\n        self.assertEqual(claimed, [(\"id\", {\"nested\": [1]})])\n        claimed[0][1][\"nested\"].append(3)\n        self.assertEqual(buffer.inflight_count(), 1)\n        buffer.acknowledge([\"id\"])\n        self.assertEqual(buffer.inflight_count(), 0)\n        self.assertEqual(payload, {\"nested\": [1, 2]})\n\n    def test_limit_validation(self):\n        buffer = MessageBuffer()\n        for limit in (True, False, 1.0, \"1\", None):\n            with self.subTest(limit=limit):\n                with self.assertRaises(TypeError):\n                    buffer.claim(limit)\n        for limit in (0, -1):\n            with self.subTest(limit=limit):\n                with self.assertRaises(ValueError):\n                    buffer.claim(limit)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "c590431d79c8d50f0c3132f9b96ac47912cc7cdb294327986a0ccf17194e868f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e985f1c26f9c8479d834eacb4e30046e54d42037963ff085b836d6c7bf077c1f",
+      "text": "Repair the complete source below. `MessageBuffer.add(message_id, payload)` must reject duplicate IDs with `ValueError` and deep-copy the payload. `claim(limit)` must require a positive non-boolean integer, move at most the oldest `limit` pending messages into the in-flight collection, and return deep-copied `(id, payload)` tuples in insertion order. Already in-flight messages cannot be claimed again. `acknowledge(ids)` removes matching in-flight messages, silently ignores unknown IDs, and must not affect pending messages. `pending_count()` and `inflight_count()` report their respective sizes. Returned or supplied mutable payloads must never alias internal state. Return a corrected complete `solution.py`.\n\n```python\nfrom copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        self._pending.clear()\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e985f1c26f9c8479d834eacb4e30046e54d42037963ff085b836d6c7bf077c1f",
+      "text": "Repair the complete source below. `MessageBuffer.add(message_id, payload)` must reject duplicate IDs with `ValueError` and deep-copy the payload. `claim(limit)` must require a positive non-boolean integer, move at most the oldest `limit` pending messages into the in-flight collection, and return deep-copied `(id, payload)` tuples in insertion order. Already in-flight messages cannot be claimed again. `acknowledge(ids)` removes matching in-flight messages, silently ignores unknown IDs, and must not affect pending messages. `pending_count()` and `inflight_count()` report their respective sizes. Returned or supplied mutable payloads must never alias internal state. Return a corrected complete `solution.py`.\n\n```python\nfrom copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        self._pending.clear()\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0057",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        self._pending.clear()\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n",
+          "label": "Claiming a limited batch clears every pending message, losing messages beyond the requested limit.",
+          "sha256": "ab5fb09c94b0008599b620ba5eaf42cf910dfd1de018f6133482e11c4e869a2e"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass MessageBuffer:\n    def __init__(self):\n        self._pending = []\n        self._inflight = {}\n\n    def add(self, message_id, payload):\n        if any(item_id == message_id for item_id, _ in self._pending) or message_id in self._inflight:\n            raise ValueError(\"duplicate message id\")\n        self._pending.append((message_id, deepcopy(payload)))\n\n    def claim(self, limit):\n        if isinstance(limit, bool) or not isinstance(limit, int):\n            raise TypeError(\"limit must be an integer\")\n        if limit <= 0:\n            raise ValueError(\"limit must be positive\")\n        selected = self._pending[:limit]\n        del self._pending[:limit]\n        for message_id, payload in selected:\n            self._inflight[message_id] = payload\n        return deepcopy(selected)\n\n    def acknowledge(self, ids):\n        for message_id in ids:\n            self._inflight.pop(message_id, None)\n\n    def pending_count(self):\n        return len(self._pending)\n\n    def inflight_count(self):\n        return len(self._inflight)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6c1d9bb66029cdfbe3bdc5721f2b4da19ee1f121bbf1354afb7e7076cfed7cad"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_nested_payload (__main__.ReviewProbe.test_finite_nested_payload)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 19, in test_finite_nested_payload\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "5d1a37c8ef27dfc336f1095278d3a894af47e9b0c2419f1c1a6f6fcf1b205a58",
+    "duration_ms": 412,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

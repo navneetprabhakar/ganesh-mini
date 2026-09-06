@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0047",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "1961cdbbee4a889641c3516035456d7533f6abf431f3ffe90a580d13c3dee4d9",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import TaskBatch\n\n\nclass ReviewProbe(unittest.TestCase):\n    def test_finite_nested_payload_while_open(self):\n        value = []\n        cursor = value\n        for _ in range(600):\n            child = []\n            cursor.append(child)\n            cursor = child\n        batch = TaskBatch()\n        error = None\n        try:\n            batch.add(value)\n        except Exception as exc:\n            error = type(exc).__name__\n        self.assertIsNone(error)\n        self.assertEqual(len(batch), 1)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "4430d7f7343b6c4ecd510e608c10d61d50a351ecd771566d6cbbf083c2089bf1"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a25fdd149ea4f75be38e017cec2ab2edd83299ff29fc6b54256ff48a0d544027",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is the `TaskBatch` class. A new batch is open and empty. `add(payload)` deep-copies and appends any payload while open; after closure it raises `RuntimeError` without copying or storing the payload. `close()` is idempotent, prevents future additions, and must preserve all already queued payloads. `drain()` returns queued payloads in FIFO order and empties the queue; it works both before and after closure. Returned payloads must not alias the original objects passed to `add`, and later mutations of returned payloads must not affect future state. `len(batch)` reports the current queued count, and `batch.closed` is a read-only boolean property.\n\nKnown-bad source:\n```python\nimport copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n        self._items.clear()\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a25fdd149ea4f75be38e017cec2ab2edd83299ff29fc6b54256ff48a0d544027",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is the `TaskBatch` class. A new batch is open and empty. `add(payload)` deep-copies and appends any payload while open; after closure it raises `RuntimeError` without copying or storing the payload. `close()` is idempotent, prevents future additions, and must preserve all already queued payloads. `drain()` returns queued payloads in FIFO order and empties the queue; it works both before and after closure. Returned payloads must not alias the original objects passed to `add`, and later mutations of returned payloads must not affect future state. `len(batch)` reports the current queued count, and `batch.closed` is a read-only boolean property.\n\nKnown-bad source:\n```python\nimport copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n        self._items.clear()\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0047",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n        self._items.clear()\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n",
+          "label": "Closing the batch incorrectly discards tasks that were queued before closure.",
+          "sha256": "d9a81beaf49b2ed7e85db109d6cb1e5c10d4c751a6614a2d09b2b9de8b100dfb"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "52e559f14bf72a5061872652db90ac540b35f30882a43aaa5620b2abc4138f1a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import TaskBatch\n\n\nclass TaskBatchTests(unittest.TestCase):\n    def test_new_batch_add_fifo_and_deep_copy(self):\n        batch = TaskBatch()\n        self.assertFalse(batch.closed)\n        self.assertEqual(len(batch), 0)\n        first = {\"items\": [[1], [2]]}\n        second = [\"next\"]\n        batch.add(first)\n        batch.add(second)\n        first[\"items\"][0].append(99)\n        second.append(\"changed\")\n        self.assertEqual(len(batch), 2)\n        drained = batch.drain()\n        self.assertEqual(drained, [{\"items\": [[1], [2]]}, [\"next\"]])\n        self.assertIsNot(drained[0], first)\n        self.assertIsNot(drained[0][\"items\"], first[\"items\"])\n        self.assertEqual(len(batch), 0)\n\n    def test_close_is_idempotent_and_preserves_queue(self):\n        batch = TaskBatch()\n        batch.add({\"a\": 1})\n        batch.close()\n        batch.close()\n        self.assertTrue(batch.closed)\n        self.assertEqual(len(batch), 1)\n        self.assertEqual(batch.drain(), [{\"a\": 1}])\n        self.assertEqual(batch.drain(), [])\n\n    def test_drain_works_while_open_and_batch_remains_usable(self):\n        batch = TaskBatch()\n        batch.add([1])\n        returned = batch.drain()\n        returned[0].append(2)\n        batch.add([3])\n        self.assertEqual(batch.drain(), [[3]])\n        self.assertFalse(batch.closed)\n\n    def test_add_after_close_raises_without_copying(self):\n        class ExplodesOnCopy:\n            def __deepcopy__(self, memo):\n                raise AssertionError(\"payload was copied\")\n\n        batch = TaskBatch()\n        batch.close()\n        with self.assertRaises(RuntimeError):\n            batch.add(ExplodesOnCopy())\n        self.assertEqual(len(batch), 0)\n\n    def test_closed_property_is_read_only(self):\n        batch = TaskBatch()\n        with self.assertRaises(AttributeError):\n            batch.closed = True\n        self.assertFalse(batch.closed)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "019ede06ac6c010c6589e32b6f97f9f77b2b903690563d6555d9da239ed4fd2d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a25fdd149ea4f75be38e017cec2ab2edd83299ff29fc6b54256ff48a0d544027",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is the `TaskBatch` class. A new batch is open and empty. `add(payload)` deep-copies and appends any payload while open; after closure it raises `RuntimeError` without copying or storing the payload. `close()` is idempotent, prevents future additions, and must preserve all already queued payloads. `drain()` returns queued payloads in FIFO order and empties the queue; it works both before and after closure. Returned payloads must not alias the original objects passed to `add`, and later mutations of returned payloads must not affect future state. `len(batch)` reports the current queued count, and `batch.closed` is a read-only boolean property.\n\nKnown-bad source:\n```python\nimport copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n        self._items.clear()\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a25fdd149ea4f75be38e017cec2ab2edd83299ff29fc6b54256ff48a0d544027",
+      "text": "Repair the complete source below and return a corrected complete `solution.py`.\n\nThe public API is the `TaskBatch` class. A new batch is open and empty. `add(payload)` deep-copies and appends any payload while open; after closure it raises `RuntimeError` without copying or storing the payload. `close()` is idempotent, prevents future additions, and must preserve all already queued payloads. `drain()` returns queued payloads in FIFO order and empties the queue; it works both before and after closure. Returned payloads must not alias the original objects passed to `add`, and later mutations of returned payloads must not affect future state. `len(batch)` reports the current queued count, and `batch.closed` is a read-only boolean property.\n\nKnown-bad source:\n```python\nimport copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n        self._items.clear()\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0047",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n        self._items.clear()\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n",
+          "label": "Closing the batch incorrectly discards tasks that were queued before closure.",
+          "sha256": "d9a81beaf49b2ed7e85db109d6cb1e5c10d4c751a6614a2d09b2b9de8b100dfb"
+        }
+      ],
+      "reference": {
+        "code": "import copy\n\n\nclass TaskBatch:\n    def __init__(self):\n        self._items = []\n        self._closed = False\n\n    @property\n    def closed(self):\n        return self._closed\n\n    def add(self, payload):\n        if self._closed:\n            raise RuntimeError(\"batch is closed\")\n        self._items.append(copy.deepcopy(payload))\n\n    def close(self):\n        self._closed = True\n\n    def drain(self):\n        items = self._items\n        self._items = []\n        return items\n\n    def __len__(self):\n        return len(self._items)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "52e559f14bf72a5061872652db90ac540b35f30882a43aaa5620b2abc4138f1a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_finite_nested_payload_while_open (__main__.ReviewProbe.test_finite_nested_payload_while_open)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 19, in test_finite_nested_payload_while_open\n    self.assertIsNone(error)\nAssertionError: 'RecursionError' is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "dbe1ca2635ff04fb98e7ff7914422af3324e1b0ee931b3d7a6e6baefa99e1ff8",
+    "duration_ms": 671,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

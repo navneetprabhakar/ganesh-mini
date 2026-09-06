@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0003",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9f132a9b64779cc059a7128ee5b06c41397250ec70a7ad464bb008ef48189b88",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createRunSheet } = require('./solution');\nconst sheet = createRunSheet([{id: 'a', minutes: 1, repeats: 1}]);\nassert.throws(() => sheet.replace(new Array(1)), TypeError);\nassert.deepEqual(sheet.list(), [{id: 'a', minutes: 1, repeats: 1}]);\n",
+        "sha256": "8a22bec4aa08bd570e288984c0df59ece2b0bc53c7867cc2698a6a328935a568"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "35e76a5e44ed84232591fd362cc017348747e039442b00895a5d44e1fe2b3695",
+      "text": "Implement a CommonJS module exporting exactly `{ createRunSheet }`.\n\n`createRunSheet(initialEntries = [])` creates an isolated schedule. Each entry is `{ id, minutes, repeats }`, where `id` is a non-empty string and both numeric fields are positive safe integers. Malformed entries throw `TypeError`; invalid numeric ranges or duplicate IDs throw `RangeError`. The initial array and its records must not be mutated or retained by reference.\n\nThe returned object exposes `list()`, `totalMinutes()`, `upsert(entry)`, `replace(entries)`, `remove(id)`, and `clear()`. `list()` returns fresh record copies in current order. `totalMinutes()` sums `minutes * repeats` and throws `RangeError` if a product or sum is not a safe integer. `upsert` replaces an existing record in place or appends a new ID. `replace` validates the entire input before changing state. `remove` requires a string ID, removes the matching record, and returns a boolean. `clear` empties the schedule. Mutator arguments must never become aliases of internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "35e76a5e44ed84232591fd362cc017348747e039442b00895a5d44e1fe2b3695",
+      "text": "Implement a CommonJS module exporting exactly `{ createRunSheet }`.\n\n`createRunSheet(initialEntries = [])` creates an isolated schedule. Each entry is `{ id, minutes, repeats }`, where `id` is a non-empty string and both numeric fields are positive safe integers. Malformed entries throw `TypeError`; invalid numeric ranges or duplicate IDs throw `RangeError`. The initial array and its records must not be mutated or retained by reference.\n\nThe returned object exposes `list()`, `totalMinutes()`, `upsert(entry)`, `replace(entries)`, `remove(id)`, and `clear()`. `list()` returns fresh record copies in current order. `totalMinutes()` sums `minutes * repeats` and throws `RangeError` if a product or sum is not a safe integer. `upsert` replaces an existing record in place or appends a new ID. `replace` validates the entire input before changing state. `remove` requires a string ID, removes the matching record, and returns a boolean. `clear` empties the schedule. Mutator arguments must never become aliases of internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0003",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createRunSheet(initialEntries = []) {\n  function copyAndValidate(entries) {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    const seen = new Set();\n    return entries.map((entry) => {\n      if (!entry || typeof entry !== 'object' || Array.isArray(entry) ||\n          typeof entry.id !== 'string' || entry.id.length === 0) {\n        throw new TypeError('Invalid entry');\n      }\n\n      for (const field of ['minutes', 'repeats']) {\n        if (typeof entry[field] !== 'number') {\n          throw new TypeError('Numeric fields must be numbers');\n        }\n        if (!Number.isSafeInteger(entry[field]) || entry[field] <= 0) {\n          throw new RangeError('Numeric fields must be positive safe integers');\n        }\n      }\n\n      if (seen.has(entry.id)) throw new RangeError('Duplicate id');\n      seen.add(entry.id);\n      return {\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      };\n    });\n  }\n\n  let entries = copyAndValidate(initialEntries);\n\n  return {\n    list() {\n      return entries.map((entry) => ({\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      }));\n    },\n\n    totalMinutes() {\n      return entries.reduce((total, entry) => {\n        const value = entry.minutes;\n        if (!Number.isSafeInteger(value) || !Number.isSafeInteger(total + value)) {\n          throw new RangeError('Total overflow');\n        }\n        return total + value;\n      }, 0);\n    },\n\n    upsert(entry) {\n      const copy = copyAndValidate([entry])[0];\n      const index = entries.findIndex((item) => item.id === copy.id);\n      if (index === -1) entries.push(copy);\n      else entries[index] = copy;\n    },\n\n    replace(next) {\n      const copies = copyAndValidate(next);\n      entries = copies;\n    },\n\n    remove(id) {\n      if (typeof id !== 'string') throw new TypeError('Id must be a string');\n      const index = entries.findIndex((entry) => entry.id === id);\n      if (index === -1) return false;\n      entries.splice(index, 1);\n      return true;\n    },\n\n    clear() {\n      entries = [];\n    }\n  };\n}\n\nmodule.exports = { createRunSheet };\n",
+          "label": "`totalMinutes` ignores each entry's repeat count and sums only its single-run duration.",
+          "sha256": "6bac44f04d0e23076d7df41ae641a3b242bfe5df9a83b80ae9987987c3a8b008"
+        }
+      ],
+      "reference": {
+        "code": "function createRunSheet(initialEntries = []) {\n  function copyAndValidate(entries) {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    const seen = new Set();\n    return entries.map((entry) => {\n      if (!entry || typeof entry !== 'object' || Array.isArray(entry) ||\n          typeof entry.id !== 'string' || entry.id.length === 0) {\n        throw new TypeError('Invalid entry');\n      }\n\n      for (const field of ['minutes', 'repeats']) {\n        if (typeof entry[field] !== 'number') {\n          throw new TypeError('Numeric fields must be numbers');\n        }\n        if (!Number.isSafeInteger(entry[field]) || entry[field] <= 0) {\n          throw new RangeError('Numeric fields must be positive safe integers');\n        }\n      }\n\n      if (seen.has(entry.id)) throw new RangeError('Duplicate id');\n      seen.add(entry.id);\n      return {\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      };\n    });\n  }\n\n  let entries = copyAndValidate(initialEntries);\n\n  return {\n    list() {\n      return entries.map((entry) => ({\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      }));\n    },\n\n    totalMinutes() {\n      return entries.reduce((total, entry) => {\n        const value = entry.minutes * entry.repeats;\n        if (!Number.isSafeInteger(value) || !Number.isSafeInteger(total + value)) {\n          throw new RangeError('Total overflow');\n        }\n        return total + value;\n      }, 0);\n    },\n\n    upsert(entry) {\n      const copy = copyAndValidate([entry])[0];\n      const index = entries.findIndex((item) => item.id === copy.id);\n      if (index === -1) entries.push(copy);\n      else entries[index] = copy;\n    },\n\n    replace(next) {\n      const copies = copyAndValidate(next);\n      entries = copies;\n    },\n\n    remove(id) {\n      if (typeof id !== 'string') throw new TypeError('Id must be a string');\n      const index = entries.findIndex((entry) => entry.id === id);\n      if (index === -1) return false;\n      entries.splice(index, 1);\n      return true;\n    },\n\n    clear() {\n      entries = [];\n    }\n  };\n}\n\nmodule.exports = { createRunSheet };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2d569a8424bebd6694c32246d65865ad1a0dd6a1d947745e3bbe233088d34926"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createRunSheet']);\nconst { createRunSheet } = api;\n\nconst initial = [\n  { id: 'intro', minutes: 5, repeats: 2 },\n  { id: 'demo', minutes: 10, repeats: 1 }\n];\nconst sheet = createRunSheet(initial);\nassert.deepStrictEqual(sheet.list(), initial);\nassert.strictEqual(sheet.totalMinutes(), 20);\nassert.notStrictEqual(sheet.list(), sheet.list());\nassert.notStrictEqual(sheet.list()[0], initial[0]);\ninitial[0].minutes = 99;\ninitial.push({ id: 'late', minutes: 1, repeats: 1 });\nassert.deepStrictEqual(sheet.list(), [\n  { id: 'intro', minutes: 5, repeats: 2 },\n  { id: 'demo', minutes: 10, repeats: 1 }\n]);\n\nconst replacement = { id: 'intro', minutes: 3, repeats: 4 };\nsheet.upsert(replacement);\nreplacement.minutes = 100;\nsheet.upsert({ id: 'end', minutes: 2, repeats: 1 });\nassert.deepStrictEqual(sheet.list(), [\n  { id: 'intro', minutes: 3, repeats: 4 },\n  { id: 'demo', minutes: 10, repeats: 1 },\n  { id: 'end', minutes: 2, repeats: 1 }\n]);\nassert.strictEqual(sheet.totalMinutes(), 24);\nassert.strictEqual(sheet.remove('demo'), true);\nassert.strictEqual(sheet.remove('missing'), false);\nassert.deepStrictEqual(sheet.list().map((entry) => entry.id), ['intro', 'end']);\nassert.throws(() => sheet.remove(1), TypeError);\n\nconst beforeFailedReplace = sheet.list();\nassert.throws(() => sheet.replace([\n  { id: 'valid', minutes: 1, repeats: 1 },\n  { id: 'valid', minutes: 2, repeats: 2 }\n]), RangeError);\nassert.deepStrictEqual(sheet.list(), beforeFailedReplace);\nassert.throws(() => sheet.replace([\n  { id: 'valid', minutes: 1, repeats: 1 },\n  { id: 'bad', minutes: '2', repeats: 1 }\n]), TypeError);\nassert.deepStrictEqual(sheet.list(), beforeFailedReplace);\n\nconst newEntries = [{ id: 'only', minutes: 7, repeats: 3 }];\nsheet.replace(newEntries);\nnewEntries[0].repeats = 50;\nassert.deepStrictEqual(sheet.list(), [{ id: 'only', minutes: 7, repeats: 3 }]);\nsheet.clear();\nassert.deepStrictEqual(sheet.list(), []);\nassert.strictEqual(sheet.totalMinutes(), 0);\n\nconst isolated = createRunSheet();\nassert.deepStrictEqual(isolated.list(), []);\nisolated.upsert({ id: 'x', minutes: 1, repeats: 1 });\nassert.deepStrictEqual(sheet.list(), []);\n\nfor (const value of [null, {}, 'entries']) assert.throws(() => createRunSheet(value), TypeError);\nfor (const entry of [\n  null,\n  { id: '', minutes: 1, repeats: 1 },\n  { id: 1, minutes: 1, repeats: 1 },\n  { id: 'x', minutes: '1', repeats: 1 }\n]) assert.throws(() => createRunSheet([entry]), TypeError);\nfor (const entry of [\n  { id: 'x', minutes: 0, repeats: 1 },\n  { id: 'x', minutes: 1.5, repeats: 1 },\n  { id: 'x', minutes: 1, repeats: -1 },\n  { id: 'x', minutes: 1, repeats: Number.MAX_SAFE_INTEGER + 1 }\n]) assert.throws(() => createRunSheet([entry]), RangeError);\nassert.throws(() => createRunSheet([\n  { id: 'x', minutes: 1, repeats: 1 },\n  { id: 'x', minutes: 2, repeats: 1 }\n]), RangeError);\n\nassert.throws(() => createRunSheet([\n  { id: 'huge', minutes: Number.MAX_SAFE_INTEGER, repeats: 2 }\n]).totalMinutes(), RangeError);\nassert.throws(() => createRunSheet([\n  { id: 'huge', minutes: Number.MAX_SAFE_INTEGER, repeats: 1 },\n  { id: 'one', minutes: 1, repeats: 1 }\n]).totalMinutes(), RangeError);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "24f7ed86bc39ec156f522cded9806124b601379cbd3be96e61920d34183ae093"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "35e76a5e44ed84232591fd362cc017348747e039442b00895a5d44e1fe2b3695",
+      "text": "Implement a CommonJS module exporting exactly `{ createRunSheet }`.\n\n`createRunSheet(initialEntries = [])` creates an isolated schedule. Each entry is `{ id, minutes, repeats }`, where `id` is a non-empty string and both numeric fields are positive safe integers. Malformed entries throw `TypeError`; invalid numeric ranges or duplicate IDs throw `RangeError`. The initial array and its records must not be mutated or retained by reference.\n\nThe returned object exposes `list()`, `totalMinutes()`, `upsert(entry)`, `replace(entries)`, `remove(id)`, and `clear()`. `list()` returns fresh record copies in current order. `totalMinutes()` sums `minutes * repeats` and throws `RangeError` if a product or sum is not a safe integer. `upsert` replaces an existing record in place or appends a new ID. `replace` validates the entire input before changing state. `remove` requires a string ID, removes the matching record, and returns a boolean. `clear` empties the schedule. Mutator arguments must never become aliases of internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "35e76a5e44ed84232591fd362cc017348747e039442b00895a5d44e1fe2b3695",
+      "text": "Implement a CommonJS module exporting exactly `{ createRunSheet }`.\n\n`createRunSheet(initialEntries = [])` creates an isolated schedule. Each entry is `{ id, minutes, repeats }`, where `id` is a non-empty string and both numeric fields are positive safe integers. Malformed entries throw `TypeError`; invalid numeric ranges or duplicate IDs throw `RangeError`. The initial array and its records must not be mutated or retained by reference.\n\nThe returned object exposes `list()`, `totalMinutes()`, `upsert(entry)`, `replace(entries)`, `remove(id)`, and `clear()`. `list()` returns fresh record copies in current order. `totalMinutes()` sums `minutes * repeats` and throws `RangeError` if a product or sum is not a safe integer. `upsert` replaces an existing record in place or appends a new ID. `replace` validates the entire input before changing state. `remove` requires a string ID, removes the matching record, and returns a boolean. `clear` empties the schedule. Mutator arguments must never become aliases of internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0003",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createRunSheet(initialEntries = []) {\n  function copyAndValidate(entries) {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    const seen = new Set();\n    return entries.map((entry) => {\n      if (!entry || typeof entry !== 'object' || Array.isArray(entry) ||\n          typeof entry.id !== 'string' || entry.id.length === 0) {\n        throw new TypeError('Invalid entry');\n      }\n\n      for (const field of ['minutes', 'repeats']) {\n        if (typeof entry[field] !== 'number') {\n          throw new TypeError('Numeric fields must be numbers');\n        }\n        if (!Number.isSafeInteger(entry[field]) || entry[field] <= 0) {\n          throw new RangeError('Numeric fields must be positive safe integers');\n        }\n      }\n\n      if (seen.has(entry.id)) throw new RangeError('Duplicate id');\n      seen.add(entry.id);\n      return {\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      };\n    });\n  }\n\n  let entries = copyAndValidate(initialEntries);\n\n  return {\n    list() {\n      return entries.map((entry) => ({\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      }));\n    },\n\n    totalMinutes() {\n      return entries.reduce((total, entry) => {\n        const value = entry.minutes;\n        if (!Number.isSafeInteger(value) || !Number.isSafeInteger(total + value)) {\n          throw new RangeError('Total overflow');\n        }\n        return total + value;\n      }, 0);\n    },\n\n    upsert(entry) {\n      const copy = copyAndValidate([entry])[0];\n      const index = entries.findIndex((item) => item.id === copy.id);\n      if (index === -1) entries.push(copy);\n      else entries[index] = copy;\n    },\n\n    replace(next) {\n      const copies = copyAndValidate(next);\n      entries = copies;\n    },\n\n    remove(id) {\n      if (typeof id !== 'string') throw new TypeError('Id must be a string');\n      const index = entries.findIndex((entry) => entry.id === id);\n      if (index === -1) return false;\n      entries.splice(index, 1);\n      return true;\n    },\n\n    clear() {\n      entries = [];\n    }\n  };\n}\n\nmodule.exports = { createRunSheet };\n",
+          "label": "`totalMinutes` ignores each entry's repeat count and sums only its single-run duration.",
+          "sha256": "6bac44f04d0e23076d7df41ae641a3b242bfe5df9a83b80ae9987987c3a8b008"
+        }
+      ],
+      "reference": {
+        "code": "function createRunSheet(initialEntries = []) {\n  function copyAndValidate(entries) {\n    if (!Array.isArray(entries)) throw new TypeError('Entries must be an array');\n\n    const seen = new Set();\n    return entries.map((entry) => {\n      if (!entry || typeof entry !== 'object' || Array.isArray(entry) ||\n          typeof entry.id !== 'string' || entry.id.length === 0) {\n        throw new TypeError('Invalid entry');\n      }\n\n      for (const field of ['minutes', 'repeats']) {\n        if (typeof entry[field] !== 'number') {\n          throw new TypeError('Numeric fields must be numbers');\n        }\n        if (!Number.isSafeInteger(entry[field]) || entry[field] <= 0) {\n          throw new RangeError('Numeric fields must be positive safe integers');\n        }\n      }\n\n      if (seen.has(entry.id)) throw new RangeError('Duplicate id');\n      seen.add(entry.id);\n      return {\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      };\n    });\n  }\n\n  let entries = copyAndValidate(initialEntries);\n\n  return {\n    list() {\n      return entries.map((entry) => ({\n        id: entry.id,\n        minutes: entry.minutes,\n        repeats: entry.repeats\n      }));\n    },\n\n    totalMinutes() {\n      return entries.reduce((total, entry) => {\n        const value = entry.minutes * entry.repeats;\n        if (!Number.isSafeInteger(value) || !Number.isSafeInteger(total + value)) {\n          throw new RangeError('Total overflow');\n        }\n        return total + value;\n      }, 0);\n    },\n\n    upsert(entry) {\n      const copy = copyAndValidate([entry])[0];\n      const index = entries.findIndex((item) => item.id === copy.id);\n      if (index === -1) entries.push(copy);\n      else entries[index] = copy;\n    },\n\n    replace(next) {\n      const copies = copyAndValidate(next);\n      entries = copies;\n    },\n\n    remove(id) {\n      if (typeof id !== 'string') throw new TypeError('Id must be a string');\n      const index = entries.findIndex((entry) => entry.id === id);\n      if (index === -1) return false;\n      entries.splice(index, 1);\n      return true;\n    },\n\n    clear() {\n      entries = [];\n    }\n  };\n}\n\nmodule.exports = { createRunSheet };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2d569a8424bebd6694c32246d65865ad1a0dd6a1d947745e3bbe233088d34926"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:5:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3a58ca05975c2db2db7517ef1cc8764513ec383a724c8c0b9945be6166005f45",
+    "duration_ms": 381,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

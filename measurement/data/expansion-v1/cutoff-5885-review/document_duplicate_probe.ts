@@ -1,0 +1,11 @@
+import { DocumentSignal } from './solution';
+const signal = new DocumentSignal({title: 'old', tags: []});
+const calls: string[] = [];
+const a = () => { calls.push('a'); };
+signal.subscribe(a);
+signal.subscribe(() => { calls.push('b'); });
+const removeLast = signal.subscribe(a);
+removeLast();
+removeLast();
+signal.replace({title: 'new', tags: []});
+if (calls.join(',') !== 'a,b') throw new Error(`last unsubscribe removed wrong registration: ${calls}`);

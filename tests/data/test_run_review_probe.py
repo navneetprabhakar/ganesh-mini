@@ -10,7 +10,8 @@ from scripts.data import run_review_probe
 @pytest.mark.parametrize('lane,test_path', [('go', 'solution_test.go'), ('java', 'SolutionTest.java'),
                                          ('javascript', 'solution.test.js'), ('python', 'test_solution.py'),
                                          ('rust', 'solution_test.rs'), ('typescript', 'solution.test.ts')])
-def test_probe_preserves_original_and_uses_verifier(tmp_path, monkeypatch, lane, test_path):
+@pytest.mark.parametrize('population', ['sample', 'cutoff'])
+def test_probe_preserves_original_and_uses_verifier(tmp_path, monkeypatch, lane, test_path, population):
     monkeypatch.chdir(tmp_path)
     root = tmp_path / 'datasets/cache/expansion-v1/cutoff-5885'
     root.mkdir(parents=True)
@@ -19,9 +20,11 @@ def test_probe_preserves_original_and_uses_verifier(tmp_path, monkeypatch, lane,
         'validation': {'reference': {'code': 'reference'}}}
     row = {'id': 'x', 'lane': lane, 'verification_task': original}
     sample = root / 'quality-sample.candidates.jsonl'
-    sample.write_text(json.dumps(row) + '\n')
-    (root / 'manifest.json').write_text(json.dumps({'files': {sample.name: {
-        'sha256': hashlib.sha256(sample.read_bytes()).hexdigest()}}}))
+    sample.write_text(json.dumps(row if population == 'sample' else {**row, 'id': 'sample-only'}) + '\n')
+    cutoff = root / 'final.candidates.jsonl'
+    cutoff.write_text(json.dumps(row) + '\n')
+    (root / 'manifest.json').write_text(json.dumps({'files': {path.name: {
+        'sha256': hashlib.sha256(path.read_bytes()).hexdigest()} for path in (sample, cutoff)}}))
     runtime = tmp_path / 'configs/eval/runtimes.json'
     runtime.parent.mkdir(parents=True)
     runtime.write_text('{}')
@@ -35,7 +38,8 @@ def test_probe_preserves_original_and_uses_verifier(tmp_path, monkeypatch, lane,
         return {'exit_codes': [1], 'timed_out': False}
 
     monkeypatch.setattr(run_review_probe, 'verify', verify)
-    monkeypatch.setattr(sys, 'argv', ['probe', '--id', 'x', '--probe', str(probe), '--output', str(output)])
+    monkeypatch.setattr(sys, 'argv', ['probe', '--id', 'x', '--population', population,
+                                    '--probe', str(probe), '--output', str(output)])
     run_review_probe.main()
     result = json.loads(output.read_text())
     assert result['original_task'] == original
@@ -43,8 +47,19 @@ def test_probe_preserves_original_and_uses_verifier(tmp_path, monkeypatch, lane,
     assert result['task']['surface'] == 'synthetic_harness'
     assert result['task']['files'][-1]['content'] == 'diagnostic'
     assert len(result['task']['files']) == (2 if lane == 'go' else 1)
-    assert json.loads(sample.read_text()) == row
+    selected = sample if population == 'sample' else cutoff
+    assert json.loads(selected.read_text()) == row
+    assert result['population'] == population
+    assert result['candidate_set_sha256'] == hashlib.sha256(selected.read_bytes()).hexdigest()
+    assert result['sample_sha256'] == hashlib.sha256(sample.read_bytes()).hexdigest()
     before = output.read_bytes()
     with pytest.raises(ValueError, match='preserve existing evidence'):
         run_review_probe.main()
     assert output.read_bytes() == before
+    # A modified population must be rejected before any candidate execution.
+    monkeypatch.setattr(sys, 'argv', ['probe', '--id', 'x', '--population', population,
+                                    '--probe', str(probe), '--output', str(tmp_path / 'second.json')])
+    selected.write_text(selected.read_text() + '\n')
+    with pytest.raises(ValueError, match='hash mismatch'):
+        run_review_probe.main()
+    assert len(calls) == 1

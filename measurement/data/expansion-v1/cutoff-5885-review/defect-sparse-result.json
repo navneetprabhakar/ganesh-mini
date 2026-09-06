@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0009",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5ef90228f5f124928ab2ea698baf3d7e52e35061eb8218d4afb950ece4943e45",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { handleDefect } = require('./solution');\nassert.deepEqual(handleDefect(new Array(1), {type: 'list'}), {status: 400, body: {error: 'Invalid input'}, state: []});\n",
+        "sha256": "047224672e2083e81c246a337c65fabfb84ccb4227f12e0af4f5e44ea2b15c2c"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7cfed1be26a163c8466fb3e0fcf46d54314bf47d1b16ce3afd7c59fe69534bca",
+      "text": "Implement a CommonJS module exporting exactly `{ handleDefect }`. This is a pure command handler for a defect ledger. Its signature is `handleDefect(state, command)`, where `state` is an array of records shaped `{ key, summary, details, phase }`. A valid key is a positive integer; summary and details are non-empty strings; phase is one of `queued`, `active`, or `resolved`.\n\nCommands are `{ type: 'list' }`, `{ type: 'get', key }`, and `{ type: 'add', record }`. Return `{ status, body, state }`. `list` returns status 200 and all records sorted by ascending key. `get` returns status 200 and the record, or status 404 with `{ error: 'Defect not found' }`. `add` returns status 201 and adds a valid record; duplicate keys return 409 with `{ error: 'Duplicate key' }`. Malformed state, commands, or records return 400 with `{ error: 'Invalid input' }` and an empty state when the supplied state is malformed.\n\nThe function must not mutate or retain mutable aliases to any input. The returned `body`, returned `state`, and their records must also be mutually independent snapshots. Non-add commands preserve the ledger's logical contents.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7cfed1be26a163c8466fb3e0fcf46d54314bf47d1b16ce3afd7c59fe69534bca",
+      "text": "Implement a CommonJS module exporting exactly `{ handleDefect }`. This is a pure command handler for a defect ledger. Its signature is `handleDefect(state, command)`, where `state` is an array of records shaped `{ key, summary, details, phase }`. A valid key is a positive integer; summary and details are non-empty strings; phase is one of `queued`, `active`, or `resolved`.\n\nCommands are `{ type: 'list' }`, `{ type: 'get', key }`, and `{ type: 'add', record }`. Return `{ status, body, state }`. `list` returns status 200 and all records sorted by ascending key. `get` returns status 200 and the record, or status 404 with `{ error: 'Defect not found' }`. `add` returns status 201 and adds a valid record; duplicate keys return 409 with `{ error: 'Duplicate key' }`. Malformed state, commands, or records return 400 with `{ error: 'Invalid input' }` and an empty state when the supplied state is malformed.\n\nThe function must not mutate or retain mutable aliases to any input. The returned `body`, returned `state`, and their records must also be mutually independent snapshots. Non-add commands preserve the ledger's logical contents.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0009",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nconst PHASES = new Set(['queued', 'active', 'resolved']);\n\nfunction validRecord(record) {\n  return record && Number.isInteger(record.key) && record.key > 0 &&\n    typeof record.summary === 'string' && record.summary.length > 0 &&\n    typeof record.details === 'string' && record.details.length > 0 &&\n    PHASES.has(record.phase);\n}\n\nfunction copyRecord(record) {\n  return {\n    key: record.key,\n    summary: record.summary,\n    details: record.details,\n    phase: record.phase\n  };\n}\n\nfunction copyState(state) {\n  return state.map(copyRecord);\n}\n\nfunction handleDefect(state, command) {\n  if (!Array.isArray(state) || !state.every(validRecord)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: [] };\n  }\n\n  const next = copyState(state);\n  if (!command || typeof command !== 'object' || Array.isArray(command)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n  }\n\n  if (command.type === 'list') {\n    const ordered = next.slice().sort((a, b) => a.key - b.key);\n    return { status: 200, body: copyState(ordered), state: copyState(next) };\n  }\n\n  if (command.type === 'get' && Number.isInteger(command.key) && command.key > 0) {\n    const found = next.find((record) => record.key === command.key);\n    return found\n      ? { status: 200, body: found, state: next }\n      : { status: 404, body: { error: 'Defect not found' }, state: copyState(next) };\n  }\n\n  if (command.type === 'add' && validRecord(command.record)) {\n    if (next.some((record) => record.key === command.record.key)) {\n      return { status: 409, body: { error: 'Duplicate key' }, state: copyState(next) };\n    }\n    const added = copyRecord(command.record);\n    next.push(added);\n    return { status: 201, body: copyRecord(added), state: copyState(next) };\n  }\n\n  return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n}\n\nmodule.exports = { handleDefect };\n",
+          "label": "A successful get aliases its body record with the returned state instead of returning independent snapshots.",
+          "sha256": "3c474058192e7dbe937dd4f99961c4a97b6e839bf4aa5f38298b5edf59444caa"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nconst PHASES = new Set(['queued', 'active', 'resolved']);\n\nfunction validRecord(record) {\n  return record && Number.isInteger(record.key) && record.key > 0 &&\n    typeof record.summary === 'string' && record.summary.length > 0 &&\n    typeof record.details === 'string' && record.details.length > 0 &&\n    PHASES.has(record.phase);\n}\n\nfunction copyRecord(record) {\n  return {\n    key: record.key,\n    summary: record.summary,\n    details: record.details,\n    phase: record.phase\n  };\n}\n\nfunction copyState(state) {\n  return state.map(copyRecord);\n}\n\nfunction handleDefect(state, command) {\n  if (!Array.isArray(state) || !state.every(validRecord)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: [] };\n  }\n\n  const next = copyState(state);\n  if (!command || typeof command !== 'object' || Array.isArray(command)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n  }\n\n  if (command.type === 'list') {\n    const ordered = next.slice().sort((a, b) => a.key - b.key);\n    return { status: 200, body: copyState(ordered), state: copyState(next) };\n  }\n\n  if (command.type === 'get' && Number.isInteger(command.key) && command.key > 0) {\n    const found = next.find((record) => record.key === command.key);\n    return found\n      ? { status: 200, body: copyRecord(found), state: copyState(next) }\n      : { status: 404, body: { error: 'Defect not found' }, state: copyState(next) };\n  }\n\n  if (command.type === 'add' && validRecord(command.record)) {\n    if (next.some((record) => record.key === command.record.key)) {\n      return { status: 409, body: { error: 'Duplicate key' }, state: copyState(next) };\n    }\n    const added = copyRecord(command.record);\n    next.push(added);\n    return { status: 201, body: copyRecord(added), state: copyState(next) };\n  }\n\n  return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n}\n\nmodule.exports = { handleDefect };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "75686a31f31be7ac4228123a87524f61a92d87f9230df480e6f0fe35eedfb09d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\n\nassert.deepEqual(Object.keys(api).sort(), ['handleDefect']);\nconst { handleDefect } = api;\nassert.equal(typeof handleDefect, 'function');\n\nconst original = [\n  { key: 3, summary: 'third', details: 'd3', phase: 'resolved' },\n  { key: 1, summary: 'first', details: 'd1', phase: 'queued' }\n];\nconst snapshot = JSON.stringify(original);\nconst listed = handleDefect(original, { type: 'list' });\nassert.equal(listed.status, 200);\nassert.deepEqual(listed.body, [original[1], original[0]]);\nassert.deepEqual(listed.state, original);\nassert.equal(JSON.stringify(original), snapshot);\nassert.notStrictEqual(listed.body, listed.state);\nassert.notStrictEqual(listed.body[0], listed.state[1]);\nassert.notStrictEqual(listed.state[0], original[0]);\nlisted.body[0].summary = 'changed';\nassert.equal(listed.state[1].summary, 'first');\nassert.equal(original[1].summary, 'first');\n\nconst got = handleDefect(original, { type: 'get', key: 3 });\nassert.deepEqual(got, {\n  status: 200,\n  body: { key: 3, summary: 'third', details: 'd3', phase: 'resolved' },\n  state: original\n});\nassert.notStrictEqual(got.body, got.state[0]);\nassert.notStrictEqual(got.state[0], original[0]);\n\nassert.deepEqual(handleDefect(original, { type: 'get', key: 2 }), {\n  status: 404,\n  body: { error: 'Defect not found' },\n  state: original\n});\n\nconst addedRecord = { key: 2, summary: 'second', details: 'd2', phase: 'active' };\nconst added = handleDefect(original, { type: 'add', record: addedRecord });\nassert.equal(added.status, 201);\nassert.deepEqual(added.body, addedRecord);\nassert.deepEqual(added.state, [...original, addedRecord]);\nassert.notStrictEqual(added.body, added.state[2]);\nassert.notStrictEqual(added.state[2], addedRecord);\naddedRecord.summary = 'input changed';\nassert.equal(added.body.summary, 'second');\nassert.equal(added.state[2].summary, 'second');\n\nassert.deepEqual(handleDefect(original, {\n  type: 'add',\n  record: { key: 1, summary: 'duplicate', details: 'x', phase: 'queued' }\n}), {\n  status: 409,\n  body: { error: 'Duplicate key' },\n  state: original\n});\n\nfor (const record of [\n  { key: 0, summary: 's', details: 'd', phase: 'queued' },\n  { key: 1.2, summary: 's', details: 'd', phase: 'queued' },\n  { key: 2, summary: '', details: 'd', phase: 'queued' },\n  { key: 2, summary: 's', details: '', phase: 'queued' },\n  { key: 2, summary: 's', details: 'd', phase: 'other' }\n]) {\n  const response = handleDefect(original, { type: 'add', record });\n  assert.equal(response.status, 400);\n  assert.deepEqual(response.body, { error: 'Invalid input' });\n  assert.deepEqual(response.state, original);\n}\n\nfor (const command of [null, {}, { type: 'unknown' }, { type: 'get', key: 0 }, { type: 'add' }]) {\n  const response = handleDefect(original, command);\n  assert.equal(response.status, 400);\n  assert.deepEqual(response.body, { error: 'Invalid input' });\n  assert.deepEqual(response.state, original);\n}\n\nfor (const badState of [null, {}, [{ key: -1, summary: 's', details: 'd', phase: 'queued' }]]) {\n  assert.deepEqual(handleDefect(badState, { type: 'list' }), {\n    status: 400,\n    body: { error: 'Invalid input' },\n    state: []\n  });\n}\n\nassert.deepEqual(handleDefect([], { type: 'list' }), { status: 200, body: [], state: [] });\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "4c72ec430fc708205586075fa5b9417ed07a0620e95f9365be9cce81c9aa2708"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7cfed1be26a163c8466fb3e0fcf46d54314bf47d1b16ce3afd7c59fe69534bca",
+      "text": "Implement a CommonJS module exporting exactly `{ handleDefect }`. This is a pure command handler for a defect ledger. Its signature is `handleDefect(state, command)`, where `state` is an array of records shaped `{ key, summary, details, phase }`. A valid key is a positive integer; summary and details are non-empty strings; phase is one of `queued`, `active`, or `resolved`.\n\nCommands are `{ type: 'list' }`, `{ type: 'get', key }`, and `{ type: 'add', record }`. Return `{ status, body, state }`. `list` returns status 200 and all records sorted by ascending key. `get` returns status 200 and the record, or status 404 with `{ error: 'Defect not found' }`. `add` returns status 201 and adds a valid record; duplicate keys return 409 with `{ error: 'Duplicate key' }`. Malformed state, commands, or records return 400 with `{ error: 'Invalid input' }` and an empty state when the supplied state is malformed.\n\nThe function must not mutate or retain mutable aliases to any input. The returned `body`, returned `state`, and their records must also be mutually independent snapshots. Non-add commands preserve the ledger's logical contents.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7cfed1be26a163c8466fb3e0fcf46d54314bf47d1b16ce3afd7c59fe69534bca",
+      "text": "Implement a CommonJS module exporting exactly `{ handleDefect }`. This is a pure command handler for a defect ledger. Its signature is `handleDefect(state, command)`, where `state` is an array of records shaped `{ key, summary, details, phase }`. A valid key is a positive integer; summary and details are non-empty strings; phase is one of `queued`, `active`, or `resolved`.\n\nCommands are `{ type: 'list' }`, `{ type: 'get', key }`, and `{ type: 'add', record }`. Return `{ status, body, state }`. `list` returns status 200 and all records sorted by ascending key. `get` returns status 200 and the record, or status 404 with `{ error: 'Defect not found' }`. `add` returns status 201 and adds a valid record; duplicate keys return 409 with `{ error: 'Duplicate key' }`. Malformed state, commands, or records return 400 with `{ error: 'Invalid input' }` and an empty state when the supplied state is malformed.\n\nThe function must not mutate or retain mutable aliases to any input. The returned `body`, returned `state`, and their records must also be mutually independent snapshots. Non-add commands preserve the ledger's logical contents.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0009",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nconst PHASES = new Set(['queued', 'active', 'resolved']);\n\nfunction validRecord(record) {\n  return record && Number.isInteger(record.key) && record.key > 0 &&\n    typeof record.summary === 'string' && record.summary.length > 0 &&\n    typeof record.details === 'string' && record.details.length > 0 &&\n    PHASES.has(record.phase);\n}\n\nfunction copyRecord(record) {\n  return {\n    key: record.key,\n    summary: record.summary,\n    details: record.details,\n    phase: record.phase\n  };\n}\n\nfunction copyState(state) {\n  return state.map(copyRecord);\n}\n\nfunction handleDefect(state, command) {\n  if (!Array.isArray(state) || !state.every(validRecord)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: [] };\n  }\n\n  const next = copyState(state);\n  if (!command || typeof command !== 'object' || Array.isArray(command)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n  }\n\n  if (command.type === 'list') {\n    const ordered = next.slice().sort((a, b) => a.key - b.key);\n    return { status: 200, body: copyState(ordered), state: copyState(next) };\n  }\n\n  if (command.type === 'get' && Number.isInteger(command.key) && command.key > 0) {\n    const found = next.find((record) => record.key === command.key);\n    return found\n      ? { status: 200, body: found, state: next }\n      : { status: 404, body: { error: 'Defect not found' }, state: copyState(next) };\n  }\n\n  if (command.type === 'add' && validRecord(command.record)) {\n    if (next.some((record) => record.key === command.record.key)) {\n      return { status: 409, body: { error: 'Duplicate key' }, state: copyState(next) };\n    }\n    const added = copyRecord(command.record);\n    next.push(added);\n    return { status: 201, body: copyRecord(added), state: copyState(next) };\n  }\n\n  return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n}\n\nmodule.exports = { handleDefect };\n",
+          "label": "A successful get aliases its body record with the returned state instead of returning independent snapshots.",
+          "sha256": "3c474058192e7dbe937dd4f99961c4a97b6e839bf4aa5f38298b5edf59444caa"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nconst PHASES = new Set(['queued', 'active', 'resolved']);\n\nfunction validRecord(record) {\n  return record && Number.isInteger(record.key) && record.key > 0 &&\n    typeof record.summary === 'string' && record.summary.length > 0 &&\n    typeof record.details === 'string' && record.details.length > 0 &&\n    PHASES.has(record.phase);\n}\n\nfunction copyRecord(record) {\n  return {\n    key: record.key,\n    summary: record.summary,\n    details: record.details,\n    phase: record.phase\n  };\n}\n\nfunction copyState(state) {\n  return state.map(copyRecord);\n}\n\nfunction handleDefect(state, command) {\n  if (!Array.isArray(state) || !state.every(validRecord)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: [] };\n  }\n\n  const next = copyState(state);\n  if (!command || typeof command !== 'object' || Array.isArray(command)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n  }\n\n  if (command.type === 'list') {\n    const ordered = next.slice().sort((a, b) => a.key - b.key);\n    return { status: 200, body: copyState(ordered), state: copyState(next) };\n  }\n\n  if (command.type === 'get' && Number.isInteger(command.key) && command.key > 0) {\n    const found = next.find((record) => record.key === command.key);\n    return found\n      ? { status: 200, body: copyRecord(found), state: copyState(next) }\n      : { status: 404, body: { error: 'Defect not found' }, state: copyState(next) };\n  }\n\n  if (command.type === 'add' && validRecord(command.record)) {\n    if (next.some((record) => record.key === command.record.key)) {\n      return { status: 409, body: { error: 'Duplicate key' }, state: copyState(next) };\n    }\n    const added = copyRecord(command.record);\n    next.push(added);\n    return { status: 201, body: copyRecord(added), state: copyState(next) };\n  }\n\n  return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n}\n\nmodule.exports = { handleDefect };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "75686a31f31be7ac4228123a87524f61a92d87f9230df480e6f0fe35eedfb09d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   body: [\n+     <1 empty item>\n+   ],\n+   state: [\n+     <1 empty item>\n+   ],\n+   status: 200\n-   body: {\n-     error: 'Invalid input'\n-   },\n-   state: [],\n-   status: 400\n  }\n\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: { status: 200, body: [ <1 empty item> ], state: [ <1 empty item> ] },\n  expected: { status: 400, body: { error: 'Invalid input' }, state: [] },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "4b0ee3871f6e942a318b4cfe8cede8da84a6a7dcb0d9b352aa22691eaff8663c",
+    "duration_ms": 543,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

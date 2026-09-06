@@ -1,0 +1,11 @@
+import { ExhibitController } from './solution';
+const controller = new ExhibitController('k', 'old', 'art', 2);
+const calls: string[] = [];
+const a = () => { calls.push('a'); };
+controller.on('captionChanged', a);
+controller.on('captionChanged', () => { calls.push('b'); });
+const removeLast = controller.on('captionChanged', a);
+removeLast();
+removeLast();
+controller.caption = 'new';
+if (calls.join(',') !== 'a,b') throw new Error(`last unsubscribe removed wrong registration: ${calls}`);

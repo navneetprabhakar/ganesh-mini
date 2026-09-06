@@ -4,6 +4,19 @@ Last updated: 2026-09-06
 
 ## Current gate
 
+Current: **63 holds (60 additive plus historical three)**; see
+`cutoff-5885-review/ARRAY_STRATUM_REVIEW.md`. Twenty-five outside-sample targeted
+inspections now accompany the unchanged 300 initial inspections. All 92 tooling
+tests pass. GCS verified through the 53-hold checkpoint; later array review
+awaits next backup. No training seal, revised partition, or new VM.
+
+Latest targeted follow-up: **53 holds (50 additive plus historical three)**.
+Ten outside-sample pattern inspections, ten sandbox-confirmed failures on eight
+new held records, one passing first-match control; see
+`cutoff-5885-review/TARGETED_STRATUM_REVIEW.md`. Initial sample remains 300.
+No new training seal, partition or VM. Next backup must include this follow-up.
+Earlier checkpoint details follow.
+
 Latest follow-up: 45 holds (42 additive plus three historical). Initial sample
 inspection complete; six recurring groups reopen 11 strata containing 2,567
 records for review, NOT rejection. See `cutoff-5885-review/STRATUM_REVIEW.md`.

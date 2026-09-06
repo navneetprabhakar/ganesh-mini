@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0012",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "87af48b766e695e5938172d490a3fff70a679f58367d9682c07cc10fe932122e",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { applyCatalogCommand } = require('./solution');\nassert.deepEqual(applyCatalogCommand(new Array(1), {type: 'readAll'}), {status: 400, data: {error: 'Invalid input'}, catalog: []});\n",
+        "sha256": "66925ae5f93bd88b9cd88bf8e2581ae9421662f0821208fcfbf0dc97ddd150eb"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ae49b861e7cafe94b9c4e4901e5b48b2c58a91127e8138b6fc5f12300820cece",
+      "text": "Implement a CommonJS module exporting exactly `{ applyCatalogCommand }`. The pure function accepts `(catalog, command)`. A catalog is an array of `{ id, name, maker, released }`, where `id` is a positive integer, `name` and `maker` are non-empty strings, and `released` is an integer from 0 through 9999.\n\nSupported commands are `{ type: 'readAll' }`, `{ type: 'read', id }`, `{ type: 'create', item }`, `{ type: 'replace', id, item }`, and `{ type: 'remove', id }`. Return `{ status, data, catalog }`. Reads use status 200. Creation uses 201 and appends the item. Replacement uses 200, requires `item.id === command.id`, and preserves the replaced item's array position. Removal uses 200 and preserves the relative order of remaining items. Missing IDs return 404 with `{ error: 'Item not found' }`; duplicate creation returns 409 with `{ error: 'Duplicate id' }`; malformed input returns 400 with `{ error: 'Invalid input' }`.\n\nDo not mutate inputs. Every returned record must be a new object, and `data` must not share record objects with the returned catalog. If the supplied catalog itself is malformed, return an empty catalog. Otherwise errors return a copied, unchanged catalog. `readAll` preserves catalog order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ae49b861e7cafe94b9c4e4901e5b48b2c58a91127e8138b6fc5f12300820cece",
+      "text": "Implement a CommonJS module exporting exactly `{ applyCatalogCommand }`. The pure function accepts `(catalog, command)`. A catalog is an array of `{ id, name, maker, released }`, where `id` is a positive integer, `name` and `maker` are non-empty strings, and `released` is an integer from 0 through 9999.\n\nSupported commands are `{ type: 'readAll' }`, `{ type: 'read', id }`, `{ type: 'create', item }`, `{ type: 'replace', id, item }`, and `{ type: 'remove', id }`. Return `{ status, data, catalog }`. Reads use status 200. Creation uses 201 and appends the item. Replacement uses 200, requires `item.id === command.id`, and preserves the replaced item's array position. Removal uses 200 and preserves the relative order of remaining items. Missing IDs return 404 with `{ error: 'Item not found' }`; duplicate creation returns 409 with `{ error: 'Duplicate id' }`; malformed input returns 400 with `{ error: 'Invalid input' }`.\n\nDo not mutate inputs. Every returned record must be a new object, and `data` must not share record objects with the returned catalog. If the supplied catalog itself is malformed, return an empty catalog. Otherwise errors return a copied, unchanged catalog. `readAll` preserves catalog order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0012",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction valid(item) {\n  return item && Number.isInteger(item.id) && item.id > 0 &&\n    typeof item.name === 'string' && item.name.length > 0 &&\n    typeof item.maker === 'string' && item.maker.length > 0 &&\n    Number.isInteger(item.released) && item.released >= 0 && item.released <= 9999;\n}\n\nfunction validId(id) {\n  return Number.isInteger(id) && id > 0;\n}\n\nfunction copy(item) {\n  return { id: item.id, name: item.name, maker: item.maker, released: item.released };\n}\n\nfunction copies(catalog) {\n  return catalog.map(copy);\n}\n\nfunction applyCatalogCommand(catalog, command) {\n  if (!Array.isArray(catalog) || !catalog.every(valid)) {\n    return { status: 400, data: { error: 'Invalid input' }, catalog: [] };\n  }\n  const current = copies(catalog);\n  const invalid = () => ({ status: 400, data: { error: 'Invalid input' }, catalog: copies(current) });\n  const missing = () => ({ status: 404, data: { error: 'Item not found' }, catalog: copies(current) });\n  if (!command || typeof command !== 'object' || Array.isArray(command)) return invalid();\n\n  if (command.type === 'readAll') {\n    return { status: 200, data: copies(current), catalog: copies(current) };\n  }\n  if (command.type === 'read' && validId(command.id)) {\n    const item = current.find((entry) => entry.id === command.id);\n    return item ? { status: 200, data: copy(item), catalog: copies(current) } : missing();\n  }\n  if (command.type === 'create' && valid(command.item)) {\n    if (current.some((entry) => entry.id === command.item.id)) {\n      return { status: 409, data: { error: 'Duplicate id' }, catalog: copies(current) };\n    }\n    const item = copy(command.item);\n    current.push(item);\n    return { status: 201, data: copy(item), catalog: copies(current) };\n  }\n  if (command.type === 'replace' && validId(command.id) && valid(command.item) && command.item.id === command.id) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    current.splice(index, 1);\n    current.push(copy(command.item));\n    return { status: 200, data: copy(command.item), catalog: copies(current) };\n  }\n  if (command.type === 'remove' && validId(command.id)) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    const removed = current[index];\n    current.splice(index, 1);\n    return { status: 200, data: copy(removed), catalog: copies(current) };\n  }\n  return invalid();\n}\n\nmodule.exports = { applyCatalogCommand };\n",
+          "label": "Replacing an item moves it to the end of the catalog instead of preserving its position.",
+          "sha256": "9b0bf8037b1541f9bbdb35c1aa71f79c3c4ae95600c06e8c1622ec483dcad473"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction valid(item) {\n  return item && Number.isInteger(item.id) && item.id > 0 &&\n    typeof item.name === 'string' && item.name.length > 0 &&\n    typeof item.maker === 'string' && item.maker.length > 0 &&\n    Number.isInteger(item.released) && item.released >= 0 && item.released <= 9999;\n}\n\nfunction validId(id) {\n  return Number.isInteger(id) && id > 0;\n}\n\nfunction copy(item) {\n  return { id: item.id, name: item.name, maker: item.maker, released: item.released };\n}\n\nfunction copies(catalog) {\n  return catalog.map(copy);\n}\n\nfunction applyCatalogCommand(catalog, command) {\n  if (!Array.isArray(catalog) || !catalog.every(valid)) {\n    return { status: 400, data: { error: 'Invalid input' }, catalog: [] };\n  }\n  const current = copies(catalog);\n  const invalid = () => ({ status: 400, data: { error: 'Invalid input' }, catalog: copies(current) });\n  const missing = () => ({ status: 404, data: { error: 'Item not found' }, catalog: copies(current) });\n  if (!command || typeof command !== 'object' || Array.isArray(command)) return invalid();\n\n  if (command.type === 'readAll') {\n    return { status: 200, data: copies(current), catalog: copies(current) };\n  }\n  if (command.type === 'read' && validId(command.id)) {\n    const item = current.find((entry) => entry.id === command.id);\n    return item ? { status: 200, data: copy(item), catalog: copies(current) } : missing();\n  }\n  if (command.type === 'create' && valid(command.item)) {\n    if (current.some((entry) => entry.id === command.item.id)) {\n      return { status: 409, data: { error: 'Duplicate id' }, catalog: copies(current) };\n    }\n    const item = copy(command.item);\n    current.push(item);\n    return { status: 201, data: copy(item), catalog: copies(current) };\n  }\n  if (command.type === 'replace' && validId(command.id) && valid(command.item) && command.item.id === command.id) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    current[index] = copy(command.item);\n    return { status: 200, data: copy(current[index]), catalog: copies(current) };\n  }\n  if (command.type === 'remove' && validId(command.id)) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    const removed = current[index];\n    current.splice(index, 1);\n    return { status: 200, data: copy(removed), catalog: copies(current) };\n  }\n  return invalid();\n}\n\nmodule.exports = { applyCatalogCommand };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "55b7766a9e68c5951e8a7e474be6d78dcd85379c68d3f5604e1773e74090d345"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\n\nassert.deepEqual(Object.keys(api).sort(), ['applyCatalogCommand']);\nconst { applyCatalogCommand } = api;\nassert.equal(typeof applyCatalogCommand, 'function');\n\nconst catalog = [\n  { id: 2, name: 'Two', maker: 'B', released: 2000 },\n  { id: 1, name: 'One', maker: 'A', released: 0 }\n];\nconst before = JSON.stringify(catalog);\nconst all = applyCatalogCommand(catalog, { type: 'readAll' });\nassert.deepEqual(all, { status: 200, data: catalog, catalog });\nassert.equal(JSON.stringify(catalog), before);\nassert.notStrictEqual(all.catalog, catalog);\nassert.notStrictEqual(all.catalog[0], catalog[0]);\nassert.notStrictEqual(all.data, all.catalog);\nassert.notStrictEqual(all.data[0], all.catalog[0]);\nall.data[0].name = 'changed';\nassert.equal(all.catalog[0].name, 'Two');\nassert.equal(catalog[0].name, 'Two');\n\nconst read = applyCatalogCommand(catalog, { type: 'read', id: 1 });\nassert.deepEqual(read, { status: 200, data: catalog[1], catalog });\nassert.notStrictEqual(read.data, read.catalog[1]);\nassert.notStrictEqual(read.catalog[1], catalog[1]);\nassert.deepEqual(applyCatalogCommand(catalog, { type: 'read', id: 99 }), {\n  status: 404,\n  data: { error: 'Item not found' },\n  catalog\n});\n\nconst newItem = { id: 3, name: 'Three', maker: 'C', released: 9999 };\nconst created = applyCatalogCommand(catalog, { type: 'create', item: newItem });\nassert.deepEqual(created, { status: 201, data: newItem, catalog: [...catalog, newItem] });\nassert.notStrictEqual(created.data, created.catalog[2]);\nassert.notStrictEqual(created.catalog[2], newItem);\nnewItem.name = 'mutated input';\nassert.equal(created.data.name, 'Three');\nassert.equal(created.catalog[2].name, 'Three');\n\nassert.deepEqual(applyCatalogCommand(catalog, {\n  type: 'create', item: { id: 1, name: 'Duplicate', maker: 'D', released: 2020 }\n}), {\n  status: 409,\n  data: { error: 'Duplicate id' },\n  catalog\n});\n\nconst replacement = { id: 2, name: 'Replacement', maker: 'R', released: 2026 };\nconst replaced = applyCatalogCommand(catalog, { type: 'replace', id: 2, item: replacement });\nassert.deepEqual(replaced, {\n  status: 200,\n  data: replacement,\n  catalog: [replacement, catalog[1]]\n});\nassert.notStrictEqual(replaced.data, replaced.catalog[0]);\nassert.notStrictEqual(replaced.catalog[1], catalog[1]);\n\nconst removed = applyCatalogCommand(catalog, { type: 'remove', id: 2 });\nassert.deepEqual(removed, { status: 200, data: catalog[0], catalog: [catalog[1]] });\nassert.notStrictEqual(removed.data, catalog[0]);\nassert.notStrictEqual(removed.catalog[0], catalog[1]);\n\nfor (const command of [\n  null,\n  {},\n  { type: 'unknown' },\n  { type: 'read', id: 0 },\n  { type: 'create', item: { id: 4, name: '', maker: 'M', released: 1 } },\n  { type: 'create', item: { id: 4, name: 'N', maker: 'M', released: 10000 } },\n  { type: 'replace', id: 2, item: { id: 1, name: 'N', maker: 'M', released: 1 } },\n  { type: 'remove', id: 1.5 }\n]) {\n  const result = applyCatalogCommand(catalog, command);\n  assert.equal(result.status, 400);\n  assert.deepEqual(result.data, { error: 'Invalid input' });\n  assert.deepEqual(result.catalog, catalog);\n  assert.notStrictEqual(result.catalog, catalog);\n  assert.notStrictEqual(result.catalog[0], catalog[0]);\n}\n\nfor (const malformed of [null, {}, [{ id: 0, name: 'N', maker: 'M', released: 1 }]]) {\n  const result = applyCatalogCommand(malformed, { type: 'readAll' });\n  assert.deepEqual(result, { status: 400, data: { error: 'Invalid input' }, catalog: [] });\n}\n\nassert.deepEqual(applyCatalogCommand([], { type: 'readAll' }), {\n  status: 200, data: [], catalog: []\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "b3e8a171d0b6ce33be0a87072ead81c9b08e79c4a4fae88bd6bc93396b927522"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ae49b861e7cafe94b9c4e4901e5b48b2c58a91127e8138b6fc5f12300820cece",
+      "text": "Implement a CommonJS module exporting exactly `{ applyCatalogCommand }`. The pure function accepts `(catalog, command)`. A catalog is an array of `{ id, name, maker, released }`, where `id` is a positive integer, `name` and `maker` are non-empty strings, and `released` is an integer from 0 through 9999.\n\nSupported commands are `{ type: 'readAll' }`, `{ type: 'read', id }`, `{ type: 'create', item }`, `{ type: 'replace', id, item }`, and `{ type: 'remove', id }`. Return `{ status, data, catalog }`. Reads use status 200. Creation uses 201 and appends the item. Replacement uses 200, requires `item.id === command.id`, and preserves the replaced item's array position. Removal uses 200 and preserves the relative order of remaining items. Missing IDs return 404 with `{ error: 'Item not found' }`; duplicate creation returns 409 with `{ error: 'Duplicate id' }`; malformed input returns 400 with `{ error: 'Invalid input' }`.\n\nDo not mutate inputs. Every returned record must be a new object, and `data` must not share record objects with the returned catalog. If the supplied catalog itself is malformed, return an empty catalog. Otherwise errors return a copied, unchanged catalog. `readAll` preserves catalog order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ae49b861e7cafe94b9c4e4901e5b48b2c58a91127e8138b6fc5f12300820cece",
+      "text": "Implement a CommonJS module exporting exactly `{ applyCatalogCommand }`. The pure function accepts `(catalog, command)`. A catalog is an array of `{ id, name, maker, released }`, where `id` is a positive integer, `name` and `maker` are non-empty strings, and `released` is an integer from 0 through 9999.\n\nSupported commands are `{ type: 'readAll' }`, `{ type: 'read', id }`, `{ type: 'create', item }`, `{ type: 'replace', id, item }`, and `{ type: 'remove', id }`. Return `{ status, data, catalog }`. Reads use status 200. Creation uses 201 and appends the item. Replacement uses 200, requires `item.id === command.id`, and preserves the replaced item's array position. Removal uses 200 and preserves the relative order of remaining items. Missing IDs return 404 with `{ error: 'Item not found' }`; duplicate creation returns 409 with `{ error: 'Duplicate id' }`; malformed input returns 400 with `{ error: 'Invalid input' }`.\n\nDo not mutate inputs. Every returned record must be a new object, and `data` must not share record objects with the returned catalog. If the supplied catalog itself is malformed, return an empty catalog. Otherwise errors return a copied, unchanged catalog. `readAll` preserves catalog order.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0012",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction valid(item) {\n  return item && Number.isInteger(item.id) && item.id > 0 &&\n    typeof item.name === 'string' && item.name.length > 0 &&\n    typeof item.maker === 'string' && item.maker.length > 0 &&\n    Number.isInteger(item.released) && item.released >= 0 && item.released <= 9999;\n}\n\nfunction validId(id) {\n  return Number.isInteger(id) && id > 0;\n}\n\nfunction copy(item) {\n  return { id: item.id, name: item.name, maker: item.maker, released: item.released };\n}\n\nfunction copies(catalog) {\n  return catalog.map(copy);\n}\n\nfunction applyCatalogCommand(catalog, command) {\n  if (!Array.isArray(catalog) || !catalog.every(valid)) {\n    return { status: 400, data: { error: 'Invalid input' }, catalog: [] };\n  }\n  const current = copies(catalog);\n  const invalid = () => ({ status: 400, data: { error: 'Invalid input' }, catalog: copies(current) });\n  const missing = () => ({ status: 404, data: { error: 'Item not found' }, catalog: copies(current) });\n  if (!command || typeof command !== 'object' || Array.isArray(command)) return invalid();\n\n  if (command.type === 'readAll') {\n    return { status: 200, data: copies(current), catalog: copies(current) };\n  }\n  if (command.type === 'read' && validId(command.id)) {\n    const item = current.find((entry) => entry.id === command.id);\n    return item ? { status: 200, data: copy(item), catalog: copies(current) } : missing();\n  }\n  if (command.type === 'create' && valid(command.item)) {\n    if (current.some((entry) => entry.id === command.item.id)) {\n      return { status: 409, data: { error: 'Duplicate id' }, catalog: copies(current) };\n    }\n    const item = copy(command.item);\n    current.push(item);\n    return { status: 201, data: copy(item), catalog: copies(current) };\n  }\n  if (command.type === 'replace' && validId(command.id) && valid(command.item) && command.item.id === command.id) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    current.splice(index, 1);\n    current.push(copy(command.item));\n    return { status: 200, data: copy(command.item), catalog: copies(current) };\n  }\n  if (command.type === 'remove' && validId(command.id)) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    const removed = current[index];\n    current.splice(index, 1);\n    return { status: 200, data: copy(removed), catalog: copies(current) };\n  }\n  return invalid();\n}\n\nmodule.exports = { applyCatalogCommand };\n",
+          "label": "Replacing an item moves it to the end of the catalog instead of preserving its position.",
+          "sha256": "9b0bf8037b1541f9bbdb35c1aa71f79c3c4ae95600c06e8c1622ec483dcad473"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction valid(item) {\n  return item && Number.isInteger(item.id) && item.id > 0 &&\n    typeof item.name === 'string' && item.name.length > 0 &&\n    typeof item.maker === 'string' && item.maker.length > 0 &&\n    Number.isInteger(item.released) && item.released >= 0 && item.released <= 9999;\n}\n\nfunction validId(id) {\n  return Number.isInteger(id) && id > 0;\n}\n\nfunction copy(item) {\n  return { id: item.id, name: item.name, maker: item.maker, released: item.released };\n}\n\nfunction copies(catalog) {\n  return catalog.map(copy);\n}\n\nfunction applyCatalogCommand(catalog, command) {\n  if (!Array.isArray(catalog) || !catalog.every(valid)) {\n    return { status: 400, data: { error: 'Invalid input' }, catalog: [] };\n  }\n  const current = copies(catalog);\n  const invalid = () => ({ status: 400, data: { error: 'Invalid input' }, catalog: copies(current) });\n  const missing = () => ({ status: 404, data: { error: 'Item not found' }, catalog: copies(current) });\n  if (!command || typeof command !== 'object' || Array.isArray(command)) return invalid();\n\n  if (command.type === 'readAll') {\n    return { status: 200, data: copies(current), catalog: copies(current) };\n  }\n  if (command.type === 'read' && validId(command.id)) {\n    const item = current.find((entry) => entry.id === command.id);\n    return item ? { status: 200, data: copy(item), catalog: copies(current) } : missing();\n  }\n  if (command.type === 'create' && valid(command.item)) {\n    if (current.some((entry) => entry.id === command.item.id)) {\n      return { status: 409, data: { error: 'Duplicate id' }, catalog: copies(current) };\n    }\n    const item = copy(command.item);\n    current.push(item);\n    return { status: 201, data: copy(item), catalog: copies(current) };\n  }\n  if (command.type === 'replace' && validId(command.id) && valid(command.item) && command.item.id === command.id) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    current[index] = copy(command.item);\n    return { status: 200, data: copy(current[index]), catalog: copies(current) };\n  }\n  if (command.type === 'remove' && validId(command.id)) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    const removed = current[index];\n    current.splice(index, 1);\n    return { status: 200, data: copy(removed), catalog: copies(current) };\n  }\n  return invalid();\n}\n\nmodule.exports = { applyCatalogCommand };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "55b7766a9e68c5951e8a7e474be6d78dcd85379c68d3f5604e1773e74090d345"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   catalog: [\n+     <1 empty item>\n+   ],\n+   data: [\n+     <1 empty item>\n+   ],\n+   status: 200\n-   catalog: [],\n-   data: {\n-     error: 'Invalid input'\n-   },\n-   status: 400\n  }\n\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: {\n    status: 200,\n    data: [ <1 empty item> ],\n    catalog: [ <1 empty item> ]\n  },\n  expected: { status: 400, data: { error: 'Invalid input' }, catalog: [] },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "3732cfffad74b83d531796f587fd7d89ec026ab455a2d068633daacf52cadf89",
+    "duration_ms": 442,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

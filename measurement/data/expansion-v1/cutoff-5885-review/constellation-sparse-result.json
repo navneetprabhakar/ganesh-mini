@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0012",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3653e40959d9143fb296d4e9ce3fcb1a8f7e32382e0204587d3e32d77995fcc9",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ConstellationStore } from './solution';\nconst store = new ConstellationStore();\nlet rejected = false;\ntry { store.create({name: 'valid', stars: new Array<string>(1)}); }\ncatch (error) { if (error instanceof TypeError) rejected = true; else throw error; }\nif (!rejected || store.findAll().length !== 0) throw new Error('sparse stars accepted into repository');\n",
+        "sha256": "0ebbebefde531f635d815d08bd1df0436d5e36ff309d395bddad0f3b5a071cdb"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "78b2d5da7a8ae497db019d868da2d68c54acfab1f209d700416d85fdfc0359ca",
+      "text": "Implement an in-memory constellation repository as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface Constellation { id: number; name: string; stars: string[] }`\n- `interface CreateConstellation { name: string; stars: readonly string[] }`\n- `interface UpdateConstellation { name?: string; stars?: readonly string[] }`\n- `class ConstellationStore` with methods `findAll(): Constellation[]`, `findOne(id: number): Constellation`, `create(input: CreateConstellation): Constellation`, `update(id: number, input: UpdateConstellation): Constellation`, and `remove(id: number): Constellation`.\n\nRules:\n\n- IDs start at 1, increase monotonically, and are never reused.\n- Names and star names must be non-empty after trimming and are stored trimmed. A constellation must contain at least one star, and star names within it must be unique after trimming. Invalid content throws `TypeError`.\n- `findAll` preserves creation order among remaining records.\n- `findOne`, `update`, and `remove` require a positive integer ID and throw `RangeError` for invalid or absent IDs.\n- An update changes only supplied fields. An empty update is valid and returns an unchanged snapshot.\n- Every input array and every returned object or array must be detached from stored state. No caller mutation may alter the repository.\n- `remove` returns the removed snapshot. An empty store returns an empty array from `findAll`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "78b2d5da7a8ae497db019d868da2d68c54acfab1f209d700416d85fdfc0359ca",
+      "text": "Implement an in-memory constellation repository as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface Constellation { id: number; name: string; stars: string[] }`\n- `interface CreateConstellation { name: string; stars: readonly string[] }`\n- `interface UpdateConstellation { name?: string; stars?: readonly string[] }`\n- `class ConstellationStore` with methods `findAll(): Constellation[]`, `findOne(id: number): Constellation`, `create(input: CreateConstellation): Constellation`, `update(id: number, input: UpdateConstellation): Constellation`, and `remove(id: number): Constellation`.\n\nRules:\n\n- IDs start at 1, increase monotonically, and are never reused.\n- Names and star names must be non-empty after trimming and are stored trimmed. A constellation must contain at least one star, and star names within it must be unique after trimming. Invalid content throws `TypeError`.\n- `findAll` preserves creation order among remaining records.\n- `findOne`, `update`, and `remove` require a positive integer ID and throw `RangeError` for invalid or absent IDs.\n- An update changes only supplied fields. An empty update is valid and returns an unchanged snapshot.\n- Every input array and every returned object or array must be detached from stored state. No caller mutation may alter the repository.\n- `remove` returns the removed snapshot. An empty store returns an empty array from `findAll`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0012",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Constellation {\n  id: number;\n  name: string;\n  stars: string[];\n}\n\nexport interface CreateConstellation {\n  name: string;\n  stars: readonly string[];\n}\n\nexport interface UpdateConstellation {\n  name?: string;\n  stars?: readonly string[];\n}\n\nfunction normalizeName(value: string): string {\n  if (typeof value !== \"string\" || value.trim().length === 0) {\n    throw new TypeError(\"Name must be non-empty.\");\n  }\n  return value.trim();\n}\n\nfunction normalizeStars(values: readonly string[]): string[] {\n  if (!Array.isArray(values) || values.length === 0) {\n    throw new TypeError(\"At least one star is required.\");\n  }\n  const stars = values.map(normalizeName);\n  if (new Set(stars).size !== stars.length) {\n    throw new TypeError(\"Star names must be unique.\");\n  }\n  return stars;\n}\n\nfunction copy(value: Constellation): Constellation {\n  return { id: value.id, name: value.name, stars: value.stars };\n}\n\nexport class ConstellationStore {\n  private readonly values: Constellation[] = [];\n  private nextId = 1;\n\n  findAll(): Constellation[] {\n    return this.values.map(copy);\n  }\n\n  findOne(id: number): Constellation {\n    return copy(this.require(id));\n  }\n\n  create(input: CreateConstellation): Constellation {\n    const name = normalizeName(input.name);\n    const stars = normalizeStars(input.stars);\n    const value: Constellation = {\n      id: this.nextId,\n      name,\n      stars,\n    };\n    this.nextId += 1;\n    this.values.push(value);\n    return copy(value);\n  }\n\n  update(id: number, input: UpdateConstellation): Constellation {\n    const value = this.require(id);\n    const name = input.name === undefined ? undefined : normalizeName(input.name);\n    const stars = input.stars === undefined ? undefined : normalizeStars(input.stars);\n    if (name !== undefined) value.name = name;\n    if (stars !== undefined) value.stars = stars;\n    return copy(value);\n  }\n\n  remove(id: number): Constellation {\n    const value = this.require(id);\n    this.values.splice(this.values.indexOf(value), 1);\n    return copy(value);\n  }\n\n  private require(id: number): Constellation {\n    if (!Number.isInteger(id) || id < 1) {\n      throw new RangeError(\"Invalid constellation ID.\");\n    }\n    const value = this.values.find((candidate) => candidate.id === id);\n    if (value === undefined) {\n      throw new RangeError(\"Constellation not found.\");\n    }\n    return value;\n  }\n}\n",
+          "label": "Returned constellation snapshots share their `stars` array with stored state.",
+          "sha256": "70296b84c9c1015fda5cff7639113418d4b1f41d8ebb338e13a734e85dadc748"
+        }
+      ],
+      "reference": {
+        "code": "export interface Constellation {\n  id: number;\n  name: string;\n  stars: string[];\n}\n\nexport interface CreateConstellation {\n  name: string;\n  stars: readonly string[];\n}\n\nexport interface UpdateConstellation {\n  name?: string;\n  stars?: readonly string[];\n}\n\nfunction normalizeName(value: string): string {\n  if (typeof value !== \"string\" || value.trim().length === 0) {\n    throw new TypeError(\"Name must be non-empty.\");\n  }\n  return value.trim();\n}\n\nfunction normalizeStars(values: readonly string[]): string[] {\n  if (!Array.isArray(values) || values.length === 0) {\n    throw new TypeError(\"At least one star is required.\");\n  }\n  const stars = values.map(normalizeName);\n  if (new Set(stars).size !== stars.length) {\n    throw new TypeError(\"Star names must be unique.\");\n  }\n  return stars;\n}\n\nfunction copy(value: Constellation): Constellation {\n  return { id: value.id, name: value.name, stars: [...value.stars] };\n}\n\nexport class ConstellationStore {\n  private readonly values: Constellation[] = [];\n  private nextId = 1;\n\n  findAll(): Constellation[] {\n    return this.values.map(copy);\n  }\n\n  findOne(id: number): Constellation {\n    return copy(this.require(id));\n  }\n\n  create(input: CreateConstellation): Constellation {\n    const name = normalizeName(input.name);\n    const stars = normalizeStars(input.stars);\n    const value: Constellation = {\n      id: this.nextId,\n      name,\n      stars,\n    };\n    this.nextId += 1;\n    this.values.push(value);\n    return copy(value);\n  }\n\n  update(id: number, input: UpdateConstellation): Constellation {\n    const value = this.require(id);\n    const name = input.name === undefined ? undefined : normalizeName(input.name);\n    const stars = input.stars === undefined ? undefined : normalizeStars(input.stars);\n    if (name !== undefined) value.name = name;\n    if (stars !== undefined) value.stars = stars;\n    return copy(value);\n  }\n\n  remove(id: number): Constellation {\n    const value = this.require(id);\n    this.values.splice(this.values.indexOf(value), 1);\n    return copy(value);\n  }\n\n  private require(id: number): Constellation {\n    if (!Number.isInteger(id) || id < 1) {\n      throw new RangeError(\"Invalid constellation ID.\");\n    }\n    const value = this.values.find((candidate) => candidate.id === id);\n    if (value === undefined) {\n      throw new RangeError(\"Constellation not found.\");\n    }\n    return value;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9e2aa0d52ae432bec98c034c9aace88f832e0e56e2c95605a322e89e28c42d00"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ConstellationStore, CreateConstellation } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (actual !== expected) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${message}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);\n}\nfunction throws(fn: () => unknown, kind: new (...args: any[]) => Error, message: string): void {\n  let caught: unknown;\n  try { fn(); } catch (error) { caught = error; }\n  assert(caught instanceof kind, message);\n}\n\nconst store = new ConstellationStore();\ndeepEqual(store.findAll(), [], \"empty repository\");\nfor (const id of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {\n  throws(() => store.findOne(id), RangeError, `invalid ID ${String(id)}`);\n  throws(() => store.update(id, {}), RangeError, `invalid update ID ${String(id)}`);\n  throws(() => store.remove(id), RangeError, `invalid remove ID ${String(id)}`);\n}\nthrows(() => store.findOne(1), RangeError, \"absent find\");\n\nconst stars = [\"  Betelgeuse \", \"Rigel  \"];\nconst input: CreateConstellation = { name: \"  Orion  \", stars };\nconst created = store.create(input);\ndeepEqual(created, { id: 1, name: \"Orion\", stars: [\"Betelgeuse\", \"Rigel\"] }, \"creation trims content\");\nstars[0] = \"input mutation\";\ncreated.name = \"result mutation\";\ncreated.stars[1] = \"result star mutation\";\ndeepEqual(store.findOne(1), { id: 1, name: \"Orion\", stars: [\"Betelgeuse\", \"Rigel\"] }, \"create input and output detached\");\n\nconst second = store.create({ name: \"Lyra\", stars: [\"Vega\"] });\nequal(second.id, 2, \"sequential ID\");\nconst all = store.findAll();\ndeepEqual(all.map((item) => item.id), [1, 2], \"creation order\");\nall[0].stars.push(\"Aliased\");\nall.splice(1, 1);\ndeepEqual(store.findAll().map((item) => item.stars), [[\"Betelgeuse\", \"Rigel\"], [\"Vega\"]], \"findAll is deeply detached\");\n\nconst emptyUpdate = store.update(1, {});\ndeepEqual(emptyUpdate, { id: 1, name: \"Orion\", stars: [\"Betelgeuse\", \"Rigel\"] }, \"empty update\");\nconst updateStars = [\"  Bellatrix\", \"Saiph  \"];\nconst updated = store.update(1, { name: \"  Orion Major \", stars: updateStars });\ndeepEqual(updated, { id: 1, name: \"Orion Major\", stars: [\"Bellatrix\", \"Saiph\"] }, \"supplied fields updated and trimmed\");\nupdateStars[0] = \"mutated input\";\nupdated.stars[0] = \"mutated result\";\ndeepEqual(store.findOne(1), { id: 1, name: \"Orion Major\", stars: [\"Bellatrix\", \"Saiph\"] }, \"update arrays and result detached\");\ndeepEqual(store.update(1, { name: \" Orion Final \" }).stars, [\"Bellatrix\", \"Saiph\"], \"update changes only supplied fields\");\n\nconst beforeInvalidUpdate = JSON.stringify(store.findOne(1));\nthrows(() => store.update(1, { stars: [\"same\", \" same \"] }), TypeError, \"trimmed duplicate stars\");\nequal(JSON.stringify(store.findOne(1)), beforeInvalidUpdate, \"invalid update changes nothing\");\n\nconst invalidCreates: CreateConstellation[] = [\n  { name: \"\", stars: [\"A\"] },\n  { name: \"   \", stars: [\"A\"] },\n  { name: \"Valid\", stars: [] },\n  { name: \"Valid\", stars: [\"\"] },\n  { name: \"Valid\", stars: [\"   \"] },\n  { name: \"Valid\", stars: [\"A\", \" A \"] },\n];\nfor (const bad of invalidCreates) throws(() => store.create(bad), TypeError, `invalid create ${JSON.stringify(bad)}`);\nthrows(() => store.update(1, { name: \"  \" }), TypeError, \"invalid updated name\");\nthrows(() => store.update(1, { stars: [] }), TypeError, \"empty updated stars\");\n\nconst removed = store.remove(1);\ndeepEqual(removed, { id: 1, name: \"Orion Final\", stars: [\"Bellatrix\", \"Saiph\"] }, \"removed snapshot\");\nremoved.stars[0] = \"changed after removal\";\ndeepEqual(store.findAll().map((item) => item.id), [2], \"remaining creation order\");\nthrows(() => store.findOne(1), RangeError, \"removed ID absent\");\nthrows(() => store.remove(1), RangeError, \"cannot remove twice\");\nconst third = store.create({ name: \"Cygnus\", stars: [\"Deneb\"] });\nequal(third.id, 3, \"removed and failed IDs are never reused or consumed\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "fa1763ca653101206a18c7f5e71dc6bf54d9c9daabef6aebbe82ce047a6d6594"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "78b2d5da7a8ae497db019d868da2d68c54acfab1f209d700416d85fdfc0359ca",
+      "text": "Implement an in-memory constellation repository as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface Constellation { id: number; name: string; stars: string[] }`\n- `interface CreateConstellation { name: string; stars: readonly string[] }`\n- `interface UpdateConstellation { name?: string; stars?: readonly string[] }`\n- `class ConstellationStore` with methods `findAll(): Constellation[]`, `findOne(id: number): Constellation`, `create(input: CreateConstellation): Constellation`, `update(id: number, input: UpdateConstellation): Constellation`, and `remove(id: number): Constellation`.\n\nRules:\n\n- IDs start at 1, increase monotonically, and are never reused.\n- Names and star names must be non-empty after trimming and are stored trimmed. A constellation must contain at least one star, and star names within it must be unique after trimming. Invalid content throws `TypeError`.\n- `findAll` preserves creation order among remaining records.\n- `findOne`, `update`, and `remove` require a positive integer ID and throw `RangeError` for invalid or absent IDs.\n- An update changes only supplied fields. An empty update is valid and returns an unchanged snapshot.\n- Every input array and every returned object or array must be detached from stored state. No caller mutation may alter the repository.\n- `remove` returns the removed snapshot. An empty store returns an empty array from `findAll`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "78b2d5da7a8ae497db019d868da2d68c54acfab1f209d700416d85fdfc0359ca",
+      "text": "Implement an in-memory constellation repository as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface Constellation { id: number; name: string; stars: string[] }`\n- `interface CreateConstellation { name: string; stars: readonly string[] }`\n- `interface UpdateConstellation { name?: string; stars?: readonly string[] }`\n- `class ConstellationStore` with methods `findAll(): Constellation[]`, `findOne(id: number): Constellation`, `create(input: CreateConstellation): Constellation`, `update(id: number, input: UpdateConstellation): Constellation`, and `remove(id: number): Constellation`.\n\nRules:\n\n- IDs start at 1, increase monotonically, and are never reused.\n- Names and star names must be non-empty after trimming and are stored trimmed. A constellation must contain at least one star, and star names within it must be unique after trimming. Invalid content throws `TypeError`.\n- `findAll` preserves creation order among remaining records.\n- `findOne`, `update`, and `remove` require a positive integer ID and throw `RangeError` for invalid or absent IDs.\n- An update changes only supplied fields. An empty update is valid and returns an unchanged snapshot.\n- Every input array and every returned object or array must be detached from stored state. No caller mutation may alter the repository.\n- `remove` returns the removed snapshot. An empty store returns an empty array from `findAll`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0012",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Constellation {\n  id: number;\n  name: string;\n  stars: string[];\n}\n\nexport interface CreateConstellation {\n  name: string;\n  stars: readonly string[];\n}\n\nexport interface UpdateConstellation {\n  name?: string;\n  stars?: readonly string[];\n}\n\nfunction normalizeName(value: string): string {\n  if (typeof value !== \"string\" || value.trim().length === 0) {\n    throw new TypeError(\"Name must be non-empty.\");\n  }\n  return value.trim();\n}\n\nfunction normalizeStars(values: readonly string[]): string[] {\n  if (!Array.isArray(values) || values.length === 0) {\n    throw new TypeError(\"At least one star is required.\");\n  }\n  const stars = values.map(normalizeName);\n  if (new Set(stars).size !== stars.length) {\n    throw new TypeError(\"Star names must be unique.\");\n  }\n  return stars;\n}\n\nfunction copy(value: Constellation): Constellation {\n  return { id: value.id, name: value.name, stars: value.stars };\n}\n\nexport class ConstellationStore {\n  private readonly values: Constellation[] = [];\n  private nextId = 1;\n\n  findAll(): Constellation[] {\n    return this.values.map(copy);\n  }\n\n  findOne(id: number): Constellation {\n    return copy(this.require(id));\n  }\n\n  create(input: CreateConstellation): Constellation {\n    const name = normalizeName(input.name);\n    const stars = normalizeStars(input.stars);\n    const value: Constellation = {\n      id: this.nextId,\n      name,\n      stars,\n    };\n    this.nextId += 1;\n    this.values.push(value);\n    return copy(value);\n  }\n\n  update(id: number, input: UpdateConstellation): Constellation {\n    const value = this.require(id);\n    const name = input.name === undefined ? undefined : normalizeName(input.name);\n    const stars = input.stars === undefined ? undefined : normalizeStars(input.stars);\n    if (name !== undefined) value.name = name;\n    if (stars !== undefined) value.stars = stars;\n    return copy(value);\n  }\n\n  remove(id: number): Constellation {\n    const value = this.require(id);\n    this.values.splice(this.values.indexOf(value), 1);\n    return copy(value);\n  }\n\n  private require(id: number): Constellation {\n    if (!Number.isInteger(id) || id < 1) {\n      throw new RangeError(\"Invalid constellation ID.\");\n    }\n    const value = this.values.find((candidate) => candidate.id === id);\n    if (value === undefined) {\n      throw new RangeError(\"Constellation not found.\");\n    }\n    return value;\n  }\n}\n",
+          "label": "Returned constellation snapshots share their `stars` array with stored state.",
+          "sha256": "70296b84c9c1015fda5cff7639113418d4b1f41d8ebb338e13a734e85dadc748"
+        }
+      ],
+      "reference": {
+        "code": "export interface Constellation {\n  id: number;\n  name: string;\n  stars: string[];\n}\n\nexport interface CreateConstellation {\n  name: string;\n  stars: readonly string[];\n}\n\nexport interface UpdateConstellation {\n  name?: string;\n  stars?: readonly string[];\n}\n\nfunction normalizeName(value: string): string {\n  if (typeof value !== \"string\" || value.trim().length === 0) {\n    throw new TypeError(\"Name must be non-empty.\");\n  }\n  return value.trim();\n}\n\nfunction normalizeStars(values: readonly string[]): string[] {\n  if (!Array.isArray(values) || values.length === 0) {\n    throw new TypeError(\"At least one star is required.\");\n  }\n  const stars = values.map(normalizeName);\n  if (new Set(stars).size !== stars.length) {\n    throw new TypeError(\"Star names must be unique.\");\n  }\n  return stars;\n}\n\nfunction copy(value: Constellation): Constellation {\n  return { id: value.id, name: value.name, stars: [...value.stars] };\n}\n\nexport class ConstellationStore {\n  private readonly values: Constellation[] = [];\n  private nextId = 1;\n\n  findAll(): Constellation[] {\n    return this.values.map(copy);\n  }\n\n  findOne(id: number): Constellation {\n    return copy(this.require(id));\n  }\n\n  create(input: CreateConstellation): Constellation {\n    const name = normalizeName(input.name);\n    const stars = normalizeStars(input.stars);\n    const value: Constellation = {\n      id: this.nextId,\n      name,\n      stars,\n    };\n    this.nextId += 1;\n    this.values.push(value);\n    return copy(value);\n  }\n\n  update(id: number, input: UpdateConstellation): Constellation {\n    const value = this.require(id);\n    const name = input.name === undefined ? undefined : normalizeName(input.name);\n    const stars = input.stars === undefined ? undefined : normalizeStars(input.stars);\n    if (name !== undefined) value.name = name;\n    if (stars !== undefined) value.stars = stars;\n    return copy(value);\n  }\n\n  remove(id: number): Constellation {\n    const value = this.require(id);\n    this.values.splice(this.values.indexOf(value), 1);\n    return copy(value);\n  }\n\n  private require(id: number): Constellation {\n    if (!Number.isInteger(id) || id < 1) {\n      throw new RangeError(\"Invalid constellation ID.\");\n    }\n    const value = this.values.find((candidate) => candidate.id === id);\n    if (value === undefined) {\n      throw new RangeError(\"Constellation not found.\");\n    }\n    return value;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9e2aa0d52ae432bec98c034c9aace88f832e0e56e2c95605a322e89e28c42d00"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:16\n    throw new Error('sparse stars accepted into repository');\n    ^\n\nError: sparse stars accepted into repository\n    at Object.<anonymous> (/work/solution.test.js:16:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "e33bf564b93db923bb131452415f698984309db636c55c6a485297525d2bc319",
+    "duration_ms": 2932,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

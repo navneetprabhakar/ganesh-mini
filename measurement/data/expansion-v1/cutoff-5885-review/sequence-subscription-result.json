@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0383",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "dfb64051fcc648570fd4ec2b65caea1abd3e579d9f39746a8534461010f0ca1a",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { SequenceChooser } from './solution';\nconst chooser = new SequenceChooser({kind: 'choice', options: ['x']});\nconst calls: string[] = [];\nlet removeChild = () => {};\nlet installed = false;\nconst removeParent = chooser.subscribe(() => {\n  if (!installed) {\n    installed = true;\n    removeChild = chooser.subscribe(() => { calls.push('child-a'); });\n    chooser.subscribe(() => { calls.push('child-b'); });\n  }\n});\nchooser.next();\nremoveParent();\nremoveChild();\nchooser.next();\nif (calls.join(',') !== 'child-b') throw new Error(`sibling subscription removed: ${calls}`);\n",
+        "sha256": "1381ba8632cdbbf3f66abf1d749a6915a9d5cfaa9bd220e42032da8b7b1dd0ab"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "69585dee55f4351b48fe55ade3bfe6861d0f318240eb1c0f255942581445b26f",
+      "text": "Implement a complete TypeScript source file exporting `NumericSequence`, `ChoiceSequence`, `SequenceSpec`, and `SequenceChooser`. A numeric specification has `{ kind: 'numeric', minimum, maximum, step }`; a choice specification has `{ kind: 'choice', options }`. The constructor copies and validates the specification. Numeric fields must be finite; step must be positive; minimum must not exceed maximum. The produced numeric cycle contains `minimum + n * step` while that value is at most `maximum`; the maximum need not be included when it is not aligned. Choice options must be nonempty strings and the array must not be empty. `next()` returns values cyclically from the first entry. `reset()` restarts at the first entry. `subscribe(listener)` returns an idempotent unsubscribe function; every `next()` notifies a snapshot of current listeners in insertion order. Mutating constructor inputs or returned values must not change later behavior.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "69585dee55f4351b48fe55ade3bfe6861d0f318240eb1c0f255942581445b26f",
+      "text": "Implement a complete TypeScript source file exporting `NumericSequence`, `ChoiceSequence`, `SequenceSpec`, and `SequenceChooser`. A numeric specification has `{ kind: 'numeric', minimum, maximum, step }`; a choice specification has `{ kind: 'choice', options }`. The constructor copies and validates the specification. Numeric fields must be finite; step must be positive; minimum must not exceed maximum. The produced numeric cycle contains `minimum + n * step` while that value is at most `maximum`; the maximum need not be included when it is not aligned. Choice options must be nonempty strings and the array must not be empty. `next()` returns values cyclically from the first entry. `reset()` restarts at the first entry. `subscribe(listener)` returns an idempotent unsubscribe function; every `next()` notifies a snapshot of current listeners in insertion order. Mutating constructor inputs or returned values must not change later behavior.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0383",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface NumericSequence { kind: 'numeric'; minimum: number; maximum: number; step: number; }\nexport interface ChoiceSequence { kind: 'choice'; options: readonly string[]; }\nexport type SequenceSpec = NumericSequence | ChoiceSequence;\n\ntype Listener = (value: number | string) => void;\ntype Subscription = { listener: Listener; owner?: Listener };\n\nexport class SequenceChooser {\n  private readonly values: Array<number | string>;\n  private index = 0;\n  private readonly subscriptions: Subscription[] = [];\n  private notifying?: Listener;\n\n  constructor(spec: SequenceSpec) {\n    if (spec.kind === 'numeric') {\n      const { minimum, maximum, step } = spec;\n      if (![minimum, maximum, step].every(Number.isFinite) || step <= 0 || minimum > maximum) {\n        throw new Error('Invalid numeric sequence');\n      }\n      this.values = [];\n      for (let n = 0; ; n++) {\n        const value = minimum + n * step;\n        if (value >= maximum) break;\n        this.values.push(value);\n        const next = minimum + (n + 1) * step;\n        if (next <= value) break;\n      }\n    } else {\n      if (spec.options.length === 0 || spec.options.some(option => typeof option !== 'string' || !option.trim())) {\n        throw new Error('Invalid choices');\n      }\n      this.values = [...spec.options];\n    }\n  }\n\n  next(): number | string {\n    const value = this.values[this.index];\n    this.index = (this.index + 1) % this.values.length;\n    const snapshot = [...this.subscriptions];\n    for (const subscription of snapshot) {\n      const previous = this.notifying;\n      this.notifying = subscription.listener;\n      try {\n        subscription.listener(value);\n      } finally {\n        this.notifying = previous;\n      }\n    }\n    return value;\n  }\n\n  reset(): void { this.index = 0; }\n\n  subscribe(listener: Listener): () => void {\n    const subscription: Subscription = { listener, owner: this.notifying };\n    this.subscriptions.push(subscription);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const matches = (candidate: Subscription): boolean =>\n        candidate === subscription ||\n        (subscription.owner !== undefined && candidate.owner === subscription.owner);\n      for (let index = this.subscriptions.length - 1; index >= 0; index--) {\n        if (matches(this.subscriptions[index])) this.subscriptions.splice(index, 1);\n      }\n    };\n  }\n}\n",
+          "label": "An aligned maximum endpoint is excluded, and a single-value numeric range becomes empty.",
+          "sha256": "7b023d796f174a3bcb0e24a3e80a199e6f9db82dd611c1b810fbcb73362059ed"
+        }
+      ],
+      "reference": {
+        "code": "export interface NumericSequence { kind: 'numeric'; minimum: number; maximum: number; step: number; }\nexport interface ChoiceSequence { kind: 'choice'; options: readonly string[]; }\nexport type SequenceSpec = NumericSequence | ChoiceSequence;\n\ntype Listener = (value: number | string) => void;\ntype Subscription = { listener: Listener; owner?: Listener };\n\nexport class SequenceChooser {\n  private readonly values: Array<number | string>;\n  private index = 0;\n  private readonly subscriptions: Subscription[] = [];\n  private notifying?: Listener;\n\n  constructor(spec: SequenceSpec) {\n    if (spec.kind === 'numeric') {\n      const { minimum, maximum, step } = spec;\n      if (![minimum, maximum, step].every(Number.isFinite) || step <= 0 || minimum > maximum) {\n        throw new Error('Invalid numeric sequence');\n      }\n      this.values = [];\n      for (let n = 0; ; n++) {\n        const value = minimum + n * step;\n        if (value > maximum) break;\n        this.values.push(value);\n        const next = minimum + (n + 1) * step;\n        if (next <= value) break;\n      }\n    } else {\n      if (spec.options.length === 0 || spec.options.some(option => typeof option !== 'string' || !option.trim())) {\n        throw new Error('Invalid choices');\n      }\n      this.values = [...spec.options];\n    }\n  }\n\n  next(): number | string {\n    const value = this.values[this.index];\n    this.index = (this.index + 1) % this.values.length;\n    const snapshot = [...this.subscriptions];\n    for (const subscription of snapshot) {\n      const previous = this.notifying;\n      this.notifying = subscription.listener;\n      try {\n        subscription.listener(value);\n      } finally {\n        this.notifying = previous;\n      }\n    }\n    return value;\n  }\n\n  reset(): void { this.index = 0; }\n\n  subscribe(listener: Listener): () => void {\n    const subscription: Subscription = { listener, owner: this.notifying };\n    this.subscriptions.push(subscription);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const matches = (candidate: Subscription): boolean =>\n        candidate === subscription ||\n        (subscription.owner !== undefined && candidate.owner === subscription.owner);\n      for (let index = this.subscriptions.length - 1; index >= 0; index--) {\n        if (matches(this.subscriptions[index])) this.subscriptions.splice(index, 1);\n      }\n    };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d9521638d8362fed6a77f2087759ba78cb3bee26751b55e44ef4d40bf9177191"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { SequenceChooser, SequenceSpec } from './solution';\n\nfunction equal(actual: unknown, expected: unknown, message: string): void { if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`); }\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void { if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${message}: ${JSON.stringify(actual)}`); }\nfunction throws(action: () => unknown, message: string): void { let didThrow = false; try { action(); } catch { didThrow = true; } if (!didThrow) throw new Error(message); }\n\nconst numericInput: SequenceSpec = { kind: 'numeric', minimum: -1, maximum: 4, step: 2 };\nconst numeric = new SequenceChooser(numericInput);\n(numericInput as { kind: 'numeric'; minimum: number; maximum: number; step: number }).minimum = 100;\ndeepEqual([numeric.next(), numeric.next(), numeric.next(), numeric.next()], [-1, 1, 3, -1], 'numeric sequence is aligned, cyclic, and copied');\nnumeric.reset();\nequal(numeric.next(), -1, 'reset restarts numeric sequence');\n\nconst singleton = new SequenceChooser({ kind: 'numeric', minimum: 5, maximum: 5, step: 3 });\ndeepEqual([singleton.next(), singleton.next()], [5, 5], 'equal bounds produce one cyclic value');\n\nthrows(() => new SequenceChooser({ kind: 'numeric', minimum: NaN, maximum: 1, step: 1 }), 'NaN minimum rejected');\nthrows(() => new SequenceChooser({ kind: 'numeric', minimum: 0, maximum: Infinity, step: 1 }), 'infinite maximum rejected');\nthrows(() => new SequenceChooser({ kind: 'numeric', minimum: 0, maximum: 1, step: 0 }), 'zero step rejected');\nthrows(() => new SequenceChooser({ kind: 'numeric', minimum: 0, maximum: 1, step: -1 }), 'negative step rejected');\nthrows(() => new SequenceChooser({ kind: 'numeric', minimum: 2, maximum: 1, step: 1 }), 'reversed range rejected');\n\nconst options = ['red', 'blue'];\nconst choice = new SequenceChooser({ kind: 'choice', options });\noptions[0] = 'mutated';\noptions.push('green');\ndeepEqual([choice.next(), choice.next(), choice.next()], ['red', 'blue', 'red'], 'choice input copied and sequence cycles');\nchoice.reset();\nequal(choice.next(), 'red', 'choice reset restarts');\nthrows(() => new SequenceChooser({ kind: 'choice', options: [] }), 'empty options rejected');\nthrows(() => new SequenceChooser({ kind: 'choice', options: ['ok', ''] }), 'empty option rejected');\nthrows(() => new SequenceChooser({ kind: 'choice', options: ['ok', 2 as unknown as string] }), 'non-string option rejected');\n\nconst notified = new SequenceChooser({ kind: 'choice', options: ['a', 'b'] });\nconst events: string[] = [];\nlet removeSecond: () => void = () => {};\nlet removeLate: () => void = () => {};\nconst removeFirst = notified.subscribe(value => {\n  events.push(`first:${String(value)}`);\n  removeSecond();\n  removeLate = notified.subscribe(next => events.push(`late:${String(next)}`));\n});\nremoveSecond = notified.subscribe(value => events.push(`second:${String(value)}`));\nequal(notified.next(), 'a', 'next returns first value');\ndeepEqual(events, ['first:a', 'second:a'], 'next notifies listener snapshot in order');\nequal(notified.next(), 'b', 'next advances');\ndeepEqual(events, ['first:a', 'second:a', 'first:b', 'late:b'], 'listener changes affect later next calls');\nremoveFirst();\nremoveFirst();\nremoveLate();\nremoveLate();\nequal(notified.next(), 'a', 'unsubscribing does not affect cycling');\ndeepEqual(events, ['first:a', 'second:a', 'first:b', 'late:b'], 'unsubscribe idempotent');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "ba3098b0ab68d892405e7180306bf2f96021324bfd2fa5e7479a1280527effe5"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "69585dee55f4351b48fe55ade3bfe6861d0f318240eb1c0f255942581445b26f",
+      "text": "Implement a complete TypeScript source file exporting `NumericSequence`, `ChoiceSequence`, `SequenceSpec`, and `SequenceChooser`. A numeric specification has `{ kind: 'numeric', minimum, maximum, step }`; a choice specification has `{ kind: 'choice', options }`. The constructor copies and validates the specification. Numeric fields must be finite; step must be positive; minimum must not exceed maximum. The produced numeric cycle contains `minimum + n * step` while that value is at most `maximum`; the maximum need not be included when it is not aligned. Choice options must be nonempty strings and the array must not be empty. `next()` returns values cyclically from the first entry. `reset()` restarts at the first entry. `subscribe(listener)` returns an idempotent unsubscribe function; every `next()` notifies a snapshot of current listeners in insertion order. Mutating constructor inputs or returned values must not change later behavior.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "69585dee55f4351b48fe55ade3bfe6861d0f318240eb1c0f255942581445b26f",
+      "text": "Implement a complete TypeScript source file exporting `NumericSequence`, `ChoiceSequence`, `SequenceSpec`, and `SequenceChooser`. A numeric specification has `{ kind: 'numeric', minimum, maximum, step }`; a choice specification has `{ kind: 'choice', options }`. The constructor copies and validates the specification. Numeric fields must be finite; step must be positive; minimum must not exceed maximum. The produced numeric cycle contains `minimum + n * step` while that value is at most `maximum`; the maximum need not be included when it is not aligned. Choice options must be nonempty strings and the array must not be empty. `next()` returns values cyclically from the first entry. `reset()` restarts at the first entry. `subscribe(listener)` returns an idempotent unsubscribe function; every `next()` notifies a snapshot of current listeners in insertion order. Mutating constructor inputs or returned values must not change later behavior.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0383",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface NumericSequence { kind: 'numeric'; minimum: number; maximum: number; step: number; }\nexport interface ChoiceSequence { kind: 'choice'; options: readonly string[]; }\nexport type SequenceSpec = NumericSequence | ChoiceSequence;\n\ntype Listener = (value: number | string) => void;\ntype Subscription = { listener: Listener; owner?: Listener };\n\nexport class SequenceChooser {\n  private readonly values: Array<number | string>;\n  private index = 0;\n  private readonly subscriptions: Subscription[] = [];\n  private notifying?: Listener;\n\n  constructor(spec: SequenceSpec) {\n    if (spec.kind === 'numeric') {\n      const { minimum, maximum, step } = spec;\n      if (![minimum, maximum, step].every(Number.isFinite) || step <= 0 || minimum > maximum) {\n        throw new Error('Invalid numeric sequence');\n      }\n      this.values = [];\n      for (let n = 0; ; n++) {\n        const value = minimum + n * step;\n        if (value >= maximum) break;\n        this.values.push(value);\n        const next = minimum + (n + 1) * step;\n        if (next <= value) break;\n      }\n    } else {\n      if (spec.options.length === 0 || spec.options.some(option => typeof option !== 'string' || !option.trim())) {\n        throw new Error('Invalid choices');\n      }\n      this.values = [...spec.options];\n    }\n  }\n\n  next(): number | string {\n    const value = this.values[this.index];\n    this.index = (this.index + 1) % this.values.length;\n    const snapshot = [...this.subscriptions];\n    for (const subscription of snapshot) {\n      const previous = this.notifying;\n      this.notifying = subscription.listener;\n      try {\n        subscription.listener(value);\n      } finally {\n        this.notifying = previous;\n      }\n    }\n    return value;\n  }\n\n  reset(): void { this.index = 0; }\n\n  subscribe(listener: Listener): () => void {\n    const subscription: Subscription = { listener, owner: this.notifying };\n    this.subscriptions.push(subscription);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const matches = (candidate: Subscription): boolean =>\n        candidate === subscription ||\n        (subscription.owner !== undefined && candidate.owner === subscription.owner);\n      for (let index = this.subscriptions.length - 1; index >= 0; index--) {\n        if (matches(this.subscriptions[index])) this.subscriptions.splice(index, 1);\n      }\n    };\n  }\n}\n",
+          "label": "An aligned maximum endpoint is excluded, and a single-value numeric range becomes empty.",
+          "sha256": "7b023d796f174a3bcb0e24a3e80a199e6f9db82dd611c1b810fbcb73362059ed"
+        }
+      ],
+      "reference": {
+        "code": "export interface NumericSequence { kind: 'numeric'; minimum: number; maximum: number; step: number; }\nexport interface ChoiceSequence { kind: 'choice'; options: readonly string[]; }\nexport type SequenceSpec = NumericSequence | ChoiceSequence;\n\ntype Listener = (value: number | string) => void;\ntype Subscription = { listener: Listener; owner?: Listener };\n\nexport class SequenceChooser {\n  private readonly values: Array<number | string>;\n  private index = 0;\n  private readonly subscriptions: Subscription[] = [];\n  private notifying?: Listener;\n\n  constructor(spec: SequenceSpec) {\n    if (spec.kind === 'numeric') {\n      const { minimum, maximum, step } = spec;\n      if (![minimum, maximum, step].every(Number.isFinite) || step <= 0 || minimum > maximum) {\n        throw new Error('Invalid numeric sequence');\n      }\n      this.values = [];\n      for (let n = 0; ; n++) {\n        const value = minimum + n * step;\n        if (value > maximum) break;\n        this.values.push(value);\n        const next = minimum + (n + 1) * step;\n        if (next <= value) break;\n      }\n    } else {\n      if (spec.options.length === 0 || spec.options.some(option => typeof option !== 'string' || !option.trim())) {\n        throw new Error('Invalid choices');\n      }\n      this.values = [...spec.options];\n    }\n  }\n\n  next(): number | string {\n    const value = this.values[this.index];\n    this.index = (this.index + 1) % this.values.length;\n    const snapshot = [...this.subscriptions];\n    for (const subscription of snapshot) {\n      const previous = this.notifying;\n      this.notifying = subscription.listener;\n      try {\n        subscription.listener(value);\n      } finally {\n        this.notifying = previous;\n      }\n    }\n    return value;\n  }\n\n  reset(): void { this.index = 0; }\n\n  subscribe(listener: Listener): () => void {\n    const subscription: Subscription = { listener, owner: this.notifying };\n    this.subscriptions.push(subscription);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const matches = (candidate: Subscription): boolean =>\n        candidate === subscription ||\n        (subscription.owner !== undefined && candidate.owner === subscription.owner);\n      for (let index = this.subscriptions.length - 1; index >= 0; index--) {\n        if (matches(this.subscriptions[index])) this.subscriptions.splice(index, 1);\n      }\n    };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d9521638d8362fed6a77f2087759ba78cb3bee26751b55e44ef4d40bf9177191"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:20\n    throw new Error(`sibling subscription removed: ${calls}`);\n    ^\n\nError: sibling subscription removed: \n    at Object.<anonymous> (/work/solution.test.js:20:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "41b6900f329762f159739e19e22a8a08f79ccdce16ddb23b9fec125a5aa14234",
+    "duration_ms": 3100,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,11 @@
+import { WorkshopToolbar } from './solution';
+const toolbar = new WorkshopToolbar(async () => [], w => ({key: String(w.id), label: w.title, room: w.roomCode}), async () => false, () => {});
+const calls: string[] = [];
+const a = () => { calls.push('a'); };
+toolbar.subscribe(a);
+toolbar.subscribe(() => { calls.push('b'); });
+const removeLast = toolbar.subscribe(a);
+removeLast();
+removeLast();
+toolbar.emitFilter({text: '', room: null});
+if (calls.join(',') !== 'a,b') throw new Error(`last unsubscribe removed wrong registration: ${calls}`);

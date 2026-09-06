@@ -1,0 +1,11 @@
+import { PanelStateStore } from './solution';
+const store = new PanelStateStore();
+const calls: string[] = [];
+const a = () => { calls.push('a'); };
+store.subscribe(a);
+store.subscribe(() => { calls.push('b'); });
+const removeLast = store.subscribe(a);
+removeLast();
+removeLast();
+store.setVisible('map', true);
+if (calls.join(',') !== 'a,b') throw new Error(`last unsubscribe removed wrong registration: ${calls}`);

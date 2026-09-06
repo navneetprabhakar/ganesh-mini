@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0294",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5b3f759e01ed5df9ac801d7dc639963f09568820de828828051e5a461072fb4f",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { DocumentSignal } from './solution';\nconst signal = new DocumentSignal({title: 'old', tags: []});\nconst calls: string[] = [];\nconst a = () => { calls.push('a'); };\nsignal.subscribe(a);\nsignal.subscribe(() => { calls.push('b'); });\nconst removeLast = signal.subscribe(a);\nremoveLast();\nremoveLast();\nsignal.replace({title: 'new', tags: []});\nif (calls.join(',') !== 'a,b') throw new Error(`last unsubscribe removed wrong registration: ${calls}`);\n",
+        "sha256": "7446c48b30c7bd47911fd0d473ef2eac9d35c792768f038ac5b440c912d59581"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cd5ca15648adb86896b25b15026017f2e97dedaf223e7138853ad2d5112e02ea",
+      "text": "Implement a new observable document holder with this exact API:\n\n```ts\nexport interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nexport class DocumentSignal {\n  constructor(initial: DocumentInfo);\n  get value(): DocumentInfo;\n  replace(next: DocumentInfo): void;\n  subscribe(listener: DocumentListener): () => void;\n}\n```\n\nA document is valid only when its title is a non-empty string after trimming and every tag is a string. Store the trimmed title and trimmed tags; empty trimmed tags are valid and duplicates remain in their original order. Malformed documents throw `TypeError` without changing state or notifying listeners. The constructor, `replace`, getter, and notifications must not expose or retain aliases to caller-owned objects or tag arrays. `replace` notifies active listeners once each in subscription order, using a snapshot of the listener list taken before notification; each listener receives its own fresh document copy. `subscribe` rejects non-functions with `TypeError`, does not immediately notify, and returns an idempotent unsubscribe function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cd5ca15648adb86896b25b15026017f2e97dedaf223e7138853ad2d5112e02ea",
+      "text": "Implement a new observable document holder with this exact API:\n\n```ts\nexport interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nexport class DocumentSignal {\n  constructor(initial: DocumentInfo);\n  get value(): DocumentInfo;\n  replace(next: DocumentInfo): void;\n  subscribe(listener: DocumentListener): () => void;\n}\n```\n\nA document is valid only when its title is a non-empty string after trimming and every tag is a string. Store the trimmed title and trimmed tags; empty trimmed tags are valid and duplicates remain in their original order. Malformed documents throw `TypeError` without changing state or notifying listeners. The constructor, `replace`, getter, and notifications must not expose or retain aliases to caller-owned objects or tag arrays. `replace` notifies active listeners once each in subscription order, using a snapshot of the listener list taken before notification; each listener receives its own fresh document copy. `subscribe` rejects non-functions with `TypeError`, does not immediately notify, and returns an idempotent unsubscribe function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0294",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nfunction copyDocument(input: DocumentInfo): DocumentInfo {\n  if (typeof input !== \"object\" || input === null) {\n    throw new TypeError(\"document must be an object\");\n  }\n  if (typeof input.title !== \"string\" || input.title.trim().length === 0) {\n    throw new TypeError(\"title must be a non-empty string\");\n  }\n  if (!Array.isArray(input.tags) || input.tags.some((tag) => typeof tag !== \"string\")) {\n    throw new TypeError(\"tags must be strings\");\n  }\n  return {\n    title: input.title.trim(),\n    tags: input.tags,\n  };\n}\n\nexport class DocumentSignal {\n  private current: DocumentInfo;\n  private readonly listeners: DocumentListener[] = [];\n\n  public constructor(initial: DocumentInfo) {\n    this.current = copyDocument(initial);\n  }\n\n  public get value(): DocumentInfo {\n    return copyDocument(this.current);\n  }\n\n  public replace(next: DocumentInfo): void {\n    const copied = copyDocument(next);\n    this.current = copied;\n    for (const listener of this.listeners.slice()) {\n      listener(copyDocument(copied));\n    }\n  }\n\n  public subscribe(listener: DocumentListener): () => void {\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n}\n",
+          "label": "Document copies retain the caller's tag-array alias instead of creating a trimmed independent array.",
+          "sha256": "521ee0bdd2babc7154b04859d61fca94fe23528764ab0dfb103b61b2f098ce94"
+        }
+      ],
+      "reference": {
+        "code": "export interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nfunction copyDocument(input: DocumentInfo): DocumentInfo {\n  if (typeof input !== \"object\" || input === null) {\n    throw new TypeError(\"document must be an object\");\n  }\n  if (typeof input.title !== \"string\" || input.title.trim().length === 0) {\n    throw new TypeError(\"title must be a non-empty string\");\n  }\n  if (!Array.isArray(input.tags) || input.tags.some((tag) => typeof tag !== \"string\")) {\n    throw new TypeError(\"tags must be strings\");\n  }\n  return {\n    title: input.title.trim(),\n    tags: input.tags.map((tag) => tag.trim()),\n  };\n}\n\nexport class DocumentSignal {\n  private current: DocumentInfo;\n  private readonly listeners: DocumentListener[] = [];\n\n  public constructor(initial: DocumentInfo) {\n    this.current = copyDocument(initial);\n  }\n\n  public get value(): DocumentInfo {\n    return copyDocument(this.current);\n  }\n\n  public replace(next: DocumentInfo): void {\n    const copied = copyDocument(next);\n    this.current = copied;\n    for (const listener of this.listeners.slice()) {\n      listener(copyDocument(copied));\n    }\n  }\n\n  public subscribe(listener: DocumentListener): () => void {\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6b624b7771202f601aa0ac4a8d9b7cbbc2ec43ca0428d5745cb22b9be8cb02ca"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { DocumentSignal, type DocumentInfo } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\n\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (actual !== expected) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\n\nfunction documentEqual(actual: DocumentInfo, title: string, tags: string[], message: string): void {\n  equal(actual.title, title, `${message} title`);\n  equal(actual.tags.length, tags.length, `${message} tag count`);\n  for (let i = 0; i < tags.length; i += 1) equal(actual.tags[i], tags[i], `${message} tag ${i}`);\n}\n\nfunction throwsType(fn: () => unknown, message: string): void {\n  try {\n    fn();\n  } catch (error) {\n    assert(error instanceof TypeError, message);\n    return;\n  }\n  throw new Error(`${message}: did not throw`);\n}\n\nconst initial: DocumentInfo = { title: \"  Plan  \", tags: [\" alpha \", \"\", \"alpha\"] };\nconst signal = new DocumentSignal(initial);\ninitial.title = \"changed\";\ninitial.tags[0] = \"changed\";\ninitial.tags.push(\"extra\");\ndocumentEqual(signal.value, \"Plan\", [\"alpha\", \"\", \"alpha\"], \"constructor trims and detaches input\");\n\nconst firstRead = signal.value;\nconst secondRead = signal.value;\nassert(firstRead !== secondRead, \"getter returns a fresh document\");\nassert(firstRead.tags !== secondRead.tags, \"getter returns a fresh tags array\");\nfirstRead.title = \"mutated\";\nfirstRead.tags[0] = \"mutated\";\ndocumentEqual(signal.value, \"Plan\", [\"alpha\", \"\", \"alpha\"], \"getter does not expose state\");\n\nconst events: string[] = [];\nlet unsubscribeSecond = () => {};\nconst unsubscribeFirst = signal.subscribe((value) => {\n  events.push(`first:${value.title}:${value.tags.join(\"|\")}`);\n  value.title = \"listener mutation\";\n  value.tags[0] = \"listener mutation\";\n  unsubscribeSecond();\n});\nunsubscribeSecond = signal.subscribe((value) => {\n  events.push(`second:${value.title}:${value.tags.join(\"|\")}`);\n});\n\nequal(events.length, 0, \"subscribe does not immediately notify\");\nconst replacement: DocumentInfo = { title: \"  Next  \", tags: [\" one \", \" \", \"one\"] };\nsignal.replace(replacement);\nequal(events.length, 2, \"snapshot includes listener unsubscribed during notification\");\nequal(events[0], \"first:Next:one||one\", \"notifies first listener first\");\nequal(events[1], \"second:Next:one||one\", \"each listener receives an independent copy\");\nreplacement.title = \"outside\";\nreplacement.tags[0] = \"outside\";\ndocumentEqual(signal.value, \"Next\", [\"one\", \"\", \"one\"], \"replace detaches caller input and listener copies\");\n\nsignal.replace({ title: \"Third\", tags: [] });\nequal(events.length, 3, \"unsubscribed listener is absent from later snapshot\");\nequal(events[2], \"first:Third:\", \"remaining listener is notified\");\nunsubscribeFirst();\nunsubscribeFirst();\nsignal.replace({ title: \"Fourth\", tags: [] });\nequal(events.length, 3, \"unsubscribe is idempotent\");\n\nlet notifications = 0;\nsignal.subscribe(() => { notifications += 1; });\nthrowsType(() => signal.replace({ title: \"   \", tags: [\"x\"] }), \"rejects empty trimmed title\");\nthrowsType(() => signal.replace({ title: \"Valid\", tags: [1 as unknown as string] }), \"rejects non-string tag\");\nequal(notifications, 0, \"invalid replacements do not notify\");\ndocumentEqual(signal.value, \"Fourth\", [], \"invalid replacements preserve state\");\n\nthrowsType(() => new DocumentSignal({ title: 4 as unknown as string, tags: [] }), \"constructor rejects non-string title\");\nthrowsType(() => new DocumentSignal({ title: \"Valid\", tags: null as unknown as string[] }), \"constructor rejects non-array tags\");\nthrowsType(() => signal.subscribe(null as unknown as (value: DocumentInfo) => void), \"subscribe rejects non-function\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "7fe45c5eab574d4e3df313bf44894efd7964befcb5b7228acae61a77140f887e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cd5ca15648adb86896b25b15026017f2e97dedaf223e7138853ad2d5112e02ea",
+      "text": "Implement a new observable document holder with this exact API:\n\n```ts\nexport interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nexport class DocumentSignal {\n  constructor(initial: DocumentInfo);\n  get value(): DocumentInfo;\n  replace(next: DocumentInfo): void;\n  subscribe(listener: DocumentListener): () => void;\n}\n```\n\nA document is valid only when its title is a non-empty string after trimming and every tag is a string. Store the trimmed title and trimmed tags; empty trimmed tags are valid and duplicates remain in their original order. Malformed documents throw `TypeError` without changing state or notifying listeners. The constructor, `replace`, getter, and notifications must not expose or retain aliases to caller-owned objects or tag arrays. `replace` notifies active listeners once each in subscription order, using a snapshot of the listener list taken before notification; each listener receives its own fresh document copy. `subscribe` rejects non-functions with `TypeError`, does not immediately notify, and returns an idempotent unsubscribe function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cd5ca15648adb86896b25b15026017f2e97dedaf223e7138853ad2d5112e02ea",
+      "text": "Implement a new observable document holder with this exact API:\n\n```ts\nexport interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nexport class DocumentSignal {\n  constructor(initial: DocumentInfo);\n  get value(): DocumentInfo;\n  replace(next: DocumentInfo): void;\n  subscribe(listener: DocumentListener): () => void;\n}\n```\n\nA document is valid only when its title is a non-empty string after trimming and every tag is a string. Store the trimmed title and trimmed tags; empty trimmed tags are valid and duplicates remain in their original order. Malformed documents throw `TypeError` without changing state or notifying listeners. The constructor, `replace`, getter, and notifications must not expose or retain aliases to caller-owned objects or tag arrays. `replace` notifies active listeners once each in subscription order, using a snapshot of the listener list taken before notification; each listener receives its own fresh document copy. `subscribe` rejects non-functions with `TypeError`, does not immediately notify, and returns an idempotent unsubscribe function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0294",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nfunction copyDocument(input: DocumentInfo): DocumentInfo {\n  if (typeof input !== \"object\" || input === null) {\n    throw new TypeError(\"document must be an object\");\n  }\n  if (typeof input.title !== \"string\" || input.title.trim().length === 0) {\n    throw new TypeError(\"title must be a non-empty string\");\n  }\n  if (!Array.isArray(input.tags) || input.tags.some((tag) => typeof tag !== \"string\")) {\n    throw new TypeError(\"tags must be strings\");\n  }\n  return {\n    title: input.title.trim(),\n    tags: input.tags,\n  };\n}\n\nexport class DocumentSignal {\n  private current: DocumentInfo;\n  private readonly listeners: DocumentListener[] = [];\n\n  public constructor(initial: DocumentInfo) {\n    this.current = copyDocument(initial);\n  }\n\n  public get value(): DocumentInfo {\n    return copyDocument(this.current);\n  }\n\n  public replace(next: DocumentInfo): void {\n    const copied = copyDocument(next);\n    this.current = copied;\n    for (const listener of this.listeners.slice()) {\n      listener(copyDocument(copied));\n    }\n  }\n\n  public subscribe(listener: DocumentListener): () => void {\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n}\n",
+          "label": "Document copies retain the caller's tag-array alias instead of creating a trimmed independent array.",
+          "sha256": "521ee0bdd2babc7154b04859d61fca94fe23528764ab0dfb103b61b2f098ce94"
+        }
+      ],
+      "reference": {
+        "code": "export interface DocumentInfo {\n  title: string;\n  tags: string[];\n}\n\nexport type DocumentListener = (value: DocumentInfo) => void;\n\nfunction copyDocument(input: DocumentInfo): DocumentInfo {\n  if (typeof input !== \"object\" || input === null) {\n    throw new TypeError(\"document must be an object\");\n  }\n  if (typeof input.title !== \"string\" || input.title.trim().length === 0) {\n    throw new TypeError(\"title must be a non-empty string\");\n  }\n  if (!Array.isArray(input.tags) || input.tags.some((tag) => typeof tag !== \"string\")) {\n    throw new TypeError(\"tags must be strings\");\n  }\n  return {\n    title: input.title.trim(),\n    tags: input.tags.map((tag) => tag.trim()),\n  };\n}\n\nexport class DocumentSignal {\n  private current: DocumentInfo;\n  private readonly listeners: DocumentListener[] = [];\n\n  public constructor(initial: DocumentInfo) {\n    this.current = copyDocument(initial);\n  }\n\n  public get value(): DocumentInfo {\n    return copyDocument(this.current);\n  }\n\n  public replace(next: DocumentInfo): void {\n    const copied = copyDocument(next);\n    this.current = copied;\n    for (const listener of this.listeners.slice()) {\n      listener(copyDocument(copied));\n    }\n  }\n\n  public subscribe(listener: DocumentListener): () => void {\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6b624b7771202f601aa0ac4a8d9b7cbbc2ec43ca0428d5745cb22b9be8cb02ca"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:14\n    throw new Error(`last unsubscribe removed wrong registration: ${calls}`);\n    ^\n\nError: last unsubscribe removed wrong registration: b,a\n    at Object.<anonymous> (/work/solution.test.js:14:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "7b8ff2bf1fbab2a60ccadf695f09fe070046488f343cfce61d6f3071cdb5c12c",
+    "duration_ms": 3271,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

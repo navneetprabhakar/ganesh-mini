@@ -1,0 +1,11 @@
+import { MessageRelay } from './solution';
+const relay = new MessageRelay();
+const calls: string[] = [];
+const a = () => { calls.push('a'); };
+relay.subscribe(a);
+relay.subscribe(() => { calls.push('b'); });
+const removeLast = relay.subscribe(a);
+removeLast();
+removeLast();
+relay.broadcast('one');
+if (calls.join(',') !== 'a,b') throw new Error(`last unsubscribe removed wrong registration: ${calls}`);

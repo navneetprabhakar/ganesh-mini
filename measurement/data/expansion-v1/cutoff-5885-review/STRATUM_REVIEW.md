@@ -1,10 +1,18 @@
 # Quality follow-up decision
 
+Current count: 60 additive holds plus three historical (63). Array batch 1
+adds ten held records, with a passing directory sparse control. See
+`ARRAY_STRATUM_REVIEW.md`. Earlier scope/disposition details follow.
+
 The original verification campaign is complete, with candidate exceptions.
 The frozen sample's initial inspection is complete, but its quality gate does
 not pass. This is not a judgment that every passing VM candidate is defective.
 
-There are 42 additive candidate holds plus the three historical holds (45).
+There are now 50 additive candidate holds plus the three historical holds (53).
+`TARGETED_STRATUM_REVIEW.md` records ten outside-sample targeted inspections,
+ten reproduced diagnostic failures on eight new held records, and one passing
+first-match unsubscribe control. The following describes the earlier 45-hold
+checkpoint and frozen v1 scope; it is not a revised partition.
 Four JS generation sparse-array failures were reproduced after the initial
 300-record archive: recipe 0233 (359 ms), activity 0173 (380 ms), shipment
 0206 (509 ms), workshop 0319 (362 ms). All exited 1 without timeout in the
@@ -38,7 +46,7 @@ operate on internally constructed dense arrays and are valid.
 
 - Prompt clarity: not cleared. Repeated missing exact Rust APIs and conflicting
   validation/normalization/error boundaries need versioned specification work.
-- API consistency: not cleared. Forty-five concrete holds include runtime
+- API consistency: not cleared. Fifty-three concrete holds include runtime
   contradictions, unsupported required inputs, and static reference/test conflicts.
   TypeScript repair0208's false non-null overload is a direct API violation.
 - Test independence: archived provenance established for all 300: 297 original
@@ -64,8 +72,8 @@ and immutable. No revised admission partition or training-ready seal exists.
 
 ## Current work
 
-First inspect the small, high-signal subscription/overload pattern inventory
-outside the sample. Then distinguish validation on external arrays from safe
+The small high-signal subscription/overload inventory is now inspected, with
+false positives preserved in the targeted report. Next distinguish validation on external arrays from safe
 internal-array callbacks, and review relevant numeric and API cases. Preserve
 negative controls and false positives. Resolve strata through documented,
 versioned changes and revalidation, not silent candidate edits or resampling.

@@ -2,6 +2,23 @@
 
 ## Quality review continuation — 2026-09-06
 
+Current: **63 holds (60 additive plus historical three)**. `ARRAY_STRATUM_REVIEW.md`
+adds 15 outside-sample inspections, ten reproduced failures and a passing sparse
+directory control; 25 total outside-sample targeted inspections. All 92 data
+tooling tests pass in `.venv`. The 53-hold checkpoint is GCS roundtrip verified
+(`QUALITY_STRATUM_53_BACKUP.md`); later array batch awaits backup. Continue array
+inventory at JavaScript repair-0008; do not repeat the first 15. No new VM,
+generation, training seal, or rewritten partition. Earlier details follow.
+
+Latest targeted follow-up: **53 holds (50 additive plus historical three)**.
+Ten outside-sample pattern inspections, ten sandbox-confirmed failures on eight
+new held records, and one passing JS first-match unsubscribe control. Frozen
+sample remains 300/300; these are not new seven-criterion approvals. See
+`TARGETED_STRATUM_REVIEW.md`. Probe helper now explicitly supports hash-bound
+full-cutoff selection. No VM, training seal or revised partition. Next: external
+array validation versus internal dense-array callbacks, then API/numeric review.
+This follow-up awaits its new GCS checkpoint. Earlier checkpoint details follow.
+
 Latest follow-up: 45 holds (42 additive plus historical three). All 300 initial
 inspections are complete. Six recurring defect groups reopen 11 frozen strata
 covering 2,567 records; this is review scope, not a rejection count. See

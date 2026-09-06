@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0261",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c4eb417f8761bf484abf01d0c6009dd72a10de7cd233abed912f24a684610212",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { PanelStateStore } from './solution';\nconst store = new PanelStateStore();\nconst calls: string[] = [];\nconst a = () => { calls.push('a'); };\nstore.subscribe(a);\nstore.subscribe(() => { calls.push('b'); });\nconst removeLast = store.subscribe(a);\nremoveLast();\nremoveLast();\nstore.setVisible('map', true);\nif (calls.join(',') !== 'a,b') throw new Error(`last unsubscribe removed wrong registration: ${calls}`);\n",
+        "sha256": "b0806a70a91a3c2f7f3b4ab232eb0008121ef659e12d36434316950ad675d5e8"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "bb2725ae5e1b2406d199df12f5da1ceb5026a197e30714306dbe8fb6f291fbbb",
+      "text": "Implement a new observable state container for three dashboard panels.\n\nExport:\n- `type PanelId = \"map\" | \"metrics\" | \"notes\"`\n- `type PanelSnapshot = Readonly<Record<PanelId, boolean>>`\n- class `PanelStateStore`\n\nIts constructor accepts `Partial<Record<PanelId, boolean>>`, defaulting omitted panels to `false`. At runtime, an explicitly supplied non-boolean value must cause `TypeError`. The class exposes:\n- `getSnapshot(): PanelSnapshot`\n- `setVisible(id: PanelId, visible: boolean): void`\n- `toggle(id: PanelId): void`\n- `subscribe(listener: (snapshot: PanelSnapshot) => void): () => void`\n\nSubscriptions are not called immediately. A listener is notified after every `setVisible` or `toggle`, even if `setVisible` repeats the current value. Notify listeners in subscription order using a snapshot of the listener list, so subscription changes during notification affect only later updates. The returned unsubscribe function is idempotent. Each notification and `getSnapshot` must receive a newly allocated frozen snapshot; no internal object may escape. Listener exceptions propagate and stop that notification pass.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "bb2725ae5e1b2406d199df12f5da1ceb5026a197e30714306dbe8fb6f291fbbb",
+      "text": "Implement a new observable state container for three dashboard panels.\n\nExport:\n- `type PanelId = \"map\" | \"metrics\" | \"notes\"`\n- `type PanelSnapshot = Readonly<Record<PanelId, boolean>>`\n- class `PanelStateStore`\n\nIts constructor accepts `Partial<Record<PanelId, boolean>>`, defaulting omitted panels to `false`. At runtime, an explicitly supplied non-boolean value must cause `TypeError`. The class exposes:\n- `getSnapshot(): PanelSnapshot`\n- `setVisible(id: PanelId, visible: boolean): void`\n- `toggle(id: PanelId): void`\n- `subscribe(listener: (snapshot: PanelSnapshot) => void): () => void`\n\nSubscriptions are not called immediately. A listener is notified after every `setVisible` or `toggle`, even if `setVisible` repeats the current value. Notify listeners in subscription order using a snapshot of the listener list, so subscription changes during notification affect only later updates. The returned unsubscribe function is idempotent. Each notification and `getSnapshot` must receive a newly allocated frozen snapshot; no internal object may escape. Listener exceptions propagate and stop that notification pass.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0261",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type PanelId = \"map\" | \"metrics\" | \"notes\";\nexport type PanelSnapshot = Readonly<Record<PanelId, boolean>>;\n\ntype Listener = (snapshot: PanelSnapshot) => void;\n\nexport class PanelStateStore {\n  private readonly state: Record<PanelId, boolean>;\n  private readonly listeners: Listener[] = [];\n\n  constructor(initial: Partial<Record<PanelId, boolean>> = {}) {\n    for (const id of [\"map\", \"metrics\", \"notes\"] as const) {\n      if (Object.prototype.hasOwnProperty.call(initial, id) && typeof initial[id] !== \"boolean\") {\n        throw new TypeError(`Initial value for ${id} must be boolean`);\n      }\n    }\n    this.state = {\n      map: initial.map ?? false,\n      metrics: initial.metrics ?? false,\n      notes: initial.notes ?? false\n    };\n  }\n\n  getSnapshot(): PanelSnapshot {\n    return Object.freeze({ ...this.state });\n  }\n\n  setVisible(id: PanelId, visible: boolean): void {\n    this.state[id] = visible;\n    this.notify();\n  }\n\n  toggle(id: PanelId): void {\n    this.state[id] = true;\n    this.notify();\n  }\n\n  subscribe(listener: Listener): () => void {\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private notify(): void {\n    for (const listener of [...this.listeners]) listener(this.getSnapshot());\n  }\n}\n",
+          "label": "`toggle` always opens a panel instead of negating its current visibility.",
+          "sha256": "56125d477738fb098bed3abaed5aaa82d5a5833e3f6453fbd162859d05ffc2f5"
+        }
+      ],
+      "reference": {
+        "code": "export type PanelId = \"map\" | \"metrics\" | \"notes\";\nexport type PanelSnapshot = Readonly<Record<PanelId, boolean>>;\n\ntype Listener = (snapshot: PanelSnapshot) => void;\n\nexport class PanelStateStore {\n  private readonly state: Record<PanelId, boolean>;\n  private readonly listeners: Listener[] = [];\n\n  constructor(initial: Partial<Record<PanelId, boolean>> = {}) {\n    for (const id of [\"map\", \"metrics\", \"notes\"] as const) {\n      if (Object.prototype.hasOwnProperty.call(initial, id) && typeof initial[id] !== \"boolean\") {\n        throw new TypeError(`Initial value for ${id} must be boolean`);\n      }\n    }\n    this.state = {\n      map: initial.map ?? false,\n      metrics: initial.metrics ?? false,\n      notes: initial.notes ?? false\n    };\n  }\n\n  getSnapshot(): PanelSnapshot {\n    return Object.freeze({ ...this.state });\n  }\n\n  setVisible(id: PanelId, visible: boolean): void {\n    this.state[id] = visible;\n    this.notify();\n  }\n\n  toggle(id: PanelId): void {\n    this.state[id] = !this.state[id];\n    this.notify();\n  }\n\n  subscribe(listener: Listener): () => void {\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private notify(): void {\n    for (const listener of [...this.listeners]) listener(this.getSnapshot());\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2b0c8f3d7aef870357d76a0fa0e115f7691eb8ce3b17d0c74b4acd83f373eafc"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { PanelStateStore } from \"./solution\";\nimport type { PanelId, PanelSnapshot } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\n\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) {\n    throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n  }\n}\n\nfunction expectTypeError(action: () => void, message: string): void {\n  let thrown: unknown;\n  try {\n    action();\n  } catch (error) {\n    thrown = error;\n  }\n  assert(thrown instanceof TypeError, message);\n}\n\nconst defaults = new PanelStateStore();\nconst defaultSnapshot = defaults.getSnapshot();\nequal(defaultSnapshot.map, false, \"map defaults to false\");\nequal(defaultSnapshot.metrics, false, \"metrics defaults to false\");\nequal(defaultSnapshot.notes, false, \"notes defaults to false\");\nassert(Object.isFrozen(defaultSnapshot), \"getSnapshot returns a frozen snapshot\");\nassert(defaultSnapshot !== defaults.getSnapshot(), \"getSnapshot allocates every time\");\n\ndefaults.setVisible(\"notes\", true);\nequal(defaultSnapshot.notes, false, \"previous snapshots remain stable after updates\");\nequal(defaults.getSnapshot().notes, true, \"updates work without subscribers\");\n\nexpectTypeError(\n  () => {\n    new PanelStateStore({ map: \"true\" } as unknown as Partial<Record<PanelId, boolean>>);\n  },\n  \"a string initial value is rejected\"\n);\nexpectTypeError(\n  () => {\n    new PanelStateStore({ metrics: undefined } as Partial<Record<PanelId, boolean>>);\n  },\n  \"an explicitly supplied undefined initial value is rejected\"\n);\n\nconst initial: Partial<Record<PanelId, boolean>> = { map: true, notes: false };\nconst store = new PanelStateStore(initial);\ninitial.map = false;\nequal(store.getSnapshot().map, true, \"the constructor does not retain the initial object\");\n\nconst events: string[] = [];\nconst delivered: PanelSnapshot[] = [];\nlet addedThird = false;\nlet unsubscribeSecond: () => void = () => {};\n\nstore.subscribe(snapshot => {\n  events.push(`first:${snapshot.map}:${snapshot.metrics}:${snapshot.notes}`);\n  delivered.push(snapshot);\n  unsubscribeSecond();\n\n  if (!addedThird) {\n    addedThird = true;\n    store.subscribe(later => {\n      events.push(`third:${later.map}:${later.metrics}:${later.notes}`);\n      delivered.push(later);\n    });\n  }\n});\n\nunsubscribeSecond = store.subscribe(snapshot => {\n  events.push(`second:${snapshot.map}:${snapshot.metrics}:${snapshot.notes}`);\n  delivered.push(snapshot);\n});\n\nequal(events.length, 0, \"subscribe does not notify immediately\");\nstore.setVisible(\"map\", true);\nequal(\n  events.join(\"|\"),\n  \"first:true:false:false|second:true:false:false\",\n  \"a repeated value notifies the snapshotted listener list in subscription order\"\n);\n\nconst firstDelivered = delivered[0];\nconst secondDelivered = delivered[1];\nassert(firstDelivered !== undefined && secondDelivered !== undefined, \"both listeners received snapshots\");\nassert(firstDelivered !== secondDelivered, \"each listener receives a newly allocated snapshot\");\nassert(Object.isFrozen(firstDelivered), \"the first notification snapshot is frozen\");\nassert(Object.isFrozen(secondDelivered), \"the second notification snapshot is frozen\");\n\ntry {\n  (firstDelivered as Record<PanelId, boolean>).map = false;\n} catch {\n  // Assignment to a frozen snapshot may throw in strict mode.\n}\nequal(firstDelivered.map, true, \"notification snapshots cannot be mutated\");\nequal(store.getSnapshot().map, true, \"snapshot mutation cannot affect store state\");\n\nunsubscribeSecond();\nunsubscribeSecond();\nstore.toggle(\"metrics\");\nequal(\n  events.join(\"|\"),\n  \"first:true:false:false|second:true:false:false|first:true:true:false|third:true:true:false\",\n  \"subscription changes affect later updates and unsubscribe is idempotent\"\n);\nequal(firstDelivered.metrics, false, \"earlier notification snapshots remain stable\");\n\nconst current = store.getSnapshot();\nequal(current.map, true, \"current map state is retained\");\nequal(current.metrics, true, \"toggle inverts the current state\");\nequal(current.notes, false, \"an omitted panel remains false\");\nassert(Object.isFrozen(current), \"later snapshots are frozen\");\nassert(current !== store.getSnapshot(), \"later getSnapshot calls also allocate\");\n\nstore.toggle(\"notes\");\nequal(store.getSnapshot().notes, true, \"toggle works for a false panel\");\nstore.toggle(\"notes\");\nequal(store.getSnapshot().notes, false, \"toggle works repeatedly\");\n\nconst failing = new PanelStateStore();\nconst marker = new Error(\"listener failure\");\nlet afterFailureCalled = false;\nfailing.subscribe(() => {\n  throw marker;\n});\nfailing.subscribe(() => {\n  afterFailureCalled = true;\n});\n\nlet caught: unknown;\ntry {\n  failing.setVisible(\"notes\", true);\n} catch (error) {\n  caught = error;\n}\nassert(caught === marker, \"listener exceptions propagate unchanged\");\nequal(afterFailureCalled, false, \"a listener exception stops the notification pass\");\nequal(failing.getSnapshot().notes, true, \"state changes before listeners are notified\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "9a9c798b785770530836ba1f0f6580e2547340a3ce5c54f1fadbad5251c49fb8"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "bb2725ae5e1b2406d199df12f5da1ceb5026a197e30714306dbe8fb6f291fbbb",
+      "text": "Implement a new observable state container for three dashboard panels.\n\nExport:\n- `type PanelId = \"map\" | \"metrics\" | \"notes\"`\n- `type PanelSnapshot = Readonly<Record<PanelId, boolean>>`\n- class `PanelStateStore`\n\nIts constructor accepts `Partial<Record<PanelId, boolean>>`, defaulting omitted panels to `false`. At runtime, an explicitly supplied non-boolean value must cause `TypeError`. The class exposes:\n- `getSnapshot(): PanelSnapshot`\n- `setVisible(id: PanelId, visible: boolean): void`\n- `toggle(id: PanelId): void`\n- `subscribe(listener: (snapshot: PanelSnapshot) => void): () => void`\n\nSubscriptions are not called immediately. A listener is notified after every `setVisible` or `toggle`, even if `setVisible` repeats the current value. Notify listeners in subscription order using a snapshot of the listener list, so subscription changes during notification affect only later updates. The returned unsubscribe function is idempotent. Each notification and `getSnapshot` must receive a newly allocated frozen snapshot; no internal object may escape. Listener exceptions propagate and stop that notification pass.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "bb2725ae5e1b2406d199df12f5da1ceb5026a197e30714306dbe8fb6f291fbbb",
+      "text": "Implement a new observable state container for three dashboard panels.\n\nExport:\n- `type PanelId = \"map\" | \"metrics\" | \"notes\"`\n- `type PanelSnapshot = Readonly<Record<PanelId, boolean>>`\n- class `PanelStateStore`\n\nIts constructor accepts `Partial<Record<PanelId, boolean>>`, defaulting omitted panels to `false`. At runtime, an explicitly supplied non-boolean value must cause `TypeError`. The class exposes:\n- `getSnapshot(): PanelSnapshot`\n- `setVisible(id: PanelId, visible: boolean): void`\n- `toggle(id: PanelId): void`\n- `subscribe(listener: (snapshot: PanelSnapshot) => void): () => void`\n\nSubscriptions are not called immediately. A listener is notified after every `setVisible` or `toggle`, even if `setVisible` repeats the current value. Notify listeners in subscription order using a snapshot of the listener list, so subscription changes during notification affect only later updates. The returned unsubscribe function is idempotent. Each notification and `getSnapshot` must receive a newly allocated frozen snapshot; no internal object may escape. Listener exceptions propagate and stop that notification pass.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0261",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type PanelId = \"map\" | \"metrics\" | \"notes\";\nexport type PanelSnapshot = Readonly<Record<PanelId, boolean>>;\n\ntype Listener = (snapshot: PanelSnapshot) => void;\n\nexport class PanelStateStore {\n  private readonly state: Record<PanelId, boolean>;\n  private readonly listeners: Listener[] = [];\n\n  constructor(initial: Partial<Record<PanelId, boolean>> = {}) {\n    for (const id of [\"map\", \"metrics\", \"notes\"] as const) {\n      if (Object.prototype.hasOwnProperty.call(initial, id) && typeof initial[id] !== \"boolean\") {\n        throw new TypeError(`Initial value for ${id} must be boolean`);\n      }\n    }\n    this.state = {\n      map: initial.map ?? false,\n      metrics: initial.metrics ?? false,\n      notes: initial.notes ?? false\n    };\n  }\n\n  getSnapshot(): PanelSnapshot {\n    return Object.freeze({ ...this.state });\n  }\n\n  setVisible(id: PanelId, visible: boolean): void {\n    this.state[id] = visible;\n    this.notify();\n  }\n\n  toggle(id: PanelId): void {\n    this.state[id] = true;\n    this.notify();\n  }\n\n  subscribe(listener: Listener): () => void {\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private notify(): void {\n    for (const listener of [...this.listeners]) listener(this.getSnapshot());\n  }\n}\n",
+          "label": "`toggle` always opens a panel instead of negating its current visibility.",
+          "sha256": "56125d477738fb098bed3abaed5aaa82d5a5833e3f6453fbd162859d05ffc2f5"
+        }
+      ],
+      "reference": {
+        "code": "export type PanelId = \"map\" | \"metrics\" | \"notes\";\nexport type PanelSnapshot = Readonly<Record<PanelId, boolean>>;\n\ntype Listener = (snapshot: PanelSnapshot) => void;\n\nexport class PanelStateStore {\n  private readonly state: Record<PanelId, boolean>;\n  private readonly listeners: Listener[] = [];\n\n  constructor(initial: Partial<Record<PanelId, boolean>> = {}) {\n    for (const id of [\"map\", \"metrics\", \"notes\"] as const) {\n      if (Object.prototype.hasOwnProperty.call(initial, id) && typeof initial[id] !== \"boolean\") {\n        throw new TypeError(`Initial value for ${id} must be boolean`);\n      }\n    }\n    this.state = {\n      map: initial.map ?? false,\n      metrics: initial.metrics ?? false,\n      notes: initial.notes ?? false\n    };\n  }\n\n  getSnapshot(): PanelSnapshot {\n    return Object.freeze({ ...this.state });\n  }\n\n  setVisible(id: PanelId, visible: boolean): void {\n    this.state[id] = visible;\n    this.notify();\n  }\n\n  toggle(id: PanelId): void {\n    this.state[id] = !this.state[id];\n    this.notify();\n  }\n\n  subscribe(listener: Listener): () => void {\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  private notify(): void {\n    for (const listener of [...this.listeners]) listener(this.getSnapshot());\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2b0c8f3d7aef870357d76a0fa0e115f7691eb8ce3b17d0c74b4acd83f373eafc"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:14\n    throw new Error(`last unsubscribe removed wrong registration: ${calls}`);\n    ^\n\nError: last unsubscribe removed wrong registration: b,a\n    at Object.<anonymous> (/work/solution.test.js:14:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "7b8ff2bf1fbab2a60ccadf695f09fe070046488f343cfce61d6f3071cdb5c12c",
+    "duration_ms": 3955,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

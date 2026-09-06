@@ -1,5 +1,14 @@
 # Cutoff quality review — in progress
 
+Current: **63 holds**, 60 additive plus historical three. Twenty-five targeted
+outside-sample inspections; see `ARRAY_STRATUM_REVIEW.md`. All 92 tooling tests
+pass; verified GCS checkpoint through 53 holds. Later batch remains additive.
+
+Current: **53 holds**, 50 additive plus three historical. Ten targeted
+outside-sample inspections reproduced ten failures on eight new held records;
+one first-match control passed. See `TARGETED_STRATUM_REVIEW.md`. These are not
+new frozen sample rows or an unbiased defect rate. Earlier checkpoints follow.
+
 Latest: initial inspection complete; **45 holds** including three historical.
 Six recurring groups reopen 11 strata (2,567 records of review scope, not
 rejections). See `STRATUM_REVIEW.md`. All 86 data tooling tests pass. The

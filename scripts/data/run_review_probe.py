@@ -12,6 +12,7 @@ from scripts.verify.sandbox import verify
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--id', required=True)
+    p.add_argument('--population', choices=('sample', 'cutoff'), default='sample')
     p.add_argument('--probe', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
@@ -23,7 +24,11 @@ def main():
     manifest = json.loads((root / 'manifest.json').read_text())
     if digest(sample.read_bytes()) != manifest['files'][sample.name]['sha256']:
         raise ValueError('sample hash mismatch')
-    row = next(r for r in read_jsonl(sample) if r['id'] == args.id)
+    candidates = sample if args.population == 'sample' else root / 'final.candidates.jsonl'
+    candidate_set_sha256 = digest(candidates.read_bytes())
+    if candidate_set_sha256 != manifest['files'][candidates.name]['sha256']:
+        raise ValueError('candidate set hash mismatch')
+    row = next(r for r in read_jsonl(candidates) if r['id'] == args.id)
     if row['lane'] not in ('go', 'java', 'javascript', 'python', 'rust', 'typescript'):
         raise ValueError('unsupported probe language')
     task = copy.deepcopy(row['verification_task'])
@@ -41,6 +46,8 @@ def main():
     runtime = Path('configs/eval/runtimes.json')
     result = verify(task, task['validation']['reference']['code'], runtime)
     args.output.write_text(json.dumps({'id': row['id'], 'sample_sha256': digest(sample.read_bytes()),
+        'population': args.population, 'candidate_set_path': str(candidates),
+        'candidate_set_sha256': candidate_set_sha256,
         'candidate_sha256': digest(canonical_json(row)), 'task': task,
         'original_task': row['verification_task'],
         'probe_mode': 'additive' if row['lane'] == 'go' else 'isolated-test',

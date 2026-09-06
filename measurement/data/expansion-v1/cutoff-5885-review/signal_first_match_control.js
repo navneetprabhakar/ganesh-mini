@@ -1,0 +1,10 @@
+'use strict';
+const { createSignalHub } = require('./solution');
+const hub = createSignalHub();
+const a = () => 'a';
+hub.on('x', a);
+hub.on('x', () => 'b');
+hub.on('x', a);
+if (!hub.off('x', a)) throw new Error('off did not remove first match');
+const actual = hub.emit('x', 0);
+if (actual.join(',') !== 'b,a') throw new Error(`first-match contract violated: ${actual}`);

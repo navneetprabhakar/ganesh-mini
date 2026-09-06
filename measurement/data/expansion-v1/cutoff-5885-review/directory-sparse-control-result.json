@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0007",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "6b441cbc3d6e32ce5f340382b2607b37a80b972ce2f7a45ed81b10c415da5aa4",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { DirectoryEntry, pageDirectory } from './solution';\nlet rejected = false;\ntry { pageDirectory(new Array<DirectoryEntry>(1), 1, 10); }\ncatch (error) { if (error instanceof TypeError) rejected = true; else throw error; }\nif (!rejected) throw new Error('sparse directory not rejected');\n",
+        "sha256": "950096f97121f2fd937f15e32dee1ba5ba846b983172e34b8c97677498f4ab8e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ced49edaded55ba930a9fea3b93fc7b6f0256938cc7b01be54324a204c1deb41",
+      "text": "Implement a paginated directory as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface DirectoryEntry { id: string; label: string }`\n- `interface NumberedEntry extends DirectoryEntry { position: number }`\n- `interface DirectoryPage { page: number; pageSize: number; totalEntries: number; totalPages: number; entries: NumberedEntry[] }`\n- `function pageDirectory(entries: readonly DirectoryEntry[], page: number, pageSize: number, omittedIds?: readonly string[]): DirectoryPage`\n- `function omitDirectoryEntry(entries: readonly DirectoryEntry[], id: string): DirectoryEntry[]`\n\nRules:\n\n- Entry IDs must be non-empty and unique; labels must be non-empty. Invalid entries throw `TypeError`.\n- `page` must be a positive integer. `pageSize` must be exactly 10, 20, or 50. Invalid pagination arguments throw `RangeError`.\n- Repeated IDs in `omittedIds` have no additional effect; unknown IDs are ignored.\n- Pagination preserves input order after omissions. A requested page beyond the last page is clamped to the last page. For an empty directory, the returned page is 1 and `totalPages` is 0.\n- `position` is the one-based position in the complete filtered directory, not within the page.\n- `omitDirectoryEntry` removes exactly one matching entry and throws `RangeError` if the ID is absent.\n- Neither function may mutate its arguments. Every returned entry must be a detached object so later mutations cannot alias an input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ced49edaded55ba930a9fea3b93fc7b6f0256938cc7b01be54324a204c1deb41",
+      "text": "Implement a paginated directory as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface DirectoryEntry { id: string; label: string }`\n- `interface NumberedEntry extends DirectoryEntry { position: number }`\n- `interface DirectoryPage { page: number; pageSize: number; totalEntries: number; totalPages: number; entries: NumberedEntry[] }`\n- `function pageDirectory(entries: readonly DirectoryEntry[], page: number, pageSize: number, omittedIds?: readonly string[]): DirectoryPage`\n- `function omitDirectoryEntry(entries: readonly DirectoryEntry[], id: string): DirectoryEntry[]`\n\nRules:\n\n- Entry IDs must be non-empty and unique; labels must be non-empty. Invalid entries throw `TypeError`.\n- `page` must be a positive integer. `pageSize` must be exactly 10, 20, or 50. Invalid pagination arguments throw `RangeError`.\n- Repeated IDs in `omittedIds` have no additional effect; unknown IDs are ignored.\n- Pagination preserves input order after omissions. A requested page beyond the last page is clamped to the last page. For an empty directory, the returned page is 1 and `totalPages` is 0.\n- `position` is the one-based position in the complete filtered directory, not within the page.\n- `omitDirectoryEntry` removes exactly one matching entry and throws `RangeError` if the ID is absent.\n- Neither function may mutate its arguments. Every returned entry must be a detached object so later mutations cannot alias an input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0007",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n}\n\nexport interface NumberedEntry extends DirectoryEntry {\n  position: number;\n}\n\nexport interface DirectoryPage {\n  page: number;\n  pageSize: number;\n  totalEntries: number;\n  totalPages: number;\n  entries: NumberedEntry[];\n}\n\nfunction validateEntries(entries: readonly DirectoryEntry[]): void {\n  const ids = new Set<string>();\n  for (const entry of entries) {\n    if (typeof entry.id !== \"string\" || entry.id.length === 0 ||\n        typeof entry.label !== \"string\" || entry.label.length === 0) {\n      throw new TypeError(\"Invalid directory entry.\");\n    }\n    if (ids.has(entry.id)) {\n      throw new TypeError(\"Directory entry IDs must be unique.\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nexport function pageDirectory(\n  entries: readonly DirectoryEntry[],\n  page: number,\n  pageSize: number,\n  omittedIds: readonly string[] = [],\n): DirectoryPage {\n  validateEntries(entries);\n  if (!Number.isInteger(page) || page < 1) {\n    throw new RangeError(\"Page must be a positive integer.\");\n  }\n  if (pageSize !== 10 && pageSize !== 20 && pageSize !== 50) {\n    throw new RangeError(\"Unsupported page size.\");\n  }\n\n  const omitted = new Set(omittedIds);\n  const filtered = entries.filter((entry) => !omitted.has(entry.id));\n  const totalEntries = filtered.length;\n  const totalPages = Math.ceil(totalEntries / pageSize);\n  const effectivePage = totalPages === 0 ? 1 : Math.min(page, totalPages);\n  const start = (effectivePage - 1) * pageSize;\n  const pageEntries = filtered.slice(start, start + pageSize).map((entry, index) => ({\n    id: entry.id,\n    label: entry.label,\n    position: index + 1,\n  }));\n\n  return { page: effectivePage, pageSize, totalEntries, totalPages, entries: pageEntries };\n}\n\nexport function omitDirectoryEntry(\n  entries: readonly DirectoryEntry[],\n  id: string,\n): DirectoryEntry[] {\n  validateEntries(entries);\n  const index = entries.findIndex((entry) => entry.id === id);\n  if (index < 0) {\n    throw new RangeError(\"Directory entry not found.\");\n  }\n  return entries.filter((_, current) => current !== index).map((entry) => ({ ...entry }));\n}\n",
+          "label": "Page positions restart at 1 instead of reflecting each entry's position in the full filtered directory.",
+          "sha256": "90ac575edef149bbb2da68ca28b7ad5e16014481e56464aee9eeae01bbe29a5d"
+        }
+      ],
+      "reference": {
+        "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n}\n\nexport interface NumberedEntry extends DirectoryEntry {\n  position: number;\n}\n\nexport interface DirectoryPage {\n  page: number;\n  pageSize: number;\n  totalEntries: number;\n  totalPages: number;\n  entries: NumberedEntry[];\n}\n\nfunction validateEntries(entries: readonly DirectoryEntry[]): void {\n  const ids = new Set<string>();\n  for (const entry of entries) {\n    if (typeof entry.id !== \"string\" || entry.id.length === 0 ||\n        typeof entry.label !== \"string\" || entry.label.length === 0) {\n      throw new TypeError(\"Invalid directory entry.\");\n    }\n    if (ids.has(entry.id)) {\n      throw new TypeError(\"Directory entry IDs must be unique.\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nexport function pageDirectory(\n  entries: readonly DirectoryEntry[],\n  page: number,\n  pageSize: number,\n  omittedIds: readonly string[] = [],\n): DirectoryPage {\n  validateEntries(entries);\n  if (!Number.isInteger(page) || page < 1) {\n    throw new RangeError(\"Page must be a positive integer.\");\n  }\n  if (pageSize !== 10 && pageSize !== 20 && pageSize !== 50) {\n    throw new RangeError(\"Unsupported page size.\");\n  }\n\n  const omitted = new Set(omittedIds);\n  const filtered = entries.filter((entry) => !omitted.has(entry.id));\n  const totalEntries = filtered.length;\n  const totalPages = Math.ceil(totalEntries / pageSize);\n  const effectivePage = totalPages === 0 ? 1 : Math.min(page, totalPages);\n  const start = (effectivePage - 1) * pageSize;\n  const pageEntries = filtered.slice(start, start + pageSize).map((entry, index) => ({\n    id: entry.id,\n    label: entry.label,\n    position: start + index + 1,\n  }));\n\n  return { page: effectivePage, pageSize, totalEntries, totalPages, entries: pageEntries };\n}\n\nexport function omitDirectoryEntry(\n  entries: readonly DirectoryEntry[],\n  id: string,\n): DirectoryEntry[] {\n  validateEntries(entries);\n  const index = entries.findIndex((entry) => entry.id === id);\n  if (index < 0) {\n    throw new RangeError(\"Directory entry not found.\");\n  }\n  return entries.filter((_, current) => current !== index).map((entry) => ({ ...entry }));\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d1e06e496c9fbf949ccb7525abf11231484f34e5e504ff19f6f8e3ea6b64e12f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { pageDirectory, omitDirectoryEntry, DirectoryEntry } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (actual !== expected) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) {\n    throw new Error(`${message}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);\n  }\n}\nfunction throws(fn: () => unknown, kind: new (...args: any[]) => Error, message: string): void {\n  let caught: unknown;\n  try { fn(); } catch (error) { caught = error; }\n  assert(caught instanceof kind, message);\n}\n\nconst entries: DirectoryEntry[] = Array.from({ length: 23 }, (_, index) => ({\n  id: `id-${index + 1}`,\n  label: `Entry ${index + 1}`,\n}));\nconst original = JSON.stringify(entries);\nconst page = pageDirectory(entries, 2, 10, [\"id-2\", \"id-2\", \"unknown\"]);\nequal(page.page, 2, \"requested page\");\nequal(page.pageSize, 10, \"page size\");\nequal(page.totalEntries, 22, \"filtered count\");\nequal(page.totalPages, 3, \"page count\");\ndeepEqual(page.entries.map((entry) => entry.id), [\"id-12\", \"id-13\", \"id-14\", \"id-15\", \"id-16\", \"id-17\", \"id-18\", \"id-19\", \"id-20\", \"id-21\"], \"filtered order\");\ndeepEqual(page.entries.map((entry) => entry.position), [11, 12, 13, 14, 15, 16, 17, 18, 19, 20], \"global positions\");\nequal(JSON.stringify(entries), original, \"pagination does not mutate input\");\npage.entries[0].label = \"changed\";\nequal(entries[11].label, \"Entry 12\", \"page entries are detached\");\n\nconst clamped = pageDirectory(entries, 99, 20);\nequal(clamped.page, 2, \"page beyond end is clamped\");\ndeepEqual(clamped.entries.map((entry) => entry.position), [21, 22, 23], \"clamped page positions\");\nconst empty = pageDirectory([], 8, 50, [\"missing\"]);\ndeepEqual(empty, { page: 1, pageSize: 50, totalEntries: 0, totalPages: 0, entries: [] }, \"empty directory\");\n\nconst omitted = omitDirectoryEntry(entries, \"id-2\");\nequal(omitted.length, 22, \"one entry removed\");\nequal(omitted.some((entry) => entry.id === \"id-2\"), false, \"matching entry omitted\");\nequal(JSON.stringify(entries), original, \"omission does not mutate input\");\nomitted[0].label = \"detached\";\nequal(entries[0].label, \"Entry 1\", \"omission results are detached\");\nthrows(() => omitDirectoryEntry(entries, \"absent\"), RangeError, \"absent omission ID\");\n\nfor (const badPage of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {\n  throws(() => pageDirectory(entries, badPage, 10), RangeError, `invalid page ${String(badPage)}`);\n}\nfor (const badSize of [0, 9, 11, 25, 50.5, Number.NaN]) {\n  throws(() => pageDirectory(entries, 1, badSize), RangeError, `invalid page size ${String(badSize)}`);\n}\nthrows(() => pageDirectory([{ id: \"\", label: \"x\" }], 1, 10), TypeError, \"empty ID\");\nthrows(() => pageDirectory([{ id: \"a\", label: \"\" }], 1, 10), TypeError, \"empty label\");\nthrows(() => pageDirectory([{ id: \"a\", label: \"x\" }, { id: \"a\", label: \"y\" }], 1, 10), TypeError, \"duplicate IDs\");\nthrows(() => omitDirectoryEntry([{ id: \"\", label: \"x\" }], \"x\"), TypeError, \"omit validates entries\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "17ce60f9ec9691fd4cc443ef7a08932b68572b5171416d0689a2e6805ff9bb42"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ced49edaded55ba930a9fea3b93fc7b6f0256938cc7b01be54324a204c1deb41",
+      "text": "Implement a paginated directory as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface DirectoryEntry { id: string; label: string }`\n- `interface NumberedEntry extends DirectoryEntry { position: number }`\n- `interface DirectoryPage { page: number; pageSize: number; totalEntries: number; totalPages: number; entries: NumberedEntry[] }`\n- `function pageDirectory(entries: readonly DirectoryEntry[], page: number, pageSize: number, omittedIds?: readonly string[]): DirectoryPage`\n- `function omitDirectoryEntry(entries: readonly DirectoryEntry[], id: string): DirectoryEntry[]`\n\nRules:\n\n- Entry IDs must be non-empty and unique; labels must be non-empty. Invalid entries throw `TypeError`.\n- `page` must be a positive integer. `pageSize` must be exactly 10, 20, or 50. Invalid pagination arguments throw `RangeError`.\n- Repeated IDs in `omittedIds` have no additional effect; unknown IDs are ignored.\n- Pagination preserves input order after omissions. A requested page beyond the last page is clamped to the last page. For an empty directory, the returned page is 1 and `totalPages` is 0.\n- `position` is the one-based position in the complete filtered directory, not within the page.\n- `omitDirectoryEntry` removes exactly one matching entry and throws `RangeError` if the ID is absent.\n- Neither function may mutate its arguments. Every returned entry must be a detached object so later mutations cannot alias an input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ced49edaded55ba930a9fea3b93fc7b6f0256938cc7b01be54324a204c1deb41",
+      "text": "Implement a paginated directory as one complete TypeScript source file.\n\nExport these declarations exactly:\n\n- `interface DirectoryEntry { id: string; label: string }`\n- `interface NumberedEntry extends DirectoryEntry { position: number }`\n- `interface DirectoryPage { page: number; pageSize: number; totalEntries: number; totalPages: number; entries: NumberedEntry[] }`\n- `function pageDirectory(entries: readonly DirectoryEntry[], page: number, pageSize: number, omittedIds?: readonly string[]): DirectoryPage`\n- `function omitDirectoryEntry(entries: readonly DirectoryEntry[], id: string): DirectoryEntry[]`\n\nRules:\n\n- Entry IDs must be non-empty and unique; labels must be non-empty. Invalid entries throw `TypeError`.\n- `page` must be a positive integer. `pageSize` must be exactly 10, 20, or 50. Invalid pagination arguments throw `RangeError`.\n- Repeated IDs in `omittedIds` have no additional effect; unknown IDs are ignored.\n- Pagination preserves input order after omissions. A requested page beyond the last page is clamped to the last page. For an empty directory, the returned page is 1 and `totalPages` is 0.\n- `position` is the one-based position in the complete filtered directory, not within the page.\n- `omitDirectoryEntry` removes exactly one matching entry and throws `RangeError` if the ID is absent.\n- Neither function may mutate its arguments. Every returned entry must be a detached object so later mutations cannot alias an input object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0007",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n}\n\nexport interface NumberedEntry extends DirectoryEntry {\n  position: number;\n}\n\nexport interface DirectoryPage {\n  page: number;\n  pageSize: number;\n  totalEntries: number;\n  totalPages: number;\n  entries: NumberedEntry[];\n}\n\nfunction validateEntries(entries: readonly DirectoryEntry[]): void {\n  const ids = new Set<string>();\n  for (const entry of entries) {\n    if (typeof entry.id !== \"string\" || entry.id.length === 0 ||\n        typeof entry.label !== \"string\" || entry.label.length === 0) {\n      throw new TypeError(\"Invalid directory entry.\");\n    }\n    if (ids.has(entry.id)) {\n      throw new TypeError(\"Directory entry IDs must be unique.\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nexport function pageDirectory(\n  entries: readonly DirectoryEntry[],\n  page: number,\n  pageSize: number,\n  omittedIds: readonly string[] = [],\n): DirectoryPage {\n  validateEntries(entries);\n  if (!Number.isInteger(page) || page < 1) {\n    throw new RangeError(\"Page must be a positive integer.\");\n  }\n  if (pageSize !== 10 && pageSize !== 20 && pageSize !== 50) {\n    throw new RangeError(\"Unsupported page size.\");\n  }\n\n  const omitted = new Set(omittedIds);\n  const filtered = entries.filter((entry) => !omitted.has(entry.id));\n  const totalEntries = filtered.length;\n  const totalPages = Math.ceil(totalEntries / pageSize);\n  const effectivePage = totalPages === 0 ? 1 : Math.min(page, totalPages);\n  const start = (effectivePage - 1) * pageSize;\n  const pageEntries = filtered.slice(start, start + pageSize).map((entry, index) => ({\n    id: entry.id,\n    label: entry.label,\n    position: index + 1,\n  }));\n\n  return { page: effectivePage, pageSize, totalEntries, totalPages, entries: pageEntries };\n}\n\nexport function omitDirectoryEntry(\n  entries: readonly DirectoryEntry[],\n  id: string,\n): DirectoryEntry[] {\n  validateEntries(entries);\n  const index = entries.findIndex((entry) => entry.id === id);\n  if (index < 0) {\n    throw new RangeError(\"Directory entry not found.\");\n  }\n  return entries.filter((_, current) => current !== index).map((entry) => ({ ...entry }));\n}\n",
+          "label": "Page positions restart at 1 instead of reflecting each entry's position in the full filtered directory.",
+          "sha256": "90ac575edef149bbb2da68ca28b7ad5e16014481e56464aee9eeae01bbe29a5d"
+        }
+      ],
+      "reference": {
+        "code": "export interface DirectoryEntry {\n  id: string;\n  label: string;\n}\n\nexport interface NumberedEntry extends DirectoryEntry {\n  position: number;\n}\n\nexport interface DirectoryPage {\n  page: number;\n  pageSize: number;\n  totalEntries: number;\n  totalPages: number;\n  entries: NumberedEntry[];\n}\n\nfunction validateEntries(entries: readonly DirectoryEntry[]): void {\n  const ids = new Set<string>();\n  for (const entry of entries) {\n    if (typeof entry.id !== \"string\" || entry.id.length === 0 ||\n        typeof entry.label !== \"string\" || entry.label.length === 0) {\n      throw new TypeError(\"Invalid directory entry.\");\n    }\n    if (ids.has(entry.id)) {\n      throw new TypeError(\"Directory entry IDs must be unique.\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nexport function pageDirectory(\n  entries: readonly DirectoryEntry[],\n  page: number,\n  pageSize: number,\n  omittedIds: readonly string[] = [],\n): DirectoryPage {\n  validateEntries(entries);\n  if (!Number.isInteger(page) || page < 1) {\n    throw new RangeError(\"Page must be a positive integer.\");\n  }\n  if (pageSize !== 10 && pageSize !== 20 && pageSize !== 50) {\n    throw new RangeError(\"Unsupported page size.\");\n  }\n\n  const omitted = new Set(omittedIds);\n  const filtered = entries.filter((entry) => !omitted.has(entry.id));\n  const totalEntries = filtered.length;\n  const totalPages = Math.ceil(totalEntries / pageSize);\n  const effectivePage = totalPages === 0 ? 1 : Math.min(page, totalPages);\n  const start = (effectivePage - 1) * pageSize;\n  const pageEntries = filtered.slice(start, start + pageSize).map((entry, index) => ({\n    id: entry.id,\n    label: entry.label,\n    position: start + index + 1,\n  }));\n\n  return { page: effectivePage, pageSize, totalEntries, totalPages, entries: pageEntries };\n}\n\nexport function omitDirectoryEntry(\n  entries: readonly DirectoryEntry[],\n  id: string,\n): DirectoryEntry[] {\n  validateEntries(entries);\n  const index = entries.findIndex((entry) => entry.id === id);\n  if (index < 0) {\n    throw new RangeError(\"Directory entry not found.\");\n  }\n  return entries.filter((_, current) => current !== index).map((entry) => ({ ...entry }));\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d1e06e496c9fbf949ccb7525abf11231484f34e5e504ff19f6f8e3ea6b64e12f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 2619,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0026",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "69edc219ebffb59be3b0df45eecbd997308ea6d06d872953b7f58933b24dc33e",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ArchiveService, ArchiveRepository } from './solution';\nlet calls = 0;\nconst repository: ArchiveRepository = {\n  list: async () => [], find: async () => undefined,\n  create: async draft => { calls++; return draft; },\n  createMany: async drafts => { calls++; return drafts; },\n};\nasync function main(): Promise<void> {\n  const service = new ArchiveService(repository);\n  const result = await service.create({id: 'a', title: 'valid', rank: 0, tags: new Array<string>(1)});\n  if (result.ok || result.reason !== 'invalid' || calls !== 0) {\n    throw new Error(`sparse tags accepted or repository called: ${JSON.stringify(result)}, calls=${calls}`);\n  }\n}\nvoid main();\n",
+        "sha256": "23d2083a44f330f09e06347185901ced60067c6794da7a51728a2a754a7e1969"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6ae4cc242e4062868bbadc9cfb9995bb8b106f8919d15eed156e89f0b77678ea",
+      "text": "Implement an archive-entry service over an injected repository. Export `ArchiveEntry`, `ArchiveDraft`, `ArchiveRepository`, `ServiceResult<T>`, and `ArchiveService`. The class must expose `list()`, `find(id)`, `create(draft)`, and `createMany(drafts)`. A valid draft has non-empty `id` and `title`, a non-negative integer `rank`, and only non-empty tags. Invalid input returns `{ ok: false, reason: \"invalid\" }` without calling the repository. A missing entry returns reason `not_found`; repository exceptions return `storage_error`. Empty batches succeed without a repository call. Batch order must be preserved. All inputs, repository results, and returned values must be copied so mutable arrays or records are not aliased.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6ae4cc242e4062868bbadc9cfb9995bb8b106f8919d15eed156e89f0b77678ea",
+      "text": "Implement an archive-entry service over an injected repository. Export `ArchiveEntry`, `ArchiveDraft`, `ArchiveRepository`, `ServiceResult<T>`, and `ArchiveService`. The class must expose `list()`, `find(id)`, `create(draft)`, and `createMany(drafts)`. A valid draft has non-empty `id` and `title`, a non-negative integer `rank`, and only non-empty tags. Invalid input returns `{ ok: false, reason: \"invalid\" }` without calling the repository. A missing entry returns reason `not_found`; repository exceptions return `storage_error`. Empty batches succeed without a repository call. Batch order must be preserved. All inputs, repository results, and returned values must be copied so mutable arrays or records are not aliased.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0026",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ArchiveEntry {\n  id: string;\n  title: string;\n  rank: number;\n  tags: string[];\n}\n\nexport type ArchiveDraft = ArchiveEntry;\n\nexport interface ArchiveRepository {\n  list(): Promise<readonly ArchiveEntry[]>;\n  find(id: string): Promise<ArchiveEntry | undefined>;\n  create(draft: ArchiveDraft): Promise<ArchiveEntry>;\n  createMany(drafts: readonly ArchiveDraft[]): Promise<readonly ArchiveEntry[]>;\n}\n\nexport type ServiceResult<T> =\n  | { ok: true; value: T }\n  | { ok: false; reason: \"invalid\" | \"not_found\" | \"storage_error\" };\n\nfunction copyEntry(entry: ArchiveEntry): ArchiveEntry {\n  return { ...entry, tags: [...entry.tags] };\n}\n\nfunction valid(draft: ArchiveDraft): boolean {\n  return typeof draft.id === \"string\" && draft.id.length > 0 &&\n    typeof draft.title === \"string\" && draft.title.length > 0 &&\n    Number.isInteger(draft.rank) && draft.rank >= 0 &&\n    Array.isArray(draft.tags) &&\n    draft.tags.every((tag) => typeof tag === \"string\" && tag.length > 0);\n}\n\nexport class ArchiveService {\n  constructor(private readonly repository: ArchiveRepository) {}\n\n  async list(): Promise<ServiceResult<ArchiveEntry[]>> {\n    try {\n      return { ok: true, value: (await this.repository.list()).map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async find(id: string): Promise<ServiceResult<ArchiveEntry>> {\n    if (typeof id !== \"string\" || id.length === 0) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    try {\n      const entry = await this.repository.find(id);\n      return entry === undefined\n        ? { ok: false, reason: \"not_found\" }\n        : { ok: true, value: copyEntry(entry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async create(draft: ArchiveDraft): Promise<ServiceResult<ArchiveEntry>> {\n    if (!valid(draft)) return { ok: false, reason: \"invalid\" };\n    try {\n      const inserted = await this.repository.create(copyEntry(draft));\n      return { ok: true, value: copyEntry(inserted) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async createMany(drafts: readonly ArchiveDraft[]): Promise<ServiceResult<ArchiveEntry[]>> {\n    if (!Array.isArray(drafts) || !drafts.every(valid)) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    if (drafts.length === 0) return { ok: true, value: [] };\n    try {\n      const inserted = await this.repository.createMany(drafts.map(copyEntry).reverse());\n      return { ok: true, value: inserted.map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n}\n",
+          "label": "Reverses a valid batch before sending it to the repository.",
+          "sha256": "243b2d9cea28047585b299974165f1e35af8bc79568deb2d363c741e044c80d2"
+        }
+      ],
+      "reference": {
+        "code": "export interface ArchiveEntry {\n  id: string;\n  title: string;\n  rank: number;\n  tags: string[];\n}\n\nexport type ArchiveDraft = ArchiveEntry;\n\nexport interface ArchiveRepository {\n  list(): Promise<readonly ArchiveEntry[]>;\n  find(id: string): Promise<ArchiveEntry | undefined>;\n  create(draft: ArchiveDraft): Promise<ArchiveEntry>;\n  createMany(drafts: readonly ArchiveDraft[]): Promise<readonly ArchiveEntry[]>;\n}\n\nexport type ServiceResult<T> =\n  | { ok: true; value: T }\n  | { ok: false; reason: \"invalid\" | \"not_found\" | \"storage_error\" };\n\nfunction copyEntry(entry: ArchiveEntry): ArchiveEntry {\n  return { ...entry, tags: [...entry.tags] };\n}\n\nfunction valid(draft: ArchiveDraft): boolean {\n  return typeof draft.id === \"string\" && draft.id.length > 0 &&\n    typeof draft.title === \"string\" && draft.title.length > 0 &&\n    Number.isInteger(draft.rank) && draft.rank >= 0 &&\n    Array.isArray(draft.tags) &&\n    draft.tags.every((tag) => typeof tag === \"string\" && tag.length > 0);\n}\n\nexport class ArchiveService {\n  constructor(private readonly repository: ArchiveRepository) {}\n\n  async list(): Promise<ServiceResult<ArchiveEntry[]>> {\n    try {\n      return { ok: true, value: (await this.repository.list()).map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async find(id: string): Promise<ServiceResult<ArchiveEntry>> {\n    if (typeof id !== \"string\" || id.length === 0) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    try {\n      const entry = await this.repository.find(id);\n      return entry === undefined\n        ? { ok: false, reason: \"not_found\" }\n        : { ok: true, value: copyEntry(entry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async create(draft: ArchiveDraft): Promise<ServiceResult<ArchiveEntry>> {\n    if (!valid(draft)) return { ok: false, reason: \"invalid\" };\n    try {\n      const inserted = await this.repository.create(copyEntry(draft));\n      return { ok: true, value: copyEntry(inserted) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async createMany(drafts: readonly ArchiveDraft[]): Promise<ServiceResult<ArchiveEntry[]>> {\n    if (!Array.isArray(drafts) || !drafts.every(valid)) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    if (drafts.length === 0) return { ok: true, value: [] };\n    try {\n      const inserted = await this.repository.createMany(drafts.map(copyEntry));\n      return { ok: true, value: inserted.map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5e176336f1d93fa6297fa2b5c920a028b754a1bc51a3020b6c4fda9b77f9e1f6"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ArchiveService } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  assert(Object.is(actual, expected), `${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  equal(JSON.stringify(actual), JSON.stringify(expected), message);\n}\n\nasync function run(): Promise<void> {\n  let calls = 0;\n  let receivedCreate: any;\n  let receivedMany: any;\n  const stored = { id: 'a', title: 'Alpha', rank: 1, tags: ['one'] };\n  const repository = {\n    async list() { calls++; return [stored]; },\n    async find(id: string) { calls++; return id === 'a' ? stored : undefined; },\n    async create(draft: any) { calls++; receivedCreate = draft; return draft; },\n    async createMany(drafts: any[]) { calls++; receivedMany = drafts; return drafts; }\n  };\n  const service = new ArchiveService(repository as any);\n\n  const listed: any = await service.list();\n  equal(listed.ok, true, 'list succeeds');\n  deepEqual(listed.value, [stored], 'list preserves repository order and data');\n  assert(listed.value[0] !== stored && listed.value[0].tags !== stored.tags, 'list copies repository records and arrays');\n  listed.value[0].title = 'mutated';\n  listed.value[0].tags.push('mutated');\n  equal(stored.title, 'Alpha', 'returned record does not alias repository record');\n  deepEqual(stored.tags, ['one'], 'returned tags do not alias repository tags');\n\n  const found: any = await service.find('a');\n  equal(found.ok, true, 'find succeeds');\n  assert(found.value !== stored && found.value.tags !== stored.tags, 'find copies repository result');\n  const missing: any = await service.find('missing');\n  deepEqual(missing, { ok: false, reason: 'not_found' }, 'missing entry is reported');\n\n  const draft: any = { id: 'b', title: 'Beta', rank: 0, tags: ['new'] };\n  const created: any = await service.create(draft);\n  equal(created.ok, true, 'create succeeds');\n  assert(receivedCreate !== draft && receivedCreate.tags !== draft.tags, 'create copies input before repository call');\n  assert(created.value !== receivedCreate && created.value.tags !== receivedCreate.tags, 'create copies repository output');\n  draft.tags[0] = 'changed';\n  deepEqual(created.value.tags, ['new'], 'created value is independent of input');\n\n  const beforeInvalid = calls;\n  const invalidDrafts: any[] = [\n    { id: '', title: 'Title', rank: 0, tags: [] },\n    { id: 'id', title: '', rank: 0, tags: [] },\n    { id: 'id', title: 'Title', rank: -1, tags: [] },\n    { id: 'id', title: 'Title', rank: 1.5, tags: [] },\n    { id: 'id', title: 'Title', rank: 0, tags: [''] }\n  ];\n  for (const invalid of invalidDrafts) {\n    deepEqual(await service.create(invalid), { ok: false, reason: 'invalid' }, 'invalid create is rejected');\n  }\n  equal(calls, beforeInvalid, 'invalid creates do not call repository');\n\n  const emptyCalls = calls;\n  const empty: any = await service.createMany([]);\n  deepEqual(empty, { ok: true, value: [] }, 'empty batch succeeds');\n  equal(calls, emptyCalls, 'empty batch avoids repository call');\n\n  const batch: any[] = [\n    { id: 'c', title: 'Third', rank: 2, tags: ['c'] },\n    { id: 'd', title: 'Fourth', rank: 3, tags: ['d'] }\n  ];\n  const many: any = await service.createMany(batch);\n  deepEqual(many.value.map((entry: any) => entry.id), ['c', 'd'], 'batch order is preserved');\n  assert(receivedMany !== batch && receivedMany[0] !== batch[0] && receivedMany[0].tags !== batch[0].tags, 'batch input is deeply copied');\n  assert(many.value !== receivedMany && many.value[0] !== receivedMany[0] && many.value[0].tags !== receivedMany[0].tags, 'batch output is deeply copied');\n\n  const beforeInvalidBatch = calls;\n  deepEqual(await service.createMany([batch[0], invalidDrafts[0]]), { ok: false, reason: 'invalid' }, 'one invalid draft rejects entire batch');\n  equal(calls, beforeInvalidBatch, 'invalid batch avoids repository call');\n\n  const failing = new ArchiveService({\n    async list() { throw new Error('disk'); },\n    async find() { throw new Error('disk'); },\n    async create() { throw new Error('disk'); },\n    async createMany() { throw new Error('disk'); }\n  } as any);\n  for (const result of [\n    await failing.list(),\n    await failing.find('x'),\n    await failing.create({ id: 'x', title: 'X', rank: 0, tags: [] }),\n    await failing.createMany([{ id: 'x', title: 'X', rank: 0, tags: [] }])\n  ] as any[]) {\n    deepEqual(result, { ok: false, reason: 'storage_error' }, 'repository exception becomes storage_error');\n  }\n}\n\nvoid run();\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "d575624b71f1d7c5805b00f6e14b313046579c176dd464f949603be514c0abbb"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6ae4cc242e4062868bbadc9cfb9995bb8b106f8919d15eed156e89f0b77678ea",
+      "text": "Implement an archive-entry service over an injected repository. Export `ArchiveEntry`, `ArchiveDraft`, `ArchiveRepository`, `ServiceResult<T>`, and `ArchiveService`. The class must expose `list()`, `find(id)`, `create(draft)`, and `createMany(drafts)`. A valid draft has non-empty `id` and `title`, a non-negative integer `rank`, and only non-empty tags. Invalid input returns `{ ok: false, reason: \"invalid\" }` without calling the repository. A missing entry returns reason `not_found`; repository exceptions return `storage_error`. Empty batches succeed without a repository call. Batch order must be preserved. All inputs, repository results, and returned values must be copied so mutable arrays or records are not aliased.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6ae4cc242e4062868bbadc9cfb9995bb8b106f8919d15eed156e89f0b77678ea",
+      "text": "Implement an archive-entry service over an injected repository. Export `ArchiveEntry`, `ArchiveDraft`, `ArchiveRepository`, `ServiceResult<T>`, and `ArchiveService`. The class must expose `list()`, `find(id)`, `create(draft)`, and `createMany(drafts)`. A valid draft has non-empty `id` and `title`, a non-negative integer `rank`, and only non-empty tags. Invalid input returns `{ ok: false, reason: \"invalid\" }` without calling the repository. A missing entry returns reason `not_found`; repository exceptions return `storage_error`. Empty batches succeed without a repository call. Batch order must be preserved. All inputs, repository results, and returned values must be copied so mutable arrays or records are not aliased.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0026",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ArchiveEntry {\n  id: string;\n  title: string;\n  rank: number;\n  tags: string[];\n}\n\nexport type ArchiveDraft = ArchiveEntry;\n\nexport interface ArchiveRepository {\n  list(): Promise<readonly ArchiveEntry[]>;\n  find(id: string): Promise<ArchiveEntry | undefined>;\n  create(draft: ArchiveDraft): Promise<ArchiveEntry>;\n  createMany(drafts: readonly ArchiveDraft[]): Promise<readonly ArchiveEntry[]>;\n}\n\nexport type ServiceResult<T> =\n  | { ok: true; value: T }\n  | { ok: false; reason: \"invalid\" | \"not_found\" | \"storage_error\" };\n\nfunction copyEntry(entry: ArchiveEntry): ArchiveEntry {\n  return { ...entry, tags: [...entry.tags] };\n}\n\nfunction valid(draft: ArchiveDraft): boolean {\n  return typeof draft.id === \"string\" && draft.id.length > 0 &&\n    typeof draft.title === \"string\" && draft.title.length > 0 &&\n    Number.isInteger(draft.rank) && draft.rank >= 0 &&\n    Array.isArray(draft.tags) &&\n    draft.tags.every((tag) => typeof tag === \"string\" && tag.length > 0);\n}\n\nexport class ArchiveService {\n  constructor(private readonly repository: ArchiveRepository) {}\n\n  async list(): Promise<ServiceResult<ArchiveEntry[]>> {\n    try {\n      return { ok: true, value: (await this.repository.list()).map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async find(id: string): Promise<ServiceResult<ArchiveEntry>> {\n    if (typeof id !== \"string\" || id.length === 0) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    try {\n      const entry = await this.repository.find(id);\n      return entry === undefined\n        ? { ok: false, reason: \"not_found\" }\n        : { ok: true, value: copyEntry(entry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async create(draft: ArchiveDraft): Promise<ServiceResult<ArchiveEntry>> {\n    if (!valid(draft)) return { ok: false, reason: \"invalid\" };\n    try {\n      const inserted = await this.repository.create(copyEntry(draft));\n      return { ok: true, value: copyEntry(inserted) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async createMany(drafts: readonly ArchiveDraft[]): Promise<ServiceResult<ArchiveEntry[]>> {\n    if (!Array.isArray(drafts) || !drafts.every(valid)) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    if (drafts.length === 0) return { ok: true, value: [] };\n    try {\n      const inserted = await this.repository.createMany(drafts.map(copyEntry).reverse());\n      return { ok: true, value: inserted.map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n}\n",
+          "label": "Reverses a valid batch before sending it to the repository.",
+          "sha256": "243b2d9cea28047585b299974165f1e35af8bc79568deb2d363c741e044c80d2"
+        }
+      ],
+      "reference": {
+        "code": "export interface ArchiveEntry {\n  id: string;\n  title: string;\n  rank: number;\n  tags: string[];\n}\n\nexport type ArchiveDraft = ArchiveEntry;\n\nexport interface ArchiveRepository {\n  list(): Promise<readonly ArchiveEntry[]>;\n  find(id: string): Promise<ArchiveEntry | undefined>;\n  create(draft: ArchiveDraft): Promise<ArchiveEntry>;\n  createMany(drafts: readonly ArchiveDraft[]): Promise<readonly ArchiveEntry[]>;\n}\n\nexport type ServiceResult<T> =\n  | { ok: true; value: T }\n  | { ok: false; reason: \"invalid\" | \"not_found\" | \"storage_error\" };\n\nfunction copyEntry(entry: ArchiveEntry): ArchiveEntry {\n  return { ...entry, tags: [...entry.tags] };\n}\n\nfunction valid(draft: ArchiveDraft): boolean {\n  return typeof draft.id === \"string\" && draft.id.length > 0 &&\n    typeof draft.title === \"string\" && draft.title.length > 0 &&\n    Number.isInteger(draft.rank) && draft.rank >= 0 &&\n    Array.isArray(draft.tags) &&\n    draft.tags.every((tag) => typeof tag === \"string\" && tag.length > 0);\n}\n\nexport class ArchiveService {\n  constructor(private readonly repository: ArchiveRepository) {}\n\n  async list(): Promise<ServiceResult<ArchiveEntry[]>> {\n    try {\n      return { ok: true, value: (await this.repository.list()).map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async find(id: string): Promise<ServiceResult<ArchiveEntry>> {\n    if (typeof id !== \"string\" || id.length === 0) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    try {\n      const entry = await this.repository.find(id);\n      return entry === undefined\n        ? { ok: false, reason: \"not_found\" }\n        : { ok: true, value: copyEntry(entry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async create(draft: ArchiveDraft): Promise<ServiceResult<ArchiveEntry>> {\n    if (!valid(draft)) return { ok: false, reason: \"invalid\" };\n    try {\n      const inserted = await this.repository.create(copyEntry(draft));\n      return { ok: true, value: copyEntry(inserted) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n\n  async createMany(drafts: readonly ArchiveDraft[]): Promise<ServiceResult<ArchiveEntry[]>> {\n    if (!Array.isArray(drafts) || !drafts.every(valid)) {\n      return { ok: false, reason: \"invalid\" };\n    }\n    if (drafts.length === 0) return { ok: true, value: [] };\n    try {\n      const inserted = await this.repository.createMany(drafts.map(copyEntry));\n      return { ok: true, value: inserted.map(copyEntry) };\n    } catch {\n      return { ok: false, reason: \"storage_error\" };\n    }\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5e176336f1d93fa6297fa2b5c920a028b754a1bc51a3020b6c4fda9b77f9e1f6"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:14\n        throw new Error(`sparse tags accepted or repository called: ${JSON.stringify(result)}, calls=${calls}`);\n              ^\n\nError: sparse tags accepted or repository called: {\"ok\":true,\"value\":{\"id\":\"a\",\"title\":\"valid\",\"rank\":0,\"tags\":[null]}}, calls=1\n    at main (/work/solution.test.js:14:15)\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "11d709d1df5bdc63dba71f8a6b5afec0d09613167163402820a051ef847d840e",
+    "duration_ms": 2994,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

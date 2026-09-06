@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0279",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c692a9357fa3768c23976875c53d1417690fb33f67ec676976b538931cad785b",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { EquipmentCatalog } from './solution';\nlet rejected = false;\ntry { new EquipmentCatalog('key').add('key', { name: 'Pump', zone: 'West', labels: new Array<string>(1) }); }\ncatch { rejected = true; }\nif (!rejected) throw new Error('Missing string label must be rejected');\n",
+        "sha256": "68fe44bc9984847111479450abf5e881465a3fc585388742e3a57e4c736a7903"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7b079a49e05b8bbd913fee7302e20ab50c2d5b0ed3644db2a0057cb00611f2cf",
+      "text": "Implement an authenticated in-memory equipment catalog as one complete TypeScript source file.\n\nExport `Equipment`, `EquipmentInput`, and `EquipmentCatalog`. `Equipment` has `id: number`, `name: string`, `zone: string`, and `labels: string[]`. `EquipmentInput` contains the same fields except `id`.\n\n`EquipmentCatalog` must expose:\n\n```typescript\nconstructor(accessKey: string);\nlist(): Equipment[];\nadd(accessKey: string, input: EquipmentInput): Equipment;\nreplace(accessKey: string, id: number, input: EquipmentInput): Equipment;\nremove(accessKey: string, id: number): boolean;\n```\n\nThe constructor must reject an empty access key with `TypeError`. All mutating methods must throw `Error(\"Unauthorized\")` for a mismatched key before inspecting other arguments. Names and zones must be non-empty strings after trimming; stored values are trimmed. Labels must be an array of strings and are stored unchanged and in order. IDs begin at 1 and increase without reuse. `replace` preserves the item's ID and list position and throws `RangeError` for a missing or non-positive-integer ID. `remove` returns `false` for a valid but absent ID. `list` preserves insertion order.\n\nAll inputs, outputs, and list results must be defensively copied, including label arrays. No caller mutation may alter catalog state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7b079a49e05b8bbd913fee7302e20ab50c2d5b0ed3644db2a0057cb00611f2cf",
+      "text": "Implement an authenticated in-memory equipment catalog as one complete TypeScript source file.\n\nExport `Equipment`, `EquipmentInput`, and `EquipmentCatalog`. `Equipment` has `id: number`, `name: string`, `zone: string`, and `labels: string[]`. `EquipmentInput` contains the same fields except `id`.\n\n`EquipmentCatalog` must expose:\n\n```typescript\nconstructor(accessKey: string);\nlist(): Equipment[];\nadd(accessKey: string, input: EquipmentInput): Equipment;\nreplace(accessKey: string, id: number, input: EquipmentInput): Equipment;\nremove(accessKey: string, id: number): boolean;\n```\n\nThe constructor must reject an empty access key with `TypeError`. All mutating methods must throw `Error(\"Unauthorized\")` for a mismatched key before inspecting other arguments. Names and zones must be non-empty strings after trimming; stored values are trimmed. Labels must be an array of strings and are stored unchanged and in order. IDs begin at 1 and increase without reuse. `replace` preserves the item's ID and list position and throws `RangeError` for a missing or non-positive-integer ID. `remove` returns `false` for a valid but absent ID. `list` preserves insertion order.\n\nAll inputs, outputs, and list results must be defensively copied, including label arrays. No caller mutation may alter catalog state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0279",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type Equipment = {\n  id: number;\n  name: string;\n  zone: string;\n  labels: string[];\n};\n\nexport type EquipmentInput = Omit<Equipment, \"id\">;\n\nfunction normalize(input: EquipmentInput): EquipmentInput {\n  if (typeof input !== \"object\" || input === null) throw new TypeError(\"Invalid equipment\");\n  if (typeof input.name !== \"string\" || input.name.trim() === \"\" ||\n      typeof input.zone !== \"string\" || input.zone.trim() === \"\" ||\n      !Array.isArray(input.labels) || input.labels.some(label => typeof label !== \"string\")) {\n    throw new TypeError(\"Invalid equipment\");\n  }\n  return { name: input.name.trim(), zone: input.zone.trim(), labels: [...input.labels] };\n}\n\nfunction copy(item: Equipment): Equipment {\n  return { ...item, labels: [...item.labels] };\n}\n\nexport class EquipmentCatalog {\n  private readonly accessKey: string;\n  private readonly items: Equipment[] = [];\n  private nextId = 1;\n\n  constructor(accessKey: string) {\n    if (typeof accessKey !== \"string\" || accessKey.length === 0) throw new TypeError(\"Invalid key\");\n    this.accessKey = accessKey;\n  }\n\n  private authorize(key: string): void {\n    if (key !== this.accessKey) throw new Error(\"Unauthorized\");\n  }\n\n  list(): Equipment[] {\n    return this.items.map(copy);\n  }\n\n  add(accessKey: string, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    const item: Equipment = { id: this.nextId++, ...normalize(input) };\n    this.items.push(item);\n    return copy(item);\n  }\n\n  replace(accessKey: string, id: number, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) throw new RangeError(\"Equipment not found\");\n    const item: Equipment = { id, ...normalize(input) };\n    this.items[index] = item;\n    return copy(item);\n  }\n\n  remove(accessKey: string, id: number): boolean {\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.items.splice(index, 1);\n    return true;\n  }\n}\n",
+          "label": "The removal operation does not authenticate its caller.",
+          "sha256": "c55987ca003333d69e26a9ba16b4cd344bc5640a30e4cd052589d37b1593eeb0"
+        }
+      ],
+      "reference": {
+        "code": "export type Equipment = {\n  id: number;\n  name: string;\n  zone: string;\n  labels: string[];\n};\n\nexport type EquipmentInput = Omit<Equipment, \"id\">;\n\nfunction normalize(input: EquipmentInput): EquipmentInput {\n  if (typeof input !== \"object\" || input === null) throw new TypeError(\"Invalid equipment\");\n  if (typeof input.name !== \"string\" || input.name.trim() === \"\" ||\n      typeof input.zone !== \"string\" || input.zone.trim() === \"\" ||\n      !Array.isArray(input.labels) || input.labels.some(label => typeof label !== \"string\")) {\n    throw new TypeError(\"Invalid equipment\");\n  }\n  return { name: input.name.trim(), zone: input.zone.trim(), labels: [...input.labels] };\n}\n\nfunction copy(item: Equipment): Equipment {\n  return { ...item, labels: [...item.labels] };\n}\n\nexport class EquipmentCatalog {\n  private readonly accessKey: string;\n  private readonly items: Equipment[] = [];\n  private nextId = 1;\n\n  constructor(accessKey: string) {\n    if (typeof accessKey !== \"string\" || accessKey.length === 0) throw new TypeError(\"Invalid key\");\n    this.accessKey = accessKey;\n  }\n\n  private authorize(key: string): void {\n    if (key !== this.accessKey) throw new Error(\"Unauthorized\");\n  }\n\n  list(): Equipment[] {\n    return this.items.map(copy);\n  }\n\n  add(accessKey: string, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    const item: Equipment = { id: this.nextId++, ...normalize(input) };\n    this.items.push(item);\n    return copy(item);\n  }\n\n  replace(accessKey: string, id: number, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) throw new RangeError(\"Equipment not found\");\n    const item: Equipment = { id, ...normalize(input) };\n    this.items[index] = item;\n    return copy(item);\n  }\n\n  remove(accessKey: string, id: number): boolean {\n    this.authorize(accessKey);\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.items.splice(index, 1);\n    return true;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6f5d800267b6cb0ee061f4c51f7ab0886e777726cf89316916d03cb582d3ac88"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { EquipmentCatalog, type EquipmentInput } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);\n}\n\nfunction captures(fn: () => unknown): unknown {\n  try {\n    fn();\n  } catch (error) {\n    return error;\n  }\n  return undefined;\n}\n\nfunction assertUnauthorized(error: unknown, message: string): void {\n  assert(error instanceof Error && error.message === 'Unauthorized', message);\n}\n\nassert(captures(() => new EquipmentCatalog('')) instanceof TypeError, 'empty access key rejected');\n\nconst catalog = new EquipmentCatalog('key');\nassert(catalog.list().length === 0, 'new catalog is empty');\n\nconst input: EquipmentInput = {\n  name: '  Pump  ',\n  zone: ' West ',\n  labels: [' critical ', 'critical', '']\n};\nconst first = catalog.add('key', input);\ndeepEqual(\n  first,\n  { id: 1, name: 'Pump', zone: 'West', labels: [' critical ', 'critical', ''] },\n  'add trims fields and preserves labels unchanged and in order'\n);\n\ninput.name = 'Mutated';\ninput.zone = 'Mutated';\ninput.labels[0] = 'changed';\ndeepEqual(\n  catalog.list()[0],\n  { id: 1, name: 'Pump', zone: 'West', labels: [' critical ', 'critical', ''] },\n  'add copies its input'\n);\n\nfirst.name = 'Changed';\nfirst.zone = 'Changed';\nfirst.labels.push('new');\ndeepEqual(\n  catalog.list()[0],\n  { id: 1, name: 'Pump', zone: 'West', labels: [' critical ', 'critical', ''] },\n  'add result is defensive'\n);\n\nconst second = catalog.add('key', { name: 'Valve', zone: 'East', labels: [] });\nassert(second.id === 2, 'ids increase');\ndeepEqual(catalog.list().map(item => item.id), [1, 2], 'list preserves insertion order');\n\nconst replacementInput: EquipmentInput = {\n  name: ' New Pump ',\n  zone: ' North ',\n  labels: ['blue']\n};\nconst replaced = catalog.replace('key', 1, replacementInput);\ndeepEqual(\n  replaced,\n  { id: 1, name: 'New Pump', zone: 'North', labels: ['blue'] },\n  'replace trims fields and preserves id'\n);\nreplacementInput.name = 'Mutated';\nreplacementInput.labels[0] = 'changed';\nreplaced.name = 'Changed';\nreplaced.labels[0] = 'also changed';\ndeepEqual(catalog.list().map(item => item.id), [1, 2], 'replace preserves list position');\ndeepEqual(\n  catalog.list()[0],\n  { id: 1, name: 'New Pump', zone: 'North', labels: ['blue'] },\n  'replace copies its input and result'\n);\n\nconst listed = catalog.list();\nlisted.reverse();\nlisted[0].name = 'Bad';\nlisted[0].labels.push('bad');\ndeepEqual(catalog.list().map(item => item.id), [1, 2], 'list array is defensive');\ndeepEqual(catalog.list()[1], { id: 2, name: 'Valve', zone: 'East', labels: [] }, 'listed items are defensive');\n\nassert(catalog.remove('key', 99) === false, 'absent valid removal returns false');\nassert(catalog.remove('key', 1) === true, 'existing item is removed');\ndeepEqual(catalog.list().map(item => item.id), [2], 'removal updates the catalog');\nassert(\n  catalog.add('key', { name: 'Sensor', zone: 'Lab', labels: ['x'] }).id === 3,\n  'removed ids are not reused'\n);\n\nfor (const badId of [0, -1, 1.5, NaN, Infinity]) {\n  assert(\n    captures(() => catalog.replace('key', badId, { name: 'X', zone: 'Y', labels: [] })) instanceof RangeError,\n    'replace rejects a non-positive-integer id with RangeError'\n  );\n}\nassert(\n  captures(() => catalog.replace('key', 500, { name: 'X', zone: 'Y', labels: [] })) instanceof RangeError,\n  'replace rejects a missing id with RangeError'\n);\n\nconst malformedInputs: unknown[] = [\n  { name: '   ', zone: 'Z', labels: [] },\n  { name: 'X', zone: '', labels: [] },\n  { name: 4, zone: 'Z', labels: [] },\n  { name: 'X', zone: null, labels: [] },\n  { name: 'X', zone: 'Z', labels: 'bad' },\n  { name: 'X', zone: 'Z', labels: ['ok', 4] },\n  null\n];\nfor (const badInput of malformedInputs) {\n  assert(\n    captures(() => catalog.add('key', badInput as EquipmentInput)) !== undefined,\n    'malformed input is rejected'\n  );\n}\n\nconst beforeFailures = catalog.list();\nassertUnauthorized(\n  captures(() => catalog.add('wrong', null as unknown as EquipmentInput)),\n  'add authorization precedes input validation'\n);\nassertUnauthorized(\n  captures(() => catalog.replace('wrong', 0, null as unknown as EquipmentInput)),\n  'replace authorization precedes id and input validation'\n);\nassertUnauthorized(\n  captures(() => catalog.remove('wrong', NaN)),\n  'remove authorization precedes id inspection'\n);\ndeepEqual(catalog.list(), beforeFailures, 'failed operations leave state unchanged');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "8d3b1446dc42ed59c948cb510dad50246b419b1cffc274bf6eb60bfc78e75efd"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7b079a49e05b8bbd913fee7302e20ab50c2d5b0ed3644db2a0057cb00611f2cf",
+      "text": "Implement an authenticated in-memory equipment catalog as one complete TypeScript source file.\n\nExport `Equipment`, `EquipmentInput`, and `EquipmentCatalog`. `Equipment` has `id: number`, `name: string`, `zone: string`, and `labels: string[]`. `EquipmentInput` contains the same fields except `id`.\n\n`EquipmentCatalog` must expose:\n\n```typescript\nconstructor(accessKey: string);\nlist(): Equipment[];\nadd(accessKey: string, input: EquipmentInput): Equipment;\nreplace(accessKey: string, id: number, input: EquipmentInput): Equipment;\nremove(accessKey: string, id: number): boolean;\n```\n\nThe constructor must reject an empty access key with `TypeError`. All mutating methods must throw `Error(\"Unauthorized\")` for a mismatched key before inspecting other arguments. Names and zones must be non-empty strings after trimming; stored values are trimmed. Labels must be an array of strings and are stored unchanged and in order. IDs begin at 1 and increase without reuse. `replace` preserves the item's ID and list position and throws `RangeError` for a missing or non-positive-integer ID. `remove` returns `false` for a valid but absent ID. `list` preserves insertion order.\n\nAll inputs, outputs, and list results must be defensively copied, including label arrays. No caller mutation may alter catalog state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7b079a49e05b8bbd913fee7302e20ab50c2d5b0ed3644db2a0057cb00611f2cf",
+      "text": "Implement an authenticated in-memory equipment catalog as one complete TypeScript source file.\n\nExport `Equipment`, `EquipmentInput`, and `EquipmentCatalog`. `Equipment` has `id: number`, `name: string`, `zone: string`, and `labels: string[]`. `EquipmentInput` contains the same fields except `id`.\n\n`EquipmentCatalog` must expose:\n\n```typescript\nconstructor(accessKey: string);\nlist(): Equipment[];\nadd(accessKey: string, input: EquipmentInput): Equipment;\nreplace(accessKey: string, id: number, input: EquipmentInput): Equipment;\nremove(accessKey: string, id: number): boolean;\n```\n\nThe constructor must reject an empty access key with `TypeError`. All mutating methods must throw `Error(\"Unauthorized\")` for a mismatched key before inspecting other arguments. Names and zones must be non-empty strings after trimming; stored values are trimmed. Labels must be an array of strings and are stored unchanged and in order. IDs begin at 1 and increase without reuse. `replace` preserves the item's ID and list position and throws `RangeError` for a missing or non-positive-integer ID. `remove` returns `false` for a valid but absent ID. `list` preserves insertion order.\n\nAll inputs, outputs, and list results must be defensively copied, including label arrays. No caller mutation may alter catalog state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0279",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type Equipment = {\n  id: number;\n  name: string;\n  zone: string;\n  labels: string[];\n};\n\nexport type EquipmentInput = Omit<Equipment, \"id\">;\n\nfunction normalize(input: EquipmentInput): EquipmentInput {\n  if (typeof input !== \"object\" || input === null) throw new TypeError(\"Invalid equipment\");\n  if (typeof input.name !== \"string\" || input.name.trim() === \"\" ||\n      typeof input.zone !== \"string\" || input.zone.trim() === \"\" ||\n      !Array.isArray(input.labels) || input.labels.some(label => typeof label !== \"string\")) {\n    throw new TypeError(\"Invalid equipment\");\n  }\n  return { name: input.name.trim(), zone: input.zone.trim(), labels: [...input.labels] };\n}\n\nfunction copy(item: Equipment): Equipment {\n  return { ...item, labels: [...item.labels] };\n}\n\nexport class EquipmentCatalog {\n  private readonly accessKey: string;\n  private readonly items: Equipment[] = [];\n  private nextId = 1;\n\n  constructor(accessKey: string) {\n    if (typeof accessKey !== \"string\" || accessKey.length === 0) throw new TypeError(\"Invalid key\");\n    this.accessKey = accessKey;\n  }\n\n  private authorize(key: string): void {\n    if (key !== this.accessKey) throw new Error(\"Unauthorized\");\n  }\n\n  list(): Equipment[] {\n    return this.items.map(copy);\n  }\n\n  add(accessKey: string, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    const item: Equipment = { id: this.nextId++, ...normalize(input) };\n    this.items.push(item);\n    return copy(item);\n  }\n\n  replace(accessKey: string, id: number, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) throw new RangeError(\"Equipment not found\");\n    const item: Equipment = { id, ...normalize(input) };\n    this.items[index] = item;\n    return copy(item);\n  }\n\n  remove(accessKey: string, id: number): boolean {\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.items.splice(index, 1);\n    return true;\n  }\n}\n",
+          "label": "The removal operation does not authenticate its caller.",
+          "sha256": "c55987ca003333d69e26a9ba16b4cd344bc5640a30e4cd052589d37b1593eeb0"
+        }
+      ],
+      "reference": {
+        "code": "export type Equipment = {\n  id: number;\n  name: string;\n  zone: string;\n  labels: string[];\n};\n\nexport type EquipmentInput = Omit<Equipment, \"id\">;\n\nfunction normalize(input: EquipmentInput): EquipmentInput {\n  if (typeof input !== \"object\" || input === null) throw new TypeError(\"Invalid equipment\");\n  if (typeof input.name !== \"string\" || input.name.trim() === \"\" ||\n      typeof input.zone !== \"string\" || input.zone.trim() === \"\" ||\n      !Array.isArray(input.labels) || input.labels.some(label => typeof label !== \"string\")) {\n    throw new TypeError(\"Invalid equipment\");\n  }\n  return { name: input.name.trim(), zone: input.zone.trim(), labels: [...input.labels] };\n}\n\nfunction copy(item: Equipment): Equipment {\n  return { ...item, labels: [...item.labels] };\n}\n\nexport class EquipmentCatalog {\n  private readonly accessKey: string;\n  private readonly items: Equipment[] = [];\n  private nextId = 1;\n\n  constructor(accessKey: string) {\n    if (typeof accessKey !== \"string\" || accessKey.length === 0) throw new TypeError(\"Invalid key\");\n    this.accessKey = accessKey;\n  }\n\n  private authorize(key: string): void {\n    if (key !== this.accessKey) throw new Error(\"Unauthorized\");\n  }\n\n  list(): Equipment[] {\n    return this.items.map(copy);\n  }\n\n  add(accessKey: string, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    const item: Equipment = { id: this.nextId++, ...normalize(input) };\n    this.items.push(item);\n    return copy(item);\n  }\n\n  replace(accessKey: string, id: number, input: EquipmentInput): Equipment {\n    this.authorize(accessKey);\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) throw new RangeError(\"Equipment not found\");\n    const item: Equipment = { id, ...normalize(input) };\n    this.items[index] = item;\n    return copy(item);\n  }\n\n  remove(accessKey: string, id: number): boolean {\n    this.authorize(accessKey);\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    const index = this.items.findIndex(item => item.id === id);\n    if (index < 0) return false;\n    this.items.splice(index, 1);\n    return true;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6f5d800267b6cb0ee061f4c51f7ab0886e777726cf89316916d03cb582d3ac88"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Missing string label must be rejected');\n    ^\n\nError: Missing string label must be rejected\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "1b5223fb356d03f367c2752938d8460568868b819cbad4a77bc97de726bf2249",
+    "duration_ms": 2063,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

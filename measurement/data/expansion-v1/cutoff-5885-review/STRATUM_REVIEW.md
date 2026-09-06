@@ -1,9 +1,10 @@
 # Quality follow-up decision
 
-Current checkpoint: **279 holds (276 additive plus historical three)**; 398
-unique outside-sample inspections. Batch 26 complete through position 390;
-continue 391. GCS verified through 279 holds / completed batch 26 / scope v6
-(11 groups, 14 strata, 3,085 review records). See QUALITY_STRATUM_279_BACKUP.md.
+Current checkpoint: **310 holds (307 additive plus historical three)**; 457
+unique outside-sample inspections. Batch 30 complete through position 450;
+continue 451 of 544 outside-sample array hits. GCS verified through 310 holds
+/ batch 30 / scope v6 (11 groups, 14 strata, 3,085 review records).
+See ARRAY_STRATUM_REVIEW_30.md and QUALITY_STRATUM_310_BACKUP.md.
 No training seal or new VM. Older entries are historical.
 
 V6 adds contradictory_suffix_uniqueness, supported by TS generation0173/0190.

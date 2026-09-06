@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0255",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "321334e9fab6b1916b6c23a1c0d6a41b4ad3bb79b9d81a8d1d00678bf308f20e",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ProfileRegistry, ProfileError } from './solution';\nconst registry = new ProfileRegistry([{ id: 'a', name: 'Alpha', badge: [7] }]);\nlet rejected = false;\ntry { registry.setBadge('a', new Array<number>(1)); }\ncatch (error) { rejected = error instanceof ProfileError && error.code === 'INVALID_BADGE'; }\nif (!rejected) throw new Error('Missing badge byte must throw INVALID_BADGE');\nif (JSON.stringify(registry.get('a').badge) !== '[7]') throw new Error('Failed operation changed state');\n",
+        "sha256": "93ed77261873c455190855f6c76c77336e946e836a7caf8cb5457262279f473a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "baf89653c524515849df5e2ffe3b0814285f84bbfee002855a7bd4df283dc9d5",
+      "text": "Implement a new `ProfileRegistry` with the exact exported API in the interfaces below. It stores profiles in memory in constructor order. Constructor input must reject duplicate IDs with `ProfileError('DUPLICATE')`. `get` returns a profile or throws `MISSING`. `rename` trims the supplied name, rejects an empty result with `INVALID_NAME`, and updates only that profile. `setBadge` replaces a profile's badge bytes; an empty byte array is valid. Each byte must be an integer from 0 through 255 or `INVALID_BADGE` is thrown. `clearBadge` sets the badge to null. Missing IDs always throw `MISSING`. Every returned profile, badge array, and list must be a fresh copy; inputs must never be mutated or retained by alias. Failed operations leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "baf89653c524515849df5e2ffe3b0814285f84bbfee002855a7bd4df283dc9d5",
+      "text": "Implement a new `ProfileRegistry` with the exact exported API in the interfaces below. It stores profiles in memory in constructor order. Constructor input must reject duplicate IDs with `ProfileError('DUPLICATE')`. `get` returns a profile or throws `MISSING`. `rename` trims the supplied name, rejects an empty result with `INVALID_NAME`, and updates only that profile. `setBadge` replaces a profile's badge bytes; an empty byte array is valid. Each byte must be an integer from 0 through 255 or `INVALID_BADGE` is thrown. `clearBadge` sets the badge to null. Missing IDs always throw `MISSING`. Every returned profile, badge array, and list must be a fresh copy; inputs must never be mutated or retained by alias. Failed operations leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0255",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Profile {\n  id: string;\n  name: string;\n  badge: number[] | null;\n}\n\nexport class ProfileError extends Error {\n  constructor(public readonly code: 'DUPLICATE' | 'MISSING' | 'INVALID_NAME' | 'INVALID_BADGE') {\n    super(code);\n    this.name = 'ProfileError';\n  }\n}\n\nfunction clone(profile: Profile): Profile {\n  return {\n    id: profile.id,\n    name: profile.name,\n    badge: profile.badge === null ? null : [...profile.badge],\n  };\n}\n\nfunction validateBadge(badge: readonly number[] | null): void {\n  if (badge !== null && badge.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n    throw new ProfileError('INVALID_BADGE');\n  }\n}\n\nexport class ProfileRegistry {\n  private readonly profiles: Profile[];\n\n  constructor(initial: readonly Profile[] = []) {\n    const seen = new Set<string>();\n    this.profiles = initial.map(profile => {\n      if (seen.has(profile.id)) throw new ProfileError('DUPLICATE');\n      if (typeof profile.name !== 'string' || profile.name.trim() === '') {\n        throw new ProfileError('INVALID_NAME');\n      }\n      validateBadge(profile.badge);\n      seen.add(profile.id);\n      return clone(profile);\n    });\n  }\n\n  private index(id: string): number {\n    const index = this.profiles.findIndex(profile => profile.id === id);\n    if (index < 0) throw new ProfileError('MISSING');\n    return index;\n  }\n\n  get(id: string): Profile {\n    return clone(this.profiles[this.index(id)]);\n  }\n\n  list(): Profile[] {\n    return this.profiles.map(clone);\n  }\n\n  rename(id: string, name: string): Profile {\n    const index = this.index(id);\n    const trimmed = name.trim();\n    if (!trimmed) throw new ProfileError('INVALID_NAME');\n    this.profiles[index].name = trimmed;\n    return clone(this.profiles[index]);\n  }\n\n  setBadge(id: string, bytes: readonly number[]): Profile {\n    const index = this.index(id);\n    validateBadge(bytes);\n    this.profiles[index].badge = bytes as number[];\n    return clone(this.profiles[index]);\n  }\n\n  clearBadge(id: string): Profile {\n    const index = this.index(id);\n    this.profiles[index].badge = null;\n    return clone(this.profiles[index]);\n  }\n}\n",
+          "label": "`setBadge` retains the caller's array by alias, allowing later caller mutation to change registry state.",
+          "sha256": "b7c3145ddf10e42dfcdf0d5fff4c24bfa824658d2079e2e6e03f66ca5f6f7975"
+        }
+      ],
+      "reference": {
+        "code": "export interface Profile {\n  id: string;\n  name: string;\n  badge: number[] | null;\n}\n\nexport class ProfileError extends Error {\n  constructor(public readonly code: 'DUPLICATE' | 'MISSING' | 'INVALID_NAME' | 'INVALID_BADGE') {\n    super(code);\n    this.name = 'ProfileError';\n  }\n}\n\nfunction clone(profile: Profile): Profile {\n  return {\n    id: profile.id,\n    name: profile.name,\n    badge: profile.badge === null ? null : [...profile.badge],\n  };\n}\n\nfunction validateBadge(badge: readonly number[] | null): void {\n  if (badge !== null && badge.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n    throw new ProfileError('INVALID_BADGE');\n  }\n}\n\nexport class ProfileRegistry {\n  private readonly profiles: Profile[];\n\n  constructor(initial: readonly Profile[] = []) {\n    const seen = new Set<string>();\n    this.profiles = initial.map(profile => {\n      if (seen.has(profile.id)) throw new ProfileError('DUPLICATE');\n      if (typeof profile.name !== 'string' || profile.name.trim() === '') {\n        throw new ProfileError('INVALID_NAME');\n      }\n      validateBadge(profile.badge);\n      seen.add(profile.id);\n      return clone(profile);\n    });\n  }\n\n  private index(id: string): number {\n    const index = this.profiles.findIndex(profile => profile.id === id);\n    if (index < 0) throw new ProfileError('MISSING');\n    return index;\n  }\n\n  get(id: string): Profile {\n    return clone(this.profiles[this.index(id)]);\n  }\n\n  list(): Profile[] {\n    return this.profiles.map(clone);\n  }\n\n  rename(id: string, name: string): Profile {\n    const index = this.index(id);\n    const trimmed = name.trim();\n    if (!trimmed) throw new ProfileError('INVALID_NAME');\n    this.profiles[index].name = trimmed;\n    return clone(this.profiles[index]);\n  }\n\n  setBadge(id: string, bytes: readonly number[]): Profile {\n    const index = this.index(id);\n    validateBadge(bytes);\n    this.profiles[index].badge = [...bytes];\n    return clone(this.profiles[index]);\n  }\n\n  clearBadge(id: string): Profile {\n    const index = this.index(id);\n    this.profiles[index].badge = null;\n    return clone(this.profiles[index]);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4158a3623fed4f76eeeeedb948f8a74b12858bcf38722864f1c18ee9ba2a7f35"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ProfileRegistry, ProfileError } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction expectCode(code: string, action: () => unknown): void {\n  try { action(); } catch (error) {\n    assert(error instanceof ProfileError, `${code} must use ProfileError`);\n    equal((error as any).code, code, 'profile error code');\n    return;\n  }\n  throw new Error(`expected ${code}`);\n}\n\nconst badge = [1, 2, 255];\nconst input: any = { id: 'a', name: 'Alpha', badge };\nconst registry: any = new ProfileRegistry([input, { id: 'b', name: 'Beta', badge: null }]);\ninput.name = 'mutated';\nbadge[0] = 99;\nequal(registry.get('a').name, 'Alpha', 'constructor does not retain profile input');\nequal(registry.get('a').badge[0], 1, 'constructor copies badge input');\nequal(registry.list().map((p: any) => p.id).join(','), 'a,b', 'constructor order is preserved');\n\nconst fetched = registry.get('a');\nfetched.name = 'changed';\nfetched.badge[1] = 88;\nequal(registry.get('a').name, 'Alpha', 'get returns a fresh profile');\nequal(registry.get('a').badge[1], 2, 'get returns a fresh badge');\n\nconst renamed = registry.rename('a', '  Renamed  ');\nequal(renamed.name, 'Renamed', 'rename trims name');\nequal(registry.get('b').name, 'Beta', 'rename updates only target');\nexpectCode('INVALID_NAME', () => registry.rename('a', '   '));\nequal(registry.get('a').name, 'Renamed', 'failed rename leaves state unchanged');\n\nconst newBadge = [0, 128, 255];\nconst badged = registry.setBadge('a', newBadge);\nequal(badged.badge.join(','), '0,128,255', 'setBadge replaces bytes');\nnewBadge[0] = 77;\nbadged.badge[1] = 77;\nequal(registry.get('a').badge.join(','), '0,128,255', 'setBadge input and result are not aliased');\n\nequal(registry.setBadge('a', []).badge.length, 0, 'empty badge is valid');\nequal(registry.clearBadge('a').badge, null, 'clearBadge stores null');\n\nfor (const invalid of [[-1], [256], [1.5], [Number.NaN], [Infinity]]) {\n  registry.setBadge('a', [7]);\n  expectCode('INVALID_BADGE', () => registry.setBadge('a', invalid));\n  equal(registry.get('a').badge.join(','), '7', 'invalid badge leaves state unchanged');\n}\n\nfor (const operation of [\n  () => registry.get('missing'),\n  () => registry.rename('missing', ''),\n  () => registry.setBadge('missing', [999]),\n  () => registry.clearBadge('missing'),\n]) expectCode('MISSING', operation);\n\nconst listed = registry.list();\nlisted.reverse();\nlisted[0].name = 'changed';\nif (listed[0].badge) listed[0].badge.push(44);\nequal(registry.list().map((p: any) => p.id).join(','), 'a,b', 'list array is fresh');\nequal(registry.get('b').name, 'Beta', 'list profiles are fresh');\n\nexpectCode('DUPLICATE', () => new ProfileRegistry([\n  { id: 'x', name: 'One', badge: null },\n  { id: 'x', name: 'Two', badge: null },\n]));\nequal(new ProfileRegistry([]).list().length, 0, 'empty registry is valid');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "15e406ab6169c308c8f9b014fcd234ec649c5fe343a382b28118b0f298dda8a6"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "baf89653c524515849df5e2ffe3b0814285f84bbfee002855a7bd4df283dc9d5",
+      "text": "Implement a new `ProfileRegistry` with the exact exported API in the interfaces below. It stores profiles in memory in constructor order. Constructor input must reject duplicate IDs with `ProfileError('DUPLICATE')`. `get` returns a profile or throws `MISSING`. `rename` trims the supplied name, rejects an empty result with `INVALID_NAME`, and updates only that profile. `setBadge` replaces a profile's badge bytes; an empty byte array is valid. Each byte must be an integer from 0 through 255 or `INVALID_BADGE` is thrown. `clearBadge` sets the badge to null. Missing IDs always throw `MISSING`. Every returned profile, badge array, and list must be a fresh copy; inputs must never be mutated or retained by alias. Failed operations leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "baf89653c524515849df5e2ffe3b0814285f84bbfee002855a7bd4df283dc9d5",
+      "text": "Implement a new `ProfileRegistry` with the exact exported API in the interfaces below. It stores profiles in memory in constructor order. Constructor input must reject duplicate IDs with `ProfileError('DUPLICATE')`. `get` returns a profile or throws `MISSING`. `rename` trims the supplied name, rejects an empty result with `INVALID_NAME`, and updates only that profile. `setBadge` replaces a profile's badge bytes; an empty byte array is valid. Each byte must be an integer from 0 through 255 or `INVALID_BADGE` is thrown. `clearBadge` sets the badge to null. Missing IDs always throw `MISSING`. Every returned profile, badge array, and list must be a fresh copy; inputs must never be mutated or retained by alias. Failed operations leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0255",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Profile {\n  id: string;\n  name: string;\n  badge: number[] | null;\n}\n\nexport class ProfileError extends Error {\n  constructor(public readonly code: 'DUPLICATE' | 'MISSING' | 'INVALID_NAME' | 'INVALID_BADGE') {\n    super(code);\n    this.name = 'ProfileError';\n  }\n}\n\nfunction clone(profile: Profile): Profile {\n  return {\n    id: profile.id,\n    name: profile.name,\n    badge: profile.badge === null ? null : [...profile.badge],\n  };\n}\n\nfunction validateBadge(badge: readonly number[] | null): void {\n  if (badge !== null && badge.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n    throw new ProfileError('INVALID_BADGE');\n  }\n}\n\nexport class ProfileRegistry {\n  private readonly profiles: Profile[];\n\n  constructor(initial: readonly Profile[] = []) {\n    const seen = new Set<string>();\n    this.profiles = initial.map(profile => {\n      if (seen.has(profile.id)) throw new ProfileError('DUPLICATE');\n      if (typeof profile.name !== 'string' || profile.name.trim() === '') {\n        throw new ProfileError('INVALID_NAME');\n      }\n      validateBadge(profile.badge);\n      seen.add(profile.id);\n      return clone(profile);\n    });\n  }\n\n  private index(id: string): number {\n    const index = this.profiles.findIndex(profile => profile.id === id);\n    if (index < 0) throw new ProfileError('MISSING');\n    return index;\n  }\n\n  get(id: string): Profile {\n    return clone(this.profiles[this.index(id)]);\n  }\n\n  list(): Profile[] {\n    return this.profiles.map(clone);\n  }\n\n  rename(id: string, name: string): Profile {\n    const index = this.index(id);\n    const trimmed = name.trim();\n    if (!trimmed) throw new ProfileError('INVALID_NAME');\n    this.profiles[index].name = trimmed;\n    return clone(this.profiles[index]);\n  }\n\n  setBadge(id: string, bytes: readonly number[]): Profile {\n    const index = this.index(id);\n    validateBadge(bytes);\n    this.profiles[index].badge = bytes as number[];\n    return clone(this.profiles[index]);\n  }\n\n  clearBadge(id: string): Profile {\n    const index = this.index(id);\n    this.profiles[index].badge = null;\n    return clone(this.profiles[index]);\n  }\n}\n",
+          "label": "`setBadge` retains the caller's array by alias, allowing later caller mutation to change registry state.",
+          "sha256": "b7c3145ddf10e42dfcdf0d5fff4c24bfa824658d2079e2e6e03f66ca5f6f7975"
+        }
+      ],
+      "reference": {
+        "code": "export interface Profile {\n  id: string;\n  name: string;\n  badge: number[] | null;\n}\n\nexport class ProfileError extends Error {\n  constructor(public readonly code: 'DUPLICATE' | 'MISSING' | 'INVALID_NAME' | 'INVALID_BADGE') {\n    super(code);\n    this.name = 'ProfileError';\n  }\n}\n\nfunction clone(profile: Profile): Profile {\n  return {\n    id: profile.id,\n    name: profile.name,\n    badge: profile.badge === null ? null : [...profile.badge],\n  };\n}\n\nfunction validateBadge(badge: readonly number[] | null): void {\n  if (badge !== null && badge.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n    throw new ProfileError('INVALID_BADGE');\n  }\n}\n\nexport class ProfileRegistry {\n  private readonly profiles: Profile[];\n\n  constructor(initial: readonly Profile[] = []) {\n    const seen = new Set<string>();\n    this.profiles = initial.map(profile => {\n      if (seen.has(profile.id)) throw new ProfileError('DUPLICATE');\n      if (typeof profile.name !== 'string' || profile.name.trim() === '') {\n        throw new ProfileError('INVALID_NAME');\n      }\n      validateBadge(profile.badge);\n      seen.add(profile.id);\n      return clone(profile);\n    });\n  }\n\n  private index(id: string): number {\n    const index = this.profiles.findIndex(profile => profile.id === id);\n    if (index < 0) throw new ProfileError('MISSING');\n    return index;\n  }\n\n  get(id: string): Profile {\n    return clone(this.profiles[this.index(id)]);\n  }\n\n  list(): Profile[] {\n    return this.profiles.map(clone);\n  }\n\n  rename(id: string, name: string): Profile {\n    const index = this.index(id);\n    const trimmed = name.trim();\n    if (!trimmed) throw new ProfileError('INVALID_NAME');\n    this.profiles[index].name = trimmed;\n    return clone(this.profiles[index]);\n  }\n\n  setBadge(id: string, bytes: readonly number[]): Profile {\n    const index = this.index(id);\n    validateBadge(bytes);\n    this.profiles[index].badge = [...bytes];\n    return clone(this.profiles[index]);\n  }\n\n  clearBadge(id: string): Profile {\n    const index = this.index(id);\n    this.profiles[index].badge = null;\n    return clone(this.profiles[index]);\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4158a3623fed4f76eeeeedb948f8a74b12858bcf38722864f1c18ee9ba2a7f35"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:13\n    throw new Error('Missing badge byte must throw INVALID_BADGE');\n    ^\n\nError: Missing badge byte must throw INVALID_BADGE\n    at Object.<anonymous> (/work/solution.test.js:13:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "8d29067ba133a370fa894b2110f53262cfb77461436723247e6367a378afe9d2",
+    "duration_ms": 2113,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

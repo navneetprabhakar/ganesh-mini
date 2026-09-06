@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0329",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "687647c7e85e989a4ffd77be267fe1ebd1bef540168555843fbc938f35b49da9",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { applyDirectoryCommand } = require('./solution');\nconst record = { id: 'a', label: 'Ada', contact: 'a@example.test' };\nObject.defineProperty(record, 'label', { value: 'Ada', enumerable: false });\nassert.equal(applyDirectoryCommand([record], { type: 'GET', id: 'a' }).record.label, 'Ada');\n",
+        "sha256": "ca664cf1375292ae71a02f3434752d5885d6d4ea97589d9f85bc80967beffdc2"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "94550a2e75df58ca81c96fe45aef70b4147c83c6ab449d616926ab063c975505",
+      "text": "Implement `applyDirectoryCommand(records, command)`, an in-memory command processor. Export exactly `{ applyDirectoryCommand }` using CommonJS. `records` must be an array of non-null objects having a nonempty string `id`, string `label`, and string `contact`; IDs must be unique. `command` must be an object with `type` equal to `\"LIST\"`, `\"GET\"`, `\"ADD\"`, `\"UPDATE\"`, or `\"REMOVE\"`. Malformed inputs throw `TypeError`; duplicate IDs throw `RangeError`. `LIST` returns `{ records }` with a new array and shallow copies of all records. `GET` requires string `id` and returns `{ record }`, where `record` is a copy or `null`. `ADD` requires a valid `record`, rejects an existing ID with `RangeError`, and returns `{ records }` containing copies of all old records plus a copy of the new record. `UPDATE` requires string `id` and a non-array object `changes`; it returns `{ records, found }`. If found, merge changes into that record but never allow its `id` to change; if absent, return copied records and `found: false`. `REMOVE` requires string `id` and returns copied remaining records plus `removed`, a copy of the removed record or `null`. Preserve ordering except that additions go last. Neither returned records nor returned arrays may alias inputs, and no operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "94550a2e75df58ca81c96fe45aef70b4147c83c6ab449d616926ab063c975505",
+      "text": "Implement `applyDirectoryCommand(records, command)`, an in-memory command processor. Export exactly `{ applyDirectoryCommand }` using CommonJS. `records` must be an array of non-null objects having a nonempty string `id`, string `label`, and string `contact`; IDs must be unique. `command` must be an object with `type` equal to `\"LIST\"`, `\"GET\"`, `\"ADD\"`, `\"UPDATE\"`, or `\"REMOVE\"`. Malformed inputs throw `TypeError`; duplicate IDs throw `RangeError`. `LIST` returns `{ records }` with a new array and shallow copies of all records. `GET` requires string `id` and returns `{ record }`, where `record` is a copy or `null`. `ADD` requires a valid `record`, rejects an existing ID with `RangeError`, and returns `{ records }` containing copies of all old records plus a copy of the new record. `UPDATE` requires string `id` and a non-array object `changes`; it returns `{ records, found }`. If found, merge changes into that record but never allow its `id` to change; if absent, return copied records and `found: false`. `REMOVE` requires string `id` and returns copied remaining records plus `removed`, a copy of the removed record or `null`. Preserve ordering except that additions go last. Neither returned records nor returned arrays may alias inputs, and no operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0329",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function validRecord(record) {\n  return record && typeof record === 'object' && !Array.isArray(record) &&\n    typeof record.id === 'string' && record.id.length > 0 &&\n    typeof record.label === 'string' && typeof record.contact === 'string';\n}\n\nfunction applyDirectoryCommand(records, command) {\n  if (!Array.isArray(records) || records.some(record => !validRecord(record))) throw new TypeError('invalid records');\n  const ids = new Set();\n  for (const record of records) {\n    if (ids.has(record.id)) throw new RangeError('duplicate id');\n    ids.add(record.id);\n  }\n  if (!command || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('invalid command');\n  }\n\n  if (command.type === 'LIST') return { records: records.map(record => ({ ...record })) };\n\n  if (command.type === 'GET') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const record = records.find(entry => entry.id === command.id);\n    return { record: record ? { ...record } : null };\n  }\n\n  if (command.type === 'ADD') {\n    if (!validRecord(command.record)) throw new TypeError('invalid record');\n    if (ids.has(command.record.id)) throw new RangeError('duplicate id');\n    return { records: records.concat(command.record).map(record => ({ ...record })) };\n  }\n\n  if (command.type === 'UPDATE') {\n    if (typeof command.id !== 'string' || !command.changes || typeof command.changes !== 'object' || Array.isArray(command.changes)) {\n      throw new TypeError('invalid update');\n    }\n    let found = false;\n    const updated = records.map(record => {\n      if (record.id !== command.id) return { ...record };\n      found = true;\n      return { ...record, ...command.changes };\n    });\n    return { records: updated, found };\n  }\n\n  if (command.type === 'REMOVE') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const removed = records.find(record => record.id === command.id);\n    return {\n      records: records.filter(record => record.id !== command.id).map(record => ({ ...record })),\n      removed: removed ? { ...removed } : null\n    };\n  }\n\n  throw new TypeError('unknown command');\n}\n\nmodule.exports = { applyDirectoryCommand };\n",
+          "label": "UPDATE allows the changes object to replace a record's immutable ID.",
+          "sha256": "32f2d9d5d62c915e3e71aa86b8a6105db55822f33db3c0d3c5abb7bd6d4c67bd"
+        }
+      ],
+      "reference": {
+        "code": "function validRecord(record) {\n  return record && typeof record === 'object' && !Array.isArray(record) &&\n    typeof record.id === 'string' && record.id.length > 0 &&\n    typeof record.label === 'string' && typeof record.contact === 'string';\n}\n\nfunction applyDirectoryCommand(records, command) {\n  if (!Array.isArray(records) || records.some(record => !validRecord(record))) throw new TypeError('invalid records');\n  const ids = new Set();\n  for (const record of records) {\n    if (ids.has(record.id)) throw new RangeError('duplicate id');\n    ids.add(record.id);\n  }\n  if (!command || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('invalid command');\n  }\n\n  if (command.type === 'LIST') return { records: records.map(record => ({ ...record })) };\n\n  if (command.type === 'GET') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const record = records.find(entry => entry.id === command.id);\n    return { record: record ? { ...record } : null };\n  }\n\n  if (command.type === 'ADD') {\n    if (!validRecord(command.record)) throw new TypeError('invalid record');\n    if (ids.has(command.record.id)) throw new RangeError('duplicate id');\n    return { records: records.concat(command.record).map(record => ({ ...record })) };\n  }\n\n  if (command.type === 'UPDATE') {\n    if (typeof command.id !== 'string' || !command.changes || typeof command.changes !== 'object' || Array.isArray(command.changes)) {\n      throw new TypeError('invalid update');\n    }\n    let found = false;\n    const updated = records.map(record => {\n      if (record.id !== command.id) return { ...record };\n      found = true;\n      return { ...record, ...command.changes, id: record.id };\n    });\n    return { records: updated, found };\n  }\n\n  if (command.type === 'REMOVE') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const removed = records.find(record => record.id === command.id);\n    return {\n      records: records.filter(record => record.id !== command.id).map(record => ({ ...record })),\n      removed: removed ? { ...removed } : null\n    };\n  }\n\n  throw new TypeError('unknown command');\n}\n\nmodule.exports = { applyDirectoryCommand };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a0b752cd02abdc56674c749125593e84f1082e32e9b651b17a2cd50fd325b68a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['applyDirectoryCommand']);\nconst { applyDirectoryCommand } = api;\n\nconst records = [\n  { id: 'a', label: 'Ada', contact: 'ada@example.com', group: 1 },\n  { id: 'b', label: 'Ben', contact: 'ben@example.com' }\n];\nconst snapshot = records.map(record => ({ ...record }));\n\nconst listed = applyDirectoryCommand(records, { type: 'LIST' });\nassert.deepStrictEqual(listed.records, records);\nassert.notStrictEqual(listed.records, records);\nassert.notStrictEqual(listed.records[0], records[0]);\nlisted.records[0].label = 'changed';\nassert.deepStrictEqual(records, snapshot);\n\nconst got = applyDirectoryCommand(records, { type: 'GET', id: 'b' });\nassert.deepStrictEqual(got, { record: { id: 'b', label: 'Ben', contact: 'ben@example.com' } });\nassert.notStrictEqual(got.record, records[1]);\nassert.deepStrictEqual(applyDirectoryCommand(records, { type: 'GET', id: 'z' }), { record: null });\n\nconst newRecord = { id: 'c', label: 'Cy', contact: 'cy@example.com' };\nconst added = applyDirectoryCommand(records, { type: 'ADD', record: newRecord });\nassert.deepStrictEqual(added.records, [...records, newRecord]);\nfor (let i = 0; i < added.records.length; i++) {\n  assert.notStrictEqual(added.records[i], i < records.length ? records[i] : newRecord);\n}\nassert.throws(() => applyDirectoryCommand(records, { type: 'ADD', record: { id: 'a', label: 'Other', contact: 'x' } }), RangeError);\n\nconst changes = { id: 'forbidden', label: 'Ada Lovelace', extra: true };\nconst updated = applyDirectoryCommand(records, { type: 'UPDATE', id: 'a', changes });\nassert.strictEqual(updated.found, true);\nassert.deepStrictEqual(updated.records[0], {\n  id: 'a', label: 'Ada Lovelace', contact: 'ada@example.com', group: 1, extra: true\n});\nassert.notStrictEqual(updated.records[0], records[0]);\nassert.notStrictEqual(updated.records[1], records[1]);\nassert.deepStrictEqual(changes, { id: 'forbidden', label: 'Ada Lovelace', extra: true });\n\nconst absent = applyDirectoryCommand(records, { type: 'UPDATE', id: 'z', changes: {} });\nassert.strictEqual(absent.found, false);\nassert.deepStrictEqual(absent.records, records);\nassert.notStrictEqual(absent.records[0], records[0]);\n\nconst removed = applyDirectoryCommand(records, { type: 'REMOVE', id: 'a' });\nassert.deepStrictEqual(removed, {\n  records: [{ id: 'b', label: 'Ben', contact: 'ben@example.com' }],\n  removed: { id: 'a', label: 'Ada', contact: 'ada@example.com', group: 1 }\n});\nassert.notStrictEqual(removed.records[0], records[1]);\nassert.notStrictEqual(removed.removed, records[0]);\nassert.deepStrictEqual(applyDirectoryCommand(records, { type: 'REMOVE', id: 'z' }), {\n  records: records.map(record => ({ ...record })), removed: null\n});\nassert.deepStrictEqual(records, snapshot);\n\nassert.throws(() => applyDirectoryCommand(null, { type: 'LIST' }), TypeError);\nassert.throws(() => applyDirectoryCommand([null], { type: 'LIST' }), TypeError);\nassert.throws(() => applyDirectoryCommand([{ id: '', label: 'A', contact: 'x' }], { type: 'LIST' }), TypeError);\nassert.throws(() => applyDirectoryCommand([{ id: 'x', label: 1, contact: 'x' }], { type: 'LIST' }), TypeError);\nassert.throws(() => applyDirectoryCommand([{ id: 'x', label: 'X', contact: 'x' }, { id: 'x', label: 'Y', contact: 'y' }], { type: 'LIST' }), RangeError);\nassert.throws(() => applyDirectoryCommand(records, null), TypeError);\nassert.throws(() => applyDirectoryCommand(records, { type: 'NOPE' }), TypeError);\nassert.throws(() => applyDirectoryCommand(records, { type: 'GET', id: 1 }), TypeError);\nassert.throws(() => applyDirectoryCommand(records, { type: 'ADD', record: [] }), TypeError);\nassert.throws(() => applyDirectoryCommand(records, { type: 'UPDATE', id: 'a', changes: [] }), TypeError);\nassert.throws(() => applyDirectoryCommand(records, { type: 'REMOVE', id: null }), TypeError);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "617636624f4a6fd93764cfc7fde9e3572398ffd0ae5b289a10e22c4f9bda5cc1"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "94550a2e75df58ca81c96fe45aef70b4147c83c6ab449d616926ab063c975505",
+      "text": "Implement `applyDirectoryCommand(records, command)`, an in-memory command processor. Export exactly `{ applyDirectoryCommand }` using CommonJS. `records` must be an array of non-null objects having a nonempty string `id`, string `label`, and string `contact`; IDs must be unique. `command` must be an object with `type` equal to `\"LIST\"`, `\"GET\"`, `\"ADD\"`, `\"UPDATE\"`, or `\"REMOVE\"`. Malformed inputs throw `TypeError`; duplicate IDs throw `RangeError`. `LIST` returns `{ records }` with a new array and shallow copies of all records. `GET` requires string `id` and returns `{ record }`, where `record` is a copy or `null`. `ADD` requires a valid `record`, rejects an existing ID with `RangeError`, and returns `{ records }` containing copies of all old records plus a copy of the new record. `UPDATE` requires string `id` and a non-array object `changes`; it returns `{ records, found }`. If found, merge changes into that record but never allow its `id` to change; if absent, return copied records and `found: false`. `REMOVE` requires string `id` and returns copied remaining records plus `removed`, a copy of the removed record or `null`. Preserve ordering except that additions go last. Neither returned records nor returned arrays may alias inputs, and no operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "94550a2e75df58ca81c96fe45aef70b4147c83c6ab449d616926ab063c975505",
+      "text": "Implement `applyDirectoryCommand(records, command)`, an in-memory command processor. Export exactly `{ applyDirectoryCommand }` using CommonJS. `records` must be an array of non-null objects having a nonempty string `id`, string `label`, and string `contact`; IDs must be unique. `command` must be an object with `type` equal to `\"LIST\"`, `\"GET\"`, `\"ADD\"`, `\"UPDATE\"`, or `\"REMOVE\"`. Malformed inputs throw `TypeError`; duplicate IDs throw `RangeError`. `LIST` returns `{ records }` with a new array and shallow copies of all records. `GET` requires string `id` and returns `{ record }`, where `record` is a copy or `null`. `ADD` requires a valid `record`, rejects an existing ID with `RangeError`, and returns `{ records }` containing copies of all old records plus a copy of the new record. `UPDATE` requires string `id` and a non-array object `changes`; it returns `{ records, found }`. If found, merge changes into that record but never allow its `id` to change; if absent, return copied records and `found: false`. `REMOVE` requires string `id` and returns copied remaining records plus `removed`, a copy of the removed record or `null`. Preserve ordering except that additions go last. Neither returned records nor returned arrays may alias inputs, and no operation may mutate its arguments.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0329",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function validRecord(record) {\n  return record && typeof record === 'object' && !Array.isArray(record) &&\n    typeof record.id === 'string' && record.id.length > 0 &&\n    typeof record.label === 'string' && typeof record.contact === 'string';\n}\n\nfunction applyDirectoryCommand(records, command) {\n  if (!Array.isArray(records) || records.some(record => !validRecord(record))) throw new TypeError('invalid records');\n  const ids = new Set();\n  for (const record of records) {\n    if (ids.has(record.id)) throw new RangeError('duplicate id');\n    ids.add(record.id);\n  }\n  if (!command || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('invalid command');\n  }\n\n  if (command.type === 'LIST') return { records: records.map(record => ({ ...record })) };\n\n  if (command.type === 'GET') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const record = records.find(entry => entry.id === command.id);\n    return { record: record ? { ...record } : null };\n  }\n\n  if (command.type === 'ADD') {\n    if (!validRecord(command.record)) throw new TypeError('invalid record');\n    if (ids.has(command.record.id)) throw new RangeError('duplicate id');\n    return { records: records.concat(command.record).map(record => ({ ...record })) };\n  }\n\n  if (command.type === 'UPDATE') {\n    if (typeof command.id !== 'string' || !command.changes || typeof command.changes !== 'object' || Array.isArray(command.changes)) {\n      throw new TypeError('invalid update');\n    }\n    let found = false;\n    const updated = records.map(record => {\n      if (record.id !== command.id) return { ...record };\n      found = true;\n      return { ...record, ...command.changes };\n    });\n    return { records: updated, found };\n  }\n\n  if (command.type === 'REMOVE') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const removed = records.find(record => record.id === command.id);\n    return {\n      records: records.filter(record => record.id !== command.id).map(record => ({ ...record })),\n      removed: removed ? { ...removed } : null\n    };\n  }\n\n  throw new TypeError('unknown command');\n}\n\nmodule.exports = { applyDirectoryCommand };\n",
+          "label": "UPDATE allows the changes object to replace a record's immutable ID.",
+          "sha256": "32f2d9d5d62c915e3e71aa86b8a6105db55822f33db3c0d3c5abb7bd6d4c67bd"
+        }
+      ],
+      "reference": {
+        "code": "function validRecord(record) {\n  return record && typeof record === 'object' && !Array.isArray(record) &&\n    typeof record.id === 'string' && record.id.length > 0 &&\n    typeof record.label === 'string' && typeof record.contact === 'string';\n}\n\nfunction applyDirectoryCommand(records, command) {\n  if (!Array.isArray(records) || records.some(record => !validRecord(record))) throw new TypeError('invalid records');\n  const ids = new Set();\n  for (const record of records) {\n    if (ids.has(record.id)) throw new RangeError('duplicate id');\n    ids.add(record.id);\n  }\n  if (!command || typeof command !== 'object' || Array.isArray(command) || typeof command.type !== 'string') {\n    throw new TypeError('invalid command');\n  }\n\n  if (command.type === 'LIST') return { records: records.map(record => ({ ...record })) };\n\n  if (command.type === 'GET') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const record = records.find(entry => entry.id === command.id);\n    return { record: record ? { ...record } : null };\n  }\n\n  if (command.type === 'ADD') {\n    if (!validRecord(command.record)) throw new TypeError('invalid record');\n    if (ids.has(command.record.id)) throw new RangeError('duplicate id');\n    return { records: records.concat(command.record).map(record => ({ ...record })) };\n  }\n\n  if (command.type === 'UPDATE') {\n    if (typeof command.id !== 'string' || !command.changes || typeof command.changes !== 'object' || Array.isArray(command.changes)) {\n      throw new TypeError('invalid update');\n    }\n    let found = false;\n    const updated = records.map(record => {\n      if (record.id !== command.id) return { ...record };\n      found = true;\n      return { ...record, ...command.changes, id: record.id };\n    });\n    return { records: updated, found };\n  }\n\n  if (command.type === 'REMOVE') {\n    if (typeof command.id !== 'string') throw new TypeError('invalid id');\n    const removed = records.find(record => record.id === command.id);\n    return {\n      records: records.filter(record => record.id !== command.id).map(record => ({ ...record })),\n      removed: removed ? { ...removed } : null\n    };\n  }\n\n  throw new TypeError('unknown command');\n}\n\nmodule.exports = { applyDirectoryCommand };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a0b752cd02abdc56674c749125593e84f1082e32e9b651b17a2cd50fd325b68a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\nundefined !== 'Ada'\n\n    at Object.<anonymous> (/work/solution.test.js:6:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: 'Ada',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "e0e5d22e8951f177fed11cd4abcace3e5e5c6dc4994290f36665ee7db8aec43c",
+    "duration_ms": 443,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

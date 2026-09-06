@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-repair-0184",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "6b8cbae81b06e32f6b6b569b50b596f8254b8330b5f9d06cd794bae538b0d088",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { AuditTrail } from './solution';\nconst entry = { id: 'a', sequence: 1, text: 'Original' };\nObject.defineProperty(entry, 'text', { value: 'Original', enumerable: false });\nconst trail = new AuditTrail({ subscribe: () => () => {} }, [entry]);\nif (trail.entries()[0].text !== 'Original') throw new Error('Required audit text lost');\n",
+        "sha256": "f98cfa19e2c05532e5c27d5b9473d12eea5cea0d087666d0016d3d5efd752190"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9c2fbfa31425d8e8ba450ca6fad209cf2fd9aa8cb4de6ba555711629386c133a",
+      "text": "Repair the complete source below and return one corrected source file. `AuditTrail` subscribes once to an `AuditSource` during construction. Append events add a unique entry, revise events replace the matching entry's text, and remove events delete it; events targeting missing IDs do nothing. Duplicate append IDs do nothing. `entries()` returns fresh objects ordered by ascending sequence, then ascending ID. `dispose()` must unsubscribe exactly once and be idempotent; after disposal, source emissions must not alter the trail. Initial entries must be snapshotted without aliasing. Here is the known-bad source:\n\nexport interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n  }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9c2fbfa31425d8e8ba450ca6fad209cf2fd9aa8cb4de6ba555711629386c133a",
+      "text": "Repair the complete source below and return one corrected source file. `AuditTrail` subscribes once to an `AuditSource` during construction. Append events add a unique entry, revise events replace the matching entry's text, and remove events delete it; events targeting missing IDs do nothing. Duplicate append IDs do nothing. `entries()` returns fresh objects ordered by ascending sequence, then ascending ID. `dispose()` must unsubscribe exactly once and be idempotent; after disposal, source emissions must not alter the trail. Initial entries must be snapshotted without aliasing. Here is the known-bad source:\n\nexport interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n  }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-repair-0184",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n  }\n}\n",
+          "label": "dispose marks the trail inactive but never invokes the source's unsubscribe function.",
+          "sha256": "a9fc030a96a0e8618dd9e7ae32853e93f7e8ba51a0459a0772bf3a26a03a6637"
+        }
+      ],
+      "reference": {
+        "code": "export interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n    this.unsubscribe();\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b2989eb76a42f7bd34217e41fd332ecf02c0ee24bb2c4ff339835b078837f13a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { AuditEntry, AuditEvent, AuditSource, AuditTrail } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nlet listener: ((event: AuditEvent) => void) | undefined;\nlet subscribeCount = 0;\nlet unsubscribeCount = 0;\nconst source: AuditSource = {\n  subscribe(next): () => void {\n    subscribeCount++;\n    listener = next;\n    return () => { unsubscribeCount++; };\n  },\n};\n\nconst initial: AuditEntry[] = [\n  { id: 'b', sequence: 2, text: 'second' },\n  { id: 'a', sequence: 1, text: 'first' },\n  { id: 'duplicate', sequence: 5, text: 'kept' },\n  { id: 'duplicate', sequence: 0, text: 'ignored' },\n];\nconst trail = new AuditTrail(source, initial);\nassert(subscribeCount === 1, 'construction should subscribe exactly once');\ninitial[0] = { id: 'changed', sequence: 99, text: 'changed' };\n(initial[1] as { text: string }).text = 'mutated';\n\nlet entries = trail.entries();\nassert(entries.map(entry => entry.id).join(',') === 'a,b,duplicate', 'initial entries should be snapshotted, deduplicated, and sorted');\nassert(entries[0].text === 'first', 'initial entry objects should not be aliased');\n\nlistener!({ type: 'append', entry: { id: 'c', sequence: 2, text: 'third' } });\nlistener!({ type: 'append', entry: { id: 'a', sequence: 99, text: 'duplicate append' } });\nentries = trail.entries();\nassert(entries.map(entry => entry.id).join(',') === 'a,b,c,duplicate', 'entries should sort by sequence and then ID');\nassert(entries.find(entry => entry.id === 'a')!.text === 'first', 'duplicate append IDs should do nothing');\n\nconst appended = { id: 'd', sequence: 3, text: 'snapshotted append' };\nlistener!({ type: 'append', entry: appended });\n(appended as { text: string }).text = 'mutated outside';\nassert(trail.entries().find(entry => entry.id === 'd')!.text === 'snapshotted append', 'append events should snapshot their entry');\n\nlistener!({ type: 'revise', id: 'b', text: 'revised' });\nlistener!({ type: 'revise', id: 'missing', text: 'ignored' });\nassert(trail.entries().find(entry => entry.id === 'b')!.text === 'revised', 'revise should replace matching text');\nassert(trail.entries().length === 5, 'revise targeting a missing ID should do nothing');\n\nlistener!({ type: 'remove', id: 'c' });\nlistener!({ type: 'remove', id: 'missing' });\nassert(!trail.entries().some(entry => entry.id === 'c'), 'remove should delete the matching entry');\nassert(trail.entries().length === 4, 'remove targeting a missing ID should do nothing');\n\nconst first = trail.entries();\nconst second = trail.entries();\nassert(first !== second && first[0] !== second[0], 'entries should return a fresh array and fresh objects');\n(first[0] as { text: string }).text = 'damaged';\nfirst.splice(0, first.length);\nassert(trail.entries()[0].text !== 'damaged' && trail.entries().length === 4, 'returned entries must not expose internal state');\n\ntrail.dispose();\nassert(unsubscribeCount === 1, 'dispose should unsubscribe once');\ntrail.dispose();\nassert(unsubscribeCount === 1, 'dispose should be idempotent');\nconst beforeDisposedEmission = JSON.stringify(trail.entries());\nlistener!({ type: 'append', entry: { id: 'after', sequence: 0, text: 'after disposal' } });\nlistener!({ type: 'revise', id: 'a', text: 'after disposal' });\nlistener!({ type: 'remove', id: 'b' });\nassert(JSON.stringify(trail.entries()) === beforeDisposedEmission, 'emissions after disposal must not alter the trail');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "8a581048c0161d8dbba06417bb46fa082f0c573d7c154ddce3caa2ce1305a811"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9c2fbfa31425d8e8ba450ca6fad209cf2fd9aa8cb4de6ba555711629386c133a",
+      "text": "Repair the complete source below and return one corrected source file. `AuditTrail` subscribes once to an `AuditSource` during construction. Append events add a unique entry, revise events replace the matching entry's text, and remove events delete it; events targeting missing IDs do nothing. Duplicate append IDs do nothing. `entries()` returns fresh objects ordered by ascending sequence, then ascending ID. `dispose()` must unsubscribe exactly once and be idempotent; after disposal, source emissions must not alter the trail. Initial entries must be snapshotted without aliasing. Here is the known-bad source:\n\nexport interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n  }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9c2fbfa31425d8e8ba450ca6fad209cf2fd9aa8cb4de6ba555711629386c133a",
+      "text": "Repair the complete source below and return one corrected source file. `AuditTrail` subscribes once to an `AuditSource` during construction. Append events add a unique entry, revise events replace the matching entry's text, and remove events delete it; events targeting missing IDs do nothing. Duplicate append IDs do nothing. `entries()` returns fresh objects ordered by ascending sequence, then ascending ID. `dispose()` must unsubscribe exactly once and be idempotent; after disposal, source emissions must not alter the trail. Initial entries must be snapshotted without aliasing. Here is the known-bad source:\n\nexport interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n  }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-repair-0184",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n  }\n}\n",
+          "label": "dispose marks the trail inactive but never invokes the source's unsubscribe function.",
+          "sha256": "a9fc030a96a0e8618dd9e7ae32853e93f7e8ba51a0459a0772bf3a26a03a6637"
+        }
+      ],
+      "reference": {
+        "code": "export interface AuditEntry { readonly id: string; readonly sequence: number; readonly text: string; }\nexport type AuditEvent =\n  | { readonly type: 'append'; readonly entry: AuditEntry }\n  | { readonly type: 'revise'; readonly id: string; readonly text: string }\n  | { readonly type: 'remove'; readonly id: string };\nexport interface AuditSource { subscribe(listener: (event: AuditEvent) => void): () => void; }\n\nexport class AuditTrail {\n  private entriesById = new Map<string, AuditEntry>();\n  private readonly unsubscribe: () => void;\n  private disposed = false;\n\n  constructor(source: AuditSource, initial: readonly AuditEntry[] = []) {\n    for (const entry of initial) if (!this.entriesById.has(entry.id)) this.entriesById.set(entry.id, { ...entry });\n    this.unsubscribe = source.subscribe(event => this.apply(event));\n  }\n\n  private apply(event: AuditEvent): void {\n    if (this.disposed) return;\n    if (event.type === 'append') {\n      if (!this.entriesById.has(event.entry.id)) this.entriesById.set(event.entry.id, { ...event.entry });\n    } else if (event.type === 'revise') {\n      const current = this.entriesById.get(event.id);\n      if (current) this.entriesById.set(event.id, { ...current, text: event.text });\n    } else {\n      this.entriesById.delete(event.id);\n    }\n  }\n\n  entries(): AuditEntry[] {\n    return [...this.entriesById.values()]\n      .sort((a, b) => a.sequence - b.sequence || a.id.localeCompare(b.id))\n      .map(entry => ({ ...entry }));\n  }\n\n  dispose(): void {\n    if (this.disposed) return;\n    this.disposed = true;\n    this.unsubscribe();\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b2989eb76a42f7bd34217e41fd332ecf02c0ee24bb2c4ff339835b078837f13a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('Required audit text lost');\n    ^\n\nError: Required audit text lost\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "27e3cd719dadd587d971a902fa05770192f1ce22708e2d1bdfb2c10d409017e9",
+    "duration_ms": 2442,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

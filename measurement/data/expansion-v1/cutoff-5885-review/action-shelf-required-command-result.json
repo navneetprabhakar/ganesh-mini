@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0275",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "95280c6e5a92f0871db5dcd7db499ae3c15ea0edfedaed7a4827dfac2d996f3a",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ActionShelfRegistry } from './solution';\nconst action = { commandId: 'run' };\nObject.defineProperty(action, 'commandId', { value: 'run', enumerable: false });\nconst registry = new ActionShelfRegistry();\nregistry.register('canvas/tools', action);\nif (registry.list('canvas/tools')[0].commandId !== 'run') throw new Error('Required command ID lost');\n",
+        "sha256": "334f9c8ea16fcfd6fc813827bb028b9a306b10ff233497ff9dac8cdf99c2bca7"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "527812e2014d34544a09f0a27dc71a9b24eb82319abb75fc79ebc22e06206076",
+      "text": "Implement a new deterministic action-shelf registry. Export `ShelfLocation`, `ShelfAction`, and `ActionShelfRegistry`. Valid locations are `'canvas/tools'` and `'outline/actions'`. The constructor optionally accepts a warning callback. `register(location, action)` rejects invalid locations, blank command IDs, and non-finite or non-integer priorities by warning and making no change. Missing priority means 0; missing group means the empty string. Registering an existing command at the same location replaces it while retaining its original registration position for tie-breaking. `remove(location, commandId)` removes only the exact command at that location; invalid locations simply warn. `list(location)` returns an empty array for invalid locations and otherwise returns fresh action objects sorted by group ascending, priority ascending, then original registration position. Returned objects must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "527812e2014d34544a09f0a27dc71a9b24eb82319abb75fc79ebc22e06206076",
+      "text": "Implement a new deterministic action-shelf registry. Export `ShelfLocation`, `ShelfAction`, and `ActionShelfRegistry`. Valid locations are `'canvas/tools'` and `'outline/actions'`. The constructor optionally accepts a warning callback. `register(location, action)` rejects invalid locations, blank command IDs, and non-finite or non-integer priorities by warning and making no change. Missing priority means 0; missing group means the empty string. Registering an existing command at the same location replaces it while retaining its original registration position for tie-breaking. `remove(location, commandId)` removes only the exact command at that location; invalid locations simply warn. `list(location)` returns an empty array for invalid locations and otherwise returns fresh action objects sorted by group ascending, priority ascending, then original registration position. Returned objects must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0275",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ShelfLocation = 'canvas/tools' | 'outline/actions';\nexport interface ShelfAction {\n  readonly commandId: string;\n  readonly group?: string;\n  readonly priority?: number;\n  readonly [key: string]: unknown;\n}\ninterface StoredAction { action: ShelfAction; sequence: number; }\n\nexport class ActionShelfRegistry {\n  private readonly entries = new Map<ShelfLocation, StoredAction[]>();\n  private nextSequence = 0;\n\n  constructor(private readonly warn: (message: string) => void = () => undefined) {\n    this.entries.set('canvas/tools', []);\n    this.entries.set('outline/actions', []);\n  }\n\n  private valid(location: string): location is ShelfLocation {\n    return location === 'canvas/tools' || location === 'outline/actions';\n  }\n\n  register(location: string, action: ShelfAction): void {\n    const priority = action.priority ?? 0;\n    if (!this.valid(location) || !action.commandId.trim() ||\n        !Number.isFinite(priority) || !Number.isInteger(priority)) {\n      this.warn('Invalid shelf action');\n      return;\n    }\n\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === action.commandId);\n    const copy: ShelfAction = { ...action, group: action.group ?? '', priority };\n\n    if (index >= 0) {\n      items[index] = { action: copy, sequence: items[index].sequence };\n    } else {\n      items.push({ action: copy, sequence: this.nextSequence++ });\n    }\n  }\n\n  remove(location: string, commandId: string): void {\n    if (!this.valid(location)) {\n      this.warn('Invalid shelf location');\n      return;\n    }\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === commandId);\n    if (index >= 0) items.splice(index, 1);\n  }\n\n  list(location: string): ShelfAction[] {\n    if (!this.valid(location)) return [];\n    return [...this.entries.get(location)!]\n      .sort((a, b) =>\n        (a.action.group ?? '').localeCompare(b.action.group ?? '') ||\n        (b.action.priority ?? 0) - (a.action.priority ?? 0) ||\n        a.sequence - b.sequence)\n      .map(item => ({ ...item.action }));\n  }\n}\n",
+          "label": "Actions within a group are sorted by descending priority instead of ascending priority.",
+          "sha256": "86601691f4780ec3f49ffe7b0ad304f822993d8ef53b69029c67d07a77424d82"
+        }
+      ],
+      "reference": {
+        "code": "export type ShelfLocation = 'canvas/tools' | 'outline/actions';\nexport interface ShelfAction {\n  readonly commandId: string;\n  readonly group?: string;\n  readonly priority?: number;\n  readonly [key: string]: unknown;\n}\ninterface StoredAction { action: ShelfAction; sequence: number; }\n\nexport class ActionShelfRegistry {\n  private readonly entries = new Map<ShelfLocation, StoredAction[]>();\n  private nextSequence = 0;\n\n  constructor(private readonly warn: (message: string) => void = () => undefined) {\n    this.entries.set('canvas/tools', []);\n    this.entries.set('outline/actions', []);\n  }\n\n  private valid(location: string): location is ShelfLocation {\n    return location === 'canvas/tools' || location === 'outline/actions';\n  }\n\n  register(location: string, action: ShelfAction): void {\n    const priority = action.priority ?? 0;\n    if (!this.valid(location) || !action.commandId.trim() ||\n        !Number.isFinite(priority) || !Number.isInteger(priority)) {\n      this.warn('Invalid shelf action');\n      return;\n    }\n\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === action.commandId);\n    const copy: ShelfAction = { ...action, group: action.group ?? '', priority };\n\n    if (index >= 0) {\n      items[index] = { action: copy, sequence: items[index].sequence };\n    } else {\n      items.push({ action: copy, sequence: this.nextSequence++ });\n    }\n  }\n\n  remove(location: string, commandId: string): void {\n    if (!this.valid(location)) {\n      this.warn('Invalid shelf location');\n      return;\n    }\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === commandId);\n    if (index >= 0) items.splice(index, 1);\n  }\n\n  list(location: string): ShelfAction[] {\n    if (!this.valid(location)) return [];\n    return [...this.entries.get(location)!]\n      .sort((a, b) =>\n        (a.action.group ?? '').localeCompare(b.action.group ?? '') ||\n        (a.action.priority ?? 0) - (b.action.priority ?? 0) ||\n        a.sequence - b.sequence)\n      .map(item => ({ ...item.action }));\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1aaab620ea05388bb478df6c084f8bfe80e694f365b7b738bda0d25e0c1a1c52"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ActionShelfRegistry, ShelfAction, ShelfLocation } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nconst warnings: string[] = [];\nconst registry = new ActionShelfRegistry(message => warnings.push(String(message)));\nconst canvas = 'canvas/tools' as ShelfLocation;\nconst outline = 'outline/actions' as ShelfLocation;\n\nregistry.register(canvas, { commandId: 'late', group: 'beta', priority: 0 } as ShelfAction);\nregistry.register(canvas, { commandId: 'second', group: 'alpha', priority: 5 } as ShelfAction);\nregistry.register(canvas, { commandId: 'first', group: 'alpha', priority: 5 } as ShelfAction);\nregistry.register(canvas, { commandId: 'early', group: 'alpha', priority: -1 } as ShelfAction);\nregistry.register(canvas, { commandId: 'defaults' } as ShelfAction);\nregistry.register(outline, { commandId: 'outline-only', group: 'alpha', priority: 0 } as ShelfAction);\n\nlet listed = registry.list(canvas) as Array<Record<string, unknown>>;\nassert(listed.map(item => item.commandId).join(',') === 'defaults,early,second,first,late', 'actions should sort by group, priority, then registration position');\nconst defaults = listed.find(item => item.commandId === 'defaults')!;\nassert(defaults.group === '' && defaults.priority === 0, 'missing group and priority should receive defaults');\nassert((registry.list(outline) as unknown as Array<Record<string, unknown>>).map(item => item.commandId).join(',') === 'outline-only', 'locations should be independent');\n\nregistry.register(canvas, { commandId: 'second', group: 'alpha', priority: 5, label: 'replacement' } as unknown as ShelfAction);\nlisted = registry.list(canvas) as unknown as Array<Record<string, unknown>>;\nassert(listed.map(item => item.commandId).join(',') === 'defaults,early,second,first,late', 'replacement should retain the original tie-breaking position');\nassert(listed.find(item => item.commandId === 'second')!.label === 'replacement', 'replacement should replace action data');\n\nconst one = registry.list(canvas) as unknown as Array<Record<string, unknown>>;\nconst two = registry.list(canvas) as unknown as Array<Record<string, unknown>>;\nassert(one !== two && one[0] !== two[0], 'list should return fresh arrays and action objects');\none[0].commandId = 'damaged';\none.push({ commandId: 'injected' });\nassert((registry.list(canvas) as unknown as Array<Record<string, unknown>>)[0].commandId === 'defaults', 'returned values must not expose internal state');\n\nconst warningCount = warnings.length;\nregistry.register('bad/location' as ShelfLocation, { commandId: 'bad' } as ShelfAction);\nregistry.register(canvas, { commandId: '   ' } as ShelfAction);\nregistry.register(canvas, { commandId: 'nan', priority: Number.NaN } as ShelfAction);\nregistry.register(canvas, { commandId: 'infinite', priority: Number.POSITIVE_INFINITY } as ShelfAction);\nregistry.register(canvas, { commandId: 'fractional', priority: 1.5 } as ShelfAction);\nassert(warnings.length === warningCount + 5, 'each invalid registration should warn');\nassert((registry.list(canvas) as unknown as Array<Record<string, unknown>>).length === 5, 'invalid registrations should make no change');\nassert((registry.list('bad/location' as ShelfLocation) as unknown[]).length === 0, 'invalid locations should list as empty');\n\nconst beforeInvalidRemove = warnings.length;\nregistry.remove('bad/location' as ShelfLocation, 'late');\nassert(warnings.length === beforeInvalidRemove + 1, 'invalid removal locations should warn');\nregistry.remove(outline, 'late');\nassert((registry.list(canvas) as unknown[]).length === 5, 'remove should affect only the exact location');\nregistry.remove(canvas, 'late');\nassert(!(registry.list(canvas) as unknown as Array<Record<string, unknown>>).some(item => item.commandId === 'late'), 'exact command should be removed');\nregistry.remove(canvas, 'missing');\nassert((registry.list(canvas) as unknown[]).length === 4, 'removing a missing command should make no change');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "ed9da17cde5524bc8b2aa7f2cb20f44c428d73f9b7d007b7d03d83b980ff9cf0"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "527812e2014d34544a09f0a27dc71a9b24eb82319abb75fc79ebc22e06206076",
+      "text": "Implement a new deterministic action-shelf registry. Export `ShelfLocation`, `ShelfAction`, and `ActionShelfRegistry`. Valid locations are `'canvas/tools'` and `'outline/actions'`. The constructor optionally accepts a warning callback. `register(location, action)` rejects invalid locations, blank command IDs, and non-finite or non-integer priorities by warning and making no change. Missing priority means 0; missing group means the empty string. Registering an existing command at the same location replaces it while retaining its original registration position for tie-breaking. `remove(location, commandId)` removes only the exact command at that location; invalid locations simply warn. `list(location)` returns an empty array for invalid locations and otherwise returns fresh action objects sorted by group ascending, priority ascending, then original registration position. Returned objects must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "527812e2014d34544a09f0a27dc71a9b24eb82319abb75fc79ebc22e06206076",
+      "text": "Implement a new deterministic action-shelf registry. Export `ShelfLocation`, `ShelfAction`, and `ActionShelfRegistry`. Valid locations are `'canvas/tools'` and `'outline/actions'`. The constructor optionally accepts a warning callback. `register(location, action)` rejects invalid locations, blank command IDs, and non-finite or non-integer priorities by warning and making no change. Missing priority means 0; missing group means the empty string. Registering an existing command at the same location replaces it while retaining its original registration position for tie-breaking. `remove(location, commandId)` removes only the exact command at that location; invalid locations simply warn. `list(location)` returns an empty array for invalid locations and otherwise returns fresh action objects sorted by group ascending, priority ascending, then original registration position. Returned objects must not expose mutable internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0275",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ShelfLocation = 'canvas/tools' | 'outline/actions';\nexport interface ShelfAction {\n  readonly commandId: string;\n  readonly group?: string;\n  readonly priority?: number;\n  readonly [key: string]: unknown;\n}\ninterface StoredAction { action: ShelfAction; sequence: number; }\n\nexport class ActionShelfRegistry {\n  private readonly entries = new Map<ShelfLocation, StoredAction[]>();\n  private nextSequence = 0;\n\n  constructor(private readonly warn: (message: string) => void = () => undefined) {\n    this.entries.set('canvas/tools', []);\n    this.entries.set('outline/actions', []);\n  }\n\n  private valid(location: string): location is ShelfLocation {\n    return location === 'canvas/tools' || location === 'outline/actions';\n  }\n\n  register(location: string, action: ShelfAction): void {\n    const priority = action.priority ?? 0;\n    if (!this.valid(location) || !action.commandId.trim() ||\n        !Number.isFinite(priority) || !Number.isInteger(priority)) {\n      this.warn('Invalid shelf action');\n      return;\n    }\n\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === action.commandId);\n    const copy: ShelfAction = { ...action, group: action.group ?? '', priority };\n\n    if (index >= 0) {\n      items[index] = { action: copy, sequence: items[index].sequence };\n    } else {\n      items.push({ action: copy, sequence: this.nextSequence++ });\n    }\n  }\n\n  remove(location: string, commandId: string): void {\n    if (!this.valid(location)) {\n      this.warn('Invalid shelf location');\n      return;\n    }\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === commandId);\n    if (index >= 0) items.splice(index, 1);\n  }\n\n  list(location: string): ShelfAction[] {\n    if (!this.valid(location)) return [];\n    return [...this.entries.get(location)!]\n      .sort((a, b) =>\n        (a.action.group ?? '').localeCompare(b.action.group ?? '') ||\n        (b.action.priority ?? 0) - (a.action.priority ?? 0) ||\n        a.sequence - b.sequence)\n      .map(item => ({ ...item.action }));\n  }\n}\n",
+          "label": "Actions within a group are sorted by descending priority instead of ascending priority.",
+          "sha256": "86601691f4780ec3f49ffe7b0ad304f822993d8ef53b69029c67d07a77424d82"
+        }
+      ],
+      "reference": {
+        "code": "export type ShelfLocation = 'canvas/tools' | 'outline/actions';\nexport interface ShelfAction {\n  readonly commandId: string;\n  readonly group?: string;\n  readonly priority?: number;\n  readonly [key: string]: unknown;\n}\ninterface StoredAction { action: ShelfAction; sequence: number; }\n\nexport class ActionShelfRegistry {\n  private readonly entries = new Map<ShelfLocation, StoredAction[]>();\n  private nextSequence = 0;\n\n  constructor(private readonly warn: (message: string) => void = () => undefined) {\n    this.entries.set('canvas/tools', []);\n    this.entries.set('outline/actions', []);\n  }\n\n  private valid(location: string): location is ShelfLocation {\n    return location === 'canvas/tools' || location === 'outline/actions';\n  }\n\n  register(location: string, action: ShelfAction): void {\n    const priority = action.priority ?? 0;\n    if (!this.valid(location) || !action.commandId.trim() ||\n        !Number.isFinite(priority) || !Number.isInteger(priority)) {\n      this.warn('Invalid shelf action');\n      return;\n    }\n\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === action.commandId);\n    const copy: ShelfAction = { ...action, group: action.group ?? '', priority };\n\n    if (index >= 0) {\n      items[index] = { action: copy, sequence: items[index].sequence };\n    } else {\n      items.push({ action: copy, sequence: this.nextSequence++ });\n    }\n  }\n\n  remove(location: string, commandId: string): void {\n    if (!this.valid(location)) {\n      this.warn('Invalid shelf location');\n      return;\n    }\n    const items = this.entries.get(location)!;\n    const index = items.findIndex(item => item.action.commandId === commandId);\n    if (index >= 0) items.splice(index, 1);\n  }\n\n  list(location: string): ShelfAction[] {\n    if (!this.valid(location)) return [];\n    return [...this.entries.get(location)!]\n      .sort((a, b) =>\n        (a.action.group ?? '').localeCompare(b.action.group ?? '') ||\n        (a.action.priority ?? 0) - (b.action.priority ?? 0) ||\n        a.sequence - b.sequence)\n      .map(item => ({ ...item.action }));\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1aaab620ea05388bb478df6c084f8bfe80e694f365b7b738bda0d25e0c1a1c52"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:9\n    throw new Error('Required command ID lost');\n    ^\n\nError: Required command ID lost\n    at Object.<anonymous> (/work/solution.test.js:9:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "2213fa428e5309688b4d2ede3b4bedd183df2be07b9cd5cb2fc0fa5093e7faf8",
+    "duration_ms": 2293,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

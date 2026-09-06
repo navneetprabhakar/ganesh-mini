@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-repair-0180",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7b5faf2fe549940745ff9bab52fa3bc710b837ce12d956656ff511a5648e6112",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"math/big\"\n\t\"testing\"\n)\n\nfunc expectedCollectionPercent(live, target uint64) int {\n\tif target <= live {\n\t\treturn 0\n\t}\n\tdifference := new(big.Int).Sub(new(big.Int).SetUint64(target), new(big.Int).SetUint64(live))\n\tdifference.Mul(difference, big.NewInt(100))\n\tdifference.Div(difference, new(big.Int).SetUint64(live))\n\tif difference.Cmp(big.NewInt(10000)) > 0 {\n\t\treturn 10000\n\t}\n\treturn int(difference.Int64())\n}\n\nfunc TestCollectionPercentZeroLiveIsError(t *testing.T) {\n\tfor _, target := range []uint64{0, 1, math.MaxUint64} {\n\t\tgot, err := CollectionPercent(0, target)\n\t\tif err == nil || got != 0 {\n\t\t\tt.Fatalf(\"CollectionPercent(0, %d) = %d, %v; want 0 and error\", target, got, err)\n\t\t}\n\t}\n}\n\nfunc TestCollectionPercentAtOrBelowLive(t *testing.T) {\n\tfor _, tc := range []struct{ live, target uint64 }{{1, 0}, {1, 1}, {math.MaxUint64, math.MaxUint64}, {100, 99}} {\n\t\tgot, err := CollectionPercent(tc.live, tc.target)\n\t\tif err != nil || got != 0 {\n\t\t\tt.Fatalf(\"CollectionPercent(%d, %d) = %d, %v; want 0, nil\", tc.live, tc.target, got, err)\n\t\t}\n\t}\n}\n\nfunc TestCollectionPercentFloorClampAndOverflowSafety(t *testing.T) {\n\tcases := []struct{ live, target uint64 }{\n\t\t{100, 101},\n\t\t{3, 4},\n\t\t{3, 5},\n\t\t{100, 150},\n\t\t{1, 101},\n\t\t{1, 102},\n\t\t{1, math.MaxUint64},\n\t\t{2, math.MaxUint64},\n\t\t{math.MaxUint64 - 1, math.MaxUint64},\n\t\t{math.MaxUint64 / 2, math.MaxUint64},\n\t\t{math.MaxUint64/101 + 1, math.MaxUint64},\n\t}\n\tfor _, tc := range cases {\n\t\twant := expectedCollectionPercent(tc.live, tc.target)\n\t\tgot, err := CollectionPercent(tc.live, tc.target)\n\t\tif err != nil || got != want {\n\t\t\tt.Errorf(\"CollectionPercent(%d, %d) = %d, %v; want %d, nil\", tc.live, tc.target, got, err, want)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "ab9223aacd30fda1f776b3674d1f6e11ed802b0f1d6a9cb6ab07010cf91be79c"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewUint64Percent0180(t *testing.T) {\n\tgot, err := CollectionPercent(uint64(1)<<63, ^uint64(0))\n\tif err != nil || got != 99 { t.Fatalf(\"percent=%v err=%v, want 99\", got, err) }\n}\n",
+        "sha256": "506ff0a3f9c6ad942c4a7ca286f570745aed839957bafecc51ea4657434da130"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1a91ee508c0b25058de5ae7b883cf7434ae3fb52a60a2d475fcba32a01d3a9b3",
+      "text": "The following complete source estimates a percentage from a live-memory size and a desired collection threshold, but integer operations are ordered incorrectly. Return a corrected complete source file.\n\n```go\npackage solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    percent := (targetBytes-liveBytes)/liveBytes*100\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n```\n\nRequired behavior:\n- If `liveBytes` is zero, return `0` and an error.\n- If `targetBytes <= liveBytes`, return `0, nil`.\n- Otherwise compute floor(`(targetBytes-liveBytes) * 100 / liveBytes`).\n- Clamp results above 10000 to 10000.\n- The calculation must be correct for every `uint64` input without overflowing intermediate arithmetic.\n- The function has no mutation or aliasing effects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1a91ee508c0b25058de5ae7b883cf7434ae3fb52a60a2d475fcba32a01d3a9b3",
+      "text": "The following complete source estimates a percentage from a live-memory size and a desired collection threshold, but integer operations are ordered incorrectly. Return a corrected complete source file.\n\n```go\npackage solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    percent := (targetBytes-liveBytes)/liveBytes*100\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n```\n\nRequired behavior:\n- If `liveBytes` is zero, return `0` and an error.\n- If `targetBytes <= liveBytes`, return `0, nil`.\n- Otherwise compute floor(`(targetBytes-liveBytes) * 100 / liveBytes`).\n- Clamp results above 10000 to 10000.\n- The calculation must be correct for every `uint64` input without overflowing intermediate arithmetic.\n- The function has no mutation or aliasing effects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-repair-0180",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    percent := (targetBytes-liveBytes)/liveBytes*100\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n",
+          "label": "Performs integer division before multiplying by 100, discarding fractional percentages.",
+          "sha256": "b1ba86681e2beceb5bb56ec08b09958fae3991576a90e1e458e32bb38ca19131"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    delta := targetBytes - liveBytes\n    quotient := delta / liveBytes\n    remainder := delta % liveBytes\n    if quotient >= 100 {\n        return 10000, nil\n    }\n    percent := quotient*100 + remainder*100/liveBytes\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cf4fdbd2ea95fa927b5ae62d5b8ee7dc444ea509017e15c925f94fe67bb8cf69"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"math/big\"\n\t\"testing\"\n)\n\nfunc expectedCollectionPercent(live, target uint64) int {\n\tif target <= live {\n\t\treturn 0\n\t}\n\tdifference := new(big.Int).Sub(new(big.Int).SetUint64(target), new(big.Int).SetUint64(live))\n\tdifference.Mul(difference, big.NewInt(100))\n\tdifference.Div(difference, new(big.Int).SetUint64(live))\n\tif difference.Cmp(big.NewInt(10000)) > 0 {\n\t\treturn 10000\n\t}\n\treturn int(difference.Int64())\n}\n\nfunc TestCollectionPercentZeroLiveIsError(t *testing.T) {\n\tfor _, target := range []uint64{0, 1, math.MaxUint64} {\n\t\tgot, err := CollectionPercent(0, target)\n\t\tif err == nil || got != 0 {\n\t\t\tt.Fatalf(\"CollectionPercent(0, %d) = %d, %v; want 0 and error\", target, got, err)\n\t\t}\n\t}\n}\n\nfunc TestCollectionPercentAtOrBelowLive(t *testing.T) {\n\tfor _, tc := range []struct{ live, target uint64 }{{1, 0}, {1, 1}, {math.MaxUint64, math.MaxUint64}, {100, 99}} {\n\t\tgot, err := CollectionPercent(tc.live, tc.target)\n\t\tif err != nil || got != 0 {\n\t\t\tt.Fatalf(\"CollectionPercent(%d, %d) = %d, %v; want 0, nil\", tc.live, tc.target, got, err)\n\t\t}\n\t}\n}\n\nfunc TestCollectionPercentFloorClampAndOverflowSafety(t *testing.T) {\n\tcases := []struct{ live, target uint64 }{\n\t\t{100, 101},\n\t\t{3, 4},\n\t\t{3, 5},\n\t\t{100, 150},\n\t\t{1, 101},\n\t\t{1, 102},\n\t\t{1, math.MaxUint64},\n\t\t{2, math.MaxUint64},\n\t\t{math.MaxUint64 - 1, math.MaxUint64},\n\t\t{math.MaxUint64 / 2, math.MaxUint64},\n\t\t{math.MaxUint64/101 + 1, math.MaxUint64},\n\t}\n\tfor _, tc := range cases {\n\t\twant := expectedCollectionPercent(tc.live, tc.target)\n\t\tgot, err := CollectionPercent(tc.live, tc.target)\n\t\tif err != nil || got != want {\n\t\t\tt.Errorf(\"CollectionPercent(%d, %d) = %d, %v; want %d, nil\", tc.live, tc.target, got, err, want)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "ab9223aacd30fda1f776b3674d1f6e11ed802b0f1d6a9cb6ab07010cf91be79c"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1a91ee508c0b25058de5ae7b883cf7434ae3fb52a60a2d475fcba32a01d3a9b3",
+      "text": "The following complete source estimates a percentage from a live-memory size and a desired collection threshold, but integer operations are ordered incorrectly. Return a corrected complete source file.\n\n```go\npackage solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    percent := (targetBytes-liveBytes)/liveBytes*100\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n```\n\nRequired behavior:\n- If `liveBytes` is zero, return `0` and an error.\n- If `targetBytes <= liveBytes`, return `0, nil`.\n- Otherwise compute floor(`(targetBytes-liveBytes) * 100 / liveBytes`).\n- Clamp results above 10000 to 10000.\n- The calculation must be correct for every `uint64` input without overflowing intermediate arithmetic.\n- The function has no mutation or aliasing effects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1a91ee508c0b25058de5ae7b883cf7434ae3fb52a60a2d475fcba32a01d3a9b3",
+      "text": "The following complete source estimates a percentage from a live-memory size and a desired collection threshold, but integer operations are ordered incorrectly. Return a corrected complete source file.\n\n```go\npackage solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    percent := (targetBytes-liveBytes)/liveBytes*100\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n```\n\nRequired behavior:\n- If `liveBytes` is zero, return `0` and an error.\n- If `targetBytes <= liveBytes`, return `0, nil`.\n- Otherwise compute floor(`(targetBytes-liveBytes) * 100 / liveBytes`).\n- Clamp results above 10000 to 10000.\n- The calculation must be correct for every `uint64` input without overflowing intermediate arithmetic.\n- The function has no mutation or aliasing effects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-repair-0180",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    percent := (targetBytes-liveBytes)/liveBytes*100\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n",
+          "label": "Performs integer division before multiplying by 100, discarding fractional percentages.",
+          "sha256": "b1ba86681e2beceb5bb56ec08b09958fae3991576a90e1e458e32bb38ca19131"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport \"errors\"\n\nfunc CollectionPercent(liveBytes, targetBytes uint64) (int, error) {\n    if liveBytes == 0 {\n        return 0, errors.New(\"live size must be positive\")\n    }\n    if targetBytes <= liveBytes {\n        return 0, nil\n    }\n    delta := targetBytes - liveBytes\n    quotient := delta / liveBytes\n    remainder := delta % liveBytes\n    if quotient >= 100 {\n        return 10000, nil\n    }\n    percent := quotient*100 + remainder*100/liveBytes\n    if percent > 10000 {\n        percent = 10000\n    }\n    return int(percent), nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "cf4fdbd2ea95fa927b5ae62d5b8ee7dc444ea509017e15c925f94fe67bb8cf69"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewUint64Percent0180 (0.00s)\n    review_test.go:7: percent=1 err=<nil>, want 99\nFAIL\nFAIL\tganesh.invalid/expansion\t0.022s\nFAIL\n",
+    "stdout_sha256": "0689c3b8a23c22f440342e0a3c0ae61c8f1c417ff62a60f6442f90acea02b708",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 28435,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

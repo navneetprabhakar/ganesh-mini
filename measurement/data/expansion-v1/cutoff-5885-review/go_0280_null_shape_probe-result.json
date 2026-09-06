@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0280",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a3e286b919262fbae3b53571ec92273fb0df3a94d347c153277c09f0fff9d39a",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"bytes\"\n\t\"errors\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestParseBadgeValidAndDuplicateFields(t *testing.T) {\n\tdata := []byte(\" \\n {\\\"label\\\":\\\"  Core Contributor  \\\",\\\"level\\\":\\\"gold\\\",\\\"label\\\":\\\"  Final Label \\\"} \\t\")\n\tbefore := append([]byte(nil), data...)\n\tallowed := []string{\"bronze\", \"gold\", \"silver\"}\n\tallowedBefore := append([]string(nil), allowed...)\n\n\tgot, err := ParseBadge(data, allowed)\n\tif err != nil {\n\t\tt.Fatalf(\"ParseBadge returned error: %v\", err)\n\t}\n\twant := Badge{Label: \"Final Label\", Level: \"gold\"}\n\tif got != want {\n\t\tt.Fatalf(\"ParseBadge = %#v, want %#v\", got, want)\n\t}\n\tif !bytes.Equal(data, before) {\n\t\tt.Fatal(\"ParseBadge mutated data\")\n\t}\n\tif !reflect.DeepEqual(allowed, allowedBefore) {\n\t\tt.Fatal(\"ParseBadge mutated allowedLevels\")\n\t}\n}\n\nfunc TestParseBadgeLevelMatchingIsExact(t *testing.T) {\n\tfor _, data := range [][]byte{\n\t\t[]byte(`{\"label\":\"badge\",\"level\":\"Gold\"}`),\n\t\t[]byte(`{\"label\":\"badge\",\"level\":\" gold\"}`),\n\t\t[]byte(`{\"label\":\"badge\",\"level\":\"gold \"}`),\n\t} {\n\t\tgot, err := ParseBadge(data, []string{\"gold\"})\n\t\tif got != (Badge{}) || !errors.Is(err, ErrInvalidBadge) {\n\t\t\tt.Fatalf(\"ParseBadge(%s) = (%#v, %v), want zero badge and ErrInvalidBadge\", data, got, err)\n\t\t}\n\t}\n\n\tgot, err := ParseBadge([]byte(`{\"label\":\"x\",\"level\":\"\"}`), []string{\"\"})\n\tif err != nil || got != (Badge{Label: \"x\", Level: \"\"}) {\n\t\tt.Fatalf(\"explicitly allowed empty level = (%#v, %v)\", got, err)\n\t}\n}\n\nfunc TestParseBadgeInvalidBadge(t *testing.T) {\n\tcases := [][]byte{\n\t\t[]byte(`{\"label\":\"\",\"level\":\"gold\"}`),\n\t\t[]byte(`{\"label\":\" \\t\\n \",\"level\":\"gold\"}`),\n\t\t[]byte(`{\"level\":\"gold\"}`),\n\t\t[]byte(`{\"label\":\"valid\",\"level\":\"missing\"}`),\n\t}\n\tfor _, data := range cases {\n\t\tgot, err := ParseBadge(data, []string{\"gold\"})\n\t\tif got != (Badge{}) || !errors.Is(err, ErrInvalidBadge) {\n\t\t\tt.Errorf(\"ParseBadge(%s) = (%#v, %v), want zero badge and ErrInvalidBadge\", data, got, err)\n\t\t}\n\t}\n}\n\nfunc TestParseBadgeMalformedInput(t *testing.T) {\n\tcases := [][]byte{\n\t\tnil,\n\t\t[]byte(\"   \\n\\t\"),\n\t\t[]byte(`{\"label\":\"x\",\"level\":\"gold\"`),\n\t\t[]byte(`[]`),\n\t\t[]byte(`{\"label\":\"x\",\"level\":\"gold\",\"extra\":1}`),\n\t\t[]byte(`{\"label\":\"x\",\"level\":\"gold\"} {}`),\n\t\t[]byte(`{\"label\":1,\"level\":\"gold\"}`),\n\t}\n\tfor _, data := range cases {\n\t\tgot, err := ParseBadge(data, []string{\"gold\"})\n\t\tif got != (Badge{}) || !errors.Is(err, ErrMalformedBadge) {\n\t\t\tt.Errorf(\"ParseBadge(%q) = (%#v, %v), want zero badge and ErrMalformedBadge\", data, got, err)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "5ba0548706f989e412c7df25527e252069b2a2f9bb642ef4a9d87978e570c66d"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport (\n\t\"errors\"\n\t\"testing\"\n)\n\nfunc TestReviewNullShape0280(t *testing.T) {\n\t_, err := ParseBadge([]byte(\"null\"), []string{\"\"})\n\tif !errors.Is(err, ErrMalformedBadge) { t.Fatalf(\"non-object null: err=%v, want ErrMalformedBadge\", err) }\n}\n",
+        "sha256": "fb3ea4f6ee429c3528d9dd868084a03057b651e568c92eff8e1de96fdb237534"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4c13666bb4ca43e61f0ee911475426a911b30eb600029165d0467852bae067c0",
+      "text": "Implement strict in-memory JSON parsing in package `solution`.\n\nExport:\n\n- `type Badge struct { Label string; Level string }` with JSON field names `label` and `level`\n- `var ErrMalformedBadge error`\n- `var ErrInvalidBadge error`\n- `func ParseBadge(data []byte, allowedLevels []string) (Badge, error)`\n\nThe input must contain exactly one JSON object, followed only by whitespace. Reject empty input, malformed JSON, unknown fields, and trailing JSON values with an error wrapping `ErrMalformedBadge`. Duplicate fields use `encoding/json`'s normal last-value behavior.\n\nAfter decoding, `Label` must be nonempty after trimming surrounding whitespace; store the trimmed label. `Level` must exactly equal an entry in `allowedLevels`, with case and whitespace significant. Otherwise return an error wrapping `ErrInvalidBadge`. Do not mutate either input argument. On every error, return the zero `Badge`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4c13666bb4ca43e61f0ee911475426a911b30eb600029165d0467852bae067c0",
+      "text": "Implement strict in-memory JSON parsing in package `solution`.\n\nExport:\n\n- `type Badge struct { Label string; Level string }` with JSON field names `label` and `level`\n- `var ErrMalformedBadge error`\n- `var ErrInvalidBadge error`\n- `func ParseBadge(data []byte, allowedLevels []string) (Badge, error)`\n\nThe input must contain exactly one JSON object, followed only by whitespace. Reject empty input, malformed JSON, unknown fields, and trailing JSON values with an error wrapping `ErrMalformedBadge`. Duplicate fields use `encoding/json`'s normal last-value behavior.\n\nAfter decoding, `Label` must be nonempty after trimming surrounding whitespace; store the trimmed label. `Level` must exactly equal an entry in `allowedLevels`, with case and whitespace significant. Otherwise return an error wrapping `ErrInvalidBadge`. Do not mutate either input argument. On every error, return the zero `Badge`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0280",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"strings\"\n)\n\ntype Badge struct {\n\tLabel string `json:\"label\"`\n\tLevel string `json:\"level\"`\n}\n\nvar ErrMalformedBadge = errors.New(\"malformed badge\")\nvar ErrInvalidBadge = errors.New(\"invalid badge\")\n\nfunc ParseBadge(data []byte, allowedLevels []string) (Badge, error) {\n\tvar badge Badge\n\tdecoder := json.NewDecoder(bytes.NewReader(data))\n\tdecoder.DisallowUnknownFields()\n\tif err := decoder.Decode(&badge); err != nil {\n\t\treturn Badge{}, fmt.Errorf(\"%w: %v\", ErrMalformedBadge, err)\n\t}\n\tbadge.Label = strings.TrimSpace(badge.Label)\n\tif badge.Label == \"\" {\n\t\treturn Badge{}, fmt.Errorf(\"%w: blank label\", ErrInvalidBadge)\n\t}\n\tallowed := false\n\tfor _, level := range allowedLevels {\n\t\tif badge.Level == level {\n\t\t\tallowed = true\n\t\t\tbreak\n\t\t}\n\t}\n\tif !allowed {\n\t\treturn Badge{}, fmt.Errorf(\"%w: unsupported level\", ErrInvalidBadge)\n\t}\n\treturn badge, nil\n}\n",
+          "label": "ParseBadge accepts additional JSON values after the first object.",
+          "sha256": "abb134bb916ea7e45cac5e3fc232aab33ad2e0722edb73404396cac4050e3934"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"io\"\n\t\"strings\"\n)\n\ntype Badge struct {\n\tLabel string `json:\"label\"`\n\tLevel string `json:\"level\"`\n}\n\nvar ErrMalformedBadge = errors.New(\"malformed badge\")\nvar ErrInvalidBadge = errors.New(\"invalid badge\")\n\nfunc ParseBadge(data []byte, allowedLevels []string) (Badge, error) {\n\tvar badge Badge\n\tdecoder := json.NewDecoder(bytes.NewReader(data))\n\tdecoder.DisallowUnknownFields()\n\tif err := decoder.Decode(&badge); err != nil {\n\t\treturn Badge{}, fmt.Errorf(\"%w: %v\", ErrMalformedBadge, err)\n\t}\n\tvar extra any\n\tif err := decoder.Decode(&extra); err != io.EOF {\n\t\tif err == nil {\n\t\t\terr = errors.New(\"trailing JSON value\")\n\t\t}\n\t\treturn Badge{}, fmt.Errorf(\"%w: %v\", ErrMalformedBadge, err)\n\t}\n\tbadge.Label = strings.TrimSpace(badge.Label)\n\tif badge.Label == \"\" {\n\t\treturn Badge{}, fmt.Errorf(\"%w: blank label\", ErrInvalidBadge)\n\t}\n\tallowed := false\n\tfor _, level := range allowedLevels {\n\t\tif badge.Level == level {\n\t\t\tallowed = true\n\t\t\tbreak\n\t\t}\n\t}\n\tif !allowed {\n\t\treturn Badge{}, fmt.Errorf(\"%w: unsupported level\", ErrInvalidBadge)\n\t}\n\treturn badge, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "daf0854bbc80ad5e57ba9be7155e2617cf1dc63eca2c87d96f36c5135d681297"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"bytes\"\n\t\"errors\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestParseBadgeValidAndDuplicateFields(t *testing.T) {\n\tdata := []byte(\" \\n {\\\"label\\\":\\\"  Core Contributor  \\\",\\\"level\\\":\\\"gold\\\",\\\"label\\\":\\\"  Final Label \\\"} \\t\")\n\tbefore := append([]byte(nil), data...)\n\tallowed := []string{\"bronze\", \"gold\", \"silver\"}\n\tallowedBefore := append([]string(nil), allowed...)\n\n\tgot, err := ParseBadge(data, allowed)\n\tif err != nil {\n\t\tt.Fatalf(\"ParseBadge returned error: %v\", err)\n\t}\n\twant := Badge{Label: \"Final Label\", Level: \"gold\"}\n\tif got != want {\n\t\tt.Fatalf(\"ParseBadge = %#v, want %#v\", got, want)\n\t}\n\tif !bytes.Equal(data, before) {\n\t\tt.Fatal(\"ParseBadge mutated data\")\n\t}\n\tif !reflect.DeepEqual(allowed, allowedBefore) {\n\t\tt.Fatal(\"ParseBadge mutated allowedLevels\")\n\t}\n}\n\nfunc TestParseBadgeLevelMatchingIsExact(t *testing.T) {\n\tfor _, data := range [][]byte{\n\t\t[]byte(`{\"label\":\"badge\",\"level\":\"Gold\"}`),\n\t\t[]byte(`{\"label\":\"badge\",\"level\":\" gold\"}`),\n\t\t[]byte(`{\"label\":\"badge\",\"level\":\"gold \"}`),\n\t} {\n\t\tgot, err := ParseBadge(data, []string{\"gold\"})\n\t\tif got != (Badge{}) || !errors.Is(err, ErrInvalidBadge) {\n\t\t\tt.Fatalf(\"ParseBadge(%s) = (%#v, %v), want zero badge and ErrInvalidBadge\", data, got, err)\n\t\t}\n\t}\n\n\tgot, err := ParseBadge([]byte(`{\"label\":\"x\",\"level\":\"\"}`), []string{\"\"})\n\tif err != nil || got != (Badge{Label: \"x\", Level: \"\"}) {\n\t\tt.Fatalf(\"explicitly allowed empty level = (%#v, %v)\", got, err)\n\t}\n}\n\nfunc TestParseBadgeInvalidBadge(t *testing.T) {\n\tcases := [][]byte{\n\t\t[]byte(`{\"label\":\"\",\"level\":\"gold\"}`),\n\t\t[]byte(`{\"label\":\" \\t\\n \",\"level\":\"gold\"}`),\n\t\t[]byte(`{\"level\":\"gold\"}`),\n\t\t[]byte(`{\"label\":\"valid\",\"level\":\"missing\"}`),\n\t}\n\tfor _, data := range cases {\n\t\tgot, err := ParseBadge(data, []string{\"gold\"})\n\t\tif got != (Badge{}) || !errors.Is(err, ErrInvalidBadge) {\n\t\t\tt.Errorf(\"ParseBadge(%s) = (%#v, %v), want zero badge and ErrInvalidBadge\", data, got, err)\n\t\t}\n\t}\n}\n\nfunc TestParseBadgeMalformedInput(t *testing.T) {\n\tcases := [][]byte{\n\t\tnil,\n\t\t[]byte(\"   \\n\\t\"),\n\t\t[]byte(`{\"label\":\"x\",\"level\":\"gold\"`),\n\t\t[]byte(`[]`),\n\t\t[]byte(`{\"label\":\"x\",\"level\":\"gold\",\"extra\":1}`),\n\t\t[]byte(`{\"label\":\"x\",\"level\":\"gold\"} {}`),\n\t\t[]byte(`{\"label\":1,\"level\":\"gold\"}`),\n\t}\n\tfor _, data := range cases {\n\t\tgot, err := ParseBadge(data, []string{\"gold\"})\n\t\tif got != (Badge{}) || !errors.Is(err, ErrMalformedBadge) {\n\t\t\tt.Errorf(\"ParseBadge(%q) = (%#v, %v), want zero badge and ErrMalformedBadge\", data, got, err)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "5ba0548706f989e412c7df25527e252069b2a2f9bb642ef4a9d87978e570c66d"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4c13666bb4ca43e61f0ee911475426a911b30eb600029165d0467852bae067c0",
+      "text": "Implement strict in-memory JSON parsing in package `solution`.\n\nExport:\n\n- `type Badge struct { Label string; Level string }` with JSON field names `label` and `level`\n- `var ErrMalformedBadge error`\n- `var ErrInvalidBadge error`\n- `func ParseBadge(data []byte, allowedLevels []string) (Badge, error)`\n\nThe input must contain exactly one JSON object, followed only by whitespace. Reject empty input, malformed JSON, unknown fields, and trailing JSON values with an error wrapping `ErrMalformedBadge`. Duplicate fields use `encoding/json`'s normal last-value behavior.\n\nAfter decoding, `Label` must be nonempty after trimming surrounding whitespace; store the trimmed label. `Level` must exactly equal an entry in `allowedLevels`, with case and whitespace significant. Otherwise return an error wrapping `ErrInvalidBadge`. Do not mutate either input argument. On every error, return the zero `Badge`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4c13666bb4ca43e61f0ee911475426a911b30eb600029165d0467852bae067c0",
+      "text": "Implement strict in-memory JSON parsing in package `solution`.\n\nExport:\n\n- `type Badge struct { Label string; Level string }` with JSON field names `label` and `level`\n- `var ErrMalformedBadge error`\n- `var ErrInvalidBadge error`\n- `func ParseBadge(data []byte, allowedLevels []string) (Badge, error)`\n\nThe input must contain exactly one JSON object, followed only by whitespace. Reject empty input, malformed JSON, unknown fields, and trailing JSON values with an error wrapping `ErrMalformedBadge`. Duplicate fields use `encoding/json`'s normal last-value behavior.\n\nAfter decoding, `Label` must be nonempty after trimming surrounding whitespace; store the trimmed label. `Level` must exactly equal an entry in `allowedLevels`, with case and whitespace significant. Otherwise return an error wrapping `ErrInvalidBadge`. Do not mutate either input argument. On every error, return the zero `Badge`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0280",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"strings\"\n)\n\ntype Badge struct {\n\tLabel string `json:\"label\"`\n\tLevel string `json:\"level\"`\n}\n\nvar ErrMalformedBadge = errors.New(\"malformed badge\")\nvar ErrInvalidBadge = errors.New(\"invalid badge\")\n\nfunc ParseBadge(data []byte, allowedLevels []string) (Badge, error) {\n\tvar badge Badge\n\tdecoder := json.NewDecoder(bytes.NewReader(data))\n\tdecoder.DisallowUnknownFields()\n\tif err := decoder.Decode(&badge); err != nil {\n\t\treturn Badge{}, fmt.Errorf(\"%w: %v\", ErrMalformedBadge, err)\n\t}\n\tbadge.Label = strings.TrimSpace(badge.Label)\n\tif badge.Label == \"\" {\n\t\treturn Badge{}, fmt.Errorf(\"%w: blank label\", ErrInvalidBadge)\n\t}\n\tallowed := false\n\tfor _, level := range allowedLevels {\n\t\tif badge.Level == level {\n\t\t\tallowed = true\n\t\t\tbreak\n\t\t}\n\t}\n\tif !allowed {\n\t\treturn Badge{}, fmt.Errorf(\"%w: unsupported level\", ErrInvalidBadge)\n\t}\n\treturn badge, nil\n}\n",
+          "label": "ParseBadge accepts additional JSON values after the first object.",
+          "sha256": "abb134bb916ea7e45cac5e3fc232aab33ad2e0722edb73404396cac4050e3934"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"io\"\n\t\"strings\"\n)\n\ntype Badge struct {\n\tLabel string `json:\"label\"`\n\tLevel string `json:\"level\"`\n}\n\nvar ErrMalformedBadge = errors.New(\"malformed badge\")\nvar ErrInvalidBadge = errors.New(\"invalid badge\")\n\nfunc ParseBadge(data []byte, allowedLevels []string) (Badge, error) {\n\tvar badge Badge\n\tdecoder := json.NewDecoder(bytes.NewReader(data))\n\tdecoder.DisallowUnknownFields()\n\tif err := decoder.Decode(&badge); err != nil {\n\t\treturn Badge{}, fmt.Errorf(\"%w: %v\", ErrMalformedBadge, err)\n\t}\n\tvar extra any\n\tif err := decoder.Decode(&extra); err != io.EOF {\n\t\tif err == nil {\n\t\t\terr = errors.New(\"trailing JSON value\")\n\t\t}\n\t\treturn Badge{}, fmt.Errorf(\"%w: %v\", ErrMalformedBadge, err)\n\t}\n\tbadge.Label = strings.TrimSpace(badge.Label)\n\tif badge.Label == \"\" {\n\t\treturn Badge{}, fmt.Errorf(\"%w: blank label\", ErrInvalidBadge)\n\t}\n\tallowed := false\n\tfor _, level := range allowedLevels {\n\t\tif badge.Level == level {\n\t\t\tallowed = true\n\t\t\tbreak\n\t\t}\n\t}\n\tif !allowed {\n\t\treturn Badge{}, fmt.Errorf(\"%w: unsupported level\", ErrInvalidBadge)\n\t}\n\treturn badge, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "daf0854bbc80ad5e57ba9be7155e2617cf1dc63eca2c87d96f36c5135d681297"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewNullShape0280 (0.00s)\n    review_test.go:10: non-object null: err=invalid badge: blank label, want ErrMalformedBadge\nFAIL\nFAIL\tganesh.invalid/expansion\t0.023s\nFAIL\n",
+    "stdout_sha256": "f2e4ed114ff7c76e053f0872cf06fdff93c70715ce7fb007737ba61c46d09a35",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 27810,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-repair-0017",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "116a710e911d650bfac7588eb5d1cb1c70a7581e2ca54437dc436f2623b84249",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import clamp_scaled\n\n\nclass ReviewProbe(unittest.TestCase):\n    def test_finite_integer_with_representable_clamped_result(self):\n        self.assertEqual(clamp_scaled(10 ** 400, 1, 1), 1.0)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "sha256": "682ac09dd2ff3f8d5cc4b54ff8291132b410da16278255b49ad47dc2918769ae"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a6038c23bc0fc5cff5eac93a9853b75fe9b2ba093172fbcce2779866a8b3335d",
+      "text": "The complete `solution.py` below is intended to expose `clamp_scaled(value, factor, limit)`. It must validate all three arguments as finite real numbers excluding Booleans, require a non-negative `limit`, multiply `value` by `factor`, and then clamp that scaled result into the inclusive interval `[-limit, limit]`. It must return a float. The implementation currently applies the operations in the wrong order. Return a corrected complete source file.\n\n```python\nimport math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    clamped = min(limit, max(-limit, value))\n    return float(clamped * factor)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a6038c23bc0fc5cff5eac93a9853b75fe9b2ba093172fbcce2779866a8b3335d",
+      "text": "The complete `solution.py` below is intended to expose `clamp_scaled(value, factor, limit)`. It must validate all three arguments as finite real numbers excluding Booleans, require a non-negative `limit`, multiply `value` by `factor`, and then clamp that scaled result into the inclusive interval `[-limit, limit]`. It must return a float. The implementation currently applies the operations in the wrong order. Return a corrected complete source file.\n\n```python\nimport math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    clamped = min(limit, max(-limit, value))\n    return float(clamped * factor)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-repair-0017",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    clamped = min(limit, max(-limit, value))\n    return float(clamped * factor)\n",
+          "label": "The value is clamped before scaling, allowing the final result to exceed the requested limit.",
+          "sha256": "fdd2242d8c4ab161167776f36582e01904f141d0b4c01694e6d21244f60f497c"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    scaled = value * factor\n    return float(min(limit, max(-limit, scaled)))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4078cc2157534a7e5e656b3ff39d8c5312192fd99e80a513409670b9bfc29011"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import clamp_scaled\n\n\nclass ClampScaledTests(unittest.TestCase):\n    def test_scales_before_clamping(self):\n        self.assertEqual(clamp_scaled(4, 3, 10), 10.0)\n        self.assertEqual(clamp_scaled(-4, 3, 10), -10.0)\n        self.assertEqual(clamp_scaled(100, 0.05, 10), 5.0)\n\n    def test_negative_factor_changes_clamp_side(self):\n        self.assertEqual(clamp_scaled(4, -3, 10), -10.0)\n        self.assertEqual(clamp_scaled(-4, -3, 10), 10.0)\n\n    def test_inclusive_boundaries_and_zero_limit(self):\n        self.assertEqual(clamp_scaled(2, 5, 10), 10.0)\n        self.assertEqual(clamp_scaled(-2, 5, 10), -10.0)\n        self.assertEqual(clamp_scaled(7, -4, 0), 0.0)\n\n    def test_always_returns_float(self):\n        self.assertEqual(clamp_scaled(2, 3, 10), 6.0)\n        self.assertIsInstance(clamp_scaled(2, 3, 10), float)\n\n    def test_invalid_types(self):\n        for args in ((True, 1, 1), (1, False, 1), (1, 1, True), (\"1\", 1, 1), (1, None, 1)):\n            with self.subTest(args=args), self.assertRaises(TypeError):\n                clamp_scaled(*args)\n\n    def test_non_finite_and_negative_limit(self):\n        for args in ((float(\"nan\"), 1, 1), (1, float(\"inf\"), 1), (1, 1, float(\"-inf\"))):\n            with self.subTest(args=args), self.assertRaises(ValueError):\n                clamp_scaled(*args)\n        with self.assertRaises(ValueError):\n            clamp_scaled(1, 1, -0.01)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "fa3f4bb8cec27e4fc2fbf99115092d4d8717d0a3d40d65e096b912b828c56cc5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a6038c23bc0fc5cff5eac93a9853b75fe9b2ba093172fbcce2779866a8b3335d",
+      "text": "The complete `solution.py` below is intended to expose `clamp_scaled(value, factor, limit)`. It must validate all three arguments as finite real numbers excluding Booleans, require a non-negative `limit`, multiply `value` by `factor`, and then clamp that scaled result into the inclusive interval `[-limit, limit]`. It must return a float. The implementation currently applies the operations in the wrong order. Return a corrected complete source file.\n\n```python\nimport math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    clamped = min(limit, max(-limit, value))\n    return float(clamped * factor)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a6038c23bc0fc5cff5eac93a9853b75fe9b2ba093172fbcce2779866a8b3335d",
+      "text": "The complete `solution.py` below is intended to expose `clamp_scaled(value, factor, limit)`. It must validate all three arguments as finite real numbers excluding Booleans, require a non-negative `limit`, multiply `value` by `factor`, and then clamp that scaled result into the inclusive interval `[-limit, limit]`. It must return a float. The implementation currently applies the operations in the wrong order. Return a corrected complete source file.\n\n```python\nimport math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    clamped = min(limit, max(-limit, value))\n    return float(clamped * factor)\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-repair-0017",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    clamped = min(limit, max(-limit, value))\n    return float(clamped * factor)\n",
+          "label": "The value is clamped before scaling, allowing the final result to exceed the requested limit.",
+          "sha256": "fdd2242d8c4ab161167776f36582e01904f141d0b4c01694e6d21244f60f497c"
+        }
+      ],
+      "reference": {
+        "code": "import math\nfrom numbers import Real\n\n\ndef _finite_real(value, name):\n    if isinstance(value, bool) or not isinstance(value, Real):\n        raise TypeError(name + \" must be a real number\")\n    if not math.isfinite(value):\n        raise ValueError(name + \" must be finite\")\n\n\ndef clamp_scaled(value, factor, limit):\n    _finite_real(value, \"value\")\n    _finite_real(factor, \"factor\")\n    _finite_real(limit, \"limit\")\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    scaled = value * factor\n    return float(min(limit, max(-limit, scaled)))\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4078cc2157534a7e5e656b3ff39d8c5312192fd99e80a513409670b9bfc29011"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_finite_integer_with_representable_clamped_result (__main__.ReviewProbe.test_finite_integer_with_representable_clamped_result)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_finite_integer_with_representable_clamped_result\n    self.assertEqual(clamp_scaled(10 ** 400, 1, 1), 1.0)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 13, in clamp_scaled\n    _finite_real(value, \"value\")\n  File \"/work/solution.py\", line 8, in _finite_real\n    if not math.isfinite(value):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.008s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "df231178bcfd2c6c2896b275cefcca4303a0068e628d8651e061e3e48ca40c75",
+    "duration_ms": 876,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

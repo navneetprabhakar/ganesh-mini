@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0081",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "786960b0a42c7f33b6eccd626d39a18d7f8e8a195178898b811141b8021e502a",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { PreferencesSession, type Preferences } from './solution';\nconst current: Preferences = {nickname:'x',theme:'day',labels:[]};\nObject.defineProperty(current, 'nickname', {enumerable:false});\nconst session = new PreferencesSession(current, {save:async () => {}, signOut:async () => {}});\nif (session.draft.nickname !== 'x') throw new Error('deep copy loses non-enumerable required nickname');\n",
+        "sha256": "36046bc086a1c624efdfe397db5e18af77e31e3dc2ff2d904cac9be73e96f43a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "234753151969c72e1660115683ca90fe5e6f3805989fd08a1650303bb2d9e242",
+      "text": "Implement a complete TypeScript source file exporting:\n\n```typescript\nexport interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nexport class PreferencesSession {\n  constructor(current: Preferences, gateway: PreferencesGateway);\n  get draft(): Preferences;\n  replaceCurrent(current: Preferences): void;\n  saveDraft(): Promise<void>;\n  signOut(): Promise<void>;\n}\n```\n\nThe constructor and `replaceCurrent` must deep-copy their argument. The `draft` getter must return a fresh deep copy, so callers cannot mutate session state through it. `saveDraft` must snapshot the draft when called and queue a gateway `save` operation after all previously requested saves or sign-outs, even if an earlier operation rejected. The gateway must receive a deep copy. `signOut` is queued under the same rule. Calls execute in request order and each returned promise resolves or rejects with its own gateway operation. Empty labels and duplicate labels are valid and their order must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "234753151969c72e1660115683ca90fe5e6f3805989fd08a1650303bb2d9e242",
+      "text": "Implement a complete TypeScript source file exporting:\n\n```typescript\nexport interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nexport class PreferencesSession {\n  constructor(current: Preferences, gateway: PreferencesGateway);\n  get draft(): Preferences;\n  replaceCurrent(current: Preferences): void;\n  saveDraft(): Promise<void>;\n  signOut(): Promise<void>;\n}\n```\n\nThe constructor and `replaceCurrent` must deep-copy their argument. The `draft` getter must return a fresh deep copy, so callers cannot mutate session state through it. `saveDraft` must snapshot the draft when called and queue a gateway `save` operation after all previously requested saves or sign-outs, even if an earlier operation rejected. The gateway must receive a deep copy. `signOut` is queued under the same rule. Calls execute in request order and each returned promise resolves or rejects with its own gateway operation. Empty labels and duplicate labels are valid and their order must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0081",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nfunction copy(value: Preferences): Preferences {\n  return {...value, labels: value.labels};\n}\n\nexport class PreferencesSession {\n  private value: Preferences;\n  private tail: Promise<void> = Promise.resolve();\n\n  public constructor(\n    current: Preferences,\n    private readonly gateway: PreferencesGateway\n  ) {\n    this.value = copy(current);\n  }\n\n  public get draft(): Preferences {\n    return copy(this.value);\n  }\n\n  public replaceCurrent(current: Preferences): void {\n    this.value = copy(current);\n  }\n\n  public saveDraft(): Promise<void> {\n    const snapshot = copy(this.value);\n    return this.enqueue(() => this.gateway.save(copy(snapshot)));\n  }\n\n  public signOut(): Promise<void> {\n    return this.enqueue(() => this.gateway.signOut());\n  }\n\n  private enqueue(operation: () => Promise<void>): Promise<void> {\n    const result = this.tail.then(operation, operation);\n    this.tail = result.then(() => undefined, () => undefined);\n    return result;\n  }\n}\n",
+          "label": "The copy helper aliases the labels array, allowing external mutation of session state and queued snapshots.",
+          "sha256": "c46a98e3a90a40aa512d5d1abdab27de628510761af0afe58ec92f997b5a598b"
+        }
+      ],
+      "reference": {
+        "code": "export interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nfunction copy(value: Preferences): Preferences {\n  return {...value, labels: [...value.labels]};\n}\n\nexport class PreferencesSession {\n  private value: Preferences;\n  private tail: Promise<void> = Promise.resolve();\n\n  public constructor(\n    current: Preferences,\n    private readonly gateway: PreferencesGateway\n  ) {\n    this.value = copy(current);\n  }\n\n  public get draft(): Preferences {\n    return copy(this.value);\n  }\n\n  public replaceCurrent(current: Preferences): void {\n    this.value = copy(current);\n  }\n\n  public saveDraft(): Promise<void> {\n    const snapshot = copy(this.value);\n    return this.enqueue(() => this.gateway.save(copy(snapshot)));\n  }\n\n  public signOut(): Promise<void> {\n    return this.enqueue(() => this.gateway.signOut());\n  }\n\n  private enqueue(operation: () => Promise<void>): Promise<void> {\n    const result = this.tail.then(operation, operation);\n    this.tail = result.then(() => undefined, () => undefined);\n    return result;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "72e3108de7ae607dd2c8aaaff42e3e7d8515f0aeaf9cf0841e947e54e533d2f5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { PreferencesSession, type Preferences, type PreferencesGateway } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(message);\n}\n\nfunction deferred<T>(): { promise: Promise<T>; resolve(value: T): void; reject(reason: unknown): void } {\n  let resolve!: (value: T) => void;\n  let reject!: (reason: unknown) => void;\n  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });\n  return { promise, resolve, reject };\n}\n\nasync function run(): Promise<void> {\n  const firstSave = deferred<void>();\n  const signOutGate = deferred<void>();\n  const secondSave = deferred<void>();\n  const calls: string[] = [];\n  const received: Preferences[] = [];\n  let saveIndex = 0;\n\n  const gateway: PreferencesGateway = {\n    save(value: Preferences): Promise<void> {\n      calls.push(`save:${value.nickname}`);\n      received.push(value);\n      return saveIndex++ === 0 ? firstSave.promise : secondSave.promise;\n    },\n    signOut(): Promise<void> {\n      calls.push(\"signOut\");\n      return signOutGate.promise;\n    }\n  };\n\n  const initial: Preferences = { nickname: \"one\", theme: \"day\", labels: [\"\", \"x\", \"x\"] };\n  const session = new PreferencesSession(initial, gateway);\n  initial.nickname = \"mutated\";\n  initial.labels.push(\"later\");\n\n  const draft1 = session.draft;\n  equal(draft1.nickname, \"one\", \"constructor must copy its argument\");\n  equal(draft1.labels.length, 3, \"constructor must deep-copy labels\");\n  draft1.nickname = \"outside\";\n  draft1.labels[0] = \"outside\";\n  const draft2 = session.draft;\n  equal(draft2.nickname, \"one\", \"draft getter must return a fresh copy\");\n  equal(draft2.labels[0], \"\", \"draft labels must not alias returned labels\");\n  assert(draft1 !== draft2 && draft1.labels !== draft2.labels, \"each draft result must be deeply fresh\");\n\n  const saveOnePromise = session.saveDraft();\n  const replacement: Preferences = { nickname: \"two\", theme: \"night\", labels: [\"a\", \"a\", \"\"] };\n  session.replaceCurrent(replacement);\n  replacement.nickname = \"changed\";\n  replacement.labels.reverse();\n  const signOutPromise = session.signOut();\n  const saveTwoPromise = session.saveDraft();\n\n  await Promise.resolve();\n  equal(calls.length, 1, \"only the first queued operation may start initially\");\n  equal(calls[0], \"save:one\", \"first save must use its call-time snapshot\");\n  equal(received[0].labels.join(\"|\"), \"|x|x\", \"empty and duplicate labels must be preserved in order\");\n  received[0].nickname = \"gateway mutation\";\n  received[0].labels.push(\"gateway mutation\");\n  equal(session.draft.nickname, \"two\", \"gateway value must not alias session state\");\n\n  const failure = new Error(\"first failed\");\n  firstSave.reject(failure);\n  let observedFailure: unknown;\n  try { await saveOnePromise; } catch (error) { observedFailure = error; }\n  equal(observedFailure, failure, \"save promise must reject with its own gateway failure\");\n  await Promise.resolve();\n  equal(calls[1], \"signOut\", \"queue must continue after a rejection\");\n  equal(calls.length, 2, \"later save must wait for sign-out\");\n\n  signOutGate.resolve(undefined);\n  await signOutPromise;\n  await Promise.resolve();\n  equal(calls[2], \"save:two\", \"operations must execute in request order\");\n  equal(received[1].theme, \"night\", \"replacement fields should be saved\");\n  equal(received[1].labels.join(\"|\"), \"a|a|\", \"replacement must be copied and preserve label order\");\n\n  secondSave.resolve(undefined);\n  await saveTwoPromise;\n  equal(calls.length, 3, \"each request should execute exactly once\");\n}\n\nrun().catch(error => { throw error; });\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "0a1e126677f3bb618f33521b239baeff4815ed7f90cc45e218400124be7f153c"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "234753151969c72e1660115683ca90fe5e6f3805989fd08a1650303bb2d9e242",
+      "text": "Implement a complete TypeScript source file exporting:\n\n```typescript\nexport interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nexport class PreferencesSession {\n  constructor(current: Preferences, gateway: PreferencesGateway);\n  get draft(): Preferences;\n  replaceCurrent(current: Preferences): void;\n  saveDraft(): Promise<void>;\n  signOut(): Promise<void>;\n}\n```\n\nThe constructor and `replaceCurrent` must deep-copy their argument. The `draft` getter must return a fresh deep copy, so callers cannot mutate session state through it. `saveDraft` must snapshot the draft when called and queue a gateway `save` operation after all previously requested saves or sign-outs, even if an earlier operation rejected. The gateway must receive a deep copy. `signOut` is queued under the same rule. Calls execute in request order and each returned promise resolves or rejects with its own gateway operation. Empty labels and duplicate labels are valid and their order must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "234753151969c72e1660115683ca90fe5e6f3805989fd08a1650303bb2d9e242",
+      "text": "Implement a complete TypeScript source file exporting:\n\n```typescript\nexport interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nexport class PreferencesSession {\n  constructor(current: Preferences, gateway: PreferencesGateway);\n  get draft(): Preferences;\n  replaceCurrent(current: Preferences): void;\n  saveDraft(): Promise<void>;\n  signOut(): Promise<void>;\n}\n```\n\nThe constructor and `replaceCurrent` must deep-copy their argument. The `draft` getter must return a fresh deep copy, so callers cannot mutate session state through it. `saveDraft` must snapshot the draft when called and queue a gateway `save` operation after all previously requested saves or sign-outs, even if an earlier operation rejected. The gateway must receive a deep copy. `signOut` is queued under the same rule. Calls execute in request order and each returned promise resolves or rejects with its own gateway operation. Empty labels and duplicate labels are valid and their order must be preserved.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0081",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nfunction copy(value: Preferences): Preferences {\n  return {...value, labels: value.labels};\n}\n\nexport class PreferencesSession {\n  private value: Preferences;\n  private tail: Promise<void> = Promise.resolve();\n\n  public constructor(\n    current: Preferences,\n    private readonly gateway: PreferencesGateway\n  ) {\n    this.value = copy(current);\n  }\n\n  public get draft(): Preferences {\n    return copy(this.value);\n  }\n\n  public replaceCurrent(current: Preferences): void {\n    this.value = copy(current);\n  }\n\n  public saveDraft(): Promise<void> {\n    const snapshot = copy(this.value);\n    return this.enqueue(() => this.gateway.save(copy(snapshot)));\n  }\n\n  public signOut(): Promise<void> {\n    return this.enqueue(() => this.gateway.signOut());\n  }\n\n  private enqueue(operation: () => Promise<void>): Promise<void> {\n    const result = this.tail.then(operation, operation);\n    this.tail = result.then(() => undefined, () => undefined);\n    return result;\n  }\n}\n",
+          "label": "The copy helper aliases the labels array, allowing external mutation of session state and queued snapshots.",
+          "sha256": "c46a98e3a90a40aa512d5d1abdab27de628510761af0afe58ec92f997b5a598b"
+        }
+      ],
+      "reference": {
+        "code": "export interface Preferences {\n  nickname: string;\n  theme: \"day\" | \"night\";\n  labels: string[];\n}\n\nexport interface PreferencesGateway {\n  save(value: Preferences): Promise<void>;\n  signOut(): Promise<void>;\n}\n\nfunction copy(value: Preferences): Preferences {\n  return {...value, labels: [...value.labels]};\n}\n\nexport class PreferencesSession {\n  private value: Preferences;\n  private tail: Promise<void> = Promise.resolve();\n\n  public constructor(\n    current: Preferences,\n    private readonly gateway: PreferencesGateway\n  ) {\n    this.value = copy(current);\n  }\n\n  public get draft(): Preferences {\n    return copy(this.value);\n  }\n\n  public replaceCurrent(current: Preferences): void {\n    this.value = copy(current);\n  }\n\n  public saveDraft(): Promise<void> {\n    const snapshot = copy(this.value);\n    return this.enqueue(() => this.gateway.save(copy(snapshot)));\n  }\n\n  public signOut(): Promise<void> {\n    return this.enqueue(() => this.gateway.signOut());\n  }\n\n  private enqueue(operation: () => Promise<void>): Promise<void> {\n    const result = this.tail.then(operation, operation);\n    this.tail = result.then(() => undefined, () => undefined);\n    return result;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "72e3108de7ae607dd2c8aaaff42e3e7d8515f0aeaf9cf0841e947e54e533d2f5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('deep copy loses non-enumerable required nickname');\n    ^\n\nError: deep copy loses non-enumerable required nickname\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "b11eb89d6ee97d41931a7acf6cbe273a1e636c5c0d3cc2e37454bf43e3338904",
+    "duration_ms": 3789,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

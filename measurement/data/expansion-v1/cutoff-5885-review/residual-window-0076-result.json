@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0076",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7dd0d2a61906b9fd5d38b537f6ab8e7b7c5301e50c0f1dee3d7a23b3a81f9de9",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { updateWindow, type WindowState } from './solution';\nconst state: WindowState = {totalItems:20,pageSize:10,page:1};\nObject.defineProperty(state, 'totalItems', {enumerable:false});\nconst result = updateWindow(state, {type:'page',page:2});\nif (result.state.totalItems !== 20 || result.rangeStart !== 11 || result.rangeEnd !== 20) throw new Error('validated typed totalItems lost on copy, corrupting result range');\n",
+        "sha256": "0516fb216adaacc39baf81ec4250cbcd4e2c128a8929dda94ea35a3666dd4a74"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cedbbed044a8e25ba325d43bfb1a5383f0b4aadab917bad30a89163f95857cc5",
+      "text": "Implement a pure reducer for navigating a numbered window. Export `WindowState`, `WindowCommand`, `WindowResult`, and `updateWindow(state, command)`. State contains `totalItems`, `pageSize`, and one-based `page`. Commands are `{ type: \"page\"; page: number }` and `{ type: \"pageSize\"; pageSize: number }`. All state numbers and command numbers must be safe integers; `totalItems` may be zero, while page sizes and requested pages must be positive. Malformed state or command values throw `TypeError`. A valid page command changes the page only when it is at most `max(1, ceil(totalItems/pageSize))`. An out-of-range page leaves state unchanged and returns warning `\"Page is out of range\"`. Changing page size is allowed only to 10, 25, 50, or 100 and resets the page to 1; an unsupported size leaves state unchanged with warning `\"Unsupported page size\"`. The result also contains inclusive one-based `rangeStart` and `rangeEnd`; both are zero when there are no items. For successful commands warning is `null`. Return a new state object and never mutate the input. Provide one complete TypeScript source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cedbbed044a8e25ba325d43bfb1a5383f0b4aadab917bad30a89163f95857cc5",
+      "text": "Implement a pure reducer for navigating a numbered window. Export `WindowState`, `WindowCommand`, `WindowResult`, and `updateWindow(state, command)`. State contains `totalItems`, `pageSize`, and one-based `page`. Commands are `{ type: \"page\"; page: number }` and `{ type: \"pageSize\"; pageSize: number }`. All state numbers and command numbers must be safe integers; `totalItems` may be zero, while page sizes and requested pages must be positive. Malformed state or command values throw `TypeError`. A valid page command changes the page only when it is at most `max(1, ceil(totalItems/pageSize))`. An out-of-range page leaves state unchanged and returns warning `\"Page is out of range\"`. Changing page size is allowed only to 10, 25, 50, or 100 and resets the page to 1; an unsupported size leaves state unchanged with warning `\"Unsupported page size\"`. The result also contains inclusive one-based `rangeStart` and `rangeEnd`; both are zero when there are no items. For successful commands warning is `null`. Return a new state object and never mutate the input. Provide one complete TypeScript source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0076",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface WindowState {\n  totalItems: number;\n  pageSize: number;\n  page: number;\n}\n\nexport type WindowCommand =\n  | { type: \"page\"; page: number }\n  | { type: \"pageSize\"; pageSize: number };\n\nexport interface WindowResult {\n  state: WindowState;\n  warning: string | null;\n  rangeStart: number;\n  rangeEnd: number;\n}\n\nconst SIZES: ReadonlySet<number> = new Set([10, 25, 50, 100]);\n\nexport function updateWindow(state: WindowState, command: WindowCommand): WindowResult {\n  validateState(state);\n  let next: WindowState = { ...state };\n  let warning: string | null = null;\n\n  if (command.type === \"page\") {\n    if (!Number.isSafeInteger(command.page) || command.page <= 0) {\n      throw new TypeError(\"page must be a positive safe integer\");\n    }\n    const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n    if (command.page < pageCount) {\n      next.page = command.page;\n    } else {\n      warning = \"Page is out of range\";\n    }\n  } else if (command.type === \"pageSize\") {\n    if (!Number.isSafeInteger(command.pageSize) || command.pageSize <= 0) {\n      throw new TypeError(\"pageSize must be a positive safe integer\");\n    }\n    if (SIZES.has(command.pageSize)) {\n      next = { ...state, pageSize: command.pageSize, page: 1 };\n    } else {\n      warning = \"Unsupported page size\";\n    }\n  } else {\n    throw new TypeError(\"unknown command\");\n  }\n\n  const rangeStart = next.totalItems === 0\n    ? 0\n    : (next.page - 1) * next.pageSize + 1;\n  const rangeEnd = next.totalItems === 0\n    ? 0\n    : Math.min(next.page * next.pageSize, next.totalItems);\n\n  return { state: next, warning, rangeStart, rangeEnd };\n}\n\nfunction validateState(state: WindowState): void {\n  if (!Number.isSafeInteger(state.totalItems) || state.totalItems < 0) {\n    throw new TypeError(\"totalItems must be a nonnegative safe integer\");\n  }\n  if (!Number.isSafeInteger(state.pageSize) || state.pageSize <= 0) {\n    throw new TypeError(\"pageSize must be a positive safe integer\");\n  }\n  const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n  if (!Number.isSafeInteger(state.page) || state.page <= 0 || state.page > pageCount) {\n    throw new TypeError(\"state page is out of range\");\n  }\n}\n",
+          "label": "The strict page-count comparison incorrectly rejects navigation to the final page.",
+          "sha256": "b1da8c7d91d98e6ff29a7231452b8b6101322eee7ca1d8ba5a2713200cb218a5"
+        }
+      ],
+      "reference": {
+        "code": "export interface WindowState {\n  totalItems: number;\n  pageSize: number;\n  page: number;\n}\n\nexport type WindowCommand =\n  | { type: \"page\"; page: number }\n  | { type: \"pageSize\"; pageSize: number };\n\nexport interface WindowResult {\n  state: WindowState;\n  warning: string | null;\n  rangeStart: number;\n  rangeEnd: number;\n}\n\nconst SIZES: ReadonlySet<number> = new Set([10, 25, 50, 100]);\n\nexport function updateWindow(state: WindowState, command: WindowCommand): WindowResult {\n  validateState(state);\n  let next: WindowState = { ...state };\n  let warning: string | null = null;\n\n  if (command.type === \"page\") {\n    if (!Number.isSafeInteger(command.page) || command.page <= 0) {\n      throw new TypeError(\"page must be a positive safe integer\");\n    }\n    const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n    if (command.page <= pageCount) {\n      next.page = command.page;\n    } else {\n      warning = \"Page is out of range\";\n    }\n  } else if (command.type === \"pageSize\") {\n    if (!Number.isSafeInteger(command.pageSize) || command.pageSize <= 0) {\n      throw new TypeError(\"pageSize must be a positive safe integer\");\n    }\n    if (SIZES.has(command.pageSize)) {\n      next = { ...state, pageSize: command.pageSize, page: 1 };\n    } else {\n      warning = \"Unsupported page size\";\n    }\n  } else {\n    throw new TypeError(\"unknown command\");\n  }\n\n  const rangeStart = next.totalItems === 0\n    ? 0\n    : (next.page - 1) * next.pageSize + 1;\n  const rangeEnd = next.totalItems === 0\n    ? 0\n    : Math.min(next.page * next.pageSize, next.totalItems);\n\n  return { state: next, warning, rangeStart, rangeEnd };\n}\n\nfunction validateState(state: WindowState): void {\n  if (!Number.isSafeInteger(state.totalItems) || state.totalItems < 0) {\n    throw new TypeError(\"totalItems must be a nonnegative safe integer\");\n  }\n  if (!Number.isSafeInteger(state.pageSize) || state.pageSize <= 0) {\n    throw new TypeError(\"pageSize must be a positive safe integer\");\n  }\n  const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n  if (!Number.isSafeInteger(state.page) || state.page <= 0 || state.page > pageCount) {\n    throw new TypeError(\"state page is out of range\");\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "35db54434c6aabb31b3a3eb7fb8c18a092c61e13a594b12341dfa0f9c5c7171e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { updateWindow, type WindowCommand, type WindowResult, type WindowState } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) {\n    throw new Error(`${message}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);\n  }\n}\nfunction throwsType(fn: () => unknown, message: string): void {\n  try { fn(); } catch (error) {\n    if (error instanceof TypeError) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: did not throw`);\n}\n\nconst state: WindowState = { totalItems: 101, pageSize: 10, page: 1 };\nconst command: WindowCommand = { type: \"page\", page: 11 };\nconst pageResult: WindowResult = updateWindow(state, command);\nequal(pageResult, { state: { totalItems: 101, pageSize: 10, page: 11 }, warning: null, rangeStart: 101, rangeEnd: 101 }, \"last partial page\");\nequal(state, { totalItems: 101, pageSize: 10, page: 1 }, \"state is not mutated\");\nassert(pageResult.state !== state, \"successful command returns a new state object\");\n\nconst outOfRange = updateWindow(state, { type: \"page\", page: 12 });\nequal(outOfRange, { state: { totalItems: 101, pageSize: 10, page: 1 }, warning: \"Page is out of range\", rangeStart: 1, rangeEnd: 10 }, \"out-of-range page\");\nassert(outOfRange.state !== state, \"rejected command still returns a new state object\");\n\nconst resized = updateWindow({ totalItems: 60, pageSize: 10, page: 4 }, { type: \"pageSize\", pageSize: 25 });\nequal(resized, { state: { totalItems: 60, pageSize: 25, page: 1 }, warning: null, rangeStart: 1, rangeEnd: 25 }, \"supported page size resets page\");\nconst unsupported = updateWindow({ totalItems: 60, pageSize: 10, page: 4 }, { type: \"pageSize\", pageSize: 20 });\nequal(unsupported, { state: { totalItems: 60, pageSize: 10, page: 4 }, warning: \"Unsupported page size\", rangeStart: 31, rangeEnd: 40 }, \"unsupported page size\");\n\nfor (const size of [10, 25, 50, 100]) {\n  assert(updateWindow({ totalItems: 1, pageSize: 10, page: 1 }, { type: \"pageSize\", pageSize: size }).warning === null, `supported size ${size}`);\n}\nequal(updateWindow({ totalItems: 0, pageSize: 10, page: 1 }, { type: \"page\", page: 1 }), { state: { totalItems: 0, pageSize: 10, page: 1 }, warning: null, rangeStart: 0, rangeEnd: 0 }, \"empty window\");\nequal(updateWindow({ totalItems: 0, pageSize: 10, page: 1 }, { type: \"page\", page: 2 }).warning, \"Page is out of range\", \"empty window has one navigable page\");\n\nthrowsType(() => updateWindow({ totalItems: -1, pageSize: 10, page: 1 }, { type: \"page\", page: 1 }), \"negative total\");\nthrowsType(() => updateWindow({ totalItems: 1.5, pageSize: 10, page: 1 }, { type: \"page\", page: 1 }), \"fractional total\");\nthrowsType(() => updateWindow({ totalItems: 1, pageSize: 0, page: 1 }, { type: \"page\", page: 1 }), \"zero state page size\");\nthrowsType(() => updateWindow({ totalItems: 1, pageSize: 10, page: 0 }, { type: \"page\", page: 1 }), \"zero state page\");\nthrowsType(() => updateWindow(state, { type: \"page\", page: 0 }), \"zero requested page\");\nthrowsType(() => updateWindow(state, { type: \"page\", page: 1.2 }), \"fractional requested page\");\nthrowsType(() => updateWindow(state, { type: \"pageSize\", pageSize: Number.MAX_SAFE_INTEGER + 1 }), \"unsafe requested size\");\nthrowsType(() => updateWindow(state, { type: \"other\" } as unknown as WindowCommand), \"unknown command\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "443c69ce571ca864f504f6517513b745f87f37dcd4f47fcf42fb5652dded777a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cedbbed044a8e25ba325d43bfb1a5383f0b4aadab917bad30a89163f95857cc5",
+      "text": "Implement a pure reducer for navigating a numbered window. Export `WindowState`, `WindowCommand`, `WindowResult`, and `updateWindow(state, command)`. State contains `totalItems`, `pageSize`, and one-based `page`. Commands are `{ type: \"page\"; page: number }` and `{ type: \"pageSize\"; pageSize: number }`. All state numbers and command numbers must be safe integers; `totalItems` may be zero, while page sizes and requested pages must be positive. Malformed state or command values throw `TypeError`. A valid page command changes the page only when it is at most `max(1, ceil(totalItems/pageSize))`. An out-of-range page leaves state unchanged and returns warning `\"Page is out of range\"`. Changing page size is allowed only to 10, 25, 50, or 100 and resets the page to 1; an unsupported size leaves state unchanged with warning `\"Unsupported page size\"`. The result also contains inclusive one-based `rangeStart` and `rangeEnd`; both are zero when there are no items. For successful commands warning is `null`. Return a new state object and never mutate the input. Provide one complete TypeScript source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cedbbed044a8e25ba325d43bfb1a5383f0b4aadab917bad30a89163f95857cc5",
+      "text": "Implement a pure reducer for navigating a numbered window. Export `WindowState`, `WindowCommand`, `WindowResult`, and `updateWindow(state, command)`. State contains `totalItems`, `pageSize`, and one-based `page`. Commands are `{ type: \"page\"; page: number }` and `{ type: \"pageSize\"; pageSize: number }`. All state numbers and command numbers must be safe integers; `totalItems` may be zero, while page sizes and requested pages must be positive. Malformed state or command values throw `TypeError`. A valid page command changes the page only when it is at most `max(1, ceil(totalItems/pageSize))`. An out-of-range page leaves state unchanged and returns warning `\"Page is out of range\"`. Changing page size is allowed only to 10, 25, 50, or 100 and resets the page to 1; an unsupported size leaves state unchanged with warning `\"Unsupported page size\"`. The result also contains inclusive one-based `rangeStart` and `rangeEnd`; both are zero when there are no items. For successful commands warning is `null`. Return a new state object and never mutate the input. Provide one complete TypeScript source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0076",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface WindowState {\n  totalItems: number;\n  pageSize: number;\n  page: number;\n}\n\nexport type WindowCommand =\n  | { type: \"page\"; page: number }\n  | { type: \"pageSize\"; pageSize: number };\n\nexport interface WindowResult {\n  state: WindowState;\n  warning: string | null;\n  rangeStart: number;\n  rangeEnd: number;\n}\n\nconst SIZES: ReadonlySet<number> = new Set([10, 25, 50, 100]);\n\nexport function updateWindow(state: WindowState, command: WindowCommand): WindowResult {\n  validateState(state);\n  let next: WindowState = { ...state };\n  let warning: string | null = null;\n\n  if (command.type === \"page\") {\n    if (!Number.isSafeInteger(command.page) || command.page <= 0) {\n      throw new TypeError(\"page must be a positive safe integer\");\n    }\n    const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n    if (command.page < pageCount) {\n      next.page = command.page;\n    } else {\n      warning = \"Page is out of range\";\n    }\n  } else if (command.type === \"pageSize\") {\n    if (!Number.isSafeInteger(command.pageSize) || command.pageSize <= 0) {\n      throw new TypeError(\"pageSize must be a positive safe integer\");\n    }\n    if (SIZES.has(command.pageSize)) {\n      next = { ...state, pageSize: command.pageSize, page: 1 };\n    } else {\n      warning = \"Unsupported page size\";\n    }\n  } else {\n    throw new TypeError(\"unknown command\");\n  }\n\n  const rangeStart = next.totalItems === 0\n    ? 0\n    : (next.page - 1) * next.pageSize + 1;\n  const rangeEnd = next.totalItems === 0\n    ? 0\n    : Math.min(next.page * next.pageSize, next.totalItems);\n\n  return { state: next, warning, rangeStart, rangeEnd };\n}\n\nfunction validateState(state: WindowState): void {\n  if (!Number.isSafeInteger(state.totalItems) || state.totalItems < 0) {\n    throw new TypeError(\"totalItems must be a nonnegative safe integer\");\n  }\n  if (!Number.isSafeInteger(state.pageSize) || state.pageSize <= 0) {\n    throw new TypeError(\"pageSize must be a positive safe integer\");\n  }\n  const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n  if (!Number.isSafeInteger(state.page) || state.page <= 0 || state.page > pageCount) {\n    throw new TypeError(\"state page is out of range\");\n  }\n}\n",
+          "label": "The strict page-count comparison incorrectly rejects navigation to the final page.",
+          "sha256": "b1da8c7d91d98e6ff29a7231452b8b6101322eee7ca1d8ba5a2713200cb218a5"
+        }
+      ],
+      "reference": {
+        "code": "export interface WindowState {\n  totalItems: number;\n  pageSize: number;\n  page: number;\n}\n\nexport type WindowCommand =\n  | { type: \"page\"; page: number }\n  | { type: \"pageSize\"; pageSize: number };\n\nexport interface WindowResult {\n  state: WindowState;\n  warning: string | null;\n  rangeStart: number;\n  rangeEnd: number;\n}\n\nconst SIZES: ReadonlySet<number> = new Set([10, 25, 50, 100]);\n\nexport function updateWindow(state: WindowState, command: WindowCommand): WindowResult {\n  validateState(state);\n  let next: WindowState = { ...state };\n  let warning: string | null = null;\n\n  if (command.type === \"page\") {\n    if (!Number.isSafeInteger(command.page) || command.page <= 0) {\n      throw new TypeError(\"page must be a positive safe integer\");\n    }\n    const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n    if (command.page <= pageCount) {\n      next.page = command.page;\n    } else {\n      warning = \"Page is out of range\";\n    }\n  } else if (command.type === \"pageSize\") {\n    if (!Number.isSafeInteger(command.pageSize) || command.pageSize <= 0) {\n      throw new TypeError(\"pageSize must be a positive safe integer\");\n    }\n    if (SIZES.has(command.pageSize)) {\n      next = { ...state, pageSize: command.pageSize, page: 1 };\n    } else {\n      warning = \"Unsupported page size\";\n    }\n  } else {\n    throw new TypeError(\"unknown command\");\n  }\n\n  const rangeStart = next.totalItems === 0\n    ? 0\n    : (next.page - 1) * next.pageSize + 1;\n  const rangeEnd = next.totalItems === 0\n    ? 0\n    : Math.min(next.page * next.pageSize, next.totalItems);\n\n  return { state: next, warning, rangeStart, rangeEnd };\n}\n\nfunction validateState(state: WindowState): void {\n  if (!Number.isSafeInteger(state.totalItems) || state.totalItems < 0) {\n    throw new TypeError(\"totalItems must be a nonnegative safe integer\");\n  }\n  if (!Number.isSafeInteger(state.pageSize) || state.pageSize <= 0) {\n    throw new TypeError(\"pageSize must be a positive safe integer\");\n  }\n  const pageCount = Math.max(1, Math.ceil(state.totalItems / state.pageSize));\n  if (!Number.isSafeInteger(state.page) || state.page <= 0 || state.page > pageCount) {\n    throw new TypeError(\"state page is out of range\");\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "35db54434c6aabb31b3a3eb7fb8c18a092c61e13a594b12341dfa0f9c5c7171e"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('validated typed totalItems lost on copy, corrupting result range');\n    ^\n\nError: validated typed totalItems lost on copy, corrupting result range\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "1ff8115f2e3e4f5eda84349da4eb679f22a48082e6f5f23e003756dba00facb7",
+    "duration_ms": 4199,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

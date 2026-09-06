@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0052",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "be13f2309c8b8fb841918f7f71c82348586d505b60428e902466e5768a4e6948",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { reduceAccessState, type AccessState } from './solution';\nconst state: AccessState = {phase:'editing',account:'a',secret:'s',error:null};\nObject.defineProperty(state, 'phase', {enumerable:false});\nconst output = reduceAccessState(state, {type:'changeAccount',value:'b'});\nif (output.phase !== 'editing') throw new Error('valid typed state loses non-enumerable discriminant');\n",
+        "sha256": "6972b03cc35af52e7b59acbf70ecc7d95fe23ed08207bfd167e272049860e38a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "70103840f4009f45b650e32d362ac61ee3574331c1f48e4689a6779360480b56",
+      "text": "Implement an immutable access-prompt state machine in one TypeScript file.\n\nExport the discriminated unions `AccessState` and `AccessEvent`, plus `reduceAccessState(state, event): AccessState`.\n\nStates:\n- `{ phase: \"closed\"; notice: string | null }`\n- `{ phase: \"editing\"; account: string; secret: string; error: string | null }`\n- `{ phase: \"submitting\"; account: string; secret: string }`\n\nEvents:\n- `open`\n- `cancel`\n- `changeAccount` with `value`\n- `changeSecret` with `value`\n- `submit`\n- `reply` with `message`\n\nRules:\n- `open` affects only `closed`, creating an empty editing form.\n- Change events affect only `editing` and clear its error.\n- `submit` affects only `editing`. Trim the account for validation but preserve the entered value. If either trimmed account or secret is empty, remain editing with `error: \"Missing credentials\"`; otherwise enter submitting.\n- `reply` affects only `submitting`. Exact message `operator` closes with notice `Access granted`; any other message returns to editing with that message as the error, except an empty message becomes `Access denied`.\n- `cancel` closes from editing or submitting with a null notice.\n- Events not applicable to the current state return the exact same state object.\n- Never mutate a state or event object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "70103840f4009f45b650e32d362ac61ee3574331c1f48e4689a6779360480b56",
+      "text": "Implement an immutable access-prompt state machine in one TypeScript file.\n\nExport the discriminated unions `AccessState` and `AccessEvent`, plus `reduceAccessState(state, event): AccessState`.\n\nStates:\n- `{ phase: \"closed\"; notice: string | null }`\n- `{ phase: \"editing\"; account: string; secret: string; error: string | null }`\n- `{ phase: \"submitting\"; account: string; secret: string }`\n\nEvents:\n- `open`\n- `cancel`\n- `changeAccount` with `value`\n- `changeSecret` with `value`\n- `submit`\n- `reply` with `message`\n\nRules:\n- `open` affects only `closed`, creating an empty editing form.\n- Change events affect only `editing` and clear its error.\n- `submit` affects only `editing`. Trim the account for validation but preserve the entered value. If either trimmed account or secret is empty, remain editing with `error: \"Missing credentials\"`; otherwise enter submitting.\n- `reply` affects only `submitting`. Exact message `operator` closes with notice `Access granted`; any other message returns to editing with that message as the error, except an empty message becomes `Access denied`.\n- `cancel` closes from editing or submitting with a null notice.\n- Events not applicable to the current state return the exact same state object.\n- Never mutate a state or event object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0052",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type AccessState =\n  | { phase: \"closed\"; notice: string | null }\n  | { phase: \"editing\"; account: string; secret: string; error: string | null }\n  | { phase: \"submitting\"; account: string; secret: string };\n\nexport type AccessEvent =\n  | { type: \"open\" }\n  | { type: \"cancel\" }\n  | { type: \"changeAccount\"; value: string }\n  | { type: \"changeSecret\"; value: string }\n  | { type: \"submit\" }\n  | { type: \"reply\"; message: string };\n\nexport function reduceAccessState(state: AccessState, event: AccessEvent): AccessState {\n  if (event.type === \"cancel\" && state.phase !== \"closed\") {\n    return { phase: \"closed\", notice: null };\n  }\n  if (event.type === \"open\" && state.phase === \"closed\") {\n    return { phase: \"editing\", account: \"\", secret: \"\", error: null };\n  }\n  if (state.phase === \"editing\") {\n    if (event.type === \"changeAccount\") {\n      return { ...state, account: event.value, error: null };\n    }\n    if (event.type === \"changeSecret\") {\n      return { ...state, secret: event.value, error: null };\n    }\n    if (event.type === \"submit\") {\n      if (state.account.trim().length === 0 || state.secret.length === 0) {\n        return { ...state, error: \"Missing credentials\" };\n      }\n      return { phase: \"submitting\", account: state.account, secret: state.secret };\n    }\n  }\n  if (state.phase === \"submitting\" && event.type === \"reply\") {\n    return { phase: \"closed\", notice: \"Access granted\" };\n  }\n  return state;\n}\n",
+          "label": "Treats every submission reply as successful instead of handling rejected replies.",
+          "sha256": "ec492609a922cffc7e0aec62f8d60618a5e8a85097b109b900e73fc553ed46a7"
+        }
+      ],
+      "reference": {
+        "code": "export type AccessState =\n  | { phase: \"closed\"; notice: string | null }\n  | { phase: \"editing\"; account: string; secret: string; error: string | null }\n  | { phase: \"submitting\"; account: string; secret: string };\n\nexport type AccessEvent =\n  | { type: \"open\" }\n  | { type: \"cancel\" }\n  | { type: \"changeAccount\"; value: string }\n  | { type: \"changeSecret\"; value: string }\n  | { type: \"submit\" }\n  | { type: \"reply\"; message: string };\n\nexport function reduceAccessState(state: AccessState, event: AccessEvent): AccessState {\n  if (event.type === \"cancel\" && state.phase !== \"closed\") {\n    return { phase: \"closed\", notice: null };\n  }\n  if (event.type === \"open\" && state.phase === \"closed\") {\n    return { phase: \"editing\", account: \"\", secret: \"\", error: null };\n  }\n  if (state.phase === \"editing\") {\n    if (event.type === \"changeAccount\") {\n      return { ...state, account: event.value, error: null };\n    }\n    if (event.type === \"changeSecret\") {\n      return { ...state, secret: event.value, error: null };\n    }\n    if (event.type === \"submit\") {\n      if (state.account.trim().length === 0 || state.secret.length === 0) {\n        return { ...state, error: \"Missing credentials\" };\n      }\n      return { phase: \"submitting\", account: state.account, secret: state.secret };\n    }\n  }\n  if (state.phase === \"submitting\" && event.type === \"reply\") {\n    if (event.message === \"operator\") {\n      return { phase: \"closed\", notice: \"Access granted\" };\n    }\n    return {\n      phase: \"editing\",\n      account: state.account,\n      secret: state.secret,\n      error: event.message.length === 0 ? \"Access denied\" : event.message,\n    };\n  }\n  return state;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a43201721f708175d7d0278b2b1ce2c6a11844f62c12b3dcf11eb8402af0a10f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { reduceAccessState } from \"./solution\";\nimport type { AccessEvent, AccessState } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) {\n    throw new Error(`${message}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);\n  }\n}\n\nconst closed: AccessState = { phase: \"closed\", notice: \"old notice\" };\nconst opened = reduceAccessState(closed, { type: \"open\" });\nequal(opened, { phase: \"editing\", account: \"\", secret: \"\", error: null }, \"open creates an empty editing form\");\nassert(opened !== closed, \"applicable event returns a new state\");\nequal(closed, { phase: \"closed\", notice: \"old notice\" }, \"open does not mutate closed state\");\n\nfor (const event of [\n  { type: \"changeAccount\", value: \"x\" },\n  { type: \"changeSecret\", value: \"x\" },\n  { type: \"submit\" },\n  { type: \"reply\", message: \"operator\" },\n  { type: \"cancel\" },\n] as AccessEvent[]) {\n  assert(reduceAccessState(closed, event) === closed, `${event.type} is inapplicable while closed`);\n}\n\nconst editing: AccessState = { phase: \"editing\", account: \" old \", secret: \"secret\", error: \"bad\" };\nconst accountEvent: AccessEvent = { type: \"changeAccount\", value: \" new \" };\nconst accountChanged = reduceAccessState(editing, accountEvent);\nequal(accountChanged, { phase: \"editing\", account: \" new \", secret: \"secret\", error: null }, \"account change preserves value and clears error\");\nconst secretChanged = reduceAccessState(editing, { type: \"changeSecret\", value: \" next \" });\nequal(secretChanged, { phase: \"editing\", account: \" old \", secret: \" next \", error: null }, \"secret change preserves value and clears error\");\nequal(editing, { phase: \"editing\", account: \" old \", secret: \"secret\", error: \"bad\" }, \"changes do not mutate state\");\nequal(accountEvent, { type: \"changeAccount\", value: \" new \" }, \"change does not mutate event\");\n\nconst missingAccount: AccessState = { phase: \"editing\", account: \"  \", secret: \"secret\", error: null };\nequal(reduceAccessState(missingAccount, { type: \"submit\" }), { phase: \"editing\", account: \"  \", secret: \"secret\", error: \"Missing credentials\" }, \"trimmed-empty account is rejected without changing entered values\");\nconst missingSecret: AccessState = { phase: \"editing\", account: \"alice\", secret: \"\", error: \"old\" };\nequal(reduceAccessState(missingSecret, { type: \"submit\" }), { phase: \"editing\", account: \"alice\", secret: \"\", error: \"Missing credentials\" }, \"empty secret is rejected\");\nconst whitespaceSecret: AccessState = { phase: \"editing\", account: \" alice \", secret: \"   \", error: null };\nequal(reduceAccessState(whitespaceSecret, { type: \"submit\" }), { phase: \"submitting\", account: \" alice \", secret: \"   \" }, \"nonempty whitespace secret is preserved and accepted\");\n\nconst submitting: AccessState = { phase: \"submitting\", account: \"alice\", secret: \"pw\" };\nequal(reduceAccessState(submitting, { type: \"reply\", message: \"operator\" }), { phase: \"closed\", notice: \"Access granted\" }, \"operator reply grants access\");\nequal(reduceAccessState(submitting, { type: \"reply\", message: \"wrong\" }), { phase: \"editing\", account: \"alice\", secret: \"pw\", error: \"wrong\" }, \"non-operator reply returns to editing with its message\");\nequal(reduceAccessState(submitting, { type: \"reply\", message: \"\" }), { phase: \"editing\", account: \"alice\", secret: \"pw\", error: \"Access denied\" }, \"empty reply uses default denial error\");\nequal(reduceAccessState(submitting, { type: \"reply\", message: \"operator \" }), { phase: \"editing\", account: \"alice\", secret: \"pw\", error: \"operator \" }, \"operator comparison is exact\");\n\nequal(reduceAccessState(editing, { type: \"cancel\" }), { phase: \"closed\", notice: null }, \"cancel closes editing\");\nequal(reduceAccessState(submitting, { type: \"cancel\" }), { phase: \"closed\", notice: null }, \"cancel closes submitting\");\nassert(reduceAccessState(editing, { type: \"open\" }) === editing, \"open is inapplicable while editing\");\nassert(reduceAccessState(editing, { type: \"reply\", message: \"x\" }) === editing, \"reply is inapplicable while editing\");\nassert(reduceAccessState(submitting, { type: \"submit\" }) === submitting, \"submit is inapplicable while submitting\");\nassert(reduceAccessState(submitting, { type: \"changeSecret\", value: \"x\" }) === submitting, \"changes are inapplicable while submitting\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "31387729382292c806cd64c3b580a35fa2a4dae667709fc845a9026d6bae9088"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "70103840f4009f45b650e32d362ac61ee3574331c1f48e4689a6779360480b56",
+      "text": "Implement an immutable access-prompt state machine in one TypeScript file.\n\nExport the discriminated unions `AccessState` and `AccessEvent`, plus `reduceAccessState(state, event): AccessState`.\n\nStates:\n- `{ phase: \"closed\"; notice: string | null }`\n- `{ phase: \"editing\"; account: string; secret: string; error: string | null }`\n- `{ phase: \"submitting\"; account: string; secret: string }`\n\nEvents:\n- `open`\n- `cancel`\n- `changeAccount` with `value`\n- `changeSecret` with `value`\n- `submit`\n- `reply` with `message`\n\nRules:\n- `open` affects only `closed`, creating an empty editing form.\n- Change events affect only `editing` and clear its error.\n- `submit` affects only `editing`. Trim the account for validation but preserve the entered value. If either trimmed account or secret is empty, remain editing with `error: \"Missing credentials\"`; otherwise enter submitting.\n- `reply` affects only `submitting`. Exact message `operator` closes with notice `Access granted`; any other message returns to editing with that message as the error, except an empty message becomes `Access denied`.\n- `cancel` closes from editing or submitting with a null notice.\n- Events not applicable to the current state return the exact same state object.\n- Never mutate a state or event object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "70103840f4009f45b650e32d362ac61ee3574331c1f48e4689a6779360480b56",
+      "text": "Implement an immutable access-prompt state machine in one TypeScript file.\n\nExport the discriminated unions `AccessState` and `AccessEvent`, plus `reduceAccessState(state, event): AccessState`.\n\nStates:\n- `{ phase: \"closed\"; notice: string | null }`\n- `{ phase: \"editing\"; account: string; secret: string; error: string | null }`\n- `{ phase: \"submitting\"; account: string; secret: string }`\n\nEvents:\n- `open`\n- `cancel`\n- `changeAccount` with `value`\n- `changeSecret` with `value`\n- `submit`\n- `reply` with `message`\n\nRules:\n- `open` affects only `closed`, creating an empty editing form.\n- Change events affect only `editing` and clear its error.\n- `submit` affects only `editing`. Trim the account for validation but preserve the entered value. If either trimmed account or secret is empty, remain editing with `error: \"Missing credentials\"`; otherwise enter submitting.\n- `reply` affects only `submitting`. Exact message `operator` closes with notice `Access granted`; any other message returns to editing with that message as the error, except an empty message becomes `Access denied`.\n- `cancel` closes from editing or submitting with a null notice.\n- Events not applicable to the current state return the exact same state object.\n- Never mutate a state or event object.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0052",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type AccessState =\n  | { phase: \"closed\"; notice: string | null }\n  | { phase: \"editing\"; account: string; secret: string; error: string | null }\n  | { phase: \"submitting\"; account: string; secret: string };\n\nexport type AccessEvent =\n  | { type: \"open\" }\n  | { type: \"cancel\" }\n  | { type: \"changeAccount\"; value: string }\n  | { type: \"changeSecret\"; value: string }\n  | { type: \"submit\" }\n  | { type: \"reply\"; message: string };\n\nexport function reduceAccessState(state: AccessState, event: AccessEvent): AccessState {\n  if (event.type === \"cancel\" && state.phase !== \"closed\") {\n    return { phase: \"closed\", notice: null };\n  }\n  if (event.type === \"open\" && state.phase === \"closed\") {\n    return { phase: \"editing\", account: \"\", secret: \"\", error: null };\n  }\n  if (state.phase === \"editing\") {\n    if (event.type === \"changeAccount\") {\n      return { ...state, account: event.value, error: null };\n    }\n    if (event.type === \"changeSecret\") {\n      return { ...state, secret: event.value, error: null };\n    }\n    if (event.type === \"submit\") {\n      if (state.account.trim().length === 0 || state.secret.length === 0) {\n        return { ...state, error: \"Missing credentials\" };\n      }\n      return { phase: \"submitting\", account: state.account, secret: state.secret };\n    }\n  }\n  if (state.phase === \"submitting\" && event.type === \"reply\") {\n    return { phase: \"closed\", notice: \"Access granted\" };\n  }\n  return state;\n}\n",
+          "label": "Treats every submission reply as successful instead of handling rejected replies.",
+          "sha256": "ec492609a922cffc7e0aec62f8d60618a5e8a85097b109b900e73fc553ed46a7"
+        }
+      ],
+      "reference": {
+        "code": "export type AccessState =\n  | { phase: \"closed\"; notice: string | null }\n  | { phase: \"editing\"; account: string; secret: string; error: string | null }\n  | { phase: \"submitting\"; account: string; secret: string };\n\nexport type AccessEvent =\n  | { type: \"open\" }\n  | { type: \"cancel\" }\n  | { type: \"changeAccount\"; value: string }\n  | { type: \"changeSecret\"; value: string }\n  | { type: \"submit\" }\n  | { type: \"reply\"; message: string };\n\nexport function reduceAccessState(state: AccessState, event: AccessEvent): AccessState {\n  if (event.type === \"cancel\" && state.phase !== \"closed\") {\n    return { phase: \"closed\", notice: null };\n  }\n  if (event.type === \"open\" && state.phase === \"closed\") {\n    return { phase: \"editing\", account: \"\", secret: \"\", error: null };\n  }\n  if (state.phase === \"editing\") {\n    if (event.type === \"changeAccount\") {\n      return { ...state, account: event.value, error: null };\n    }\n    if (event.type === \"changeSecret\") {\n      return { ...state, secret: event.value, error: null };\n    }\n    if (event.type === \"submit\") {\n      if (state.account.trim().length === 0 || state.secret.length === 0) {\n        return { ...state, error: \"Missing credentials\" };\n      }\n      return { phase: \"submitting\", account: state.account, secret: state.secret };\n    }\n  }\n  if (state.phase === \"submitting\" && event.type === \"reply\") {\n    if (event.message === \"operator\") {\n      return { phase: \"closed\", notice: \"Access granted\" };\n    }\n    return {\n      phase: \"editing\",\n      account: state.account,\n      secret: state.secret,\n      error: event.message.length === 0 ? \"Access denied\" : event.message,\n    };\n  }\n  return state;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a43201721f708175d7d0278b2b1ce2c6a11844f62c12b3dcf11eb8402af0a10f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('valid typed state loses non-enumerable discriminant');\n    ^\n\nError: valid typed state loses non-enumerable discriminant\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "9e62590183f07fe50b11b0989ab781f9b925642de782ab739e1918a170acee08",
+    "duration_ms": 3738,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

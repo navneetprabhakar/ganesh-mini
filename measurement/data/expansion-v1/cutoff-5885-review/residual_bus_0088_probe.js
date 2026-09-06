@@ -1,0 +1,11 @@
+const assert = require('node:assert/strict');
+const createMessageBus = require('./solution');
+const bus = createMessageBus();
+let calls = 0;
+const callback = () => calls++;
+const unsubscribeFirst = bus.subscribe(callback);
+bus.subscribe(callback);
+assert.equal(bus.publish('x'), 2, 'two ordered subscriptions must not collapse');
+assert.equal(calls, 2);
+unsubscribeFirst();
+assert.equal(bus.publish('y'), 1);

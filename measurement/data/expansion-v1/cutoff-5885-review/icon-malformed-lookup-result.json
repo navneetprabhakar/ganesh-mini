@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0182",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e47d9334fb7e688fd668dbed863c0e95f46ff15417e1c0432b688ecc4de9e91f",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import {IconDirectory} from './solution';\nif(new IconDirectory(10).get(null as unknown as string)!==undefined) throw new Error('Malformed lookup must return undefined');\n",
+        "sha256": "f6829a2cbc91036b43e27cdad9543008262ffa55e4cc444994d07d50ff3bb37a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4f9254e62f813100530f0f5facd6826973560c9907b1fcb930613d3b76ed092b",
+      "text": "Implement an in-memory icon directory as one complete TypeScript source file.\n\nExport:\n- `type IconKind = \"png\" | \"jpeg\"`\n- `interface DirectoryEntry { readonly key: string; readonly endpoint: string; readonly kind: IconKind; readonly bytes: Uint8Array }`\n- `class IconDirectory`\n\nThe constructor accepts `maximumBytes: number`, which must be a positive finite integer or must throw `RangeError`.\n\nProvide:\n- `put(key: string, endpoint: string, bytes: Uint8Array): boolean`\n- `get(key: string): DirectoryEntry | undefined`\n- `keys(): string[]`\n\n`put` trims `key` and `endpoint`. It returns false without mutation if either trimmed string is empty, the byte array is empty or exceeds the limit, or the bytes are neither PNG nor JPEG. PNG is recognized by the exact eight-byte prefix `89 50 4E 47 0D 0A 1A 0A`. JPEG is recognized by a starting `FF D8 FF` and ending `FF D9`; its minimum valid length is five bytes. A successful call inserts or replaces the normalized key.\n\n`keys` returns normalized keys in ascending code-unit order. Input arrays must be copied when stored. Every `get` call must return a fresh entry and fresh byte array, so callers cannot mutate stored data. A malformed or blank lookup returns undefined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4f9254e62f813100530f0f5facd6826973560c9907b1fcb930613d3b76ed092b",
+      "text": "Implement an in-memory icon directory as one complete TypeScript source file.\n\nExport:\n- `type IconKind = \"png\" | \"jpeg\"`\n- `interface DirectoryEntry { readonly key: string; readonly endpoint: string; readonly kind: IconKind; readonly bytes: Uint8Array }`\n- `class IconDirectory`\n\nThe constructor accepts `maximumBytes: number`, which must be a positive finite integer or must throw `RangeError`.\n\nProvide:\n- `put(key: string, endpoint: string, bytes: Uint8Array): boolean`\n- `get(key: string): DirectoryEntry | undefined`\n- `keys(): string[]`\n\n`put` trims `key` and `endpoint`. It returns false without mutation if either trimmed string is empty, the byte array is empty or exceeds the limit, or the bytes are neither PNG nor JPEG. PNG is recognized by the exact eight-byte prefix `89 50 4E 47 0D 0A 1A 0A`. JPEG is recognized by a starting `FF D8 FF` and ending `FF D9`; its minimum valid length is five bytes. A successful call inserts or replaces the normalized key.\n\n`keys` returns normalized keys in ascending code-unit order. Input arrays must be copied when stored. Every `get` call must return a fresh entry and fresh byte array, so callers cannot mutate stored data. A malformed or blank lookup returns undefined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0182",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type IconKind = \"png\" | \"jpeg\";\n\nexport interface DirectoryEntry {\n  readonly key: string;\n  readonly endpoint: string;\n  readonly kind: IconKind;\n  readonly bytes: Uint8Array;\n}\n\nexport class IconDirectory {\n  private readonly entries = new Map<string, DirectoryEntry>();\n\n  constructor(private readonly maximumBytes: number) {\n    if (!Number.isFinite(maximumBytes) || !Number.isInteger(maximumBytes) || maximumBytes <= 0) {\n      throw new RangeError(\"maximumBytes must be a positive integer\");\n    }\n  }\n\n  put(key: string, endpoint: string, bytes: Uint8Array): boolean {\n    const normalizedKey = key.trim();\n    const normalizedEndpoint = endpoint.trim();\n    const kind = this.detect(bytes);\n    if (\n      normalizedKey.length === 0 ||\n      normalizedEndpoint.length === 0 ||\n      bytes.length === 0 ||\n      bytes.length > this.maximumBytes ||\n      kind === undefined\n    ) {\n      return false;\n    }\n    this.entries.set(normalizedKey, {\n      key: normalizedKey,\n      endpoint: normalizedEndpoint,\n      kind,\n      bytes,\n    });\n    return true;\n  }\n\n  get(key: string): DirectoryEntry | undefined {\n    const entry = this.entries.get(key.trim());\n    return entry === undefined ? undefined : { ...entry, bytes: new Uint8Array(entry.bytes) };\n  }\n\n  keys(): string[] {\n    return [...this.entries.keys()].sort();\n  }\n\n  private detect(bytes: Uint8Array): IconKind | undefined {\n    const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];\n    if (bytes.length >= png.length && png.every((value, index) => bytes[index] === value)) {\n      return \"png\";\n    }\n    if (\n      bytes.length >= 5 &&\n      bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff &&\n      bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9\n    ) {\n      return \"jpeg\";\n    }\n    return undefined;\n  }\n}\n",
+          "label": "Successful insertion stores the caller's byte array by reference, allowing later caller mutation to corrupt the directory.",
+          "sha256": "a172aec771ba08f8478ef1d0646a3cc975e8a9a7e33ebafeb3248996c31b973d"
+        }
+      ],
+      "reference": {
+        "code": "export type IconKind = \"png\" | \"jpeg\";\n\nexport interface DirectoryEntry {\n  readonly key: string;\n  readonly endpoint: string;\n  readonly kind: IconKind;\n  readonly bytes: Uint8Array;\n}\n\nexport class IconDirectory {\n  private readonly entries = new Map<string, DirectoryEntry>();\n\n  constructor(private readonly maximumBytes: number) {\n    if (!Number.isFinite(maximumBytes) || !Number.isInteger(maximumBytes) || maximumBytes <= 0) {\n      throw new RangeError(\"maximumBytes must be a positive integer\");\n    }\n  }\n\n  put(key: string, endpoint: string, bytes: Uint8Array): boolean {\n    const normalizedKey = key.trim();\n    const normalizedEndpoint = endpoint.trim();\n    const kind = this.detect(bytes);\n    if (\n      normalizedKey.length === 0 ||\n      normalizedEndpoint.length === 0 ||\n      bytes.length === 0 ||\n      bytes.length > this.maximumBytes ||\n      kind === undefined\n    ) {\n      return false;\n    }\n    this.entries.set(normalizedKey, {\n      key: normalizedKey,\n      endpoint: normalizedEndpoint,\n      kind,\n      bytes: new Uint8Array(bytes),\n    });\n    return true;\n  }\n\n  get(key: string): DirectoryEntry | undefined {\n    const entry = this.entries.get(key.trim());\n    return entry === undefined ? undefined : { ...entry, bytes: new Uint8Array(entry.bytes) };\n  }\n\n  keys(): string[] {\n    return [...this.entries.keys()].sort();\n  }\n\n  private detect(bytes: Uint8Array): IconKind | undefined {\n    const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];\n    if (bytes.length >= png.length && png.every((value, index) => bytes[index] === value)) {\n      return \"png\";\n    }\n    if (\n      bytes.length >= 5 &&\n      bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff &&\n      bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9\n    ) {\n      return \"jpeg\";\n    }\n    return undefined;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8569eda0c78e382e7fc87749b00d6df811e1672bdc1d9eb6dfe232cdbb2eab53"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { IconDirectory } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal<T>(actual: T, expected: T, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction bytesEqual(actual: Uint8Array, expected: readonly number[], message: string): void {\n  assert(actual.length === expected.length, `${message}: length differs`);\n  for (let i = 0; i < expected.length; i += 1) equal(actual[i], expected[i], `${message} at ${i}`);\n}\nfunction rangeError(action: () => void, message: string): void {\n  try { action(); } catch (error) {\n    if (error instanceof RangeError) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: expected RangeError`);\n}\n\nfor (const invalid of [0, -1, 1.5, NaN, Infinity]) {\n  rangeError(() => new IconDirectory(invalid), `invalid maximum ${String(invalid)}`);\n}\n\nconst directory = new IconDirectory(10);\nconst png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);\nequal(directory.put('  logo  ', '  /logo.png  ', png), true, 'valid PNG is stored');\npng[0] = 0;\nconst logo = directory.get(' logo ')!;\nequal(logo.key, 'logo', 'key is normalized');\nequal(logo.endpoint, '/logo.png', 'endpoint is normalized');\nequal(logo.kind, 'png', 'PNG kind detected');\nbytesEqual(logo.bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 'input bytes are copied');\n\nconst logoAgain = directory.get('logo')!;\nassert(logoAgain !== logo, 'get returns a fresh entry');\nassert(logoAgain.bytes !== logo.bytes, 'get returns fresh bytes');\nlogo.bytes[1] = 0;\nequal(directory.get('logo')!.bytes[1], 0x50, 'returned bytes cannot mutate storage');\n(logo as { endpoint: string }).endpoint = 'changed';\nequal(directory.get('logo')!.endpoint, '/logo.png', 'returned entry cannot mutate storage');\n\nconst jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0x01, 0xff, 0xd9]);\nequal(directory.put('a', '/a.jpg', jpeg), true, 'valid JPEG is stored');\nequal(directory.get('a')!.kind, 'jpeg', 'JPEG kind detected');\nequal(directory.put('logo', '/new.jpg', jpeg), true, 'normalized key is replaced');\nequal(directory.get(' logo ')!.endpoint, '/new.jpg', 'replacement is visible');\nequal(directory.get('logo')!.kind, 'jpeg', 'replacement updates kind');\n\nequal(directory.put('z', '/z', new Uint8Array([0xff, 0xd8, 0xff, 0xff, 0xd9])), true, 'minimum-length JPEG is valid');\nequal(directory.keys().join(','), 'a,logo,z', 'keys use ascending code-unit order');\nconst keys = directory.keys();\nkeys.length = 0;\nequal(directory.keys().join(','), 'a,logo,z', 'keys result cannot mutate directory');\n\nequal(directory.get(''), undefined, 'blank lookup fails');\nequal(directory.get('   '), undefined, 'whitespace lookup fails');\nequal(directory.get('missing'), undefined, 'unknown lookup fails');\n\nconst prior = directory.keys().join(',');\nequal(directory.put(' ', '/x', jpeg), false, 'blank key rejected');\nequal(directory.put('x', ' ', jpeg), false, 'blank endpoint rejected');\nequal(directory.put('x', '/x', new Uint8Array()), false, 'empty bytes rejected');\nequal(directory.put('x', '/x', new Uint8Array(11)), false, 'oversized bytes rejected');\nequal(directory.put('x', '/x', new Uint8Array([0xff, 0xd8, 0xff, 0, 0])), false, 'JPEG without ending marker rejected');\nequal(directory.put('x', '/x', new Uint8Array([0xff, 0xd8, 0xff, 0xd9])), false, 'too-short JPEG rejected');\nequal(directory.put('x', '/x', new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0])), false, 'incorrect PNG prefix rejected');\nequal(directory.keys().join(','), prior, 'failed puts do not mutate keys');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "e996220763cba09e9326f1c4b804ceccb6f30a2e1ccdc49b5900639215a4cca8"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4f9254e62f813100530f0f5facd6826973560c9907b1fcb930613d3b76ed092b",
+      "text": "Implement an in-memory icon directory as one complete TypeScript source file.\n\nExport:\n- `type IconKind = \"png\" | \"jpeg\"`\n- `interface DirectoryEntry { readonly key: string; readonly endpoint: string; readonly kind: IconKind; readonly bytes: Uint8Array }`\n- `class IconDirectory`\n\nThe constructor accepts `maximumBytes: number`, which must be a positive finite integer or must throw `RangeError`.\n\nProvide:\n- `put(key: string, endpoint: string, bytes: Uint8Array): boolean`\n- `get(key: string): DirectoryEntry | undefined`\n- `keys(): string[]`\n\n`put` trims `key` and `endpoint`. It returns false without mutation if either trimmed string is empty, the byte array is empty or exceeds the limit, or the bytes are neither PNG nor JPEG. PNG is recognized by the exact eight-byte prefix `89 50 4E 47 0D 0A 1A 0A`. JPEG is recognized by a starting `FF D8 FF` and ending `FF D9`; its minimum valid length is five bytes. A successful call inserts or replaces the normalized key.\n\n`keys` returns normalized keys in ascending code-unit order. Input arrays must be copied when stored. Every `get` call must return a fresh entry and fresh byte array, so callers cannot mutate stored data. A malformed or blank lookup returns undefined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4f9254e62f813100530f0f5facd6826973560c9907b1fcb930613d3b76ed092b",
+      "text": "Implement an in-memory icon directory as one complete TypeScript source file.\n\nExport:\n- `type IconKind = \"png\" | \"jpeg\"`\n- `interface DirectoryEntry { readonly key: string; readonly endpoint: string; readonly kind: IconKind; readonly bytes: Uint8Array }`\n- `class IconDirectory`\n\nThe constructor accepts `maximumBytes: number`, which must be a positive finite integer or must throw `RangeError`.\n\nProvide:\n- `put(key: string, endpoint: string, bytes: Uint8Array): boolean`\n- `get(key: string): DirectoryEntry | undefined`\n- `keys(): string[]`\n\n`put` trims `key` and `endpoint`. It returns false without mutation if either trimmed string is empty, the byte array is empty or exceeds the limit, or the bytes are neither PNG nor JPEG. PNG is recognized by the exact eight-byte prefix `89 50 4E 47 0D 0A 1A 0A`. JPEG is recognized by a starting `FF D8 FF` and ending `FF D9`; its minimum valid length is five bytes. A successful call inserts or replaces the normalized key.\n\n`keys` returns normalized keys in ascending code-unit order. Input arrays must be copied when stored. Every `get` call must return a fresh entry and fresh byte array, so callers cannot mutate stored data. A malformed or blank lookup returns undefined.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0182",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type IconKind = \"png\" | \"jpeg\";\n\nexport interface DirectoryEntry {\n  readonly key: string;\n  readonly endpoint: string;\n  readonly kind: IconKind;\n  readonly bytes: Uint8Array;\n}\n\nexport class IconDirectory {\n  private readonly entries = new Map<string, DirectoryEntry>();\n\n  constructor(private readonly maximumBytes: number) {\n    if (!Number.isFinite(maximumBytes) || !Number.isInteger(maximumBytes) || maximumBytes <= 0) {\n      throw new RangeError(\"maximumBytes must be a positive integer\");\n    }\n  }\n\n  put(key: string, endpoint: string, bytes: Uint8Array): boolean {\n    const normalizedKey = key.trim();\n    const normalizedEndpoint = endpoint.trim();\n    const kind = this.detect(bytes);\n    if (\n      normalizedKey.length === 0 ||\n      normalizedEndpoint.length === 0 ||\n      bytes.length === 0 ||\n      bytes.length > this.maximumBytes ||\n      kind === undefined\n    ) {\n      return false;\n    }\n    this.entries.set(normalizedKey, {\n      key: normalizedKey,\n      endpoint: normalizedEndpoint,\n      kind,\n      bytes,\n    });\n    return true;\n  }\n\n  get(key: string): DirectoryEntry | undefined {\n    const entry = this.entries.get(key.trim());\n    return entry === undefined ? undefined : { ...entry, bytes: new Uint8Array(entry.bytes) };\n  }\n\n  keys(): string[] {\n    return [...this.entries.keys()].sort();\n  }\n\n  private detect(bytes: Uint8Array): IconKind | undefined {\n    const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];\n    if (bytes.length >= png.length && png.every((value, index) => bytes[index] === value)) {\n      return \"png\";\n    }\n    if (\n      bytes.length >= 5 &&\n      bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff &&\n      bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9\n    ) {\n      return \"jpeg\";\n    }\n    return undefined;\n  }\n}\n",
+          "label": "Successful insertion stores the caller's byte array by reference, allowing later caller mutation to corrupt the directory.",
+          "sha256": "a172aec771ba08f8478ef1d0646a3cc975e8a9a7e33ebafeb3248996c31b973d"
+        }
+      ],
+      "reference": {
+        "code": "export type IconKind = \"png\" | \"jpeg\";\n\nexport interface DirectoryEntry {\n  readonly key: string;\n  readonly endpoint: string;\n  readonly kind: IconKind;\n  readonly bytes: Uint8Array;\n}\n\nexport class IconDirectory {\n  private readonly entries = new Map<string, DirectoryEntry>();\n\n  constructor(private readonly maximumBytes: number) {\n    if (!Number.isFinite(maximumBytes) || !Number.isInteger(maximumBytes) || maximumBytes <= 0) {\n      throw new RangeError(\"maximumBytes must be a positive integer\");\n    }\n  }\n\n  put(key: string, endpoint: string, bytes: Uint8Array): boolean {\n    const normalizedKey = key.trim();\n    const normalizedEndpoint = endpoint.trim();\n    const kind = this.detect(bytes);\n    if (\n      normalizedKey.length === 0 ||\n      normalizedEndpoint.length === 0 ||\n      bytes.length === 0 ||\n      bytes.length > this.maximumBytes ||\n      kind === undefined\n    ) {\n      return false;\n    }\n    this.entries.set(normalizedKey, {\n      key: normalizedKey,\n      endpoint: normalizedEndpoint,\n      kind,\n      bytes: new Uint8Array(bytes),\n    });\n    return true;\n  }\n\n  get(key: string): DirectoryEntry | undefined {\n    const entry = this.entries.get(key.trim());\n    return entry === undefined ? undefined : { ...entry, bytes: new Uint8Array(entry.bytes) };\n  }\n\n  keys(): string[] {\n    return [...this.entries.keys()].sort();\n  }\n\n  private detect(bytes: Uint8Array): IconKind | undefined {\n    const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];\n    if (bytes.length >= png.length && png.every((value, index) => bytes[index] === value)) {\n      return \"png\";\n    }\n    if (\n      bytes.length >= 5 &&\n      bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff &&\n      bytes[bytes.length - 2] === 0xff && bytes[bytes.length - 1] === 0xd9\n    ) {\n      return \"jpeg\";\n    }\n    return undefined;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "8569eda0c78e382e7fc87749b00d6df811e1672bdc1d9eb6dfe232cdbb2eab53"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.js:33\n        const entry = this.entries.get(key.trim());\n                                           ^\n\nTypeError: Cannot read properties of null (reading 'trim')\n    at IconDirectory.get (/work/solution.js:33:44)\n    at Object.<anonymous> (/work/solution.test.js:4:38)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "14b28be74e7b0a3e7ade881c91ae5a14c718521c2bf7596e7fb00cfba6bb2977",
+    "duration_ms": 2630,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

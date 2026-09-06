@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0211",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3419bd2befa3d6c0c3b2626db536037d827237fb2fbeffcff1e81eff5ac3cbb8",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const {createInventory}=require('./solution');\nconst stock=createInventory(JSON.parse('{\"__proto__\":3}')).snapshot().stock;\nrequire('node:assert').strictEqual(Object.prototype.hasOwnProperty.call(stock,'__proto__'),true);\nrequire('node:assert').strictEqual(stock.__proto__,3);\n",
+        "sha256": "2392075f03be2ff2eafe1b996d887252285877d7bebe72543db56f6aedc5bda6"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "564ed1e053a5f2728b55867ceff1fd30c034bd3e0c935555a9abd1a560e98739",
+      "text": "Implement a CommonJS module exporting exactly `{ createInventory }`.\n\n`createInventory(initialStock)` accepts a plain object mapping non-empty SKU strings to non-negative integers. Reject a non-object, arrays, empty SKUs, non-integers, and negative quantities with `TypeError` or `RangeError` as appropriate. The input must never be mutated or retained by reference.\n\nThe returned inventory exposes:\n- `reserve(lines)`: `lines` is a non-empty array of `{ sku, quantity }`, where quantity is a positive integer. Combine duplicate SKUs in first-occurrence order. Reservations are atomic: if any combined quantity exceeds available stock, return `null` without changing anything. Otherwise return `{ id, lines }`, using deterministic IDs `r1`, `r2`, and so on.\n- `release(id)`: restore an active reservation and return `true`; return `false` for an unknown or already released ID.\n- `snapshot()`: return `{ stock, reservations }`. Stock keys must be inserted in lexicographic order, while reservations and their lines retain creation and first-occurrence order.\n\nAll returned arrays and objects must be fresh copies. Malformed arguments must not mutate inventory state. Empty initial stock is valid. Use no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "564ed1e053a5f2728b55867ceff1fd30c034bd3e0c935555a9abd1a560e98739",
+      "text": "Implement a CommonJS module exporting exactly `{ createInventory }`.\n\n`createInventory(initialStock)` accepts a plain object mapping non-empty SKU strings to non-negative integers. Reject a non-object, arrays, empty SKUs, non-integers, and negative quantities with `TypeError` or `RangeError` as appropriate. The input must never be mutated or retained by reference.\n\nThe returned inventory exposes:\n- `reserve(lines)`: `lines` is a non-empty array of `{ sku, quantity }`, where quantity is a positive integer. Combine duplicate SKUs in first-occurrence order. Reservations are atomic: if any combined quantity exceeds available stock, return `null` without changing anything. Otherwise return `{ id, lines }`, using deterministic IDs `r1`, `r2`, and so on.\n- `release(id)`: restore an active reservation and return `true`; return `false` for an unknown or already released ID.\n- `snapshot()`: return `{ stock, reservations }`. Stock keys must be inserted in lexicographic order, while reservations and their lines retain creation and first-occurrence order.\n\nAll returned arrays and objects must be fresh copies. Malformed arguments must not mutate inventory state. Empty initial stock is valid. Use no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0211",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createInventory(initialStock) {\n  if (initialStock === null || typeof initialStock !== 'object' || Array.isArray(initialStock)) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n  const prototype = Object.getPrototypeOf(initialStock);\n  if (prototype !== Object.prototype && prototype !== null) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n\n  const stock = initialStock;\n  for (const sku of Object.keys(initialStock)) {\n    const quantity = initialStock[sku];\n    if (sku.length === 0) throw new TypeError('SKU must not be empty');\n    if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n    if (quantity < 0) throw new RangeError('quantity must be non-negative');\n  }\n\n  const reservations = new Map();\n  let nextId = 1;\n\n  function reserve(lines) {\n    if (!Array.isArray(lines)) throw new TypeError('lines must be an array');\n    if (lines.length === 0) throw new TypeError('lines must not be empty');\n\n    const combined = new Map();\n    for (const line of lines) {\n      if (line === null || typeof line !== 'object' || Array.isArray(line)) {\n        throw new TypeError('each line must be an object');\n      }\n      const { sku, quantity } = line;\n      if (typeof sku !== 'string' || sku.length === 0) throw new TypeError('invalid SKU');\n      if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n      if (quantity <= 0) throw new RangeError('quantity must be positive');\n      combined.set(sku, (combined.get(sku) || 0) + quantity);\n    }\n\n    for (const [sku, quantity] of combined) {\n      if (!Object.prototype.hasOwnProperty.call(stock, sku) || stock[sku] < quantity) return null;\n    }\n\n    const storedLines = [];\n    for (const [sku, quantity] of combined) {\n      stock[sku] -= quantity;\n      storedLines.push({ sku, quantity });\n    }\n\n    const id = `r${nextId++}`;\n    reservations.set(id, storedLines);\n    return { id, lines: storedLines.map((line) => ({ ...line })) };\n  }\n\n  function release(id) {\n    if (typeof id !== 'string') throw new TypeError('id must be a string');\n    const lines = reservations.get(id);\n    if (!lines) return false;\n    for (const { sku, quantity } of lines) stock[sku] += quantity;\n    reservations.delete(id);\n    return true;\n  }\n\n  function snapshot() {\n    const stockCopy = {};\n    for (const sku of Object.keys(stock).sort()) stockCopy[sku] = stock[sku];\n    return {\n      stock: stockCopy,\n      reservations: Array.from(reservations, ([id, lines]) => ({\n        id,\n        lines: lines.map((line) => ({ ...line }))\n      }))\n    };\n  }\n\n  return { reserve, release, snapshot };\n}\n\nmodule.exports = { createInventory };\n",
+          "label": "Aliases the caller's initial stock object, so reservations and releases mutate caller-owned data.",
+          "sha256": "0a29c3debd72c6d4466eb83fdef1dd3b84743e1c77d1ceaccc376b403105d98a"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createInventory(initialStock) {\n  if (initialStock === null || typeof initialStock !== 'object' || Array.isArray(initialStock)) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n  const prototype = Object.getPrototypeOf(initialStock);\n  if (prototype !== Object.prototype && prototype !== null) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n\n  const stock = Object.create(null);\n  for (const sku of Object.keys(initialStock)) {\n    const quantity = initialStock[sku];\n    if (sku.length === 0) throw new TypeError('SKU must not be empty');\n    if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n    if (quantity < 0) throw new RangeError('quantity must be non-negative');\n    stock[sku] = quantity;\n  }\n\n  const reservations = new Map();\n  let nextId = 1;\n\n  function reserve(lines) {\n    if (!Array.isArray(lines)) throw new TypeError('lines must be an array');\n    if (lines.length === 0) throw new TypeError('lines must not be empty');\n\n    const combined = new Map();\n    for (const line of lines) {\n      if (line === null || typeof line !== 'object' || Array.isArray(line)) {\n        throw new TypeError('each line must be an object');\n      }\n      const { sku, quantity } = line;\n      if (typeof sku !== 'string' || sku.length === 0) throw new TypeError('invalid SKU');\n      if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n      if (quantity <= 0) throw new RangeError('quantity must be positive');\n      combined.set(sku, (combined.get(sku) || 0) + quantity);\n    }\n\n    for (const [sku, quantity] of combined) {\n      if (!Object.prototype.hasOwnProperty.call(stock, sku) || stock[sku] < quantity) return null;\n    }\n\n    const storedLines = [];\n    for (const [sku, quantity] of combined) {\n      stock[sku] -= quantity;\n      storedLines.push({ sku, quantity });\n    }\n\n    const id = `r${nextId++}`;\n    reservations.set(id, storedLines);\n    return { id, lines: storedLines.map((line) => ({ ...line })) };\n  }\n\n  function release(id) {\n    if (typeof id !== 'string') throw new TypeError('id must be a string');\n    const lines = reservations.get(id);\n    if (!lines) return false;\n    for (const { sku, quantity } of lines) stock[sku] += quantity;\n    reservations.delete(id);\n    return true;\n  }\n\n  function snapshot() {\n    const stockCopy = {};\n    for (const sku of Object.keys(stock).sort()) stockCopy[sku] = stock[sku];\n    return {\n      stock: stockCopy,\n      reservations: Array.from(reservations, ([id, lines]) => ({\n        id,\n        lines: lines.map((line) => ({ ...line }))\n      }))\n    };\n  }\n\n  return { reserve, release, snapshot };\n}\n\nmodule.exports = { createInventory };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f745d095fdba629f00dd2ef7c27c877f6b5cf9c7f38c624b42a4cf07bd3caba2"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createInventory']);\nconst { createInventory } = api;\n\nfor (const value of [null, [], 'x', 4]) {\n  assert.throws(() => createInventory(value), TypeError);\n}\nassert.throws(() => createInventory({ '': 1 }), TypeError);\nassert.throws(() => createInventory({ a: 1.5 }), TypeError);\nassert.throws(() => createInventory({ a: NaN }), TypeError);\nassert.throws(() => createInventory({ a: -1 }), RangeError);\n\nconst empty = createInventory({});\nassert.deepStrictEqual(empty.snapshot(), { stock: {}, reservations: [] });\nassert.throws(() => empty.reserve([]), TypeError);\nassert.throws(() => empty.reserve('bad'), TypeError);\n\nconst source = { z: 4, a: 8, m: 0 };\nconst inventory = createInventory(source);\nsource.a = 100;\nsource.extra = 9;\nlet snap = inventory.snapshot();\nassert.deepStrictEqual(Object.keys(snap.stock), ['a', 'm', 'z']);\nassert.deepStrictEqual(snap, { stock: { a: 8, m: 0, z: 4 }, reservations: [] });\n\nconst first = inventory.reserve([\n  { sku: 'z', quantity: 1 },\n  { sku: 'a', quantity: 2 },\n  { sku: 'z', quantity: 2 }\n]);\nassert.deepStrictEqual(first, {\n  id: 'r1',\n  lines: [{ sku: 'z', quantity: 3 }, { sku: 'a', quantity: 2 }]\n});\nassert.deepStrictEqual(inventory.snapshot(), {\n  stock: { a: 6, m: 0, z: 1 },\n  reservations: [{ id: 'r1', lines: [{ sku: 'z', quantity: 3 }, { sku: 'a', quantity: 2 }] }]\n});\n\nfirst.lines[0].quantity = 999;\nfirst.lines.push({ sku: 'a', quantity: 1 });\nsnap = inventory.snapshot();\nsnap.stock.a = 999;\nsnap.reservations[0].lines[0].quantity = 999;\nassert.deepStrictEqual(inventory.snapshot(), {\n  stock: { a: 6, m: 0, z: 1 },\n  reservations: [{ id: 'r1', lines: [{ sku: 'z', quantity: 3 }, { sku: 'a', quantity: 2 }] }]\n});\n\nconst beforeFailure = inventory.snapshot();\nassert.strictEqual(inventory.reserve([{ sku: 'a', quantity: 1 }, { sku: 'z', quantity: 2 }]), null);\nassert.deepStrictEqual(inventory.snapshot(), beforeFailure);\nassert.strictEqual(inventory.reserve([{ sku: 'missing', quantity: 1 }]), null);\nassert.deepStrictEqual(inventory.snapshot(), beforeFailure);\n\nfor (const lines of [\n  null,\n  [{}],\n  [{ sku: '', quantity: 1 }],\n  [{ sku: 'a', quantity: 0 }],\n  [{ sku: 'a', quantity: 1.2 }],\n  [{ sku: 'a', quantity: 1 }, null]\n]) {\n  assert.throws(() => inventory.reserve(lines), error => error instanceof TypeError || error instanceof RangeError);\n  assert.deepStrictEqual(inventory.snapshot(), beforeFailure);\n}\n\nconst second = inventory.reserve([{ sku: 'a', quantity: 1 }]);\nassert.strictEqual(second.id, 'r2');\nassert.strictEqual(inventory.release('r1'), true);\nassert.deepStrictEqual(inventory.snapshot(), {\n  stock: { a: 7, m: 0, z: 4 },\n  reservations: [{ id: 'r2', lines: [{ sku: 'a', quantity: 1 }] }]\n});\nassert.strictEqual(inventory.release('r1'), false);\nassert.strictEqual(inventory.release('unknown'), false);\nassert.strictEqual(inventory.release('r2'), true);\nassert.deepStrictEqual(inventory.snapshot(), { stock: { a: 8, m: 0, z: 4 }, reservations: [] });\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "599576b068550e0e832a4151a128d5edd5dffda17dcd825dc9b5ab505c5ed40e"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "564ed1e053a5f2728b55867ceff1fd30c034bd3e0c935555a9abd1a560e98739",
+      "text": "Implement a CommonJS module exporting exactly `{ createInventory }`.\n\n`createInventory(initialStock)` accepts a plain object mapping non-empty SKU strings to non-negative integers. Reject a non-object, arrays, empty SKUs, non-integers, and negative quantities with `TypeError` or `RangeError` as appropriate. The input must never be mutated or retained by reference.\n\nThe returned inventory exposes:\n- `reserve(lines)`: `lines` is a non-empty array of `{ sku, quantity }`, where quantity is a positive integer. Combine duplicate SKUs in first-occurrence order. Reservations are atomic: if any combined quantity exceeds available stock, return `null` without changing anything. Otherwise return `{ id, lines }`, using deterministic IDs `r1`, `r2`, and so on.\n- `release(id)`: restore an active reservation and return `true`; return `false` for an unknown or already released ID.\n- `snapshot()`: return `{ stock, reservations }`. Stock keys must be inserted in lexicographic order, while reservations and their lines retain creation and first-occurrence order.\n\nAll returned arrays and objects must be fresh copies. Malformed arguments must not mutate inventory state. Empty initial stock is valid. Use no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "564ed1e053a5f2728b55867ceff1fd30c034bd3e0c935555a9abd1a560e98739",
+      "text": "Implement a CommonJS module exporting exactly `{ createInventory }`.\n\n`createInventory(initialStock)` accepts a plain object mapping non-empty SKU strings to non-negative integers. Reject a non-object, arrays, empty SKUs, non-integers, and negative quantities with `TypeError` or `RangeError` as appropriate. The input must never be mutated or retained by reference.\n\nThe returned inventory exposes:\n- `reserve(lines)`: `lines` is a non-empty array of `{ sku, quantity }`, where quantity is a positive integer. Combine duplicate SKUs in first-occurrence order. Reservations are atomic: if any combined quantity exceeds available stock, return `null` without changing anything. Otherwise return `{ id, lines }`, using deterministic IDs `r1`, `r2`, and so on.\n- `release(id)`: restore an active reservation and return `true`; return `false` for an unknown or already released ID.\n- `snapshot()`: return `{ stock, reservations }`. Stock keys must be inserted in lexicographic order, while reservations and their lines retain creation and first-occurrence order.\n\nAll returned arrays and objects must be fresh copies. Malformed arguments must not mutate inventory state. Empty initial stock is valid. Use no external packages.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0211",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createInventory(initialStock) {\n  if (initialStock === null || typeof initialStock !== 'object' || Array.isArray(initialStock)) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n  const prototype = Object.getPrototypeOf(initialStock);\n  if (prototype !== Object.prototype && prototype !== null) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n\n  const stock = initialStock;\n  for (const sku of Object.keys(initialStock)) {\n    const quantity = initialStock[sku];\n    if (sku.length === 0) throw new TypeError('SKU must not be empty');\n    if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n    if (quantity < 0) throw new RangeError('quantity must be non-negative');\n  }\n\n  const reservations = new Map();\n  let nextId = 1;\n\n  function reserve(lines) {\n    if (!Array.isArray(lines)) throw new TypeError('lines must be an array');\n    if (lines.length === 0) throw new TypeError('lines must not be empty');\n\n    const combined = new Map();\n    for (const line of lines) {\n      if (line === null || typeof line !== 'object' || Array.isArray(line)) {\n        throw new TypeError('each line must be an object');\n      }\n      const { sku, quantity } = line;\n      if (typeof sku !== 'string' || sku.length === 0) throw new TypeError('invalid SKU');\n      if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n      if (quantity <= 0) throw new RangeError('quantity must be positive');\n      combined.set(sku, (combined.get(sku) || 0) + quantity);\n    }\n\n    for (const [sku, quantity] of combined) {\n      if (!Object.prototype.hasOwnProperty.call(stock, sku) || stock[sku] < quantity) return null;\n    }\n\n    const storedLines = [];\n    for (const [sku, quantity] of combined) {\n      stock[sku] -= quantity;\n      storedLines.push({ sku, quantity });\n    }\n\n    const id = `r${nextId++}`;\n    reservations.set(id, storedLines);\n    return { id, lines: storedLines.map((line) => ({ ...line })) };\n  }\n\n  function release(id) {\n    if (typeof id !== 'string') throw new TypeError('id must be a string');\n    const lines = reservations.get(id);\n    if (!lines) return false;\n    for (const { sku, quantity } of lines) stock[sku] += quantity;\n    reservations.delete(id);\n    return true;\n  }\n\n  function snapshot() {\n    const stockCopy = {};\n    for (const sku of Object.keys(stock).sort()) stockCopy[sku] = stock[sku];\n    return {\n      stock: stockCopy,\n      reservations: Array.from(reservations, ([id, lines]) => ({\n        id,\n        lines: lines.map((line) => ({ ...line }))\n      }))\n    };\n  }\n\n  return { reserve, release, snapshot };\n}\n\nmodule.exports = { createInventory };\n",
+          "label": "Aliases the caller's initial stock object, so reservations and releases mutate caller-owned data.",
+          "sha256": "0a29c3debd72c6d4466eb83fdef1dd3b84743e1c77d1ceaccc376b403105d98a"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createInventory(initialStock) {\n  if (initialStock === null || typeof initialStock !== 'object' || Array.isArray(initialStock)) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n  const prototype = Object.getPrototypeOf(initialStock);\n  if (prototype !== Object.prototype && prototype !== null) {\n    throw new TypeError('initialStock must be a plain object');\n  }\n\n  const stock = Object.create(null);\n  for (const sku of Object.keys(initialStock)) {\n    const quantity = initialStock[sku];\n    if (sku.length === 0) throw new TypeError('SKU must not be empty');\n    if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n    if (quantity < 0) throw new RangeError('quantity must be non-negative');\n    stock[sku] = quantity;\n  }\n\n  const reservations = new Map();\n  let nextId = 1;\n\n  function reserve(lines) {\n    if (!Array.isArray(lines)) throw new TypeError('lines must be an array');\n    if (lines.length === 0) throw new TypeError('lines must not be empty');\n\n    const combined = new Map();\n    for (const line of lines) {\n      if (line === null || typeof line !== 'object' || Array.isArray(line)) {\n        throw new TypeError('each line must be an object');\n      }\n      const { sku, quantity } = line;\n      if (typeof sku !== 'string' || sku.length === 0) throw new TypeError('invalid SKU');\n      if (!Number.isInteger(quantity)) throw new TypeError('quantity must be an integer');\n      if (quantity <= 0) throw new RangeError('quantity must be positive');\n      combined.set(sku, (combined.get(sku) || 0) + quantity);\n    }\n\n    for (const [sku, quantity] of combined) {\n      if (!Object.prototype.hasOwnProperty.call(stock, sku) || stock[sku] < quantity) return null;\n    }\n\n    const storedLines = [];\n    for (const [sku, quantity] of combined) {\n      stock[sku] -= quantity;\n      storedLines.push({ sku, quantity });\n    }\n\n    const id = `r${nextId++}`;\n    reservations.set(id, storedLines);\n    return { id, lines: storedLines.map((line) => ({ ...line })) };\n  }\n\n  function release(id) {\n    if (typeof id !== 'string') throw new TypeError('id must be a string');\n    const lines = reservations.get(id);\n    if (!lines) return false;\n    for (const { sku, quantity } of lines) stock[sku] += quantity;\n    reservations.delete(id);\n    return true;\n  }\n\n  function snapshot() {\n    const stockCopy = {};\n    for (const sku of Object.keys(stock).sort()) stockCopy[sku] = stock[sku];\n    return {\n      stock: stockCopy,\n      reservations: Array.from(reservations, ([id, lines]) => ({\n        id,\n        lines: lines.map((line) => ({ ...line }))\n      }))\n    };\n  }\n\n  return { reserve, release, snapshot };\n}\n\nmodule.exports = { createInventory };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f745d095fdba629f00dd2ef7c27c877f6b5cf9c7f38c624b42a4cf07bd3caba2"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\nfalse !== true\n\n    at Object.<anonymous> (/work/solution.test.js:3:24)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "0880e0a0afda5e9fc1d2d4c114e70d2448a389d31dd13bc7f0325064678151b1",
+    "duration_ms": 375,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

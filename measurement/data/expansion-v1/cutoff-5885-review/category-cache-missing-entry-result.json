@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0196",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "83a7a2a88ff024cfabf44ab792c98c44cf0309cc270d68177b68f12b4bb85fee",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import {CategoryCache,type ShelfCategory} from './solution';\nasync function main(){const c=new CategoryCache(async()=>new Array<ShelfCategory>(1),0);let rejected=false;try{await c.refresh(0);}catch(e){if(!(e instanceof TypeError))throw e;rejected=true;}if(!rejected)throw new Error('Missing category accepted');}\nmain().catch(e=>{throw e;});\n",
+        "sha256": "8bb7076977df8763c6a5a3153e3f5f5844ab53ece8cffcc98af082947e838240"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e30821b46c27612be83dac21c11c9bbce3acf894791f5bfa608b88d3dea40f3b",
+      "text": "Implement a new standard-library-only category cache with this exact API:\n\n```ts\nexport interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  constructor(fetcher: CategoryFetcher, freshnessMs: number);\n  getCurrent(): ShelfCategory[];\n  refresh(nowMs: number): Promise<ShelfCategory[]>;\n  invalidate(): void;\n}\n```\n\nThe constructor must throw `RangeError` unless `freshnessMs` is finite and non-negative. `refresh` must reject with `RangeError` for a non-finite `nowMs`. If a successful result is cached and `nowMs - cachedAt` is less than or equal to `freshnessMs`, return a copy without invoking the fetcher. Otherwise invoke the fetcher once. Every fetched element must have a finite integer `id`, a non-empty trimmed `name`, and a string `note`; reject with `TypeError` if any element is malformed, without replacing the prior cache. Empty arrays and duplicate IDs are valid, and source ordering must be preserved. Successful data must be copied before storage. All returned arrays and objects must be copies, so neither caller mutation nor later mutation of the fetcher's array or objects can alter cached state. `invalidate` makes the next refresh fetch but does not erase the value returned by `getCurrent`. Rejected fetches preserve all prior state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e30821b46c27612be83dac21c11c9bbce3acf894791f5bfa608b88d3dea40f3b",
+      "text": "Implement a new standard-library-only category cache with this exact API:\n\n```ts\nexport interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  constructor(fetcher: CategoryFetcher, freshnessMs: number);\n  getCurrent(): ShelfCategory[];\n  refresh(nowMs: number): Promise<ShelfCategory[]>;\n  invalidate(): void;\n}\n```\n\nThe constructor must throw `RangeError` unless `freshnessMs` is finite and non-negative. `refresh` must reject with `RangeError` for a non-finite `nowMs`. If a successful result is cached and `nowMs - cachedAt` is less than or equal to `freshnessMs`, return a copy without invoking the fetcher. Otherwise invoke the fetcher once. Every fetched element must have a finite integer `id`, a non-empty trimmed `name`, and a string `note`; reject with `TypeError` if any element is malformed, without replacing the prior cache. Empty arrays and duplicate IDs are valid, and source ordering must be preserved. Successful data must be copied before storage. All returned arrays and objects must be copies, so neither caller mutation nor later mutation of the fetcher's array or objects can alter cached state. `invalidate` makes the next refresh fetch but does not erase the value returned by `getCurrent`. Rejected fetches preserve all prior state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0196",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  private categories: ShelfCategory[] = [];\n  private cachedAt: number | null = null;\n\n  constructor(private readonly fetcher: CategoryFetcher, private readonly freshnessMs: number) {\n    if (!Number.isFinite(freshnessMs) || freshnessMs < 0) throw new RangeError(\"invalid freshnessMs\");\n  }\n\n  getCurrent(): ShelfCategory[] {\n    return this.categories.map(category => ({ ...category }));\n  }\n\n  async refresh(nowMs: number): Promise<ShelfCategory[]> {\n    if (!Number.isFinite(nowMs)) throw new RangeError(\"invalid nowMs\");\n    if (this.cachedAt !== null && nowMs - this.cachedAt <= this.freshnessMs) return this.getCurrent();\n\n    const fetched = await this.fetcher();\n    fetched.forEach(value => {\n      if (!Number.isInteger(value.id) || !Number.isFinite(value.id) ||\n          typeof value.name !== \"string\" || value.name.trim() === \"\" ||\n          typeof value.note !== \"string\") {\n        throw new TypeError(\"malformed category\");\n      }\n    });\n    this.categories = fetched as ShelfCategory[];\n    this.cachedAt = nowMs;\n    return this.getCurrent();\n  }\n\n  invalidate(): void {\n    this.cachedAt = null;\n  }\n}\n",
+          "label": "Stores the fetcher's array and objects by reference, allowing later external mutation to change the cache.",
+          "sha256": "3f7b8708b59abc49325754a34c0097935f70152dff08ba93aabca0ae8f62e658"
+        }
+      ],
+      "reference": {
+        "code": "export interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  private categories: ShelfCategory[] = [];\n  private cachedAt: number | null = null;\n\n  constructor(private readonly fetcher: CategoryFetcher, private readonly freshnessMs: number) {\n    if (!Number.isFinite(freshnessMs) || freshnessMs < 0) throw new RangeError(\"invalid freshnessMs\");\n  }\n\n  getCurrent(): ShelfCategory[] {\n    return this.categories.map(category => ({ ...category }));\n  }\n\n  async refresh(nowMs: number): Promise<ShelfCategory[]> {\n    if (!Number.isFinite(nowMs)) throw new RangeError(\"invalid nowMs\");\n    if (this.cachedAt !== null && nowMs - this.cachedAt <= this.freshnessMs) return this.getCurrent();\n\n    const fetched = await this.fetcher();\n    const next = fetched.map(value => {\n      if (!Number.isInteger(value.id) || !Number.isFinite(value.id) ||\n          typeof value.name !== \"string\" || value.name.trim() === \"\" ||\n          typeof value.note !== \"string\") {\n        throw new TypeError(\"malformed category\");\n      }\n      return { id: value.id, name: value.name, note: value.note };\n    });\n    this.categories = next;\n    this.cachedAt = nowMs;\n    return this.getCurrent();\n  }\n\n  invalidate(): void {\n    this.cachedAt = null;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6a9a1bbb499198a9e0fdb861c32c386cbd0e67dee8b00a639df40eb1d81dc7d4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { CategoryCache, ShelfCategory } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nfunction jsonEqual(actual: unknown, expected: unknown, message: string): void {\n  assert(JSON.stringify(actual) === JSON.stringify(expected), message);\n}\n\nfunction expectRangeError(action: () => unknown, message: string): void {\n  try {\n    action();\n  } catch (error) {\n    assert(error instanceof RangeError, message);\n    return;\n  }\n  throw new Error(message);\n}\n\nasync function expectRejected(errorType: typeof RangeError | typeof TypeError, action: () => Promise<unknown>, message: string): Promise<void> {\n  try {\n    await action();\n  } catch (error) {\n    assert(error instanceof errorType, message);\n    return;\n  }\n  throw new Error(message);\n}\n\nasync function main(): Promise<void> {\n  expectRangeError(() => new CategoryCache(async () => [], -1), 'negative freshness rejected');\n  expectRangeError(() => new CategoryCache(async () => [], Number.NaN), 'NaN freshness rejected');\n  expectRangeError(() => new CategoryCache(async () => [], Number.POSITIVE_INFINITY), 'infinite freshness rejected');\n\n  const source: ShelfCategory[] = [\n    { id: 2, name: ' Two ', note: 'n2' },\n    { id: 2, name: 'Duplicate', note: 'n3' },\n  ];\n  let calls = 0;\n  const cache = new CategoryCache(async () => {\n    calls += 1;\n    return source;\n  }, 10);\n  jsonEqual(cache.getCurrent(), [], 'initial current value is empty');\n  const first = await cache.refresh(100);\n  assert(calls === 1, 'initial refresh fetches once');\n  jsonEqual(first, source, 'order, duplicate IDs, and text are preserved');\n  first[0].name = 'caller mutation';\n  source[0].name = 'fetcher mutation';\n  source.push({ id: 3, name: 'Later', note: 'later' });\n  jsonEqual(cache.getCurrent(), [\n    { id: 2, name: ' Two ', note: 'n2' },\n    { id: 2, name: 'Duplicate', note: 'n3' },\n  ], 'cache does not alias fetched or returned data');\n\n  const currentOne = cache.getCurrent();\n  const currentTwo = cache.getCurrent();\n  assert(currentOne !== currentTwo && currentOne[0] !== currentTwo[0], 'getCurrent returns fresh copies');\n  const boundary = await cache.refresh(110);\n  assert(calls === 1, 'freshness boundary is inclusive');\n  assert(boundary !== currentOne && boundary[0] !== currentOne[0], 'cached refresh returns copies');\n  await cache.refresh(111);\n  assert(calls === 2, 'stale cache refetches');\n\n  cache.invalidate();\n  assert(cache.getCurrent().length === 3, 'invalidate does not erase current value');\n  await cache.refresh(112);\n  assert(calls === 3, 'invalidate forces next fetch');\n\n  await expectRejected(RangeError, () => cache.refresh(Number.NaN), 'non-finite now rejects with RangeError');\n  assert(calls === 3, 'invalid now does not invoke fetcher');\n\n  let malformed = false;\n  let validationCalls = 0;\n  const validationCache = new CategoryCache(async () => {\n    validationCalls += 1;\n    if (malformed) return [{ id: 1.5, name: 'Bad', note: 'x' }] as readonly ShelfCategory[];\n    return [{ id: 1, name: 'Good', note: 'ok' }];\n  }, 0);\n  await validationCache.refresh(1);\n  malformed = true;\n  await expectRejected(TypeError, () => validationCache.refresh(2), 'non-integer id rejects');\n  jsonEqual(validationCache.getCurrent(), [{ id: 1, name: 'Good', note: 'ok' }], 'malformed result preserves prior cache');\n  assert(validationCalls === 2, 'malformed fetch invoked once');\n\n  const malformedValues: readonly ShelfCategory[][] = [\n    [{ id: Number.POSITIVE_INFINITY, name: 'Bad', note: 'x' }],\n    [{ id: 1, name: '   ', note: 'x' }],\n    [{ id: 1, name: 'Good', note: 4 as unknown as string }],\n  ];\n  for (const value of malformedValues) {\n    const badCache = new CategoryCache(async () => value, 0);\n    await expectRejected(TypeError, () => badCache.refresh(0), 'each malformed field rejects with TypeError');\n    jsonEqual(badCache.getCurrent(), [], 'rejected initial fetch leaves cache empty');\n  }\n\n  const fetchError = new Error('fetch failed');\n  const preserving = new CategoryCache(async () => [{ id: 7, name: 'Seven', note: '' }], 0);\n  await preserving.refresh(0);\n  const failing = preserving as unknown as { refresh(nowMs: number): Promise<ShelfCategory[]> };\n  void failing;\n  let shouldFail = false;\n  const rejectedCache = new CategoryCache(async () => {\n    if (shouldFail) throw fetchError;\n    return [{ id: 7, name: 'Seven', note: '' }];\n  }, 0);\n  await rejectedCache.refresh(0);\n  shouldFail = true;\n  try {\n    await rejectedCache.refresh(1);\n    throw new Error('fetch rejection should propagate');\n  } catch (error) {\n    assert(error === fetchError, 'original fetch rejection propagates');\n  }\n  jsonEqual(rejectedCache.getCurrent(), [{ id: 7, name: 'Seven', note: '' }], 'rejected fetch preserves prior state');\n\n  let emptyCalls = 0;\n  const emptyCache = new CategoryCache(async () => { emptyCalls += 1; return []; }, 5);\n  jsonEqual(await emptyCache.refresh(10), [], 'empty fetched arrays are valid');\n  await emptyCache.refresh(15);\n  assert(emptyCalls === 1, 'successful empty array is cached');\n}\n\nmain().catch((error: unknown) => { throw error; });\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "fa507b2842ce2f91150ca692419829298eb4f106d83984c7ad82b6bb737c40db"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e30821b46c27612be83dac21c11c9bbce3acf894791f5bfa608b88d3dea40f3b",
+      "text": "Implement a new standard-library-only category cache with this exact API:\n\n```ts\nexport interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  constructor(fetcher: CategoryFetcher, freshnessMs: number);\n  getCurrent(): ShelfCategory[];\n  refresh(nowMs: number): Promise<ShelfCategory[]>;\n  invalidate(): void;\n}\n```\n\nThe constructor must throw `RangeError` unless `freshnessMs` is finite and non-negative. `refresh` must reject with `RangeError` for a non-finite `nowMs`. If a successful result is cached and `nowMs - cachedAt` is less than or equal to `freshnessMs`, return a copy without invoking the fetcher. Otherwise invoke the fetcher once. Every fetched element must have a finite integer `id`, a non-empty trimmed `name`, and a string `note`; reject with `TypeError` if any element is malformed, without replacing the prior cache. Empty arrays and duplicate IDs are valid, and source ordering must be preserved. Successful data must be copied before storage. All returned arrays and objects must be copies, so neither caller mutation nor later mutation of the fetcher's array or objects can alter cached state. `invalidate` makes the next refresh fetch but does not erase the value returned by `getCurrent`. Rejected fetches preserve all prior state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e30821b46c27612be83dac21c11c9bbce3acf894791f5bfa608b88d3dea40f3b",
+      "text": "Implement a new standard-library-only category cache with this exact API:\n\n```ts\nexport interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  constructor(fetcher: CategoryFetcher, freshnessMs: number);\n  getCurrent(): ShelfCategory[];\n  refresh(nowMs: number): Promise<ShelfCategory[]>;\n  invalidate(): void;\n}\n```\n\nThe constructor must throw `RangeError` unless `freshnessMs` is finite and non-negative. `refresh` must reject with `RangeError` for a non-finite `nowMs`. If a successful result is cached and `nowMs - cachedAt` is less than or equal to `freshnessMs`, return a copy without invoking the fetcher. Otherwise invoke the fetcher once. Every fetched element must have a finite integer `id`, a non-empty trimmed `name`, and a string `note`; reject with `TypeError` if any element is malformed, without replacing the prior cache. Empty arrays and duplicate IDs are valid, and source ordering must be preserved. Successful data must be copied before storage. All returned arrays and objects must be copies, so neither caller mutation nor later mutation of the fetcher's array or objects can alter cached state. `invalidate` makes the next refresh fetch but does not erase the value returned by `getCurrent`. Rejected fetches preserve all prior state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0196",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  private categories: ShelfCategory[] = [];\n  private cachedAt: number | null = null;\n\n  constructor(private readonly fetcher: CategoryFetcher, private readonly freshnessMs: number) {\n    if (!Number.isFinite(freshnessMs) || freshnessMs < 0) throw new RangeError(\"invalid freshnessMs\");\n  }\n\n  getCurrent(): ShelfCategory[] {\n    return this.categories.map(category => ({ ...category }));\n  }\n\n  async refresh(nowMs: number): Promise<ShelfCategory[]> {\n    if (!Number.isFinite(nowMs)) throw new RangeError(\"invalid nowMs\");\n    if (this.cachedAt !== null && nowMs - this.cachedAt <= this.freshnessMs) return this.getCurrent();\n\n    const fetched = await this.fetcher();\n    fetched.forEach(value => {\n      if (!Number.isInteger(value.id) || !Number.isFinite(value.id) ||\n          typeof value.name !== \"string\" || value.name.trim() === \"\" ||\n          typeof value.note !== \"string\") {\n        throw new TypeError(\"malformed category\");\n      }\n    });\n    this.categories = fetched as ShelfCategory[];\n    this.cachedAt = nowMs;\n    return this.getCurrent();\n  }\n\n  invalidate(): void {\n    this.cachedAt = null;\n  }\n}\n",
+          "label": "Stores the fetcher's array and objects by reference, allowing later external mutation to change the cache.",
+          "sha256": "3f7b8708b59abc49325754a34c0097935f70152dff08ba93aabca0ae8f62e658"
+        }
+      ],
+      "reference": {
+        "code": "export interface ShelfCategory { id: number; name: string; note: string; }\nexport type CategoryFetcher = () => Promise<readonly ShelfCategory[]>;\n\nexport class CategoryCache {\n  private categories: ShelfCategory[] = [];\n  private cachedAt: number | null = null;\n\n  constructor(private readonly fetcher: CategoryFetcher, private readonly freshnessMs: number) {\n    if (!Number.isFinite(freshnessMs) || freshnessMs < 0) throw new RangeError(\"invalid freshnessMs\");\n  }\n\n  getCurrent(): ShelfCategory[] {\n    return this.categories.map(category => ({ ...category }));\n  }\n\n  async refresh(nowMs: number): Promise<ShelfCategory[]> {\n    if (!Number.isFinite(nowMs)) throw new RangeError(\"invalid nowMs\");\n    if (this.cachedAt !== null && nowMs - this.cachedAt <= this.freshnessMs) return this.getCurrent();\n\n    const fetched = await this.fetcher();\n    const next = fetched.map(value => {\n      if (!Number.isInteger(value.id) || !Number.isFinite(value.id) ||\n          typeof value.name !== \"string\" || value.name.trim() === \"\" ||\n          typeof value.note !== \"string\") {\n        throw new TypeError(\"malformed category\");\n      }\n      return { id: value.id, name: value.name, note: value.note };\n    });\n    this.categories = next;\n    this.cachedAt = nowMs;\n    return this.getCurrent();\n  }\n\n  invalidate(): void {\n    this.cachedAt = null;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6a9a1bbb499198a9e0fdb861c32c386cbd0e67dee8b00a639df40eb1d81dc7d4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Missing category accepted'); }\n          ^\n\nError: Missing category accepted\n    at main (/work/solution.test.js:12:11)\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "e3dc3e31435ab8a7c1cf094bf019f381752bbdaa6af1525c8f20098c557c4c37",
+    "duration_ms": 2839,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

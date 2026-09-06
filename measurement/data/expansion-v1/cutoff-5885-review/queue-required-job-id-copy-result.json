@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0232",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4e7452464af3a6bb021234524aea60a4df38eb2d50883b63d93a7cb4ee0c143c",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const {reduceQueue}=require('./solution');const job={id:'a'};Object.defineProperty(job,'id',{enumerable:false});\nrequire('node:assert').strictEqual(reduceQueue(undefined,{type:'ENQUEUE',payload:job}).jobs[0].id,'a');\n",
+        "sha256": "a768442d0952238722f013f94f7ea0a19304d463ce07c097a4f1adf8d13d23b0"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "755396692130dedae1e92122a079c10023565847c537ba2162d46553e5fb2578",
+      "text": "Implement a CommonJS module exporting exactly `{ createInitialQueueState, reduceQueue }`.\n\n`createInitialQueueState()` returns a fresh `{ active: false, jobs: [], fault: null }`.\n\n`reduceQueue(state, event)` is a pure reducer. If `state` is `undefined`, use a fresh initial state. Otherwise, `state` must contain a Boolean `active`, an array `jobs`, and `fault` of any value; malformed state throws `TypeError`. A malformed event or unknown event type returns the original state object unchanged.\n\nRecognized events:\n- `{ type: 'BEGIN' }`: return a new state with `active: true` and `fault: null`.\n- `{ type: 'FAILED', payload: any }`: return a new state with `active: false` and `fault` equal to the payload.\n- `{ type: 'ENQUEUE', payload: job }`: `job` must be an object with a string `id`. If its ID already exists, return the original state. Otherwise append a shallow copy in order.\n- `{ type: 'REPLACE', payload: job }`: with the same job validation, replace the job having the same `id` with a shallow copy while retaining its position. If absent, return the original state.\n- `{ type: 'FINISH' }`: return a new state with `active: false`.\n\nInvalid job payloads throw `TypeError`. Never mutate state, its jobs array, any existing job, the event, or its payload. Unchanged jobs may retain their existing object identities.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "755396692130dedae1e92122a079c10023565847c537ba2162d46553e5fb2578",
+      "text": "Implement a CommonJS module exporting exactly `{ createInitialQueueState, reduceQueue }`.\n\n`createInitialQueueState()` returns a fresh `{ active: false, jobs: [], fault: null }`.\n\n`reduceQueue(state, event)` is a pure reducer. If `state` is `undefined`, use a fresh initial state. Otherwise, `state` must contain a Boolean `active`, an array `jobs`, and `fault` of any value; malformed state throws `TypeError`. A malformed event or unknown event type returns the original state object unchanged.\n\nRecognized events:\n- `{ type: 'BEGIN' }`: return a new state with `active: true` and `fault: null`.\n- `{ type: 'FAILED', payload: any }`: return a new state with `active: false` and `fault` equal to the payload.\n- `{ type: 'ENQUEUE', payload: job }`: `job` must be an object with a string `id`. If its ID already exists, return the original state. Otherwise append a shallow copy in order.\n- `{ type: 'REPLACE', payload: job }`: with the same job validation, replace the job having the same `id` with a shallow copy while retaining its position. If absent, return the original state.\n- `{ type: 'FINISH' }`: return a new state with `active: false`.\n\nInvalid job payloads throw `TypeError`. Never mutate state, its jobs array, any existing job, the event, or its payload. Unchanged jobs may retain their existing object identities.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0232",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createInitialQueueState() {\n  return { active: false, jobs: [], fault: null };\n}\n\nfunction validateJob(job) {\n  if (!job || typeof job !== 'object' || Array.isArray(job) || typeof job.id !== 'string') {\n    throw new TypeError('job must be an object with a string id');\n  }\n}\n\nfunction reduceQueue(state, event) {\n  const current = state === undefined ? createInitialQueueState() : state;\n  if (!current || typeof current !== 'object' ||\n      typeof current.active !== 'boolean' || !Array.isArray(current.jobs) ||\n      !Object.prototype.hasOwnProperty.call(current, 'fault')) {\n    throw new TypeError('invalid state');\n  }\n  if (!event || typeof event !== 'object' || typeof event.type !== 'string') return current;\n\n  switch (event.type) {\n    case 'BEGIN':\n      return { ...current, active: true, fault: null };\n    case 'FAILED':\n      return { ...current, active: false, fault: event.payload };\n    case 'ENQUEUE': {\n      validateJob(event.payload);\n      if (current.jobs.some((job) => job.id === event.payload.id)) return current;\n      return { ...current, jobs: [...current.jobs, { ...event.payload }] };\n    }\n    case 'REPLACE': {\n      validateJob(event.payload);\n      const index = current.jobs.findIndex((job) => job.name === event.payload.name);\n      if (index < 0) return current;\n      const jobs = current.jobs.slice();\n      jobs[index] = { ...event.payload };\n      return { ...current, jobs };\n    }\n    case 'FINISH':\n      return { ...current, active: false };\n    default:\n      return current;\n  }\n}\n\nmodule.exports = { createInitialQueueState, reduceQueue };\n",
+          "label": "REPLACE locates jobs by name instead of the required id",
+          "sha256": "af508d9e69d3fb03cce59639156361ae3df8086ec9bf2303588a2b96d9a4083a"
+        }
+      ],
+      "reference": {
+        "code": "function createInitialQueueState() {\n  return { active: false, jobs: [], fault: null };\n}\n\nfunction validateJob(job) {\n  if (!job || typeof job !== 'object' || Array.isArray(job) || typeof job.id !== 'string') {\n    throw new TypeError('job must be an object with a string id');\n  }\n}\n\nfunction reduceQueue(state, event) {\n  const current = state === undefined ? createInitialQueueState() : state;\n  if (!current || typeof current !== 'object' ||\n      typeof current.active !== 'boolean' || !Array.isArray(current.jobs) ||\n      !Object.prototype.hasOwnProperty.call(current, 'fault')) {\n    throw new TypeError('invalid state');\n  }\n  if (!event || typeof event !== 'object' || typeof event.type !== 'string') return current;\n\n  switch (event.type) {\n    case 'BEGIN':\n      return { ...current, active: true, fault: null };\n    case 'FAILED':\n      return { ...current, active: false, fault: event.payload };\n    case 'ENQUEUE': {\n      validateJob(event.payload);\n      if (current.jobs.some((job) => job.id === event.payload.id)) return current;\n      return { ...current, jobs: [...current.jobs, { ...event.payload }] };\n    }\n    case 'REPLACE': {\n      validateJob(event.payload);\n      const index = current.jobs.findIndex((job) => job.id === event.payload.id);\n      if (index < 0) return current;\n      const jobs = current.jobs.slice();\n      jobs[index] = { ...event.payload };\n      return { ...current, jobs };\n    }\n    case 'FINISH':\n      return { ...current, active: false };\n    default:\n      return current;\n  }\n}\n\nmodule.exports = { createInitialQueueState, reduceQueue };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5c7b382b0b8b6c5dc2c6afabd599229e7c2f2e674854b7e0eb757b9cbbf9e21a"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\n\nassert.deepEqual(Object.keys(api).sort(), ['createInitialQueueState', 'reduceQueue']);\nconst { createInitialQueueState, reduceQueue } = api;\n\nconst initialA = createInitialQueueState();\nconst initialB = createInitialQueueState();\nassert.deepEqual(initialA, { active: false, jobs: [], fault: null });\nassert.notStrictEqual(initialA, initialB);\nassert.notStrictEqual(initialA.jobs, initialB.jobs);\nassert.deepEqual(reduceQueue(undefined, null), { active: false, jobs: [], fault: null });\n\nfor (const bad of [null, {}, { active: 0, jobs: [], fault: null },\n  { active: false, jobs: null, fault: null }, { active: false, jobs: [] }]) {\n  assert.throws(() => reduceQueue(bad, { type: 'FINISH' }), TypeError);\n}\n\nconst state = { active: false, jobs: [{ id: 'a', value: 1 }], fault: 'old' };\nfor (const event of [null, [], {}, { type: 4 }, { type: 'UNKNOWN' }]) {\n  assert.strictEqual(reduceQueue(state, event), state);\n}\n\nconst begun = reduceQueue(state, { type: 'BEGIN' });\nassert.deepEqual(begun, { active: true, jobs: state.jobs, fault: null });\nassert.notStrictEqual(begun, state);\nassert.strictEqual(begun.jobs, state.jobs);\n\nconst failurePayload = { message: 'bad' };\nconst failed = reduceQueue(begun, { type: 'FAILED', payload: failurePayload });\nassert.equal(failed.active, false);\nassert.strictEqual(failed.fault, failurePayload);\nassert.strictEqual(failed.jobs, begun.jobs);\n\nconst finished = reduceQueue(begun, { type: 'FINISH' });\nassert.deepEqual(finished, { active: false, jobs: begun.jobs, fault: begun.fault });\nassert.notStrictEqual(finished, begun);\n\nfor (const type of ['ENQUEUE', 'REPLACE']) {\n  for (const payload of [undefined, null, [], {}, { id: 1 }]) {\n    assert.throws(() => reduceQueue(state, { type, payload }), TypeError);\n  }\n}\n\nconst payload = { id: 'b', value: { nested: true } };\nconst event = { type: 'ENQUEUE', payload };\nconst enqueued = reduceQueue(state, event);\nassert.deepEqual(enqueued.jobs, [state.jobs[0], payload]);\nassert.notStrictEqual(enqueued.jobs, state.jobs);\nassert.strictEqual(enqueued.jobs[0], state.jobs[0]);\nassert.notStrictEqual(enqueued.jobs[1], payload);\nassert.strictEqual(enqueued.jobs[1].value, payload.value);\nassert.deepEqual(state, { active: false, jobs: [{ id: 'a', value: 1 }], fault: 'old' });\nassert.deepEqual(event, { type: 'ENQUEUE', payload });\n\nassert.strictEqual(reduceQueue(enqueued, { type: 'ENQUEUE', payload: { id: 'b', value: 9 } }), enqueued);\nassert.strictEqual(reduceQueue(enqueued, { type: 'REPLACE', payload: { id: 'missing' } }), enqueued);\n\nconst replacement = { id: 'a', value: 7 };\nconst replaced = reduceQueue(enqueued, { type: 'REPLACE', payload: replacement });\nassert.deepEqual(replaced.jobs, [{ id: 'a', value: 7 }, { id: 'b', value: payload.value }]);\nassert.notStrictEqual(replaced.jobs[0], replacement);\nassert.strictEqual(replaced.jobs[1], enqueued.jobs[1]);\nassert.deepEqual(enqueued.jobs[0], { id: 'a', value: 1 });\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "4f3c76a08b38a7d1b7a3fada42552adbfa051a37efb7ab014e48590ecc14a0fa"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "755396692130dedae1e92122a079c10023565847c537ba2162d46553e5fb2578",
+      "text": "Implement a CommonJS module exporting exactly `{ createInitialQueueState, reduceQueue }`.\n\n`createInitialQueueState()` returns a fresh `{ active: false, jobs: [], fault: null }`.\n\n`reduceQueue(state, event)` is a pure reducer. If `state` is `undefined`, use a fresh initial state. Otherwise, `state` must contain a Boolean `active`, an array `jobs`, and `fault` of any value; malformed state throws `TypeError`. A malformed event or unknown event type returns the original state object unchanged.\n\nRecognized events:\n- `{ type: 'BEGIN' }`: return a new state with `active: true` and `fault: null`.\n- `{ type: 'FAILED', payload: any }`: return a new state with `active: false` and `fault` equal to the payload.\n- `{ type: 'ENQUEUE', payload: job }`: `job` must be an object with a string `id`. If its ID already exists, return the original state. Otherwise append a shallow copy in order.\n- `{ type: 'REPLACE', payload: job }`: with the same job validation, replace the job having the same `id` with a shallow copy while retaining its position. If absent, return the original state.\n- `{ type: 'FINISH' }`: return a new state with `active: false`.\n\nInvalid job payloads throw `TypeError`. Never mutate state, its jobs array, any existing job, the event, or its payload. Unchanged jobs may retain their existing object identities.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "755396692130dedae1e92122a079c10023565847c537ba2162d46553e5fb2578",
+      "text": "Implement a CommonJS module exporting exactly `{ createInitialQueueState, reduceQueue }`.\n\n`createInitialQueueState()` returns a fresh `{ active: false, jobs: [], fault: null }`.\n\n`reduceQueue(state, event)` is a pure reducer. If `state` is `undefined`, use a fresh initial state. Otherwise, `state` must contain a Boolean `active`, an array `jobs`, and `fault` of any value; malformed state throws `TypeError`. A malformed event or unknown event type returns the original state object unchanged.\n\nRecognized events:\n- `{ type: 'BEGIN' }`: return a new state with `active: true` and `fault: null`.\n- `{ type: 'FAILED', payload: any }`: return a new state with `active: false` and `fault` equal to the payload.\n- `{ type: 'ENQUEUE', payload: job }`: `job` must be an object with a string `id`. If its ID already exists, return the original state. Otherwise append a shallow copy in order.\n- `{ type: 'REPLACE', payload: job }`: with the same job validation, replace the job having the same `id` with a shallow copy while retaining its position. If absent, return the original state.\n- `{ type: 'FINISH' }`: return a new state with `active: false`.\n\nInvalid job payloads throw `TypeError`. Never mutate state, its jobs array, any existing job, the event, or its payload. Unchanged jobs may retain their existing object identities.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0232",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createInitialQueueState() {\n  return { active: false, jobs: [], fault: null };\n}\n\nfunction validateJob(job) {\n  if (!job || typeof job !== 'object' || Array.isArray(job) || typeof job.id !== 'string') {\n    throw new TypeError('job must be an object with a string id');\n  }\n}\n\nfunction reduceQueue(state, event) {\n  const current = state === undefined ? createInitialQueueState() : state;\n  if (!current || typeof current !== 'object' ||\n      typeof current.active !== 'boolean' || !Array.isArray(current.jobs) ||\n      !Object.prototype.hasOwnProperty.call(current, 'fault')) {\n    throw new TypeError('invalid state');\n  }\n  if (!event || typeof event !== 'object' || typeof event.type !== 'string') return current;\n\n  switch (event.type) {\n    case 'BEGIN':\n      return { ...current, active: true, fault: null };\n    case 'FAILED':\n      return { ...current, active: false, fault: event.payload };\n    case 'ENQUEUE': {\n      validateJob(event.payload);\n      if (current.jobs.some((job) => job.id === event.payload.id)) return current;\n      return { ...current, jobs: [...current.jobs, { ...event.payload }] };\n    }\n    case 'REPLACE': {\n      validateJob(event.payload);\n      const index = current.jobs.findIndex((job) => job.name === event.payload.name);\n      if (index < 0) return current;\n      const jobs = current.jobs.slice();\n      jobs[index] = { ...event.payload };\n      return { ...current, jobs };\n    }\n    case 'FINISH':\n      return { ...current, active: false };\n    default:\n      return current;\n  }\n}\n\nmodule.exports = { createInitialQueueState, reduceQueue };\n",
+          "label": "REPLACE locates jobs by name instead of the required id",
+          "sha256": "af508d9e69d3fb03cce59639156361ae3df8086ec9bf2303588a2b96d9a4083a"
+        }
+      ],
+      "reference": {
+        "code": "function createInitialQueueState() {\n  return { active: false, jobs: [], fault: null };\n}\n\nfunction validateJob(job) {\n  if (!job || typeof job !== 'object' || Array.isArray(job) || typeof job.id !== 'string') {\n    throw new TypeError('job must be an object with a string id');\n  }\n}\n\nfunction reduceQueue(state, event) {\n  const current = state === undefined ? createInitialQueueState() : state;\n  if (!current || typeof current !== 'object' ||\n      typeof current.active !== 'boolean' || !Array.isArray(current.jobs) ||\n      !Object.prototype.hasOwnProperty.call(current, 'fault')) {\n    throw new TypeError('invalid state');\n  }\n  if (!event || typeof event !== 'object' || typeof event.type !== 'string') return current;\n\n  switch (event.type) {\n    case 'BEGIN':\n      return { ...current, active: true, fault: null };\n    case 'FAILED':\n      return { ...current, active: false, fault: event.payload };\n    case 'ENQUEUE': {\n      validateJob(event.payload);\n      if (current.jobs.some((job) => job.id === event.payload.id)) return current;\n      return { ...current, jobs: [...current.jobs, { ...event.payload }] };\n    }\n    case 'REPLACE': {\n      validateJob(event.payload);\n      const index = current.jobs.findIndex((job) => job.id === event.payload.id);\n      if (index < 0) return current;\n      const jobs = current.jobs.slice();\n      jobs[index] = { ...event.payload };\n      return { ...current, jobs };\n    }\n    case 'FINISH':\n      return { ...current, active: false };\n    default:\n      return current;\n  }\n}\n\nmodule.exports = { createInitialQueueState, reduceQueue };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5c7b382b0b8b6c5dc2c6afabd599229e7c2f2e674854b7e0eb757b9cbbf9e21a"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\nundefined !== 'a'\n\n    at Object.<anonymous> (/work/solution.test.js:2:24)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: 'a',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "d718fcd89b0101dfdd2c32c405c9188db25bbcd4170e821e6c320b1730d8c64b",
+    "duration_ms": 405,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

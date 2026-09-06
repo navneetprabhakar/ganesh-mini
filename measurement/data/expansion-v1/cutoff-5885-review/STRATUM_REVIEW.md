@@ -1,5 +1,27 @@
 # Quality follow-up decision
 
+Current checkpoint: **226 holds (223 additive plus historical three)**; 313
+unique outside-sample inspections. Batch 21 partial through position 305;
+continue 306. GCS verified through 223 holds / completed batch 20 / scope v6
+(11 groups, 14 strata, 3,085 review records). Latest five inspections await backup.
+No training seal or new VM. Older entries are historical.
+
+V6 adds contradictory_suffix_uniqueness, supported by TS generation0173/0190.
+Scope: 11 groups / 14 strata / 3,085 review records (not rejection count).
+Decision SHA-256: `361cd6f09f19585bd01e5286414bec22afcc252050c1488665cf853ff487566f`.
+Report SHA-256: `0510ab4e2d1122715ecd7c3c3feec3267042f5a284e3c17eb01013404e71db26`.
+Previous inventories remain preserved.
+
+Current checkpoint: **223 holds (220 additive plus historical three)**; 308
+unique outside-sample inspections. Batch 20 complete through position 300;
+continue 301. GCS verified through 217 holds / batch 19; batch 20 awaits backup.
+No training seal or new VM. Older entries are historical.
+
+Current checkpoint: **217 holds (214 additive plus historical three)**; 294
+unique outside-sample inspections. Batch 19 complete through position 285;
+continue 286. GCS verified through 209 holds / batch 18; batch 19 awaits backup.
+No training seal or new VM. Older entries are historical.
+
 Current checkpoint: **212 holds (209 additive plus historical three)**; 284
 unique outside-sample inspections. Batch 19 partial through position 275;
 continue 276. GCS verified through 209 holds / batch 18 / scope v5 (10 groups,

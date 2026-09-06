@@ -1,5 +1,23 @@
 # Array-validation follow-up, batch 19
 
+Completed positions 271–285: 15 new / 294 unique outside-sample inspections.
+Eight holds in batch: **214 additive / 217 including historical three**.
+Later confirmed defects: TS generation0182 malformed lookup throws (explicit
+runtime contract says undefined); generation0186 missing supported language;
+repair0121 missing field ID; generation0183 missing choice value; JS generation
+0211 snapshot drops a valid __proto__ SKU. Evidence prefixes: icon-malformed-lookup,
+preference-missing-language, field-collection-missing-id, choice-model-missing-value,
+inventory-proto-sku-snapshot (each suffixed -result.json).
+All five runtime checks failed without timeout; TypeScript compilation passed.
+
+Scoped negatives: TS generation0184 uses per-registration entries and snapshots
+active listeners; inactive-entry retention is a scalability concern, not a tested
+contract defect. TS repair0122 copies internally created toast and confirmation
+objects. JS repair0143/0142 validate with for-of and use internal dense records.
+TS generation0188 materializes missing sequence entries with Array.from before
+finite validation, so it does not share the skipped-hole defect. No approvals.
+Continue position 286. Earlier partial checkpoint follows.
+
 Partial: positions 271–275 inspected; five new / 284 unique outside-sample
 inspections. Three new holds: **209 additive / 212 including historical three**.
 

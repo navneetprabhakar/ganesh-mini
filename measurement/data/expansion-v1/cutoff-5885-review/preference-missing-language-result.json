@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0186",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "57731853a4a395049507fc4cc84a458bbfcf774ba94a7500f347fa48ccfd5128",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import {PreferenceManager} from './solution';\nconst languages=['en'];languages.length=2;\nlet rejected=false;try { new PreferenceManager(languages,'en','#112233'); } catch(e) { if(!(e instanceof RangeError)) throw e;rejected=true; }\nif(!rejected) throw new Error('Missing supported language accepted');\n",
+        "sha256": "e496d35eea41d7487e8a5902f067fdbe0b263afbbfed2f71e3da28292ace0dff"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48f1d4a98647b026b6ca889ef8b550492bfd1dcae5e1d618d0186b4a45d882ca",
+      "text": "Implement a deterministic preference manager as one complete TypeScript source file.\n\nExport:\n- `interface Preferences { readonly language: string; readonly accent: string }`\n- `class PreferenceManager`\n\nConstructor: `constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string)`.\n\nNormalize languages by trimming them. The supported list must be nonempty, contain no empty or duplicate normalized entries, and contain the normalized fallback language. Accents must have exact form `#RRGGBB` using hexadecimal digits; normalize them to uppercase. Invalid constructor arguments throw `RangeError`. The supported input array must be copied.\n\nProvide:\n- `setLanguage(language: string): boolean`: update only when its trimmed value is supported.\n- `setAccent(accent: string): boolean`: update only when the value has the exact valid form.\n- `current(): Preferences`: return a fresh object.\n- `serialize(): string`: return compact JSON with keys in the order `language`, then `accent`.\n- `restore(serialized: string): boolean`: accept only JSON objects whose `language` and `accent` properties are strings and valid under the same rules. Arrays, null, malformed JSON, extra-only objects, unsupported languages, or invalid accents return false without changing either preference. Extra properties on an otherwise valid object are ignored.\n\nState starts at the normalized fallbacks.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48f1d4a98647b026b6ca889ef8b550492bfd1dcae5e1d618d0186b4a45d882ca",
+      "text": "Implement a deterministic preference manager as one complete TypeScript source file.\n\nExport:\n- `interface Preferences { readonly language: string; readonly accent: string }`\n- `class PreferenceManager`\n\nConstructor: `constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string)`.\n\nNormalize languages by trimming them. The supported list must be nonempty, contain no empty or duplicate normalized entries, and contain the normalized fallback language. Accents must have exact form `#RRGGBB` using hexadecimal digits; normalize them to uppercase. Invalid constructor arguments throw `RangeError`. The supported input array must be copied.\n\nProvide:\n- `setLanguage(language: string): boolean`: update only when its trimmed value is supported.\n- `setAccent(accent: string): boolean`: update only when the value has the exact valid form.\n- `current(): Preferences`: return a fresh object.\n- `serialize(): string`: return compact JSON with keys in the order `language`, then `accent`.\n- `restore(serialized: string): boolean`: accept only JSON objects whose `language` and `accent` properties are strings and valid under the same rules. Arrays, null, malformed JSON, extra-only objects, unsupported languages, or invalid accents return false without changing either preference. Extra properties on an otherwise valid object are ignored.\n\nState starts at the normalized fallbacks.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0186",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Preferences {\n  readonly language: string;\n  readonly accent: string;\n}\n\nexport class PreferenceManager {\n  private readonly supported: Set<string>;\n  private language: string;\n  private accent: string;\n\n  constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string) {\n    const normalized = supportedLanguages.map((value) => value.trim());\n    if (normalized.length === 0 || normalized.some((value) => value.length === 0) || new Set(normalized).size !== normalized.length) {\n      throw new RangeError(\"Invalid supported languages\");\n    }\n    this.supported = new Set(normalized);\n    this.language = fallbackLanguage.trim();\n    const accent = PreferenceManager.normalizeAccent(fallbackAccent);\n    if (!this.supported.has(this.language) || accent === undefined) {\n      throw new RangeError(\"Invalid fallbacks\");\n    }\n    this.accent = accent;\n  }\n\n  setLanguage(language: string): boolean {\n    const normalized = language.trim();\n    if (!this.supported.has(normalized)) return false;\n    this.language = normalized;\n    return true;\n  }\n\n  setAccent(accent: string): boolean {\n    const normalized = PreferenceManager.normalizeAccent(accent);\n    if (normalized === undefined) return false;\n    this.accent = normalized;\n    return true;\n  }\n\n  current(): Preferences {\n    return { language: this.language, accent: this.accent };\n  }\n\n  serialize(): string {\n    return JSON.stringify({ language: this.language, accent: this.accent });\n  }\n\n  restore(serialized: string): boolean {\n    try {\n      const parsed: unknown = JSON.parse(serialized);\n      if (typeof parsed !== \"object\" || parsed === null || Array.isArray(parsed)) return false;\n      const value = parsed as Record<string, unknown>;\n      if (typeof value.language !== \"string\" || typeof value.accent !== \"string\") return false;\n      const language = value.language.trim();\n      const accent = PreferenceManager.normalizeAccent(value.accent);\n      if (accent === undefined) return false;\n      this.language = language;\n      this.accent = accent;\n      return true;\n    } catch {\n      return false;\n    }\n  }\n\n  private static normalizeAccent(value: string): string | undefined {\n    return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toUpperCase() : undefined;\n  }\n}\n",
+          "label": "Restoration accepts and stores a language that is not in the supported-language set.",
+          "sha256": "b6bfb4421d8a2dbf34f4a5fac64a38ce9d3621fe39cd49a64b2ed6a16bb21917"
+        }
+      ],
+      "reference": {
+        "code": "export interface Preferences {\n  readonly language: string;\n  readonly accent: string;\n}\n\nexport class PreferenceManager {\n  private readonly supported: Set<string>;\n  private language: string;\n  private accent: string;\n\n  constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string) {\n    const normalized = supportedLanguages.map((value) => value.trim());\n    if (normalized.length === 0 || normalized.some((value) => value.length === 0) || new Set(normalized).size !== normalized.length) {\n      throw new RangeError(\"Invalid supported languages\");\n    }\n    this.supported = new Set(normalized);\n    this.language = fallbackLanguage.trim();\n    const accent = PreferenceManager.normalizeAccent(fallbackAccent);\n    if (!this.supported.has(this.language) || accent === undefined) {\n      throw new RangeError(\"Invalid fallbacks\");\n    }\n    this.accent = accent;\n  }\n\n  setLanguage(language: string): boolean {\n    const normalized = language.trim();\n    if (!this.supported.has(normalized)) return false;\n    this.language = normalized;\n    return true;\n  }\n\n  setAccent(accent: string): boolean {\n    const normalized = PreferenceManager.normalizeAccent(accent);\n    if (normalized === undefined) return false;\n    this.accent = normalized;\n    return true;\n  }\n\n  current(): Preferences {\n    return { language: this.language, accent: this.accent };\n  }\n\n  serialize(): string {\n    return JSON.stringify({ language: this.language, accent: this.accent });\n  }\n\n  restore(serialized: string): boolean {\n    try {\n      const parsed: unknown = JSON.parse(serialized);\n      if (typeof parsed !== \"object\" || parsed === null || Array.isArray(parsed)) return false;\n      const value = parsed as Record<string, unknown>;\n      if (typeof value.language !== \"string\" || typeof value.accent !== \"string\") return false;\n      const language = value.language.trim();\n      const accent = PreferenceManager.normalizeAccent(value.accent);\n      if (!this.supported.has(language) || accent === undefined) return false;\n      this.language = language;\n      this.accent = accent;\n      return true;\n    } catch {\n      return false;\n    }\n  }\n\n  private static normalizeAccent(value: string): string | undefined {\n    return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toUpperCase() : undefined;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "63226809618d1d5a64c05eaf2684a10e96173818e34b946bef239624ab439825"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { PreferenceManager } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal<T>(actual: T, expected: T, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction rangeError(action: () => void, message: string): void {\n  try { action(); } catch (error) {\n    if (error instanceof RangeError) return;\n    throw new Error(`${message}: wrong error type`);\n  }\n  throw new Error(`${message}: expected RangeError`);\n}\n\nrangeError(() => new PreferenceManager([], 'en', '#112233'), 'empty supported list');\nrangeError(() => new PreferenceManager(['en', ' '], 'en', '#112233'), 'blank supported language');\nrangeError(() => new PreferenceManager(['en', ' en '], 'en', '#112233'), 'normalized duplicate language');\nrangeError(() => new PreferenceManager(['en'], 'fr', '#112233'), 'unsupported fallback language');\nrangeError(() => new PreferenceManager(['en'], 'en', '112233'), 'accent missing hash');\nrangeError(() => new PreferenceManager(['en'], 'en', '#12345G'), 'accent with non-hex digit');\nrangeError(() => new PreferenceManager(['en'], 'en', ' #112233 '), 'accent is not trimmed');\n\nconst supported = [' en ', 'fr', '\u65e5\u672c\u8a9e'];\nconst manager = new PreferenceManager(supported, ' en ', '#a1b2c3');\nsupported[0] = 'changed';\nlet current = manager.current();\nequal(current.language, 'en', 'fallback language normalized');\nequal(current.accent, '#A1B2C3', 'fallback accent uppercased');\nequal(manager.setLanguage(' fr '), true, 'supported trimmed language accepted');\nequal(manager.current().language, 'fr', 'language updated');\nequal(manager.setLanguage('changed'), false, 'supported input array was copied');\nequal(manager.setLanguage(''), false, 'blank language rejected');\nequal(manager.setLanguage('de'), false, 'unsupported language rejected');\nequal(manager.current().language, 'fr', 'failed language update preserves state');\n\nequal(manager.setAccent('#00ffAa'), true, 'valid mixed-case accent accepted');\nequal(manager.current().accent, '#00FFAA', 'accent normalized uppercase');\nequal(manager.setAccent('#FFF'), false, 'short accent rejected');\nequal(manager.setAccent(' #001122'), false, 'accent whitespace rejected');\nequal(manager.setAccent('#00112233'), false, 'long accent rejected');\nequal(manager.current().accent, '#00FFAA', 'failed accent update preserves state');\n\nequal(manager.serialize(), '{\"language\":\"fr\",\"accent\":\"#00FFAA\"}', 'serialization is compact and ordered');\nconst first = manager.current();\nconst second = manager.current();\nassert(first !== second, 'current returns fresh objects');\n(first as { language: string; accent: string }).language = 'tampered';\nequal(manager.current().language, 'fr', 'current result cannot mutate state');\n\nconst invalidRestores = [\n  '', '{', 'null', '[]', '\"text\"', '{}',\n  '{\"language\":\"fr\"}', '{\"accent\":\"#112233\"}',\n  '{\"language\":1,\"accent\":\"#112233\"}',\n  '{\"language\":\"de\",\"accent\":\"#112233\"}',\n  '{\"language\":\"en\",\"accent\":\"#xyzxyz\"}',\n];\nfor (const serialized of invalidRestores) {\n  equal(manager.restore(serialized), false, `invalid restore rejected: ${serialized}`);\n  equal(manager.serialize(), '{\"language\":\"fr\",\"accent\":\"#00FFAA\"}', 'failed restore is atomic');\n}\n\nequal(manager.restore('{\"language\":\" \u65e5\u672c\u8a9e \",\"accent\":\"#abcdef\",\"extra\":true}'), true, 'valid restore permits extra properties');\nequal(manager.current().language, '\u65e5\u672c\u8a9e', 'restored language normalized');\nequal(manager.current().accent, '#ABCDEF', 'restored accent normalized');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "3493df0b29616d23793031e8d64f960d9486576fbee4b3eaaa523517c3920a2f"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48f1d4a98647b026b6ca889ef8b550492bfd1dcae5e1d618d0186b4a45d882ca",
+      "text": "Implement a deterministic preference manager as one complete TypeScript source file.\n\nExport:\n- `interface Preferences { readonly language: string; readonly accent: string }`\n- `class PreferenceManager`\n\nConstructor: `constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string)`.\n\nNormalize languages by trimming them. The supported list must be nonempty, contain no empty or duplicate normalized entries, and contain the normalized fallback language. Accents must have exact form `#RRGGBB` using hexadecimal digits; normalize them to uppercase. Invalid constructor arguments throw `RangeError`. The supported input array must be copied.\n\nProvide:\n- `setLanguage(language: string): boolean`: update only when its trimmed value is supported.\n- `setAccent(accent: string): boolean`: update only when the value has the exact valid form.\n- `current(): Preferences`: return a fresh object.\n- `serialize(): string`: return compact JSON with keys in the order `language`, then `accent`.\n- `restore(serialized: string): boolean`: accept only JSON objects whose `language` and `accent` properties are strings and valid under the same rules. Arrays, null, malformed JSON, extra-only objects, unsupported languages, or invalid accents return false without changing either preference. Extra properties on an otherwise valid object are ignored.\n\nState starts at the normalized fallbacks.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48f1d4a98647b026b6ca889ef8b550492bfd1dcae5e1d618d0186b4a45d882ca",
+      "text": "Implement a deterministic preference manager as one complete TypeScript source file.\n\nExport:\n- `interface Preferences { readonly language: string; readonly accent: string }`\n- `class PreferenceManager`\n\nConstructor: `constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string)`.\n\nNormalize languages by trimming them. The supported list must be nonempty, contain no empty or duplicate normalized entries, and contain the normalized fallback language. Accents must have exact form `#RRGGBB` using hexadecimal digits; normalize them to uppercase. Invalid constructor arguments throw `RangeError`. The supported input array must be copied.\n\nProvide:\n- `setLanguage(language: string): boolean`: update only when its trimmed value is supported.\n- `setAccent(accent: string): boolean`: update only when the value has the exact valid form.\n- `current(): Preferences`: return a fresh object.\n- `serialize(): string`: return compact JSON with keys in the order `language`, then `accent`.\n- `restore(serialized: string): boolean`: accept only JSON objects whose `language` and `accent` properties are strings and valid under the same rules. Arrays, null, malformed JSON, extra-only objects, unsupported languages, or invalid accents return false without changing either preference. Extra properties on an otherwise valid object are ignored.\n\nState starts at the normalized fallbacks.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0186",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Preferences {\n  readonly language: string;\n  readonly accent: string;\n}\n\nexport class PreferenceManager {\n  private readonly supported: Set<string>;\n  private language: string;\n  private accent: string;\n\n  constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string) {\n    const normalized = supportedLanguages.map((value) => value.trim());\n    if (normalized.length === 0 || normalized.some((value) => value.length === 0) || new Set(normalized).size !== normalized.length) {\n      throw new RangeError(\"Invalid supported languages\");\n    }\n    this.supported = new Set(normalized);\n    this.language = fallbackLanguage.trim();\n    const accent = PreferenceManager.normalizeAccent(fallbackAccent);\n    if (!this.supported.has(this.language) || accent === undefined) {\n      throw new RangeError(\"Invalid fallbacks\");\n    }\n    this.accent = accent;\n  }\n\n  setLanguage(language: string): boolean {\n    const normalized = language.trim();\n    if (!this.supported.has(normalized)) return false;\n    this.language = normalized;\n    return true;\n  }\n\n  setAccent(accent: string): boolean {\n    const normalized = PreferenceManager.normalizeAccent(accent);\n    if (normalized === undefined) return false;\n    this.accent = normalized;\n    return true;\n  }\n\n  current(): Preferences {\n    return { language: this.language, accent: this.accent };\n  }\n\n  serialize(): string {\n    return JSON.stringify({ language: this.language, accent: this.accent });\n  }\n\n  restore(serialized: string): boolean {\n    try {\n      const parsed: unknown = JSON.parse(serialized);\n      if (typeof parsed !== \"object\" || parsed === null || Array.isArray(parsed)) return false;\n      const value = parsed as Record<string, unknown>;\n      if (typeof value.language !== \"string\" || typeof value.accent !== \"string\") return false;\n      const language = value.language.trim();\n      const accent = PreferenceManager.normalizeAccent(value.accent);\n      if (accent === undefined) return false;\n      this.language = language;\n      this.accent = accent;\n      return true;\n    } catch {\n      return false;\n    }\n  }\n\n  private static normalizeAccent(value: string): string | undefined {\n    return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toUpperCase() : undefined;\n  }\n}\n",
+          "label": "Restoration accepts and stores a language that is not in the supported-language set.",
+          "sha256": "b6bfb4421d8a2dbf34f4a5fac64a38ce9d3621fe39cd49a64b2ed6a16bb21917"
+        }
+      ],
+      "reference": {
+        "code": "export interface Preferences {\n  readonly language: string;\n  readonly accent: string;\n}\n\nexport class PreferenceManager {\n  private readonly supported: Set<string>;\n  private language: string;\n  private accent: string;\n\n  constructor(supportedLanguages: readonly string[], fallbackLanguage: string, fallbackAccent: string) {\n    const normalized = supportedLanguages.map((value) => value.trim());\n    if (normalized.length === 0 || normalized.some((value) => value.length === 0) || new Set(normalized).size !== normalized.length) {\n      throw new RangeError(\"Invalid supported languages\");\n    }\n    this.supported = new Set(normalized);\n    this.language = fallbackLanguage.trim();\n    const accent = PreferenceManager.normalizeAccent(fallbackAccent);\n    if (!this.supported.has(this.language) || accent === undefined) {\n      throw new RangeError(\"Invalid fallbacks\");\n    }\n    this.accent = accent;\n  }\n\n  setLanguage(language: string): boolean {\n    const normalized = language.trim();\n    if (!this.supported.has(normalized)) return false;\n    this.language = normalized;\n    return true;\n  }\n\n  setAccent(accent: string): boolean {\n    const normalized = PreferenceManager.normalizeAccent(accent);\n    if (normalized === undefined) return false;\n    this.accent = normalized;\n    return true;\n  }\n\n  current(): Preferences {\n    return { language: this.language, accent: this.accent };\n  }\n\n  serialize(): string {\n    return JSON.stringify({ language: this.language, accent: this.accent });\n  }\n\n  restore(serialized: string): boolean {\n    try {\n      const parsed: unknown = JSON.parse(serialized);\n      if (typeof parsed !== \"object\" || parsed === null || Array.isArray(parsed)) return false;\n      const value = parsed as Record<string, unknown>;\n      if (typeof value.language !== \"string\" || typeof value.accent !== \"string\") return false;\n      const language = value.language.trim();\n      const accent = PreferenceManager.normalizeAccent(value.accent);\n      if (!this.supported.has(language) || accent === undefined) return false;\n      this.language = language;\n      this.accent = accent;\n      return true;\n    } catch {\n      return false;\n    }\n  }\n\n  private static normalizeAccent(value: string): string | undefined {\n    return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toUpperCase() : undefined;\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "63226809618d1d5a64c05eaf2684a10e96173818e34b946bef239624ab439825"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:16\n    throw new Error('Missing supported language accepted');\n    ^\n\nError: Missing supported language accepted\n    at Object.<anonymous> (/work/solution.test.js:16:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "55d4bd552e1004e5c0aff359d8eeb1c791bdb1fe2d624cbd9a183b1f415d9ee0",
+    "duration_ms": 2938,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

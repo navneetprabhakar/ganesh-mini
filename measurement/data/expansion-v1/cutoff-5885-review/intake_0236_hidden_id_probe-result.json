@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0236",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "07d7ac950bd3968132bb20a3f1b503103ddf971c69b1ed093304b57c3f27901f",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { transitionIntake } from './solution';\nconst parcel = Object.defineProperty({ sender: 'A' }, 'id', { value: 'P', enumerable: false }) as { id: string; sender: string };\nconst result = transitionIntake({ status: 'waiting' }, { type: 'ARRIVE', parcel });\nif (result.status !== 'reviewing' || result.parcel.id !== 'P') throw new Error('Validated parcel id lost during arrival copy');\n",
+        "sha256": "4b371d578239fe459b60919815273f2a6c36e60c09f32f4bbd2f8a79c3622f1e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "87779493105d0f994b8bec270575e5acba75b25d7463037f11da4fa76309553d",
+      "text": "Implement a complete TypeScript module for an immutable parcel-intake state machine. Export `Parcel`, `IntakeState`, `IntakeEvent`, `initialIntakeState`, and `transitionIntake`. A parcel has non-empty `id` and `sender` strings. States are `{status:\"waiting\"}`, `{status:\"reviewing\", parcel}`, `{status:\"storing\", parcel}`, `{status:\"stored\", parcel}`, `{status:\"rejected\"}`, and `{status:\"failed\", parcel, reason}`. Events are `ARRIVE` with a parcel, `APPROVE`, `REJECT`, `STORE_OK`, `STORE_FAILED` with a non-empty reason, `RETRY`, and `RESET`. The only transitions are: waiting+ARRIVE\u2192reviewing; reviewing+APPROVE\u2192storing; reviewing+REJECT\u2192rejected; storing+STORE_OK\u2192stored; storing+STORE_FAILED\u2192failed; failed+RETRY\u2192storing; and any state+RESET\u2192waiting. An ARRIVE parcel must be copied. Invalid parcel or reason data throws `TypeError`. Events not valid for the current state return the exact original state reference. Valid transitions return fresh state objects and must not mutate the state, event, or parcel.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "87779493105d0f994b8bec270575e5acba75b25d7463037f11da4fa76309553d",
+      "text": "Implement a complete TypeScript module for an immutable parcel-intake state machine. Export `Parcel`, `IntakeState`, `IntakeEvent`, `initialIntakeState`, and `transitionIntake`. A parcel has non-empty `id` and `sender` strings. States are `{status:\"waiting\"}`, `{status:\"reviewing\", parcel}`, `{status:\"storing\", parcel}`, `{status:\"stored\", parcel}`, `{status:\"rejected\"}`, and `{status:\"failed\", parcel, reason}`. Events are `ARRIVE` with a parcel, `APPROVE`, `REJECT`, `STORE_OK`, `STORE_FAILED` with a non-empty reason, `RETRY`, and `RESET`. The only transitions are: waiting+ARRIVE\u2192reviewing; reviewing+APPROVE\u2192storing; reviewing+REJECT\u2192rejected; storing+STORE_OK\u2192stored; storing+STORE_FAILED\u2192failed; failed+RETRY\u2192storing; and any state+RESET\u2192waiting. An ARRIVE parcel must be copied. Invalid parcel or reason data throws `TypeError`. Events not valid for the current state return the exact original state reference. Valid transitions return fresh state objects and must not mutate the state, event, or parcel.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0236",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Parcel {\n  readonly id: string;\n  readonly sender: string;\n}\n\nexport type IntakeState =\n  | { readonly status: \"waiting\" }\n  | { readonly status: \"reviewing\"; readonly parcel: Parcel }\n  | { readonly status: \"storing\"; readonly parcel: Parcel }\n  | { readonly status: \"stored\"; readonly parcel: Parcel }\n  | { readonly status: \"rejected\" }\n  | { readonly status: \"failed\"; readonly parcel: Parcel; readonly reason: string };\n\nexport type IntakeEvent =\n  | { readonly type: \"ARRIVE\"; readonly parcel: Parcel }\n  | { readonly type: \"APPROVE\" }\n  | { readonly type: \"REJECT\" }\n  | { readonly type: \"STORE_OK\" }\n  | { readonly type: \"STORE_FAILED\"; readonly reason: string }\n  | { readonly type: \"RETRY\" }\n  | { readonly type: \"RESET\" };\n\nexport const initialIntakeState: IntakeState = { status: \"waiting\" };\n\nfunction validateParcel(parcel: Parcel): void {\n  if (\n    typeof parcel !== \"object\" ||\n    parcel === null ||\n    typeof parcel.id !== \"string\" ||\n    parcel.id.length === 0 ||\n    typeof parcel.sender !== \"string\" ||\n    parcel.sender.length === 0\n  ) {\n    throw new TypeError(\"Parcel id and sender must be non-empty strings\");\n  }\n}\n\nexport function transitionIntake(\n  state: IntakeState,\n  event: IntakeEvent,\n): IntakeState {\n  if (event.type === \"ARRIVE\") {\n    validateParcel(event.parcel);\n  } else if (\n    event.type === \"STORE_FAILED\" &&\n    (typeof event.reason !== \"string\" || event.reason.length === 0)\n  ) {\n    throw new TypeError(\"Reason must be a non-empty string\");\n  }\n\n  if (event.type === \"RESET\") return { status: \"waiting\" };\n\n  if (state.status === \"waiting\" && event.type === \"ARRIVE\") {\n    return { status: \"storing\", parcel: { ...event.parcel } };\n  }\n  if (state.status === \"reviewing\" && event.type === \"APPROVE\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  if (state.status === \"reviewing\" && event.type === \"REJECT\") {\n    return { status: \"rejected\" };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_OK\") {\n    return { status: \"stored\", parcel: state.parcel };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_FAILED\") {\n    return { status: \"failed\", parcel: state.parcel, reason: event.reason };\n  }\n  if (state.status === \"failed\" && event.type === \"RETRY\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  return state;\n}\n",
+          "label": "Moves a newly arrived parcel directly to storing instead of the required reviewing state.",
+          "sha256": "4123ffc1a36eea783cdf1a58e74773f730a958b9fe7a923346f8426a6049085c"
+        }
+      ],
+      "reference": {
+        "code": "export interface Parcel {\n  readonly id: string;\n  readonly sender: string;\n}\n\nexport type IntakeState =\n  | { readonly status: \"waiting\" }\n  | { readonly status: \"reviewing\"; readonly parcel: Parcel }\n  | { readonly status: \"storing\"; readonly parcel: Parcel }\n  | { readonly status: \"stored\"; readonly parcel: Parcel }\n  | { readonly status: \"rejected\" }\n  | { readonly status: \"failed\"; readonly parcel: Parcel; readonly reason: string };\n\nexport type IntakeEvent =\n  | { readonly type: \"ARRIVE\"; readonly parcel: Parcel }\n  | { readonly type: \"APPROVE\" }\n  | { readonly type: \"REJECT\" }\n  | { readonly type: \"STORE_OK\" }\n  | { readonly type: \"STORE_FAILED\"; readonly reason: string }\n  | { readonly type: \"RETRY\" }\n  | { readonly type: \"RESET\" };\n\nexport const initialIntakeState: IntakeState = { status: \"waiting\" };\n\nfunction validateParcel(parcel: Parcel): void {\n  if (\n    typeof parcel !== \"object\" ||\n    parcel === null ||\n    typeof parcel.id !== \"string\" ||\n    parcel.id.length === 0 ||\n    typeof parcel.sender !== \"string\" ||\n    parcel.sender.length === 0\n  ) {\n    throw new TypeError(\"Parcel id and sender must be non-empty strings\");\n  }\n}\n\nexport function transitionIntake(\n  state: IntakeState,\n  event: IntakeEvent,\n): IntakeState {\n  if (event.type === \"ARRIVE\") {\n    validateParcel(event.parcel);\n  } else if (\n    event.type === \"STORE_FAILED\" &&\n    (typeof event.reason !== \"string\" || event.reason.length === 0)\n  ) {\n    throw new TypeError(\"Reason must be a non-empty string\");\n  }\n\n  if (event.type === \"RESET\") return { status: \"waiting\" };\n\n  if (state.status === \"waiting\" && event.type === \"ARRIVE\") {\n    return { status: \"reviewing\", parcel: { ...event.parcel } };\n  }\n  if (state.status === \"reviewing\" && event.type === \"APPROVE\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  if (state.status === \"reviewing\" && event.type === \"REJECT\") {\n    return { status: \"rejected\" };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_OK\") {\n    return { status: \"stored\", parcel: state.parcel };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_FAILED\") {\n    return { status: \"failed\", parcel: state.parcel, reason: event.reason };\n  }\n  if (state.status === \"failed\" && event.type === \"RETRY\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  return state;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0ad71c4d2aff42c10032a373a8ef663103d3ec497445c157c720d9c6b89f2438"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { initialIntakeState, transitionIntake } from './solution';\nimport type { Parcel, IntakeState, IntakeEvent } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction throwsTypeError(action: () => unknown, message: string): void {\n  let error: unknown;\n  try { action(); } catch (caught) { error = caught; }\n  if (!(error instanceof TypeError)) throw new Error(message);\n}\n\nconst waiting: IntakeState = initialIntakeState;\nequal(waiting.status, 'waiting', 'initial status');\n\nconst parcel: Parcel = { id: 'P-1', sender: 'Ada' };\nconst arrive: IntakeEvent = { type: 'ARRIVE', parcel };\nconst reviewing = transitionIntake(waiting, arrive);\nequal(reviewing.status, 'reviewing', 'ARRIVE transition');\nassert(reviewing !== waiting, 'valid transition returns a fresh state');\nif (reviewing.status !== 'reviewing') throw new Error('expected reviewing state');\nassert(reviewing.parcel !== parcel, 'arriving parcel must be copied');\nequal(reviewing.parcel.id, 'P-1', 'copied parcel id');\nequal(reviewing.parcel.sender, 'Ada', 'copied parcel sender');\nequal(parcel.id, 'P-1', 'parcel input not mutated');\nequal(arrive.type, 'ARRIVE', 'event not mutated');\n\nconst storing = transitionIntake(reviewing, { type: 'APPROVE' });\nequal(storing.status, 'storing', 'APPROVE transition');\nassert(storing !== reviewing, 'APPROVE returns fresh state');\nconst stored = transitionIntake(storing, { type: 'STORE_OK' });\nequal(stored.status, 'stored', 'STORE_OK transition');\n\nconst reviewingForReject = transitionIntake(initialIntakeState, { type: 'ARRIVE', parcel: { id: 'P-2', sender: 'Bob' } });\nconst rejected = transitionIntake(reviewingForReject, { type: 'REJECT' });\nequal(rejected.status, 'rejected', 'REJECT transition');\n\nconst reviewingForFailure = transitionIntake(initialIntakeState, { type: 'ARRIVE', parcel: { id: 'P-3', sender: 'Cy' } });\nconst storingForFailure = transitionIntake(reviewingForFailure, { type: 'APPROVE' });\nconst failureEvent: IntakeEvent = { type: 'STORE_FAILED', reason: 'shelf unavailable' };\nconst failed = transitionIntake(storingForFailure, failureEvent);\nequal(failed.status, 'failed', 'STORE_FAILED transition');\nif (failed.status !== 'failed') throw new Error('expected failed state');\nequal(failed.reason, 'shelf unavailable', 'failure reason retained');\nequal(failureEvent.reason, 'shelf unavailable', 'failure event not mutated');\nconst retried = transitionIntake(failed, { type: 'RETRY' });\nequal(retried.status, 'storing', 'RETRY transition');\nassert(retried !== failed, 'RETRY returns fresh state');\n\nconst invalid = transitionIntake(reviewing, { type: 'STORE_OK' });\nassert(invalid === reviewing, 'event invalid for state returns exact state reference');\nconst invalidArrival = transitionIntake(reviewing, { type: 'ARRIVE', parcel: { id: 'P-X', sender: 'X' } });\nassert(invalidArrival === reviewing, 'second validly formed ARRIVE is ignored by reference');\n\nconst resetWaiting = transitionIntake(initialIntakeState, { type: 'RESET' });\nequal(resetWaiting.status, 'waiting', 'RESET from waiting');\nassert(resetWaiting !== initialIntakeState, 'RESET is valid and returns a fresh state even from waiting');\nconst resetStored = transitionIntake(stored, { type: 'RESET' });\nequal(resetStored.status, 'waiting', 'RESET from stored');\nassert(resetStored !== stored, 'RESET from stored returns fresh state');\n\nthrowsTypeError(\n  () => transitionIntake(initialIntakeState, { type: 'ARRIVE', parcel: { id: '', sender: 'valid' } }),\n  'empty parcel id must throw',\n);\nthrowsTypeError(\n  () => transitionIntake(initialIntakeState, { type: 'ARRIVE', parcel: { id: 'valid', sender: '' } }),\n  'empty sender must throw',\n);\nthrowsTypeError(\n  () => transitionIntake(storingForFailure, { type: 'STORE_FAILED', reason: '' }),\n  'empty failure reason must throw',\n);\nthrowsTypeError(\n  () => transitionIntake(stored, { type: 'ARRIVE', parcel: { id: '', sender: '' } }),\n  'malformed parcel must throw even when ARRIVE is not a valid transition',\n);\nthrowsTypeError(\n  () => transitionIntake(waiting, { type: 'STORE_FAILED', reason: '' }),\n  'malformed reason must throw even when STORE_FAILED is not a valid transition',\n);\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "5639787b93ff84fa81115de085eec26517c544162cdaac930753b9f01f846a5e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "87779493105d0f994b8bec270575e5acba75b25d7463037f11da4fa76309553d",
+      "text": "Implement a complete TypeScript module for an immutable parcel-intake state machine. Export `Parcel`, `IntakeState`, `IntakeEvent`, `initialIntakeState`, and `transitionIntake`. A parcel has non-empty `id` and `sender` strings. States are `{status:\"waiting\"}`, `{status:\"reviewing\", parcel}`, `{status:\"storing\", parcel}`, `{status:\"stored\", parcel}`, `{status:\"rejected\"}`, and `{status:\"failed\", parcel, reason}`. Events are `ARRIVE` with a parcel, `APPROVE`, `REJECT`, `STORE_OK`, `STORE_FAILED` with a non-empty reason, `RETRY`, and `RESET`. The only transitions are: waiting+ARRIVE\u2192reviewing; reviewing+APPROVE\u2192storing; reviewing+REJECT\u2192rejected; storing+STORE_OK\u2192stored; storing+STORE_FAILED\u2192failed; failed+RETRY\u2192storing; and any state+RESET\u2192waiting. An ARRIVE parcel must be copied. Invalid parcel or reason data throws `TypeError`. Events not valid for the current state return the exact original state reference. Valid transitions return fresh state objects and must not mutate the state, event, or parcel.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "87779493105d0f994b8bec270575e5acba75b25d7463037f11da4fa76309553d",
+      "text": "Implement a complete TypeScript module for an immutable parcel-intake state machine. Export `Parcel`, `IntakeState`, `IntakeEvent`, `initialIntakeState`, and `transitionIntake`. A parcel has non-empty `id` and `sender` strings. States are `{status:\"waiting\"}`, `{status:\"reviewing\", parcel}`, `{status:\"storing\", parcel}`, `{status:\"stored\", parcel}`, `{status:\"rejected\"}`, and `{status:\"failed\", parcel, reason}`. Events are `ARRIVE` with a parcel, `APPROVE`, `REJECT`, `STORE_OK`, `STORE_FAILED` with a non-empty reason, `RETRY`, and `RESET`. The only transitions are: waiting+ARRIVE\u2192reviewing; reviewing+APPROVE\u2192storing; reviewing+REJECT\u2192rejected; storing+STORE_OK\u2192stored; storing+STORE_FAILED\u2192failed; failed+RETRY\u2192storing; and any state+RESET\u2192waiting. An ARRIVE parcel must be copied. Invalid parcel or reason data throws `TypeError`. Events not valid for the current state return the exact original state reference. Valid transitions return fresh state objects and must not mutate the state, event, or parcel.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0236",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Parcel {\n  readonly id: string;\n  readonly sender: string;\n}\n\nexport type IntakeState =\n  | { readonly status: \"waiting\" }\n  | { readonly status: \"reviewing\"; readonly parcel: Parcel }\n  | { readonly status: \"storing\"; readonly parcel: Parcel }\n  | { readonly status: \"stored\"; readonly parcel: Parcel }\n  | { readonly status: \"rejected\" }\n  | { readonly status: \"failed\"; readonly parcel: Parcel; readonly reason: string };\n\nexport type IntakeEvent =\n  | { readonly type: \"ARRIVE\"; readonly parcel: Parcel }\n  | { readonly type: \"APPROVE\" }\n  | { readonly type: \"REJECT\" }\n  | { readonly type: \"STORE_OK\" }\n  | { readonly type: \"STORE_FAILED\"; readonly reason: string }\n  | { readonly type: \"RETRY\" }\n  | { readonly type: \"RESET\" };\n\nexport const initialIntakeState: IntakeState = { status: \"waiting\" };\n\nfunction validateParcel(parcel: Parcel): void {\n  if (\n    typeof parcel !== \"object\" ||\n    parcel === null ||\n    typeof parcel.id !== \"string\" ||\n    parcel.id.length === 0 ||\n    typeof parcel.sender !== \"string\" ||\n    parcel.sender.length === 0\n  ) {\n    throw new TypeError(\"Parcel id and sender must be non-empty strings\");\n  }\n}\n\nexport function transitionIntake(\n  state: IntakeState,\n  event: IntakeEvent,\n): IntakeState {\n  if (event.type === \"ARRIVE\") {\n    validateParcel(event.parcel);\n  } else if (\n    event.type === \"STORE_FAILED\" &&\n    (typeof event.reason !== \"string\" || event.reason.length === 0)\n  ) {\n    throw new TypeError(\"Reason must be a non-empty string\");\n  }\n\n  if (event.type === \"RESET\") return { status: \"waiting\" };\n\n  if (state.status === \"waiting\" && event.type === \"ARRIVE\") {\n    return { status: \"storing\", parcel: { ...event.parcel } };\n  }\n  if (state.status === \"reviewing\" && event.type === \"APPROVE\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  if (state.status === \"reviewing\" && event.type === \"REJECT\") {\n    return { status: \"rejected\" };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_OK\") {\n    return { status: \"stored\", parcel: state.parcel };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_FAILED\") {\n    return { status: \"failed\", parcel: state.parcel, reason: event.reason };\n  }\n  if (state.status === \"failed\" && event.type === \"RETRY\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  return state;\n}\n",
+          "label": "Moves a newly arrived parcel directly to storing instead of the required reviewing state.",
+          "sha256": "4123ffc1a36eea783cdf1a58e74773f730a958b9fe7a923346f8426a6049085c"
+        }
+      ],
+      "reference": {
+        "code": "export interface Parcel {\n  readonly id: string;\n  readonly sender: string;\n}\n\nexport type IntakeState =\n  | { readonly status: \"waiting\" }\n  | { readonly status: \"reviewing\"; readonly parcel: Parcel }\n  | { readonly status: \"storing\"; readonly parcel: Parcel }\n  | { readonly status: \"stored\"; readonly parcel: Parcel }\n  | { readonly status: \"rejected\" }\n  | { readonly status: \"failed\"; readonly parcel: Parcel; readonly reason: string };\n\nexport type IntakeEvent =\n  | { readonly type: \"ARRIVE\"; readonly parcel: Parcel }\n  | { readonly type: \"APPROVE\" }\n  | { readonly type: \"REJECT\" }\n  | { readonly type: \"STORE_OK\" }\n  | { readonly type: \"STORE_FAILED\"; readonly reason: string }\n  | { readonly type: \"RETRY\" }\n  | { readonly type: \"RESET\" };\n\nexport const initialIntakeState: IntakeState = { status: \"waiting\" };\n\nfunction validateParcel(parcel: Parcel): void {\n  if (\n    typeof parcel !== \"object\" ||\n    parcel === null ||\n    typeof parcel.id !== \"string\" ||\n    parcel.id.length === 0 ||\n    typeof parcel.sender !== \"string\" ||\n    parcel.sender.length === 0\n  ) {\n    throw new TypeError(\"Parcel id and sender must be non-empty strings\");\n  }\n}\n\nexport function transitionIntake(\n  state: IntakeState,\n  event: IntakeEvent,\n): IntakeState {\n  if (event.type === \"ARRIVE\") {\n    validateParcel(event.parcel);\n  } else if (\n    event.type === \"STORE_FAILED\" &&\n    (typeof event.reason !== \"string\" || event.reason.length === 0)\n  ) {\n    throw new TypeError(\"Reason must be a non-empty string\");\n  }\n\n  if (event.type === \"RESET\") return { status: \"waiting\" };\n\n  if (state.status === \"waiting\" && event.type === \"ARRIVE\") {\n    return { status: \"reviewing\", parcel: { ...event.parcel } };\n  }\n  if (state.status === \"reviewing\" && event.type === \"APPROVE\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  if (state.status === \"reviewing\" && event.type === \"REJECT\") {\n    return { status: \"rejected\" };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_OK\") {\n    return { status: \"stored\", parcel: state.parcel };\n  }\n  if (state.status === \"storing\" && event.type === \"STORE_FAILED\") {\n    return { status: \"failed\", parcel: state.parcel, reason: event.reason };\n  }\n  if (state.status === \"failed\" && event.type === \"RETRY\") {\n    return { status: \"storing\", parcel: state.parcel };\n  }\n  return state;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0ad71c4d2aff42c10032a373a8ef663103d3ec497445c157c720d9c6b89f2438"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:7\n    throw new Error('Validated parcel id lost during arrival copy');\n    ^\n\nError: Validated parcel id lost during arrival copy\n    at Object.<anonymous> (/work/solution.test.js:7:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "a1a2f5631a349299a3b98308c43e04bea59c0fa2cd36c7f560f9931194617990",
+    "duration_ms": 2405,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

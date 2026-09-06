@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0234",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "3972a6551e815c51c07112987ca2dc15664be16497c59bcdceffa87b41b48efe",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { SegmentBuffer } from './solution';\nlet caught: unknown;\ntry { SegmentBuffer.fromSnapshot({ length: 1, cells: new Array<string>(1) }); }\ncatch (error) { caught = error; }\nif (!(caught instanceof TypeError)) throw new Error('Sparse snapshot accepted despite every-cell string validation requirement');\n",
+        "sha256": "cd1086a7e8467e260342bc4e3467e8a2cc58a4228393e30f3adfe56944f262e6"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e96e81aa55e9c3199efe04a0c2b5650ebadb9c3b3a9673d0a1ab4b479cd06302",
+      "text": "Implement a new mutable TypeScript buffer whose state can be safely imported and exported.\n\nExport:\n\n```typescript\nexport interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    constructor(length: number);\n    readonly length: number;\n    setRange(start: number, endExclusive: number, value: string): void;\n    get(index: number): string;\n    serialize(separator?: string): string;\n    snapshot(): SegmentSnapshot;\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer;\n}\n```\n\n`length` must be a non-negative safe integer. New cells contain the empty string. Indices and range endpoints must be safe integers. `get` accepts only `0 <= index < length`. `setRange` requires `0 <= start <= endExclusive <= length`, writes exactly the half-open range, and treats an empty range as a no-op. Invalid numeric values or bounds throw `RangeError`; a non-string cell value or separator throws `TypeError`.\n\n`serialize` joins all cells in index order, using `\"|\"` by default. For a zero-length buffer it returns the empty string. `snapshot` returns a new object and a new cell array. `fromSnapshot` validates the snapshot object, its length, exact cell count, and every string cell, then copies all data. Subsequent mutation of source or returned arrays must not affect the buffer.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e96e81aa55e9c3199efe04a0c2b5650ebadb9c3b3a9673d0a1ab4b479cd06302",
+      "text": "Implement a new mutable TypeScript buffer whose state can be safely imported and exported.\n\nExport:\n\n```typescript\nexport interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    constructor(length: number);\n    readonly length: number;\n    setRange(start: number, endExclusive: number, value: string): void;\n    get(index: number): string;\n    serialize(separator?: string): string;\n    snapshot(): SegmentSnapshot;\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer;\n}\n```\n\n`length` must be a non-negative safe integer. New cells contain the empty string. Indices and range endpoints must be safe integers. `get` accepts only `0 <= index < length`. `setRange` requires `0 <= start <= endExclusive <= length`, writes exactly the half-open range, and treats an empty range as a no-op. Invalid numeric values or bounds throw `RangeError`; a non-string cell value or separator throws `TypeError`.\n\n`serialize` joins all cells in index order, using `\"|\"` by default. For a zero-length buffer it returns the empty string. `snapshot` returns a new object and a new cell array. `fromSnapshot` validates the snapshot object, its length, exact cell count, and every string cell, then copies all data. Subsequent mutation of source or returned arrays must not affect the buffer.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0234",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    readonly length: number;\n    private readonly cells: string[];\n\n    constructor(length: number) {\n        assertLength(length);\n        this.length = length;\n        this.cells = Array.from({ length }, () => \"\");\n    }\n\n    setRange(start: number, endExclusive: number, value: string): void {\n        if (typeof value !== \"string\") {\n            throw new TypeError(\"value must be a string\");\n        }\n        this.assertEndpoint(start);\n        this.assertEndpoint(endExclusive);\n        if (start > endExclusive) {\n            throw new RangeError(\"start must not exceed endExclusive\");\n        }\n        for (let index = start; index <= endExclusive; index += 1) {\n            this.cells[index] = value;\n        }\n    }\n\n    get(index: number): string {\n        if (!Number.isSafeInteger(index) || index < 0 || index >= this.length) {\n            throw new RangeError(\"index is outside the buffer\");\n        }\n        return this.cells[index];\n    }\n\n    serialize(separator = \"|\"): string {\n        if (typeof separator !== \"string\") {\n            throw new TypeError(\"separator must be a string\");\n        }\n        return this.cells.join(separator);\n    }\n\n    snapshot(): SegmentSnapshot {\n        return { length: this.length, cells: [...this.cells] };\n    }\n\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer {\n        if (typeof snapshot !== \"object\" || snapshot === null) {\n            throw new TypeError(\"snapshot must be an object\");\n        }\n        assertLength(snapshot.length);\n        if (!Array.isArray(snapshot.cells)) {\n            throw new TypeError(\"cells must be an array\");\n        }\n        if (snapshot.cells.length !== snapshot.length) {\n            throw new RangeError(\"cells must match snapshot length\");\n        }\n        const result = new SegmentBuffer(snapshot.length);\n        snapshot.cells.forEach((cell, index) => {\n            if (typeof cell !== \"string\") {\n                throw new TypeError(\"every cell must be a string\");\n            }\n            result.cells[index] = cell;\n        });\n        return result;\n    }\n\n    private assertEndpoint(endpoint: number): void {\n        if (!Number.isSafeInteger(endpoint) || endpoint < 0 || endpoint > this.length) {\n            throw new RangeError(\"range endpoint is outside the buffer\");\n        }\n    }\n}\n\nfunction assertLength(length: number): void {\n    if (!Number.isSafeInteger(length) || length < 0) {\n        throw new RangeError(\"length must be a non-negative safe integer\");\n    }\n}\n",
+          "label": "setRange treats the exclusive endpoint as inclusive, writes one extra cell, and mutates an empty range.",
+          "sha256": "2c51d042b0a089414cd8c6a5728ab00e1bb85d731c7ea7ab428b4ab9e7982567"
+        }
+      ],
+      "reference": {
+        "code": "export interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    readonly length: number;\n    private readonly cells: string[];\n\n    constructor(length: number) {\n        assertLength(length);\n        this.length = length;\n        this.cells = Array.from({ length }, () => \"\");\n    }\n\n    setRange(start: number, endExclusive: number, value: string): void {\n        if (typeof value !== \"string\") {\n            throw new TypeError(\"value must be a string\");\n        }\n        this.assertEndpoint(start);\n        this.assertEndpoint(endExclusive);\n        if (start > endExclusive) {\n            throw new RangeError(\"start must not exceed endExclusive\");\n        }\n        for (let index = start; index < endExclusive; index += 1) {\n            this.cells[index] = value;\n        }\n    }\n\n    get(index: number): string {\n        if (!Number.isSafeInteger(index) || index < 0 || index >= this.length) {\n            throw new RangeError(\"index is outside the buffer\");\n        }\n        return this.cells[index];\n    }\n\n    serialize(separator = \"|\"): string {\n        if (typeof separator !== \"string\") {\n            throw new TypeError(\"separator must be a string\");\n        }\n        return this.cells.join(separator);\n    }\n\n    snapshot(): SegmentSnapshot {\n        return { length: this.length, cells: [...this.cells] };\n    }\n\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer {\n        if (typeof snapshot !== \"object\" || snapshot === null) {\n            throw new TypeError(\"snapshot must be an object\");\n        }\n        assertLength(snapshot.length);\n        if (!Array.isArray(snapshot.cells)) {\n            throw new TypeError(\"cells must be an array\");\n        }\n        if (snapshot.cells.length !== snapshot.length) {\n            throw new RangeError(\"cells must match snapshot length\");\n        }\n        const result = new SegmentBuffer(snapshot.length);\n        snapshot.cells.forEach((cell, index) => {\n            if (typeof cell !== \"string\") {\n                throw new TypeError(\"every cell must be a string\");\n            }\n            result.cells[index] = cell;\n        });\n        return result;\n    }\n\n    private assertEndpoint(endpoint: number): void {\n        if (!Number.isSafeInteger(endpoint) || endpoint < 0 || endpoint > this.length) {\n            throw new RangeError(\"range endpoint is outside the buffer\");\n        }\n    }\n}\n\nfunction assertLength(length: number): void {\n    if (!Number.isSafeInteger(length) || length < 0) {\n        throw new RangeError(\"length must be a non-negative safe integer\");\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bd57488c576f4266ce11dd78990cf1d4bb06462dcf14c6a5b893e07856cda871"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { SegmentBuffer } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n    if (!condition) throw new Error(message);\n}\n\nfunction throws(action: () => unknown, expected: typeof TypeError | typeof RangeError, message: string): void {\n    let error: unknown;\n    try { action(); } catch (caught) { error = caught; }\n    assert(error instanceof expected, message);\n}\n\nconst buffer = new SegmentBuffer(4);\nassert(buffer.length === 4, \"length is exposed\");\nassert(buffer.serialize() === \"|||\", \"new cells are empty and default separator is used\");\nbuffer.setRange(1, 3, \"x\");\nassert(buffer.get(0) === \"\" && buffer.get(1) === \"x\" && buffer.get(2) === \"x\" && buffer.get(3) === \"\", \"setRange writes exactly the half-open range\");\nassert(buffer.serialize(\",\") === \",x,x,\", \"custom separator is used\");\nbuffer.setRange(2, 2, \"ignored\");\nassert(buffer.serialize() === \"|x|x|\", \"empty range is a no-op\");\nbuffer.setRange(0, 4, \"z\");\nassert(buffer.serialize() === \"z|z|z|z\", \"full boundary range is accepted\");\n\nconst snap1 = buffer.snapshot();\nconst snap2 = buffer.snapshot();\nassert(snap1 !== snap2 && snap1.cells !== snap2.cells, \"snapshots contain fresh objects and arrays\");\nassert(snap1.length === 4 && snap1.cells.join(\",\") === \"z,z,z,z\", \"snapshot contains complete state\");\n(snap1.cells as string[])[0] = \"changed\";\nassert(buffer.get(0) === \"z\", \"snapshot array cannot mutate the buffer\");\n\nconst sourceCells = [\"a\", \"b\"];\nconst restored = SegmentBuffer.fromSnapshot({ length: 2, cells: sourceCells });\nsourceCells[0] = \"mutated\";\nassert(restored.serialize() === \"a|b\", \"fromSnapshot copies source cells\");\nconst restoredSnapshot = restored.snapshot();\n(restoredSnapshot.cells as string[])[1] = \"mutated\";\nassert(restored.get(1) === \"b\", \"returned snapshot cells are isolated\");\nrestored.setRange(0, 1, \"c\");\nassert(sourceCells[0] === \"mutated\" && sourceCells[1] === \"b\", \"buffer mutation does not affect source array\");\n\nconst empty = new SegmentBuffer(0);\nassert(empty.serialize() === \"\", \"zero-length buffer serializes to empty string\");\nempty.setRange(0, 0, \"valid\");\nassert(empty.snapshot().cells.length === 0, \"zero-length empty range is valid\");\n\nfor (const invalidLength of [-1, 1.2, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {\n    throws(() => new SegmentBuffer(invalidLength), RangeError, \"invalid length throws RangeError\");\n}\nfor (const invalidIndex of [-1, 4, 1.5, NaN, Infinity]) {\n    throws(() => buffer.get(invalidIndex), RangeError, \"invalid get index throws RangeError\");\n}\nconst invalidRanges: Array<[number, number]> = [[-1, 1], [0, 5], [3, 2], [0.5, 2], [0, NaN], [0, Infinity]];\nfor (const [start, end] of invalidRanges) {\n    throws(() => buffer.setRange(start, end, \"x\"), RangeError, \"invalid range throws RangeError\");\n}\nthrows(() => buffer.setRange(0, 1, 2 as unknown as string), TypeError, \"non-string cell value throws TypeError\");\nthrows(() => buffer.serialize(2 as unknown as string), TypeError, \"non-string separator throws TypeError\");\n\nthrows(() => SegmentBuffer.fromSnapshot(null as unknown as { length: number; cells: readonly string[] }), TypeError, \"null snapshot is rejected\");\nthrows(() => SegmentBuffer.fromSnapshot({ length: -1, cells: [] }), RangeError, \"invalid snapshot length is rejected\");\nthrows(() => SegmentBuffer.fromSnapshot({ length: 2, cells: [\"a\"] }), RangeError, \"snapshot cell count must match length\");\nthrows(() => SegmentBuffer.fromSnapshot({ length: 1, cells: [7 as unknown as string] }), TypeError, \"snapshot cells must be strings\");\nthrows(() => SegmentBuffer.fromSnapshot({ length: 1, cells: null as unknown as readonly string[] }), TypeError, \"snapshot cells must be an array\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "9e8e6ec80214939729a8e61aec0e3ef8f2777b179048a78f38cd316e504c460a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e96e81aa55e9c3199efe04a0c2b5650ebadb9c3b3a9673d0a1ab4b479cd06302",
+      "text": "Implement a new mutable TypeScript buffer whose state can be safely imported and exported.\n\nExport:\n\n```typescript\nexport interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    constructor(length: number);\n    readonly length: number;\n    setRange(start: number, endExclusive: number, value: string): void;\n    get(index: number): string;\n    serialize(separator?: string): string;\n    snapshot(): SegmentSnapshot;\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer;\n}\n```\n\n`length` must be a non-negative safe integer. New cells contain the empty string. Indices and range endpoints must be safe integers. `get` accepts only `0 <= index < length`. `setRange` requires `0 <= start <= endExclusive <= length`, writes exactly the half-open range, and treats an empty range as a no-op. Invalid numeric values or bounds throw `RangeError`; a non-string cell value or separator throws `TypeError`.\n\n`serialize` joins all cells in index order, using `\"|\"` by default. For a zero-length buffer it returns the empty string. `snapshot` returns a new object and a new cell array. `fromSnapshot` validates the snapshot object, its length, exact cell count, and every string cell, then copies all data. Subsequent mutation of source or returned arrays must not affect the buffer.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e96e81aa55e9c3199efe04a0c2b5650ebadb9c3b3a9673d0a1ab4b479cd06302",
+      "text": "Implement a new mutable TypeScript buffer whose state can be safely imported and exported.\n\nExport:\n\n```typescript\nexport interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    constructor(length: number);\n    readonly length: number;\n    setRange(start: number, endExclusive: number, value: string): void;\n    get(index: number): string;\n    serialize(separator?: string): string;\n    snapshot(): SegmentSnapshot;\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer;\n}\n```\n\n`length` must be a non-negative safe integer. New cells contain the empty string. Indices and range endpoints must be safe integers. `get` accepts only `0 <= index < length`. `setRange` requires `0 <= start <= endExclusive <= length`, writes exactly the half-open range, and treats an empty range as a no-op. Invalid numeric values or bounds throw `RangeError`; a non-string cell value or separator throws `TypeError`.\n\n`serialize` joins all cells in index order, using `\"|\"` by default. For a zero-length buffer it returns the empty string. `snapshot` returns a new object and a new cell array. `fromSnapshot` validates the snapshot object, its length, exact cell count, and every string cell, then copies all data. Subsequent mutation of source or returned arrays must not affect the buffer.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0234",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    readonly length: number;\n    private readonly cells: string[];\n\n    constructor(length: number) {\n        assertLength(length);\n        this.length = length;\n        this.cells = Array.from({ length }, () => \"\");\n    }\n\n    setRange(start: number, endExclusive: number, value: string): void {\n        if (typeof value !== \"string\") {\n            throw new TypeError(\"value must be a string\");\n        }\n        this.assertEndpoint(start);\n        this.assertEndpoint(endExclusive);\n        if (start > endExclusive) {\n            throw new RangeError(\"start must not exceed endExclusive\");\n        }\n        for (let index = start; index <= endExclusive; index += 1) {\n            this.cells[index] = value;\n        }\n    }\n\n    get(index: number): string {\n        if (!Number.isSafeInteger(index) || index < 0 || index >= this.length) {\n            throw new RangeError(\"index is outside the buffer\");\n        }\n        return this.cells[index];\n    }\n\n    serialize(separator = \"|\"): string {\n        if (typeof separator !== \"string\") {\n            throw new TypeError(\"separator must be a string\");\n        }\n        return this.cells.join(separator);\n    }\n\n    snapshot(): SegmentSnapshot {\n        return { length: this.length, cells: [...this.cells] };\n    }\n\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer {\n        if (typeof snapshot !== \"object\" || snapshot === null) {\n            throw new TypeError(\"snapshot must be an object\");\n        }\n        assertLength(snapshot.length);\n        if (!Array.isArray(snapshot.cells)) {\n            throw new TypeError(\"cells must be an array\");\n        }\n        if (snapshot.cells.length !== snapshot.length) {\n            throw new RangeError(\"cells must match snapshot length\");\n        }\n        const result = new SegmentBuffer(snapshot.length);\n        snapshot.cells.forEach((cell, index) => {\n            if (typeof cell !== \"string\") {\n                throw new TypeError(\"every cell must be a string\");\n            }\n            result.cells[index] = cell;\n        });\n        return result;\n    }\n\n    private assertEndpoint(endpoint: number): void {\n        if (!Number.isSafeInteger(endpoint) || endpoint < 0 || endpoint > this.length) {\n            throw new RangeError(\"range endpoint is outside the buffer\");\n        }\n    }\n}\n\nfunction assertLength(length: number): void {\n    if (!Number.isSafeInteger(length) || length < 0) {\n        throw new RangeError(\"length must be a non-negative safe integer\");\n    }\n}\n",
+          "label": "setRange treats the exclusive endpoint as inclusive, writes one extra cell, and mutates an empty range.",
+          "sha256": "2c51d042b0a089414cd8c6a5728ab00e1bb85d731c7ea7ab428b4ab9e7982567"
+        }
+      ],
+      "reference": {
+        "code": "export interface SegmentSnapshot {\n    length: number;\n    cells: readonly string[];\n}\n\nexport class SegmentBuffer {\n    readonly length: number;\n    private readonly cells: string[];\n\n    constructor(length: number) {\n        assertLength(length);\n        this.length = length;\n        this.cells = Array.from({ length }, () => \"\");\n    }\n\n    setRange(start: number, endExclusive: number, value: string): void {\n        if (typeof value !== \"string\") {\n            throw new TypeError(\"value must be a string\");\n        }\n        this.assertEndpoint(start);\n        this.assertEndpoint(endExclusive);\n        if (start > endExclusive) {\n            throw new RangeError(\"start must not exceed endExclusive\");\n        }\n        for (let index = start; index < endExclusive; index += 1) {\n            this.cells[index] = value;\n        }\n    }\n\n    get(index: number): string {\n        if (!Number.isSafeInteger(index) || index < 0 || index >= this.length) {\n            throw new RangeError(\"index is outside the buffer\");\n        }\n        return this.cells[index];\n    }\n\n    serialize(separator = \"|\"): string {\n        if (typeof separator !== \"string\") {\n            throw new TypeError(\"separator must be a string\");\n        }\n        return this.cells.join(separator);\n    }\n\n    snapshot(): SegmentSnapshot {\n        return { length: this.length, cells: [...this.cells] };\n    }\n\n    static fromSnapshot(snapshot: SegmentSnapshot): SegmentBuffer {\n        if (typeof snapshot !== \"object\" || snapshot === null) {\n            throw new TypeError(\"snapshot must be an object\");\n        }\n        assertLength(snapshot.length);\n        if (!Array.isArray(snapshot.cells)) {\n            throw new TypeError(\"cells must be an array\");\n        }\n        if (snapshot.cells.length !== snapshot.length) {\n            throw new RangeError(\"cells must match snapshot length\");\n        }\n        const result = new SegmentBuffer(snapshot.length);\n        snapshot.cells.forEach((cell, index) => {\n            if (typeof cell !== \"string\") {\n                throw new TypeError(\"every cell must be a string\");\n            }\n            result.cells[index] = cell;\n        });\n        return result;\n    }\n\n    private assertEndpoint(endpoint: number): void {\n        if (!Number.isSafeInteger(endpoint) || endpoint < 0 || endpoint > this.length) {\n            throw new RangeError(\"range endpoint is outside the buffer\");\n        }\n    }\n}\n\nfunction assertLength(length: number): void {\n    if (!Number.isSafeInteger(length) || length < 0) {\n        throw new RangeError(\"length must be a non-negative safe integer\");\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bd57488c576f4266ce11dd78990cf1d4bb06462dcf14c6a5b893e07856cda871"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Sparse snapshot accepted despite every-cell string validation requirement');\n    ^\n\nError: Sparse snapshot accepted despite every-cell string validation requirement\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "290f9b17200bddbe7e22727fc820fc50bcf1d8d71e80bbb2f4082b4115f9728f",
+    "duration_ms": 2231,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

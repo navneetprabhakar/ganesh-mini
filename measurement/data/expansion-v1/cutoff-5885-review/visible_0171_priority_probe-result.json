@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-repair-0171",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "2c7edc0a9ea0e8119d6b22239ff9ab5b84e73c620ecb33f68606f0bc7687ff9c",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { chooseVisible } from './solution';\nconst result = chooseVisible([\n  { id: 'a', width: 1, priority: 3, group: 'g' },\n  { id: 'b', width: 1, priority: 8, group: 'g' },\n  { id: 'high', width: 2, priority: 10 },\n], 2);\nif (result.visible.join(',') !== 'high') throw new Error('Group summed priorities instead of maximum: ' + result.visible.join(','));\n",
+        "sha256": "3374e3ea223a277813a320fcb68427188375549c7cd5a35649912239101cfe0e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a0e82a7069faf262b74e7bcced46ce44e4b9f83b463fcbe1ba7d0e3c829cbb80",
+      "text": "Repair the complete source below and return one corrected source file. `chooseVisible` treats items sharing a non-null `group` as one atomic candidate; ungrouped items are separate candidates. Reject duplicate item IDs, non-finite or negative widths, and non-finite priorities with `RangeError`. Reject a non-finite or negative capacity likewise. Candidate width is the sum of its items, priority is the maximum item priority, and first position is its earliest input index. Consider candidates by descending priority, then ascending first position. Select a candidate if its entire width fits in remaining capacity; otherwise skip it and continue. Return selected IDs in original input order and hidden IDs likewise. Empty input is valid. Do not mutate or alias inputs.\n\nKnown-bad source:\n\nexport interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n  const seen = new Set<string>();\n  const groups = new Map<string, { indices: number[]; width: number; priority: number; first: number }>();\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n    const key = item.group == null ? `#${index}` : `g:${item.group}`;\n    const group = groups.get(key);\n    if (group) {\n      group.indices.push(index);\n      group.width += item.width;\n      group.priority = Math.max(group.priority, item.priority);\n    } else {\n      groups.set(key, { indices: [index], width: item.width, priority: item.priority, first: index });\n    }\n  });\n  const candidates = [...groups.values()].sort((a, b) => a.priority - b.priority || a.first - b.first);\n  const selected = new Set<number>();\n  let remaining = capacity;\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      candidate.indices.forEach(index => selected.add(index));\n      remaining -= candidate.width;\n    }\n  }\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => (selected.has(index) ? visible : hidden).push(item.id));\n  return { visible, hidden };\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a0e82a7069faf262b74e7bcced46ce44e4b9f83b463fcbe1ba7d0e3c829cbb80",
+      "text": "Repair the complete source below and return one corrected source file. `chooseVisible` treats items sharing a non-null `group` as one atomic candidate; ungrouped items are separate candidates. Reject duplicate item IDs, non-finite or negative widths, and non-finite priorities with `RangeError`. Reject a non-finite or negative capacity likewise. Candidate width is the sum of its items, priority is the maximum item priority, and first position is its earliest input index. Consider candidates by descending priority, then ascending first position. Select a candidate if its entire width fits in remaining capacity; otherwise skip it and continue. Return selected IDs in original input order and hidden IDs likewise. Empty input is valid. Do not mutate or alias inputs.\n\nKnown-bad source:\n\nexport interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n  const seen = new Set<string>();\n  const groups = new Map<string, { indices: number[]; width: number; priority: number; first: number }>();\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n    const key = item.group == null ? `#${index}` : `g:${item.group}`;\n    const group = groups.get(key);\n    if (group) {\n      group.indices.push(index);\n      group.width += item.width;\n      group.priority = Math.max(group.priority, item.priority);\n    } else {\n      groups.set(key, { indices: [index], width: item.width, priority: item.priority, first: index });\n    }\n  });\n  const candidates = [...groups.values()].sort((a, b) => a.priority - b.priority || a.first - b.first);\n  const selected = new Set<number>();\n  let remaining = capacity;\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      candidate.indices.forEach(index => selected.add(index));\n      remaining -= candidate.width;\n    }\n  }\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => (selected.has(index) ? visible : hidden).push(item.id));\n  return { visible, hidden };\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-repair-0171",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\ninterface Candidate {\n  indices: number[];\n  width: number;\n  priority: number;\n  first: number;\n}\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n\n  const seen = new Set<string>();\n  const groups = new Map<string, Candidate>();\n\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n\n    const key = item.group == null ? `item:${index}` : `group:${item.group}`;\n    const candidate = groups.get(key);\n    if (candidate) {\n      candidate.indices.push(index);\n      candidate.width += item.width;\n      candidate.priority += item.priority;\n    } else {\n      groups.set(key, {\n        indices: [index],\n        width: item.width,\n        priority: item.priority,\n        first: index,\n      });\n    }\n  });\n\n  const candidates = [...groups.values()].sort(\n    (left, right) => left.priority - right.priority || left.first - right.first,\n  );\n  const selected = new Set<number>();\n  let remaining = capacity;\n\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      for (const index of candidate.indices) selected.add(index);\n      remaining -= candidate.width;\n    }\n  }\n\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => {\n    (selected.has(index) ? visible : hidden).push(item.id);\n  });\n  return { visible, hidden };\n}\n",
+          "label": "Candidates are considered in ascending priority, causing low-priority content to consume capacity first.",
+          "sha256": "06e000e93411f1f1761b08b19f541f09dfdbb8c5671bdecde0373b52a7ec4952"
+        }
+      ],
+      "reference": {
+        "code": "export interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\ninterface Candidate {\n  indices: number[];\n  width: number;\n  priority: number;\n  first: number;\n}\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n\n  const seen = new Set<string>();\n  const groups = new Map<string, Candidate>();\n\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n\n    const key = item.group == null ? `item:${index}` : `group:${item.group}`;\n    const candidate = groups.get(key);\n    if (candidate) {\n      candidate.indices.push(index);\n      candidate.width += item.width;\n      candidate.priority += item.priority;\n    } else {\n      groups.set(key, {\n        indices: [index],\n        width: item.width,\n        priority: item.priority,\n        first: index,\n      });\n    }\n  });\n\n  const candidates = [...groups.values()].sort(\n    (left, right) => right.priority - left.priority || left.first - right.first,\n  );\n  const selected = new Set<number>();\n  let remaining = capacity;\n\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      for (const index of candidate.indices) selected.add(index);\n      remaining -= candidate.width;\n    }\n  }\n\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => {\n    (selected.has(index) ? visible : hidden).push(item.id);\n  });\n  return { visible, hidden };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5ba813cebfc45eca32e3f41d7cf7aec0d2d3fd892d23356c8306dcfb8af491cb"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { chooseVisible } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction expectRange(action: () => unknown): void {\n  try { action(); } catch (error) {\n    assert(error instanceof RangeError, 'invalid input throws RangeError');\n    return;\n  }\n  throw new Error('expected RangeError');\n}\n\nconst items = [\n  { id: 'low', width: 2, priority: 1 },\n  { id: 'g1', width: 2, priority: 3, group: 'g' },\n  { id: 'high', width: 3, priority: 10 },\n  { id: 'g2', width: 2, priority: 8, group: 'g' },\n  { id: 'later', width: 1, priority: 2 },\n];\nconst result = chooseVisible(items, 5);\nequal(result.visible.join(','), 'g1,g2,later', 'group priority is maximum and atomic selection skips nonfitting candidates');\nequal(result.hidden.join(','), 'low,high', 'hidden IDs retain original order');\n\nconst tie = chooseVisible([\n  { id: 'first', width: 2, priority: 5 },\n  { id: 'second', width: 2, priority: 5 },\n], 2);\nequal(tie.visible.join(','), 'first', 'equal priority uses earliest position');\nequal(tie.hidden.join(','), 'second', 'later tie is hidden');\n\nconst atomic = chooseVisible([\n  { id: 'a', width: 2, priority: 9, group: 'same' },\n  { id: 'b', width: 2, priority: 1, group: 'same' },\n  { id: 'c', width: 3, priority: 2 },\n], 3);\nequal(atomic.visible.join(','), 'c', 'oversized group is skipped as a whole and consideration continues');\nequal(atomic.hidden.join(','), 'a,b', 'whole group hidden');\n\nconst zero = chooseVisible([\n  { id: 'zero', width: 0, priority: -10 },\n  { id: 'one', width: 1, priority: 0 },\n], 0);\nequal(zero.visible.join(','), 'zero', 'zero-width candidate fits zero capacity');\nequal(zero.hidden.join(','), 'one', 'positive-width candidate does not fit zero capacity');\nequal(JSON.stringify(chooseVisible([], 0)), JSON.stringify({ visible: [], hidden: [] }), 'empty input valid');\n\nexpectRange(() => chooseVisible([], -1));\nexpectRange(() => chooseVisible([], Number.NaN));\nexpectRange(() => chooseVisible([], Infinity));\nexpectRange(() => chooseVisible([{ id: 'x', width: -1, priority: 1 }], 10));\nexpectRange(() => chooseVisible([{ id: 'x', width: Number.NaN, priority: 1 }], 10));\nexpectRange(() => chooseVisible([{ id: 'x', width: 1, priority: Infinity }], 10));\nexpectRange(() => chooseVisible([\n  { id: 'x', width: 1, priority: 1 },\n  { id: 'x', width: 1, priority: 2 },\n], 10));\n\nconst mutable = [{ id: 'x', width: 1, priority: 1, group: null }];\nconst copied = chooseVisible(mutable, 1);\nassert(copied.visible !== (mutable as any), 'output array does not alias input');\ncopied.visible[0] = 'changed';\nequal(mutable[0].id, 'x', 'output mutation does not affect input');\nequal(mutable[0].width, 1, 'input record is not mutated');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "597dc36e788cd64e38a28c76b244e4d5f3c281ba224e5debc9374a1bde182644"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a0e82a7069faf262b74e7bcced46ce44e4b9f83b463fcbe1ba7d0e3c829cbb80",
+      "text": "Repair the complete source below and return one corrected source file. `chooseVisible` treats items sharing a non-null `group` as one atomic candidate; ungrouped items are separate candidates. Reject duplicate item IDs, non-finite or negative widths, and non-finite priorities with `RangeError`. Reject a non-finite or negative capacity likewise. Candidate width is the sum of its items, priority is the maximum item priority, and first position is its earliest input index. Consider candidates by descending priority, then ascending first position. Select a candidate if its entire width fits in remaining capacity; otherwise skip it and continue. Return selected IDs in original input order and hidden IDs likewise. Empty input is valid. Do not mutate or alias inputs.\n\nKnown-bad source:\n\nexport interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n  const seen = new Set<string>();\n  const groups = new Map<string, { indices: number[]; width: number; priority: number; first: number }>();\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n    const key = item.group == null ? `#${index}` : `g:${item.group}`;\n    const group = groups.get(key);\n    if (group) {\n      group.indices.push(index);\n      group.width += item.width;\n      group.priority = Math.max(group.priority, item.priority);\n    } else {\n      groups.set(key, { indices: [index], width: item.width, priority: item.priority, first: index });\n    }\n  });\n  const candidates = [...groups.values()].sort((a, b) => a.priority - b.priority || a.first - b.first);\n  const selected = new Set<number>();\n  let remaining = capacity;\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      candidate.indices.forEach(index => selected.add(index));\n      remaining -= candidate.width;\n    }\n  }\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => (selected.has(index) ? visible : hidden).push(item.id));\n  return { visible, hidden };\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a0e82a7069faf262b74e7bcced46ce44e4b9f83b463fcbe1ba7d0e3c829cbb80",
+      "text": "Repair the complete source below and return one corrected source file. `chooseVisible` treats items sharing a non-null `group` as one atomic candidate; ungrouped items are separate candidates. Reject duplicate item IDs, non-finite or negative widths, and non-finite priorities with `RangeError`. Reject a non-finite or negative capacity likewise. Candidate width is the sum of its items, priority is the maximum item priority, and first position is its earliest input index. Consider candidates by descending priority, then ascending first position. Select a candidate if its entire width fits in remaining capacity; otherwise skip it and continue. Return selected IDs in original input order and hidden IDs likewise. Empty input is valid. Do not mutate or alias inputs.\n\nKnown-bad source:\n\nexport interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n  const seen = new Set<string>();\n  const groups = new Map<string, { indices: number[]; width: number; priority: number; first: number }>();\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n    const key = item.group == null ? `#${index}` : `g:${item.group}`;\n    const group = groups.get(key);\n    if (group) {\n      group.indices.push(index);\n      group.width += item.width;\n      group.priority = Math.max(group.priority, item.priority);\n    } else {\n      groups.set(key, { indices: [index], width: item.width, priority: item.priority, first: index });\n    }\n  });\n  const candidates = [...groups.values()].sort((a, b) => a.priority - b.priority || a.first - b.first);\n  const selected = new Set<number>();\n  let remaining = capacity;\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      candidate.indices.forEach(index => selected.add(index));\n      remaining -= candidate.width;\n    }\n  }\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => (selected.has(index) ? visible : hidden).push(item.id));\n  return { visible, hidden };\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-repair-0171",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\ninterface Candidate {\n  indices: number[];\n  width: number;\n  priority: number;\n  first: number;\n}\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n\n  const seen = new Set<string>();\n  const groups = new Map<string, Candidate>();\n\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n\n    const key = item.group == null ? `item:${index}` : `group:${item.group}`;\n    const candidate = groups.get(key);\n    if (candidate) {\n      candidate.indices.push(index);\n      candidate.width += item.width;\n      candidate.priority += item.priority;\n    } else {\n      groups.set(key, {\n        indices: [index],\n        width: item.width,\n        priority: item.priority,\n        first: index,\n      });\n    }\n  });\n\n  const candidates = [...groups.values()].sort(\n    (left, right) => left.priority - right.priority || left.first - right.first,\n  );\n  const selected = new Set<number>();\n  let remaining = capacity;\n\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      for (const index of candidate.indices) selected.add(index);\n      remaining -= candidate.width;\n    }\n  }\n\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => {\n    (selected.has(index) ? visible : hidden).push(item.id);\n  });\n  return { visible, hidden };\n}\n",
+          "label": "Candidates are considered in ascending priority, causing low-priority content to consume capacity first.",
+          "sha256": "06e000e93411f1f1761b08b19f541f09dfdbb8c5671bdecde0373b52a7ec4952"
+        }
+      ],
+      "reference": {
+        "code": "export interface OverflowItem {\n  readonly id: string;\n  readonly width: number;\n  readonly priority: number;\n  readonly group?: string | null;\n}\nexport interface VisibilityResult { visible: string[]; hidden: string[] }\n\ninterface Candidate {\n  indices: number[];\n  width: number;\n  priority: number;\n  first: number;\n}\n\nexport function chooseVisible(items: readonly OverflowItem[], capacity: number): VisibilityResult {\n  if (!Number.isFinite(capacity) || capacity < 0) throw new RangeError('invalid capacity');\n\n  const seen = new Set<string>();\n  const groups = new Map<string, Candidate>();\n\n  items.forEach((item, index) => {\n    if (seen.has(item.id)) throw new RangeError('duplicate id');\n    seen.add(item.id);\n    if (!Number.isFinite(item.width) || item.width < 0 || !Number.isFinite(item.priority)) {\n      throw new RangeError('invalid item');\n    }\n\n    const key = item.group == null ? `item:${index}` : `group:${item.group}`;\n    const candidate = groups.get(key);\n    if (candidate) {\n      candidate.indices.push(index);\n      candidate.width += item.width;\n      candidate.priority += item.priority;\n    } else {\n      groups.set(key, {\n        indices: [index],\n        width: item.width,\n        priority: item.priority,\n        first: index,\n      });\n    }\n  });\n\n  const candidates = [...groups.values()].sort(\n    (left, right) => right.priority - left.priority || left.first - right.first,\n  );\n  const selected = new Set<number>();\n  let remaining = capacity;\n\n  for (const candidate of candidates) {\n    if (candidate.width <= remaining) {\n      for (const index of candidate.indices) selected.add(index);\n      remaining -= candidate.width;\n    }\n  }\n\n  const visible: string[] = [];\n  const hidden: string[] = [];\n  items.forEach((item, index) => {\n    (selected.has(index) ? visible : hidden).push(item.id);\n  });\n  return { visible, hidden };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5ba813cebfc45eca32e3f41d7cf7aec0d2d3fd892d23356c8306dcfb8af491cb"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:10\n    throw new Error('Group summed priorities instead of maximum: ' + result.visible.join(','));\n    ^\n\nError: Group summed priorities instead of maximum: a,b\n    at Object.<anonymous> (/work/solution.test.js:10:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "e0db80c1b7d4ecd27cd42cad4ba818da94d8b06996d50d186fc6754ae8ee6802",
+    "duration_ms": 2295,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0130",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f9db52bb060137bd7f596b26aa9c5e99bb9bbc38462a91a200ca7b0c93ac56e4",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{match_segments, Segment};\n\n#[test]\nfn qualifying_match_has_an_unrepresentable_required_score() {\n    let probe = Segment { first: 0, second: 1, squared_length: 0,\n        low_angle: 0, high_angle: 0, orientation: 0, reversed: false };\n    let gallery = Segment { squared_length: u64::MAX, low_angle: 1, ..probe };\n    // Required sum is u64::MAX + 1. No clamping/wrapping policy is specified.\n    // Retaining the qualifying match is required regardless of that design gap.\n    assert_eq!(match_segments(&[probe], &[gallery], u64::MAX, 1, false).len(), 1);\n}\n",
+        "sha256": "988e49e73f406d39d6d6c15844c597bedc62f8653acd37af1ff9f7a03d1b19f8"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "527a1b391b9e79037c0b21b90e53d39597225254184e0fb487a4ffdf749958e5",
+      "text": "Implement deterministic segment correspondence in `solution.rs` using only the standard library.\n\nExpose:\n\n```rust\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence>;\n```\n\nAngles use degrees and must be compared by their shortest circular distance modulo 360. A negative `angle_tolerance` permits no matches. Lengths match when their absolute difference is at most `length_tolerance`. Both low and high angles must match. In strict mode, omit only the final probe segment; an empty probe remains empty.\n\nFor a match, compute `orientation_delta` as gallery orientation minus probe orientation. Negate the gallery orientation first when `reversed` differs between the two segments. Normalize the delta to `[-180, 179]`. The score is `abs(length difference) + circular(low-angle difference) + circular(high-angle difference)`. Preserve probe-major then gallery-major ordering, retain all qualifying matches, and do not mutate either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "527a1b391b9e79037c0b21b90e53d39597225254184e0fb487a4ffdf749958e5",
+      "text": "Implement deterministic segment correspondence in `solution.rs` using only the standard library.\n\nExpose:\n\n```rust\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence>;\n```\n\nAngles use degrees and must be compared by their shortest circular distance modulo 360. A negative `angle_tolerance` permits no matches. Lengths match when their absolute difference is at most `length_tolerance`. Both low and high angles must match. In strict mode, omit only the final probe segment; an empty probe remains empty.\n\nFor a match, compute `orientation_delta` as gallery orientation minus probe orientation. Negate the gallery orientation first when `reversed` differs between the two segments. Normalize the delta to `[-180, 179]`. The score is `abs(length difference) + circular(low-angle difference) + circular(high-angle difference)`. Preserve probe-major then gallery-major ordering, retain all qualifying matches, and do not mutate either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0130",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\nfn normalize(angle: i64) -> i32 {\n    ((angle + 180).rem_euclid(360) - 180) as i32\n}\n\nfn circular_distance(a: i32, b: i32) -> u64 {\n    u64::from(normalize(i64::from(a) - i64::from(b)).unsigned_abs())\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence> {\n    if angle_tolerance < 0 {\n        return Vec::new();\n    }\n    let count = if strict { probe.len().saturating_sub(1) } else { probe.len() };\n    let mut result = Vec::new();\n    for (probe_index, p) in probe[..count].iter().enumerate() {\n        for (gallery_index, g) in gallery.iter().enumerate() {\n            let length_delta = p.squared_length.abs_diff(g.squared_length);\n            let low_delta = circular_distance(p.low_angle, g.low_angle);\n            let high_delta = circular_distance(p.high_angle, g.high_angle);\n            if length_delta <= length_tolerance\n                && low_delta <= angle_tolerance as u64\n                && high_delta <= angle_tolerance as u64\n            {\n                let gallery_orientation = if p.reversed == g.reversed {\n                    i64::from(g.orientation)\n                } else {\n                    -i64::from(g.orientation)\n                };\n                result.push(Correspondence {\n                    probe_index,\n                    gallery_index,\n                    orientation_delta: normalize(gallery_orientation + i64::from(p.orientation)),\n                    score: length_delta + low_delta + high_delta,\n                });\n            }\n        }\n    }\n    result\n}\n",
+          "label": "Adds the probe orientation when computing the orientation delta instead of subtracting it.",
+          "sha256": "c635e852121eb8f2923936cb61ce48d26c1c37ba24d502511192570aaf52a335"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\nfn normalize(angle: i64) -> i32 {\n    ((angle + 180).rem_euclid(360) - 180) as i32\n}\n\nfn circular_distance(a: i32, b: i32) -> u64 {\n    u64::from(normalize(i64::from(a) - i64::from(b)).unsigned_abs())\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence> {\n    if angle_tolerance < 0 {\n        return Vec::new();\n    }\n    let count = if strict { probe.len().saturating_sub(1) } else { probe.len() };\n    let mut result = Vec::new();\n    for (probe_index, p) in probe[..count].iter().enumerate() {\n        for (gallery_index, g) in gallery.iter().enumerate() {\n            let length_delta = p.squared_length.abs_diff(g.squared_length);\n            let low_delta = circular_distance(p.low_angle, g.low_angle);\n            let high_delta = circular_distance(p.high_angle, g.high_angle);\n            if length_delta <= length_tolerance\n                && low_delta <= angle_tolerance as u64\n                && high_delta <= angle_tolerance as u64\n            {\n                let gallery_orientation = if p.reversed == g.reversed {\n                    i64::from(g.orientation)\n                } else {\n                    -i64::from(g.orientation)\n                };\n                result.push(Correspondence {\n                    probe_index,\n                    gallery_index,\n                    orientation_delta: normalize(gallery_orientation - i64::from(p.orientation)),\n                    score: length_delta + low_delta + high_delta,\n                });\n            }\n        }\n    }\n    result\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "597294c983f8cb9b1e404820ce3d7af5739d05b5af863b26050f62d5e4cc7970"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{match_segments, Correspondence, Segment};\n\nfn segment(length: u64, low: i32, high: i32, orientation: i32, reversed: bool) -> Segment {\n    Segment {\n        first: 11,\n        second: 22,\n        squared_length: length,\n        low_angle: low,\n        high_angle: high,\n        orientation,\n        reversed,\n    }\n}\n\n#[test]\nfn empty_inputs_and_negative_angle_tolerance_produce_no_matches() {\n    let s = segment(10, 0, 0, 0, false);\n    assert!(match_segments(&[], &[s], 0, 0, false).is_empty());\n    assert!(match_segments(&[s], &[], 0, 0, false).is_empty());\n    assert!(match_segments(&[s], &[s], u64::MAX, -1, false).is_empty());\n}\n\n#[test]\nfn matching_uses_inclusive_length_and_angle_tolerances() {\n    let probe = [segment(100, 350, 10, 0, false)];\n    let gallery = [\n        segment(105, 5, 355, 0, false),\n        segment(106, 5, 355, 0, false),\n        segment(105, 6, 355, 0, false),\n        segment(105, 5, 354, 0, false),\n    ];\n    let result = match_segments(&probe, &gallery, 5, 15, false);\n    assert_eq!(\n        result,\n        vec![Correspondence {\n            probe_index: 0,\n            gallery_index: 0,\n            orientation_delta: 0,\n            score: 35,\n        }]\n    );\n}\n\n#[test]\nfn angles_are_compared_modulo_360_with_negative_values() {\n    let probe = [segment(7, -10, 721, 0, false)];\n    let gallery = [segment(7, 350, 1, 0, false)];\n    assert_eq!(\n        match_segments(&probe, &gallery, 0, 0, false),\n        vec![Correspondence {\n            probe_index: 0,\n            gallery_index: 0,\n            orientation_delta: 0,\n            score: 0,\n        }]\n    );\n}\n\n#[test]\nfn orientation_delta_honors_reversal_and_normalization() {\n    let probe = [segment(1, 0, 0, 30, false)];\n    let gallery = [\n        segment(1, 0, 0, 100, false),\n        segment(1, 0, 0, 100, true),\n        segment(1, 0, 0, 210, false),\n        segment(1, 0, 0, -151, false),\n    ];\n    let result = match_segments(&probe, &gallery, 0, 0, false);\n    assert_eq!(result[0].orientation_delta, 70);\n    assert_eq!(result[1].orientation_delta, -130);\n    assert_eq!(result[2].orientation_delta, -180);\n    assert_eq!(result[3].orientation_delta, 179);\n}\n\n#[test]\nfn score_is_the_sum_of_all_three_distances() {\n    let probe = [segment(50, 10, 340, 5, false)];\n    let gallery = [segment(43, 350, 5, 7, false)];\n    assert_eq!(\n        match_segments(&probe, &gallery, 7, 25, false),\n        vec![Correspondence {\n            probe_index: 0,\n            gallery_index: 0,\n            orientation_delta: 2,\n            score: 52,\n        }]\n    );\n}\n\n#[test]\nfn all_matches_are_retained_in_probe_major_gallery_major_order() {\n    let probe = [\n        segment(10, 0, 0, 0, false),\n        segment(20, 0, 0, 0, false),\n    ];\n    let gallery = [\n        segment(10, 0, 0, 0, false),\n        segment(20, 0, 0, 0, false),\n    ];\n    let indices: Vec<(usize, usize)> = match_segments(&probe, &gallery, 10, 0, false)\n        .into_iter()\n        .map(|c| (c.probe_index, c.gallery_index))\n        .collect();\n    assert_eq!(indices, vec![(0, 0), (0, 1), (1, 0), (1, 1)]);\n}\n\n#[test]\nfn strict_mode_omits_only_the_last_probe_segment() {\n    let probe = [\n        segment(1, 0, 0, 0, false),\n        segment(1, 0, 0, 0, false),\n        segment(1, 0, 0, 0, false),\n    ];\n    let gallery = [segment(1, 0, 0, 0, false)];\n    let result = match_segments(&probe, &gallery, 0, 0, true);\n    assert_eq!(result.len(), 2);\n    assert_eq!(result[0].probe_index, 0);\n    assert_eq!(result[1].probe_index, 1);\n\n    assert!(match_segments(&probe[..1], &gallery, 0, 0, true).is_empty());\n    assert!(match_segments(&[], &gallery, 0, 0, true).is_empty());\n}\n\n#[test]\nfn inputs_are_not_mutated_and_results_are_deterministic() {\n    let probe = [segment(12, 20, 30, 40, false)];\n    let gallery = [segment(13, 21, 29, 42, true)];\n    let probe_before = probe;\n    let gallery_before = gallery;\n    let first = match_segments(&probe, &gallery, 2, 2, false);\n    let second = match_segments(&probe, &gallery, 2, 2, false);\n    assert_eq!(first, second);\n    assert_eq!(probe, probe_before);\n    assert_eq!(gallery, gallery_before);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "d1b2126fc58fad42bad50531489a7fc6a88312091b94d87445dc7e8611b4cf27"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "527a1b391b9e79037c0b21b90e53d39597225254184e0fb487a4ffdf749958e5",
+      "text": "Implement deterministic segment correspondence in `solution.rs` using only the standard library.\n\nExpose:\n\n```rust\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence>;\n```\n\nAngles use degrees and must be compared by their shortest circular distance modulo 360. A negative `angle_tolerance` permits no matches. Lengths match when their absolute difference is at most `length_tolerance`. Both low and high angles must match. In strict mode, omit only the final probe segment; an empty probe remains empty.\n\nFor a match, compute `orientation_delta` as gallery orientation minus probe orientation. Negate the gallery orientation first when `reversed` differs between the two segments. Normalize the delta to `[-180, 179]`. The score is `abs(length difference) + circular(low-angle difference) + circular(high-angle difference)`. Preserve probe-major then gallery-major ordering, retain all qualifying matches, and do not mutate either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "527a1b391b9e79037c0b21b90e53d39597225254184e0fb487a4ffdf749958e5",
+      "text": "Implement deterministic segment correspondence in `solution.rs` using only the standard library.\n\nExpose:\n\n```rust\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence>;\n```\n\nAngles use degrees and must be compared by their shortest circular distance modulo 360. A negative `angle_tolerance` permits no matches. Lengths match when their absolute difference is at most `length_tolerance`. Both low and high angles must match. In strict mode, omit only the final probe segment; an empty probe remains empty.\n\nFor a match, compute `orientation_delta` as gallery orientation minus probe orientation. Negate the gallery orientation first when `reversed` differs between the two segments. Normalize the delta to `[-180, 179]`. The score is `abs(length difference) + circular(low-angle difference) + circular(high-angle difference)`. Preserve probe-major then gallery-major ordering, retain all qualifying matches, and do not mutate either input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0130",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\nfn normalize(angle: i64) -> i32 {\n    ((angle + 180).rem_euclid(360) - 180) as i32\n}\n\nfn circular_distance(a: i32, b: i32) -> u64 {\n    u64::from(normalize(i64::from(a) - i64::from(b)).unsigned_abs())\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence> {\n    if angle_tolerance < 0 {\n        return Vec::new();\n    }\n    let count = if strict { probe.len().saturating_sub(1) } else { probe.len() };\n    let mut result = Vec::new();\n    for (probe_index, p) in probe[..count].iter().enumerate() {\n        for (gallery_index, g) in gallery.iter().enumerate() {\n            let length_delta = p.squared_length.abs_diff(g.squared_length);\n            let low_delta = circular_distance(p.low_angle, g.low_angle);\n            let high_delta = circular_distance(p.high_angle, g.high_angle);\n            if length_delta <= length_tolerance\n                && low_delta <= angle_tolerance as u64\n                && high_delta <= angle_tolerance as u64\n            {\n                let gallery_orientation = if p.reversed == g.reversed {\n                    i64::from(g.orientation)\n                } else {\n                    -i64::from(g.orientation)\n                };\n                result.push(Correspondence {\n                    probe_index,\n                    gallery_index,\n                    orientation_delta: normalize(gallery_orientation + i64::from(p.orientation)),\n                    score: length_delta + low_delta + high_delta,\n                });\n            }\n        }\n    }\n    result\n}\n",
+          "label": "Adds the probe orientation when computing the orientation delta instead of subtracting it.",
+          "sha256": "c635e852121eb8f2923936cb61ce48d26c1c37ba24d502511192570aaf52a335"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Segment {\n    pub first: usize,\n    pub second: usize,\n    pub squared_length: u64,\n    pub low_angle: i32,\n    pub high_angle: i32,\n    pub orientation: i32,\n    pub reversed: bool,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct Correspondence {\n    pub probe_index: usize,\n    pub gallery_index: usize,\n    pub orientation_delta: i32,\n    pub score: u64,\n}\n\nfn normalize(angle: i64) -> i32 {\n    ((angle + 180).rem_euclid(360) - 180) as i32\n}\n\nfn circular_distance(a: i32, b: i32) -> u64 {\n    u64::from(normalize(i64::from(a) - i64::from(b)).unsigned_abs())\n}\n\npub fn match_segments(\n    probe: &[Segment],\n    gallery: &[Segment],\n    length_tolerance: u64,\n    angle_tolerance: i32,\n    strict: bool,\n) -> Vec<Correspondence> {\n    if angle_tolerance < 0 {\n        return Vec::new();\n    }\n    let count = if strict { probe.len().saturating_sub(1) } else { probe.len() };\n    let mut result = Vec::new();\n    for (probe_index, p) in probe[..count].iter().enumerate() {\n        for (gallery_index, g) in gallery.iter().enumerate() {\n            let length_delta = p.squared_length.abs_diff(g.squared_length);\n            let low_delta = circular_distance(p.low_angle, g.low_angle);\n            let high_delta = circular_distance(p.high_angle, g.high_angle);\n            if length_delta <= length_tolerance\n                && low_delta <= angle_tolerance as u64\n                && high_delta <= angle_tolerance as u64\n            {\n                let gallery_orientation = if p.reversed == g.reversed {\n                    i64::from(g.orientation)\n                } else {\n                    -i64::from(g.orientation)\n                };\n                result.push(Correspondence {\n                    probe_index,\n                    gallery_index,\n                    orientation_delta: normalize(gallery_orientation - i64::from(p.orientation)),\n                    score: length_delta + low_delta + high_delta,\n                });\n            }\n        }\n    }\n    result\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "597294c983f8cb9b1e404820ce3d7af5739d05b5af863b26050f62d5e4cc7970"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest qualifying_match_has_an_unrepresentable_required_score ... FAILED\n\nfailures:\n\n---- qualifying_match_has_an_unrepresentable_required_score stdout ----\n\nthread 'qualifying_match_has_an_unrepresentable_required_score' panicked at solution.rs:58:28:\nattempt to add with overflow\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    qualifying_match_has_an_unrepresentable_required_score\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "d39fcde6fdbbef4c81d2544133983c39ba90fb3a19050990de8e853e5fb54775",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1450,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

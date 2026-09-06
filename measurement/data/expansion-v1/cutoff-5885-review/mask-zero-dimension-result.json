@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0043",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7622df026cb07b992e102cd48fc6b7116afe03d6f9770d3c1375c4b37b86287a",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::Mask3;\n#[test]\nfn zero_final_dimension_makes_empty_shape_valid() {\n    assert!(Mask3::new(usize::MAX, 2, 0, vec![]).is_ok());\n}\n",
+        "sha256": "7a17a0f68da2cab9dd135721eed735f2ea4d840b555f6219652295abff7dade3"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8907256885c6960622655757937f32398e99ae080c40bb4d8f126f2d6362f3b4",
+      "text": "Implement a standard-library-only 3D mask comparison API in `solution.rs`.\n\nExpose:\n- `pub struct Mask3 { ... }`\n- `pub enum MaskError { ShapeOverflow, LengthMismatch }`\n- `pub struct Overlap { pub both_set: usize, pub both_clear: usize, pub left_only: usize, pub right_only: usize }`\n- `pub struct Scores { pub dice: f64, pub jaccard: f64 }`\n- `pub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError>`\n\n`Mask3::new(width, height, depth, cells)` must reject an overflowing dimension product and any cell count unequal to `width * height * depth`. `compare_masks` must return `LengthMismatch` when dimensions differ, must not mutate either mask, and must count corresponding cells in traversal order. `Overlap::scores()` computes Dice and Jaccard similarity using set cells. When neither mask has a set cell, both scores are defined as `1.0`. Zero-sized masks are valid when their cell vector is empty.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8907256885c6960622655757937f32398e99ae080c40bb4d8f126f2d6362f3b4",
+      "text": "Implement a standard-library-only 3D mask comparison API in `solution.rs`.\n\nExpose:\n- `pub struct Mask3 { ... }`\n- `pub enum MaskError { ShapeOverflow, LengthMismatch }`\n- `pub struct Overlap { pub both_set: usize, pub both_clear: usize, pub left_only: usize, pub right_only: usize }`\n- `pub struct Scores { pub dice: f64, pub jaccard: f64 }`\n- `pub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError>`\n\n`Mask3::new(width, height, depth, cells)` must reject an overflowing dimension product and any cell count unequal to `width * height * depth`. `compare_masks` must return `LengthMismatch` when dimensions differ, must not mutate either mask, and must count corresponding cells in traversal order. `Overlap::scores()` computes Dice and Jaccard similarity using set cells. When neither mask has a set cell, both scores are defined as `1.0`. Zero-sized masks are valid when their cell vector is empty.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0043",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Mask3 {\n    width: usize,\n    height: usize,\n    depth: usize,\n    cells: Vec<bool>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum MaskError {\n    ShapeOverflow,\n    LengthMismatch,\n}\n\n#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]\npub struct Overlap {\n    pub both_set: usize,\n    pub both_clear: usize,\n    pub left_only: usize,\n    pub right_only: usize,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq)]\npub struct Scores {\n    pub dice: f64,\n    pub jaccard: f64,\n}\n\nimpl Mask3 {\n    pub fn new(width: usize, height: usize, depth: usize, cells: Vec<bool>) -> Result<Self, MaskError> {\n        let expected = width\n            .checked_mul(height)\n            .and_then(|n| n.checked_mul(depth))\n            .ok_or(MaskError::ShapeOverflow)?;\n        if cells.len() != expected {\n            return Err(MaskError::LengthMismatch);\n        }\n        Ok(Self { width, height, depth, cells })\n    }\n\n    pub fn dimensions(&self) -> (usize, usize, usize) {\n        (self.width, self.height, self.depth)\n    }\n\n    pub fn cells(&self) -> &[bool] {\n        &self.cells\n    }\n}\n\nimpl Overlap {\n    pub fn scores(&self) -> Scores {\n        let union = self.both_set + self.left_only + self.right_only;\n        if union == 0 {\n            return Scores { dice: 0.0, jaccard: 0.0 };\n        }\n        let intersection = self.both_set as f64;\n        Scores {\n            dice: 2.0 * intersection / (2.0 * intersection + self.left_only as f64 + self.right_only as f64),\n            jaccard: intersection / union as f64,\n        }\n    }\n}\n\npub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError> {\n    if left.dimensions() != right.dimensions() {\n        return Err(MaskError::LengthMismatch);\n    }\n    let mut result = Overlap::default();\n    for (&a, &b) in left.cells.iter().zip(&right.cells) {\n        match (a, b) {\n            (true, true) => result.both_set += 1,\n            (false, false) => result.both_clear += 1,\n            (true, false) => result.left_only += 1,\n            (false, true) => result.right_only += 1,\n        }\n    }\n    Ok(result)\n}\n",
+          "label": "Returns zero similarity instead of perfect similarity when both masks contain no set cells.",
+          "sha256": "06beca44f20808b0bd6fe17bb183bea92cf92f08fc892df79b20fd13bd17567f"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Mask3 {\n    width: usize,\n    height: usize,\n    depth: usize,\n    cells: Vec<bool>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum MaskError {\n    ShapeOverflow,\n    LengthMismatch,\n}\n\n#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]\npub struct Overlap {\n    pub both_set: usize,\n    pub both_clear: usize,\n    pub left_only: usize,\n    pub right_only: usize,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq)]\npub struct Scores {\n    pub dice: f64,\n    pub jaccard: f64,\n}\n\nimpl Mask3 {\n    pub fn new(width: usize, height: usize, depth: usize, cells: Vec<bool>) -> Result<Self, MaskError> {\n        let expected = width\n            .checked_mul(height)\n            .and_then(|n| n.checked_mul(depth))\n            .ok_or(MaskError::ShapeOverflow)?;\n        if cells.len() != expected {\n            return Err(MaskError::LengthMismatch);\n        }\n        Ok(Self { width, height, depth, cells })\n    }\n\n    pub fn dimensions(&self) -> (usize, usize, usize) {\n        (self.width, self.height, self.depth)\n    }\n\n    pub fn cells(&self) -> &[bool] {\n        &self.cells\n    }\n}\n\nimpl Overlap {\n    pub fn scores(&self) -> Scores {\n        let union = self.both_set + self.left_only + self.right_only;\n        if union == 0 {\n            return Scores { dice: 1.0, jaccard: 1.0 };\n        }\n        let intersection = self.both_set as f64;\n        Scores {\n            dice: 2.0 * intersection / (2.0 * intersection + self.left_only as f64 + self.right_only as f64),\n            jaccard: intersection / union as f64,\n        }\n    }\n}\n\npub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError> {\n    if left.dimensions() != right.dimensions() {\n        return Err(MaskError::LengthMismatch);\n    }\n    let mut result = Overlap::default();\n    for (&a, &b) in left.cells.iter().zip(&right.cells) {\n        match (a, b) {\n            (true, true) => result.both_set += 1,\n            (false, false) => result.both_clear += 1,\n            (true, false) => result.left_only += 1,\n            (false, true) => result.right_only += 1,\n        }\n    }\n    Ok(result)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d238d77d2f2bf0509e6a35ca152b66ad1fe90a79ad4f8c211aa3e31d7d313d82"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{compare_masks, Mask3, MaskError};\n\n#[test]\nfn counts_all_four_corresponding_cell_states() {\n    let left = Mask3::new(2, 2, 2, vec![true, true, false, false, true, false, true, false]).unwrap();\n    let right = Mask3::new(2, 2, 2, vec![true, false, true, false, true, false, false, true]).unwrap();\n\n    let overlap = compare_masks(&left, &right).unwrap();\n    assert_eq!(overlap.both_set, 2);\n    assert_eq!(overlap.both_clear, 2);\n    assert_eq!(overlap.left_only, 2);\n    assert_eq!(overlap.right_only, 2);\n\n    let scores = overlap.scores();\n    assert!((scores.dice - 0.5).abs() < f64::EPSILON);\n    assert!((scores.jaccard - (1.0 / 3.0)).abs() < f64::EPSILON);\n}\n\n#[test]\nfn empty_and_all_clear_masks_have_perfect_scores() {\n    for mask in [\n        Mask3::new(0, 7, 9, vec![]).unwrap(),\n        Mask3::new(2, 1, 1, vec![false, false]).unwrap(),\n    ] {\n        let overlap = compare_masks(&mask, &mask).unwrap();\n        let scores = overlap.scores();\n        assert_eq!(scores.dice, 1.0);\n        assert_eq!(scores.jaccard, 1.0);\n    }\n}\n\n#[test]\nfn constructor_rejects_wrong_length_and_overflow() {\n    assert!(matches!(\n        Mask3::new(2, 3, 1, vec![false; 5]),\n        Err(MaskError::LengthMismatch)\n    ));\n    assert!(matches!(\n        Mask3::new(usize::MAX, 2, 1, vec![]),\n        Err(MaskError::ShapeOverflow)\n    ));\n}\n\n#[test]\nfn dimensions_must_match_even_when_cell_counts_match() {\n    let left = Mask3::new(1, 2, 1, vec![true, false]).unwrap();\n    let right = Mask3::new(2, 1, 1, vec![true, false]).unwrap();\n    assert!(matches!(\n        compare_masks(&left, &right),\n        Err(MaskError::LengthMismatch)\n    ));\n}\n\n#[test]\nfn comparison_is_repeatable_and_does_not_mutate_masks() {\n    let left = Mask3::new(3, 1, 1, vec![true, false, true]).unwrap();\n    let right = Mask3::new(3, 1, 1, vec![false, false, true]).unwrap();\n\n    for _ in 0..2 {\n        let overlap = compare_masks(&left, &right).unwrap();\n        assert_eq!((overlap.both_set, overlap.both_clear), (1, 1));\n        assert_eq!((overlap.left_only, overlap.right_only), (1, 0));\n    }\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "5015325f1935aed809c842d7d28d179e49af6ea72f4f3ae345e6a0ff7a886b8f"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8907256885c6960622655757937f32398e99ae080c40bb4d8f126f2d6362f3b4",
+      "text": "Implement a standard-library-only 3D mask comparison API in `solution.rs`.\n\nExpose:\n- `pub struct Mask3 { ... }`\n- `pub enum MaskError { ShapeOverflow, LengthMismatch }`\n- `pub struct Overlap { pub both_set: usize, pub both_clear: usize, pub left_only: usize, pub right_only: usize }`\n- `pub struct Scores { pub dice: f64, pub jaccard: f64 }`\n- `pub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError>`\n\n`Mask3::new(width, height, depth, cells)` must reject an overflowing dimension product and any cell count unequal to `width * height * depth`. `compare_masks` must return `LengthMismatch` when dimensions differ, must not mutate either mask, and must count corresponding cells in traversal order. `Overlap::scores()` computes Dice and Jaccard similarity using set cells. When neither mask has a set cell, both scores are defined as `1.0`. Zero-sized masks are valid when their cell vector is empty.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8907256885c6960622655757937f32398e99ae080c40bb4d8f126f2d6362f3b4",
+      "text": "Implement a standard-library-only 3D mask comparison API in `solution.rs`.\n\nExpose:\n- `pub struct Mask3 { ... }`\n- `pub enum MaskError { ShapeOverflow, LengthMismatch }`\n- `pub struct Overlap { pub both_set: usize, pub both_clear: usize, pub left_only: usize, pub right_only: usize }`\n- `pub struct Scores { pub dice: f64, pub jaccard: f64 }`\n- `pub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError>`\n\n`Mask3::new(width, height, depth, cells)` must reject an overflowing dimension product and any cell count unequal to `width * height * depth`. `compare_masks` must return `LengthMismatch` when dimensions differ, must not mutate either mask, and must count corresponding cells in traversal order. `Overlap::scores()` computes Dice and Jaccard similarity using set cells. When neither mask has a set cell, both scores are defined as `1.0`. Zero-sized masks are valid when their cell vector is empty.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0043",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Mask3 {\n    width: usize,\n    height: usize,\n    depth: usize,\n    cells: Vec<bool>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum MaskError {\n    ShapeOverflow,\n    LengthMismatch,\n}\n\n#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]\npub struct Overlap {\n    pub both_set: usize,\n    pub both_clear: usize,\n    pub left_only: usize,\n    pub right_only: usize,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq)]\npub struct Scores {\n    pub dice: f64,\n    pub jaccard: f64,\n}\n\nimpl Mask3 {\n    pub fn new(width: usize, height: usize, depth: usize, cells: Vec<bool>) -> Result<Self, MaskError> {\n        let expected = width\n            .checked_mul(height)\n            .and_then(|n| n.checked_mul(depth))\n            .ok_or(MaskError::ShapeOverflow)?;\n        if cells.len() != expected {\n            return Err(MaskError::LengthMismatch);\n        }\n        Ok(Self { width, height, depth, cells })\n    }\n\n    pub fn dimensions(&self) -> (usize, usize, usize) {\n        (self.width, self.height, self.depth)\n    }\n\n    pub fn cells(&self) -> &[bool] {\n        &self.cells\n    }\n}\n\nimpl Overlap {\n    pub fn scores(&self) -> Scores {\n        let union = self.both_set + self.left_only + self.right_only;\n        if union == 0 {\n            return Scores { dice: 0.0, jaccard: 0.0 };\n        }\n        let intersection = self.both_set as f64;\n        Scores {\n            dice: 2.0 * intersection / (2.0 * intersection + self.left_only as f64 + self.right_only as f64),\n            jaccard: intersection / union as f64,\n        }\n    }\n}\n\npub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError> {\n    if left.dimensions() != right.dimensions() {\n        return Err(MaskError::LengthMismatch);\n    }\n    let mut result = Overlap::default();\n    for (&a, &b) in left.cells.iter().zip(&right.cells) {\n        match (a, b) {\n            (true, true) => result.both_set += 1,\n            (false, false) => result.both_clear += 1,\n            (true, false) => result.left_only += 1,\n            (false, true) => result.right_only += 1,\n        }\n    }\n    Ok(result)\n}\n",
+          "label": "Returns zero similarity instead of perfect similarity when both masks contain no set cells.",
+          "sha256": "06beca44f20808b0bd6fe17bb183bea92cf92f08fc892df79b20fd13bd17567f"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Mask3 {\n    width: usize,\n    height: usize,\n    depth: usize,\n    cells: Vec<bool>,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum MaskError {\n    ShapeOverflow,\n    LengthMismatch,\n}\n\n#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]\npub struct Overlap {\n    pub both_set: usize,\n    pub both_clear: usize,\n    pub left_only: usize,\n    pub right_only: usize,\n}\n\n#[derive(Clone, Copy, Debug, PartialEq)]\npub struct Scores {\n    pub dice: f64,\n    pub jaccard: f64,\n}\n\nimpl Mask3 {\n    pub fn new(width: usize, height: usize, depth: usize, cells: Vec<bool>) -> Result<Self, MaskError> {\n        let expected = width\n            .checked_mul(height)\n            .and_then(|n| n.checked_mul(depth))\n            .ok_or(MaskError::ShapeOverflow)?;\n        if cells.len() != expected {\n            return Err(MaskError::LengthMismatch);\n        }\n        Ok(Self { width, height, depth, cells })\n    }\n\n    pub fn dimensions(&self) -> (usize, usize, usize) {\n        (self.width, self.height, self.depth)\n    }\n\n    pub fn cells(&self) -> &[bool] {\n        &self.cells\n    }\n}\n\nimpl Overlap {\n    pub fn scores(&self) -> Scores {\n        let union = self.both_set + self.left_only + self.right_only;\n        if union == 0 {\n            return Scores { dice: 1.0, jaccard: 1.0 };\n        }\n        let intersection = self.both_set as f64;\n        Scores {\n            dice: 2.0 * intersection / (2.0 * intersection + self.left_only as f64 + self.right_only as f64),\n            jaccard: intersection / union as f64,\n        }\n    }\n}\n\npub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError> {\n    if left.dimensions() != right.dimensions() {\n        return Err(MaskError::LengthMismatch);\n    }\n    let mut result = Overlap::default();\n    for (&a, &b) in left.cells.iter().zip(&right.cells) {\n        match (a, b) {\n            (true, true) => result.both_set += 1,\n            (false, false) => result.both_clear += 1,\n            (true, false) => result.left_only += 1,\n            (false, true) => result.right_only += 1,\n        }\n    }\n    Ok(result)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "d238d77d2f2bf0509e6a35ca152b66ad1fe90a79ad4f8c211aa3e31d7d313d82"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest zero_final_dimension_makes_empty_shape_valid ... FAILED\n\nfailures:\n\n---- zero_final_dimension_makes_empty_shape_valid stdout ----\n\nthread 'zero_final_dimension_makes_empty_shape_valid' panicked at solution_test.rs:6:5:\nassertion failed: Mask3::new(usize::MAX, 2, 0, vec![]).is_ok()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    zero_final_dimension_makes_empty_shape_valid\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "e7bf8cf4f134abdca5d3e2bab81f5aaa8e36179c2d93d5664b002b7d13168be0",
+    "stderr": "warning: methods `dimensions` and `cells` are never used\n  --> solution.rs:41:12\n   |\n29 | impl Mask3 {\n   | ---------- methods in this implementation\n...\n41 |     pub fn dimensions(&self) -> (usize, usize, usize) {\n   |            ^^^^^^^^^^\n...\n45 |     pub fn cells(&self) -> &[bool] {\n   |            ^^^^^\n   |\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: method `scores` is never used\n  --> solution.rs:51:12\n   |\n50 | impl Overlap {\n   | ------------ method in this implementation\n51 |     pub fn scores(&self) -> Scores {\n   |            ^^^^^^\n\nwarning: function `compare_masks` is never used\n  --> solution.rs:64:8\n   |\n64 | pub fn compare_masks(left: &Mask3, right: &Mask3) -> Result<Overlap, MaskError> {\n   |        ^^^^^^^^^^^^^\n\nwarning: 3 warnings emitted\n\n",
+    "stderr_sha256": "6c1a6ca97e3dd630f50bdc0c5d32fc064fff312dbbdb5587464808b81f46097f",
+    "duration_ms": 1687,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

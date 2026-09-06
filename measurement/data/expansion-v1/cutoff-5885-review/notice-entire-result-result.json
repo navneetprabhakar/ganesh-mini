@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0111",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "42d67460786da429421d42ac674375082c1cedd18823e1e323eb0b9a903eaed2",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{create_rule, update_rule, Channel, RuleError, RulePatch};\n\n#[test]\nfn entire_proposed_result_includes_public_base_fields() {\n    let mut rule = create_rule(1, vec![Channel::Email], \"valid\".to_string()).unwrap();\n    rule.id = 0;\n    let original = rule.clone();\n    let outcome = update_rule(&mut rule, RulePatch {\n        expires_after: Some(Some(30)), tags: None,\n    });\n    assert_eq!(outcome, Err(RuleError::InvalidId));\n    assert_eq!(rule, original);\n}\n",
+        "sha256": "42d2da64ee780f4d1ffccbb739cd6d72a5e07794a31fb83f1d064b370c791c47"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1060062f0cd123e7e9ffc62f6fa76fb5893539e1aacb621da2fd3a0859f8b502",
+      "text": "Create `solution.rs` implementing notification-rule creation and atomic patching. Expose `Channel` with variants `Email`, `Sms`, and `Dashboard`; `NoticeRule { pub id: u64, pub channels: Vec<Channel>, pub subject_prefix: String, pub expires_after: Option<u32>, pub tags: Option<Vec<String>> }`; `RulePatch { pub expires_after: Option<Option<u32>>, pub tags: Option<Option<Vec<String>>> }`; and `RuleError` with variants `InvalidId`, `NoChannels`, `EmptyPrefix`, `ZeroExpiry`, and `EmptyTag`. `create_rule` accepts an ID, channels, and prefix, validates them, and creates a rule whose optional fields are `None`. ID zero, no channels, or a whitespace-only prefix is invalid; preserve the prefix exactly. `update_rule(&mut NoticeRule, RulePatch)` uses tri-state patch fields: outer `None` preserves the field, `Some(None)` clears it, and `Some(Some(value))` sets it. An expiry of zero or any whitespace-only tag is invalid. Validate the entire proposed result before mutating the rule, so errors leave it byte-for-byte unchanged. Empty tag vectors are valid. `ordered_rules(&[NoticeRule]) -> Vec<&NoticeRule>` returns references sorted by ascending ID, preserving original relative order for duplicate IDs and never mutating the slice. Use only the standard library and do not define `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1060062f0cd123e7e9ffc62f6fa76fb5893539e1aacb621da2fd3a0859f8b502",
+      "text": "Create `solution.rs` implementing notification-rule creation and atomic patching. Expose `Channel` with variants `Email`, `Sms`, and `Dashboard`; `NoticeRule { pub id: u64, pub channels: Vec<Channel>, pub subject_prefix: String, pub expires_after: Option<u32>, pub tags: Option<Vec<String>> }`; `RulePatch { pub expires_after: Option<Option<u32>>, pub tags: Option<Option<Vec<String>>> }`; and `RuleError` with variants `InvalidId`, `NoChannels`, `EmptyPrefix`, `ZeroExpiry`, and `EmptyTag`. `create_rule` accepts an ID, channels, and prefix, validates them, and creates a rule whose optional fields are `None`. ID zero, no channels, or a whitespace-only prefix is invalid; preserve the prefix exactly. `update_rule(&mut NoticeRule, RulePatch)` uses tri-state patch fields: outer `None` preserves the field, `Some(None)` clears it, and `Some(Some(value))` sets it. An expiry of zero or any whitespace-only tag is invalid. Validate the entire proposed result before mutating the rule, so errors leave it byte-for-byte unchanged. Empty tag vectors are valid. `ordered_rules(&[NoticeRule]) -> Vec<&NoticeRule>` returns references sorted by ascending ID, preserving original relative order for duplicate IDs and never mutating the slice. Use only the standard library and do not define `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0111",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Channel {\n    Email,\n    Sms,\n    Dashboard,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct NoticeRule {\n    pub id: u64,\n    pub channels: Vec<Channel>,\n    pub subject_prefix: String,\n    pub expires_after: Option<u32>,\n    pub tags: Option<Vec<String>>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct RulePatch {\n    pub expires_after: Option<Option<u32>>,\n    pub tags: Option<Option<Vec<String>>>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RuleError {\n    InvalidId,\n    NoChannels,\n    EmptyPrefix,\n    ZeroExpiry,\n    EmptyTag,\n}\n\npub fn create_rule(\n    id: u64,\n    channels: Vec<Channel>,\n    subject_prefix: String,\n) -> Result<NoticeRule, RuleError> {\n    if id == 0 {\n        return Err(RuleError::InvalidId);\n    }\n    if channels.is_empty() {\n        return Err(RuleError::NoChannels);\n    }\n    if subject_prefix.trim().is_empty() {\n        return Err(RuleError::EmptyPrefix);\n    }\n    Ok(NoticeRule {\n        id,\n        channels,\n        subject_prefix,\n        expires_after: None,\n        tags: None,\n    })\n}\n\npub fn update_rule(rule: &mut NoticeRule, patch: RulePatch) -> Result<(), RuleError> {\n    let mut candidate = rule.clone();\n    if let Some(value) = patch.expires_after {\n        candidate.expires_after = value;\n    }\n    if let Some(value) = patch.tags {\n        candidate.tags = value;\n    } else {\n        candidate.tags = None;\n    }\n    if candidate.expires_after == Some(0) {\n        return Err(RuleError::ZeroExpiry);\n    }\n    if candidate\n        .tags\n        .as_ref()\n        .is_some_and(|tags| tags.iter().any(|tag| tag.trim().is_empty()))\n    {\n        return Err(RuleError::EmptyTag);\n    }\n    *rule = candidate;\n    Ok(())\n}\n\npub fn ordered_rules(rules: &[NoticeRule]) -> Vec<&NoticeRule> {\n    let mut result: Vec<_> = rules.iter().collect();\n    result.sort_by_key(|rule| rule.id);\n    result\n}\n",
+          "label": "A patch with `tags: None` clears existing tags instead of preserving them.",
+          "sha256": "3cc0bcee56f2c05b639a5b18f9483409c0bc6b0f6552e624bf6eb7766efc5908"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Channel {\n    Email,\n    Sms,\n    Dashboard,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct NoticeRule {\n    pub id: u64,\n    pub channels: Vec<Channel>,\n    pub subject_prefix: String,\n    pub expires_after: Option<u32>,\n    pub tags: Option<Vec<String>>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct RulePatch {\n    pub expires_after: Option<Option<u32>>,\n    pub tags: Option<Option<Vec<String>>>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RuleError {\n    InvalidId,\n    NoChannels,\n    EmptyPrefix,\n    ZeroExpiry,\n    EmptyTag,\n}\n\npub fn create_rule(\n    id: u64,\n    channels: Vec<Channel>,\n    subject_prefix: String,\n) -> Result<NoticeRule, RuleError> {\n    if id == 0 {\n        return Err(RuleError::InvalidId);\n    }\n    if channels.is_empty() {\n        return Err(RuleError::NoChannels);\n    }\n    if subject_prefix.trim().is_empty() {\n        return Err(RuleError::EmptyPrefix);\n    }\n    Ok(NoticeRule {\n        id,\n        channels,\n        subject_prefix,\n        expires_after: None,\n        tags: None,\n    })\n}\n\npub fn update_rule(rule: &mut NoticeRule, patch: RulePatch) -> Result<(), RuleError> {\n    let mut candidate = rule.clone();\n    if let Some(value) = patch.expires_after {\n        candidate.expires_after = value;\n    }\n    if let Some(value) = patch.tags {\n        candidate.tags = value;\n    }\n    if candidate.expires_after == Some(0) {\n        return Err(RuleError::ZeroExpiry);\n    }\n    if candidate\n        .tags\n        .as_ref()\n        .is_some_and(|tags| tags.iter().any(|tag| tag.trim().is_empty()))\n    {\n        return Err(RuleError::EmptyTag);\n    }\n    *rule = candidate;\n    Ok(())\n}\n\npub fn ordered_rules(rules: &[NoticeRule]) -> Vec<&NoticeRule> {\n    let mut result: Vec<_> = rules.iter().collect();\n    result.sort_by_key(|rule| rule.id);\n    result\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "720420c227e306f3c319b1d00daa9e23657b6a07e5ae10596c48682134e1a448"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{create_rule, ordered_rules, update_rule, Channel, NoticeRule, RuleError, RulePatch};\n\nfn channel_code(channel: &Channel) -> u8 {\n    match channel {\n        Channel::Email => 1,\n        Channel::Sms => 2,\n        Channel::Dashboard => 3,\n    }\n}\n\nfn snapshot(rule: &NoticeRule) -> (u64, Vec<u8>, String, Option<u32>, Option<Vec<String>>) {\n    (\n        rule.id,\n        rule.channels.iter().map(channel_code).collect(),\n        rule.subject_prefix.clone(),\n        rule.expires_after,\n        rule.tags.clone(),\n    )\n}\n\n#[test]\nfn create_rule_preserves_prefix_and_initializes_optional_fields_empty() {\n    let rule = create_rule(7, vec![Channel::Email, Channel::Dashboard], \"  Alert:  \".to_string()).unwrap();\n    assert_eq!(rule.id, 7);\n    assert_eq!(rule.channels.iter().map(channel_code).collect::<Vec<_>>(), vec![1, 3]);\n    assert_eq!(rule.subject_prefix, \"  Alert:  \");\n    assert!(rule.expires_after.is_none());\n    assert!(rule.tags.is_none());\n}\n\n#[test]\nfn create_rule_rejects_each_malformed_input() {\n    assert!(matches!(create_rule(0, vec![Channel::Email], \"x\".to_string()), Err(RuleError::InvalidId)));\n    assert!(matches!(create_rule(1, Vec::new(), \"x\".to_string()), Err(RuleError::NoChannels)));\n    assert!(matches!(create_rule(1, vec![Channel::Sms], \" \\t\\n\".to_string()), Err(RuleError::EmptyPrefix)));\n}\n\n#[test]\nfn tri_state_patch_preserves_sets_and_clears_fields() {\n    let mut rule = create_rule(1, vec![Channel::Sms], \"Notice\".to_string()).unwrap();\n\n    update_rule(&mut rule, RulePatch {\n        expires_after: Some(Some(30)),\n        tags: Some(Some(vec![\"urgent\".to_string(), \" ops \".to_string()])),\n    }).unwrap();\n    assert_eq!(rule.expires_after, Some(30));\n    assert_eq!(rule.tags.as_ref().unwrap(), &vec![\"urgent\".to_string(), \" ops \".to_string()]);\n\n    update_rule(&mut rule, RulePatch { expires_after: None, tags: None }).unwrap();\n    assert_eq!(rule.expires_after, Some(30));\n    assert!(rule.tags.is_some());\n\n    update_rule(&mut rule, RulePatch {\n        expires_after: Some(None),\n        tags: Some(None),\n    }).unwrap();\n    assert!(rule.expires_after.is_none());\n    assert!(rule.tags.is_none());\n\n    update_rule(&mut rule, RulePatch {\n        expires_after: None,\n        tags: Some(Some(Vec::new())),\n    }).unwrap();\n    assert_eq!(rule.tags, Some(Vec::new()));\n}\n\n#[test]\nfn invalid_patch_is_atomic() {\n    let mut rule = create_rule(12, vec![Channel::Email, Channel::Sms], \"Prefix\".to_string()).unwrap();\n    update_rule(&mut rule, RulePatch {\n        expires_after: Some(Some(15)),\n        tags: Some(Some(vec![\"existing\".to_string()])),\n    }).unwrap();\n    let before = snapshot(&rule);\n\n    let result = update_rule(&mut rule, RulePatch {\n        expires_after: Some(Some(0)),\n        tags: Some(Some(vec![\"replacement\".to_string()])),\n    });\n    assert!(matches!(result, Err(RuleError::ZeroExpiry)));\n    assert_eq!(snapshot(&rule), before);\n\n    let result = update_rule(&mut rule, RulePatch {\n        expires_after: Some(Some(99)),\n        tags: Some(Some(vec![\"valid\".to_string(), \" \\n \".to_string()])),\n    });\n    assert!(matches!(result, Err(RuleError::EmptyTag)));\n    assert_eq!(snapshot(&rule), before);\n}\n\nfn rule(id: u64, prefix: &str) -> NoticeRule {\n    create_rule(id, vec![Channel::Dashboard], prefix.to_string()).unwrap()\n}\n\n#[test]\nfn ordered_rules_is_stable_and_does_not_mutate_input() {\n    let rules = vec![rule(3, \"first-three\"), rule(1, \"one\"), rule(3, \"second-three\"), rule(2, \"two\")];\n    let before: Vec<(u64, String)> = rules.iter().map(|r| (r.id, r.subject_prefix.clone())).collect();\n\n    let ordered = ordered_rules(&rules);\n    assert_eq!(ordered.iter().map(|r| r.id).collect::<Vec<_>>(), vec![1, 2, 3, 3]);\n    assert_eq!(ordered[2].subject_prefix, \"first-three\");\n    assert_eq!(ordered[3].subject_prefix, \"second-three\");\n    assert!(std::ptr::eq(ordered[2], &rules[0]));\n    assert!(std::ptr::eq(ordered[3], &rules[2]));\n\n    let after: Vec<(u64, String)> = rules.iter().map(|r| (r.id, r.subject_prefix.clone())).collect();\n    assert_eq!(after, before);\n    assert!(ordered_rules(&[]).is_empty());\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "57217b37fc4a6f17aac323c35af526bd31c75b1386ee57d3ed5dd6b40daadda3"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1060062f0cd123e7e9ffc62f6fa76fb5893539e1aacb621da2fd3a0859f8b502",
+      "text": "Create `solution.rs` implementing notification-rule creation and atomic patching. Expose `Channel` with variants `Email`, `Sms`, and `Dashboard`; `NoticeRule { pub id: u64, pub channels: Vec<Channel>, pub subject_prefix: String, pub expires_after: Option<u32>, pub tags: Option<Vec<String>> }`; `RulePatch { pub expires_after: Option<Option<u32>>, pub tags: Option<Option<Vec<String>>> }`; and `RuleError` with variants `InvalidId`, `NoChannels`, `EmptyPrefix`, `ZeroExpiry`, and `EmptyTag`. `create_rule` accepts an ID, channels, and prefix, validates them, and creates a rule whose optional fields are `None`. ID zero, no channels, or a whitespace-only prefix is invalid; preserve the prefix exactly. `update_rule(&mut NoticeRule, RulePatch)` uses tri-state patch fields: outer `None` preserves the field, `Some(None)` clears it, and `Some(Some(value))` sets it. An expiry of zero or any whitespace-only tag is invalid. Validate the entire proposed result before mutating the rule, so errors leave it byte-for-byte unchanged. Empty tag vectors are valid. `ordered_rules(&[NoticeRule]) -> Vec<&NoticeRule>` returns references sorted by ascending ID, preserving original relative order for duplicate IDs and never mutating the slice. Use only the standard library and do not define `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1060062f0cd123e7e9ffc62f6fa76fb5893539e1aacb621da2fd3a0859f8b502",
+      "text": "Create `solution.rs` implementing notification-rule creation and atomic patching. Expose `Channel` with variants `Email`, `Sms`, and `Dashboard`; `NoticeRule { pub id: u64, pub channels: Vec<Channel>, pub subject_prefix: String, pub expires_after: Option<u32>, pub tags: Option<Vec<String>> }`; `RulePatch { pub expires_after: Option<Option<u32>>, pub tags: Option<Option<Vec<String>>> }`; and `RuleError` with variants `InvalidId`, `NoChannels`, `EmptyPrefix`, `ZeroExpiry`, and `EmptyTag`. `create_rule` accepts an ID, channels, and prefix, validates them, and creates a rule whose optional fields are `None`. ID zero, no channels, or a whitespace-only prefix is invalid; preserve the prefix exactly. `update_rule(&mut NoticeRule, RulePatch)` uses tri-state patch fields: outer `None` preserves the field, `Some(None)` clears it, and `Some(Some(value))` sets it. An expiry of zero or any whitespace-only tag is invalid. Validate the entire proposed result before mutating the rule, so errors leave it byte-for-byte unchanged. Empty tag vectors are valid. `ordered_rules(&[NoticeRule]) -> Vec<&NoticeRule>` returns references sorted by ascending ID, preserving original relative order for duplicate IDs and never mutating the slice. Use only the standard library and do not define `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0111",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Channel {\n    Email,\n    Sms,\n    Dashboard,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct NoticeRule {\n    pub id: u64,\n    pub channels: Vec<Channel>,\n    pub subject_prefix: String,\n    pub expires_after: Option<u32>,\n    pub tags: Option<Vec<String>>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct RulePatch {\n    pub expires_after: Option<Option<u32>>,\n    pub tags: Option<Option<Vec<String>>>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RuleError {\n    InvalidId,\n    NoChannels,\n    EmptyPrefix,\n    ZeroExpiry,\n    EmptyTag,\n}\n\npub fn create_rule(\n    id: u64,\n    channels: Vec<Channel>,\n    subject_prefix: String,\n) -> Result<NoticeRule, RuleError> {\n    if id == 0 {\n        return Err(RuleError::InvalidId);\n    }\n    if channels.is_empty() {\n        return Err(RuleError::NoChannels);\n    }\n    if subject_prefix.trim().is_empty() {\n        return Err(RuleError::EmptyPrefix);\n    }\n    Ok(NoticeRule {\n        id,\n        channels,\n        subject_prefix,\n        expires_after: None,\n        tags: None,\n    })\n}\n\npub fn update_rule(rule: &mut NoticeRule, patch: RulePatch) -> Result<(), RuleError> {\n    let mut candidate = rule.clone();\n    if let Some(value) = patch.expires_after {\n        candidate.expires_after = value;\n    }\n    if let Some(value) = patch.tags {\n        candidate.tags = value;\n    } else {\n        candidate.tags = None;\n    }\n    if candidate.expires_after == Some(0) {\n        return Err(RuleError::ZeroExpiry);\n    }\n    if candidate\n        .tags\n        .as_ref()\n        .is_some_and(|tags| tags.iter().any(|tag| tag.trim().is_empty()))\n    {\n        return Err(RuleError::EmptyTag);\n    }\n    *rule = candidate;\n    Ok(())\n}\n\npub fn ordered_rules(rules: &[NoticeRule]) -> Vec<&NoticeRule> {\n    let mut result: Vec<_> = rules.iter().collect();\n    result.sort_by_key(|rule| rule.id);\n    result\n}\n",
+          "label": "A patch with `tags: None` clears existing tags instead of preserving them.",
+          "sha256": "3cc0bcee56f2c05b639a5b18f9483409c0bc6b0f6552e624bf6eb7766efc5908"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Channel {\n    Email,\n    Sms,\n    Dashboard,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct NoticeRule {\n    pub id: u64,\n    pub channels: Vec<Channel>,\n    pub subject_prefix: String,\n    pub expires_after: Option<u32>,\n    pub tags: Option<Vec<String>>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct RulePatch {\n    pub expires_after: Option<Option<u32>>,\n    pub tags: Option<Option<Vec<String>>>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RuleError {\n    InvalidId,\n    NoChannels,\n    EmptyPrefix,\n    ZeroExpiry,\n    EmptyTag,\n}\n\npub fn create_rule(\n    id: u64,\n    channels: Vec<Channel>,\n    subject_prefix: String,\n) -> Result<NoticeRule, RuleError> {\n    if id == 0 {\n        return Err(RuleError::InvalidId);\n    }\n    if channels.is_empty() {\n        return Err(RuleError::NoChannels);\n    }\n    if subject_prefix.trim().is_empty() {\n        return Err(RuleError::EmptyPrefix);\n    }\n    Ok(NoticeRule {\n        id,\n        channels,\n        subject_prefix,\n        expires_after: None,\n        tags: None,\n    })\n}\n\npub fn update_rule(rule: &mut NoticeRule, patch: RulePatch) -> Result<(), RuleError> {\n    let mut candidate = rule.clone();\n    if let Some(value) = patch.expires_after {\n        candidate.expires_after = value;\n    }\n    if let Some(value) = patch.tags {\n        candidate.tags = value;\n    }\n    if candidate.expires_after == Some(0) {\n        return Err(RuleError::ZeroExpiry);\n    }\n    if candidate\n        .tags\n        .as_ref()\n        .is_some_and(|tags| tags.iter().any(|tag| tag.trim().is_empty()))\n    {\n        return Err(RuleError::EmptyTag);\n    }\n    *rule = candidate;\n    Ok(())\n}\n\npub fn ordered_rules(rules: &[NoticeRule]) -> Vec<&NoticeRule> {\n    let mut result: Vec<_> = rules.iter().collect();\n    result.sort_by_key(|rule| rule.id);\n    result\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "720420c227e306f3c319b1d00daa9e23657b6a07e5ae10596c48682134e1a448"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest entire_proposed_result_includes_public_base_fields ... FAILED\n\nfailures:\n\n---- entire_proposed_result_includes_public_base_fields stdout ----\n\nthread 'entire_proposed_result_includes_public_base_fields' panicked at solution_test.rs:13:5:\nassertion `left == right` failed\n  left: Ok(())\n right: Err(InvalidId)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    entire_proposed_result_includes_public_base_fields\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "92dccd2b45aad5c400519a888396466880c2119d88c8f59f2e0ca2bf4380ce11",
+    "stderr": "warning: variants `Sms` and `Dashboard` are never constructed\n --> solution.rs:4:5\n  |\n2 | pub enum Channel {\n  |          ------- variants in this enum\n3 |     Email,\n4 |     Sms,\n  |     ^^^\n5 |     Dashboard,\n  |     ^^^^^^^^^\n  |\n  = note: `Channel` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis\n  = note: `#[warn(dead_code)]` on by default\n\nwarning: function `ordered_rules` is never used\n  --> solution.rs:77:8\n   |\n77 | pub fn ordered_rules(rules: &[NoticeRule]) -> Vec<&NoticeRule> {\n   |        ^^^^^^^^^^^^^\n\nwarning: 2 warnings emitted\n\n",
+    "stderr_sha256": "907e7f85c3ff99d11f51b0989eeb8921417b49514344babeca582f305853be0f",
+    "duration_ms": 1531,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

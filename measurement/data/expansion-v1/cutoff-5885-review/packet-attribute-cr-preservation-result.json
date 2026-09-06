@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0071",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e2ceb1e16802116fff5a7b828b4a01b13ac7c996d841f293fdca978b0186610d",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::parse_packet;\n#[test]\nfn accepted_attribute_values_must_not_silently_lose_carriage_returns() {\n    // LF is the delimiter. If CRLF is instead considered malformed, rejection\n    // is also acceptable here; accepting it while altering the value is not.\n    if let Ok(packet) = parse_packet(b\"READ /\\nkey:value\\r\\nnext:kept\\n\\nbody\") {\n        assert_eq!(packet.attributes[0].1, \"value\\r\");\n    }\n}\n",
+        "sha256": "0c38c8deccabedf5916a35a5d0442a9339872daa5d6b3a17619fbd7873b28c77"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9f6d489d7630112bf92b57bbb50b74a2c328fee9f91c04e1669f918be077663a",
+      "text": "Implement parsers for a self-contained packet format in `solution.rs`.\n\nA packet consists of a first line `VERB route`, zero or more attribute lines in `name:value` form, one empty line, and an arbitrary body. Lines and the header/body separator use LF (`\\n`) only. The first empty line is always the separator, even if the body contains additional blank lines.\n\nExpose `Verb` with `Read`, `Write`, `Replace`, and `Remove`; `Packet` with public `verb`, `route`, `attributes: Vec<(String, String)>`, and `payload: Vec<u8>` fields; and `TextPacket` with the same fields except `payload: String`. Expose `ParseError` variants `MissingSeparator`, `InvalidHeaderUtf8`, `InvalidStartLine`, `UnknownVerb`, `InvalidAttribute`, and `InvalidBodyUtf8`.\n\nImplement:\n- `pub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError>`.\n- `pub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError>`.\n\nThe start line must contain exactly two non-empty space-separated fields. Attribute names must be non-empty; values may be empty and are preserved exactly. Preserve attribute order and duplicates. Binary bodies may contain any bytes and may be empty. The text parser must reject a non-UTF-8 body. Parsing must not mutate or retain aliases into the input. Provide a new complete implementation without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9f6d489d7630112bf92b57bbb50b74a2c328fee9f91c04e1669f918be077663a",
+      "text": "Implement parsers for a self-contained packet format in `solution.rs`.\n\nA packet consists of a first line `VERB route`, zero or more attribute lines in `name:value` form, one empty line, and an arbitrary body. Lines and the header/body separator use LF (`\\n`) only. The first empty line is always the separator, even if the body contains additional blank lines.\n\nExpose `Verb` with `Read`, `Write`, `Replace`, and `Remove`; `Packet` with public `verb`, `route`, `attributes: Vec<(String, String)>`, and `payload: Vec<u8>` fields; and `TextPacket` with the same fields except `payload: String`. Expose `ParseError` variants `MissingSeparator`, `InvalidHeaderUtf8`, `InvalidStartLine`, `UnknownVerb`, `InvalidAttribute`, and `InvalidBodyUtf8`.\n\nImplement:\n- `pub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError>`.\n- `pub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError>`.\n\nThe start line must contain exactly two non-empty space-separated fields. Attribute names must be non-empty; values may be empty and are preserved exactly. Preserve attribute order and duplicates. Binary bodies may contain any bytes and may be empty. The text parser must reject a non-UTF-8 body. Parsing must not mutate or retain aliases into the input. Provide a new complete implementation without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0071",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Verb {\n    Read,\n    Write,\n    Replace,\n    Remove,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Packet {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct TextPacket {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: String,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ParseError {\n    MissingSeparator,\n    InvalidHeaderUtf8,\n    InvalidStartLine,\n    UnknownVerb,\n    InvalidAttribute,\n    InvalidBodyUtf8,\n}\n\npub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError> {\n    let split = input.windows(2).rposition(|window| window == b\"\\n\\n\")\n        .ok_or(ParseError::MissingSeparator)?;\n    let header = std::str::from_utf8(&input[..split])\n        .map_err(|_| ParseError::InvalidHeaderUtf8)?;\n    let mut lines = header.lines();\n    let mut start = lines.next().ok_or(ParseError::InvalidStartLine)?.split(' ');\n    let verb_text = start.next().ok_or(ParseError::InvalidStartLine)?;\n    let route = start.next().filter(|value| !value.is_empty())\n        .ok_or(ParseError::InvalidStartLine)?;\n    if verb_text.is_empty() || start.next().is_some() {\n        return Err(ParseError::InvalidStartLine);\n    }\n    let verb = match verb_text {\n        \"READ\" => Verb::Read,\n        \"WRITE\" => Verb::Write,\n        \"REPLACE\" => Verb::Replace,\n        \"REMOVE\" => Verb::Remove,\n        _ => return Err(ParseError::UnknownVerb),\n    };\n    let mut attributes = Vec::new();\n    for line in lines {\n        let (name, value) = line.split_once(':').ok_or(ParseError::InvalidAttribute)?;\n        if name.is_empty() {\n            return Err(ParseError::InvalidAttribute);\n        }\n        attributes.push((name.to_owned(), value.to_owned()));\n    }\n    Ok(Packet {\n        verb,\n        route: route.to_owned(),\n        attributes,\n        payload: input[split + 2..].to_vec(),\n    })\n}\n\npub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError> {\n    let packet = parse_packet(input)?;\n    let payload = String::from_utf8(packet.payload)\n        .map_err(|_| ParseError::InvalidBodyUtf8)?;\n    Ok(TextPacket {\n        verb: packet.verb,\n        route: packet.route,\n        attributes: packet.attributes,\n        payload,\n    })\n}\n",
+          "label": "The parser selects the last blank-line delimiter instead of the first, so blank lines inside the body are misinterpreted as header content.",
+          "sha256": "ce23b7aeaeccde2e7da8ae1808b5a4cbf2c50bcdcb00062cc18f38ea80e5a164"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Verb {\n    Read,\n    Write,\n    Replace,\n    Remove,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Packet {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct TextPacket {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: String,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ParseError {\n    MissingSeparator,\n    InvalidHeaderUtf8,\n    InvalidStartLine,\n    UnknownVerb,\n    InvalidAttribute,\n    InvalidBodyUtf8,\n}\n\npub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError> {\n    let split = input.windows(2).position(|window| window == b\"\\n\\n\")\n        .ok_or(ParseError::MissingSeparator)?;\n    let header = std::str::from_utf8(&input[..split])\n        .map_err(|_| ParseError::InvalidHeaderUtf8)?;\n    let mut lines = header.lines();\n    let mut start = lines.next().ok_or(ParseError::InvalidStartLine)?.split(' ');\n    let verb_text = start.next().ok_or(ParseError::InvalidStartLine)?;\n    let route = start.next().filter(|value| !value.is_empty())\n        .ok_or(ParseError::InvalidStartLine)?;\n    if verb_text.is_empty() || start.next().is_some() {\n        return Err(ParseError::InvalidStartLine);\n    }\n    let verb = match verb_text {\n        \"READ\" => Verb::Read,\n        \"WRITE\" => Verb::Write,\n        \"REPLACE\" => Verb::Replace,\n        \"REMOVE\" => Verb::Remove,\n        _ => return Err(ParseError::UnknownVerb),\n    };\n    let mut attributes = Vec::new();\n    for line in lines {\n        let (name, value) = line.split_once(':').ok_or(ParseError::InvalidAttribute)?;\n        if name.is_empty() {\n            return Err(ParseError::InvalidAttribute);\n        }\n        attributes.push((name.to_owned(), value.to_owned()));\n    }\n    Ok(Packet {\n        verb,\n        route: route.to_owned(),\n        attributes,\n        payload: input[split + 2..].to_vec(),\n    })\n}\n\npub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError> {\n    let packet = parse_packet(input)?;\n    let payload = String::from_utf8(packet.payload)\n        .map_err(|_| ParseError::InvalidBodyUtf8)?;\n    Ok(TextPacket {\n        verb: packet.verb,\n        route: packet.route,\n        attributes: packet.attributes,\n        payload,\n    })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "796201a2fa2a8e706ceb32add9d0c607149d7c2b860cf1cd5a875c331d4c64e0"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{parse_packet, parse_text_packet, ParseError, Verb};\n\n#[test]\nfn parses_binary_packet_and_preserves_attributes_and_body() {\n    let input = b\"WRITE /items/7\\nkind:text\\nkind:duplicate\\nempty:\\ncolon:a:b:c\\n\\n\\x00\\xffbody\\n\\nend\";\n    let packet = match parse_packet(input) {\n        Ok(packet) => packet,\n        Err(_) => panic!(\"valid packet was rejected\"),\n    };\n\n    assert!(matches!(packet.verb, Verb::Write));\n    assert_eq!(packet.route, \"/items/7\");\n    assert_eq!(packet.attributes.len(), 4);\n    assert_eq!(packet.attributes[0], (String::from(\"kind\"), String::from(\"text\")));\n    assert_eq!(packet.attributes[1], (String::from(\"kind\"), String::from(\"duplicate\")));\n    assert_eq!(packet.attributes[2], (String::from(\"empty\"), String::new()));\n    assert_eq!(packet.attributes[3], (String::from(\"colon\"), String::from(\"a:b:c\")));\n    assert_eq!(packet.payload, b\"\\x00\\xffbody\\n\\nend\");\n}\n\n#[test]\nfn parses_each_verb_and_empty_payload() {\n    let cases: &[(&[u8], fn(&Verb) -> bool)] = &[\n        (b\"READ /r\\n\\n\", |verb| matches!(verb, Verb::Read)),\n        (b\"WRITE /w\\n\\n\", |verb| matches!(verb, Verb::Write)),\n        (b\"REPLACE /p\\n\\n\", |verb| matches!(verb, Verb::Replace)),\n        (b\"REMOVE /d\\n\\n\", |verb| matches!(verb, Verb::Remove)),\n    ];\n\n    for (input, expected_verb) in cases {\n        let packet = parse_packet(input).unwrap_or_else(|_| panic!(\"valid verb rejected\"));\n        assert!(expected_verb(&packet.verb));\n        assert!(packet.attributes.is_empty());\n        assert!(packet.payload.is_empty());\n    }\n}\n\n#[test]\nfn text_parser_preserves_unicode_and_blank_lines_in_body() {\n    let input = \"REPLACE /caf\u00e9\\nlang:\u65e5\u672c\u8a9e\\n\\nfirst\\n\\nthird\".as_bytes();\n    let packet = parse_text_packet(input).unwrap_or_else(|_| panic!(\"valid text packet rejected\"));\n    assert!(matches!(packet.verb, Verb::Replace));\n    assert_eq!(packet.route, \"/caf\u00e9\");\n    assert_eq!(packet.attributes, vec![(String::from(\"lang\"), String::from(\"\u65e5\u672c\u8a9e\"))]);\n    assert_eq!(packet.payload, \"first\\n\\nthird\");\n}\n\n#[test]\nfn reports_missing_separator() {\n    assert!(matches!(parse_packet(b\"READ /route\\nname:value\"), Err(ParseError::MissingSeparator)));\n    assert!(matches!(parse_packet(b\"\"), Err(ParseError::MissingSeparator)));\n}\n\n#[test]\nfn rejects_non_utf8_header() {\n    let input = b\"READ /\\nbad:\\xff\\n\\nbody\";\n    assert!(matches!(parse_packet(input), Err(ParseError::InvalidHeaderUtf8)));\n}\n\n#[test]\nfn rejects_invalid_start_lines() {\n    for input in [\n        &b\"READ\\n\\n\"[..],\n        &b\"READ \\n\\n\"[..],\n        &b\" /route\\n\\n\"[..],\n        &b\"READ  /route\\n\\n\"[..],\n        &b\"READ /route extra\\n\\n\"[..],\n        &b\"READ\\t/route\\n\\n\"[..],\n    ] {\n        assert!(matches!(parse_packet(input), Err(ParseError::InvalidStartLine)));\n    }\n}\n\n#[test]\nfn rejects_unknown_verb() {\n    assert!(matches!(parse_packet(b\"PATCH /route\\n\\n\"), Err(ParseError::UnknownVerb)));\n}\n\n#[test]\nfn rejects_attributes_without_a_nonempty_name() {\n    assert!(matches!(parse_packet(b\"READ /\\nmissing-colon\\n\\n\"), Err(ParseError::InvalidAttribute)));\n    assert!(matches!(parse_packet(b\"READ /\\n:value\\n\\n\"), Err(ParseError::InvalidAttribute)));\n}\n\n#[test]\nfn text_parser_rejects_non_utf8_body_but_binary_parser_accepts_it() {\n    let input = b\"READ /raw\\n\\n\\xff\\xfe\";\n    assert!(parse_packet(input).is_ok());\n    assert!(matches!(parse_text_packet(input), Err(ParseError::InvalidBodyUtf8)));\n}\n\n#[test]\nfn parsed_packet_owns_copies_and_does_not_alias_input() {\n    let mut input = b\"REMOVE /owned\\na:b\\n\\npayload\".to_vec();\n    let packet = parse_packet(&input).unwrap_or_else(|_| panic!(\"valid packet rejected\"));\n    input.fill(b'x');\n\n    assert_eq!(packet.route, \"/owned\");\n    assert_eq!(packet.attributes[0], (String::from(\"a\"), String::from(\"b\")));\n    assert_eq!(packet.payload, b\"payload\");\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "9236b44d291f84bc7a523d043a63a935f867d52935ee3bdf982fe66d52a9e41a"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "9f6d489d7630112bf92b57bbb50b74a2c328fee9f91c04e1669f918be077663a",
+      "text": "Implement parsers for a self-contained packet format in `solution.rs`.\n\nA packet consists of a first line `VERB route`, zero or more attribute lines in `name:value` form, one empty line, and an arbitrary body. Lines and the header/body separator use LF (`\\n`) only. The first empty line is always the separator, even if the body contains additional blank lines.\n\nExpose `Verb` with `Read`, `Write`, `Replace`, and `Remove`; `Packet` with public `verb`, `route`, `attributes: Vec<(String, String)>`, and `payload: Vec<u8>` fields; and `TextPacket` with the same fields except `payload: String`. Expose `ParseError` variants `MissingSeparator`, `InvalidHeaderUtf8`, `InvalidStartLine`, `UnknownVerb`, `InvalidAttribute`, and `InvalidBodyUtf8`.\n\nImplement:\n- `pub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError>`.\n- `pub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError>`.\n\nThe start line must contain exactly two non-empty space-separated fields. Attribute names must be non-empty; values may be empty and are preserved exactly. Preserve attribute order and duplicates. Binary bodies may contain any bytes and may be empty. The text parser must reject a non-UTF-8 body. Parsing must not mutate or retain aliases into the input. Provide a new complete implementation without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "9f6d489d7630112bf92b57bbb50b74a2c328fee9f91c04e1669f918be077663a",
+      "text": "Implement parsers for a self-contained packet format in `solution.rs`.\n\nA packet consists of a first line `VERB route`, zero or more attribute lines in `name:value` form, one empty line, and an arbitrary body. Lines and the header/body separator use LF (`\\n`) only. The first empty line is always the separator, even if the body contains additional blank lines.\n\nExpose `Verb` with `Read`, `Write`, `Replace`, and `Remove`; `Packet` with public `verb`, `route`, `attributes: Vec<(String, String)>`, and `payload: Vec<u8>` fields; and `TextPacket` with the same fields except `payload: String`. Expose `ParseError` variants `MissingSeparator`, `InvalidHeaderUtf8`, `InvalidStartLine`, `UnknownVerb`, `InvalidAttribute`, and `InvalidBodyUtf8`.\n\nImplement:\n- `pub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError>`.\n- `pub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError>`.\n\nThe start line must contain exactly two non-empty space-separated fields. Attribute names must be non-empty; values may be empty and are preserved exactly. Preserve attribute order and duplicates. Binary bodies may contain any bytes and may be empty. The text parser must reject a non-UTF-8 body. Parsing must not mutate or retain aliases into the input. Provide a new complete implementation without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0071",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Verb {\n    Read,\n    Write,\n    Replace,\n    Remove,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Packet {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct TextPacket {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: String,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ParseError {\n    MissingSeparator,\n    InvalidHeaderUtf8,\n    InvalidStartLine,\n    UnknownVerb,\n    InvalidAttribute,\n    InvalidBodyUtf8,\n}\n\npub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError> {\n    let split = input.windows(2).rposition(|window| window == b\"\\n\\n\")\n        .ok_or(ParseError::MissingSeparator)?;\n    let header = std::str::from_utf8(&input[..split])\n        .map_err(|_| ParseError::InvalidHeaderUtf8)?;\n    let mut lines = header.lines();\n    let mut start = lines.next().ok_or(ParseError::InvalidStartLine)?.split(' ');\n    let verb_text = start.next().ok_or(ParseError::InvalidStartLine)?;\n    let route = start.next().filter(|value| !value.is_empty())\n        .ok_or(ParseError::InvalidStartLine)?;\n    if verb_text.is_empty() || start.next().is_some() {\n        return Err(ParseError::InvalidStartLine);\n    }\n    let verb = match verb_text {\n        \"READ\" => Verb::Read,\n        \"WRITE\" => Verb::Write,\n        \"REPLACE\" => Verb::Replace,\n        \"REMOVE\" => Verb::Remove,\n        _ => return Err(ParseError::UnknownVerb),\n    };\n    let mut attributes = Vec::new();\n    for line in lines {\n        let (name, value) = line.split_once(':').ok_or(ParseError::InvalidAttribute)?;\n        if name.is_empty() {\n            return Err(ParseError::InvalidAttribute);\n        }\n        attributes.push((name.to_owned(), value.to_owned()));\n    }\n    Ok(Packet {\n        verb,\n        route: route.to_owned(),\n        attributes,\n        payload: input[split + 2..].to_vec(),\n    })\n}\n\npub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError> {\n    let packet = parse_packet(input)?;\n    let payload = String::from_utf8(packet.payload)\n        .map_err(|_| ParseError::InvalidBodyUtf8)?;\n    Ok(TextPacket {\n        verb: packet.verb,\n        route: packet.route,\n        attributes: packet.attributes,\n        payload,\n    })\n}\n",
+          "label": "The parser selects the last blank-line delimiter instead of the first, so blank lines inside the body are misinterpreted as header content.",
+          "sha256": "ce23b7aeaeccde2e7da8ae1808b5a4cbf2c50bcdcb00062cc18f38ea80e5a164"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Verb {\n    Read,\n    Write,\n    Replace,\n    Remove,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Packet {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct TextPacket {\n    pub verb: Verb,\n    pub route: String,\n    pub attributes: Vec<(String, String)>,\n    pub payload: String,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ParseError {\n    MissingSeparator,\n    InvalidHeaderUtf8,\n    InvalidStartLine,\n    UnknownVerb,\n    InvalidAttribute,\n    InvalidBodyUtf8,\n}\n\npub fn parse_packet(input: &[u8]) -> Result<Packet, ParseError> {\n    let split = input.windows(2).position(|window| window == b\"\\n\\n\")\n        .ok_or(ParseError::MissingSeparator)?;\n    let header = std::str::from_utf8(&input[..split])\n        .map_err(|_| ParseError::InvalidHeaderUtf8)?;\n    let mut lines = header.lines();\n    let mut start = lines.next().ok_or(ParseError::InvalidStartLine)?.split(' ');\n    let verb_text = start.next().ok_or(ParseError::InvalidStartLine)?;\n    let route = start.next().filter(|value| !value.is_empty())\n        .ok_or(ParseError::InvalidStartLine)?;\n    if verb_text.is_empty() || start.next().is_some() {\n        return Err(ParseError::InvalidStartLine);\n    }\n    let verb = match verb_text {\n        \"READ\" => Verb::Read,\n        \"WRITE\" => Verb::Write,\n        \"REPLACE\" => Verb::Replace,\n        \"REMOVE\" => Verb::Remove,\n        _ => return Err(ParseError::UnknownVerb),\n    };\n    let mut attributes = Vec::new();\n    for line in lines {\n        let (name, value) = line.split_once(':').ok_or(ParseError::InvalidAttribute)?;\n        if name.is_empty() {\n            return Err(ParseError::InvalidAttribute);\n        }\n        attributes.push((name.to_owned(), value.to_owned()));\n    }\n    Ok(Packet {\n        verb,\n        route: route.to_owned(),\n        attributes,\n        payload: input[split + 2..].to_vec(),\n    })\n}\n\npub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError> {\n    let packet = parse_packet(input)?;\n    let payload = String::from_utf8(packet.payload)\n        .map_err(|_| ParseError::InvalidBodyUtf8)?;\n    Ok(TextPacket {\n        verb: packet.verb,\n        route: packet.route,\n        attributes: packet.attributes,\n        payload,\n    })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "796201a2fa2a8e706ceb32add9d0c607149d7c2b860cf1cd5a875c331d4c64e0"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest accepted_attribute_values_must_not_silently_lose_carriage_returns ... FAILED\n\nfailures:\n\n---- accepted_attribute_values_must_not_silently_lose_carriage_returns stdout ----\n\nthread 'accepted_attribute_values_must_not_silently_lose_carriage_returns' panicked at solution_test.rs:9:9:\nassertion `left == right` failed\n  left: \"value\"\n right: \"value\\r\"\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    accepted_attribute_values_must_not_silently_lose_carriage_returns\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "1e2f0fcb316dc10bbd5833650d7133c17e044cd432014968841a333f0c2164ea",
+    "stderr": "warning: variant `InvalidBodyUtf8` is never constructed\n  --> solution.rs:32:5\n   |\n26 | pub enum ParseError {\n   |          ---------- variant in this enum\n...\n32 |     InvalidBodyUtf8,\n   |     ^^^^^^^^^^^^^^^\n   |\n   = note: `ParseError` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: function `parse_text_packet` is never used\n  --> solution.rs:71:8\n   |\n71 | pub fn parse_text_packet(input: &[u8]) -> Result<TextPacket, ParseError> {\n   |        ^^^^^^^^^^^^^^^^^\n\nwarning: 2 warnings emitted\n\n",
+    "stderr_sha256": "e86b0eb5fc0a0736a5d8223adf23e2ef14bfa99fe1e1d748f60872f7ecb4178d",
+    "duration_ms": 1416,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

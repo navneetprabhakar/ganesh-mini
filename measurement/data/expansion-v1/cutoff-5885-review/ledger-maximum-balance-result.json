@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0141",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bee540edb94df83bbc7fdec816b910309e7e289d5e92618552b865aeaffadf0d",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{Ledger, Transfer};\n\n#[test]\nfn exact_maximum_balance_is_not_overflow() {\n    let mut ledger = Ledger::new(\"rich\".to_string(), u64::MAX).unwrap();\n    ledger.add_account(\"sender\".to_string()).unwrap();\n    ledger.apply(&Transfer { from: \"rich\".into(), to: \"sender\".into(), amount: 1 }).unwrap();\n    assert_eq!(ledger.apply(&Transfer { from: \"sender\".into(), to: \"rich\".into(), amount: 1 }), Ok(()));\n    assert_eq!(ledger.balance(\"rich\"), Some(u64::MAX));\n}\n",
+        "sha256": "921b0615beb5faf2c44b4db9175ed1a4cd5c258da9f9da9da53bcf3fc3e95737"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "513b0501b421df84d77333bd3c25b8ed984698d5569e0948bb214318aa591f12",
+      "text": "Implement an atomic in-memory credit ledger in `solution.rs` using only the standard library. Expose `pub type AccountId = String`, `pub struct Ledger`, `pub struct Transfer { pub from: AccountId, pub to: AccountId, pub amount: u64 }`, and `pub enum LedgerError { EmptyAccount, DuplicateAccount, UnknownAccount, SameAccount, ZeroAmount, InsufficientFunds, Overflow }`. `Ledger::new(origin, supply)` creates exactly one account, permitting zero supply but rejecting an empty identifier. Provide `add_account`, `balance`, `total`, `apply`, and `apply_batch`. New accounts start at zero. Transfers require distinct known accounts and a positive amount. Arithmetic must be checked. A failed individual transfer must not mutate the ledger. A batch is ordered and all-or-nothing: return the first error and restore the complete pre-batch state. Empty batches succeed. Total supply must never change. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "513b0501b421df84d77333bd3c25b8ed984698d5569e0948bb214318aa591f12",
+      "text": "Implement an atomic in-memory credit ledger in `solution.rs` using only the standard library. Expose `pub type AccountId = String`, `pub struct Ledger`, `pub struct Transfer { pub from: AccountId, pub to: AccountId, pub amount: u64 }`, and `pub enum LedgerError { EmptyAccount, DuplicateAccount, UnknownAccount, SameAccount, ZeroAmount, InsufficientFunds, Overflow }`. `Ledger::new(origin, supply)` creates exactly one account, permitting zero supply but rejecting an empty identifier. Provide `add_account`, `balance`, `total`, `apply`, and `apply_batch`. New accounts start at zero. Transfers require distinct known accounts and a positive amount. Arithmetic must be checked. A failed individual transfer must not mutate the ledger. A batch is ordered and all-or-nothing: return the first error and restore the complete pre-batch state. Empty batches succeed. Total supply must never change. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0141",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\npub type AccountId = String;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Transfer {\n    pub from: AccountId,\n    pub to: AccountId,\n    pub amount: u64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LedgerError {\n    EmptyAccount,\n    DuplicateAccount,\n    UnknownAccount,\n    SameAccount,\n    ZeroAmount,\n    InsufficientFunds,\n    Overflow,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    balances: BTreeMap<AccountId, u64>,\n    supply: u64,\n}\n\nimpl Ledger {\n    pub fn new(origin: AccountId, supply: u64) -> Result<Self, LedgerError> {\n        if origin.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        let mut balances = BTreeMap::new();\n        balances.insert(origin, supply);\n        Ok(Self { balances, supply })\n    }\n\n    pub fn add_account(&mut self, id: AccountId) -> Result<(), LedgerError> {\n        if id.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        if self.balances.contains_key(&id) {\n            return Err(LedgerError::DuplicateAccount);\n        }\n        self.balances.insert(id, 0);\n        Ok(())\n    }\n\n    pub fn balance(&self, id: &str) -> Option<u64> {\n        self.balances.get(id).copied()\n    }\n\n    pub fn total(&self) -> u64 {\n        self.supply\n    }\n\n    pub fn apply(&mut self, transfer: &Transfer) -> Result<(), LedgerError> {\n        if transfer.amount == 0 {\n            return Err(LedgerError::ZeroAmount);\n        }\n        if transfer.from == transfer.to {\n            return Err(LedgerError::SameAccount);\n        }\n\n        let from = self.balance(&transfer.from).ok_or(LedgerError::UnknownAccount)?;\n        let to = self.balance(&transfer.to).ok_or(LedgerError::UnknownAccount)?;\n        if from <= transfer.amount {\n            return Err(LedgerError::InsufficientFunds);\n        }\n\n        let new_from = from\n            .checked_sub(transfer.amount)\n            .ok_or(LedgerError::InsufficientFunds)?;\n        let new_to = to.checked_add(transfer.amount).ok_or(LedgerError::Overflow)?;\n        if new_to == u64::MAX && to != u64::MAX {\n            return Err(LedgerError::Overflow);\n        }\n\n        self.balances.insert(transfer.from.clone(), new_from);\n        self.balances.insert(transfer.to.clone(), new_to);\n        Ok(())\n    }\n\n    pub fn apply_batch(&mut self, transfers: &[Transfer]) -> Result<(), LedgerError> {\n        let snapshot = self.balances.clone();\n        for transfer in transfers {\n            if let Err(error) = self.apply(transfer) {\n                self.balances = snapshot;\n                return Err(error);\n            }\n        }\n        Ok(())\n    }\n}\n",
+          "label": "Rejects a valid transfer that spends an account's exact balance.",
+          "sha256": "b814d93209d5eb643e532d3e4602f5636058b640867e33c94393e5fac9af1113"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\npub type AccountId = String;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Transfer {\n    pub from: AccountId,\n    pub to: AccountId,\n    pub amount: u64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LedgerError {\n    EmptyAccount,\n    DuplicateAccount,\n    UnknownAccount,\n    SameAccount,\n    ZeroAmount,\n    InsufficientFunds,\n    Overflow,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    balances: BTreeMap<AccountId, u64>,\n    supply: u64,\n}\n\nimpl Ledger {\n    pub fn new(origin: AccountId, supply: u64) -> Result<Self, LedgerError> {\n        if origin.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        let mut balances = BTreeMap::new();\n        balances.insert(origin, supply);\n        Ok(Self { balances, supply })\n    }\n\n    pub fn add_account(&mut self, id: AccountId) -> Result<(), LedgerError> {\n        if id.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        if self.balances.contains_key(&id) {\n            return Err(LedgerError::DuplicateAccount);\n        }\n        self.balances.insert(id, 0);\n        Ok(())\n    }\n\n    pub fn balance(&self, id: &str) -> Option<u64> {\n        self.balances.get(id).copied()\n    }\n\n    pub fn total(&self) -> u64 {\n        self.supply\n    }\n\n    pub fn apply(&mut self, transfer: &Transfer) -> Result<(), LedgerError> {\n        if transfer.amount == 0 {\n            return Err(LedgerError::ZeroAmount);\n        }\n        if transfer.from == transfer.to {\n            return Err(LedgerError::SameAccount);\n        }\n\n        let from = self.balance(&transfer.from).ok_or(LedgerError::UnknownAccount)?;\n        let to = self.balance(&transfer.to).ok_or(LedgerError::UnknownAccount)?;\n        if from < transfer.amount {\n            return Err(LedgerError::InsufficientFunds);\n        }\n\n        let new_from = from\n            .checked_sub(transfer.amount)\n            .ok_or(LedgerError::InsufficientFunds)?;\n        let new_to = to.checked_add(transfer.amount).ok_or(LedgerError::Overflow)?;\n        if new_to == u64::MAX && to != u64::MAX {\n            return Err(LedgerError::Overflow);\n        }\n\n        self.balances.insert(transfer.from.clone(), new_from);\n        self.balances.insert(transfer.to.clone(), new_to);\n        Ok(())\n    }\n\n    pub fn apply_batch(&mut self, transfers: &[Transfer]) -> Result<(), LedgerError> {\n        let snapshot = self.balances.clone();\n        for transfer in transfers {\n            if let Err(error) = self.apply(transfer) {\n                self.balances = snapshot;\n                return Err(error);\n            }\n        }\n        Ok(())\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0e11b5f4972fe25c713e9a846c5f2130fb47c7c0d33448e3720ca0550784b66f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{Ledger, LedgerError, Transfer};\n\nfn transfer(from: &str, to: &str, amount: u64) -> Transfer {\n    Transfer { from: from.to_string(), to: to.to_string(), amount }\n}\n\n#[test]\nfn creates_origin_and_moves_credit_without_changing_total() {\n    let mut ledger = Ledger::new(\"origin\".to_string(), 100).expect(\"valid origin\");\n    ledger.add_account(\"alice\".to_string()).expect(\"new account\");\n    assert_eq!(ledger.balance(\"origin\").expect(\"origin exists\"), 100);\n    assert_eq!(ledger.balance(\"alice\").expect(\"alice exists\"), 0);\n    assert_eq!(ledger.total(), 100);\n\n    ledger.apply(&transfer(\"origin\", \"alice\", 40)).expect(\"transfer\");\n    assert_eq!(ledger.balance(\"origin\").unwrap(), 60);\n    assert_eq!(ledger.balance(\"alice\").unwrap(), 40);\n    assert_eq!(ledger.total(), 100);\n}\n\n#[test]\nfn validates_account_creation_atomically() {\n    assert!(matches!(Ledger::new(String::new(), 0), Err(LedgerError::EmptyAccount)));\n    let ledger = Ledger::new(\"zero\".to_string(), 0).expect(\"zero supply allowed\");\n    assert_eq!(ledger.total(), 0);\n\n    let mut ledger = Ledger::new(\"origin\".to_string(), 7).unwrap();\n    assert!(matches!(ledger.add_account(String::new()), Err(LedgerError::EmptyAccount)));\n    assert!(matches!(ledger.add_account(\"origin\".to_string()), Err(LedgerError::DuplicateAccount)));\n    assert_eq!(ledger.total(), 7);\n    assert_eq!(ledger.balance(\"origin\").unwrap(), 7);\n}\n\n#[test]\nfn failed_individual_transfers_leave_balances_unchanged() {\n    let mut ledger = Ledger::new(\"a\".to_string(), 10).unwrap();\n    ledger.add_account(\"b\".to_string()).unwrap();\n\n    let cases = [\n        transfer(\"missing\", \"b\", 1),\n        transfer(\"a\", \"missing\", 1),\n        transfer(\"a\", \"a\", 1),\n        transfer(\"a\", \"b\", 0),\n        transfer(\"a\", \"b\", 11),\n    ];\n    for item in &cases {\n        assert!(ledger.apply(item).is_err());\n        assert_eq!(ledger.balance(\"a\").unwrap(), 10);\n        assert_eq!(ledger.balance(\"b\").unwrap(), 0);\n        assert_eq!(ledger.total(), 10);\n    }\n}\n\n#[test]\nfn batch_is_ordered_and_rolls_back_on_first_failure() {\n    let mut ledger = Ledger::new(\"a\".to_string(), 10).unwrap();\n    ledger.add_account(\"b\".to_string()).unwrap();\n    ledger.add_account(\"c\".to_string()).unwrap();\n    let batch = [transfer(\"a\", \"b\", 7), transfer(\"a\", \"c\", 4)];\n\n    assert!(matches!(ledger.apply_batch(&batch), Err(LedgerError::InsufficientFunds)));\n    assert_eq!(ledger.balance(\"a\").unwrap(), 10);\n    assert_eq!(ledger.balance(\"b\").unwrap(), 0);\n    assert_eq!(ledger.balance(\"c\").unwrap(), 0);\n    assert_eq!(ledger.total(), 10);\n}\n\n#[test]\nfn successful_and_empty_batches_preserve_supply() {\n    let mut ledger = Ledger::new(\"a\".to_string(), 20).unwrap();\n    ledger.add_account(\"b\".to_string()).unwrap();\n    ledger.add_account(\"c\".to_string()).unwrap();\n    ledger.apply_batch(&[]).expect(\"empty batch succeeds\");\n    ledger.apply_batch(&[transfer(\"a\", \"b\", 12), transfer(\"b\", \"c\", 5)]).unwrap();\n    assert_eq!(ledger.balance(\"a\").unwrap(), 8);\n    assert_eq!(ledger.balance(\"b\").unwrap(), 7);\n    assert_eq!(ledger.balance(\"c\").unwrap(), 5);\n    assert_eq!(ledger.total(), 20);\n}\n\n#[test]\nfn destination_overflow_is_rejected_atomically() {\n    let mut ledger = Ledger::new(\"rich\".to_string(), u64::MAX).unwrap();\n    ledger.add_account(\"sender\".to_string()).unwrap();\n    ledger.apply(&transfer(\"rich\", \"sender\", 1)).unwrap();\n    assert!(matches!(ledger.apply(&transfer(\"sender\", \"rich\", 1)), Err(LedgerError::Overflow)));\n    assert_eq!(ledger.balance(\"rich\").unwrap(), u64::MAX - 1);\n    assert_eq!(ledger.balance(\"sender\").unwrap(), 1);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "2dc10f2847184ae89625b4c071d086a209390f710296d8f9f3c362ac07947160"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "513b0501b421df84d77333bd3c25b8ed984698d5569e0948bb214318aa591f12",
+      "text": "Implement an atomic in-memory credit ledger in `solution.rs` using only the standard library. Expose `pub type AccountId = String`, `pub struct Ledger`, `pub struct Transfer { pub from: AccountId, pub to: AccountId, pub amount: u64 }`, and `pub enum LedgerError { EmptyAccount, DuplicateAccount, UnknownAccount, SameAccount, ZeroAmount, InsufficientFunds, Overflow }`. `Ledger::new(origin, supply)` creates exactly one account, permitting zero supply but rejecting an empty identifier. Provide `add_account`, `balance`, `total`, `apply`, and `apply_batch`. New accounts start at zero. Transfers require distinct known accounts and a positive amount. Arithmetic must be checked. A failed individual transfer must not mutate the ledger. A batch is ordered and all-or-nothing: return the first error and restore the complete pre-batch state. Empty batches succeed. Total supply must never change. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "513b0501b421df84d77333bd3c25b8ed984698d5569e0948bb214318aa591f12",
+      "text": "Implement an atomic in-memory credit ledger in `solution.rs` using only the standard library. Expose `pub type AccountId = String`, `pub struct Ledger`, `pub struct Transfer { pub from: AccountId, pub to: AccountId, pub amount: u64 }`, and `pub enum LedgerError { EmptyAccount, DuplicateAccount, UnknownAccount, SameAccount, ZeroAmount, InsufficientFunds, Overflow }`. `Ledger::new(origin, supply)` creates exactly one account, permitting zero supply but rejecting an empty identifier. Provide `add_account`, `balance`, `total`, `apply`, and `apply_batch`. New accounts start at zero. Transfers require distinct known accounts and a positive amount. Arithmetic must be checked. A failed individual transfer must not mutate the ledger. A batch is ordered and all-or-nothing: return the first error and restore the complete pre-batch state. Empty batches succeed. Total supply must never change. Do not include `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0141",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::BTreeMap;\n\npub type AccountId = String;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Transfer {\n    pub from: AccountId,\n    pub to: AccountId,\n    pub amount: u64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LedgerError {\n    EmptyAccount,\n    DuplicateAccount,\n    UnknownAccount,\n    SameAccount,\n    ZeroAmount,\n    InsufficientFunds,\n    Overflow,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    balances: BTreeMap<AccountId, u64>,\n    supply: u64,\n}\n\nimpl Ledger {\n    pub fn new(origin: AccountId, supply: u64) -> Result<Self, LedgerError> {\n        if origin.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        let mut balances = BTreeMap::new();\n        balances.insert(origin, supply);\n        Ok(Self { balances, supply })\n    }\n\n    pub fn add_account(&mut self, id: AccountId) -> Result<(), LedgerError> {\n        if id.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        if self.balances.contains_key(&id) {\n            return Err(LedgerError::DuplicateAccount);\n        }\n        self.balances.insert(id, 0);\n        Ok(())\n    }\n\n    pub fn balance(&self, id: &str) -> Option<u64> {\n        self.balances.get(id).copied()\n    }\n\n    pub fn total(&self) -> u64 {\n        self.supply\n    }\n\n    pub fn apply(&mut self, transfer: &Transfer) -> Result<(), LedgerError> {\n        if transfer.amount == 0 {\n            return Err(LedgerError::ZeroAmount);\n        }\n        if transfer.from == transfer.to {\n            return Err(LedgerError::SameAccount);\n        }\n\n        let from = self.balance(&transfer.from).ok_or(LedgerError::UnknownAccount)?;\n        let to = self.balance(&transfer.to).ok_or(LedgerError::UnknownAccount)?;\n        if from <= transfer.amount {\n            return Err(LedgerError::InsufficientFunds);\n        }\n\n        let new_from = from\n            .checked_sub(transfer.amount)\n            .ok_or(LedgerError::InsufficientFunds)?;\n        let new_to = to.checked_add(transfer.amount).ok_or(LedgerError::Overflow)?;\n        if new_to == u64::MAX && to != u64::MAX {\n            return Err(LedgerError::Overflow);\n        }\n\n        self.balances.insert(transfer.from.clone(), new_from);\n        self.balances.insert(transfer.to.clone(), new_to);\n        Ok(())\n    }\n\n    pub fn apply_batch(&mut self, transfers: &[Transfer]) -> Result<(), LedgerError> {\n        let snapshot = self.balances.clone();\n        for transfer in transfers {\n            if let Err(error) = self.apply(transfer) {\n                self.balances = snapshot;\n                return Err(error);\n            }\n        }\n        Ok(())\n    }\n}\n",
+          "label": "Rejects a valid transfer that spends an account's exact balance.",
+          "sha256": "b814d93209d5eb643e532d3e4602f5636058b640867e33c94393e5fac9af1113"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::BTreeMap;\n\npub type AccountId = String;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Transfer {\n    pub from: AccountId,\n    pub to: AccountId,\n    pub amount: u64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LedgerError {\n    EmptyAccount,\n    DuplicateAccount,\n    UnknownAccount,\n    SameAccount,\n    ZeroAmount,\n    InsufficientFunds,\n    Overflow,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    balances: BTreeMap<AccountId, u64>,\n    supply: u64,\n}\n\nimpl Ledger {\n    pub fn new(origin: AccountId, supply: u64) -> Result<Self, LedgerError> {\n        if origin.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        let mut balances = BTreeMap::new();\n        balances.insert(origin, supply);\n        Ok(Self { balances, supply })\n    }\n\n    pub fn add_account(&mut self, id: AccountId) -> Result<(), LedgerError> {\n        if id.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        if self.balances.contains_key(&id) {\n            return Err(LedgerError::DuplicateAccount);\n        }\n        self.balances.insert(id, 0);\n        Ok(())\n    }\n\n    pub fn balance(&self, id: &str) -> Option<u64> {\n        self.balances.get(id).copied()\n    }\n\n    pub fn total(&self) -> u64 {\n        self.supply\n    }\n\n    pub fn apply(&mut self, transfer: &Transfer) -> Result<(), LedgerError> {\n        if transfer.amount == 0 {\n            return Err(LedgerError::ZeroAmount);\n        }\n        if transfer.from == transfer.to {\n            return Err(LedgerError::SameAccount);\n        }\n\n        let from = self.balance(&transfer.from).ok_or(LedgerError::UnknownAccount)?;\n        let to = self.balance(&transfer.to).ok_or(LedgerError::UnknownAccount)?;\n        if from < transfer.amount {\n            return Err(LedgerError::InsufficientFunds);\n        }\n\n        let new_from = from\n            .checked_sub(transfer.amount)\n            .ok_or(LedgerError::InsufficientFunds)?;\n        let new_to = to.checked_add(transfer.amount).ok_or(LedgerError::Overflow)?;\n        if new_to == u64::MAX && to != u64::MAX {\n            return Err(LedgerError::Overflow);\n        }\n\n        self.balances.insert(transfer.from.clone(), new_from);\n        self.balances.insert(transfer.to.clone(), new_to);\n        Ok(())\n    }\n\n    pub fn apply_batch(&mut self, transfers: &[Transfer]) -> Result<(), LedgerError> {\n        let snapshot = self.balances.clone();\n        for transfer in transfers {\n            if let Err(error) = self.apply(transfer) {\n                self.balances = snapshot;\n                return Err(error);\n            }\n        }\n        Ok(())\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0e11b5f4972fe25c713e9a846c5f2130fb47c7c0d33448e3720ca0550784b66f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest exact_maximum_balance_is_not_overflow ... FAILED\n\nfailures:\n\n---- exact_maximum_balance_is_not_overflow stdout ----\n\nthread 'exact_maximum_balance_is_not_overflow' panicked at solution_test.rs:10:5:\nassertion `left == right` failed\n  left: Err(Overflow)\n right: Ok(())\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    exact_maximum_balance_is_not_overflow\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "2ea8b5acbcf2881273157e3102794e47dec9e973a1fc7e2d1c6f898ae2ebe808",
+    "stderr": "warning: methods `total` and `apply_batch` are never used\n  --> solution.rs:54:12\n   |\n29 | impl Ledger {\n   | ----------- methods in this implementation\n...\n54 |     pub fn total(&self) -> u64 {\n   |            ^^^^^\n...\n85 |     pub fn apply_batch(&mut self, transfers: &[Transfer]) -> Result<(), LedgerError> {\n   |            ^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: 1 warning emitted\n\n",
+    "stderr_sha256": "508eddf6c2c6223bfbc71acf3a85268a834ffe39e35683d0314e3ffa882bd717",
+    "duration_ms": 1725,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

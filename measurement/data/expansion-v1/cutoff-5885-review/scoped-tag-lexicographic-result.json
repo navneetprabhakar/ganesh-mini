@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0099",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9f1028f4c63a875a71fbc516e38096b59319eb4fda05df1527125f04a6f467ab",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::TagRegistry;\n\n#[test]\nfn sorts_complete_qualified_tag_strings() {\n    let mut registry = TagRegistry::new();\n    for scope in [\"a\", \"a0\"] {\n        registry.register_scope(scope).unwrap();\n        registry.register_tag(scope, \"x\").unwrap();\n    }\n    assert_eq!(registry.tags(), vec![\"a0::x\", \"a::x\"]);\n}\n",
+        "sha256": "d229beda73624e9c6fb592de978a0806969586e624b905ecbd90ac5340bbac3a"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7dd2093524df44c2e1652379b094a7b1f09272273d84aa99bf8beecb80278bc8",
+      "text": "Implement an in-memory registry for scoped metadata tags.\n\nExpose a cloneable `TagRegistry`, and `RegistryError` with `InvalidName(String)`, `UnknownScope(String)`, and `Duplicate(String)` variants. Provide:\n- `TagRegistry::new() -> Self`\n- `register_scope(&mut self, scope: &str) -> Result<(), RegistryError>`\n- `register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError>`\n- `register_batch(&mut self, enabled: bool, entries: &[(&str, &str)]) -> Result<(), RegistryError>`\n- `tags(&self) -> Vec<String>`\n\nA valid name begins with an ASCII letter or underscore and continues with ASCII letters, digits, or underscores. Empty or non-ASCII names are invalid. Scopes must be registered before their tags. Re-registering a scope or a tag is a duplicate error. Duplicate tag errors contain `scope::tag`.\n\nWhen `enabled` is false, `register_batch` must return success without inspecting or changing the entries. When true, it registers entries in slice order. The whole batch is atomic: any error leaves the registry exactly unchanged, including when an earlier entry was valid. `tags` returns all `scope::tag` strings in lexicographic order. Empty registries and empty batches are valid.\n\nProvide a complete, standard-library-only `solution.rs` without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7dd2093524df44c2e1652379b094a7b1f09272273d84aa99bf8beecb80278bc8",
+      "text": "Implement an in-memory registry for scoped metadata tags.\n\nExpose a cloneable `TagRegistry`, and `RegistryError` with `InvalidName(String)`, `UnknownScope(String)`, and `Duplicate(String)` variants. Provide:\n- `TagRegistry::new() -> Self`\n- `register_scope(&mut self, scope: &str) -> Result<(), RegistryError>`\n- `register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError>`\n- `register_batch(&mut self, enabled: bool, entries: &[(&str, &str)]) -> Result<(), RegistryError>`\n- `tags(&self) -> Vec<String>`\n\nA valid name begins with an ASCII letter or underscore and continues with ASCII letters, digits, or underscores. Empty or non-ASCII names are invalid. Scopes must be registered before their tags. Re-registering a scope or a tag is a duplicate error. Duplicate tag errors contain `scope::tag`.\n\nWhen `enabled` is false, `register_batch` must return success without inspecting or changing the entries. When true, it registers entries in slice order. The whole batch is atomic: any error leaves the registry exactly unchanged, including when an earlier entry was valid. `tags` returns all `scope::tag` strings in lexicographic order. Empty registries and empty batches are valid.\n\nProvide a complete, standard-library-only `solution.rs` without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0099",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::{BTreeMap, BTreeSet};\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum RegistryError {\n    InvalidName(String),\n    UnknownScope(String),\n    Duplicate(String),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct TagRegistry {\n    scopes: BTreeMap<String, BTreeSet<String>>,\n}\n\nfn valid_name(name: &str) -> bool {\n    let mut bytes = name.bytes();\n    match bytes.next() {\n        Some(first) if first.is_ascii_alphabetic() || first == b'_' => {}\n        _ => return false,\n    }\n    bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')\n}\n\nimpl TagRegistry {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn register_scope(&mut self, scope: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if self.scopes.contains_key(scope) {\n            return Err(RegistryError::Duplicate(scope.to_owned()));\n        }\n        self.scopes.insert(scope.to_owned(), BTreeSet::new());\n        Ok(())\n    }\n\n    pub fn register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if !valid_name(tag) {\n            return Err(RegistryError::InvalidName(tag.to_owned()));\n        }\n        let tags = self\n            .scopes\n            .get_mut(scope)\n            .ok_or_else(|| RegistryError::UnknownScope(scope.to_owned()))?;\n        if !tags.insert(tag.to_owned()) {\n            return Err(RegistryError::Duplicate(format!(\"{}::{}\", scope, tag)));\n        }\n        Ok(())\n    }\n\n    pub fn register_batch(\n        &mut self,\n        enabled: bool,\n        entries: &[(&str, &str)],\n    ) -> Result<(), RegistryError> {\n        if !enabled {\n            return Ok(());\n        }\n        for &(scope, tag) in entries {\n            self.register_tag(scope, tag)?;\n        }\n        Ok(())\n    }\n\n    pub fn tags(&self) -> Vec<String> {\n        self.scopes\n            .iter()\n            .flat_map(|(scope, tags)| {\n                tags.iter().map(move |tag| format!(\"{}::{}\", scope, tag))\n            })\n            .collect()\n    }\n}\n",
+          "label": "Applies batch entries directly, leaving earlier tags registered when a later entry fails.",
+          "sha256": "e792ac6e6a472a6dcee71cce259ff7a2b8f44ab6a87884ba3374acec9d87b7fb"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::{BTreeMap, BTreeSet};\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum RegistryError {\n    InvalidName(String),\n    UnknownScope(String),\n    Duplicate(String),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct TagRegistry {\n    scopes: BTreeMap<String, BTreeSet<String>>,\n}\n\nfn valid_name(name: &str) -> bool {\n    let mut bytes = name.bytes();\n    match bytes.next() {\n        Some(first) if first.is_ascii_alphabetic() || first == b'_' => {}\n        _ => return false,\n    }\n    bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')\n}\n\nimpl TagRegistry {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn register_scope(&mut self, scope: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if self.scopes.contains_key(scope) {\n            return Err(RegistryError::Duplicate(scope.to_owned()));\n        }\n        self.scopes.insert(scope.to_owned(), BTreeSet::new());\n        Ok(())\n    }\n\n    pub fn register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if !valid_name(tag) {\n            return Err(RegistryError::InvalidName(tag.to_owned()));\n        }\n        let tags = self\n            .scopes\n            .get_mut(scope)\n            .ok_or_else(|| RegistryError::UnknownScope(scope.to_owned()))?;\n        if !tags.insert(tag.to_owned()) {\n            return Err(RegistryError::Duplicate(format!(\"{}::{}\", scope, tag)));\n        }\n        Ok(())\n    }\n\n    pub fn register_batch(\n        &mut self,\n        enabled: bool,\n        entries: &[(&str, &str)],\n    ) -> Result<(), RegistryError> {\n        if !enabled {\n            return Ok(());\n        }\n        let mut candidate = self.clone();\n        for &(scope, tag) in entries {\n            candidate.register_tag(scope, tag)?;\n        }\n        *self = candidate;\n        Ok(())\n    }\n\n    pub fn tags(&self) -> Vec<String> {\n        self.scopes\n            .iter()\n            .flat_map(|(scope, tags)| {\n                tags.iter().map(move |tag| format!(\"{}::{}\", scope, tag))\n            })\n            .collect()\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0e24a33412199403e6ef0e7d766ecf276c4213d509adf4cef73257735d3a8922"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{RegistryError, TagRegistry};\n\n#[test]\nfn empty_registry_and_disabled_batches_are_noops() {\n    let mut registry = TagRegistry::new();\n    assert!(registry.tags().is_empty());\n    registry.register_batch(false, &[(\"\", \"bad-name\"), (\"unknown\", \"tag\")]).unwrap();\n    assert!(registry.tags().is_empty());\n    registry.register_batch(true, &[]).unwrap();\n    assert!(registry.tags().is_empty());\n}\n\n#[test]\nfn valid_names_and_sorted_owned_tag_output() {\n    let mut registry = TagRegistry::new();\n    registry.register_scope(\"z_scope\").unwrap();\n    registry.register_scope(\"Alpha2\").unwrap();\n    registry.register_tag(\"z_scope\", \"_tag9\").unwrap();\n    registry.register_tag(\"Alpha2\", \"beta\").unwrap();\n    registry.register_tag(\"Alpha2\", \"Alpha\").unwrap();\n    assert_eq!(registry.tags(), vec![\"Alpha2::Alpha\", \"Alpha2::beta\", \"z_scope::_tag9\"]);\n\n    let mut returned = registry.tags();\n    returned[0].push_str(\"-changed\");\n    assert_eq!(registry.tags()[0], \"Alpha2::Alpha\");\n}\n\n#[test]\nfn invalid_names_are_rejected_with_the_original_name() {\n    let mut registry = TagRegistry::new();\n    for name in [\"\", \"9scope\", \"bad-name\", \"\u00e9clair\", \"has space\"] {\n        match registry.register_scope(name) {\n            Err(RegistryError::InvalidName(found)) => assert_eq!(found, name),\n            _ => panic!(\"expected InvalidName\"),\n        }\n    }\n    registry.register_scope(\"valid\").unwrap();\n    match registry.register_tag(\"valid\", \"\") {\n        Err(RegistryError::InvalidName(found)) => assert_eq!(found, \"\"),\n        _ => panic!(\"expected InvalidName\"),\n    }\n}\n\n#[test]\nfn unknown_scopes_and_duplicates_report_required_payloads() {\n    let mut registry = TagRegistry::new();\n    match registry.register_tag(\"missing\", \"tag\") {\n        Err(RegistryError::UnknownScope(scope)) => assert_eq!(scope, \"missing\"),\n        _ => panic!(\"expected UnknownScope\"),\n    }\n\n    registry.register_scope(\"scope\").unwrap();\n    match registry.register_scope(\"scope\") {\n        Err(RegistryError::Duplicate(name)) => assert_eq!(name, \"scope\"),\n        _ => panic!(\"expected Duplicate\"),\n    }\n    registry.register_tag(\"scope\", \"tag\").unwrap();\n    match registry.register_tag(\"scope\", \"tag\") {\n        Err(RegistryError::Duplicate(name)) => assert_eq!(name, \"scope::tag\"),\n        _ => panic!(\"expected Duplicate\"),\n    }\n}\n\n#[test]\nfn enabled_batch_is_atomic_and_processes_in_order() {\n    let mut registry = TagRegistry::new();\n    registry.register_scope(\"s\").unwrap();\n    registry.register_tag(\"s\", \"existing\").unwrap();\n\n    match registry.register_batch(true, &[(\"s\", \"first\"), (\"missing\", \"second\")]) {\n        Err(RegistryError::UnknownScope(scope)) => assert_eq!(scope, \"missing\"),\n        _ => panic!(\"expected UnknownScope\"),\n    }\n    assert_eq!(registry.tags(), vec![\"s::existing\"]);\n    registry.register_tag(\"s\", \"first\").unwrap();\n}\n\n#[test]\nfn clone_has_independent_registry_state() {\n    let mut original = TagRegistry::new();\n    original.register_scope(\"s\").unwrap();\n    let mut cloned = original.clone();\n    cloned.register_tag(\"s\", \"only_clone\").unwrap();\n    assert!(original.tags().is_empty());\n    assert_eq!(cloned.tags(), vec![\"s::only_clone\"]);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "50a0ec6c2919549f821d5f101162c24c5647505f74d8a1241f0a3b5273fe542f"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7dd2093524df44c2e1652379b094a7b1f09272273d84aa99bf8beecb80278bc8",
+      "text": "Implement an in-memory registry for scoped metadata tags.\n\nExpose a cloneable `TagRegistry`, and `RegistryError` with `InvalidName(String)`, `UnknownScope(String)`, and `Duplicate(String)` variants. Provide:\n- `TagRegistry::new() -> Self`\n- `register_scope(&mut self, scope: &str) -> Result<(), RegistryError>`\n- `register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError>`\n- `register_batch(&mut self, enabled: bool, entries: &[(&str, &str)]) -> Result<(), RegistryError>`\n- `tags(&self) -> Vec<String>`\n\nA valid name begins with an ASCII letter or underscore and continues with ASCII letters, digits, or underscores. Empty or non-ASCII names are invalid. Scopes must be registered before their tags. Re-registering a scope or a tag is a duplicate error. Duplicate tag errors contain `scope::tag`.\n\nWhen `enabled` is false, `register_batch` must return success without inspecting or changing the entries. When true, it registers entries in slice order. The whole batch is atomic: any error leaves the registry exactly unchanged, including when an earlier entry was valid. `tags` returns all `scope::tag` strings in lexicographic order. Empty registries and empty batches are valid.\n\nProvide a complete, standard-library-only `solution.rs` without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7dd2093524df44c2e1652379b094a7b1f09272273d84aa99bf8beecb80278bc8",
+      "text": "Implement an in-memory registry for scoped metadata tags.\n\nExpose a cloneable `TagRegistry`, and `RegistryError` with `InvalidName(String)`, `UnknownScope(String)`, and `Duplicate(String)` variants. Provide:\n- `TagRegistry::new() -> Self`\n- `register_scope(&mut self, scope: &str) -> Result<(), RegistryError>`\n- `register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError>`\n- `register_batch(&mut self, enabled: bool, entries: &[(&str, &str)]) -> Result<(), RegistryError>`\n- `tags(&self) -> Vec<String>`\n\nA valid name begins with an ASCII letter or underscore and continues with ASCII letters, digits, or underscores. Empty or non-ASCII names are invalid. Scopes must be registered before their tags. Re-registering a scope or a tag is a duplicate error. Duplicate tag errors contain `scope::tag`.\n\nWhen `enabled` is false, `register_batch` must return success without inspecting or changing the entries. When true, it registers entries in slice order. The whole batch is atomic: any error leaves the registry exactly unchanged, including when an earlier entry was valid. `tags` returns all `scope::tag` strings in lexicographic order. Empty registries and empty batches are valid.\n\nProvide a complete, standard-library-only `solution.rs` without `main`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0099",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "use std::collections::{BTreeMap, BTreeSet};\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum RegistryError {\n    InvalidName(String),\n    UnknownScope(String),\n    Duplicate(String),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct TagRegistry {\n    scopes: BTreeMap<String, BTreeSet<String>>,\n}\n\nfn valid_name(name: &str) -> bool {\n    let mut bytes = name.bytes();\n    match bytes.next() {\n        Some(first) if first.is_ascii_alphabetic() || first == b'_' => {}\n        _ => return false,\n    }\n    bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')\n}\n\nimpl TagRegistry {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn register_scope(&mut self, scope: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if self.scopes.contains_key(scope) {\n            return Err(RegistryError::Duplicate(scope.to_owned()));\n        }\n        self.scopes.insert(scope.to_owned(), BTreeSet::new());\n        Ok(())\n    }\n\n    pub fn register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if !valid_name(tag) {\n            return Err(RegistryError::InvalidName(tag.to_owned()));\n        }\n        let tags = self\n            .scopes\n            .get_mut(scope)\n            .ok_or_else(|| RegistryError::UnknownScope(scope.to_owned()))?;\n        if !tags.insert(tag.to_owned()) {\n            return Err(RegistryError::Duplicate(format!(\"{}::{}\", scope, tag)));\n        }\n        Ok(())\n    }\n\n    pub fn register_batch(\n        &mut self,\n        enabled: bool,\n        entries: &[(&str, &str)],\n    ) -> Result<(), RegistryError> {\n        if !enabled {\n            return Ok(());\n        }\n        for &(scope, tag) in entries {\n            self.register_tag(scope, tag)?;\n        }\n        Ok(())\n    }\n\n    pub fn tags(&self) -> Vec<String> {\n        self.scopes\n            .iter()\n            .flat_map(|(scope, tags)| {\n                tags.iter().map(move |tag| format!(\"{}::{}\", scope, tag))\n            })\n            .collect()\n    }\n}\n",
+          "label": "Applies batch entries directly, leaving earlier tags registered when a later entry fails.",
+          "sha256": "e792ac6e6a472a6dcee71cce259ff7a2b8f44ab6a87884ba3374acec9d87b7fb"
+        }
+      ],
+      "reference": {
+        "code": "use std::collections::{BTreeMap, BTreeSet};\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum RegistryError {\n    InvalidName(String),\n    UnknownScope(String),\n    Duplicate(String),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct TagRegistry {\n    scopes: BTreeMap<String, BTreeSet<String>>,\n}\n\nfn valid_name(name: &str) -> bool {\n    let mut bytes = name.bytes();\n    match bytes.next() {\n        Some(first) if first.is_ascii_alphabetic() || first == b'_' => {}\n        _ => return false,\n    }\n    bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')\n}\n\nimpl TagRegistry {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn register_scope(&mut self, scope: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if self.scopes.contains_key(scope) {\n            return Err(RegistryError::Duplicate(scope.to_owned()));\n        }\n        self.scopes.insert(scope.to_owned(), BTreeSet::new());\n        Ok(())\n    }\n\n    pub fn register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if !valid_name(tag) {\n            return Err(RegistryError::InvalidName(tag.to_owned()));\n        }\n        let tags = self\n            .scopes\n            .get_mut(scope)\n            .ok_or_else(|| RegistryError::UnknownScope(scope.to_owned()))?;\n        if !tags.insert(tag.to_owned()) {\n            return Err(RegistryError::Duplicate(format!(\"{}::{}\", scope, tag)));\n        }\n        Ok(())\n    }\n\n    pub fn register_batch(\n        &mut self,\n        enabled: bool,\n        entries: &[(&str, &str)],\n    ) -> Result<(), RegistryError> {\n        if !enabled {\n            return Ok(());\n        }\n        let mut candidate = self.clone();\n        for &(scope, tag) in entries {\n            candidate.register_tag(scope, tag)?;\n        }\n        *self = candidate;\n        Ok(())\n    }\n\n    pub fn tags(&self) -> Vec<String> {\n        self.scopes\n            .iter()\n            .flat_map(|(scope, tags)| {\n                tags.iter().map(move |tag| format!(\"{}::{}\", scope, tag))\n            })\n            .collect()\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0e24a33412199403e6ef0e7d766ecf276c4213d509adf4cef73257735d3a8922"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest sorts_complete_qualified_tag_strings ... FAILED\n\nfailures:\n\n---- sorts_complete_qualified_tag_strings stdout ----\n\nthread 'sorts_complete_qualified_tag_strings' panicked at solution_test.rs:12:5:\nassertion `left == right` failed\n  left: [\"a::x\", \"a0::x\"]\n right: [\"a0::x\", \"a::x\"]\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    sorts_complete_qualified_tag_strings\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "b13c947a3fc342cfb51c5bcc1d19108454745df074ff0e6e7577f439c37ffe06",
+    "stderr": "warning: method `register_batch` is never used\n  --> solution.rs:57:12\n   |\n24 | impl TagRegistry {\n   | ---------------- method in this implementation\n...\n57 |     pub fn register_batch(\n   |            ^^^^^^^^^^^^^^\n   |\n   = note: `#[warn(dead_code)]` on by default\n\nwarning: 1 warning emitted\n\n",
+    "stderr_sha256": "b06982dc6d6a3e45a5417fa5b07ea0c6f6e635b57da9f496bfc9b8b4dcb518b8",
+    "duration_ms": 1626,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-rust-generation-0154",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "821acafb93890dc565aa75dcedfb9a635f3d9886f4667671f181c1362e894f63",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::EnvelopeDecoder;\n\nfn require_equality<T: PartialEq + Eq>() {}\n\n#[test]\nfn all_public_types_include_decoder_equality_traits() {\n    require_equality::<EnvelopeDecoder>();\n}\n",
+        "sha256": "5e6bd82999a7a926b1b3d11c5b955fde7cd4eb09168cceedd4fbc5e913f3c4d4"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e9aa11d1a9f3ae894bd83bf4ef7325742b59743af63a6c26d8302aa806dae9c0",
+      "text": "Implement an in-memory envelope decoder in `solution.rs` using only the standard library. Define `Endpoint { pub node: String, pub port: u16 }`, `Transport { Plain, Shielded }`, `Envelope { pub transport: Transport, pub payload: Vec<u8>, pub client_tag: Option<String>, pub protocol: Option<u8>, pub peer: Endpoint, pub local: Endpoint }`, `DecodeError { Truncated, InvalidHeader, InvalidUtf8 }`, and a unit struct `EnvelopeDecoder`. Derive clone/debug/equality traits for all types.\n\nExpose `pub fn is_shielded_prefix(bytes: &[u8]) -> bool`, which is true exactly when the first byte exists and equals `0xA5`. Expose `EnvelopeDecoder::decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError>`.\n\nPlain input is any input not beginning with `0xA5`, including empty input; its complete bytes become the payload and optional fields are `None`. A shielded envelope is `[0xA5, tag_len, protocol, payload_len_hi, payload_len_lo, tag..., payload...]`. It must contain exactly the declared number of bytes: missing or trailing bytes yield `InvalidHeader`, except fewer than five total bytes yields `Truncated`. The tag must be valid UTF-8; a zero-length tag maps to `None`, otherwise to `Some`. Protocol byte zero maps to `None`, otherwise `Some`. Preserve payload bytes, endpoints, and input without mutation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e9aa11d1a9f3ae894bd83bf4ef7325742b59743af63a6c26d8302aa806dae9c0",
+      "text": "Implement an in-memory envelope decoder in `solution.rs` using only the standard library. Define `Endpoint { pub node: String, pub port: u16 }`, `Transport { Plain, Shielded }`, `Envelope { pub transport: Transport, pub payload: Vec<u8>, pub client_tag: Option<String>, pub protocol: Option<u8>, pub peer: Endpoint, pub local: Endpoint }`, `DecodeError { Truncated, InvalidHeader, InvalidUtf8 }`, and a unit struct `EnvelopeDecoder`. Derive clone/debug/equality traits for all types.\n\nExpose `pub fn is_shielded_prefix(bytes: &[u8]) -> bool`, which is true exactly when the first byte exists and equals `0xA5`. Expose `EnvelopeDecoder::decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError>`.\n\nPlain input is any input not beginning with `0xA5`, including empty input; its complete bytes become the payload and optional fields are `None`. A shielded envelope is `[0xA5, tag_len, protocol, payload_len_hi, payload_len_lo, tag..., payload...]`. It must contain exactly the declared number of bytes: missing or trailing bytes yield `InvalidHeader`, except fewer than five total bytes yields `Truncated`. The tag must be valid UTF-8; a zero-length tag maps to `None`, otherwise to `Some`. Protocol byte zero maps to `None`, otherwise `Some`. Preserve payload bytes, endpoints, and input without mutation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0154",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Endpoint { pub node: String, pub port: u16 }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum Transport { Plain, Shielded }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Envelope {\n    pub transport: Transport,\n    pub payload: Vec<u8>,\n    pub client_tag: Option<String>,\n    pub protocol: Option<u8>,\n    pub peer: Endpoint,\n    pub local: Endpoint,\n}\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum DecodeError { Truncated, InvalidHeader, InvalidUtf8 }\n#[derive(Clone, Debug, Default)]\npub struct EnvelopeDecoder;\n\npub fn is_shielded_prefix(bytes: &[u8]) -> bool { bytes.first() == Some(&0x5A) }\n\nimpl EnvelopeDecoder {\n    pub fn decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError> {\n        if !is_shielded_prefix(bytes) {\n            return Ok(Envelope { transport: Transport::Plain, payload: bytes.to_vec(), client_tag: None, protocol: None, peer, local });\n        }\n        if bytes.len() < 5 { return Err(DecodeError::Truncated); }\n        let tag_len = bytes[1] as usize;\n        let payload_len = u16::from_be_bytes([bytes[3], bytes[4]]) as usize;\n        let expected = 5usize.checked_add(tag_len).and_then(|n| n.checked_add(payload_len)).ok_or(DecodeError::InvalidHeader)?;\n        if bytes.len() != expected { return Err(DecodeError::InvalidHeader); }\n        let tag_bytes = &bytes[5..5 + tag_len];\n        let client_tag = if tag_bytes.is_empty() { None } else {\n            Some(std::str::from_utf8(tag_bytes).map_err(|_| DecodeError::InvalidUtf8)?.to_owned())\n        };\n        Ok(Envelope {\n            transport: Transport::Shielded,\n            payload: bytes[5 + tag_len..].to_vec(),\n            client_tag,\n            protocol: if bytes[2] == 0 { None } else { Some(bytes[2]) },\n            peer,\n            local,\n        })\n    }\n}\n",
+          "label": "Checks for marker 0x5A instead of 0xA5, so valid shielded envelopes are treated as plain data.",
+          "sha256": "896c78f97a1e3bc0c883d7af25583627102140ee8955d23adc11a5387e57de34"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Endpoint { pub node: String, pub port: u16 }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum Transport { Plain, Shielded }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Envelope {\n    pub transport: Transport,\n    pub payload: Vec<u8>,\n    pub client_tag: Option<String>,\n    pub protocol: Option<u8>,\n    pub peer: Endpoint,\n    pub local: Endpoint,\n}\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum DecodeError { Truncated, InvalidHeader, InvalidUtf8 }\n#[derive(Clone, Debug, Default)]\npub struct EnvelopeDecoder;\n\npub fn is_shielded_prefix(bytes: &[u8]) -> bool { bytes.first() == Some(&0xA5) }\n\nimpl EnvelopeDecoder {\n    pub fn decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError> {\n        if !is_shielded_prefix(bytes) {\n            return Ok(Envelope { transport: Transport::Plain, payload: bytes.to_vec(), client_tag: None, protocol: None, peer, local });\n        }\n        if bytes.len() < 5 { return Err(DecodeError::Truncated); }\n        let tag_len = bytes[1] as usize;\n        let payload_len = u16::from_be_bytes([bytes[3], bytes[4]]) as usize;\n        let expected = 5usize.checked_add(tag_len).and_then(|n| n.checked_add(payload_len)).ok_or(DecodeError::InvalidHeader)?;\n        if bytes.len() != expected { return Err(DecodeError::InvalidHeader); }\n        let tag_bytes = &bytes[5..5 + tag_len];\n        let client_tag = if tag_bytes.is_empty() { None } else {\n            Some(std::str::from_utf8(tag_bytes).map_err(|_| DecodeError::InvalidUtf8)?.to_owned())\n        };\n        Ok(Envelope {\n            transport: Transport::Shielded,\n            payload: bytes[5 + tag_len..].to_vec(),\n            client_tag,\n            protocol: if bytes[2] == 0 { None } else { Some(bytes[2]) },\n            peer,\n            local,\n        })\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7dc1601de9a855802d017fc82a6574e83ebda6274e218c128e1341d788c2ceb5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{is_shielded_prefix, DecodeError, Endpoint, EnvelopeDecoder, Transport};\n\nfn peer() -> Endpoint { Endpoint { node: \"peer\".into(), port: 10 } }\nfn local() -> Endpoint { Endpoint { node: \"local\".into(), port: 20 } }\n\n#[test]\nfn prefix_detection_is_exact() {\n    assert!(!is_shielded_prefix(&[]));\n    assert!(!is_shielded_prefix(&[0x00, 0xa5]));\n    assert!(is_shielded_prefix(&[0xa5]));\n    assert!(is_shielded_prefix(&[0xa5, 0x00]));\n}\n\n#[test]\nfn plain_inputs_include_empty_and_preserve_every_byte() {\n    let decoder = EnvelopeDecoder;\n    for bytes in [Vec::new(), vec![0], vec![1, 2, 3, 255]] {\n        let before = bytes.clone();\n        let envelope = decoder.decode(&bytes, peer(), local()).unwrap();\n        assert_eq!(envelope.transport, Transport::Plain);\n        assert_eq!(envelope.payload, bytes);\n        assert_eq!(envelope.client_tag, None);\n        assert_eq!(envelope.protocol, None);\n        assert_eq!(envelope.peer, peer());\n        assert_eq!(envelope.local, local());\n        assert_eq!(bytes, before);\n    }\n}\n\n#[test]\nfn decodes_shielded_fields_and_zero_optionals() {\n    let decoder = EnvelopeDecoder;\n    let bytes = vec![0xa5, 3, 7, 0, 4, b'a', b'b', b'c', 0, 1, 2, 255];\n    let envelope = decoder.decode(&bytes, peer(), local()).unwrap();\n    assert_eq!(envelope.transport, Transport::Shielded);\n    assert_eq!(envelope.client_tag, Some(\"abc\".into()));\n    assert_eq!(envelope.protocol, Some(7));\n    assert_eq!(envelope.payload, vec![0, 1, 2, 255]);\n\n    let empty = decoder.decode(&[0xa5, 0, 0, 0, 0], peer(), local()).unwrap();\n    assert_eq!(empty.transport, Transport::Shielded);\n    assert_eq!(empty.client_tag, None);\n    assert_eq!(empty.protocol, None);\n    assert!(empty.payload.is_empty());\n}\n\n#[test]\nfn distinguishes_truncation_from_declared_length_errors() {\n    let decoder = EnvelopeDecoder;\n    for bytes in [&[0xa5][..], &[0xa5, 0][..], &[0xa5, 0, 0, 0][..]] {\n        assert_eq!(decoder.decode(bytes, peer(), local()), Err(DecodeError::Truncated));\n    }\n    assert_eq!(decoder.decode(&[0xa5, 1, 1, 0, 1], peer(), local()), Err(DecodeError::InvalidHeader));\n    assert_eq!(decoder.decode(&[0xa5, 0, 1, 0, 0, 9], peer(), local()), Err(DecodeError::InvalidHeader));\n    assert_eq!(decoder.decode(&[0xa5, 0, 1, 0, 2, 9], peer(), local()), Err(DecodeError::InvalidHeader));\n}\n\n#[test]\nfn invalid_tag_utf8_is_reported_without_mutating_input() {\n    let decoder = EnvelopeDecoder;\n    let bytes = vec![0xa5, 1, 1, 0, 0, 0xff];\n    let before = bytes.clone();\n    assert_eq!(decoder.decode(&bytes, peer(), local()), Err(DecodeError::InvalidUtf8));\n    assert_eq!(bytes, before);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "4a15d40f6f7d748339506ddb0568b17d62d2211394e6b54d8de0b07d9b5db0f1"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e9aa11d1a9f3ae894bd83bf4ef7325742b59743af63a6c26d8302aa806dae9c0",
+      "text": "Implement an in-memory envelope decoder in `solution.rs` using only the standard library. Define `Endpoint { pub node: String, pub port: u16 }`, `Transport { Plain, Shielded }`, `Envelope { pub transport: Transport, pub payload: Vec<u8>, pub client_tag: Option<String>, pub protocol: Option<u8>, pub peer: Endpoint, pub local: Endpoint }`, `DecodeError { Truncated, InvalidHeader, InvalidUtf8 }`, and a unit struct `EnvelopeDecoder`. Derive clone/debug/equality traits for all types.\n\nExpose `pub fn is_shielded_prefix(bytes: &[u8]) -> bool`, which is true exactly when the first byte exists and equals `0xA5`. Expose `EnvelopeDecoder::decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError>`.\n\nPlain input is any input not beginning with `0xA5`, including empty input; its complete bytes become the payload and optional fields are `None`. A shielded envelope is `[0xA5, tag_len, protocol, payload_len_hi, payload_len_lo, tag..., payload...]`. It must contain exactly the declared number of bytes: missing or trailing bytes yield `InvalidHeader`, except fewer than five total bytes yields `Truncated`. The tag must be valid UTF-8; a zero-length tag maps to `None`, otherwise to `Some`. Protocol byte zero maps to `None`, otherwise `Some`. Preserve payload bytes, endpoints, and input without mutation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e9aa11d1a9f3ae894bd83bf4ef7325742b59743af63a6c26d8302aa806dae9c0",
+      "text": "Implement an in-memory envelope decoder in `solution.rs` using only the standard library. Define `Endpoint { pub node: String, pub port: u16 }`, `Transport { Plain, Shielded }`, `Envelope { pub transport: Transport, pub payload: Vec<u8>, pub client_tag: Option<String>, pub protocol: Option<u8>, pub peer: Endpoint, pub local: Endpoint }`, `DecodeError { Truncated, InvalidHeader, InvalidUtf8 }`, and a unit struct `EnvelopeDecoder`. Derive clone/debug/equality traits for all types.\n\nExpose `pub fn is_shielded_prefix(bytes: &[u8]) -> bool`, which is true exactly when the first byte exists and equals `0xA5`. Expose `EnvelopeDecoder::decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError>`.\n\nPlain input is any input not beginning with `0xA5`, including empty input; its complete bytes become the payload and optional fields are `None`. A shielded envelope is `[0xA5, tag_len, protocol, payload_len_hi, payload_len_lo, tag..., payload...]`. It must contain exactly the declared number of bytes: missing or trailing bytes yield `InvalidHeader`, except fewer than five total bytes yields `Truncated`. The tag must be valid UTF-8; a zero-length tag maps to `None`, otherwise to `Some`. Protocol byte zero maps to `None`, otherwise `Some`. Preserve payload bytes, endpoints, and input without mutation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0154",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Endpoint { pub node: String, pub port: u16 }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum Transport { Plain, Shielded }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Envelope {\n    pub transport: Transport,\n    pub payload: Vec<u8>,\n    pub client_tag: Option<String>,\n    pub protocol: Option<u8>,\n    pub peer: Endpoint,\n    pub local: Endpoint,\n}\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum DecodeError { Truncated, InvalidHeader, InvalidUtf8 }\n#[derive(Clone, Debug, Default)]\npub struct EnvelopeDecoder;\n\npub fn is_shielded_prefix(bytes: &[u8]) -> bool { bytes.first() == Some(&0x5A) }\n\nimpl EnvelopeDecoder {\n    pub fn decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError> {\n        if !is_shielded_prefix(bytes) {\n            return Ok(Envelope { transport: Transport::Plain, payload: bytes.to_vec(), client_tag: None, protocol: None, peer, local });\n        }\n        if bytes.len() < 5 { return Err(DecodeError::Truncated); }\n        let tag_len = bytes[1] as usize;\n        let payload_len = u16::from_be_bytes([bytes[3], bytes[4]]) as usize;\n        let expected = 5usize.checked_add(tag_len).and_then(|n| n.checked_add(payload_len)).ok_or(DecodeError::InvalidHeader)?;\n        if bytes.len() != expected { return Err(DecodeError::InvalidHeader); }\n        let tag_bytes = &bytes[5..5 + tag_len];\n        let client_tag = if tag_bytes.is_empty() { None } else {\n            Some(std::str::from_utf8(tag_bytes).map_err(|_| DecodeError::InvalidUtf8)?.to_owned())\n        };\n        Ok(Envelope {\n            transport: Transport::Shielded,\n            payload: bytes[5 + tag_len..].to_vec(),\n            client_tag,\n            protocol: if bytes[2] == 0 { None } else { Some(bytes[2]) },\n            peer,\n            local,\n        })\n    }\n}\n",
+          "label": "Checks for marker 0x5A instead of 0xA5, so valid shielded envelopes are treated as plain data.",
+          "sha256": "896c78f97a1e3bc0c883d7af25583627102140ee8955d23adc11a5387e57de34"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Endpoint { pub node: String, pub port: u16 }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum Transport { Plain, Shielded }\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Envelope {\n    pub transport: Transport,\n    pub payload: Vec<u8>,\n    pub client_tag: Option<String>,\n    pub protocol: Option<u8>,\n    pub peer: Endpoint,\n    pub local: Endpoint,\n}\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum DecodeError { Truncated, InvalidHeader, InvalidUtf8 }\n#[derive(Clone, Debug, Default)]\npub struct EnvelopeDecoder;\n\npub fn is_shielded_prefix(bytes: &[u8]) -> bool { bytes.first() == Some(&0xA5) }\n\nimpl EnvelopeDecoder {\n    pub fn decode(&self, bytes: &[u8], peer: Endpoint, local: Endpoint) -> Result<Envelope, DecodeError> {\n        if !is_shielded_prefix(bytes) {\n            return Ok(Envelope { transport: Transport::Plain, payload: bytes.to_vec(), client_tag: None, protocol: None, peer, local });\n        }\n        if bytes.len() < 5 { return Err(DecodeError::Truncated); }\n        let tag_len = bytes[1] as usize;\n        let payload_len = u16::from_be_bytes([bytes[3], bytes[4]]) as usize;\n        let expected = 5usize.checked_add(tag_len).and_then(|n| n.checked_add(payload_len)).ok_or(DecodeError::InvalidHeader)?;\n        if bytes.len() != expected { return Err(DecodeError::InvalidHeader); }\n        let tag_bytes = &bytes[5..5 + tag_len];\n        let client_tag = if tag_bytes.is_empty() { None } else {\n            Some(std::str::from_utf8(tag_bytes).map_err(|_| DecodeError::InvalidUtf8)?.to_owned())\n        };\n        Ok(Envelope {\n            transport: Transport::Shielded,\n            payload: bytes[5 + tag_len..].to_vec(),\n            client_tag,\n            protocol: if bytes[2] == 0 { None } else { Some(bytes[2]) },\n            peer,\n            local,\n        })\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7dc1601de9a855802d017fc82a6574e83ebda6274e218c128e1341d788c2ceb5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "error[E0277]: the trait bound `EnvelopeDecoder: Eq` is not satisfied\n --> solution_test.rs:9:24\n  |\n9 |     require_equality::<EnvelopeDecoder>();\n  |                        ^^^^^^^^^^^^^^^ the trait `Eq` is not implemented for `EnvelopeDecoder`\n  |\nnote: required by a bound in `require_equality`\n --> solution_test.rs:5:36\n  |\n5 | fn require_equality<T: PartialEq + Eq>() {}\n  |                                    ^^ required by this bound in `require_equality`\nhelp: consider annotating `EnvelopeDecoder` with `#[derive(Eq)]`\n --> solution.rs:17:1\n  |\n17+ #[derive(Eq)]\n18| pub struct EnvelopeDecoder;\n  |\n\nerror: aborting due to 1 previous error\n\nFor more information about this error, try `rustc --explain E0277`.\n",
+    "stderr_sha256": "5464b76ff6cd699782024e34a977718b5229817c3d62716a4ad6c4ea4eca404f",
+    "duration_ms": 662,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-generation-0092",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "fb599775c62d40ba3fba6a8ea9a454415ad1d7de70a66a78206526600f768935",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::read_tagged_field;\n\n#[test]\nfn matched_non_nested_hyphenated_name_is_preserved() {\n    assert_eq!(read_tagged_field(\"[item-name]exact text[/item-name]\", \"item-name\"),\n               Ok(Some(\"exact text\".to_string())));\n}\n",
+        "sha256": "b9019ce396b219eb5b82e89488223d95e847751a48c068cbfed12006a6e23803"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7069241c14efff84e0b7724e90daa76b336a8104509b5a187cb622f3c25a40dd",
+      "text": "Implement a parser for a compact tagged-text format in `solution.rs` using only the Rust standard library.\n\nExpose this API:\n\n```rust\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError>;\n```\n\nA field has the form `[name]text[/name]`. Names and delimiters are case-sensitive. Fields may appear consecutively with arbitrary text between them, but fields cannot be nested. Return the exact text between the delimiters, including whitespace. An empty field returns `Some(String::new())`.\n\nReturn `EmptyName` when `name` is empty. Return `Malformed` if any opening or closing delimiter in `input` is unmatched, mismatched, or nested. Validate the whole input even when the requested field appears early. Return `Duplicate` if the requested name occurs more than once. Return `Ok(None)` when the document is valid but the requested field is absent. Brackets in ordinary text are allowed unless they form a delimiter beginning with `[` followed immediately by `/` or an ASCII letter. Inputs must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7069241c14efff84e0b7724e90daa76b336a8104509b5a187cb622f3c25a40dd",
+      "text": "Implement a parser for a compact tagged-text format in `solution.rs` using only the Rust standard library.\n\nExpose this API:\n\n```rust\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError>;\n```\n\nA field has the form `[name]text[/name]`. Names and delimiters are case-sensitive. Fields may appear consecutively with arbitrary text between them, but fields cannot be nested. Return the exact text between the delimiters, including whitespace. An empty field returns `Some(String::new())`.\n\nReturn `EmptyName` when `name` is empty. Return `Malformed` if any opening or closing delimiter in `input` is unmatched, mismatched, or nested. Validate the whole input even when the requested field appears early. Return `Duplicate` if the requested name occurs more than once. Return `Ok(None)` when the document is valid but the requested field is absent. Brackets in ordinary text are allowed unless they form a delimiter beginning with `[` followed immediately by `/` or an ASCII letter. Inputs must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0092",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError> {\n    if name.is_empty() {\n        return Err(FieldError::EmptyName);\n    }\n\n    let bytes = input.as_bytes();\n    let mut pos = 0;\n    let mut result: Option<String> = None;\n\n    while pos < bytes.len() {\n        if bytes[pos] != b'[' {\n            pos += 1;\n            continue;\n        }\n        let starts_delimiter = bytes.get(pos + 1) == Some(&b'/')\n            || bytes.get(pos + 1).is_some_and(u8::is_ascii_alphabetic);\n        if !starts_delimiter {\n            pos += 1;\n            continue;\n        }\n\n        let open_end = input[pos + 1..]\n            .find(']')\n            .map(|offset| pos + 1 + offset)\n            .ok_or(FieldError::Malformed)?;\n        let open_name = &input[pos + 1..open_end];\n        if open_name.is_empty()\n            || open_name.starts_with('/')\n            || !open_name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')\n        {\n            return Err(FieldError::Malformed);\n        }\n\n        let close = format!(\"[/{open_name}]\");\n        let content_start = open_end + 1;\n        let relative_end = input[content_start..]\n            .find(&close)\n            .ok_or(FieldError::Malformed)?;\n        let content_end = content_start + relative_end;\n        let content = input[content_start..content_end].trim();\n\n        if content.as_bytes().windows(2).any(|w| {\n            w[0] == b'[' && (w[1] == b'/' || w[1].is_ascii_alphabetic())\n        }) {\n            return Err(FieldError::Malformed);\n        }\n\n        if open_name == name {\n            if result.is_some() {\n                return Err(FieldError::Duplicate);\n            }\n            result = Some(content.to_string());\n        }\n        pos = content_end + close.len();\n    }\n\n    Ok(result)\n}\n",
+          "label": "The extracted field content is trimmed, so significant leading and trailing whitespace is lost.",
+          "sha256": "35ef60d378137f90f11ed7b1cc613a4f6ca993cb28b958d5bec893a9e97c3adc"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError> {\n    if name.is_empty() {\n        return Err(FieldError::EmptyName);\n    }\n\n    let bytes = input.as_bytes();\n    let mut pos = 0;\n    let mut result: Option<String> = None;\n\n    while pos < bytes.len() {\n        if bytes[pos] != b'[' {\n            pos += 1;\n            continue;\n        }\n        let starts_delimiter = bytes.get(pos + 1) == Some(&b'/')\n            || bytes.get(pos + 1).is_some_and(u8::is_ascii_alphabetic);\n        if !starts_delimiter {\n            pos += 1;\n            continue;\n        }\n\n        let open_end = input[pos + 1..]\n            .find(']')\n            .map(|offset| pos + 1 + offset)\n            .ok_or(FieldError::Malformed)?;\n        let open_name = &input[pos + 1..open_end];\n        if open_name.is_empty()\n            || open_name.starts_with('/')\n            || !open_name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')\n        {\n            return Err(FieldError::Malformed);\n        }\n\n        let close = format!(\"[/{open_name}]\");\n        let content_start = open_end + 1;\n        let relative_end = input[content_start..]\n            .find(&close)\n            .ok_or(FieldError::Malformed)?;\n        let content_end = content_start + relative_end;\n        let content = &input[content_start..content_end];\n\n        if content.as_bytes().windows(2).any(|w| {\n            w[0] == b'[' && (w[1] == b'/' || w[1].is_ascii_alphabetic())\n        }) {\n            return Err(FieldError::Malformed);\n        }\n\n        if open_name == name {\n            if result.is_some() {\n                return Err(FieldError::Duplicate);\n            }\n            result = Some(content.to_string());\n        }\n        pos = content_end + close.len();\n    }\n\n    Ok(result)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "672bdbf5b8056a67737c004765959631be1b6f896c6fd6f669225c1fe1797144"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{read_tagged_field, FieldError};\n\n#[test]\nfn reads_exact_content_and_empty_fields() {\n    assert_eq!(\n        read_tagged_field(\"prefix [title]  Hello\\nWorld  [/title] suffix\", \"title\"),\n        Ok(Some(\"  Hello\\nWorld  \".to_string()))\n    );\n    assert_eq!(read_tagged_field(\"[empty][/empty]\", \"empty\"), Ok(Some(String::new())));\n}\n\n#[test]\nfn supports_consecutive_fields_and_absence() {\n    let input = \"plain[a]one[/a][b]two[/b]tail\";\n    assert_eq!(read_tagged_field(input, \"b\"), Ok(Some(\"two\".to_string())));\n    assert_eq!(read_tagged_field(input, \"c\"), Ok(None));\n}\n\n#[test]\nfn rejects_empty_requested_name() {\n    assert_eq!(read_tagged_field(\"[a]x[/a]\", \"\"), Err(FieldError::EmptyName));\n}\n\n#[test]\nfn reports_duplicate_requested_fields() {\n    assert_eq!(\n        read_tagged_field(\"[a]first[/a] between [a]second[/a]\", \"a\"),\n        Err(FieldError::Duplicate)\n    );\n}\n\n#[test]\nfn rejects_unmatched_mismatched_and_nested_delimiters() {\n    let malformed = [\n        \"[a]never closed\",\n        \"orphan [/a]\",\n        \"[a]value[/b]\",\n        \"[a]outer[b]inner[/b][/a]\",\n        \"[a]outer[/a][/a]\",\n    ];\n    for input in malformed {\n        assert_eq!(read_tagged_field(input, \"a\"), Err(FieldError::Malformed), \"accepted {input:?}\");\n    }\n}\n\n#[test]\nfn validates_text_after_an_early_match() {\n    assert_eq!(\n        read_tagged_field(\"[wanted]ok[/wanted] later [broken]\", \"wanted\"),\n        Err(FieldError::Malformed)\n    );\n}\n\n#[test]\nfn permits_non_delimiter_brackets_in_ordinary_text() {\n    let input = \"ordinary [123] and [!] brackets [x]value[/x]\";\n    let original = input.to_string();\n    assert_eq!(read_tagged_field(input, \"x\"), Ok(Some(\"value\".to_string())));\n    assert_eq!(input, original);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "51135a5ee737f6c55227210e4a886b66ec2e036f83f58818037e1c8d5b3c3546"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7069241c14efff84e0b7724e90daa76b336a8104509b5a187cb622f3c25a40dd",
+      "text": "Implement a parser for a compact tagged-text format in `solution.rs` using only the Rust standard library.\n\nExpose this API:\n\n```rust\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError>;\n```\n\nA field has the form `[name]text[/name]`. Names and delimiters are case-sensitive. Fields may appear consecutively with arbitrary text between them, but fields cannot be nested. Return the exact text between the delimiters, including whitespace. An empty field returns `Some(String::new())`.\n\nReturn `EmptyName` when `name` is empty. Return `Malformed` if any opening or closing delimiter in `input` is unmatched, mismatched, or nested. Validate the whole input even when the requested field appears early. Return `Duplicate` if the requested name occurs more than once. Return `Ok(None)` when the document is valid but the requested field is absent. Brackets in ordinary text are allowed unless they form a delimiter beginning with `[` followed immediately by `/` or an ASCII letter. Inputs must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7069241c14efff84e0b7724e90daa76b336a8104509b5a187cb622f3c25a40dd",
+      "text": "Implement a parser for a compact tagged-text format in `solution.rs` using only the Rust standard library.\n\nExpose this API:\n\n```rust\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError>;\n```\n\nA field has the form `[name]text[/name]`. Names and delimiters are case-sensitive. Fields may appear consecutively with arbitrary text between them, but fields cannot be nested. Return the exact text between the delimiters, including whitespace. An empty field returns `Some(String::new())`.\n\nReturn `EmptyName` when `name` is empty. Return `Malformed` if any opening or closing delimiter in `input` is unmatched, mismatched, or nested. Validate the whole input even when the requested field appears early. Return `Duplicate` if the requested name occurs more than once. Return `Ok(None)` when the document is valid but the requested field is absent. Brackets in ordinary text are allowed unless they form a delimiter beginning with `[` followed immediately by `/` or an ASCII letter. Inputs must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0092",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError> {\n    if name.is_empty() {\n        return Err(FieldError::EmptyName);\n    }\n\n    let bytes = input.as_bytes();\n    let mut pos = 0;\n    let mut result: Option<String> = None;\n\n    while pos < bytes.len() {\n        if bytes[pos] != b'[' {\n            pos += 1;\n            continue;\n        }\n        let starts_delimiter = bytes.get(pos + 1) == Some(&b'/')\n            || bytes.get(pos + 1).is_some_and(u8::is_ascii_alphabetic);\n        if !starts_delimiter {\n            pos += 1;\n            continue;\n        }\n\n        let open_end = input[pos + 1..]\n            .find(']')\n            .map(|offset| pos + 1 + offset)\n            .ok_or(FieldError::Malformed)?;\n        let open_name = &input[pos + 1..open_end];\n        if open_name.is_empty()\n            || open_name.starts_with('/')\n            || !open_name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')\n        {\n            return Err(FieldError::Malformed);\n        }\n\n        let close = format!(\"[/{open_name}]\");\n        let content_start = open_end + 1;\n        let relative_end = input[content_start..]\n            .find(&close)\n            .ok_or(FieldError::Malformed)?;\n        let content_end = content_start + relative_end;\n        let content = input[content_start..content_end].trim();\n\n        if content.as_bytes().windows(2).any(|w| {\n            w[0] == b'[' && (w[1] == b'/' || w[1].is_ascii_alphabetic())\n        }) {\n            return Err(FieldError::Malformed);\n        }\n\n        if open_name == name {\n            if result.is_some() {\n                return Err(FieldError::Duplicate);\n            }\n            result = Some(content.to_string());\n        }\n        pos = content_end + close.len();\n    }\n\n    Ok(result)\n}\n",
+          "label": "The extracted field content is trimmed, so significant leading and trailing whitespace is lost.",
+          "sha256": "35ef60d378137f90f11ed7b1cc613a4f6ca993cb28b958d5bec893a9e97c3adc"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError> {\n    if name.is_empty() {\n        return Err(FieldError::EmptyName);\n    }\n\n    let bytes = input.as_bytes();\n    let mut pos = 0;\n    let mut result: Option<String> = None;\n\n    while pos < bytes.len() {\n        if bytes[pos] != b'[' {\n            pos += 1;\n            continue;\n        }\n        let starts_delimiter = bytes.get(pos + 1) == Some(&b'/')\n            || bytes.get(pos + 1).is_some_and(u8::is_ascii_alphabetic);\n        if !starts_delimiter {\n            pos += 1;\n            continue;\n        }\n\n        let open_end = input[pos + 1..]\n            .find(']')\n            .map(|offset| pos + 1 + offset)\n            .ok_or(FieldError::Malformed)?;\n        let open_name = &input[pos + 1..open_end];\n        if open_name.is_empty()\n            || open_name.starts_with('/')\n            || !open_name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')\n        {\n            return Err(FieldError::Malformed);\n        }\n\n        let close = format!(\"[/{open_name}]\");\n        let content_start = open_end + 1;\n        let relative_end = input[content_start..]\n            .find(&close)\n            .ok_or(FieldError::Malformed)?;\n        let content_end = content_start + relative_end;\n        let content = &input[content_start..content_end];\n\n        if content.as_bytes().windows(2).any(|w| {\n            w[0] == b'[' && (w[1] == b'/' || w[1].is_ascii_alphabetic())\n        }) {\n            return Err(FieldError::Malformed);\n        }\n\n        if open_name == name {\n            if result.is_some() {\n                return Err(FieldError::Duplicate);\n            }\n            result = Some(content.to_string());\n        }\n        pos = content_end + close.len();\n    }\n\n    Ok(result)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "672bdbf5b8056a67737c004765959631be1b6f896c6fd6f669225c1fe1797144"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest matched_non_nested_hyphenated_name_is_preserved ... FAILED\n\nfailures:\n\n---- matched_non_nested_hyphenated_name_is_preserved stdout ----\n\nthread 'matched_non_nested_hyphenated_name_is_preserved' panicked at solution_test.rs:7:5:\nassertion `left == right` failed\n  left: Err(Malformed)\n right: Ok(Some(\"exact text\"))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    matched_non_nested_hyphenated_name_is_preserved\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "d6297ee2256ea4a2029d6fd9bad17b20eb9897f02972850313260bc83b26e33f",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1442,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-rust-generation-0133",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a5d5a5f77d58df7ba21dfecff01cad4d33b51dfb5c3071c1b5244cc1f4fdf531",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\nuse solution::{BufferEnded, ByteSource, SliceSource};\n\nfn use_declared_generic_method<S: ByteSource + ?Sized>(source: &mut S)\n    -> Result<usize, BufferEnded>\n{\n    source.read_until(&mut Vec::new(), |a, b| a == b)\n}\n\n#[test]\nfn declared_method_does_not_require_a_sized_implementor() {\n    let mut source = SliceSource::new(b\"aa\");\n    assert_eq!(use_declared_generic_method(&mut source), Ok(2));\n}\n",
+        "sha256": "15fdb2686d2789d1233efffda2e595252d28db9d5c320b6cc795f5a2477320ef"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1d5915fa31f27d85dcb89ca7cd602d16d1b7a58562ca9e2a1ef6e0517c445631",
+      "text": "Implement `solution.rs` using only the Rust standard library. Declare `pub struct BufferEnded`, `pub trait ByteSource`, and `pub struct SliceSource<'a>`. `BufferEnded` must derive `Debug`, `Clone`, `Copy`, `PartialEq`, and `Eq`. `ByteSource` must expose `read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>`, `read_byte(&mut self) -> Result<u8, BufferEnded>`, and generic `read_until(&mut self, out: &mut Vec<u8>, stop: F) -> Result<usize, BufferEnded>` where `F: FnMut(u8, u8) -> bool`. `SliceSource::new(data: &'a [u8])` starts at offset zero and implements the trait. `read_into` copies as many bytes as fit without modifying bytes beyond the returned count; an empty destination returns `Ok(0)`, while a nonempty read at exhaustion returns `Err(BufferEnded)`. `read_until` appends bytes, tests `stop(previous, current)` after every pair read by that call, and returns the number appended when it matches. Existing bytes in `out` do not participate in matching. If exhaustion occurs first, return `Err(BufferEnded)` while preserving all bytes already appended. None of the source bytes may be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1d5915fa31f27d85dcb89ca7cd602d16d1b7a58562ca9e2a1ef6e0517c445631",
+      "text": "Implement `solution.rs` using only the Rust standard library. Declare `pub struct BufferEnded`, `pub trait ByteSource`, and `pub struct SliceSource<'a>`. `BufferEnded` must derive `Debug`, `Clone`, `Copy`, `PartialEq`, and `Eq`. `ByteSource` must expose `read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>`, `read_byte(&mut self) -> Result<u8, BufferEnded>`, and generic `read_until(&mut self, out: &mut Vec<u8>, stop: F) -> Result<usize, BufferEnded>` where `F: FnMut(u8, u8) -> bool`. `SliceSource::new(data: &'a [u8])` starts at offset zero and implements the trait. `read_into` copies as many bytes as fit without modifying bytes beyond the returned count; an empty destination returns `Ok(0)`, while a nonempty read at exhaustion returns `Err(BufferEnded)`. `read_until` appends bytes, tests `stop(previous, current)` after every pair read by that call, and returns the number appended when it matches. Existing bytes in `out` do not participate in matching. If exhaustion occurs first, return `Err(BufferEnded)` while preserving all bytes already appended. None of the source bytes may be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-generation-0133",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct BufferEnded;\n\npub trait ByteSource {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>;\n    fn read_byte(&mut self) -> Result<u8, BufferEnded>;\n\n    fn read_until<F>(&mut self, out: &mut Vec<u8>, mut stop: F) -> Result<usize, BufferEnded>\n    where\n        Self: Sized,\n        F: FnMut(u8, u8) -> bool,\n    {\n        let mut count = 0;\n        let mut previous = None;\n        loop {\n            let current = self.read_byte()?;\n            out.push(current);\n            count += 1;\n            if let Some(prev) = previous {\n                if stop(current, prev) {\n                    return Ok(count);\n                }\n            }\n            previous = Some(current);\n        }\n    }\n}\n\npub struct SliceSource<'a> {\n    data: &'a [u8],\n    offset: usize,\n}\n\nimpl<'a> SliceSource<'a> {\n    pub fn new(data: &'a [u8]) -> Self {\n        Self { data, offset: 0 }\n    }\n}\n\nimpl ByteSource for SliceSource<'_> {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded> {\n        if dst.is_empty() {\n            return Ok(0);\n        }\n        if self.offset == self.data.len() {\n            return Err(BufferEnded);\n        }\n        let count = dst.len().min(self.data.len() - self.offset);\n        dst[..count].copy_from_slice(&self.data[self.offset..self.offset + count]);\n        self.offset += count;\n        Ok(count)\n    }\n\n    fn read_byte(&mut self) -> Result<u8, BufferEnded> {\n        let byte = self.data.get(self.offset).copied().ok_or(BufferEnded)?;\n        self.offset += 1;\n        Ok(byte)\n    }\n}\n",
+          "label": "Calls the stopping callback with the current and previous bytes reversed.",
+          "sha256": "a71bd8ed70d890d80f65b9e57fdba69466e8d47c6460e9445ce439d2ef1f0df9"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct BufferEnded;\n\npub trait ByteSource {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>;\n    fn read_byte(&mut self) -> Result<u8, BufferEnded>;\n\n    fn read_until<F>(&mut self, out: &mut Vec<u8>, mut stop: F) -> Result<usize, BufferEnded>\n    where\n        Self: Sized,\n        F: FnMut(u8, u8) -> bool,\n    {\n        let mut count = 0;\n        let mut previous = None;\n        loop {\n            let current = self.read_byte()?;\n            out.push(current);\n            count += 1;\n            if let Some(prev) = previous {\n                if stop(prev, current) {\n                    return Ok(count);\n                }\n            }\n            previous = Some(current);\n        }\n    }\n}\n\npub struct SliceSource<'a> {\n    data: &'a [u8],\n    offset: usize,\n}\n\nimpl<'a> SliceSource<'a> {\n    pub fn new(data: &'a [u8]) -> Self {\n        Self { data, offset: 0 }\n    }\n}\n\nimpl ByteSource for SliceSource<'_> {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded> {\n        if dst.is_empty() {\n            return Ok(0);\n        }\n        if self.offset == self.data.len() {\n            return Err(BufferEnded);\n        }\n        let count = dst.len().min(self.data.len() - self.offset);\n        dst[..count].copy_from_slice(&self.data[self.offset..self.offset + count]);\n        self.offset += count;\n        Ok(count)\n    }\n\n    fn read_byte(&mut self) -> Result<u8, BufferEnded> {\n        let byte = self.data.get(self.offset).copied().ok_or(BufferEnded)?;\n        self.offset += 1;\n        Ok(byte)\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f26c51aec3309f6e951180aad686c92cd8fada591ffd01421602e6a79d565d7d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{BufferEnded, ByteSource, SliceSource};\n\n#[test]\nfn read_into_respects_capacity_tail_and_exhaustion() {\n    let input = [1, 2, 3, 4, 5];\n    let original = input;\n    let mut source = SliceSource::new(&input);\n    let mut dst = [99; 8];\n\n    assert_eq!(source.read_into(&mut dst[..3]), Ok(3));\n    assert_eq!(&dst, &[1, 2, 3, 99, 99, 99, 99, 99]);\n    assert_eq!(source.read_into(&mut dst), Ok(2));\n    assert_eq!(&dst, &[4, 5, 3, 99, 99, 99, 99, 99]);\n    assert_eq!(source.read_into(&mut dst[..1]), Err(BufferEnded));\n    assert_eq!(source.read_into(&mut []), Ok(0));\n    assert_eq!(input, original);\n}\n\n#[test]\nfn read_byte_advances_and_reports_end() {\n    let mut source = SliceSource::new(&[0, 255]);\n    assert_eq!(source.read_byte(), Ok(0));\n    assert_eq!(source.read_byte(), Ok(255));\n    assert_eq!(source.read_byte(), Err(BufferEnded));\n}\n\n#[test]\nfn read_until_matches_pairs_from_this_call_only() {\n    let mut source = SliceSource::new(b\"ab--tail\");\n    let mut out = vec![b'z'];\n    let mut examined = Vec::new();\n\n    let appended = source\n        .read_until(&mut out, |previous, current| {\n            examined.push((previous, current));\n            previous == b'-' && current == b'-'\n        })\n        .unwrap();\n\n    assert_eq!(appended, 4);\n    assert_eq!(out, b\"zab--\");\n    assert_eq!(examined, vec![(b'a', b'b'), (b'b', b'-'), (b'-', b'-')]);\n    assert_eq!(source.read_byte(), Ok(b't'));\n}\n\n#[test]\nfn read_until_preserves_appended_bytes_when_exhausted() {\n    let mut source = SliceSource::new(b\"abc\");\n    let mut out = vec![b'x'];\n    let result = source.read_until(&mut out, |previous, current| {\n        previous == b'x' && current == b'a'\n    });\n\n    assert_eq!(result, Err(BufferEnded));\n    assert_eq!(out, b\"xabc\");\n}\n\n#[test]\nfn read_until_empty_and_single_byte_sources_end_cleanly() {\n    let mut empty = SliceSource::new(b\"\");\n    let mut empty_out = Vec::new();\n    assert_eq!(empty.read_until(&mut empty_out, |_, _| true), Err(BufferEnded));\n    assert!(empty_out.is_empty());\n\n    let mut single = SliceSource::new(b\"q\");\n    let mut single_out = Vec::new();\n    let mut calls = 0;\n    assert_eq!(\n        single.read_until(&mut single_out, |_, _| {\n            calls += 1;\n            true\n        }),\n        Err(BufferEnded)\n    );\n    assert_eq!(single_out, b\"q\");\n    assert_eq!(calls, 0);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "ed1d9221193fc2b6af0afaecf3b1050cbeb65ea5e9dc15e802e37ce1b5a7e137"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1d5915fa31f27d85dcb89ca7cd602d16d1b7a58562ca9e2a1ef6e0517c445631",
+      "text": "Implement `solution.rs` using only the Rust standard library. Declare `pub struct BufferEnded`, `pub trait ByteSource`, and `pub struct SliceSource<'a>`. `BufferEnded` must derive `Debug`, `Clone`, `Copy`, `PartialEq`, and `Eq`. `ByteSource` must expose `read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>`, `read_byte(&mut self) -> Result<u8, BufferEnded>`, and generic `read_until(&mut self, out: &mut Vec<u8>, stop: F) -> Result<usize, BufferEnded>` where `F: FnMut(u8, u8) -> bool`. `SliceSource::new(data: &'a [u8])` starts at offset zero and implements the trait. `read_into` copies as many bytes as fit without modifying bytes beyond the returned count; an empty destination returns `Ok(0)`, while a nonempty read at exhaustion returns `Err(BufferEnded)`. `read_until` appends bytes, tests `stop(previous, current)` after every pair read by that call, and returns the number appended when it matches. Existing bytes in `out` do not participate in matching. If exhaustion occurs first, return `Err(BufferEnded)` while preserving all bytes already appended. None of the source bytes may be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1d5915fa31f27d85dcb89ca7cd602d16d1b7a58562ca9e2a1ef6e0517c445631",
+      "text": "Implement `solution.rs` using only the Rust standard library. Declare `pub struct BufferEnded`, `pub trait ByteSource`, and `pub struct SliceSource<'a>`. `BufferEnded` must derive `Debug`, `Clone`, `Copy`, `PartialEq`, and `Eq`. `ByteSource` must expose `read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>`, `read_byte(&mut self) -> Result<u8, BufferEnded>`, and generic `read_until(&mut self, out: &mut Vec<u8>, stop: F) -> Result<usize, BufferEnded>` where `F: FnMut(u8, u8) -> bool`. `SliceSource::new(data: &'a [u8])` starts at offset zero and implements the trait. `read_into` copies as many bytes as fit without modifying bytes beyond the returned count; an empty destination returns `Ok(0)`, while a nonempty read at exhaustion returns `Err(BufferEnded)`. `read_until` appends bytes, tests `stop(previous, current)` after every pair read by that call, and returns the number appended when it matches. Existing bytes in `out` do not participate in matching. If exhaustion occurs first, return `Err(BufferEnded)` while preserving all bytes already appended. None of the source bytes may be mutated. Do not include a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-generation-0133",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct BufferEnded;\n\npub trait ByteSource {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>;\n    fn read_byte(&mut self) -> Result<u8, BufferEnded>;\n\n    fn read_until<F>(&mut self, out: &mut Vec<u8>, mut stop: F) -> Result<usize, BufferEnded>\n    where\n        Self: Sized,\n        F: FnMut(u8, u8) -> bool,\n    {\n        let mut count = 0;\n        let mut previous = None;\n        loop {\n            let current = self.read_byte()?;\n            out.push(current);\n            count += 1;\n            if let Some(prev) = previous {\n                if stop(current, prev) {\n                    return Ok(count);\n                }\n            }\n            previous = Some(current);\n        }\n    }\n}\n\npub struct SliceSource<'a> {\n    data: &'a [u8],\n    offset: usize,\n}\n\nimpl<'a> SliceSource<'a> {\n    pub fn new(data: &'a [u8]) -> Self {\n        Self { data, offset: 0 }\n    }\n}\n\nimpl ByteSource for SliceSource<'_> {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded> {\n        if dst.is_empty() {\n            return Ok(0);\n        }\n        if self.offset == self.data.len() {\n            return Err(BufferEnded);\n        }\n        let count = dst.len().min(self.data.len() - self.offset);\n        dst[..count].copy_from_slice(&self.data[self.offset..self.offset + count]);\n        self.offset += count;\n        Ok(count)\n    }\n\n    fn read_byte(&mut self) -> Result<u8, BufferEnded> {\n        let byte = self.data.get(self.offset).copied().ok_or(BufferEnded)?;\n        self.offset += 1;\n        Ok(byte)\n    }\n}\n",
+          "label": "Calls the stopping callback with the current and previous bytes reversed.",
+          "sha256": "a71bd8ed70d890d80f65b9e57fdba69466e8d47c6460e9445ce439d2ef1f0df9"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct BufferEnded;\n\npub trait ByteSource {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded>;\n    fn read_byte(&mut self) -> Result<u8, BufferEnded>;\n\n    fn read_until<F>(&mut self, out: &mut Vec<u8>, mut stop: F) -> Result<usize, BufferEnded>\n    where\n        Self: Sized,\n        F: FnMut(u8, u8) -> bool,\n    {\n        let mut count = 0;\n        let mut previous = None;\n        loop {\n            let current = self.read_byte()?;\n            out.push(current);\n            count += 1;\n            if let Some(prev) = previous {\n                if stop(prev, current) {\n                    return Ok(count);\n                }\n            }\n            previous = Some(current);\n        }\n    }\n}\n\npub struct SliceSource<'a> {\n    data: &'a [u8],\n    offset: usize,\n}\n\nimpl<'a> SliceSource<'a> {\n    pub fn new(data: &'a [u8]) -> Self {\n        Self { data, offset: 0 }\n    }\n}\n\nimpl ByteSource for SliceSource<'_> {\n    fn read_into(&mut self, dst: &mut [u8]) -> Result<usize, BufferEnded> {\n        if dst.is_empty() {\n            return Ok(0);\n        }\n        if self.offset == self.data.len() {\n            return Err(BufferEnded);\n        }\n        let count = dst.len().min(self.data.len() - self.offset);\n        dst[..count].copy_from_slice(&self.data[self.offset..self.offset + count]);\n        self.offset += count;\n        Ok(count)\n    }\n\n    fn read_byte(&mut self) -> Result<u8, BufferEnded> {\n        let byte = self.data.get(self.offset).copied().ok_or(BufferEnded)?;\n        self.offset += 1;\n        Ok(byte)\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "f26c51aec3309f6e951180aad686c92cd8fada591ffd01421602e6a79d565d7d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "error[E0277]: the size for values of type `S` cannot be known at compilation time\n  --> solution_test.rs:8:12\n   |\n5  | fn use_declared_generic_method<S: ByteSource + ?Sized>(source: &mut S)\n   |                                - this type parameter needs to be `Sized`\n...\n8  |     source.read_until(&mut Vec::new(), |a, b| a == b)\n   |            ^^^^^^^^^^ doesn't have a size known at compile-time\n   |\nnote: required by a bound in `ByteSource::read_until`\n  --> solution.rs:10:15\n   |\n8  |     fn read_until<F>(&mut self, out: &mut Vec<u8>, mut stop: F) -> Result<usize, BufferEnded>\n   |        ---------- required by a bound in this associated function\n9  |     where\n10 |         Self: Sized,\n   |               ^^^^^ required by this bound in `ByteSource::read_until`\nhelp: consider removing the `?Sized` bound to make the type parameter `Sized`\n   |\n5  - fn use_declared_generic_method<S: ByteSource + ?Sized>(source: &mut S)\n5  + fn use_declared_generic_method<S: ByteSource>(source: &mut S)\n   |\n\nerror: aborting due to 1 previous error\n\nFor more information about this error, try `rustc --explain E0277`.\n",
+    "stderr_sha256": "259d4f323ee986a6fdd95bec6fb2c58cb634e1939d44d13da354f2cf87a0c12e",
+    "duration_ms": 666,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

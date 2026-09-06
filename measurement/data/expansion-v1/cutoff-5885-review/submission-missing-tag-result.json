@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0315",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "f22fb882a702f58af73cd99d043ad6c9b70cf43ff3d6464060af1e3072f03365",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { SubmissionDesk } from './solution';\nconst desk = new SubmissionDesk();\nlet threw = false;\ntry { desk.create({ title: 'T', author: 'A', tags: new Array<string>(1) }); } catch { threw = true; }\nif (!threw) throw new Error('Missing tag must not become a stored non-string');\nif (desk.create({ title: 'T', author: 'A', tags: [] }).id !== 'S1') throw new Error('Invalid creation must not consume ID');\n",
+        "sha256": "5b67f6b094f115dbe5092983bf52b3654be118d94276cb506032a4966ca967d7"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cdeb486be7367f84b545dff1ddec8d9db00747f355510c5a4356dafd4a71ced8",
+      "text": "Implement a complete TypeScript source file exporting `SubmissionState`, `SubmissionInput`, `Submission`, `SubmissionReport`, and `SubmissionDesk`.\n\nStates are `\"pending\"`, `\"accepted\"`, and `\"declined\"`. A submission input has non-blank `title` and `author` strings plus a readonly string array `tags`. Construction of `SubmissionDesk` creates an empty desk. `create(input)` trims title, author, and every tag; blank title, author, or tag throws `RangeError`. It returns a submission with deterministic ID `S1`, `S2`, and so on, initial state `pending`, and tags in input order. Invalid creation must not consume an ID.\n\n`setState(id, state)` trims the ID, throws `RangeError` for blank IDs, and throws `Error(\"Unknown submission: \" + id)` when absent. A pending submission may become accepted or declined. Reapplying its current state is a no-op. Every other transition throws `Error(\"Invalid state transition\")`.\n\n`report()` returns `{ total, submissions }` in creation order. All inputs, returned submissions, and reports must be defensively copied so external mutation cannot change stored data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cdeb486be7367f84b545dff1ddec8d9db00747f355510c5a4356dafd4a71ced8",
+      "text": "Implement a complete TypeScript source file exporting `SubmissionState`, `SubmissionInput`, `Submission`, `SubmissionReport`, and `SubmissionDesk`.\n\nStates are `\"pending\"`, `\"accepted\"`, and `\"declined\"`. A submission input has non-blank `title` and `author` strings plus a readonly string array `tags`. Construction of `SubmissionDesk` creates an empty desk. `create(input)` trims title, author, and every tag; blank title, author, or tag throws `RangeError`. It returns a submission with deterministic ID `S1`, `S2`, and so on, initial state `pending`, and tags in input order. Invalid creation must not consume an ID.\n\n`setState(id, state)` trims the ID, throws `RangeError` for blank IDs, and throws `Error(\"Unknown submission: \" + id)` when absent. A pending submission may become accepted or declined. Reapplying its current state is a no-op. Every other transition throws `Error(\"Invalid state transition\")`.\n\n`report()` returns `{ total, submissions }` in creation order. All inputs, returned submissions, and reports must be defensively copied so external mutation cannot change stored data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0315",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type SubmissionState = \"pending\" | \"accepted\" | \"declined\";\n\nexport interface SubmissionInput {\n  title: string;\n  author: string;\n  tags: readonly string[];\n}\n\nexport interface Submission extends SubmissionInput {\n  id: string;\n  state: SubmissionState;\n}\n\nexport interface SubmissionReport {\n  total: number;\n  submissions: Submission[];\n}\n\nexport class SubmissionDesk {\n  private nextId = 1;\n  private readonly entries: Submission[] = [];\n\n  create(input: SubmissionInput): Submission {\n    const title = input.title.trim();\n    const author = input.author.trim();\n    const tags = input.tags.map((tag) => tag.trim());\n    if (title.length === 0 || author.length === 0 || tags.some((tag) => tag.length === 0)) {\n      throw new RangeError(\"Submission fields must be non-blank\");\n    }\n    const entry: Submission = {\n      id: `S${this.nextId++}`,\n      title,\n      author,\n      tags,\n      state: \"pending\",\n    };\n    this.entries.push(entry);\n    return this.copy(entry);\n  }\n\n  setState(id: string, state: SubmissionState): Submission {\n    const normalizedId = id.trim();\n    if (normalizedId.length === 0) throw new RangeError(\"ID must be non-blank\");\n    const entry = this.entries.find((candidate) => candidate.id === normalizedId);\n    if (!entry) throw new Error(`Unknown submission: ${normalizedId}`);\n    if (entry.state === state) return this.copy(entry);\n    if (entry.state === \"pending\") throw new Error(\"Invalid state transition\");\n    entry.state = state;\n    return this.copy(entry);\n  }\n\n  report(): SubmissionReport {\n    return { total: this.entries.length, submissions: this.entries.map((entry) => this.copy(entry)) };\n  }\n\n  private copy(entry: Submission): Submission {\n    return { ...entry, tags: [...entry.tags] };\n  }\n}\n",
+          "label": "The state-transition guard is reversed, rejecting valid pending transitions and allowing terminal states to change.",
+          "sha256": "3a0c8ab1aadb8c6a88d03cbdb58a0468da90f8f996042a2eae53767192c3b70e"
+        }
+      ],
+      "reference": {
+        "code": "export type SubmissionState = \"pending\" | \"accepted\" | \"declined\";\n\nexport interface SubmissionInput {\n  title: string;\n  author: string;\n  tags: readonly string[];\n}\n\nexport interface Submission extends SubmissionInput {\n  id: string;\n  state: SubmissionState;\n}\n\nexport interface SubmissionReport {\n  total: number;\n  submissions: Submission[];\n}\n\nexport class SubmissionDesk {\n  private nextId = 1;\n  private readonly entries: Submission[] = [];\n\n  create(input: SubmissionInput): Submission {\n    const title = input.title.trim();\n    const author = input.author.trim();\n    const tags = input.tags.map((tag) => tag.trim());\n    if (title.length === 0 || author.length === 0 || tags.some((tag) => tag.length === 0)) {\n      throw new RangeError(\"Submission fields must be non-blank\");\n    }\n    const entry: Submission = {\n      id: `S${this.nextId++}`,\n      title,\n      author,\n      tags,\n      state: \"pending\",\n    };\n    this.entries.push(entry);\n    return this.copy(entry);\n  }\n\n  setState(id: string, state: SubmissionState): Submission {\n    const normalizedId = id.trim();\n    if (normalizedId.length === 0) throw new RangeError(\"ID must be non-blank\");\n    const entry = this.entries.find((candidate) => candidate.id === normalizedId);\n    if (!entry) throw new Error(`Unknown submission: ${normalizedId}`);\n    if (entry.state === state) return this.copy(entry);\n    if (entry.state !== \"pending\") throw new Error(\"Invalid state transition\");\n    entry.state = state;\n    return this.copy(entry);\n  }\n\n  report(): SubmissionReport {\n    return { total: this.entries.length, submissions: this.entries.map((entry) => this.copy(entry)) };\n  }\n\n  private copy(entry: Submission): Submission {\n    return { ...entry, tags: [...entry.tags] };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "32ef90a78d3d6ca069629b8f3e48991a883873f82f5379aa135ef0e3ca0268d5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { SubmissionDesk } from \"./solution\";\nimport type { SubmissionState, SubmissionInput, Submission, SubmissionReport } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction expectError(action: () => void, constructor: typeof Error, message?: string): void {\n  let thrown: unknown;\n  try { action(); } catch (error) { thrown = error; }\n  assert(thrown instanceof constructor, `expected ${constructor.name}`);\n  if (message !== undefined && thrown.message !== message) throw new Error(`expected ${message}, got ${thrown.message}`);\n}\n\nconst pending: SubmissionState = \"pending\";\nconst desk = new SubmissionDesk();\nlet report: SubmissionReport = desk.report();\nequal(report.total, 0, \"new desk total\");\nequal(report.submissions.length, 0, \"new desk submissions\");\n\nconst tags = [\" ts \", \"behavior\"];\nconst input: SubmissionInput = { title: \" First \", author: \" Ada \", tags };\nconst first: Submission = desk.create(input);\nequal(first.id, \"S1\", \"first ID\");\nequal(first.title, \"First\", \"title normalized\");\nequal(first.author, \"Ada\", \"author normalized\");\nequal(first.state, pending, \"initial state\");\nequal(first.tags[0], \"ts\", \"tags normalized\");\ntags[0] = \"changed\";\n(input as { title: string }).title = \"changed\";\n(first as { title: string }).title = \"external\";\n(first.tags as string[])[0] = \"external\";\n\nexpectError(() => desk.create({ title: \" \", author: \"A\", tags: [] }), RangeError);\nexpectError(() => desk.create({ title: \"T\", author: \"\\t\", tags: [] }), RangeError);\nexpectError(() => desk.create({ title: \"T\", author: \"A\", tags: [\"ok\", \" \"] }), RangeError);\nconst second = desk.create({ title: \"Second\", author: \"Bob\", tags: [] });\nequal(second.id, \"S2\", \"invalid creates do not consume IDs\");\n\nreport = desk.report();\nequal(report.total, 2, \"report total\");\nequal(report.submissions[0].id, \"S1\", \"creation order retained\");\nequal(report.submissions[0].title, \"First\", \"returned submission was defensive\");\nequal(report.submissions[0].tags[0], \"ts\", \"returned tags were defensive\");\nequal(report.submissions[1].id, \"S2\", \"second report item\");\n\n(report as { total: number }).total = 99;\n(report.submissions as Submission[]).reverse();\n(report.submissions[0] as { author: string }).author = \"mutated\";\nconst fresh = desk.report();\nequal(fresh.total, 2, \"report object is independent\");\nequal(fresh.submissions[0].id, \"S1\", \"report array is independent\");\nequal(fresh.submissions[1].author, \"Bob\", \"report entries are independent\");\n\ndesk.setState(\" S1 \", \"accepted\");\ndesk.setState(\"S1\", \"accepted\");\nequal(desk.report().submissions[0].state, \"accepted\", \"accepted state stored\");\nexpectError(() => desk.setState(\"S1\", \"declined\"), Error, \"Invalid state transition\");\ndesk.setState(\"S2\", \"declined\");\nequal(desk.report().submissions[1].state, \"declined\", \"pending can decline\");\nexpectError(() => desk.setState(\" \", \"accepted\"), RangeError);\nexpectError(() => desk.setState(\" missing \", \"accepted\"), Error, \"Unknown submission: missing\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "90966b6323095927d8b3d9b07f7570cb09dce415d0d1210e2dbdbbba3255892e"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "cdeb486be7367f84b545dff1ddec8d9db00747f355510c5a4356dafd4a71ced8",
+      "text": "Implement a complete TypeScript source file exporting `SubmissionState`, `SubmissionInput`, `Submission`, `SubmissionReport`, and `SubmissionDesk`.\n\nStates are `\"pending\"`, `\"accepted\"`, and `\"declined\"`. A submission input has non-blank `title` and `author` strings plus a readonly string array `tags`. Construction of `SubmissionDesk` creates an empty desk. `create(input)` trims title, author, and every tag; blank title, author, or tag throws `RangeError`. It returns a submission with deterministic ID `S1`, `S2`, and so on, initial state `pending`, and tags in input order. Invalid creation must not consume an ID.\n\n`setState(id, state)` trims the ID, throws `RangeError` for blank IDs, and throws `Error(\"Unknown submission: \" + id)` when absent. A pending submission may become accepted or declined. Reapplying its current state is a no-op. Every other transition throws `Error(\"Invalid state transition\")`.\n\n`report()` returns `{ total, submissions }` in creation order. All inputs, returned submissions, and reports must be defensively copied so external mutation cannot change stored data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "cdeb486be7367f84b545dff1ddec8d9db00747f355510c5a4356dafd4a71ced8",
+      "text": "Implement a complete TypeScript source file exporting `SubmissionState`, `SubmissionInput`, `Submission`, `SubmissionReport`, and `SubmissionDesk`.\n\nStates are `\"pending\"`, `\"accepted\"`, and `\"declined\"`. A submission input has non-blank `title` and `author` strings plus a readonly string array `tags`. Construction of `SubmissionDesk` creates an empty desk. `create(input)` trims title, author, and every tag; blank title, author, or tag throws `RangeError`. It returns a submission with deterministic ID `S1`, `S2`, and so on, initial state `pending`, and tags in input order. Invalid creation must not consume an ID.\n\n`setState(id, state)` trims the ID, throws `RangeError` for blank IDs, and throws `Error(\"Unknown submission: \" + id)` when absent. A pending submission may become accepted or declined. Reapplying its current state is a no-op. Every other transition throws `Error(\"Invalid state transition\")`.\n\n`report()` returns `{ total, submissions }` in creation order. All inputs, returned submissions, and reports must be defensively copied so external mutation cannot change stored data.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0315",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type SubmissionState = \"pending\" | \"accepted\" | \"declined\";\n\nexport interface SubmissionInput {\n  title: string;\n  author: string;\n  tags: readonly string[];\n}\n\nexport interface Submission extends SubmissionInput {\n  id: string;\n  state: SubmissionState;\n}\n\nexport interface SubmissionReport {\n  total: number;\n  submissions: Submission[];\n}\n\nexport class SubmissionDesk {\n  private nextId = 1;\n  private readonly entries: Submission[] = [];\n\n  create(input: SubmissionInput): Submission {\n    const title = input.title.trim();\n    const author = input.author.trim();\n    const tags = input.tags.map((tag) => tag.trim());\n    if (title.length === 0 || author.length === 0 || tags.some((tag) => tag.length === 0)) {\n      throw new RangeError(\"Submission fields must be non-blank\");\n    }\n    const entry: Submission = {\n      id: `S${this.nextId++}`,\n      title,\n      author,\n      tags,\n      state: \"pending\",\n    };\n    this.entries.push(entry);\n    return this.copy(entry);\n  }\n\n  setState(id: string, state: SubmissionState): Submission {\n    const normalizedId = id.trim();\n    if (normalizedId.length === 0) throw new RangeError(\"ID must be non-blank\");\n    const entry = this.entries.find((candidate) => candidate.id === normalizedId);\n    if (!entry) throw new Error(`Unknown submission: ${normalizedId}`);\n    if (entry.state === state) return this.copy(entry);\n    if (entry.state === \"pending\") throw new Error(\"Invalid state transition\");\n    entry.state = state;\n    return this.copy(entry);\n  }\n\n  report(): SubmissionReport {\n    return { total: this.entries.length, submissions: this.entries.map((entry) => this.copy(entry)) };\n  }\n\n  private copy(entry: Submission): Submission {\n    return { ...entry, tags: [...entry.tags] };\n  }\n}\n",
+          "label": "The state-transition guard is reversed, rejecting valid pending transitions and allowing terminal states to change.",
+          "sha256": "3a0c8ab1aadb8c6a88d03cbdb58a0468da90f8f996042a2eae53767192c3b70e"
+        }
+      ],
+      "reference": {
+        "code": "export type SubmissionState = \"pending\" | \"accepted\" | \"declined\";\n\nexport interface SubmissionInput {\n  title: string;\n  author: string;\n  tags: readonly string[];\n}\n\nexport interface Submission extends SubmissionInput {\n  id: string;\n  state: SubmissionState;\n}\n\nexport interface SubmissionReport {\n  total: number;\n  submissions: Submission[];\n}\n\nexport class SubmissionDesk {\n  private nextId = 1;\n  private readonly entries: Submission[] = [];\n\n  create(input: SubmissionInput): Submission {\n    const title = input.title.trim();\n    const author = input.author.trim();\n    const tags = input.tags.map((tag) => tag.trim());\n    if (title.length === 0 || author.length === 0 || tags.some((tag) => tag.length === 0)) {\n      throw new RangeError(\"Submission fields must be non-blank\");\n    }\n    const entry: Submission = {\n      id: `S${this.nextId++}`,\n      title,\n      author,\n      tags,\n      state: \"pending\",\n    };\n    this.entries.push(entry);\n    return this.copy(entry);\n  }\n\n  setState(id: string, state: SubmissionState): Submission {\n    const normalizedId = id.trim();\n    if (normalizedId.length === 0) throw new RangeError(\"ID must be non-blank\");\n    const entry = this.entries.find((candidate) => candidate.id === normalizedId);\n    if (!entry) throw new Error(`Unknown submission: ${normalizedId}`);\n    if (entry.state === state) return this.copy(entry);\n    if (entry.state !== \"pending\") throw new Error(\"Invalid state transition\");\n    entry.state = state;\n    return this.copy(entry);\n  }\n\n  report(): SubmissionReport {\n    return { total: this.entries.length, submissions: this.entries.map((entry) => this.copy(entry)) };\n  }\n\n  private copy(entry: Submission): Submission {\n    return { ...entry, tags: [...entry.tags] };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "32ef90a78d3d6ca069629b8f3e48991a883873f82f5379aa135ef0e3ca0268d5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:13\n    throw new Error('Missing tag must not become a stored non-string');\n    ^\n\nError: Missing tag must not become a stored non-string\n    at Object.<anonymous> (/work/solution.test.js:13:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "12632b43a75c93bc851e0bbcff0242a77413a863443ae911b2149b9d651a8fde",
+    "duration_ms": 2246,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

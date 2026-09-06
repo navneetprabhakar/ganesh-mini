@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0367",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9c65a1c93beeed17ad1b18a2772a0568dbe28ae248e25d30baaeb0661ceff884",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createTaskBoard } = require('./solution');\nassert.throws(() => createTaskBoard().add({ id: 'a', title: 'Alpha', priority: 1, tags: new Array(1) }));\n",
+        "sha256": "75bc8956091ec723df21483be7343e8661d4d708d36bffe13486ed45f25f7c35"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7a87b48ed3d1559a3fce0b2f2e37bdc7c27fe4b6f6452c7c2b324856cee5bb90",
+      "text": "Implement an in-memory task-board module. Export exactly `{ createTaskBoard }`. `createTaskBoard()` returns `add(card)`, `get(id)`, `list(offset, limit)`, `patch(id, changes)`, and `remove(id)`. A card has exactly `{ id, title, priority, tags }`: `id` and trimmed `title` are non-empty strings, `priority` is an integer from 1 through 5, and `tags` is an array of strings. `add` rejects duplicate IDs and returns a detached copy. `get` returns a detached copy or `null`. `list` uses insertion order, requires non-negative integer `offset` and `limit`, and returns detached copies; an empty board or an offset beyond the end returns `[]`. `patch` may change `title`, `priority`, or `tags`, rejects unknown fields and malformed values, preserves ordering, and returns `null` for an unknown ID. `remove` returns whether a card existed. No input or returned value may expose mutable board state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7a87b48ed3d1559a3fce0b2f2e37bdc7c27fe4b6f6452c7c2b324856cee5bb90",
+      "text": "Implement an in-memory task-board module. Export exactly `{ createTaskBoard }`. `createTaskBoard()` returns `add(card)`, `get(id)`, `list(offset, limit)`, `patch(id, changes)`, and `remove(id)`. A card has exactly `{ id, title, priority, tags }`: `id` and trimmed `title` are non-empty strings, `priority` is an integer from 1 through 5, and `tags` is an array of strings. `add` rejects duplicate IDs and returns a detached copy. `get` returns a detached copy or `null`. `list` uses insertion order, requires non-negative integer `offset` and `limit`, and returns detached copies; an empty board or an offset beyond the end returns `[]`. `patch` may change `title`, `priority`, or `tags`, rejects unknown fields and malformed values, preserves ordering, and returns `null` for an unknown ID. `remove` returns whether a card existed. No input or returned value may expose mutable board state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0367",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createTaskBoard() {\n  const cards = new Map();\n  const order = [];\n\n  const copy = card => ({ ...card, tags: card.tags.slice() });\n\n  function normalize(card) {\n    if (!card || typeof card !== 'object' || Array.isArray(card)) throw new TypeError('card must be an object');\n    const keys = Object.keys(card);\n    if (keys.some(key => !['id', 'title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown card field');\n    if (typeof card.id !== 'string' || card.id.trim() === '') throw new TypeError('invalid id');\n    if (typeof card.title !== 'string' || card.title.trim() === '') throw new TypeError('invalid title');\n    if (!Number.isInteger(card.priority) || card.priority < 1 || card.priority > 5) throw new TypeError('invalid priority');\n    if (!Array.isArray(card.tags) || card.tags.some(tag => typeof tag !== 'string')) throw new TypeError('invalid tags');\n    return { id: card.id, title: card.title.trim(), priority: card.priority, tags: card.tags.slice() };\n  }\n\n  function add(card) {\n    const value = normalize(card);\n    if (cards.has(value.id)) throw new Error('duplicate id');\n    cards.set(value.id, value);\n    order.push(value.id);\n    return copy(value);\n  }\n\n  function get(id) {\n    return cards.has(id) ? copy(cards.get(id)) : null;\n  }\n\n  function list(offset, limit) {\n    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 0) throw new TypeError('invalid range');\n    return order.slice(offset, offset + limit).map(id => cards.get(id));\n  }\n\n  function patch(id, changes) {\n    if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new TypeError('changes must be an object');\n    if (Object.keys(changes).some(key => !['title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown change');\n    if (!cards.has(id)) return null;\n    const current = cards.get(id);\n    const candidate = normalize({ ...current, ...changes, id });\n    cards.set(id, candidate);\n    return copy(candidate);\n  }\n\n  function remove(id) {\n    if (!cards.delete(id)) return false;\n    order.splice(order.indexOf(id), 1);\n    return true;\n  }\n\n  return { add, get, list, patch, remove };\n}\n\nmodule.exports = { createTaskBoard };\n",
+          "label": "list returns internal card objects, allowing callers to mutate board state through aliases",
+          "sha256": "4253ae4337e0a4dd03bb3d1dbc717c3bbbc5907bc8e44c2e82593604c4457584"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createTaskBoard() {\n  const cards = new Map();\n  const order = [];\n\n  const copy = card => ({ ...card, tags: card.tags.slice() });\n\n  function normalize(card) {\n    if (!card || typeof card !== 'object' || Array.isArray(card)) throw new TypeError('card must be an object');\n    const keys = Object.keys(card);\n    if (keys.some(key => !['id', 'title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown card field');\n    if (typeof card.id !== 'string' || card.id.trim() === '') throw new TypeError('invalid id');\n    if (typeof card.title !== 'string' || card.title.trim() === '') throw new TypeError('invalid title');\n    if (!Number.isInteger(card.priority) || card.priority < 1 || card.priority > 5) throw new TypeError('invalid priority');\n    if (!Array.isArray(card.tags) || card.tags.some(tag => typeof tag !== 'string')) throw new TypeError('invalid tags');\n    return { id: card.id, title: card.title.trim(), priority: card.priority, tags: card.tags.slice() };\n  }\n\n  function add(card) {\n    const value = normalize(card);\n    if (cards.has(value.id)) throw new Error('duplicate id');\n    cards.set(value.id, value);\n    order.push(value.id);\n    return copy(value);\n  }\n\n  function get(id) {\n    return cards.has(id) ? copy(cards.get(id)) : null;\n  }\n\n  function list(offset, limit) {\n    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 0) throw new TypeError('invalid range');\n    return order.slice(offset, offset + limit).map(id => copy(cards.get(id)));\n  }\n\n  function patch(id, changes) {\n    if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new TypeError('changes must be an object');\n    if (Object.keys(changes).some(key => !['title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown change');\n    if (!cards.has(id)) return null;\n    const current = cards.get(id);\n    const candidate = normalize({ ...current, ...changes, id });\n    cards.set(id, candidate);\n    return copy(candidate);\n  }\n\n  function remove(id) {\n    if (!cards.delete(id)) return false;\n    order.splice(order.indexOf(id), 1);\n    return true;\n  }\n\n  return { add, get, list, patch, remove };\n}\n\nmodule.exports = { createTaskBoard };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7f3cd5445f6eb937cd86ac4c197bf6b06635c4f8d0b0e6c53da095add773dd14"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createTaskBoard']);\nconst { createTaskBoard } = api;\n\nconst board = createTaskBoard();\nassert.deepStrictEqual(board.list(0, 10), []);\nassert.strictEqual(board.get('missing'), null);\nassert.strictEqual(board.remove('missing'), false);\n\nconst source = { id: 'a', title: '  Alpha  ', priority: 1, tags: ['one'] };\nconst added = board.add(source);\nassert.deepStrictEqual(added, { id: 'a', title: 'Alpha', priority: 1, tags: ['one'] });\nassert.notStrictEqual(added, source);\nassert.notStrictEqual(added.tags, source.tags);\nsource.title = 'changed';\nsource.tags.push('source mutation');\nadded.title = 'returned mutation';\nadded.tags.push('returned mutation');\nassert.deepStrictEqual(board.get('a'), { id: 'a', title: 'Alpha', priority: 1, tags: ['one'] });\n\nboard.add({ id: 'b', title: 'Beta', priority: 5, tags: [] });\nboard.add({ id: 'c', title: 'Gamma', priority: 3, tags: ['x', 'y'] });\nassert.deepStrictEqual(board.list(1, 1), [{ id: 'b', title: 'Beta', priority: 5, tags: [] }]);\nassert.deepStrictEqual(board.list(3, 2), []);\nassert.deepStrictEqual(board.list(99, 0), []);\nconst listed = board.list(0, 3);\nlisted[0].tags.push('leak');\nlisted.splice(1, 1);\nassert.deepStrictEqual(board.list(0, 3).map(card => card.id), ['a', 'b', 'c']);\nassert.deepStrictEqual(board.get('a').tags, ['one']);\n\nconst changes = { title: '  Updated  ', priority: 4, tags: ['new'] };\nconst patched = board.patch('b', changes);\nassert.deepStrictEqual(patched, { id: 'b', title: 'Updated', priority: 4, tags: ['new'] });\nchanges.tags.push('leak');\npatched.tags.push('leak');\nassert.deepStrictEqual(board.get('b'), { id: 'b', title: 'Updated', priority: 4, tags: ['new'] });\nassert.deepStrictEqual(board.list(0, 3).map(card => card.id), ['a', 'b', 'c']);\nassert.strictEqual(board.patch('unknown', { title: 'Valid' }), null);\n\nassert.throws(() => board.add({ id: 'a', title: 'Again', priority: 2, tags: [] }));\nconst invalidCards = [\n  null,\n  [],\n  { id: '', title: 'X', priority: 1, tags: [] },\n  { id: 'x', title: '   ', priority: 1, tags: [] },\n  { id: 'x', title: 'X', priority: 0, tags: [] },\n  { id: 'x', title: 'X', priority: 2.5, tags: [] },\n  { id: 'x', title: 'X', priority: 6, tags: [] },\n  { id: 'x', title: 'X', priority: 1, tags: [1] },\n  { id: 'x', title: 'X', priority: 1, tags: [], extra: true }\n];\nfor (const card of invalidCards) assert.throws(() => board.add(card));\nassert.throws(() => board.patch('a', { id: 'z' }));\nassert.throws(() => board.patch('a', { unknown: 1 }));\nassert.throws(() => board.patch('a', { title: '' }));\nassert.throws(() => board.patch('a', { priority: NaN }));\nassert.throws(() => board.patch('a', { tags: ['ok', 2] }));\nassert.deepStrictEqual(board.get('a'), { id: 'a', title: 'Alpha', priority: 1, tags: ['one'] });\nfor (const args of [[-1, 1], [0.5, 1], [0, -1], [0, 1.5]]) {\n  assert.throws(() => board.list(args[0], args[1]));\n}\nassert.strictEqual(board.remove('b'), true);\nassert.strictEqual(board.remove('b'), false);\nassert.deepStrictEqual(board.list(0, 10).map(card => card.id), ['a', 'c']);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "00cf0b61280c672d17a7b6a48301d0c307c31c15d9eb57db690914c3318c61c5"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7a87b48ed3d1559a3fce0b2f2e37bdc7c27fe4b6f6452c7c2b324856cee5bb90",
+      "text": "Implement an in-memory task-board module. Export exactly `{ createTaskBoard }`. `createTaskBoard()` returns `add(card)`, `get(id)`, `list(offset, limit)`, `patch(id, changes)`, and `remove(id)`. A card has exactly `{ id, title, priority, tags }`: `id` and trimmed `title` are non-empty strings, `priority` is an integer from 1 through 5, and `tags` is an array of strings. `add` rejects duplicate IDs and returns a detached copy. `get` returns a detached copy or `null`. `list` uses insertion order, requires non-negative integer `offset` and `limit`, and returns detached copies; an empty board or an offset beyond the end returns `[]`. `patch` may change `title`, `priority`, or `tags`, rejects unknown fields and malformed values, preserves ordering, and returns `null` for an unknown ID. `remove` returns whether a card existed. No input or returned value may expose mutable board state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7a87b48ed3d1559a3fce0b2f2e37bdc7c27fe4b6f6452c7c2b324856cee5bb90",
+      "text": "Implement an in-memory task-board module. Export exactly `{ createTaskBoard }`. `createTaskBoard()` returns `add(card)`, `get(id)`, `list(offset, limit)`, `patch(id, changes)`, and `remove(id)`. A card has exactly `{ id, title, priority, tags }`: `id` and trimmed `title` are non-empty strings, `priority` is an integer from 1 through 5, and `tags` is an array of strings. `add` rejects duplicate IDs and returns a detached copy. `get` returns a detached copy or `null`. `list` uses insertion order, requires non-negative integer `offset` and `limit`, and returns detached copies; an empty board or an offset beyond the end returns `[]`. `patch` may change `title`, `priority`, or `tags`, rejects unknown fields and malformed values, preserves ordering, and returns `null` for an unknown ID. `remove` returns whether a card existed. No input or returned value may expose mutable board state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0367",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction createTaskBoard() {\n  const cards = new Map();\n  const order = [];\n\n  const copy = card => ({ ...card, tags: card.tags.slice() });\n\n  function normalize(card) {\n    if (!card || typeof card !== 'object' || Array.isArray(card)) throw new TypeError('card must be an object');\n    const keys = Object.keys(card);\n    if (keys.some(key => !['id', 'title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown card field');\n    if (typeof card.id !== 'string' || card.id.trim() === '') throw new TypeError('invalid id');\n    if (typeof card.title !== 'string' || card.title.trim() === '') throw new TypeError('invalid title');\n    if (!Number.isInteger(card.priority) || card.priority < 1 || card.priority > 5) throw new TypeError('invalid priority');\n    if (!Array.isArray(card.tags) || card.tags.some(tag => typeof tag !== 'string')) throw new TypeError('invalid tags');\n    return { id: card.id, title: card.title.trim(), priority: card.priority, tags: card.tags.slice() };\n  }\n\n  function add(card) {\n    const value = normalize(card);\n    if (cards.has(value.id)) throw new Error('duplicate id');\n    cards.set(value.id, value);\n    order.push(value.id);\n    return copy(value);\n  }\n\n  function get(id) {\n    return cards.has(id) ? copy(cards.get(id)) : null;\n  }\n\n  function list(offset, limit) {\n    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 0) throw new TypeError('invalid range');\n    return order.slice(offset, offset + limit).map(id => cards.get(id));\n  }\n\n  function patch(id, changes) {\n    if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new TypeError('changes must be an object');\n    if (Object.keys(changes).some(key => !['title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown change');\n    if (!cards.has(id)) return null;\n    const current = cards.get(id);\n    const candidate = normalize({ ...current, ...changes, id });\n    cards.set(id, candidate);\n    return copy(candidate);\n  }\n\n  function remove(id) {\n    if (!cards.delete(id)) return false;\n    order.splice(order.indexOf(id), 1);\n    return true;\n  }\n\n  return { add, get, list, patch, remove };\n}\n\nmodule.exports = { createTaskBoard };\n",
+          "label": "list returns internal card objects, allowing callers to mutate board state through aliases",
+          "sha256": "4253ae4337e0a4dd03bb3d1dbc717c3bbbc5907bc8e44c2e82593604c4457584"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction createTaskBoard() {\n  const cards = new Map();\n  const order = [];\n\n  const copy = card => ({ ...card, tags: card.tags.slice() });\n\n  function normalize(card) {\n    if (!card || typeof card !== 'object' || Array.isArray(card)) throw new TypeError('card must be an object');\n    const keys = Object.keys(card);\n    if (keys.some(key => !['id', 'title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown card field');\n    if (typeof card.id !== 'string' || card.id.trim() === '') throw new TypeError('invalid id');\n    if (typeof card.title !== 'string' || card.title.trim() === '') throw new TypeError('invalid title');\n    if (!Number.isInteger(card.priority) || card.priority < 1 || card.priority > 5) throw new TypeError('invalid priority');\n    if (!Array.isArray(card.tags) || card.tags.some(tag => typeof tag !== 'string')) throw new TypeError('invalid tags');\n    return { id: card.id, title: card.title.trim(), priority: card.priority, tags: card.tags.slice() };\n  }\n\n  function add(card) {\n    const value = normalize(card);\n    if (cards.has(value.id)) throw new Error('duplicate id');\n    cards.set(value.id, value);\n    order.push(value.id);\n    return copy(value);\n  }\n\n  function get(id) {\n    return cards.has(id) ? copy(cards.get(id)) : null;\n  }\n\n  function list(offset, limit) {\n    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 0) throw new TypeError('invalid range');\n    return order.slice(offset, offset + limit).map(id => copy(cards.get(id)));\n  }\n\n  function patch(id, changes) {\n    if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw new TypeError('changes must be an object');\n    if (Object.keys(changes).some(key => !['title', 'priority', 'tags'].includes(key))) throw new TypeError('unknown change');\n    if (!cards.has(id)) return null;\n    const current = cards.get(id);\n    const candidate = normalize({ ...current, ...changes, id });\n    cards.set(id, candidate);\n    return copy(candidate);\n  }\n\n  function remove(id) {\n    if (!cards.delete(id)) return false;\n    order.splice(order.indexOf(id), 1);\n    return true;\n  }\n\n  return { add, get, list, patch, remove };\n}\n\nmodule.exports = { createTaskBoard };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "7f3cd5445f6eb937cd86ac4c197bf6b06635c4f8d0b0e6c53da095add773dd14"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception.\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: undefined,\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "adcfa5af306f5219afe10d79c7230e71e374679acb31e6ba66664976d100e45d",
+    "duration_ms": 332,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

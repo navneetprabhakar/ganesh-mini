@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0306",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "405b707b3ad2ac46f74df1f3ca36538611bc9b1c26a9a143c5ee466500ad3355",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { PassRegistry, createObserverPass } from './solution';\nconst registry = new PassRegistry();\nlet innerId = '';\nconst outer = createObserverPass(registry, { handle: 'outer' }, {\n  publish(): void {\n    innerId = createObserverPass(registry, { handle: 'inner' }, { publish(): void {} }).id;\n  }\n});\nif (outer.id === innerId || registry.list().length !== 2) throw new Error('Successful nested issuance must not overwrite a pass or reuse its ID');\n",
+        "sha256": "baa0d5783b9ee329915d3ce074dbca20c0b36e20486fa57276eb3021a7af4b2d"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8864d9bd9f45c77d6638c75776a66ea076ee46c31ad2a450c9af135741721eae",
+      "text": "Implement a complete TypeScript source file for deterministic pass issuance. Export `PassKind`, `PassRecord`, `PassInput`, `AuditSink`, `PassRegistry`, `createObserverPass`, `createBuilderPass`, and `createHostPass`.\n\nEach creation function accepts `(registry: PassRegistry, input: PassInput, sink: AuditSink)` and creates its respective kind. Trim `handle`; reject an empty handle with `TypeError`. Handles are unique case-insensitively across all kinds; duplicates throw `Error`. Use the supplied secret after trimming, or the default `welcome-2026` when missing or blank. IDs are sequential per kind: `O-0001`, `B-0001`, and `H-0001`, padded to at least four digits.\n\nBefore changing registry state, call `sink.publish` with `pass-created:<id>:<normalized-handle>`, where the normalized handle is lowercase. If publishing throws, the registry\u2014including its sequence counter\u2014must remain unchanged. On success, store and return a fresh `PassRecord`. `get(id)` and `list()` must also return fresh records; `list()` preserves successful creation order. Inputs, returned records, and sink objects must never be stored by reference.\n\n`PassRegistry` is initially empty. State-changing mechanics may be public only as needed by the three exported creation functions, but callers must not be able to inject malformed records.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8864d9bd9f45c77d6638c75776a66ea076ee46c31ad2a450c9af135741721eae",
+      "text": "Implement a complete TypeScript source file for deterministic pass issuance. Export `PassKind`, `PassRecord`, `PassInput`, `AuditSink`, `PassRegistry`, `createObserverPass`, `createBuilderPass`, and `createHostPass`.\n\nEach creation function accepts `(registry: PassRegistry, input: PassInput, sink: AuditSink)` and creates its respective kind. Trim `handle`; reject an empty handle with `TypeError`. Handles are unique case-insensitively across all kinds; duplicates throw `Error`. Use the supplied secret after trimming, or the default `welcome-2026` when missing or blank. IDs are sequential per kind: `O-0001`, `B-0001`, and `H-0001`, padded to at least four digits.\n\nBefore changing registry state, call `sink.publish` with `pass-created:<id>:<normalized-handle>`, where the normalized handle is lowercase. If publishing throws, the registry\u2014including its sequence counter\u2014must remain unchanged. On success, store and return a fresh `PassRecord`. `get(id)` and `list()` must also return fresh records; `list()` preserves successful creation order. Inputs, returned records, and sink objects must never be stored by reference.\n\n`PassRegistry` is initially empty. State-changing mechanics may be public only as needed by the three exported creation functions, but callers must not be able to inject malformed records.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0306",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type PassKind = \"observer\" | \"builder\" | \"host\";\n\nexport type PassInput = {\n  handle: string;\n  secret?: string;\n};\n\nexport type PassRecord = {\n  id: string;\n  kind: PassKind;\n  handle: string;\n  secret: string;\n};\n\nexport type AuditSink = {\n  publish(message: string): void;\n};\n\nexport class PassRegistry {\n  private readonly records = new Map<string, PassRecord>();\n  private readonly handles = new Set<string>();\n  private readonly counters: Record<PassKind, number> = {\n    observer: 1,\n    builder: 1,\n    host: 1\n  };\n\n  get(id: string): PassRecord | undefined {\n    const record = this.records.get(id);\n    return record === undefined ? undefined : { ...record };\n  }\n\n  list(): PassRecord[] {\n    return [...this.records.values()].map((record) => ({ ...record }));\n  }\n\n  issue(kind: PassKind, input: PassInput, sink: AuditSink): PassRecord {\n    const handle = input.handle.trim();\n    if (handle.length === 0) throw new TypeError(\"handle must not be empty\");\n    const normalized = handle.toLowerCase();\n    if (this.handles.has(normalized)) throw new Error(\"duplicate handle\");\n\n    const prefix: Record<PassKind, string> = {\n      observer: \"O\",\n      builder: \"B\",\n      host: \"H\"\n    };\n    const sequence = this.counters[kind]++;\n    const id = `${prefix[kind]}-${String(sequence).padStart(4, \"0\")}`;\n    const suppliedSecret = input.secret?.trim() ?? \"\";\n    const record: PassRecord = {\n      id,\n      kind,\n      handle,\n      secret: suppliedSecret.length === 0 ? \"welcome-2026\" : suppliedSecret\n    };\n\n    sink.publish(`pass-created:${id}:${normalized}`);\n    this.records.set(id, { ...record });\n    this.handles.add(normalized);\n    return { ...record };\n  }\n}\n\nexport function createObserverPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"observer\", input, sink);\n}\n\nexport function createBuilderPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"builder\", input, sink);\n}\n\nexport function createHostPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"host\", input, sink);\n}\n",
+          "label": "Advances the per-kind sequence before publishing, so a failed publish leaves a gap.",
+          "sha256": "bcb6f20583a560be8cf160d43af53ab0b473a959eb01cc3e8e285d8f4cd1f797"
+        }
+      ],
+      "reference": {
+        "code": "export type PassKind = \"observer\" | \"builder\" | \"host\";\n\nexport type PassInput = {\n  handle: string;\n  secret?: string;\n};\n\nexport type PassRecord = {\n  id: string;\n  kind: PassKind;\n  handle: string;\n  secret: string;\n};\n\nexport type AuditSink = {\n  publish(message: string): void;\n};\n\nexport class PassRegistry {\n  private readonly records = new Map<string, PassRecord>();\n  private readonly handles = new Set<string>();\n  private readonly counters: Record<PassKind, number> = {\n    observer: 1,\n    builder: 1,\n    host: 1\n  };\n\n  get(id: string): PassRecord | undefined {\n    const record = this.records.get(id);\n    return record === undefined ? undefined : { ...record };\n  }\n\n  list(): PassRecord[] {\n    return [...this.records.values()].map((record) => ({ ...record }));\n  }\n\n  issue(kind: PassKind, input: PassInput, sink: AuditSink): PassRecord {\n    const handle = input.handle.trim();\n    if (handle.length === 0) throw new TypeError(\"handle must not be empty\");\n    const normalized = handle.toLowerCase();\n    if (this.handles.has(normalized)) throw new Error(\"duplicate handle\");\n\n    const prefix: Record<PassKind, string> = {\n      observer: \"O\",\n      builder: \"B\",\n      host: \"H\"\n    };\n    const sequence = this.counters[kind];\n    const id = `${prefix[kind]}-${String(sequence).padStart(4, \"0\")}`;\n    const suppliedSecret = input.secret?.trim() ?? \"\";\n    const record: PassRecord = {\n      id,\n      kind,\n      handle,\n      secret: suppliedSecret.length === 0 ? \"welcome-2026\" : suppliedSecret\n    };\n\n    sink.publish(`pass-created:${id}:${normalized}`);\n    this.records.set(id, { ...record });\n    this.handles.add(normalized);\n    this.counters[kind] = sequence + 1;\n    return { ...record };\n  }\n}\n\nexport function createObserverPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"observer\", input, sink);\n}\n\nexport function createBuilderPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"builder\", input, sink);\n}\n\nexport function createHostPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"host\", input, sink);\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1e7efe9c9d54a36caca7394fdf451267e88c1f3ad759e4ea912d2376a36bec10"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { PassRegistry, createObserverPass, createBuilderPass, createHostPass } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  assert(JSON.stringify(actual) === JSON.stringify(expected), message);\n}\n\nfunction captureError(fn: () => unknown): unknown {\n  try {\n    fn();\n  } catch (error) {\n    return error;\n  }\n  return undefined;\n}\n\nconst events: string[] = [];\nconst sink = { publish(message: string): void { events.push(message); } };\nconst registry = new PassRegistry();\n\nconst observer = createObserverPass(registry, { handle: '  Forge  ' }, sink);\ndeepEqual(observer, { id: 'O-0001', kind: 'observer', handle: 'Forge', secret: 'welcome-2026' }, 'observer pass must trim handle and use the default secret');\ndeepEqual(events, ['pass-created:O-0001:forge'], 'observer creation must publish the normalized audit event');\n\nconst builder = createBuilderPass(registry, { handle: 'Builder', secret: '  custom-secret  ' }, sink);\ndeepEqual(builder, { id: 'B-0001', kind: 'builder', handle: 'Builder', secret: 'custom-secret' }, 'builder pass must trim a supplied secret');\nconst host = createHostPass(registry, { handle: 'Host', secret: '   ' }, sink);\ndeepEqual(host, { id: 'H-0001', kind: 'host', handle: 'Host', secret: 'welcome-2026' }, 'blank secret must use the default');\n\ndeepEqual(events, [\n  'pass-created:O-0001:forge',\n  'pass-created:B-0001:builder',\n  'pass-created:H-0001:host'\n], 'audit events must preserve successful creation order');\ndeepEqual(registry.list(), [observer, builder, host], 'list must preserve successful creation order');\n\nconst duplicateError = captureError(() => createHostPass(registry, { handle: ' fOrGe ' }, sink));\nassert(duplicateError instanceof Error, 'handles must be unique case-insensitively across kinds');\nassert(registry.list().length === 3, 'duplicate rejection must not alter registry state');\nassert(captureError(() => createObserverPass(registry, { handle: '   ' }, sink)) instanceof TypeError, 'blank handles must throw TypeError');\n\nconst returned = registry.get('O-0001');\nassert(returned !== observer, 'get must return a fresh record');\n(returned as unknown as { handle: string }).handle = 'Changed';\ndeepEqual(registry.get('O-0001'), observer, 'mutating a get result must not affect stored records');\n\nconst listA = registry.list();\nconst listB = registry.list();\nassert(listA !== listB, 'list arrays must be fresh');\nassert(listA[0] !== listB[0], 'records in list results must be fresh');\n(listA as unknown as Array<{ handle: string }>)[0].handle = 'Changed';\ndeepEqual(registry.list(), [observer, builder, host], 'mutating list records must not affect registry state');\n\nconst rollbackRegistry = new PassRegistry();\nconst failingSink = { publish(_message: string): void { throw new Error('audit unavailable'); } };\nassert(captureError(() => createObserverPass(rollbackRegistry, { handle: 'First' }, failingSink)) instanceof Error, 'publish failures must propagate');\ndeepEqual(rollbackRegistry.list(), [], 'publish failure must leave the registry empty');\nconst afterFailureEvents: string[] = [];\nconst afterFailure = createObserverPass(rollbackRegistry, { handle: 'First' }, {\n  publish(message: string): void { afterFailureEvents.push(message); }\n});\nassert((afterFailure as unknown as { id: string }).id === 'O-0001', 'publish failure must not consume a sequence number');\ndeepEqual(afterFailureEvents, ['pass-created:O-0001:first'], 'retry after rollback must publish the unconsumed ID');\n\nconst input = { handle: 'Mutable', secret: 'secret' };\nconst isolated = createBuilderPass(rollbackRegistry, input, sink);\ninput.handle = 'Changed';\ninput.secret = 'Changed';\ndeepEqual(rollbackRegistry.get((isolated as unknown as { id: string }).id), isolated, 'input objects must not be stored by reference');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "bb9e3ff2ff8f9edcc8b387c5b3eec09363f88b7f14ee4030a3d1ea6fb00f97e3"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8864d9bd9f45c77d6638c75776a66ea076ee46c31ad2a450c9af135741721eae",
+      "text": "Implement a complete TypeScript source file for deterministic pass issuance. Export `PassKind`, `PassRecord`, `PassInput`, `AuditSink`, `PassRegistry`, `createObserverPass`, `createBuilderPass`, and `createHostPass`.\n\nEach creation function accepts `(registry: PassRegistry, input: PassInput, sink: AuditSink)` and creates its respective kind. Trim `handle`; reject an empty handle with `TypeError`. Handles are unique case-insensitively across all kinds; duplicates throw `Error`. Use the supplied secret after trimming, or the default `welcome-2026` when missing or blank. IDs are sequential per kind: `O-0001`, `B-0001`, and `H-0001`, padded to at least four digits.\n\nBefore changing registry state, call `sink.publish` with `pass-created:<id>:<normalized-handle>`, where the normalized handle is lowercase. If publishing throws, the registry\u2014including its sequence counter\u2014must remain unchanged. On success, store and return a fresh `PassRecord`. `get(id)` and `list()` must also return fresh records; `list()` preserves successful creation order. Inputs, returned records, and sink objects must never be stored by reference.\n\n`PassRegistry` is initially empty. State-changing mechanics may be public only as needed by the three exported creation functions, but callers must not be able to inject malformed records.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8864d9bd9f45c77d6638c75776a66ea076ee46c31ad2a450c9af135741721eae",
+      "text": "Implement a complete TypeScript source file for deterministic pass issuance. Export `PassKind`, `PassRecord`, `PassInput`, `AuditSink`, `PassRegistry`, `createObserverPass`, `createBuilderPass`, and `createHostPass`.\n\nEach creation function accepts `(registry: PassRegistry, input: PassInput, sink: AuditSink)` and creates its respective kind. Trim `handle`; reject an empty handle with `TypeError`. Handles are unique case-insensitively across all kinds; duplicates throw `Error`. Use the supplied secret after trimming, or the default `welcome-2026` when missing or blank. IDs are sequential per kind: `O-0001`, `B-0001`, and `H-0001`, padded to at least four digits.\n\nBefore changing registry state, call `sink.publish` with `pass-created:<id>:<normalized-handle>`, where the normalized handle is lowercase. If publishing throws, the registry\u2014including its sequence counter\u2014must remain unchanged. On success, store and return a fresh `PassRecord`. `get(id)` and `list()` must also return fresh records; `list()` preserves successful creation order. Inputs, returned records, and sink objects must never be stored by reference.\n\n`PassRegistry` is initially empty. State-changing mechanics may be public only as needed by the three exported creation functions, but callers must not be able to inject malformed records.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0306",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type PassKind = \"observer\" | \"builder\" | \"host\";\n\nexport type PassInput = {\n  handle: string;\n  secret?: string;\n};\n\nexport type PassRecord = {\n  id: string;\n  kind: PassKind;\n  handle: string;\n  secret: string;\n};\n\nexport type AuditSink = {\n  publish(message: string): void;\n};\n\nexport class PassRegistry {\n  private readonly records = new Map<string, PassRecord>();\n  private readonly handles = new Set<string>();\n  private readonly counters: Record<PassKind, number> = {\n    observer: 1,\n    builder: 1,\n    host: 1\n  };\n\n  get(id: string): PassRecord | undefined {\n    const record = this.records.get(id);\n    return record === undefined ? undefined : { ...record };\n  }\n\n  list(): PassRecord[] {\n    return [...this.records.values()].map((record) => ({ ...record }));\n  }\n\n  issue(kind: PassKind, input: PassInput, sink: AuditSink): PassRecord {\n    const handle = input.handle.trim();\n    if (handle.length === 0) throw new TypeError(\"handle must not be empty\");\n    const normalized = handle.toLowerCase();\n    if (this.handles.has(normalized)) throw new Error(\"duplicate handle\");\n\n    const prefix: Record<PassKind, string> = {\n      observer: \"O\",\n      builder: \"B\",\n      host: \"H\"\n    };\n    const sequence = this.counters[kind]++;\n    const id = `${prefix[kind]}-${String(sequence).padStart(4, \"0\")}`;\n    const suppliedSecret = input.secret?.trim() ?? \"\";\n    const record: PassRecord = {\n      id,\n      kind,\n      handle,\n      secret: suppliedSecret.length === 0 ? \"welcome-2026\" : suppliedSecret\n    };\n\n    sink.publish(`pass-created:${id}:${normalized}`);\n    this.records.set(id, { ...record });\n    this.handles.add(normalized);\n    return { ...record };\n  }\n}\n\nexport function createObserverPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"observer\", input, sink);\n}\n\nexport function createBuilderPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"builder\", input, sink);\n}\n\nexport function createHostPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"host\", input, sink);\n}\n",
+          "label": "Advances the per-kind sequence before publishing, so a failed publish leaves a gap.",
+          "sha256": "bcb6f20583a560be8cf160d43af53ab0b473a959eb01cc3e8e285d8f4cd1f797"
+        }
+      ],
+      "reference": {
+        "code": "export type PassKind = \"observer\" | \"builder\" | \"host\";\n\nexport type PassInput = {\n  handle: string;\n  secret?: string;\n};\n\nexport type PassRecord = {\n  id: string;\n  kind: PassKind;\n  handle: string;\n  secret: string;\n};\n\nexport type AuditSink = {\n  publish(message: string): void;\n};\n\nexport class PassRegistry {\n  private readonly records = new Map<string, PassRecord>();\n  private readonly handles = new Set<string>();\n  private readonly counters: Record<PassKind, number> = {\n    observer: 1,\n    builder: 1,\n    host: 1\n  };\n\n  get(id: string): PassRecord | undefined {\n    const record = this.records.get(id);\n    return record === undefined ? undefined : { ...record };\n  }\n\n  list(): PassRecord[] {\n    return [...this.records.values()].map((record) => ({ ...record }));\n  }\n\n  issue(kind: PassKind, input: PassInput, sink: AuditSink): PassRecord {\n    const handle = input.handle.trim();\n    if (handle.length === 0) throw new TypeError(\"handle must not be empty\");\n    const normalized = handle.toLowerCase();\n    if (this.handles.has(normalized)) throw new Error(\"duplicate handle\");\n\n    const prefix: Record<PassKind, string> = {\n      observer: \"O\",\n      builder: \"B\",\n      host: \"H\"\n    };\n    const sequence = this.counters[kind];\n    const id = `${prefix[kind]}-${String(sequence).padStart(4, \"0\")}`;\n    const suppliedSecret = input.secret?.trim() ?? \"\";\n    const record: PassRecord = {\n      id,\n      kind,\n      handle,\n      secret: suppliedSecret.length === 0 ? \"welcome-2026\" : suppliedSecret\n    };\n\n    sink.publish(`pass-created:${id}:${normalized}`);\n    this.records.set(id, { ...record });\n    this.handles.add(normalized);\n    this.counters[kind] = sequence + 1;\n    return { ...record };\n  }\n}\n\nexport function createObserverPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"observer\", input, sink);\n}\n\nexport function createBuilderPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"builder\", input, sink);\n}\n\nexport function createHostPass(\n  registry: PassRegistry,\n  input: PassInput,\n  sink: AuditSink\n): PassRecord {\n  return registry.issue(\"host\", input, sink);\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1e7efe9c9d54a36caca7394fdf451267e88c1f3ad759e4ea912d2376a36bec10"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Successful nested issuance must not overwrite a pass or reuse its ID');\n    ^\n\nError: Successful nested issuance must not overwrite a pass or reuse its ID\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "bac8a0df624c7f4dd51c2e626bb2c8c16c4df0f7bb9ef312454798dd42b63c5f",
+    "duration_ms": 2022,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

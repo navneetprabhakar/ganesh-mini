@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0298",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "dd415d8b750db69520dd9dd4557dcd088365951ad473ae91b99ca17828e19ad9",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { Reservation, ReservationStore } from './solution';\nconst reservation: Reservation = { id: 'r', owner: 'alice', seats: 1, status: 'held' };\nObject.defineProperty(reservation, 'owner', { value: 'alice', enumerable: false });\nconst records = new ReservationStore([reservation]).listByOwner('alice');\nif (records.length !== 1 || records[0].owner !== 'alice') throw new Error('Required owner must survive input copying');\n",
+        "sha256": "d7d364038ca8220957840e8742b70974db081dfdc2121971db34238075adec69"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "832fd15b3a221302dace423335600c8102887cba3131840b018db8962d3490ea",
+      "text": "Implement a new in-memory TypeScript module with this exact API:\n\n```typescript\nexport type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nexport class ReservationStore {\n  constructor(initial?: readonly Reservation[]);\n  add(reservation: Reservation): void;\n  listByOwner(owner: string): Reservation[];\n  changeStatus(id: string, status: ReservationStatus): Reservation;\n  remove(id: string): Reservation;\n}\n```\n\nIDs and owners must be non-empty strings, seats must be a positive integer, and status must be one of the three declared values. Malformed reservations or method arguments must throw `TypeError`. Duplicate IDs must throw `Error`. Unknown IDs passed to `changeStatus` or `remove` must throw `Error`. Preserve insertion order in `listByOwner`; an empty store returns an empty array. The store must copy all incoming records and return fresh record copies so callers can never mutate stored state through aliases. Failed operations must leave the store unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "832fd15b3a221302dace423335600c8102887cba3131840b018db8962d3490ea",
+      "text": "Implement a new in-memory TypeScript module with this exact API:\n\n```typescript\nexport type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nexport class ReservationStore {\n  constructor(initial?: readonly Reservation[]);\n  add(reservation: Reservation): void;\n  listByOwner(owner: string): Reservation[];\n  changeStatus(id: string, status: ReservationStatus): Reservation;\n  remove(id: string): Reservation;\n}\n```\n\nIDs and owners must be non-empty strings, seats must be a positive integer, and status must be one of the three declared values. Malformed reservations or method arguments must throw `TypeError`. Duplicate IDs must throw `Error`. Unknown IDs passed to `changeStatus` or `remove` must throw `Error`. Preserve insertion order in `listByOwner`; an empty store returns an empty array. The store must copy all incoming records and return fresh record copies so callers can never mutate stored state through aliases. Failed operations must leave the store unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0298",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nconst statuses = new Set<ReservationStatus>([\"held\", \"confirmed\", \"cancelled\"]);\n\nfunction requireText(value: string, name: string): void {\n  if (typeof value !== \"string\" || value.length === 0) {\n    throw new TypeError(`${name} must be a non-empty string`);\n  }\n}\n\nfunction validateReservation(value: Reservation): void {\n  if (typeof value !== \"object\" || value === null) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n  requireText(value.id, \"id\");\n  requireText(value.owner, \"owner\");\n  if (!Number.isInteger(value.seats) || value.seats <= 0 || !statuses.has(value.status)) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n}\n\nexport class ReservationStore {\n  private readonly records = new Map<string, Reservation>();\n\n  constructor(initial: readonly Reservation[] = []) {\n    for (const reservation of initial) {\n      this.add(reservation);\n    }\n  }\n\n  add(reservation: Reservation): void {\n    validateReservation(reservation);\n    if (this.records.has(reservation.id)) {\n      throw new Error(`Duplicate reservation: ${reservation.id}`);\n    }\n    this.records.set(reservation.id, { ...reservation });\n  }\n\n  listByOwner(owner: string): Reservation[] {\n    requireText(owner, \"owner\");\n    return [...this.records.values()]\n      .filter((reservation) => reservation.owner === owner);\n  }\n\n  changeStatus(id: string, status: ReservationStatus): Reservation {\n    requireText(id, \"id\");\n    if (!statuses.has(status)) {\n      throw new TypeError(\"Invalid status\");\n    }\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    const updated = { ...current, status };\n    this.records.set(id, updated);\n    return { ...updated };\n  }\n\n  remove(id: string): Reservation {\n    requireText(id, \"id\");\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    this.records.delete(id);\n    return { ...current };\n  }\n}\n",
+          "label": "Returns stored reservation objects directly from `listByOwner`, allowing external mutation of store state.",
+          "sha256": "b7395174f37e33501929041637369036be4777777ffb361ecbb413fb6987c766"
+        }
+      ],
+      "reference": {
+        "code": "export type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nconst statuses = new Set<ReservationStatus>([\"held\", \"confirmed\", \"cancelled\"]);\n\nfunction requireText(value: string, name: string): void {\n  if (typeof value !== \"string\" || value.length === 0) {\n    throw new TypeError(`${name} must be a non-empty string`);\n  }\n}\n\nfunction validateReservation(value: Reservation): void {\n  if (typeof value !== \"object\" || value === null) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n  requireText(value.id, \"id\");\n  requireText(value.owner, \"owner\");\n  if (!Number.isInteger(value.seats) || value.seats <= 0 || !statuses.has(value.status)) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n}\n\nexport class ReservationStore {\n  private readonly records = new Map<string, Reservation>();\n\n  constructor(initial: readonly Reservation[] = []) {\n    for (const reservation of initial) {\n      this.add(reservation);\n    }\n  }\n\n  add(reservation: Reservation): void {\n    validateReservation(reservation);\n    if (this.records.has(reservation.id)) {\n      throw new Error(`Duplicate reservation: ${reservation.id}`);\n    }\n    this.records.set(reservation.id, { ...reservation });\n  }\n\n  listByOwner(owner: string): Reservation[] {\n    requireText(owner, \"owner\");\n    return [...this.records.values()]\n      .filter((reservation) => reservation.owner === owner)\n      .map((reservation) => ({ ...reservation }));\n  }\n\n  changeStatus(id: string, status: ReservationStatus): Reservation {\n    requireText(id, \"id\");\n    if (!statuses.has(status)) {\n      throw new TypeError(\"Invalid status\");\n    }\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    const updated = { ...current, status };\n    this.records.set(id, updated);\n    return { ...updated };\n  }\n\n  remove(id: string): Reservation {\n    requireText(id, \"id\");\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    this.records.delete(id);\n    return { ...current };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2e971cbbfc44b1d95c65aa48d646fed0a27999064b404cc7e28247752b84b78b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { Reservation, ReservationStatus, ReservationStore } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\n\nfunction expectError(action: () => void, ctor: typeof Error, message: string): void {\n  let caught: unknown;\n  try { action(); } catch (error) { caught = error; }\n  assert(caught instanceof ctor, message);\n}\n\nconst empty = new ReservationStore();\nassert(empty.listByOwner(\"nobody\").length === 0, \"empty store returns an empty list\");\n\nconst initial: Reservation = { id: \"r1\", owner: \"alice\", seats: 2, status: \"held\" };\nconst store = new ReservationStore([initial]);\ninitial.owner = \"mutated\";\ninitial.seats = 99;\ninitial.status = \"cancelled\";\nstore.add({ id: \"r2\", owner: \"bob\", seats: 1, status: \"confirmed\" });\nconst third: Reservation = { id: \"r3\", owner: \"alice\", seats: 4, status: \"held\" };\nstore.add(third);\nthird.owner = \"bob\";\n\nconst alice1 = store.listByOwner(\"alice\");\nassert(alice1.length === 2 && alice1[0].id === \"r1\" && alice1[1].id === \"r3\", \"owner listing preserves insertion order\");\nassert(alice1[0].seats === 2 && alice1[0].status === \"held\", \"incoming records must be copied\");\nalice1[0].owner = \"corrupted\";\nalice1[0].seats = 100;\nconst alice2 = store.listByOwner(\"alice\");\nassert(alice2 !== alice1 && alice2[0] !== alice1[0], \"list results must be fresh copies\");\nassert(alice2[0].owner === \"alice\" && alice2[0].seats === 2, \"returned records must not alias stored state\");\n\nconst changed = store.changeStatus(\"r1\", \"confirmed\");\nassert(changed.status === \"confirmed\", \"changeStatus returns updated status\");\nchanged.status = \"cancelled\";\nassert(store.listByOwner(\"alice\")[0].status === \"confirmed\", \"changeStatus result must be a fresh copy\");\nconst removed = store.remove(\"r2\");\nassert(removed.id === \"r2\" && removed.status === \"confirmed\", \"remove returns removed record\");\nremoved.owner = \"changed\";\nassert(store.listByOwner(\"bob\").length === 0, \"removed record must no longer be stored\");\n\nexpectError(() => store.add({ id: \"r1\", owner: \"other\", seats: 1, status: \"held\" }), Error, \"duplicate IDs throw Error\");\nexpectError(() => store.changeStatus(\"unknown\", \"held\"), Error, \"unknown status-change ID throws Error\");\nexpectError(() => store.remove(\"unknown\"), Error, \"unknown removal ID throws Error\");\nassert(store.listByOwner(\"alice\").length === 2, \"failed operations leave state unchanged\");\n\nconst badReservations: unknown[] = [\n  null,\n  { id: \"\", owner: \"a\", seats: 1, status: \"held\" },\n  { id: \"x\", owner: \"\", seats: 1, status: \"held\" },\n  { id: \"x\", owner: \"a\", seats: 0, status: \"held\" },\n  { id: \"x\", owner: \"a\", seats: -1, status: \"held\" },\n  { id: \"x\", owner: \"a\", seats: 1.5, status: \"held\" },\n  { id: \"x\", owner: \"a\", seats: 1, status: \"pending\" }\n];\nfor (const bad of badReservations) {\n  expectError(() => new ReservationStore([bad as Reservation]), TypeError, \"malformed initial reservation throws TypeError\");\n  expectError(() => store.add(bad as Reservation), TypeError, \"malformed added reservation throws TypeError\");\n}\nexpectError(() => store.listByOwner(\"\"), TypeError, \"empty owner argument throws TypeError\");\nexpectError(() => store.listByOwner(3 as unknown as string), TypeError, \"non-string owner throws TypeError\");\nexpectError(() => store.changeStatus(\"\", \"held\"), TypeError, \"empty ID throws TypeError\");\nexpectError(() => store.changeStatus(\"r1\", \"bad\" as ReservationStatus), TypeError, \"invalid status throws TypeError\");\nexpectError(() => store.remove(4 as unknown as string), TypeError, \"non-string removal ID throws TypeError\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "18e4b2f5c1a8de9f360775f21f3af9be1a942495b43650163d0d5a930e29c472"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "832fd15b3a221302dace423335600c8102887cba3131840b018db8962d3490ea",
+      "text": "Implement a new in-memory TypeScript module with this exact API:\n\n```typescript\nexport type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nexport class ReservationStore {\n  constructor(initial?: readonly Reservation[]);\n  add(reservation: Reservation): void;\n  listByOwner(owner: string): Reservation[];\n  changeStatus(id: string, status: ReservationStatus): Reservation;\n  remove(id: string): Reservation;\n}\n```\n\nIDs and owners must be non-empty strings, seats must be a positive integer, and status must be one of the three declared values. Malformed reservations or method arguments must throw `TypeError`. Duplicate IDs must throw `Error`. Unknown IDs passed to `changeStatus` or `remove` must throw `Error`. Preserve insertion order in `listByOwner`; an empty store returns an empty array. The store must copy all incoming records and return fresh record copies so callers can never mutate stored state through aliases. Failed operations must leave the store unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "832fd15b3a221302dace423335600c8102887cba3131840b018db8962d3490ea",
+      "text": "Implement a new in-memory TypeScript module with this exact API:\n\n```typescript\nexport type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nexport class ReservationStore {\n  constructor(initial?: readonly Reservation[]);\n  add(reservation: Reservation): void;\n  listByOwner(owner: string): Reservation[];\n  changeStatus(id: string, status: ReservationStatus): Reservation;\n  remove(id: string): Reservation;\n}\n```\n\nIDs and owners must be non-empty strings, seats must be a positive integer, and status must be one of the three declared values. Malformed reservations or method arguments must throw `TypeError`. Duplicate IDs must throw `Error`. Unknown IDs passed to `changeStatus` or `remove` must throw `Error`. Preserve insertion order in `listByOwner`; an empty store returns an empty array. The store must copy all incoming records and return fresh record copies so callers can never mutate stored state through aliases. Failed operations must leave the store unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0298",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nconst statuses = new Set<ReservationStatus>([\"held\", \"confirmed\", \"cancelled\"]);\n\nfunction requireText(value: string, name: string): void {\n  if (typeof value !== \"string\" || value.length === 0) {\n    throw new TypeError(`${name} must be a non-empty string`);\n  }\n}\n\nfunction validateReservation(value: Reservation): void {\n  if (typeof value !== \"object\" || value === null) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n  requireText(value.id, \"id\");\n  requireText(value.owner, \"owner\");\n  if (!Number.isInteger(value.seats) || value.seats <= 0 || !statuses.has(value.status)) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n}\n\nexport class ReservationStore {\n  private readonly records = new Map<string, Reservation>();\n\n  constructor(initial: readonly Reservation[] = []) {\n    for (const reservation of initial) {\n      this.add(reservation);\n    }\n  }\n\n  add(reservation: Reservation): void {\n    validateReservation(reservation);\n    if (this.records.has(reservation.id)) {\n      throw new Error(`Duplicate reservation: ${reservation.id}`);\n    }\n    this.records.set(reservation.id, { ...reservation });\n  }\n\n  listByOwner(owner: string): Reservation[] {\n    requireText(owner, \"owner\");\n    return [...this.records.values()]\n      .filter((reservation) => reservation.owner === owner);\n  }\n\n  changeStatus(id: string, status: ReservationStatus): Reservation {\n    requireText(id, \"id\");\n    if (!statuses.has(status)) {\n      throw new TypeError(\"Invalid status\");\n    }\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    const updated = { ...current, status };\n    this.records.set(id, updated);\n    return { ...updated };\n  }\n\n  remove(id: string): Reservation {\n    requireText(id, \"id\");\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    this.records.delete(id);\n    return { ...current };\n  }\n}\n",
+          "label": "Returns stored reservation objects directly from `listByOwner`, allowing external mutation of store state.",
+          "sha256": "b7395174f37e33501929041637369036be4777777ffb361ecbb413fb6987c766"
+        }
+      ],
+      "reference": {
+        "code": "export type ReservationStatus = \"held\" | \"confirmed\" | \"cancelled\";\n\nexport interface Reservation {\n  id: string;\n  owner: string;\n  seats: number;\n  status: ReservationStatus;\n}\n\nconst statuses = new Set<ReservationStatus>([\"held\", \"confirmed\", \"cancelled\"]);\n\nfunction requireText(value: string, name: string): void {\n  if (typeof value !== \"string\" || value.length === 0) {\n    throw new TypeError(`${name} must be a non-empty string`);\n  }\n}\n\nfunction validateReservation(value: Reservation): void {\n  if (typeof value !== \"object\" || value === null) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n  requireText(value.id, \"id\");\n  requireText(value.owner, \"owner\");\n  if (!Number.isInteger(value.seats) || value.seats <= 0 || !statuses.has(value.status)) {\n    throw new TypeError(\"Invalid reservation\");\n  }\n}\n\nexport class ReservationStore {\n  private readonly records = new Map<string, Reservation>();\n\n  constructor(initial: readonly Reservation[] = []) {\n    for (const reservation of initial) {\n      this.add(reservation);\n    }\n  }\n\n  add(reservation: Reservation): void {\n    validateReservation(reservation);\n    if (this.records.has(reservation.id)) {\n      throw new Error(`Duplicate reservation: ${reservation.id}`);\n    }\n    this.records.set(reservation.id, { ...reservation });\n  }\n\n  listByOwner(owner: string): Reservation[] {\n    requireText(owner, \"owner\");\n    return [...this.records.values()]\n      .filter((reservation) => reservation.owner === owner)\n      .map((reservation) => ({ ...reservation }));\n  }\n\n  changeStatus(id: string, status: ReservationStatus): Reservation {\n    requireText(id, \"id\");\n    if (!statuses.has(status)) {\n      throw new TypeError(\"Invalid status\");\n    }\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    const updated = { ...current, status };\n    this.records.set(id, updated);\n    return { ...updated };\n  }\n\n  remove(id: string): Reservation {\n    requireText(id, \"id\");\n    const current = this.records.get(id);\n    if (current === undefined) {\n      throw new Error(`Unknown reservation: ${id}`);\n    }\n    this.records.delete(id);\n    return { ...current };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2e971cbbfc44b1d95c65aa48d646fed0a27999064b404cc7e28247752b84b78b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:8\n    throw new Error('Required owner must survive input copying');\n    ^\n\nError: Required owner must survive input copying\n    at Object.<anonymous> (/work/solution.test.js:8:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "54a91b30922559b72724c35dd57f2dbd30b91a73c7da92c4dcacb0f49b28fd1e",
+    "duration_ms": 2335,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0337",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "74d63d6d60019214db2c553f5b7039401b944fdc0243fbd4dca8c3ba3d088511",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { EntryBook } from './solution';\nconst book = new EntryBook();\nfor (const id of ['a', 'b', 'c']) book.add({ id, weight: 1 });\nbook.select('c');\nif (book.move(Number.MAX_SAFE_INTEGER)?.id !== 'a') throw new Error('Safe integer offset must wrap without losing selected origin');\n",
+        "sha256": "7b741d94fca4ab84733471f4f9ada4c36cd949d266b7a5f4fd4a814c9dedd439"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a0d4b0b6dbfe676122f1444704aea71eb8d96a570f209ac0ab387e7d8810ec65",
+      "text": "Implement a new TypeScript source file exporting `Entry`, `EntryBook`, and all methods shown below.\n\n```ts\nexport interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  add(entry: Entry): void;\n  remove(id: string): boolean;\n  select(id: string): boolean;\n  move(offset: number): Entry | null;\n  current(): Entry | null;\n  list(): Entry[];\n}\n```\n\nThe book preserves insertion order. `add` rejects blank IDs and non-finite weights with `RangeError`. Entries must be copied when stored. Adding an existing ID replaces its value without changing its position or selection. `remove` returns false for an unknown ID. If the selected entry is removed, select the entry now occupying the removed index, wrapping to the first entry when necessary; an empty book has no selection. `select` returns false for an unknown ID. `move` requires an integer offset, otherwise throwing `RangeError`. On a nonempty book, it moves from the selected entry with circular wrapping; when nothing is selected, offset zero starts at the first entry, positive offsets count forward from it, and negative offsets count backward from it. `current` and `list` return fresh objects so callers cannot mutate stored state. Ordering must remain deterministic.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a0d4b0b6dbfe676122f1444704aea71eb8d96a570f209ac0ab387e7d8810ec65",
+      "text": "Implement a new TypeScript source file exporting `Entry`, `EntryBook`, and all methods shown below.\n\n```ts\nexport interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  add(entry: Entry): void;\n  remove(id: string): boolean;\n  select(id: string): boolean;\n  move(offset: number): Entry | null;\n  current(): Entry | null;\n  list(): Entry[];\n}\n```\n\nThe book preserves insertion order. `add` rejects blank IDs and non-finite weights with `RangeError`. Entries must be copied when stored. Adding an existing ID replaces its value without changing its position or selection. `remove` returns false for an unknown ID. If the selected entry is removed, select the entry now occupying the removed index, wrapping to the first entry when necessary; an empty book has no selection. `select` returns false for an unknown ID. `move` requires an integer offset, otherwise throwing `RangeError`. On a nonempty book, it moves from the selected entry with circular wrapping; when nothing is selected, offset zero starts at the first entry, positive offsets count forward from it, and negative offsets count backward from it. `current` and `list` return fresh objects so callers cannot mutate stored state. Ordering must remain deterministic.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0337",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  private entries: Entry[] = [];\n  private selectedId: string | null = null;\n\n  add(entry: Entry): void {\n    if (entry.id.trim().length === 0) throw new RangeError(\"id must not be blank\");\n    if (!Number.isFinite(entry.weight)) throw new RangeError(\"weight must be finite\");\n    const copy: Entry = { id: entry.id, weight: entry.weight };\n    const index = this.entries.findIndex((item) => item.id === entry.id);\n    if (index >= 0) this.entries[index] = copy;\n    else this.entries.push(copy);\n  }\n\n  remove(id: string): boolean {\n    const index = this.entries.findIndex((item) => item.id === id);\n    if (index < 0) return false;\n    const wasSelected = this.selectedId === id;\n    this.entries.splice(index, 1);\n    if (wasSelected) {\n      this.selectedId = this.entries.length === 0\n        ? null\n        : this.entries[index % this.entries.length].id;\n    }\n    return true;\n  }\n\n  select(id: string): boolean {\n    if (!this.entries.some((item) => item.id === id)) return false;\n    this.selectedId = id;\n    return true;\n  }\n\n  move(offset: number): Entry | null {\n    if (!Number.isInteger(offset)) throw new RangeError(\"offset must be an integer\");\n    const size = this.entries.length;\n    if (size === 0) return null;\n    const selectedIndex = this.entries.findIndex((item) => item.id === this.selectedId);\n    const origin = selectedIndex >= 0 ? selectedIndex : 0;\n    const index = (origin + offset) % size;\n    if (index < 0) return null;\n    this.selectedId = this.entries[index].id;\n    return { ...this.entries[index] };\n  }\n\n  current(): Entry | null {\n    const entry = this.entries.find((item) => item.id === this.selectedId);\n    return entry ? { ...entry } : null;\n  }\n\n  list(): Entry[] {\n    return this.entries.map((entry) => ({ ...entry }));\n  }\n}\n",
+          "label": "Negative movement does not wrap around the beginning of the ordered collection.",
+          "sha256": "fbcab015b319c908830c07dcc3da28feb036c4c30f0cb0a0897888f8b75c2cae"
+        }
+      ],
+      "reference": {
+        "code": "export interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  private entries: Entry[] = [];\n  private selectedId: string | null = null;\n\n  add(entry: Entry): void {\n    if (entry.id.trim().length === 0) throw new RangeError(\"id must not be blank\");\n    if (!Number.isFinite(entry.weight)) throw new RangeError(\"weight must be finite\");\n    const copy: Entry = { id: entry.id, weight: entry.weight };\n    const index = this.entries.findIndex((item) => item.id === entry.id);\n    if (index >= 0) this.entries[index] = copy;\n    else this.entries.push(copy);\n  }\n\n  remove(id: string): boolean {\n    const index = this.entries.findIndex((item) => item.id === id);\n    if (index < 0) return false;\n    const wasSelected = this.selectedId === id;\n    this.entries.splice(index, 1);\n    if (wasSelected) {\n      this.selectedId = this.entries.length === 0\n        ? null\n        : this.entries[index % this.entries.length].id;\n    }\n    return true;\n  }\n\n  select(id: string): boolean {\n    if (!this.entries.some((item) => item.id === id)) return false;\n    this.selectedId = id;\n    return true;\n  }\n\n  move(offset: number): Entry | null {\n    if (!Number.isInteger(offset)) throw new RangeError(\"offset must be an integer\");\n    const size = this.entries.length;\n    if (size === 0) return null;\n    const selectedIndex = this.entries.findIndex((item) => item.id === this.selectedId);\n    const origin = selectedIndex >= 0 ? selectedIndex : 0;\n    const index = ((origin + offset) % size + size) % size;\n    this.selectedId = this.entries[index].id;\n    return { ...this.entries[index] };\n  }\n\n  current(): Entry | null {\n    const entry = this.entries.find((item) => item.id === this.selectedId);\n    return entry ? { ...entry } : null;\n  }\n\n  list(): Entry[] {\n    return this.entries.map((entry) => ({ ...entry }));\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c314a64305a3b55681615aca68003949dab94e81888277b1a22afcde943ee0d9"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { EntryBook } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (actual !== expected) throw new Error(message);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);\n}\nfunction expectRange(fn: () => void, message: string): void {\n  let error: unknown;\n  try { fn(); } catch (caught) { error = caught; }\n  assert(error instanceof RangeError, message);\n}\n\nconst book = new EntryBook();\nequal(book.current(), null, 'new book has no selection');\nequal(book.move(3), null, 'move on empty book returns null');\nequal(book.remove('missing'), false, 'remove unknown ID returns false');\nequal(book.select('missing'), false, 'select unknown ID returns false');\nexpectRange(() => book.add({ id: '   ', weight: 1 }), 'blank ID is rejected');\nexpectRange(() => book.add({ id: 'x', weight: Infinity }), 'infinite weight is rejected');\nexpectRange(() => book.add({ id: 'x', weight: NaN }), 'NaN weight is rejected');\nexpectRange(() => book.move(0.5), 'fractional move is rejected');\nexpectRange(() => book.move(Infinity), 'infinite move is rejected');\n\nconst original = { id: 'a', weight: 1 };\nbook.add(original);\nbook.add({ id: 'b', weight: 2 });\nbook.add({ id: 'c', weight: 3 });\noriginal.weight = 99;\ndeepEqual(book.list(), [{ id: 'a', weight: 1 }, { id: 'b', weight: 2 }, { id: 'c', weight: 3 }], 'add copies entries and preserves insertion order');\n\nequal(book.select('b'), true, 'known ID can be selected');\nbook.add({ id: 'b', weight: 20 });\ndeepEqual(book.list(), [{ id: 'a', weight: 1 }, { id: 'b', weight: 20 }, { id: 'c', weight: 3 }], 'replacement retains its position');\ndeepEqual(book.current(), { id: 'b', weight: 20 }, 'replacement retains selection');\ndeepEqual(book.move(1), { id: 'c', weight: 3 }, 'positive movement advances selection');\ndeepEqual(book.move(1), { id: 'a', weight: 1 }, 'movement wraps forward');\ndeepEqual(book.move(-1), { id: 'c', weight: 3 }, 'movement wraps backward');\n\nconst currentCopy = book.current() as { id: string; weight: number };\ncurrentCopy.weight = -1;\nconst listCopy = book.list() as Array<{ id: string; weight: number }>;\nlistCopy[0].weight = -2;\nlistCopy.push({ id: 'extra', weight: 0 });\ndeepEqual(book.current(), { id: 'c', weight: 3 }, 'current returns a fresh entry');\ndeepEqual(book.list(), [{ id: 'a', weight: 1 }, { id: 'b', weight: 20 }, { id: 'c', weight: 3 }], 'list returns a fresh array and entries');\n\nequal(book.remove('c'), true, 'selected entry can be removed');\ndeepEqual(book.current(), { id: 'a', weight: 1 }, 'removing selected last entry wraps to first');\nbook.select('a');\nequal(book.remove('a'), true, 'selected first entry can be removed');\ndeepEqual(book.current(), { id: 'b', weight: 20 }, 'entry occupying removed index becomes selected');\nequal(book.remove('b'), true, 'last entry can be removed');\nequal(book.current(), null, 'empty book has no selection');\n\nfunction unselectedBook(): EntryBook {\n  const result = new EntryBook();\n  result.add({ id: 'a', weight: 1 });\n  result.add({ id: 'b', weight: 2 });\n  result.add({ id: 'c', weight: 3 });\n  return result;\n}\ndeepEqual(unselectedBook().move(0), { id: 'a', weight: 1 }, 'zero starts at first when unselected');\ndeepEqual(unselectedBook().move(1), { id: 'b', weight: 2 }, 'positive offset counts forward from first when unselected');\ndeepEqual(unselectedBook().move(-1), { id: 'c', weight: 3 }, 'negative offset counts backward from first when unselected');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "8ddaeeb4b010ef01d87ef47c8db3ed1cc8cf212d7d07bf69bb1efc2ec4cddf74"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a0d4b0b6dbfe676122f1444704aea71eb8d96a570f209ac0ab387e7d8810ec65",
+      "text": "Implement a new TypeScript source file exporting `Entry`, `EntryBook`, and all methods shown below.\n\n```ts\nexport interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  add(entry: Entry): void;\n  remove(id: string): boolean;\n  select(id: string): boolean;\n  move(offset: number): Entry | null;\n  current(): Entry | null;\n  list(): Entry[];\n}\n```\n\nThe book preserves insertion order. `add` rejects blank IDs and non-finite weights with `RangeError`. Entries must be copied when stored. Adding an existing ID replaces its value without changing its position or selection. `remove` returns false for an unknown ID. If the selected entry is removed, select the entry now occupying the removed index, wrapping to the first entry when necessary; an empty book has no selection. `select` returns false for an unknown ID. `move` requires an integer offset, otherwise throwing `RangeError`. On a nonempty book, it moves from the selected entry with circular wrapping; when nothing is selected, offset zero starts at the first entry, positive offsets count forward from it, and negative offsets count backward from it. `current` and `list` return fresh objects so callers cannot mutate stored state. Ordering must remain deterministic.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a0d4b0b6dbfe676122f1444704aea71eb8d96a570f209ac0ab387e7d8810ec65",
+      "text": "Implement a new TypeScript source file exporting `Entry`, `EntryBook`, and all methods shown below.\n\n```ts\nexport interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  add(entry: Entry): void;\n  remove(id: string): boolean;\n  select(id: string): boolean;\n  move(offset: number): Entry | null;\n  current(): Entry | null;\n  list(): Entry[];\n}\n```\n\nThe book preserves insertion order. `add` rejects blank IDs and non-finite weights with `RangeError`. Entries must be copied when stored. Adding an existing ID replaces its value without changing its position or selection. `remove` returns false for an unknown ID. If the selected entry is removed, select the entry now occupying the removed index, wrapping to the first entry when necessary; an empty book has no selection. `select` returns false for an unknown ID. `move` requires an integer offset, otherwise throwing `RangeError`. On a nonempty book, it moves from the selected entry with circular wrapping; when nothing is selected, offset zero starts at the first entry, positive offsets count forward from it, and negative offsets count backward from it. `current` and `list` return fresh objects so callers cannot mutate stored state. Ordering must remain deterministic.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0337",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  private entries: Entry[] = [];\n  private selectedId: string | null = null;\n\n  add(entry: Entry): void {\n    if (entry.id.trim().length === 0) throw new RangeError(\"id must not be blank\");\n    if (!Number.isFinite(entry.weight)) throw new RangeError(\"weight must be finite\");\n    const copy: Entry = { id: entry.id, weight: entry.weight };\n    const index = this.entries.findIndex((item) => item.id === entry.id);\n    if (index >= 0) this.entries[index] = copy;\n    else this.entries.push(copy);\n  }\n\n  remove(id: string): boolean {\n    const index = this.entries.findIndex((item) => item.id === id);\n    if (index < 0) return false;\n    const wasSelected = this.selectedId === id;\n    this.entries.splice(index, 1);\n    if (wasSelected) {\n      this.selectedId = this.entries.length === 0\n        ? null\n        : this.entries[index % this.entries.length].id;\n    }\n    return true;\n  }\n\n  select(id: string): boolean {\n    if (!this.entries.some((item) => item.id === id)) return false;\n    this.selectedId = id;\n    return true;\n  }\n\n  move(offset: number): Entry | null {\n    if (!Number.isInteger(offset)) throw new RangeError(\"offset must be an integer\");\n    const size = this.entries.length;\n    if (size === 0) return null;\n    const selectedIndex = this.entries.findIndex((item) => item.id === this.selectedId);\n    const origin = selectedIndex >= 0 ? selectedIndex : 0;\n    const index = (origin + offset) % size;\n    if (index < 0) return null;\n    this.selectedId = this.entries[index].id;\n    return { ...this.entries[index] };\n  }\n\n  current(): Entry | null {\n    const entry = this.entries.find((item) => item.id === this.selectedId);\n    return entry ? { ...entry } : null;\n  }\n\n  list(): Entry[] {\n    return this.entries.map((entry) => ({ ...entry }));\n  }\n}\n",
+          "label": "Negative movement does not wrap around the beginning of the ordered collection.",
+          "sha256": "fbcab015b319c908830c07dcc3da28feb036c4c30f0cb0a0897888f8b75c2cae"
+        }
+      ],
+      "reference": {
+        "code": "export interface Entry {\n  readonly id: string;\n  readonly weight: number;\n}\n\nexport class EntryBook {\n  private entries: Entry[] = [];\n  private selectedId: string | null = null;\n\n  add(entry: Entry): void {\n    if (entry.id.trim().length === 0) throw new RangeError(\"id must not be blank\");\n    if (!Number.isFinite(entry.weight)) throw new RangeError(\"weight must be finite\");\n    const copy: Entry = { id: entry.id, weight: entry.weight };\n    const index = this.entries.findIndex((item) => item.id === entry.id);\n    if (index >= 0) this.entries[index] = copy;\n    else this.entries.push(copy);\n  }\n\n  remove(id: string): boolean {\n    const index = this.entries.findIndex((item) => item.id === id);\n    if (index < 0) return false;\n    const wasSelected = this.selectedId === id;\n    this.entries.splice(index, 1);\n    if (wasSelected) {\n      this.selectedId = this.entries.length === 0\n        ? null\n        : this.entries[index % this.entries.length].id;\n    }\n    return true;\n  }\n\n  select(id: string): boolean {\n    if (!this.entries.some((item) => item.id === id)) return false;\n    this.selectedId = id;\n    return true;\n  }\n\n  move(offset: number): Entry | null {\n    if (!Number.isInteger(offset)) throw new RangeError(\"offset must be an integer\");\n    const size = this.entries.length;\n    if (size === 0) return null;\n    const selectedIndex = this.entries.findIndex((item) => item.id === this.selectedId);\n    const origin = selectedIndex >= 0 ? selectedIndex : 0;\n    const index = ((origin + offset) % size + size) % size;\n    this.selectedId = this.entries[index].id;\n    return { ...this.entries[index] };\n  }\n\n  current(): Entry | null {\n    const entry = this.entries.find((item) => item.id === this.selectedId);\n    return entry ? { ...entry } : null;\n  }\n\n  list(): Entry[] {\n    return this.entries.map((entry) => ({ ...entry }));\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "c314a64305a3b55681615aca68003949dab94e81888277b1a22afcde943ee0d9"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:9\n    throw new Error('Safe integer offset must wrap without losing selected origin');\n    ^\n\nError: Safe integer offset must wrap without losing selected origin\n    at Object.<anonymous> (/work/solution.test.js:9:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "dd49c66feefea8d706c623cd44e863b9445796713205fa8512559ce34f109ce7",
+    "duration_ms": 2379,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

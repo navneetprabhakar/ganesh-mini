@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0339",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "49462460fd94993d64ea46707b2a927844d21ddd288221212fe0a36472bcc043",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { cleanCatalog } from './solution';\nlet threw = false;\ntry { cleanCatalog({ root: 'old', bundles: [] }, { root: '/x', allowedSuffixes: new Array<string>(1) }); } catch { threw = true; }\nif (!threw) throw new Error('Missing suffix must not bypass dot-prefix validation');\n",
+        "sha256": "0d23443e40c8cc8c598d03f73662366685977729d653eb2285b7588401aacc86"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ee18b80ac710d83fb6de564df2c7e261bc8d93d8538ae32733d47f9f81ca0ed8",
+      "text": "Implement a new pure TypeScript catalog cleanup API:\n\n```ts\nexport type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog;\n```\n\nThe function must not mutate or reuse any input bundle, artifact, or array. `root` must be nonblank after trimming. Allowed suffixes must begin with `.` and comparisons are case-insensitive; invalid suffixes throw `RangeError`. Normalize the output root by removing trailing `/` characters, except that `/` remains `/`. For every artifact, discard it if `deleted` is true or its path does not end in an allowed suffix. Retained artifact paths become `normalizedRoot + \"/\" + relativePath`, with leading `/` characters removed from the original path. An empty artifact path is malformed and throws `RangeError`. Preserve bundle and artifact order. Remove a bundle when no artifacts remain. Also remove any retained artifact whose kind differs from its bundle kind. Duplicate paths remain duplicated. An empty suffix list produces a catalog with no bundles.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ee18b80ac710d83fb6de564df2c7e261bc8d93d8538ae32733d47f9f81ca0ed8",
+      "text": "Implement a new pure TypeScript catalog cleanup API:\n\n```ts\nexport type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog;\n```\n\nThe function must not mutate or reuse any input bundle, artifact, or array. `root` must be nonblank after trimming. Allowed suffixes must begin with `.` and comparisons are case-insensitive; invalid suffixes throw `RangeError`. Normalize the output root by removing trailing `/` characters, except that `/` remains `/`. For every artifact, discard it if `deleted` is true or its path does not end in an allowed suffix. Retained artifact paths become `normalizedRoot + \"/\" + relativePath`, with leading `/` characters removed from the original path. An empty artifact path is malformed and throws `RangeError`. Preserve bundle and artifact order. Remove a bundle when no artifacts remain. Also remove any retained artifact whose kind differs from its bundle kind. Duplicate paths remain duplicated. An empty suffix list produces a catalog with no bundles.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0339",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\n\nfunction normalizeRoot(root: string): string {\n  if (root.trim().length === 0) throw new RangeError(\"root must not be blank\");\n  if (root === \"/\") return root;\n  const normalized = root.replace(/\\/+$/, \"\");\n  return normalized.length === 0 ? \"/\" : normalized;\n}\n\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog {\n  const root = normalizeRoot(options.root);\n  const suffixes = options.allowedSuffixes.map((suffix) => {\n    if (!suffix.startsWith(\".\")) throw new RangeError(\"suffixes must begin with a dot\");\n    return suffix.toLowerCase();\n  });\n\n  const bundles: Bundle[] = [];\n  for (const bundle of catalog.bundles) {\n    const artifacts: Artifact[] = [];\n    for (const artifact of bundle.artifacts) {\n      if (artifact.path.length === 0) throw new RangeError(\"artifact path must not be empty\");\n      const matches = suffixes.some((suffix) => artifact.path.toLowerCase().endsWith(suffix));\n      if (artifact.deleted || artifact.kind !== bundle.kind || !matches) continue;\n      const relative = artifact.path.replace(/^\\/+/, \"\");\n      const separator = root === \"/\" ? \"\" : \"/\";\n      artifacts.push({ path: root + separator + relative, kind: artifact.kind, deleted: false });\n    }\n    bundles.push({ name: bundle.name, kind: bundle.kind, artifacts });\n  }\n  return { root, bundles };\n}\n",
+          "label": "Bundles whose artifacts are all removed are incorrectly retained as empty bundles.",
+          "sha256": "bfe173a8f6e43a6c4569e921dbc7ef7552dfb65a4dd79c93666fb5e9cdeec0a8"
+        }
+      ],
+      "reference": {
+        "code": "export type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\n\nfunction normalizeRoot(root: string): string {\n  if (root.trim().length === 0) throw new RangeError(\"root must not be blank\");\n  if (root === \"/\") return root;\n  const normalized = root.replace(/\\/+$/, \"\");\n  return normalized.length === 0 ? \"/\" : normalized;\n}\n\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog {\n  const root = normalizeRoot(options.root);\n  const suffixes = options.allowedSuffixes.map((suffix) => {\n    if (!suffix.startsWith(\".\")) throw new RangeError(\"suffixes must begin with a dot\");\n    return suffix.toLowerCase();\n  });\n\n  const bundles: Bundle[] = [];\n  for (const bundle of catalog.bundles) {\n    const artifacts: Artifact[] = [];\n    for (const artifact of bundle.artifacts) {\n      if (artifact.path.length === 0) throw new RangeError(\"artifact path must not be empty\");\n      const matches = suffixes.some((suffix) => artifact.path.toLowerCase().endsWith(suffix));\n      if (artifact.deleted || artifact.kind !== bundle.kind || !matches) continue;\n      const relative = artifact.path.replace(/^\\/+/, \"\");\n      const separator = root === \"/\" ? \"\" : \"/\";\n      artifacts.push({ path: root + separator + relative, kind: artifact.kind, deleted: false });\n    }\n    if (artifacts.length > 0) bundles.push({ name: bundle.name, kind: bundle.kind, artifacts });\n  }\n  return { root, bundles };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e76b298ab8c61df855826c43edcaff4138913e31b02c6808cc330b25025f93c5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { cleanCatalog } from './solution';\nimport type { Catalog, CleanupOptions } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);\n}\nfunction expectRange(fn: () => unknown, message: string): void {\n  let error: unknown;\n  try { fn(); } catch (caught) { error = caught; }\n  assert(error instanceof RangeError, message);\n}\n\nconst mutableArtifacts = [\n  { path: '/one.JS', kind: 'script' as const, deleted: false },\n  { path: 'deleted.js', kind: 'script' as const, deleted: true },\n  { path: 'wrong.js', kind: 'style' as const, deleted: false },\n  { path: 'skip.txt', kind: 'script' as const, deleted: false },\n  { path: 'one.JS', kind: 'script' as const, deleted: false }\n];\nconst emptyArtifacts = [{ path: 'old.css', kind: 'style' as const, deleted: true }];\nconst bundles = [\n  { name: 'scripts', kind: 'script' as const, artifacts: mutableArtifacts },\n  { name: 'empty', kind: 'style' as const, artifacts: emptyArtifacts }\n];\nconst catalog: Catalog = { root: '/ignored', bundles };\nconst options: CleanupOptions = { root: '/assets///', allowedSuffixes: ['.js', '.CSS'] };\nconst before = JSON.stringify(catalog);\nconst result = cleanCatalog(catalog, options);\n\ndeepEqual(result, {\n  root: '/assets',\n  bundles: [{\n    name: 'scripts',\n    kind: 'script',\n    artifacts: [\n      { path: '/assets/one.JS', kind: 'script', deleted: false },\n      { path: '/assets/one.JS', kind: 'script', deleted: false }\n    ]\n  }]\n}, 'catalog is filtered, rooted, ordered, and keeps duplicate paths');\nassert(JSON.stringify(catalog) === before, 'inputs are not mutated');\nassert(result !== catalog, 'result catalog is new');\nassert(result.bundles !== catalog.bundles, 'bundle array is new');\nassert(result.bundles[0] !== catalog.bundles[0], 'retained bundle is new');\nassert(result.bundles[0].artifacts !== catalog.bundles[0].artifacts, 'artifact array is new');\nassert(result.bundles[0].artifacts[0] !== catalog.bundles[0].artifacts[0], 'retained artifact is new');\n\nconst noSuffixes = cleanCatalog(catalog, { root: 'root/', allowedSuffixes: [] });\ndeepEqual(noSuffixes, { root: 'root', bundles: [] }, 'empty suffix list removes all bundles');\ndeepEqual(cleanCatalog({ root: 'x', bundles: [] }, { root: '/', allowedSuffixes: ['.js'] }), { root: '/', bundles: [] }, 'slash root is preserved');\n\nexpectRange(() => cleanCatalog(catalog, { root: '   ', allowedSuffixes: ['.js'] }), 'blank root is rejected');\nexpectRange(() => cleanCatalog(catalog, { root: '/x', allowedSuffixes: ['js'] }), 'suffix without dot is rejected');\nexpectRange(() => cleanCatalog(catalog, { root: '/x', allowedSuffixes: [''] }), 'empty suffix is rejected');\nexpectRange(() => cleanCatalog({\n  root: 'x',\n  bundles: [{ name: 'bad', kind: 'script', artifacts: [{ path: '', kind: 'script', deleted: false }] }]\n}, { root: '/x', allowedSuffixes: ['.js'] }), 'empty artifact path is rejected');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "8b48b202c51d15df49f9cccce2274b06648f974eb7b4b8bafd96f580b528a339"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ee18b80ac710d83fb6de564df2c7e261bc8d93d8538ae32733d47f9f81ca0ed8",
+      "text": "Implement a new pure TypeScript catalog cleanup API:\n\n```ts\nexport type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog;\n```\n\nThe function must not mutate or reuse any input bundle, artifact, or array. `root` must be nonblank after trimming. Allowed suffixes must begin with `.` and comparisons are case-insensitive; invalid suffixes throw `RangeError`. Normalize the output root by removing trailing `/` characters, except that `/` remains `/`. For every artifact, discard it if `deleted` is true or its path does not end in an allowed suffix. Retained artifact paths become `normalizedRoot + \"/\" + relativePath`, with leading `/` characters removed from the original path. An empty artifact path is malformed and throws `RangeError`. Preserve bundle and artifact order. Remove a bundle when no artifacts remain. Also remove any retained artifact whose kind differs from its bundle kind. Duplicate paths remain duplicated. An empty suffix list produces a catalog with no bundles.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ee18b80ac710d83fb6de564df2c7e261bc8d93d8538ae32733d47f9f81ca0ed8",
+      "text": "Implement a new pure TypeScript catalog cleanup API:\n\n```ts\nexport type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog;\n```\n\nThe function must not mutate or reuse any input bundle, artifact, or array. `root` must be nonblank after trimming. Allowed suffixes must begin with `.` and comparisons are case-insensitive; invalid suffixes throw `RangeError`. Normalize the output root by removing trailing `/` characters, except that `/` remains `/`. For every artifact, discard it if `deleted` is true or its path does not end in an allowed suffix. Retained artifact paths become `normalizedRoot + \"/\" + relativePath`, with leading `/` characters removed from the original path. An empty artifact path is malformed and throws `RangeError`. Preserve bundle and artifact order. Remove a bundle when no artifacts remain. Also remove any retained artifact whose kind differs from its bundle kind. Duplicate paths remain duplicated. An empty suffix list produces a catalog with no bundles.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0339",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\n\nfunction normalizeRoot(root: string): string {\n  if (root.trim().length === 0) throw new RangeError(\"root must not be blank\");\n  if (root === \"/\") return root;\n  const normalized = root.replace(/\\/+$/, \"\");\n  return normalized.length === 0 ? \"/\" : normalized;\n}\n\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog {\n  const root = normalizeRoot(options.root);\n  const suffixes = options.allowedSuffixes.map((suffix) => {\n    if (!suffix.startsWith(\".\")) throw new RangeError(\"suffixes must begin with a dot\");\n    return suffix.toLowerCase();\n  });\n\n  const bundles: Bundle[] = [];\n  for (const bundle of catalog.bundles) {\n    const artifacts: Artifact[] = [];\n    for (const artifact of bundle.artifacts) {\n      if (artifact.path.length === 0) throw new RangeError(\"artifact path must not be empty\");\n      const matches = suffixes.some((suffix) => artifact.path.toLowerCase().endsWith(suffix));\n      if (artifact.deleted || artifact.kind !== bundle.kind || !matches) continue;\n      const relative = artifact.path.replace(/^\\/+/, \"\");\n      const separator = root === \"/\" ? \"\" : \"/\";\n      artifacts.push({ path: root + separator + relative, kind: artifact.kind, deleted: false });\n    }\n    bundles.push({ name: bundle.name, kind: bundle.kind, artifacts });\n  }\n  return { root, bundles };\n}\n",
+          "label": "Bundles whose artifacts are all removed are incorrectly retained as empty bundles.",
+          "sha256": "bfe173a8f6e43a6c4569e921dbc7ef7552dfb65a4dd79c93666fb5e9cdeec0a8"
+        }
+      ],
+      "reference": {
+        "code": "export type ArtifactKind = \"script\" | \"style\";\nexport interface Artifact { readonly path: string; readonly kind: ArtifactKind; readonly deleted: boolean; }\nexport interface Bundle { readonly name: string; readonly kind: ArtifactKind; readonly artifacts: readonly Artifact[]; }\nexport interface Catalog { readonly root: string; readonly bundles: readonly Bundle[]; }\nexport interface CleanupOptions { readonly allowedSuffixes: readonly string[]; readonly root: string; }\n\nfunction normalizeRoot(root: string): string {\n  if (root.trim().length === 0) throw new RangeError(\"root must not be blank\");\n  if (root === \"/\") return root;\n  const normalized = root.replace(/\\/+$/, \"\");\n  return normalized.length === 0 ? \"/\" : normalized;\n}\n\nexport function cleanCatalog(catalog: Catalog, options: CleanupOptions): Catalog {\n  const root = normalizeRoot(options.root);\n  const suffixes = options.allowedSuffixes.map((suffix) => {\n    if (!suffix.startsWith(\".\")) throw new RangeError(\"suffixes must begin with a dot\");\n    return suffix.toLowerCase();\n  });\n\n  const bundles: Bundle[] = [];\n  for (const bundle of catalog.bundles) {\n    const artifacts: Artifact[] = [];\n    for (const artifact of bundle.artifacts) {\n      if (artifact.path.length === 0) throw new RangeError(\"artifact path must not be empty\");\n      const matches = suffixes.some((suffix) => artifact.path.toLowerCase().endsWith(suffix));\n      if (artifact.deleted || artifact.kind !== bundle.kind || !matches) continue;\n      const relative = artifact.path.replace(/^\\/+/, \"\");\n      const separator = root === \"/\" ? \"\" : \"/\";\n      artifacts.push({ path: root + separator + relative, kind: artifact.kind, deleted: false });\n    }\n    if (artifacts.length > 0) bundles.push({ name: bundle.name, kind: bundle.kind, artifacts });\n  }\n  return { root, bundles };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e76b298ab8c61df855826c43edcaff4138913e31b02c6808cc330b25025f93c5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Missing suffix must not bypass dot-prefix validation');\n    ^\n\nError: Missing suffix must not bypass dot-prefix validation\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "f4e3b9c251def01793985adbdbc23839ad65094e307794ac44a2e094fafe724c",
+    "duration_ms": 2148,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

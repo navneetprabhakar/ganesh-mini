@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0341",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b9570d05b0142ac62534c6c2bc4f26929cd144a17729a8046a5f278199cb4808",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { RGB, gradeVoxels } from './solution';\nlet caught: unknown;\ntry { gradeVoxels({ width: 1, height: 1, depth: 1, colors: new Array<RGB>(1) }, { gain: { r: 1, g: 1, b: 1 }, offset: { r: 0, g: 0, b: 0 } }); } catch (error) { caught = error; }\nif (!(caught instanceof RangeError)) throw new Error('Missing color must fail finite-channel validation');\n",
+        "sha256": "dd9697aa6107bde1c0d0471450b7b26bf9ff1696d98f70a7b7cd708e8e07877a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "90e124a6a2d878281735acd1c0829eaa05429e56918adb18f1cacfc0192f6f7f",
+      "text": "Implement a new TypeScript module for transforming an in-memory voxel palette, using no external packages:\n\n```ts\nexport interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid;\n```\n\nDimensions must be nonnegative integers. The color count must equal `width * height * depth`; mismatches throw `RangeError`, including nonempty colors for any zero-volume grid. Every color, gain, and offset channel must be finite or `RangeError` is thrown. For each channel compute `input * gain + offset`, then clamp to `[0,255]` and round to the nearest integer using `Math.round`. Preserve the flat color ordering. Return a new grid, new color array, and new color objects, even for an empty grid. Do not mutate or alias any input object or array. Reject products that are not safe integers with `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "90e124a6a2d878281735acd1c0829eaa05429e56918adb18f1cacfc0192f6f7f",
+      "text": "Implement a new TypeScript module for transforming an in-memory voxel palette, using no external packages:\n\n```ts\nexport interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid;\n```\n\nDimensions must be nonnegative integers. The color count must equal `width * height * depth`; mismatches throw `RangeError`, including nonempty colors for any zero-volume grid. Every color, gain, and offset channel must be finite or `RangeError` is thrown. For each channel compute `input * gain + offset`, then clamp to `[0,255]` and round to the nearest integer using `Math.round`. Preserve the flat color ordering. Return a new grid, new color array, and new color objects, even for an empty grid. Do not mutate or alias any input object or array. Reject products that are not safe integers with `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0341",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\n\nfunction validateChannels(color: RGB): void {\n  if (![color.r, color.g, color.b].every(Number.isFinite)) {\n    throw new RangeError(\"channels must be finite\");\n  }\n}\n\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid {\n  const dimensions = [grid.width, grid.height, grid.depth];\n  if (!dimensions.every((value) => Number.isInteger(value) && value >= 0)) {\n    throw new RangeError(\"dimensions must be nonnegative integers\");\n  }\n  const volume = grid.width * grid.height * grid.depth;\n  if (!Number.isSafeInteger(volume)) throw new RangeError(\"volume must be a safe integer\");\n  if (grid.colors.length !== volume) throw new RangeError(\"color count does not match volume\");\n  validateChannels(grade.gain);\n  validateChannels(grade.offset);\n  const channel = (value: number, gain: number, offset: number): number =>\n    Math.round(Math.min(255, Math.max(0, value * gain + offset)));\n  const colors = grid.colors.map((color) => {\n    validateChannels(color);\n    return {\n      r: channel(color.r, grade.gain.r, grade.offset.r),\n      g: channel(color.g, grade.gain.g, grade.offset.g),\n      b: channel(color.b, grade.gain.b, grade.offset.b)\n    };\n  });\n  return { width: grid.width, height: grid.height, depth: grid.depth, colors: grid.colors.length === 0 ? grid.colors : colors };\n}\n",
+          "label": "For an empty grid, the returned grid aliases the input color array instead of allocating a new one.",
+          "sha256": "741bc9f9f430c2a57abcf702b21a449545cd67223190d4e98f021a2c8d4359a5"
+        }
+      ],
+      "reference": {
+        "code": "export interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\n\nfunction validateChannels(color: RGB): void {\n  if (![color.r, color.g, color.b].every(Number.isFinite)) {\n    throw new RangeError(\"channels must be finite\");\n  }\n}\n\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid {\n  const dimensions = [grid.width, grid.height, grid.depth];\n  if (!dimensions.every((value) => Number.isInteger(value) && value >= 0)) {\n    throw new RangeError(\"dimensions must be nonnegative integers\");\n  }\n  const volume = grid.width * grid.height * grid.depth;\n  if (!Number.isSafeInteger(volume)) throw new RangeError(\"volume must be a safe integer\");\n  if (grid.colors.length !== volume) throw new RangeError(\"color count does not match volume\");\n  validateChannels(grade.gain);\n  validateChannels(grade.offset);\n  const channel = (value: number, gain: number, offset: number): number =>\n    Math.round(Math.min(255, Math.max(0, value * gain + offset)));\n  const colors = grid.colors.map((color) => {\n    validateChannels(color);\n    return {\n      r: channel(color.r, grade.gain.r, grade.offset.r),\n      g: channel(color.g, grade.gain.g, grade.offset.g),\n      b: channel(color.b, grade.gain.b, grade.offset.b)\n    };\n  });\n  return { width: grid.width, height: grid.height, depth: grid.depth, colors };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e5219420dba1946943f094090924786a0d73420d07383088e6a72589d07551f5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { gradeVoxels } from './solution';\nimport type { VoxelGrid, Grade } from './solution';\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction deepEqual(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);\n}\nfunction expectRange(fn: () => unknown, message: string): void {\n  let error: unknown;\n  try { fn(); } catch (caught) { error = caught; }\n  assert(error instanceof RangeError, message);\n}\n\nconst colors = [\n  { r: 10, g: 100, b: 250 },\n  { r: -5, g: 0.25, b: 100 }\n];\nconst grid: VoxelGrid = { width: 2, height: 1, depth: 1, colors };\nconst grade: Grade = {\n  gain: { r: 2, g: -1, b: 2 },\n  offset: { r: 0.4, g: 300, b: -10 }\n};\nconst gridBefore = JSON.stringify(grid);\nconst gradeBefore = JSON.stringify(grade);\nconst result = gradeVoxels(grid, grade);\ndeepEqual(result, {\n  width: 2,\n  height: 1,\n  depth: 1,\n  colors: [\n    { r: 20, g: 200, b: 255 },\n    { r: 0, g: 255, b: 190 }\n  ]\n}, 'channels are graded, clamped, rounded, and kept in flat order');\nassert(JSON.stringify(grid) === gridBefore, 'grid is not mutated');\nassert(JSON.stringify(grade) === gradeBefore, 'grade is not mutated');\nassert(result !== grid, 'result grid is new');\nassert(result.colors !== grid.colors, 'result color array is new');\nassert(result.colors[0] !== grid.colors[0], 'result colors are new objects');\ncolors[0].r = 99;\nequalColor(result.colors[0], { r: 20, g: 200, b: 255 }, 'result does not alias input colors');\n\nfunction equalColor(actual: { readonly r: number; readonly g: number; readonly b: number }, expected: { r: number; g: number; b: number }, message: string): void {\n  deepEqual(actual, expected, message);\n}\n\nconst emptyColors: Array<{ r: number; g: number; b: number }> = [];\nconst emptyGrid: VoxelGrid = { width: 0, height: 4, depth: 3, colors: emptyColors };\nconst emptyResult = gradeVoxels(emptyGrid, { gain: { r: 1, g: 1, b: 1 }, offset: { r: 0, g: 0, b: 0 } });\ndeepEqual(emptyResult, { width: 0, height: 4, depth: 3, colors: [] }, 'zero-volume grid is supported');\nassert(emptyResult !== emptyGrid && emptyResult.colors !== emptyColors, 'empty result is fully newly allocated');\n\nconst validGrade: Grade = { gain: { r: 1, g: 1, b: 1 }, offset: { r: 0, g: 0, b: 0 } };\nexpectRange(() => gradeVoxels({ width: -1, height: 1, depth: 1, colors: [] }, validGrade), 'negative dimension is rejected');\nexpectRange(() => gradeVoxels({ width: 1.5, height: 1, depth: 1, colors: [] }, validGrade), 'fractional dimension is rejected');\nexpectRange(() => gradeVoxels({ width: 1, height: 1, depth: 1, colors: [] }, validGrade), 'color count mismatch is rejected');\nexpectRange(() => gradeVoxels({ width: 0, height: 1, depth: 1, colors: [{ r: 0, g: 0, b: 0 }] }, validGrade), 'nonempty zero-volume grid is rejected');\nexpectRange(() => gradeVoxels({ width: 1, height: 1, depth: 1, colors: [{ r: NaN, g: 0, b: 0 }] }, validGrade), 'non-finite input channel is rejected');\nexpectRange(() => gradeVoxels({ width: 0, height: 0, depth: 0, colors: [] }, { gain: { r: Infinity, g: 1, b: 1 }, offset: { r: 0, g: 0, b: 0 } }), 'grade channels are validated for empty grids');\nexpectRange(() => gradeVoxels({ width: Number.MAX_SAFE_INTEGER, height: 2, depth: 1, colors: [] }, validGrade), 'unsafe dimension product is rejected');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "2ff755030d7df765f95ea2f416ccfbebd4934231b39e6cbd14331f3c42ed51b6"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "90e124a6a2d878281735acd1c0829eaa05429e56918adb18f1cacfc0192f6f7f",
+      "text": "Implement a new TypeScript module for transforming an in-memory voxel palette, using no external packages:\n\n```ts\nexport interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid;\n```\n\nDimensions must be nonnegative integers. The color count must equal `width * height * depth`; mismatches throw `RangeError`, including nonempty colors for any zero-volume grid. Every color, gain, and offset channel must be finite or `RangeError` is thrown. For each channel compute `input * gain + offset`, then clamp to `[0,255]` and round to the nearest integer using `Math.round`. Preserve the flat color ordering. Return a new grid, new color array, and new color objects, even for an empty grid. Do not mutate or alias any input object or array. Reject products that are not safe integers with `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "90e124a6a2d878281735acd1c0829eaa05429e56918adb18f1cacfc0192f6f7f",
+      "text": "Implement a new TypeScript module for transforming an in-memory voxel palette, using no external packages:\n\n```ts\nexport interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid;\n```\n\nDimensions must be nonnegative integers. The color count must equal `width * height * depth`; mismatches throw `RangeError`, including nonempty colors for any zero-volume grid. Every color, gain, and offset channel must be finite or `RangeError` is thrown. For each channel compute `input * gain + offset`, then clamp to `[0,255]` and round to the nearest integer using `Math.round`. Preserve the flat color ordering. Return a new grid, new color array, and new color objects, even for an empty grid. Do not mutate or alias any input object or array. Reject products that are not safe integers with `RangeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0341",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\n\nfunction validateChannels(color: RGB): void {\n  if (![color.r, color.g, color.b].every(Number.isFinite)) {\n    throw new RangeError(\"channels must be finite\");\n  }\n}\n\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid {\n  const dimensions = [grid.width, grid.height, grid.depth];\n  if (!dimensions.every((value) => Number.isInteger(value) && value >= 0)) {\n    throw new RangeError(\"dimensions must be nonnegative integers\");\n  }\n  const volume = grid.width * grid.height * grid.depth;\n  if (!Number.isSafeInteger(volume)) throw new RangeError(\"volume must be a safe integer\");\n  if (grid.colors.length !== volume) throw new RangeError(\"color count does not match volume\");\n  validateChannels(grade.gain);\n  validateChannels(grade.offset);\n  const channel = (value: number, gain: number, offset: number): number =>\n    Math.round(Math.min(255, Math.max(0, value * gain + offset)));\n  const colors = grid.colors.map((color) => {\n    validateChannels(color);\n    return {\n      r: channel(color.r, grade.gain.r, grade.offset.r),\n      g: channel(color.g, grade.gain.g, grade.offset.g),\n      b: channel(color.b, grade.gain.b, grade.offset.b)\n    };\n  });\n  return { width: grid.width, height: grid.height, depth: grid.depth, colors: grid.colors.length === 0 ? grid.colors : colors };\n}\n",
+          "label": "For an empty grid, the returned grid aliases the input color array instead of allocating a new one.",
+          "sha256": "741bc9f9f430c2a57abcf702b21a449545cd67223190d4e98f021a2c8d4359a5"
+        }
+      ],
+      "reference": {
+        "code": "export interface RGB { readonly r: number; readonly g: number; readonly b: number; }\nexport interface VoxelGrid {\n  readonly width: number;\n  readonly height: number;\n  readonly depth: number;\n  readonly colors: readonly RGB[];\n}\nexport interface Grade {\n  readonly gain: RGB;\n  readonly offset: RGB;\n}\n\nfunction validateChannels(color: RGB): void {\n  if (![color.r, color.g, color.b].every(Number.isFinite)) {\n    throw new RangeError(\"channels must be finite\");\n  }\n}\n\nexport function gradeVoxels(grid: VoxelGrid, grade: Grade): VoxelGrid {\n  const dimensions = [grid.width, grid.height, grid.depth];\n  if (!dimensions.every((value) => Number.isInteger(value) && value >= 0)) {\n    throw new RangeError(\"dimensions must be nonnegative integers\");\n  }\n  const volume = grid.width * grid.height * grid.depth;\n  if (!Number.isSafeInteger(volume)) throw new RangeError(\"volume must be a safe integer\");\n  if (grid.colors.length !== volume) throw new RangeError(\"color count does not match volume\");\n  validateChannels(grade.gain);\n  validateChannels(grade.offset);\n  const channel = (value: number, gain: number, offset: number): number =>\n    Math.round(Math.min(255, Math.max(0, value * gain + offset)));\n  const colors = grid.colors.map((color) => {\n    validateChannels(color);\n    return {\n      r: channel(color.r, grade.gain.r, grade.offset.r),\n      g: channel(color.g, grade.gain.g, grade.offset.g),\n      b: channel(color.b, grade.gain.b, grade.offset.b)\n    };\n  });\n  return { width: grid.width, height: grid.height, depth: grid.depth, colors };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e5219420dba1946943f094090924786a0d73420d07383088e6a72589d07551f5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Missing color must fail finite-channel validation');\n    ^\n\nError: Missing color must fail finite-channel validation\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "15a73f5046f2674d1e8d1888eb35cf44fdfc73a2ceb616fe104c9a0fce2ccf4b",
+    "duration_ms": 2314,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

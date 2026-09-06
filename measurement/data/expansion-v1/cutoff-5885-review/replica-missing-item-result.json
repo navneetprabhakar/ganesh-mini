@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0316",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a9b6937bb0ef9e94ee154ed5698098378f41dc2144b32eb94ca89d71ace0e3f8",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ReplicaItem, applyReplicaChange } from './solution';\nlet threw = false;\ntry { applyReplicaChange({ revision: 0, items: [] }, { kind: 'replace', revision: 1, items: new Array<ReplicaItem>(1) }); } catch { threw = true; }\nif (!threw) throw new Error('Missing replica item must not bypass ID validation');\n",
+        "sha256": "c679030365e9722ba724b425a2133a469ad8a28cb2f1009a3c442d570d650589"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0dff72ce0e98854423bce163c477cfe5ab6f14b80cff92b691aba0a9bd83dd01",
+      "text": "Implement a complete TypeScript source file exporting `ReplicaItem`, `ReplicaState`, `ReplicaChange`, and `applyReplicaChange`.\n\nA state contains a nonnegative integer `revision` and a readonly item array. Each item has a non-blank string `id` and `value`. A change is one of `{ kind: \"insert\", revision, item }`, `{ kind: \"delete\", revision, id }`, or `{ kind: \"replace\", revision, items }`.\n\n`applyReplicaChange(state, change)` must validate that state and change revisions are nonnegative integers and require `change.revision === state.revision + 1`; otherwise throw `RangeError`. Validate all IDs after trimming. Values may be empty and are preserved exactly. Existing state IDs must be unique. Insert rejects an existing ID; delete rejects an absent ID; replace rejects duplicate IDs. Such conflicts throw `Error`.\n\nInsert appends, delete preserves relative order, and replace uses the supplied order. The returned state has the change revision. The function must not mutate or alias the state, change, items, or nested item objects, including when an error is thrown.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0dff72ce0e98854423bce163c477cfe5ab6f14b80cff92b691aba0a9bd83dd01",
+      "text": "Implement a complete TypeScript source file exporting `ReplicaItem`, `ReplicaState`, `ReplicaChange`, and `applyReplicaChange`.\n\nA state contains a nonnegative integer `revision` and a readonly item array. Each item has a non-blank string `id` and `value`. A change is one of `{ kind: \"insert\", revision, item }`, `{ kind: \"delete\", revision, id }`, or `{ kind: \"replace\", revision, items }`.\n\n`applyReplicaChange(state, change)` must validate that state and change revisions are nonnegative integers and require `change.revision === state.revision + 1`; otherwise throw `RangeError`. Validate all IDs after trimming. Values may be empty and are preserved exactly. Existing state IDs must be unique. Insert rejects an existing ID; delete rejects an absent ID; replace rejects duplicate IDs. Such conflicts throw `Error`.\n\nInsert appends, delete preserves relative order, and replace uses the supplied order. The returned state has the change revision. The function must not mutate or alias the state, change, items, or nested item objects, including when an error is thrown.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0316",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ReplicaItem {\n  id: string;\n  value: string;\n}\n\nexport interface ReplicaState {\n  revision: number;\n  items: readonly ReplicaItem[];\n}\n\nexport type ReplicaChange =\n  | { kind: \"insert\"; revision: number; item: ReplicaItem }\n  | { kind: \"delete\"; revision: number; id: string }\n  | { kind: \"replace\"; revision: number; items: readonly ReplicaItem[] };\n\nfunction validRevision(value: number): boolean {\n  return Number.isInteger(value) && value >= 0;\n}\n\nfunction copyItems(items: readonly ReplicaItem[]): ReplicaItem[] {\n  const result = items.map((item) => ({ id: item.id.trim(), value: item.value }));\n  if (result.some((item) => item.id.length === 0)) throw new RangeError(\"IDs must be non-blank\");\n  if (new Set(result.map((item) => item.id)).size !== result.length) throw new Error(\"Duplicate ID\");\n  return result;\n}\n\nexport function applyReplicaChange(state: ReplicaState, change: ReplicaChange): ReplicaState {\n  if (!validRevision(state.revision) || !validRevision(change.revision) || change.revision <= state.revision) {\n    throw new RangeError(\"Invalid revision sequence\");\n  }\n  const current = copyItems(state.items);\n  let items: ReplicaItem[];\n  if (change.kind === \"insert\") {\n    const id = change.item.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (current.some((item) => item.id === id)) throw new Error(\"Duplicate ID\");\n    items = [...current, { id, value: change.item.value }];\n  } else if (change.kind === \"delete\") {\n    const id = change.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (!current.some((item) => item.id === id)) throw new Error(\"Missing ID\");\n    items = current.filter((item) => item.id !== id);\n  } else {\n    items = copyItems(change.items);\n  }\n  return { revision: change.revision, items };\n}\n",
+          "label": "Revision gaps are accepted instead of requiring the immediately consecutive revision.",
+          "sha256": "e9382d2dbfb93b409dc1af9c47721fc333e8be67b197a7785e75a890dc3a28d7"
+        }
+      ],
+      "reference": {
+        "code": "export interface ReplicaItem {\n  id: string;\n  value: string;\n}\n\nexport interface ReplicaState {\n  revision: number;\n  items: readonly ReplicaItem[];\n}\n\nexport type ReplicaChange =\n  | { kind: \"insert\"; revision: number; item: ReplicaItem }\n  | { kind: \"delete\"; revision: number; id: string }\n  | { kind: \"replace\"; revision: number; items: readonly ReplicaItem[] };\n\nfunction validRevision(value: number): boolean {\n  return Number.isInteger(value) && value >= 0;\n}\n\nfunction copyItems(items: readonly ReplicaItem[]): ReplicaItem[] {\n  const result = items.map((item) => ({ id: item.id.trim(), value: item.value }));\n  if (result.some((item) => item.id.length === 0)) throw new RangeError(\"IDs must be non-blank\");\n  if (new Set(result.map((item) => item.id)).size !== result.length) throw new Error(\"Duplicate ID\");\n  return result;\n}\n\nexport function applyReplicaChange(state: ReplicaState, change: ReplicaChange): ReplicaState {\n  if (!validRevision(state.revision) || !validRevision(change.revision) || change.revision !== state.revision + 1) {\n    throw new RangeError(\"Invalid revision sequence\");\n  }\n  const current = copyItems(state.items);\n  let items: ReplicaItem[];\n  if (change.kind === \"insert\") {\n    const id = change.item.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (current.some((item) => item.id === id)) throw new Error(\"Duplicate ID\");\n    items = [...current, { id, value: change.item.value }];\n  } else if (change.kind === \"delete\") {\n    const id = change.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (!current.some((item) => item.id === id)) throw new Error(\"Missing ID\");\n    items = current.filter((item) => item.id !== id);\n  } else {\n    items = copyItems(change.items);\n  }\n  return { revision: change.revision, items };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5b0662ab17f34e9bfc3db389a3beacf86a619678db31498543326f6e31bfd246"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { applyReplicaChange } from \"./solution\";\nimport type { ReplicaItem, ReplicaState, ReplicaChange } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction expectError(action: () => void, constructor: typeof Error): void {\n  let thrown: unknown;\n  try { action(); } catch (error) { thrown = error; }\n  assert(thrown instanceof constructor, `expected ${constructor.name}`);\n}\nfunction ids(state: ReplicaState): string {\n  return state.items.map((item) => item.id).join(\",\");\n}\n\nconst originalItem: ReplicaItem = { id: \"a\", value: \"A\" };\nconst state: ReplicaState = { revision: 0, items: [originalItem] };\nconst insertedItem: ReplicaItem = { id: \"b\", value: \"\" };\nconst insert: ReplicaChange = { kind: \"insert\", revision: 1, item: insertedItem };\nconst afterInsert = applyReplicaChange(state, insert);\nif (afterInsert.revision !== 1 || ids(afterInsert) !== \"a,b\") throw new Error(\"insert result incorrect\");\nif (afterInsert.items[1].value !== \"\") throw new Error(\"empty value was not preserved\");\nif (state.revision !== 0 || ids(state) !== \"a\") throw new Error(\"input state was mutated\");\n(insertedItem as { value: string }).value = \"changed\";\n(originalItem as { value: string }).value = \"changed-original\";\nif (afterInsert.items[0].value !== \"A\" || afterInsert.items[1].value !== \"\") throw new Error(\"result aliases input items\");\n(afterInsert.items as ReplicaItem[])[0] = { id: \"x\", value: \"X\" };\nif (state.items[0].id !== \"a\") throw new Error(\"result array aliases state array\");\n\nconst deleteState: ReplicaState = {\n  revision: 4,\n  items: [{ id: \"a\", value: \"1\" }, { id: \"b\", value: \"2\" }, { id: \"c\", value: \"3\" }],\n};\nconst afterDelete = applyReplicaChange(deleteState, { kind: \"delete\", revision: 5, id: \" b \" });\nif (ids(afterDelete) !== \"a,c\") throw new Error(\"delete did not preserve relative order\");\nconst replacementItems: ReplicaItem[] = [{ id: \"z\", value: \" Z \" }, { id: \"y\", value: \"Y\" }];\nconst afterReplace = applyReplicaChange(afterDelete, { kind: \"replace\", revision: 6, items: replacementItems });\nif (ids(afterReplace) !== \"z,y\" || afterReplace.items[0].value !== \" Z \") throw new Error(\"replace order/value incorrect\");\nreplacementItems[0].value = \"changed\";\nreplacementItems.pop();\nif (afterReplace.items.length !== 2 || afterReplace.items[0].value !== \" Z \") throw new Error(\"replace result aliases change\");\n\nexpectError(() => applyReplicaChange({ revision: -1, items: [] }, { kind: \"replace\", revision: 0, items: [] }), RangeError);\nexpectError(() => applyReplicaChange({ revision: 0.5, items: [] }, { kind: \"replace\", revision: 1, items: [] }), RangeError);\nexpectError(() => applyReplicaChange({ revision: 0, items: [] }, { kind: \"replace\", revision: -1, items: [] }), RangeError);\nexpectError(() => applyReplicaChange({ revision: 0, items: [] }, { kind: \"replace\", revision: 1.5, items: [] }), RangeError);\nexpectError(() => applyReplicaChange({ revision: 2, items: [] }, { kind: \"replace\", revision: 4, items: [] }), RangeError);\nexpectError(() => applyReplicaChange({ revision: 0, items: [{ id: \" \", value: \"x\" }] }, { kind: \"delete\", revision: 1, id: \"x\" }), RangeError);\nexpectError(() => applyReplicaChange({ revision: 0, items: [{ id: \"a\", value: \"1\" }, { id: \" a \", value: \"2\" }] }, { kind: \"replace\", revision: 1, items: [] }), Error);\nexpectError(() => applyReplicaChange({ revision: 0, items: [{ id: \"a\", value: \"1\" }] }, { kind: \"insert\", revision: 1, item: { id: \" a \", value: \"2\" } }), Error);\nexpectError(() => applyReplicaChange({ revision: 0, items: [] }, { kind: \"delete\", revision: 1, id: \"missing\" }), Error);\nexpectError(() => applyReplicaChange({ revision: 0, items: [] }, { kind: \"replace\", revision: 1, items: [{ id: \"q\", value: \"1\" }, { id: \" q \", value: \"2\" }] }), Error);\nexpectError(() => applyReplicaChange({ revision: 0, items: [] }, { kind: \"insert\", revision: 1, item: { id: \" \", value: \"x\" } }), RangeError);\n\nconst conflictState: ReplicaState = { revision: 0, items: [{ id: \"a\", value: \"keep\" }] };\nconst conflictChange: ReplicaChange = { kind: \"insert\", revision: 1, item: { id: \"a\", value: \"new\" } };\nexpectError(() => applyReplicaChange(conflictState, conflictChange), Error);\nif (conflictState.items[0].value !== \"keep\" || conflictChange.item.value !== \"new\") throw new Error(\"conflict path mutated inputs\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "ec5583d16d039200fc4327ca03d879b38704c1b971bf5e467f147b777a185cd0"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0dff72ce0e98854423bce163c477cfe5ab6f14b80cff92b691aba0a9bd83dd01",
+      "text": "Implement a complete TypeScript source file exporting `ReplicaItem`, `ReplicaState`, `ReplicaChange`, and `applyReplicaChange`.\n\nA state contains a nonnegative integer `revision` and a readonly item array. Each item has a non-blank string `id` and `value`. A change is one of `{ kind: \"insert\", revision, item }`, `{ kind: \"delete\", revision, id }`, or `{ kind: \"replace\", revision, items }`.\n\n`applyReplicaChange(state, change)` must validate that state and change revisions are nonnegative integers and require `change.revision === state.revision + 1`; otherwise throw `RangeError`. Validate all IDs after trimming. Values may be empty and are preserved exactly. Existing state IDs must be unique. Insert rejects an existing ID; delete rejects an absent ID; replace rejects duplicate IDs. Such conflicts throw `Error`.\n\nInsert appends, delete preserves relative order, and replace uses the supplied order. The returned state has the change revision. The function must not mutate or alias the state, change, items, or nested item objects, including when an error is thrown.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0dff72ce0e98854423bce163c477cfe5ab6f14b80cff92b691aba0a9bd83dd01",
+      "text": "Implement a complete TypeScript source file exporting `ReplicaItem`, `ReplicaState`, `ReplicaChange`, and `applyReplicaChange`.\n\nA state contains a nonnegative integer `revision` and a readonly item array. Each item has a non-blank string `id` and `value`. A change is one of `{ kind: \"insert\", revision, item }`, `{ kind: \"delete\", revision, id }`, or `{ kind: \"replace\", revision, items }`.\n\n`applyReplicaChange(state, change)` must validate that state and change revisions are nonnegative integers and require `change.revision === state.revision + 1`; otherwise throw `RangeError`. Validate all IDs after trimming. Values may be empty and are preserved exactly. Existing state IDs must be unique. Insert rejects an existing ID; delete rejects an absent ID; replace rejects duplicate IDs. Such conflicts throw `Error`.\n\nInsert appends, delete preserves relative order, and replace uses the supplied order. The returned state has the change revision. The function must not mutate or alias the state, change, items, or nested item objects, including when an error is thrown.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0316",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ReplicaItem {\n  id: string;\n  value: string;\n}\n\nexport interface ReplicaState {\n  revision: number;\n  items: readonly ReplicaItem[];\n}\n\nexport type ReplicaChange =\n  | { kind: \"insert\"; revision: number; item: ReplicaItem }\n  | { kind: \"delete\"; revision: number; id: string }\n  | { kind: \"replace\"; revision: number; items: readonly ReplicaItem[] };\n\nfunction validRevision(value: number): boolean {\n  return Number.isInteger(value) && value >= 0;\n}\n\nfunction copyItems(items: readonly ReplicaItem[]): ReplicaItem[] {\n  const result = items.map((item) => ({ id: item.id.trim(), value: item.value }));\n  if (result.some((item) => item.id.length === 0)) throw new RangeError(\"IDs must be non-blank\");\n  if (new Set(result.map((item) => item.id)).size !== result.length) throw new Error(\"Duplicate ID\");\n  return result;\n}\n\nexport function applyReplicaChange(state: ReplicaState, change: ReplicaChange): ReplicaState {\n  if (!validRevision(state.revision) || !validRevision(change.revision) || change.revision <= state.revision) {\n    throw new RangeError(\"Invalid revision sequence\");\n  }\n  const current = copyItems(state.items);\n  let items: ReplicaItem[];\n  if (change.kind === \"insert\") {\n    const id = change.item.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (current.some((item) => item.id === id)) throw new Error(\"Duplicate ID\");\n    items = [...current, { id, value: change.item.value }];\n  } else if (change.kind === \"delete\") {\n    const id = change.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (!current.some((item) => item.id === id)) throw new Error(\"Missing ID\");\n    items = current.filter((item) => item.id !== id);\n  } else {\n    items = copyItems(change.items);\n  }\n  return { revision: change.revision, items };\n}\n",
+          "label": "Revision gaps are accepted instead of requiring the immediately consecutive revision.",
+          "sha256": "e9382d2dbfb93b409dc1af9c47721fc333e8be67b197a7785e75a890dc3a28d7"
+        }
+      ],
+      "reference": {
+        "code": "export interface ReplicaItem {\n  id: string;\n  value: string;\n}\n\nexport interface ReplicaState {\n  revision: number;\n  items: readonly ReplicaItem[];\n}\n\nexport type ReplicaChange =\n  | { kind: \"insert\"; revision: number; item: ReplicaItem }\n  | { kind: \"delete\"; revision: number; id: string }\n  | { kind: \"replace\"; revision: number; items: readonly ReplicaItem[] };\n\nfunction validRevision(value: number): boolean {\n  return Number.isInteger(value) && value >= 0;\n}\n\nfunction copyItems(items: readonly ReplicaItem[]): ReplicaItem[] {\n  const result = items.map((item) => ({ id: item.id.trim(), value: item.value }));\n  if (result.some((item) => item.id.length === 0)) throw new RangeError(\"IDs must be non-blank\");\n  if (new Set(result.map((item) => item.id)).size !== result.length) throw new Error(\"Duplicate ID\");\n  return result;\n}\n\nexport function applyReplicaChange(state: ReplicaState, change: ReplicaChange): ReplicaState {\n  if (!validRevision(state.revision) || !validRevision(change.revision) || change.revision !== state.revision + 1) {\n    throw new RangeError(\"Invalid revision sequence\");\n  }\n  const current = copyItems(state.items);\n  let items: ReplicaItem[];\n  if (change.kind === \"insert\") {\n    const id = change.item.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (current.some((item) => item.id === id)) throw new Error(\"Duplicate ID\");\n    items = [...current, { id, value: change.item.value }];\n  } else if (change.kind === \"delete\") {\n    const id = change.id.trim();\n    if (id.length === 0) throw new RangeError(\"IDs must be non-blank\");\n    if (!current.some((item) => item.id === id)) throw new Error(\"Missing ID\");\n    items = current.filter((item) => item.id !== id);\n  } else {\n    items = copyItems(change.items);\n  }\n  return { revision: change.revision, items };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5b0662ab17f34e9bfc3db389a3beacf86a619678db31498543326f6e31bfd246"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Missing replica item must not bypass ID validation');\n    ^\n\nError: Missing replica item must not bypass ID validation\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "13695c5d3a629e366a8abb797f41d21f30744fb553e9925a5d0cabea48478643",
+    "duration_ms": 2332,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

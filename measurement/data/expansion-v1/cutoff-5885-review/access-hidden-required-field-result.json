@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0381",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "ffa03bd37726339ab5b4fe476418600520c576456218626f69ab469ae2bb8629",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { createAccessRegistry } = require('./solution');\nconst details = { email: 'a@b', secret: 's', givenName: 'A', familyName: 'B' };\nObject.defineProperty(details, 'givenName', { value: 'A', enumerable: false });\nassert.equal(createAccessRegistry().register(details).givenName, 'A');\n",
+        "sha256": "eaebed02467dcc3350e973e018415d00eaebe2883dbc7fb917d3dcd75bb15cb1"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8144a28c754172243da28248589d40b493464fad5a927b23044963b651556d8d",
+      "text": "Implement `createAccessRegistry()` and export exactly `{ createAccessRegistry }` using CommonJS. It returns an isolated in-memory registry with methods `register(details)`, `open(email, secret)`, `inspect(token)`, and `close(token)`. `details` must be a plain object containing exactly `email`, `secret`, `givenName`, and `familyName`, all non-empty strings. Emails are compared after converting to lowercase; registering a duplicate throws `Error('Email already registered')`. `open` requires non-empty string arguments, throws `Error('Invalid credentials')` for an unknown email or wrong secret, and returns `{ token, account }`. Tokens are deterministic per registry (`session-1`, `session-2`, and so on). `inspect` returns a fresh public account object for an active token and throws `Error('Invalid session')` for malformed, unknown, or closed tokens. `close` marks an active session closed and returns `true`; malformed, unknown, or already-closed tokens return `false`. Public account objects contain only `email`, `givenName`, and `familyName`; normalized lowercase email is returned. The registry must not retain `details` or expose mutable internal objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8144a28c754172243da28248589d40b493464fad5a927b23044963b651556d8d",
+      "text": "Implement `createAccessRegistry()` and export exactly `{ createAccessRegistry }` using CommonJS. It returns an isolated in-memory registry with methods `register(details)`, `open(email, secret)`, `inspect(token)`, and `close(token)`. `details` must be a plain object containing exactly `email`, `secret`, `givenName`, and `familyName`, all non-empty strings. Emails are compared after converting to lowercase; registering a duplicate throws `Error('Email already registered')`. `open` requires non-empty string arguments, throws `Error('Invalid credentials')` for an unknown email or wrong secret, and returns `{ token, account }`. Tokens are deterministic per registry (`session-1`, `session-2`, and so on). `inspect` returns a fresh public account object for an active token and throws `Error('Invalid session')` for malformed, unknown, or closed tokens. `close` marks an active session closed and returns `true`; malformed, unknown, or already-closed tokens return `false`. Public account objects contain only `email`, `givenName`, and `familyName`; normalized lowercase email is returned. The registry must not retain `details` or expose mutable internal objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0381",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction plain(value) {\n  if (value === null || typeof value !== 'object') return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction createAccessRegistry() {\n  const accounts = new Map();\n  const sessions = new Map();\n  let nextSession = 1;\n\n  function publicAccount(account) {\n    return {\n      email: account.email,\n      givenName: account.givenName,\n      familyName: account.familyName\n    };\n  }\n\n  function register(details) {\n    if (!plain(details)) throw new TypeError('details must be a plain object');\n    const keys = Object.keys(details);\n    const expected = ['email', 'familyName', 'givenName', 'secret'];\n    if (keys.length !== 4 || keys.slice().sort().some((key, i) => key !== expected[i])) {\n      throw new TypeError('invalid registration fields');\n    }\n    for (const key of expected) {\n      if (typeof details[key] !== 'string' || details[key].length === 0) throw new TypeError('invalid registration value');\n    }\n    const email = details.email.toLowerCase();\n    if (accounts.has(email)) throw new Error('Email already registered');\n    const account = {\n      email,\n      secret: details.secret,\n      givenName: details.givenName,\n      familyName: details.familyName\n    };\n    accounts.set(email, account);\n    return publicAccount(account);\n  }\n\n  function open(email, secret) {\n    if (typeof email !== 'string' || email.length === 0 || typeof secret !== 'string' || secret.length === 0) {\n      throw new TypeError('invalid credentials input');\n    }\n    const account = accounts.get(email.toLowerCase());\n    if (!account || account.secret !== secret) throw new Error('Invalid credentials');\n    const token = `session-${nextSession++}`;\n    sessions.set(token, { account, closed: false });\n    return { token, account: publicAccount(account) };\n  }\n\n  function inspect(token) {\n    if (typeof token !== 'string' || token.length === 0) throw new Error('Invalid session');\n    const session = sessions.get(token);\n    if (!session || session.closed) throw new Error('Invalid session');\n    return publicAccount(session.account);\n  }\n\n  function close(token) {\n    if (typeof token !== 'string' || token.length === 0) return false;\n    const session = sessions.get(token);\n    if (!session || session.closed) return false;\n    session.closed = false;\n    return true;\n  }\n\n  return { register, open, inspect, close };\n}\n\nmodule.exports = { createAccessRegistry };\n",
+          "label": "The close operation leaves an active session open instead of marking it closed.",
+          "sha256": "2e22d3848a034da6832cc9e05ac68904201e84e388f0c5f2bf16a1078c7678ee"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction plain(value) {\n  if (value === null || typeof value !== 'object') return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction createAccessRegistry() {\n  const accounts = new Map();\n  const sessions = new Map();\n  let nextSession = 1;\n\n  function publicAccount(account) {\n    return {\n      email: account.email,\n      givenName: account.givenName,\n      familyName: account.familyName\n    };\n  }\n\n  function register(details) {\n    if (!plain(details)) throw new TypeError('details must be a plain object');\n    const keys = Object.keys(details);\n    const expected = ['email', 'familyName', 'givenName', 'secret'];\n    if (keys.length !== 4 || keys.slice().sort().some((key, i) => key !== expected[i])) {\n      throw new TypeError('invalid registration fields');\n    }\n    for (const key of expected) {\n      if (typeof details[key] !== 'string' || details[key].length === 0) throw new TypeError('invalid registration value');\n    }\n    const email = details.email.toLowerCase();\n    if (accounts.has(email)) throw new Error('Email already registered');\n    const account = {\n      email,\n      secret: details.secret,\n      givenName: details.givenName,\n      familyName: details.familyName\n    };\n    accounts.set(email, account);\n    return publicAccount(account);\n  }\n\n  function open(email, secret) {\n    if (typeof email !== 'string' || email.length === 0 || typeof secret !== 'string' || secret.length === 0) {\n      throw new TypeError('invalid credentials input');\n    }\n    const account = accounts.get(email.toLowerCase());\n    if (!account || account.secret !== secret) throw new Error('Invalid credentials');\n    const token = `session-${nextSession++}`;\n    sessions.set(token, { account, closed: false });\n    return { token, account: publicAccount(account) };\n  }\n\n  function inspect(token) {\n    if (typeof token !== 'string' || token.length === 0) throw new Error('Invalid session');\n    const session = sessions.get(token);\n    if (!session || session.closed) throw new Error('Invalid session');\n    return publicAccount(session.account);\n  }\n\n  function close(token) {\n    if (typeof token !== 'string' || token.length === 0) return false;\n    const session = sessions.get(token);\n    if (!session || session.closed) return false;\n    session.closed = true;\n    return true;\n  }\n\n  return { register, open, inspect, close };\n}\n\nmodule.exports = { createAccessRegistry };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e0f98671d5bd9a7cadd92f309a9ecb4a3a5972e22cb2f0f7dac8fcc911f24a0b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api).sort(), ['createAccessRegistry']);\nconst { createAccessRegistry } = api;\nconst typeError = fn => assert.throws(fn, TypeError);\n\nconst registry = createAccessRegistry();\nassert.deepStrictEqual(Object.keys(registry).sort(), ['close', 'inspect', 'open', 'register']);\nconst details = { email: 'User@Example.COM', secret: 'secret', givenName: 'Ada', familyName: 'Lovelace' };\nconst registered = registry.register(details);\ndetails.email = 'changed@example.com';\ndetails.secret = 'changed';\ndetails.givenName = 'Changed';\nassert.deepStrictEqual(registered, { email: 'user@example.com', givenName: 'Ada', familyName: 'Lovelace' });\nregistered.givenName = 'Mutated';\n\nassert.throws(() => registry.register({ email: 'USER@example.com', secret: 'x', givenName: 'X', familyName: 'Y' }), err => err.message === 'Email already registered');\nassert.throws(() => registry.open('missing@example.com', 'secret'), err => err.message === 'Invalid credentials');\nassert.throws(() => registry.open('USER@example.com', 'wrong'), err => err.message === 'Invalid credentials');\nconst opened = registry.open('USER@EXAMPLE.COM', 'secret');\nassert.strictEqual(opened.token, 'session-1');\nassert.deepStrictEqual(opened.account, { email: 'user@example.com', givenName: 'Ada', familyName: 'Lovelace' });\nopened.account.givenName = 'Bad';\nconst inspected = registry.inspect('session-1');\nassert.deepStrictEqual(inspected, { email: 'user@example.com', givenName: 'Ada', familyName: 'Lovelace' });\nassert.notStrictEqual(inspected, opened.account);\nassert.strictEqual(registry.close('session-1'), true);\nassert.strictEqual(registry.close('session-1'), false);\nassert.strictEqual(registry.close('unknown'), false);\nassert.strictEqual(registry.close(''), false);\nassert.strictEqual(registry.close(1), false);\nassert.throws(() => registry.inspect('session-1'), err => err.message === 'Invalid session');\nassert.throws(() => registry.inspect(1), err => err.message === 'Invalid session');\n\nregistry.register({ email: 'two@example.com', secret: 's2', givenName: 'Two', familyName: 'User' });\nassert.strictEqual(registry.open('two@example.com', 's2').token, 'session-2');\nconst other = createAccessRegistry();\nother.register({ email: 'user@example.com', secret: 'z', givenName: 'Other', familyName: 'Person' });\nassert.strictEqual(other.open('user@example.com', 'z').token, 'session-1');\n\ntypeError(() => registry.register(null));\ntypeError(() => registry.register({ email: 'a@b.com', secret: 's', givenName: 'A' }));\ntypeError(() => registry.register({ email: 'a@b.com', secret: 's', givenName: 'A', familyName: 'B', extra: 'x' }));\ntypeError(() => registry.register({ email: '', secret: 's', givenName: 'A', familyName: 'B' }));\ntypeError(() => registry.open('', 's'));\ntypeError(() => registry.open('a@b.com', ''));\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "f5809c71578d99b8d957b46eb071c7ad5732ad2482fc6aaf48ddb5aeae681590"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8144a28c754172243da28248589d40b493464fad5a927b23044963b651556d8d",
+      "text": "Implement `createAccessRegistry()` and export exactly `{ createAccessRegistry }` using CommonJS. It returns an isolated in-memory registry with methods `register(details)`, `open(email, secret)`, `inspect(token)`, and `close(token)`. `details` must be a plain object containing exactly `email`, `secret`, `givenName`, and `familyName`, all non-empty strings. Emails are compared after converting to lowercase; registering a duplicate throws `Error('Email already registered')`. `open` requires non-empty string arguments, throws `Error('Invalid credentials')` for an unknown email or wrong secret, and returns `{ token, account }`. Tokens are deterministic per registry (`session-1`, `session-2`, and so on). `inspect` returns a fresh public account object for an active token and throws `Error('Invalid session')` for malformed, unknown, or closed tokens. `close` marks an active session closed and returns `true`; malformed, unknown, or already-closed tokens return `false`. Public account objects contain only `email`, `givenName`, and `familyName`; normalized lowercase email is returned. The registry must not retain `details` or expose mutable internal objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8144a28c754172243da28248589d40b493464fad5a927b23044963b651556d8d",
+      "text": "Implement `createAccessRegistry()` and export exactly `{ createAccessRegistry }` using CommonJS. It returns an isolated in-memory registry with methods `register(details)`, `open(email, secret)`, `inspect(token)`, and `close(token)`. `details` must be a plain object containing exactly `email`, `secret`, `givenName`, and `familyName`, all non-empty strings. Emails are compared after converting to lowercase; registering a duplicate throws `Error('Email already registered')`. `open` requires non-empty string arguments, throws `Error('Invalid credentials')` for an unknown email or wrong secret, and returns `{ token, account }`. Tokens are deterministic per registry (`session-1`, `session-2`, and so on). `inspect` returns a fresh public account object for an active token and throws `Error('Invalid session')` for malformed, unknown, or closed tokens. `close` marks an active session closed and returns `true`; malformed, unknown, or already-closed tokens return `false`. Public account objects contain only `email`, `givenName`, and `familyName`; normalized lowercase email is returned. The registry must not retain `details` or expose mutable internal objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0381",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction plain(value) {\n  if (value === null || typeof value !== 'object') return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction createAccessRegistry() {\n  const accounts = new Map();\n  const sessions = new Map();\n  let nextSession = 1;\n\n  function publicAccount(account) {\n    return {\n      email: account.email,\n      givenName: account.givenName,\n      familyName: account.familyName\n    };\n  }\n\n  function register(details) {\n    if (!plain(details)) throw new TypeError('details must be a plain object');\n    const keys = Object.keys(details);\n    const expected = ['email', 'familyName', 'givenName', 'secret'];\n    if (keys.length !== 4 || keys.slice().sort().some((key, i) => key !== expected[i])) {\n      throw new TypeError('invalid registration fields');\n    }\n    for (const key of expected) {\n      if (typeof details[key] !== 'string' || details[key].length === 0) throw new TypeError('invalid registration value');\n    }\n    const email = details.email.toLowerCase();\n    if (accounts.has(email)) throw new Error('Email already registered');\n    const account = {\n      email,\n      secret: details.secret,\n      givenName: details.givenName,\n      familyName: details.familyName\n    };\n    accounts.set(email, account);\n    return publicAccount(account);\n  }\n\n  function open(email, secret) {\n    if (typeof email !== 'string' || email.length === 0 || typeof secret !== 'string' || secret.length === 0) {\n      throw new TypeError('invalid credentials input');\n    }\n    const account = accounts.get(email.toLowerCase());\n    if (!account || account.secret !== secret) throw new Error('Invalid credentials');\n    const token = `session-${nextSession++}`;\n    sessions.set(token, { account, closed: false });\n    return { token, account: publicAccount(account) };\n  }\n\n  function inspect(token) {\n    if (typeof token !== 'string' || token.length === 0) throw new Error('Invalid session');\n    const session = sessions.get(token);\n    if (!session || session.closed) throw new Error('Invalid session');\n    return publicAccount(session.account);\n  }\n\n  function close(token) {\n    if (typeof token !== 'string' || token.length === 0) return false;\n    const session = sessions.get(token);\n    if (!session || session.closed) return false;\n    session.closed = false;\n    return true;\n  }\n\n  return { register, open, inspect, close };\n}\n\nmodule.exports = { createAccessRegistry };\n",
+          "label": "The close operation leaves an active session open instead of marking it closed.",
+          "sha256": "2e22d3848a034da6832cc9e05ac68904201e84e388f0c5f2bf16a1078c7678ee"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction plain(value) {\n  if (value === null || typeof value !== 'object') return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction createAccessRegistry() {\n  const accounts = new Map();\n  const sessions = new Map();\n  let nextSession = 1;\n\n  function publicAccount(account) {\n    return {\n      email: account.email,\n      givenName: account.givenName,\n      familyName: account.familyName\n    };\n  }\n\n  function register(details) {\n    if (!plain(details)) throw new TypeError('details must be a plain object');\n    const keys = Object.keys(details);\n    const expected = ['email', 'familyName', 'givenName', 'secret'];\n    if (keys.length !== 4 || keys.slice().sort().some((key, i) => key !== expected[i])) {\n      throw new TypeError('invalid registration fields');\n    }\n    for (const key of expected) {\n      if (typeof details[key] !== 'string' || details[key].length === 0) throw new TypeError('invalid registration value');\n    }\n    const email = details.email.toLowerCase();\n    if (accounts.has(email)) throw new Error('Email already registered');\n    const account = {\n      email,\n      secret: details.secret,\n      givenName: details.givenName,\n      familyName: details.familyName\n    };\n    accounts.set(email, account);\n    return publicAccount(account);\n  }\n\n  function open(email, secret) {\n    if (typeof email !== 'string' || email.length === 0 || typeof secret !== 'string' || secret.length === 0) {\n      throw new TypeError('invalid credentials input');\n    }\n    const account = accounts.get(email.toLowerCase());\n    if (!account || account.secret !== secret) throw new Error('Invalid credentials');\n    const token = `session-${nextSession++}`;\n    sessions.set(token, { account, closed: false });\n    return { token, account: publicAccount(account) };\n  }\n\n  function inspect(token) {\n    if (typeof token !== 'string' || token.length === 0) throw new Error('Invalid session');\n    const session = sessions.get(token);\n    if (!session || session.closed) throw new Error('Invalid session');\n    return publicAccount(session.account);\n  }\n\n  function close(token) {\n    if (typeof token !== 'string' || token.length === 0) return false;\n    const session = sessions.get(token);\n    if (!session || session.closed) return false;\n    session.closed = true;\n    return true;\n  }\n\n  return { register, open, inspect, close };\n}\n\nmodule.exports = { createAccessRegistry };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "e0f98671d5bd9a7cadd92f309a9ecb4a3a5972e22cb2f0f7dac8fcc911f24a0b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.js:27\n      throw new TypeError('invalid registration fields');\n      ^\n\nTypeError: invalid registration fields\n    at Object.register (/work/solution.js:27:13)\n    at Object.<anonymous> (/work/solution.test.js:5:37)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "cc725376c627ed4c1bb67e6c40b285ae7faf70c8eb7d86bc470c3165831f7d27",
+    "duration_ms": 384,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

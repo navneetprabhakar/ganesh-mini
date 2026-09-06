@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0311",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "2532f445e9e02c560c945eb8d8c62612628705a09a4d6d67d169c91378daf6b6",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ReviewRecord, buildReviewPage } from './solution';\nlet caught: unknown;\ntry { buildReviewPage('reviewer', new Array<ReviewRecord>(1)); } catch (error) { caught = error; }\nif (!(caught instanceof TypeError)) throw new Error('Missing review record must not bypass validation');\n",
+        "sha256": "bd258e255c55241db91fecdbe0f44d1b2cacc16682007678dc38ccf6595a8559"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "430b76ece2eecf20addba584a8ed688412875df1c7d1dd6077ec6ccbc689e717",
+      "text": "Implement a new TypeScript module exporting `ReviewRecord`, `ReviewRow`, `ReviewPage`, and `buildReviewPage`.\n\nPublic API:\n\n```ts\nexport interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\nexport interface ReviewRow extends ReviewRecord { readonly status: \"pending\" | \"scored\"; }\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage;\n```\n\nOnly the exact role `\"reviewer\"` is authorized; every other string, including different casing and whitespace variants, causes `Error` before record validation. Validate each record in input order: `contributor`, `document`, and `submittedOn` must each contain at least one non-whitespace character; otherwise throw `TypeError`. Scores must be null or finite numbers from 0 through 100 inclusive; otherwise throw `RangeError`.\n\nReturn rows sorted by ascending `submittedOn` using ordinary string comparison. Equal dates retain input order. Do not trim or otherwise normalize returned strings. A null score maps to `pending`; every numeric score, including zero, maps to `scored`. Empty input returns an empty fresh row array. Return a new page, new row array, and new row objects on every successful call. Never mutate or sort the input array, and returned rows must not alias input record objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "430b76ece2eecf20addba584a8ed688412875df1c7d1dd6077ec6ccbc689e717",
+      "text": "Implement a new TypeScript module exporting `ReviewRecord`, `ReviewRow`, `ReviewPage`, and `buildReviewPage`.\n\nPublic API:\n\n```ts\nexport interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\nexport interface ReviewRow extends ReviewRecord { readonly status: \"pending\" | \"scored\"; }\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage;\n```\n\nOnly the exact role `\"reviewer\"` is authorized; every other string, including different casing and whitespace variants, causes `Error` before record validation. Validate each record in input order: `contributor`, `document`, and `submittedOn` must each contain at least one non-whitespace character; otherwise throw `TypeError`. Scores must be null or finite numbers from 0 through 100 inclusive; otherwise throw `RangeError`.\n\nReturn rows sorted by ascending `submittedOn` using ordinary string comparison. Equal dates retain input order. Do not trim or otherwise normalize returned strings. A null score maps to `pending`; every numeric score, including zero, maps to `scored`. Empty input returns an empty fresh row array. Return a new page, new row array, and new row objects on every successful call. Never mutate or sort the input array, and returned rows must not alias input record objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0311",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\n\nexport interface ReviewRow extends ReviewRecord {\n  readonly status: \"pending\" | \"scored\";\n}\n\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\n\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage {\n  if (role !== \"reviewer\") throw new Error(\"Unauthorized role\");\n\n  const rows = records.map((record, index) => {\n    if (\n      record.contributor.trim() === \"\" ||\n      record.document.trim() === \"\" ||\n      record.submittedOn.trim() === \"\"\n    ) {\n      throw new TypeError(`Blank field at record ${index}`);\n    }\n    if (\n      record.score !== null &&\n      (!Number.isFinite(record.score) || record.score < 0 || record.score > 100)\n    ) {\n      throw new RangeError(`Invalid score at record ${index}`);\n    }\n    return {\n      contributor: record.contributor,\n      document: record.document,\n      submittedOn: record.submittedOn,\n      score: record.score,\n      status: record.score ? \"scored\" as const : \"pending\" as const,\n      index,\n    };\n  });\n\n  rows.sort((a, b) => a.submittedOn < b.submittedOn ? -1 : a.submittedOn > b.submittedOn ? 1 : a.index - b.index);\n  return {\n    title: \"Pending Reviews\",\n    rows: rows.map(({ index: _index, ...row }) => row),\n  };\n}\n",
+          "label": "A numeric score of zero is classified as pending because status is derived from truthiness.",
+          "sha256": "9b66e38837f678bcde8a128c9bd621834b41b23fd55dec7353cd7c6aef92d9ae"
+        }
+      ],
+      "reference": {
+        "code": "export interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\n\nexport interface ReviewRow extends ReviewRecord {\n  readonly status: \"pending\" | \"scored\";\n}\n\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\n\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage {\n  if (role !== \"reviewer\") throw new Error(\"Unauthorized role\");\n\n  const rows = records.map((record, index) => {\n    if (\n      record.contributor.trim() === \"\" ||\n      record.document.trim() === \"\" ||\n      record.submittedOn.trim() === \"\"\n    ) {\n      throw new TypeError(`Blank field at record ${index}`);\n    }\n    if (\n      record.score !== null &&\n      (!Number.isFinite(record.score) || record.score < 0 || record.score > 100)\n    ) {\n      throw new RangeError(`Invalid score at record ${index}`);\n    }\n    return {\n      contributor: record.contributor,\n      document: record.document,\n      submittedOn: record.submittedOn,\n      score: record.score,\n      status: record.score === null ? \"pending\" as const : \"scored\" as const,\n      index,\n    };\n  });\n\n  rows.sort((a, b) => a.submittedOn < b.submittedOn ? -1 : a.submittedOn > b.submittedOn ? 1 : a.index - b.index);\n  return {\n    title: \"Pending Reviews\",\n    rows: rows.map(({ index: _index, ...row }) => row),\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9e53a522bbdd0803c213a830cee3e3ec884cfb32edb7c866aaa312c00e2859c1"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ReviewRecord, buildReviewPage } from \"./solution\";\n\nfunction assert(condition: boolean, message: string): void {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  assert(Object.is(actual, expected), `${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction expectThrows(fn: () => unknown, ctor: ErrorConstructor, message: string): void {\n  let error: unknown;\n  try { fn(); } catch (caught) { error = caught; }\n  assert(error instanceof ctor, message);\n}\n\nconst records: ReviewRecord[] = [\n  { contributor: \" Alice \", document: \"Second\", submittedOn: \"2026-02-02\", score: null },\n  { contributor: \"Bob\", document: \"First\", submittedOn: \"2026-01-01\", score: 0 },\n  { contributor: \"Cara\", document: \"Same date\", submittedOn: \"2026-01-01\", score: 100 },\n];\nconst originalOrder = records.slice();\nconst page = buildReviewPage(\"reviewer\", records);\nequal(page.title, \"Pending Reviews\", \"title is fixed\");\nequal(page.rows.map((row) => row.contributor).join(\",\"), \"Bob,Cara, Alice \", \"rows sort stably by date\");\nequal(page.rows[0].status, \"scored\", \"zero score is scored\");\nequal(page.rows[1].status, \"scored\", \"upper boundary score is scored\");\nequal(page.rows[2].status, \"pending\", \"null score is pending\");\nequal(page.rows[2].contributor, \" Alice \", \"returned strings are not trimmed\");\nassert(records[0] === originalOrder[0] && records[1] === originalOrder[1] && records[2] === originalOrder[2], \"input array is not sorted or replaced\");\nassert(page.rows.every((row) => !records.some((record) => record === row)), \"rows do not alias input records\");\n\nconst again = buildReviewPage(\"reviewer\", records);\nassert(page !== again, \"successful calls return fresh pages\");\nassert(page.rows !== again.rows, \"successful calls return fresh row arrays\");\nassert(page.rows[0] !== again.rows[0], \"successful calls return fresh row objects\");\n(page.rows[0] as { contributor: string }).contributor = \"changed\";\nequal(records[1].contributor, \"Bob\", \"row mutation does not affect input\");\nequal(again.rows[0].contributor, \"Bob\", \"rows from calls do not alias\");\n\nconst empty1 = buildReviewPage(\"reviewer\", []);\nconst empty2 = buildReviewPage(\"reviewer\", []);\nequal(empty1.rows.length, 0, \"empty input succeeds\");\nassert(empty1.rows !== empty2.rows, \"empty row arrays are fresh\");\n\nfor (const role of [\"Reviewer\", \" reviewer\", \"reviewer \", \"\", \"admin\"]) {\n  expectThrows(() => buildReviewPage(role, [{ contributor: \"\", document: \"\", submittedOn: \"\", score: -1 }]), Error, \"authorization is checked before records\");\n}\nfor (const bad of [\n  { contributor: \" \\t\", document: \"d\", submittedOn: \"s\", score: null },\n  { contributor: \"c\", document: \"\\n\", submittedOn: \"s\", score: null },\n  { contributor: \"c\", document: \"d\", submittedOn: \"  \", score: null },\n] as ReviewRecord[]) {\n  expectThrows(() => buildReviewPage(\"reviewer\", [bad]), TypeError, \"blank required string throws TypeError\");\n}\nfor (const score of [-1, 101, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {\n  expectThrows(() => buildReviewPage(\"reviewer\", [{ contributor: \"c\", document: \"d\", submittedOn: \"s\", score }]), RangeError, \"invalid score throws RangeError\");\n}\nconst boundaries = buildReviewPage(\"reviewer\", [\n  { contributor: \"a\", document: \"d\", submittedOn: \"a\", score: 0 },\n  { contributor: \"b\", document: \"d\", submittedOn: \"b\", score: 100 },\n]);\nequal(boundaries.rows.length, 2, \"score boundaries are accepted\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "24b8356ad522c368ce6dbf8c514316f9371a58771552228cab64d30872c239b4"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "430b76ece2eecf20addba584a8ed688412875df1c7d1dd6077ec6ccbc689e717",
+      "text": "Implement a new TypeScript module exporting `ReviewRecord`, `ReviewRow`, `ReviewPage`, and `buildReviewPage`.\n\nPublic API:\n\n```ts\nexport interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\nexport interface ReviewRow extends ReviewRecord { readonly status: \"pending\" | \"scored\"; }\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage;\n```\n\nOnly the exact role `\"reviewer\"` is authorized; every other string, including different casing and whitespace variants, causes `Error` before record validation. Validate each record in input order: `contributor`, `document`, and `submittedOn` must each contain at least one non-whitespace character; otherwise throw `TypeError`. Scores must be null or finite numbers from 0 through 100 inclusive; otherwise throw `RangeError`.\n\nReturn rows sorted by ascending `submittedOn` using ordinary string comparison. Equal dates retain input order. Do not trim or otherwise normalize returned strings. A null score maps to `pending`; every numeric score, including zero, maps to `scored`. Empty input returns an empty fresh row array. Return a new page, new row array, and new row objects on every successful call. Never mutate or sort the input array, and returned rows must not alias input record objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "430b76ece2eecf20addba584a8ed688412875df1c7d1dd6077ec6ccbc689e717",
+      "text": "Implement a new TypeScript module exporting `ReviewRecord`, `ReviewRow`, `ReviewPage`, and `buildReviewPage`.\n\nPublic API:\n\n```ts\nexport interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\nexport interface ReviewRow extends ReviewRecord { readonly status: \"pending\" | \"scored\"; }\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage;\n```\n\nOnly the exact role `\"reviewer\"` is authorized; every other string, including different casing and whitespace variants, causes `Error` before record validation. Validate each record in input order: `contributor`, `document`, and `submittedOn` must each contain at least one non-whitespace character; otherwise throw `TypeError`. Scores must be null or finite numbers from 0 through 100 inclusive; otherwise throw `RangeError`.\n\nReturn rows sorted by ascending `submittedOn` using ordinary string comparison. Equal dates retain input order. Do not trim or otherwise normalize returned strings. A null score maps to `pending`; every numeric score, including zero, maps to `scored`. Empty input returns an empty fresh row array. Return a new page, new row array, and new row objects on every successful call. Never mutate or sort the input array, and returned rows must not alias input record objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0311",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\n\nexport interface ReviewRow extends ReviewRecord {\n  readonly status: \"pending\" | \"scored\";\n}\n\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\n\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage {\n  if (role !== \"reviewer\") throw new Error(\"Unauthorized role\");\n\n  const rows = records.map((record, index) => {\n    if (\n      record.contributor.trim() === \"\" ||\n      record.document.trim() === \"\" ||\n      record.submittedOn.trim() === \"\"\n    ) {\n      throw new TypeError(`Blank field at record ${index}`);\n    }\n    if (\n      record.score !== null &&\n      (!Number.isFinite(record.score) || record.score < 0 || record.score > 100)\n    ) {\n      throw new RangeError(`Invalid score at record ${index}`);\n    }\n    return {\n      contributor: record.contributor,\n      document: record.document,\n      submittedOn: record.submittedOn,\n      score: record.score,\n      status: record.score ? \"scored\" as const : \"pending\" as const,\n      index,\n    };\n  });\n\n  rows.sort((a, b) => a.submittedOn < b.submittedOn ? -1 : a.submittedOn > b.submittedOn ? 1 : a.index - b.index);\n  return {\n    title: \"Pending Reviews\",\n    rows: rows.map(({ index: _index, ...row }) => row),\n  };\n}\n",
+          "label": "A numeric score of zero is classified as pending because status is derived from truthiness.",
+          "sha256": "9b66e38837f678bcde8a128c9bd621834b41b23fd55dec7353cd7c6aef92d9ae"
+        }
+      ],
+      "reference": {
+        "code": "export interface ReviewRecord {\n  readonly contributor: string;\n  readonly document: string;\n  readonly submittedOn: string;\n  readonly score: number | null;\n}\n\nexport interface ReviewRow extends ReviewRecord {\n  readonly status: \"pending\" | \"scored\";\n}\n\nexport interface ReviewPage {\n  readonly title: \"Pending Reviews\";\n  readonly rows: readonly ReviewRow[];\n}\n\nexport function buildReviewPage(role: string, records: readonly ReviewRecord[]): ReviewPage {\n  if (role !== \"reviewer\") throw new Error(\"Unauthorized role\");\n\n  const rows = records.map((record, index) => {\n    if (\n      record.contributor.trim() === \"\" ||\n      record.document.trim() === \"\" ||\n      record.submittedOn.trim() === \"\"\n    ) {\n      throw new TypeError(`Blank field at record ${index}`);\n    }\n    if (\n      record.score !== null &&\n      (!Number.isFinite(record.score) || record.score < 0 || record.score > 100)\n    ) {\n      throw new RangeError(`Invalid score at record ${index}`);\n    }\n    return {\n      contributor: record.contributor,\n      document: record.document,\n      submittedOn: record.submittedOn,\n      score: record.score,\n      status: record.score === null ? \"pending\" as const : \"scored\" as const,\n      index,\n    };\n  });\n\n  rows.sort((a, b) => a.submittedOn < b.submittedOn ? -1 : a.submittedOn > b.submittedOn ? 1 : a.index - b.index);\n  return {\n    title: \"Pending Reviews\",\n    rows: rows.map(({ index: _index, ...row }) => row),\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9e53a522bbdd0803c213a830cee3e3ec884cfb32edb7c866aaa312c00e2859c1"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:12\n    throw new Error('Missing review record must not bypass validation');\n    ^\n\nError: Missing review record must not bypass validation\n    at Object.<anonymous> (/work/solution.test.js:12:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "dbb08c87a9f682dcb0bac88e43e65f2880ea279f317cc89612aea08663c7b7c7",
+    "duration_ms": 2398,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

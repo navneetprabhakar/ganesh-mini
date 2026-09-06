@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0148",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c98c452f81d3b7cf707118e7ae6fca5dc56bf18f91d2d3d817358d678dc53c4e",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { validateAccount } from './solution';\nconst issues = validateAccount('UPDATE', {email:'a@b.com',accessLevel:''}, [{id:'a',email:'a@b.com'}]);\nif (issues[0]?.field !== 'accessLevel' || issues[1]?.message !== 'Email is already in use') throw new Error('Duplicate email issue must follow format/required issues');\n",
+        "sha256": "c4704f27caff457a739ed60852a1e603a94e027ab169ce0eadca9d82b04044a7"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "29bb13be4a80ce2740873569511d61a836f5c957210ff179dabfe1d3e2321308",
+      "text": "Implement a pure account-input validator with no framework dependencies. Export `AccountRecord`, `ValidationIssue`, and `validateAccount(method, body, accounts, currentId?)`, where `method` is `'CREATE' | 'UPDATE'` and `body` is a readonly string-keyed object of unknown values. Return a fresh issue array and never mutate inputs. Issues have `field` and `message`. For CREATE, validate in order: `displayName`, `secret`, `email`. Each is required and must be a string containing a non-whitespace character. Email must additionally match exactly one `@`, a nonempty local part, and a domain containing a dot with nonempty components. For UPDATE, validate provided own properties in order: `displayName`, `email`, `accessLevel`; `undefined`, non-strings, and whitespace-only strings are invalid. A provided valid email must be unique. Email uniqueness is case-insensitive after trimming. During UPDATE, an account whose `id` equals `currentId` is excluded; omitting `currentId` excludes none. CREATE excludes none. Report at most one format/required issue per field, then append `Email is already in use` for a well-formed duplicate email. Unknown properties are ignored, an empty UPDATE is valid, and account order must not change output.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "29bb13be4a80ce2740873569511d61a836f5c957210ff179dabfe1d3e2321308",
+      "text": "Implement a pure account-input validator with no framework dependencies. Export `AccountRecord`, `ValidationIssue`, and `validateAccount(method, body, accounts, currentId?)`, where `method` is `'CREATE' | 'UPDATE'` and `body` is a readonly string-keyed object of unknown values. Return a fresh issue array and never mutate inputs. Issues have `field` and `message`. For CREATE, validate in order: `displayName`, `secret`, `email`. Each is required and must be a string containing a non-whitespace character. Email must additionally match exactly one `@`, a nonempty local part, and a domain containing a dot with nonempty components. For UPDATE, validate provided own properties in order: `displayName`, `email`, `accessLevel`; `undefined`, non-strings, and whitespace-only strings are invalid. A provided valid email must be unique. Email uniqueness is case-insensitive after trimming. During UPDATE, an account whose `id` equals `currentId` is excluded; omitting `currentId` excludes none. CREATE excludes none. Report at most one format/required issue per field, then append `Email is already in use` for a well-formed duplicate email. Unknown properties are ignored, an empty UPDATE is valid, and account order must not change output.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0148",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface AccountRecord { readonly id: string; readonly email: string }\nexport interface ValidationIssue { readonly field: string; readonly message: string }\n\nconst own = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);\nconst nonblank = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;\nconst emailPattern = /^[^@\\s]+@[^@\\s.]+(?:\\.[^@\\s.]+)+$/;\n\nexport function validateAccount(\n  method: 'CREATE' | 'UPDATE',\n  body: Readonly<Record<string, unknown>>,\n  accounts: readonly AccountRecord[],\n  currentId?: string,\n): ValidationIssue[] {\n  const issues: ValidationIssue[] = [];\n  const checkText = (field: string, required: boolean): boolean => {\n    if (!own(body, field)) {\n      if (required) issues.push({ field, message: `${field} is required` });\n      return false;\n    }\n    if (!nonblank(body[field])) {\n      issues.push({ field, message: `${field} must be a non-empty string` });\n      return false;\n    }\n    return true;\n  };\n\n  if (method === 'CREATE') {\n    checkText('displayName', true);\n    checkText('secret', true);\n  } else {\n    checkText('displayName', false);\n  }\n\n  const validEmailText = checkText('email', method === 'CREATE');\n  if (validEmailText) {\n    const email = (body.email as string).trim();\n    if (!emailPattern.test(email)) {\n      issues.push({ field: 'email', message: 'email is invalid' });\n    } else if (accounts.some(account =>\n      (method !== 'UPDATE' || account.id !== currentId) &&\n      account.email.trim() === email\n    )) {\n      issues.push({ field: 'email', message: 'Email is already in use' });\n    }\n  }\n\n  if (method === 'UPDATE') checkText('accessLevel', false);\n  return issues;\n}\n",
+          "label": "Email uniqueness is checked case-sensitively, allowing duplicates that differ only by letter case.",
+          "sha256": "76ca68f2549cf2efcc3ff35c6eb3828beb8fff01efe3fdfa90d79b90e32a430d"
+        }
+      ],
+      "reference": {
+        "code": "export interface AccountRecord { readonly id: string; readonly email: string }\nexport interface ValidationIssue { readonly field: string; readonly message: string }\n\nconst own = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);\nconst nonblank = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;\nconst emailPattern = /^[^@\\s]+@[^@\\s.]+(?:\\.[^@\\s.]+)+$/;\n\nexport function validateAccount(\n  method: 'CREATE' | 'UPDATE',\n  body: Readonly<Record<string, unknown>>,\n  accounts: readonly AccountRecord[],\n  currentId?: string,\n): ValidationIssue[] {\n  const issues: ValidationIssue[] = [];\n  const checkText = (field: string, required: boolean): boolean => {\n    if (!own(body, field)) {\n      if (required) issues.push({ field, message: `${field} is required` });\n      return false;\n    }\n    if (!nonblank(body[field])) {\n      issues.push({ field, message: `${field} must be a non-empty string` });\n      return false;\n    }\n    return true;\n  };\n\n  if (method === 'CREATE') {\n    checkText('displayName', true);\n    checkText('secret', true);\n  } else {\n    checkText('displayName', false);\n  }\n\n  const validEmailText = checkText('email', method === 'CREATE');\n  if (validEmailText) {\n    const email = (body.email as string).trim();\n    if (!emailPattern.test(email)) {\n      issues.push({ field: 'email', message: 'email is invalid' });\n    } else if (accounts.some(account =>\n      (method !== 'UPDATE' || account.id !== currentId) &&\n      account.email.trim().toLowerCase() === email.toLowerCase()\n    )) {\n      issues.push({ field: 'email', message: 'Email is already in use' });\n    }\n  }\n\n  if (method === 'UPDATE') checkText('accessLevel', false);\n  return issues;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "97c48cbda4736d192e366eec734a838f94cf9bb20c4e728ea97ae1016c718133"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { validateAccount } from './solution';\nimport type { AccountRecord, ValidationIssue } from './solution';\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction fields(issues: readonly ValidationIssue[]): string {\n  return issues.map(issue => issue.field).join(',');\n}\nfunction duplicateCount(issues: readonly ValidationIssue[]): number {\n  return issues.filter(issue => issue.message === 'Email is already in use').length;\n}\n\nconst accounts = [\n  { id: 'a', email: 'Taken@Example.com' },\n  { id: 'b', email: 'other@example.org' },\n] as AccountRecord[];\n\nconst validCreate = { displayName: ' Alice ', secret: ' value ', email: 'alice@example.com' };\nequal(validateAccount('CREATE', validCreate, accounts).length, 0, 'valid CREATE');\nconst missing = validateAccount('CREATE', {}, accounts);\nequal(fields(missing), 'displayName,secret,email', 'CREATE validation order');\nequal(missing.length, 3, 'one required issue per missing field');\n\nconst malformedCreate = validateAccount('CREATE', {\n  displayName: 12,\n  secret: '   ',\n  email: 'a@@example.com',\n}, accounts);\nequal(fields(malformedCreate), 'displayName,secret,email', 'malformed CREATE field order');\nequal(malformedCreate.length, 3, 'at most one format issue per field');\n\nfor (const email of ['@example.com', 'a@', 'a@example', 'a@.example', 'a@example.', 'a@exam..ple']) {\n  const issues = validateAccount('CREATE', { displayName: 'A', secret: 'S', email }, []);\n  equal(fields(issues), 'email', `invalid email ${email}`);\n  equal(issues.length, 1, `one issue for invalid email ${email}`);\n}\n\nconst createDuplicate = validateAccount('CREATE', {\n  displayName: 'A', secret: 'S', email: '  taken@example.COM  ',\n}, accounts);\nequal(duplicateCount(createDuplicate), 1, 'CREATE duplicate is trimmed and case-insensitive');\nequal(createDuplicate.length, 1, 'well-formed duplicate has one uniqueness issue');\n\nconst emptyUpdateA = validateAccount('UPDATE', {}, accounts);\nconst emptyUpdateB = validateAccount('UPDATE', {}, accounts);\nequal(emptyUpdateA.length, 0, 'empty UPDATE valid');\nassert(emptyUpdateA !== emptyUpdateB, 'fresh issue array returned');\n\nequal(fields(validateAccount('UPDATE', {\n  accessLevel: undefined,\n  email: 'bad',\n  displayName: ' ',\n  unknown: false,\n}, accounts)), 'displayName,email,accessLevel', 'UPDATE validates own properties in fixed order');\n\nconst inherited = Object.create({ email: 'bad' }) as Record<string, unknown>;\nequal(validateAccount('UPDATE', inherited, accounts).length, 0, 'inherited properties ignored');\n\nequal(validateAccount('UPDATE', { email: 'TAKEN@example.com' }, accounts, 'a').length, 0, 'current account excluded');\nequal(duplicateCount(validateAccount('UPDATE', { email: 'taken@example.com' }, accounts)), 1, 'omitted currentId excludes none');\nequal(duplicateCount(validateAccount('UPDATE', { email: 'taken@example.com' }, accounts, 'b')), 1, 'different currentId remains duplicate');\n\nconst reversed = [...accounts].reverse();\nconst forwardIssues = validateAccount('CREATE', { displayName: 'A', secret: 'S', email: 'taken@example.com' }, accounts);\nconst reverseIssues = validateAccount('CREATE', { displayName: 'A', secret: 'S', email: 'taken@example.com' }, reversed);\nequal(JSON.stringify(forwardIssues), JSON.stringify(reverseIssues), 'account order does not affect output');\nequal(accounts[0].email, 'Taken@Example.com', 'accounts not mutated');\nequal(validCreate.email, 'alice@example.com', 'body not mutated');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "fb052b6eae01172851cc982b4f890cdfb149b07fc62078483cf721f656adf335"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "29bb13be4a80ce2740873569511d61a836f5c957210ff179dabfe1d3e2321308",
+      "text": "Implement a pure account-input validator with no framework dependencies. Export `AccountRecord`, `ValidationIssue`, and `validateAccount(method, body, accounts, currentId?)`, where `method` is `'CREATE' | 'UPDATE'` and `body` is a readonly string-keyed object of unknown values. Return a fresh issue array and never mutate inputs. Issues have `field` and `message`. For CREATE, validate in order: `displayName`, `secret`, `email`. Each is required and must be a string containing a non-whitespace character. Email must additionally match exactly one `@`, a nonempty local part, and a domain containing a dot with nonempty components. For UPDATE, validate provided own properties in order: `displayName`, `email`, `accessLevel`; `undefined`, non-strings, and whitespace-only strings are invalid. A provided valid email must be unique. Email uniqueness is case-insensitive after trimming. During UPDATE, an account whose `id` equals `currentId` is excluded; omitting `currentId` excludes none. CREATE excludes none. Report at most one format/required issue per field, then append `Email is already in use` for a well-formed duplicate email. Unknown properties are ignored, an empty UPDATE is valid, and account order must not change output.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "29bb13be4a80ce2740873569511d61a836f5c957210ff179dabfe1d3e2321308",
+      "text": "Implement a pure account-input validator with no framework dependencies. Export `AccountRecord`, `ValidationIssue`, and `validateAccount(method, body, accounts, currentId?)`, where `method` is `'CREATE' | 'UPDATE'` and `body` is a readonly string-keyed object of unknown values. Return a fresh issue array and never mutate inputs. Issues have `field` and `message`. For CREATE, validate in order: `displayName`, `secret`, `email`. Each is required and must be a string containing a non-whitespace character. Email must additionally match exactly one `@`, a nonempty local part, and a domain containing a dot with nonempty components. For UPDATE, validate provided own properties in order: `displayName`, `email`, `accessLevel`; `undefined`, non-strings, and whitespace-only strings are invalid. A provided valid email must be unique. Email uniqueness is case-insensitive after trimming. During UPDATE, an account whose `id` equals `currentId` is excluded; omitting `currentId` excludes none. CREATE excludes none. Report at most one format/required issue per field, then append `Email is already in use` for a well-formed duplicate email. Unknown properties are ignored, an empty UPDATE is valid, and account order must not change output.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0148",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface AccountRecord { readonly id: string; readonly email: string }\nexport interface ValidationIssue { readonly field: string; readonly message: string }\n\nconst own = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);\nconst nonblank = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;\nconst emailPattern = /^[^@\\s]+@[^@\\s.]+(?:\\.[^@\\s.]+)+$/;\n\nexport function validateAccount(\n  method: 'CREATE' | 'UPDATE',\n  body: Readonly<Record<string, unknown>>,\n  accounts: readonly AccountRecord[],\n  currentId?: string,\n): ValidationIssue[] {\n  const issues: ValidationIssue[] = [];\n  const checkText = (field: string, required: boolean): boolean => {\n    if (!own(body, field)) {\n      if (required) issues.push({ field, message: `${field} is required` });\n      return false;\n    }\n    if (!nonblank(body[field])) {\n      issues.push({ field, message: `${field} must be a non-empty string` });\n      return false;\n    }\n    return true;\n  };\n\n  if (method === 'CREATE') {\n    checkText('displayName', true);\n    checkText('secret', true);\n  } else {\n    checkText('displayName', false);\n  }\n\n  const validEmailText = checkText('email', method === 'CREATE');\n  if (validEmailText) {\n    const email = (body.email as string).trim();\n    if (!emailPattern.test(email)) {\n      issues.push({ field: 'email', message: 'email is invalid' });\n    } else if (accounts.some(account =>\n      (method !== 'UPDATE' || account.id !== currentId) &&\n      account.email.trim() === email\n    )) {\n      issues.push({ field: 'email', message: 'Email is already in use' });\n    }\n  }\n\n  if (method === 'UPDATE') checkText('accessLevel', false);\n  return issues;\n}\n",
+          "label": "Email uniqueness is checked case-sensitively, allowing duplicates that differ only by letter case.",
+          "sha256": "76ca68f2549cf2efcc3ff35c6eb3828beb8fff01efe3fdfa90d79b90e32a430d"
+        }
+      ],
+      "reference": {
+        "code": "export interface AccountRecord { readonly id: string; readonly email: string }\nexport interface ValidationIssue { readonly field: string; readonly message: string }\n\nconst own = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);\nconst nonblank = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;\nconst emailPattern = /^[^@\\s]+@[^@\\s.]+(?:\\.[^@\\s.]+)+$/;\n\nexport function validateAccount(\n  method: 'CREATE' | 'UPDATE',\n  body: Readonly<Record<string, unknown>>,\n  accounts: readonly AccountRecord[],\n  currentId?: string,\n): ValidationIssue[] {\n  const issues: ValidationIssue[] = [];\n  const checkText = (field: string, required: boolean): boolean => {\n    if (!own(body, field)) {\n      if (required) issues.push({ field, message: `${field} is required` });\n      return false;\n    }\n    if (!nonblank(body[field])) {\n      issues.push({ field, message: `${field} must be a non-empty string` });\n      return false;\n    }\n    return true;\n  };\n\n  if (method === 'CREATE') {\n    checkText('displayName', true);\n    checkText('secret', true);\n  } else {\n    checkText('displayName', false);\n  }\n\n  const validEmailText = checkText('email', method === 'CREATE');\n  if (validEmailText) {\n    const email = (body.email as string).trim();\n    if (!emailPattern.test(email)) {\n      issues.push({ field: 'email', message: 'email is invalid' });\n    } else if (accounts.some(account =>\n      (method !== 'UPDATE' || account.id !== currentId) &&\n      account.email.trim().toLowerCase() === email.toLowerCase()\n    )) {\n      issues.push({ field: 'email', message: 'Email is already in use' });\n    }\n  }\n\n  if (method === 'UPDATE') checkText('accessLevel', false);\n  return issues;\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "97c48cbda4736d192e366eec734a838f94cf9bb20c4e728ea97ae1016c718133"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:6\n    throw new Error('Duplicate email issue must follow format/required issues');\n    ^\n\nError: Duplicate email issue must follow format/required issues\n    at Object.<anonymous> (/work/solution.test.js:6:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "649fff7246bd06fa86e0f65878df137677a00bd859801daeffeac9c055025a07",
+    "duration_ms": 2170,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -2,6 +2,31 @@
 
 ## Quality review continuation — 2026-09-06
 
+Latest: **171 holds (168 additive plus historical three)**; 224 unique outside-
+sample inspections. Batch 15 partial through position 215; continue 216.
+GCS verified through 168 holds; later five inspections pending. All 97 tooling
+tests pass. Frozen 300/partition unchanged. No training seal or new VM.
+
+Latest: **168 holds (165 additive plus historical three)**; 219 unique outside-
+sample inspections. Array batch 14 complete through position 210; continue 211.
+GCS verified through 159 holds; batch 14 pending. Frozen 300/partition unchanged.
+No training seal or new VM. Earlier checkpoints below are historical.
+
+Latest: **159 holds (156 additive plus historical three)**; 204 unique outside-
+sample inspections. Array batch 13 complete through position 195; continue 196.
+GCS verified through 149 holds; batch 13 pending. Frozen 300/partition unchanged.
+No training seal or new VM. Earlier checkpoints below are historical.
+
+Latest: **149 holds (146 additive plus historical three)**; 189 unique outside-
+sample inspections. Array batch 12 complete through position 180; continue 181.
+GCS verified through 139 holds; batch 12 pending. Frozen 300/partition unchanged.
+No training seal or new VM. Earlier checkpoints below are historical.
+
+Latest: **139 holds (136 additive plus historical three)**; 174 unique outside-
+sample inspections. Array batch 11 complete through position 165; continue 166.
+GCS verified through 129 holds; batch 11 pending. Frozen 300/partition unchanged.
+No training seal or new VM. Earlier checkpoints below are historical.
+
 Latest: **131 holds (128 additive plus three historical)**; 164 unique outside-
 sample inspections. Batch 11 partial covers positions 151–155; resume 156.
 GCS verified through 129 holds; these latest five inspections are local only.

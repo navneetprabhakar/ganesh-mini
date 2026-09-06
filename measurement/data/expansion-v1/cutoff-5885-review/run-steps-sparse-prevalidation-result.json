@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-repair-0109",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "0b575f96cd13659396ca41dd19e8aecb083e90185e9275246d535cd71af6abb0",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { runSteps } = require('./solution');\nasync function main() {\n  let runs = 0;\n  const steps = new Array(2); steps[0] = () => { runs++; };\n  await assert.rejects(runSteps(steps), TypeError);\n  assert.equal(runs, 0, 'All elements must be validated before any step runs');\n}\nmain().catch(error => { throw error; });\n",
+        "sha256": "9d3302d8e49e95630de13f4f08d5a16a28b781a1ba1c2b9c110b8ba211d86063"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f1c7e08f7ea0534dbea5245285470c9e535a75d79e7a6488615b9b0f730aef65",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ runSteps }`. `runSteps(steps)` accepts an array of zero-argument functions. Invalid input or any non-function element throws `TypeError` before any step runs. Invoke steps sequentially, awaiting each result before starting the next. Resolve to an array of results in input order; an empty array resolves to `[]`. Stop immediately and reject if a step throws or rejects. Do not mutate the input array.\n\n```javascript\n'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  steps.forEach(async step => {\n    results.push(await step());\n  });\n  return results;\n}\n\nmodule.exports = { runSteps };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f1c7e08f7ea0534dbea5245285470c9e535a75d79e7a6488615b9b0f730aef65",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ runSteps }`. `runSteps(steps)` accepts an array of zero-argument functions. Invalid input or any non-function element throws `TypeError` before any step runs. Invoke steps sequentially, awaiting each result before starting the next. Resolve to an array of results in input order; an empty array resolves to `[]`. Stop immediately and reject if a step throws or rejects. Do not mutate the input array.\n\n```javascript\n'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  steps.forEach(async step => {\n    results.push(await step());\n  });\n  return results;\n}\n\nmodule.exports = { runSteps };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-repair-0109",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  steps.forEach(async step => {\n    results.push(await step());\n  });\n  return results;\n}\n\nmodule.exports = { runSteps };\n",
+          "label": "Async forEach callbacks are not awaited, so the function returns early and runs steps concurrently.",
+          "sha256": "353adf6afb816b48d21eec45edb68e5c1b642ee5df1bebdf4bbdf160ab207a6a"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  for (const step of steps) {\n    results.push(await step());\n  }\n  return results;\n}\n\nmodule.exports = { runSteps };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9d292f3efd9992e552a97636d1e4518daeff9e5e16ad8c78626114d683ee9678"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\n\nconst assert = require('node:assert');\nconst api = require('./solution');\n\nassert.deepStrictEqual(Object.keys(api).sort(), ['runSteps']);\nassert.strictEqual(typeof api.runSteps, 'function');\n\n(async () => {\n  assert.deepStrictEqual(await api.runSteps([]), []);\n\n  const events = [];\n  let releaseFirst;\n  const firstGate = new Promise(resolve => { releaseFirst = resolve; });\n  const steps = [\n    async () => {\n      events.push('first:start');\n      await firstGate;\n      events.push('first:end');\n      return 'one';\n    },\n    () => {\n      events.push('second');\n      return 2;\n    },\n    async () => {\n      events.push('third');\n      return undefined;\n    }\n  ];\n  const originalSteps = steps.slice();\n  const running = api.runSteps(steps);\n  assert.ok(running instanceof Promise);\n  await Promise.resolve();\n  assert.deepStrictEqual(events, ['first:start']);\n  releaseFirst();\n  assert.deepStrictEqual(await running, ['one', 2, undefined]);\n  assert.deepStrictEqual(events, ['first:start', 'first:end', 'second', 'third']);\n  assert.deepStrictEqual(steps, originalSteps);\n\n  let validationRuns = 0;\n  await assert.rejects(\n    api.runSteps([() => { validationRuns += 1; }, null, () => { validationRuns += 1; }]),\n    TypeError\n  );\n  assert.strictEqual(validationRuns, 0);\n  await assert.rejects(api.runSteps(null), TypeError);\n  await assert.rejects(api.runSteps({}), TypeError);\n\n  const syncFailure = new Error('sync failure');\n  const syncEvents = [];\n  await assert.rejects(api.runSteps([\n    () => { syncEvents.push('before'); return 1; },\n    () => { syncEvents.push('failure'); throw syncFailure; },\n    () => { syncEvents.push('after'); return 3; }\n  ]), error => error === syncFailure);\n  assert.deepStrictEqual(syncEvents, ['before', 'failure']);\n\n  const asyncFailure = new Error('async failure');\n  const asyncEvents = [];\n  await assert.rejects(api.runSteps([\n    async () => { asyncEvents.push('before'); return 1; },\n    () => { asyncEvents.push('failure'); return Promise.reject(asyncFailure); },\n    () => { asyncEvents.push('after'); return 3; }\n  ]), error => error === asyncFailure);\n  assert.deepStrictEqual(asyncEvents, ['before', 'failure']);\n})().catch(error => {\n  console.error(error);\n  process.exitCode = 1;\n});\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "a19fb64a1cba5ce4efeaa89e564f0daf77d156251b44c7d724c56b32cbcdec21"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "f1c7e08f7ea0534dbea5245285470c9e535a75d79e7a6488615b9b0f730aef65",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ runSteps }`. `runSteps(steps)` accepts an array of zero-argument functions. Invalid input or any non-function element throws `TypeError` before any step runs. Invoke steps sequentially, awaiting each result before starting the next. Resolve to an array of results in input order; an empty array resolves to `[]`. Stop immediately and reject if a step throws or rejects. Do not mutate the input array.\n\n```javascript\n'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  steps.forEach(async step => {\n    results.push(await step());\n  });\n  return results;\n}\n\nmodule.exports = { runSteps };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "f1c7e08f7ea0534dbea5245285470c9e535a75d79e7a6488615b9b0f730aef65",
+      "text": "Repair the complete source below and return a corrected complete source file. Export exactly `{ runSteps }`. `runSteps(steps)` accepts an array of zero-argument functions. Invalid input or any non-function element throws `TypeError` before any step runs. Invoke steps sequentially, awaiting each result before starting the next. Resolve to an array of results in input order; an empty array resolves to `[]`. Stop immediately and reject if a step throws or rejects. Do not mutate the input array.\n\n```javascript\n'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  steps.forEach(async step => {\n    results.push(await step());\n  });\n  return results;\n}\n\nmodule.exports = { runSteps };\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-repair-0109",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  steps.forEach(async step => {\n    results.push(await step());\n  });\n  return results;\n}\n\nmodule.exports = { runSteps };\n",
+          "label": "Async forEach callbacks are not awaited, so the function returns early and runs steps concurrently.",
+          "sha256": "353adf6afb816b48d21eec45edb68e5c1b642ee5df1bebdf4bbdf160ab207a6a"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nasync function runSteps(steps) {\n  if (!Array.isArray(steps) || steps.some(step => typeof step !== 'function')) {\n    throw new TypeError('steps must contain only functions');\n  }\n\n  const results = [];\n  for (const step of steps) {\n    results.push(await step());\n  }\n  return results;\n}\n\nmodule.exports = { runSteps };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9d292f3efd9992e552a97636d1e4518daeff9e5e16ad8c78626114d683ee9678"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\nAssertionError [ERR_ASSERTION]: All elements must be validated before any step runs\n\n1 !== 0\n\n    at main (/work/solution.test.js:7:10) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: 1,\n  expected: 0,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "208fa8150085396ac7a907c0c405b5c548e61dbe6872da4a6154a867951726bf",
+    "duration_ms": 357,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

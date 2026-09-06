@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0123",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "ac7c8d184c33b2b9a684b6182866285dd573c9ebdf3a93d34010c6640551a3db",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ExchangeRecorder, type ExchangeRecord } from './solution';\nconst record: ExchangeRecord = {id:'e', channel:'c', verb:'V', status:200, elapsedTicks:0, breadcrumbLevel:'info'};\nObject.defineProperty(record, 'id', {enumerable:false});\nif (new ExchangeRecorder().transform(record, 0).id !== 'e') throw new Error('Required exchange ID lost');\n",
+        "sha256": "b8f28fb95a645e098e5e77b29da48064ed0206a3a42cc278b4b672ef3589e7f7"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e7ab5eb7e9707d758b0ffe6a1038f3b3fa1d643090e03e5436e1ae5f1aefd472",
+      "text": "Implement a complete TypeScript source file exporting `ExchangeInput`, `ExchangeRecord`, `ExchangeReport`, `RecorderOptions`, and `ExchangeRecorder`.\n\n`ExchangeRecorder` records already-completed message exchanges without performing I/O. Its constructor accepts ignored channel prefixes and a `retainReply` flag. `capture(input)` must:\n- Validate that channel and verb are non-blank, status is an integer from 100 through 599, and `finishedTick >= startedTick` with both ticks finite.\n- Return `undefined` when the channel begins with any ignored prefix.\n- Otherwise generate IDs `exchange-1`, `exchange-2`, and so on, counting only retained exchanges.\n- Record channel, uppercase verb, optional payload, status, elapsed ticks, and reply only when `retainReply` is true.\n- Produce breadcrumb level `'warn'` for statuses outside 200\u2013299 and `'info'` otherwise.\n\n`transform(record, timestamp)` returns a defensive `ExchangeReport` with category `'MESSAGE'` and the supplied finite timestamp. Constructor inputs, capture inputs, records, and reports must not be mutated. Empty ignored prefixes are malformed and must throw.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e7ab5eb7e9707d758b0ffe6a1038f3b3fa1d643090e03e5436e1ae5f1aefd472",
+      "text": "Implement a complete TypeScript source file exporting `ExchangeInput`, `ExchangeRecord`, `ExchangeReport`, `RecorderOptions`, and `ExchangeRecorder`.\n\n`ExchangeRecorder` records already-completed message exchanges without performing I/O. Its constructor accepts ignored channel prefixes and a `retainReply` flag. `capture(input)` must:\n- Validate that channel and verb are non-blank, status is an integer from 100 through 599, and `finishedTick >= startedTick` with both ticks finite.\n- Return `undefined` when the channel begins with any ignored prefix.\n- Otherwise generate IDs `exchange-1`, `exchange-2`, and so on, counting only retained exchanges.\n- Record channel, uppercase verb, optional payload, status, elapsed ticks, and reply only when `retainReply` is true.\n- Produce breadcrumb level `'warn'` for statuses outside 200\u2013299 and `'info'` otherwise.\n\n`transform(record, timestamp)` returns a defensive `ExchangeReport` with category `'MESSAGE'` and the supplied finite timestamp. Constructor inputs, capture inputs, records, and reports must not be mutated. Empty ignored prefixes are malformed and must throw.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0123",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ExchangeInput {\n  channel: string;\n  verb: string;\n  payload?: string;\n  status: number;\n  reply?: string;\n  startedTick: number;\n  finishedTick: number;\n}\n\nexport interface ExchangeRecord {\n  readonly id: string;\n  readonly channel: string;\n  readonly verb: string;\n  readonly payload?: string;\n  readonly status: number;\n  readonly reply?: string;\n  readonly elapsedTicks: number;\n  readonly breadcrumbLevel: \"info\" | \"warn\";\n}\n\nexport interface ExchangeReport extends ExchangeRecord {\n  readonly category: \"MESSAGE\";\n  readonly timestamp: number;\n}\n\nexport interface RecorderOptions {\n  ignoredPrefixes?: readonly string[];\n  retainReply?: boolean;\n}\n\nexport class ExchangeRecorder {\n  private readonly ignored: string[];\n  private readonly retainReply: boolean;\n  private nextId = 1;\n\n  constructor(options: RecorderOptions = {}) {\n    this.ignored = [...(options.ignoredPrefixes ?? [])];\n    if (this.ignored.some((prefix) => prefix.trim() === \"\")) {\n      throw new Error(\"Ignored prefixes must be non-blank\");\n    }\n    this.retainReply = options.retainReply ?? false;\n  }\n\n  capture(input: ExchangeInput): ExchangeRecord | undefined {\n    if (input.channel.trim() === \"\" || input.verb.trim() === \"\") {\n      throw new Error(\"Channel and verb must be non-blank\");\n    }\n    if (!Number.isInteger(input.status) || input.status < 100 || input.status > 599) {\n      throw new Error(\"Invalid status\");\n    }\n    if (\n      !Number.isFinite(input.startedTick) ||\n      !Number.isFinite(input.finishedTick) ||\n      input.finishedTick < input.startedTick\n    ) {\n      throw new Error(\"Invalid ticks\");\n    }\n    if (this.ignored.some((prefix) => input.channel.startsWith(prefix))) {\n      return undefined;\n    }\n\n    const record = {\n      id: `exchange-${this.nextId++}`,\n      channel: input.channel,\n      verb: input.verb.toUpperCase(),\n      payload: input.payload,\n      status: input.status,\n      elapsedTicks: input.startedTick - input.finishedTick,\n      breadcrumbLevel: (input.status >= 200 && input.status <= 299 ? \"info\" : \"warn\") as \"info\" | \"warn\"\n    };\n\n    return this.retainReply ? { ...record, reply: input.reply } : record;\n  }\n\n  transform(record: ExchangeRecord, timestamp: number): ExchangeReport {\n    if (!Number.isFinite(timestamp)) {\n      throw new Error(\"Timestamp must be finite\");\n    }\n    return { ...record, category: \"MESSAGE\", timestamp };\n  }\n}\n",
+          "label": "Elapsed time is subtracted in reverse, producing negative durations for valid exchanges.",
+          "sha256": "1a9b537242d64bd33e7838511a628fe1a30413c64c288117da18599841596c6e"
+        }
+      ],
+      "reference": {
+        "code": "export interface ExchangeInput {\n  channel: string;\n  verb: string;\n  payload?: string;\n  status: number;\n  reply?: string;\n  startedTick: number;\n  finishedTick: number;\n}\n\nexport interface ExchangeRecord {\n  readonly id: string;\n  readonly channel: string;\n  readonly verb: string;\n  readonly payload?: string;\n  readonly status: number;\n  readonly reply?: string;\n  readonly elapsedTicks: number;\n  readonly breadcrumbLevel: \"info\" | \"warn\";\n}\n\nexport interface ExchangeReport extends ExchangeRecord {\n  readonly category: \"MESSAGE\";\n  readonly timestamp: number;\n}\n\nexport interface RecorderOptions {\n  ignoredPrefixes?: readonly string[];\n  retainReply?: boolean;\n}\n\nexport class ExchangeRecorder {\n  private readonly ignored: string[];\n  private readonly retainReply: boolean;\n  private nextId = 1;\n\n  constructor(options: RecorderOptions = {}) {\n    this.ignored = [...(options.ignoredPrefixes ?? [])];\n    if (this.ignored.some((prefix) => prefix.trim() === \"\")) {\n      throw new Error(\"Ignored prefixes must be non-blank\");\n    }\n    this.retainReply = options.retainReply ?? false;\n  }\n\n  capture(input: ExchangeInput): ExchangeRecord | undefined {\n    if (input.channel.trim() === \"\" || input.verb.trim() === \"\") {\n      throw new Error(\"Channel and verb must be non-blank\");\n    }\n    if (!Number.isInteger(input.status) || input.status < 100 || input.status > 599) {\n      throw new Error(\"Invalid status\");\n    }\n    if (\n      !Number.isFinite(input.startedTick) ||\n      !Number.isFinite(input.finishedTick) ||\n      input.finishedTick < input.startedTick\n    ) {\n      throw new Error(\"Invalid ticks\");\n    }\n    if (this.ignored.some((prefix) => input.channel.startsWith(prefix))) {\n      return undefined;\n    }\n\n    const record = {\n      id: `exchange-${this.nextId++}`,\n      channel: input.channel,\n      verb: input.verb.toUpperCase(),\n      payload: input.payload,\n      status: input.status,\n      elapsedTicks: input.finishedTick - input.startedTick,\n      breadcrumbLevel: (input.status >= 200 && input.status <= 299 ? \"info\" : \"warn\") as \"info\" | \"warn\"\n    };\n\n    return this.retainReply ? { ...record, reply: input.reply } : record;\n  }\n\n  transform(record: ExchangeRecord, timestamp: number): ExchangeReport {\n    if (!Number.isFinite(timestamp)) {\n      throw new Error(\"Timestamp must be finite\");\n    }\n    return { ...record, category: \"MESSAGE\", timestamp };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a3e1b98c3b4536afd7a234a6d9cf49109e844ef3df7237850fe8b411fa79cc1c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ExchangeRecorder } from './solution';\nimport type { ExchangeInput, ExchangeRecord, RecorderOptions } from './solution';\n\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction throws(action: () => unknown, message: string): void {\n  let failed = false;\n  try { action(); } catch (error) { failed = error instanceof Error; }\n  if (!failed) throw new Error(message);\n}\n\nthrows(() => new ExchangeRecorder({ ignoredPrefixes: [''], retainReply: true }), 'empty ignored prefix');\nthrows(() => new ExchangeRecorder({ ignoredPrefixes: ['   '], retainReply: true }), 'blank ignored prefix');\n\nconst prefixes = ['internal.'];\nconst options: RecorderOptions = { ignoredPrefixes: prefixes, retainReply: true };\nconst recorder = new ExchangeRecorder(options);\nprefixes[0] = 'changed.';\n\nconst base: ExchangeInput = {\n  channel: 'orders.created',\n  verb: 'post',\n  payload: 'request-body',\n  status: 201,\n  startedTick: 10,\n  finishedTick: 16,\n  reply: 'reply-body'\n};\nconst record = recorder.capture(base);\nif (record === undefined) throw new Error('retained capture expected');\nequal(record.id, 'exchange-1', 'first retained ID');\nequal(record.channel, 'orders.created', 'channel recorded');\nequal(record.verb, 'POST', 'verb uppercased');\nequal(record.payload, 'request-body', 'payload recorded');\nequal(record.status, 201, 'status recorded');\nequal(record.elapsedTicks, 6, 'elapsed ticks');\nequal(record.reply, 'reply-body', 'reply retained');\nequal((record as unknown as { breadcrumbLevel: string }).breadcrumbLevel, 'info', 'success level');\n\nbase.channel = 'mutated';\nbase.verb = 'delete';\nbase.status = 500;\nequal(record.channel, 'orders.created', 'capture does not retain input');\nequal(record.verb, 'POST', 'captured record stable');\n\nconst ignored = recorder.capture({\n  channel: 'internal.metrics', verb: 'get', status: 200, startedTick: 1, finishedTick: 1\n});\nequal(ignored, undefined, 'ignored channel');\nconst warning = recorder.capture({\n  channel: 'orders.failed', verb: 'put', status: 300, startedTick: -4, finishedTick: -1, reply: 'x'\n});\nif (warning === undefined) throw new Error('warning capture expected');\nequal(warning.id, 'exchange-2', 'ignored capture does not consume ID');\nequal((warning as unknown as { breadcrumbLevel: string }).breadcrumbLevel, 'warn', 'non-2xx level');\n\nconst withoutReply = new ExchangeRecorder({ ignoredPrefixes: [], retainReply: false }).capture({\n  channel: 'c', verb: 'v', status: 299, startedTick: 0, finishedTick: 0, reply: 'secret'\n});\nif (withoutReply === undefined) throw new Error('capture expected');\nequal(Object.prototype.hasOwnProperty.call(withoutReply, 'reply'), false, 'reply omitted when disabled');\n\nconst invalid: ExchangeInput[] = [\n  { channel: ' ', verb: 'x', status: 200, startedTick: 0, finishedTick: 0 },\n  { channel: 'x', verb: ' ', status: 200, startedTick: 0, finishedTick: 0 },\n  { channel: 'x', verb: 'v', status: 99, startedTick: 0, finishedTick: 0 },\n  { channel: 'x', verb: 'v', status: 600, startedTick: 0, finishedTick: 0 },\n  { channel: 'x', verb: 'v', status: 200.5, startedTick: 0, finishedTick: 0 },\n  { channel: 'x', verb: 'v', status: 200, startedTick: Number.NaN, finishedTick: 0 },\n  { channel: 'x', verb: 'v', status: 200, startedTick: 1, finishedTick: Number.POSITIVE_INFINITY },\n  { channel: 'x', verb: 'v', status: 200, startedTick: 2, finishedTick: 1 }\n];\nfor (const input of invalid) throws(() => recorder.capture(input), 'invalid capture must throw');\n\nconst before = { ...record };\nconst report = recorder.transform(record, 123.5);\nequal(report.category, 'MESSAGE', 'report category');\nequal(report.timestamp, 123.5, 'report timestamp');\nequal(record.id, before.id, 'transform does not mutate record');\nthrows(() => recorder.transform(record, Number.NaN), 'nonfinite timestamp');\nthrows(() => recorder.transform(record, Number.POSITIVE_INFINITY), 'infinite timestamp');\n\nconst mutableRecord = record as ExchangeRecord & { channel: string };\nmutableRecord.channel = 'after-transform';\nequal(report.category, 'MESSAGE', 'report remains valid after source mutation');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "1346a6fe4f3c2f1370075a256673808b5d5059c5d5db34e7b1904b6947ba5d1a"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e7ab5eb7e9707d758b0ffe6a1038f3b3fa1d643090e03e5436e1ae5f1aefd472",
+      "text": "Implement a complete TypeScript source file exporting `ExchangeInput`, `ExchangeRecord`, `ExchangeReport`, `RecorderOptions`, and `ExchangeRecorder`.\n\n`ExchangeRecorder` records already-completed message exchanges without performing I/O. Its constructor accepts ignored channel prefixes and a `retainReply` flag. `capture(input)` must:\n- Validate that channel and verb are non-blank, status is an integer from 100 through 599, and `finishedTick >= startedTick` with both ticks finite.\n- Return `undefined` when the channel begins with any ignored prefix.\n- Otherwise generate IDs `exchange-1`, `exchange-2`, and so on, counting only retained exchanges.\n- Record channel, uppercase verb, optional payload, status, elapsed ticks, and reply only when `retainReply` is true.\n- Produce breadcrumb level `'warn'` for statuses outside 200\u2013299 and `'info'` otherwise.\n\n`transform(record, timestamp)` returns a defensive `ExchangeReport` with category `'MESSAGE'` and the supplied finite timestamp. Constructor inputs, capture inputs, records, and reports must not be mutated. Empty ignored prefixes are malformed and must throw.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e7ab5eb7e9707d758b0ffe6a1038f3b3fa1d643090e03e5436e1ae5f1aefd472",
+      "text": "Implement a complete TypeScript source file exporting `ExchangeInput`, `ExchangeRecord`, `ExchangeReport`, `RecorderOptions`, and `ExchangeRecorder`.\n\n`ExchangeRecorder` records already-completed message exchanges without performing I/O. Its constructor accepts ignored channel prefixes and a `retainReply` flag. `capture(input)` must:\n- Validate that channel and verb are non-blank, status is an integer from 100 through 599, and `finishedTick >= startedTick` with both ticks finite.\n- Return `undefined` when the channel begins with any ignored prefix.\n- Otherwise generate IDs `exchange-1`, `exchange-2`, and so on, counting only retained exchanges.\n- Record channel, uppercase verb, optional payload, status, elapsed ticks, and reply only when `retainReply` is true.\n- Produce breadcrumb level `'warn'` for statuses outside 200\u2013299 and `'info'` otherwise.\n\n`transform(record, timestamp)` returns a defensive `ExchangeReport` with category `'MESSAGE'` and the supplied finite timestamp. Constructor inputs, capture inputs, records, and reports must not be mutated. Empty ignored prefixes are malformed and must throw.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0123",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface ExchangeInput {\n  channel: string;\n  verb: string;\n  payload?: string;\n  status: number;\n  reply?: string;\n  startedTick: number;\n  finishedTick: number;\n}\n\nexport interface ExchangeRecord {\n  readonly id: string;\n  readonly channel: string;\n  readonly verb: string;\n  readonly payload?: string;\n  readonly status: number;\n  readonly reply?: string;\n  readonly elapsedTicks: number;\n  readonly breadcrumbLevel: \"info\" | \"warn\";\n}\n\nexport interface ExchangeReport extends ExchangeRecord {\n  readonly category: \"MESSAGE\";\n  readonly timestamp: number;\n}\n\nexport interface RecorderOptions {\n  ignoredPrefixes?: readonly string[];\n  retainReply?: boolean;\n}\n\nexport class ExchangeRecorder {\n  private readonly ignored: string[];\n  private readonly retainReply: boolean;\n  private nextId = 1;\n\n  constructor(options: RecorderOptions = {}) {\n    this.ignored = [...(options.ignoredPrefixes ?? [])];\n    if (this.ignored.some((prefix) => prefix.trim() === \"\")) {\n      throw new Error(\"Ignored prefixes must be non-blank\");\n    }\n    this.retainReply = options.retainReply ?? false;\n  }\n\n  capture(input: ExchangeInput): ExchangeRecord | undefined {\n    if (input.channel.trim() === \"\" || input.verb.trim() === \"\") {\n      throw new Error(\"Channel and verb must be non-blank\");\n    }\n    if (!Number.isInteger(input.status) || input.status < 100 || input.status > 599) {\n      throw new Error(\"Invalid status\");\n    }\n    if (\n      !Number.isFinite(input.startedTick) ||\n      !Number.isFinite(input.finishedTick) ||\n      input.finishedTick < input.startedTick\n    ) {\n      throw new Error(\"Invalid ticks\");\n    }\n    if (this.ignored.some((prefix) => input.channel.startsWith(prefix))) {\n      return undefined;\n    }\n\n    const record = {\n      id: `exchange-${this.nextId++}`,\n      channel: input.channel,\n      verb: input.verb.toUpperCase(),\n      payload: input.payload,\n      status: input.status,\n      elapsedTicks: input.startedTick - input.finishedTick,\n      breadcrumbLevel: (input.status >= 200 && input.status <= 299 ? \"info\" : \"warn\") as \"info\" | \"warn\"\n    };\n\n    return this.retainReply ? { ...record, reply: input.reply } : record;\n  }\n\n  transform(record: ExchangeRecord, timestamp: number): ExchangeReport {\n    if (!Number.isFinite(timestamp)) {\n      throw new Error(\"Timestamp must be finite\");\n    }\n    return { ...record, category: \"MESSAGE\", timestamp };\n  }\n}\n",
+          "label": "Elapsed time is subtracted in reverse, producing negative durations for valid exchanges.",
+          "sha256": "1a9b537242d64bd33e7838511a628fe1a30413c64c288117da18599841596c6e"
+        }
+      ],
+      "reference": {
+        "code": "export interface ExchangeInput {\n  channel: string;\n  verb: string;\n  payload?: string;\n  status: number;\n  reply?: string;\n  startedTick: number;\n  finishedTick: number;\n}\n\nexport interface ExchangeRecord {\n  readonly id: string;\n  readonly channel: string;\n  readonly verb: string;\n  readonly payload?: string;\n  readonly status: number;\n  readonly reply?: string;\n  readonly elapsedTicks: number;\n  readonly breadcrumbLevel: \"info\" | \"warn\";\n}\n\nexport interface ExchangeReport extends ExchangeRecord {\n  readonly category: \"MESSAGE\";\n  readonly timestamp: number;\n}\n\nexport interface RecorderOptions {\n  ignoredPrefixes?: readonly string[];\n  retainReply?: boolean;\n}\n\nexport class ExchangeRecorder {\n  private readonly ignored: string[];\n  private readonly retainReply: boolean;\n  private nextId = 1;\n\n  constructor(options: RecorderOptions = {}) {\n    this.ignored = [...(options.ignoredPrefixes ?? [])];\n    if (this.ignored.some((prefix) => prefix.trim() === \"\")) {\n      throw new Error(\"Ignored prefixes must be non-blank\");\n    }\n    this.retainReply = options.retainReply ?? false;\n  }\n\n  capture(input: ExchangeInput): ExchangeRecord | undefined {\n    if (input.channel.trim() === \"\" || input.verb.trim() === \"\") {\n      throw new Error(\"Channel and verb must be non-blank\");\n    }\n    if (!Number.isInteger(input.status) || input.status < 100 || input.status > 599) {\n      throw new Error(\"Invalid status\");\n    }\n    if (\n      !Number.isFinite(input.startedTick) ||\n      !Number.isFinite(input.finishedTick) ||\n      input.finishedTick < input.startedTick\n    ) {\n      throw new Error(\"Invalid ticks\");\n    }\n    if (this.ignored.some((prefix) => input.channel.startsWith(prefix))) {\n      return undefined;\n    }\n\n    const record = {\n      id: `exchange-${this.nextId++}`,\n      channel: input.channel,\n      verb: input.verb.toUpperCase(),\n      payload: input.payload,\n      status: input.status,\n      elapsedTicks: input.finishedTick - input.startedTick,\n      breadcrumbLevel: (input.status >= 200 && input.status <= 299 ? \"info\" : \"warn\") as \"info\" | \"warn\"\n    };\n\n    return this.retainReply ? { ...record, reply: input.reply } : record;\n  }\n\n  transform(record: ExchangeRecord, timestamp: number): ExchangeReport {\n    if (!Number.isFinite(timestamp)) {\n      throw new Error(\"Timestamp must be finite\");\n    }\n    return { ...record, category: \"MESSAGE\", timestamp };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a3e1b98c3b4536afd7a234a6d9cf49109e844ef3df7237850fe8b411fa79cc1c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:7\n    throw new Error('Required exchange ID lost');\n    ^\n\nError: Required exchange ID lost\n    at Object.<anonymous> (/work/solution.test.js:7:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "d27c225cc3efb2a28ecd20113f2de4850c3ff6a47781f91f427ed2ae30744451",
+    "duration_ms": 2069,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

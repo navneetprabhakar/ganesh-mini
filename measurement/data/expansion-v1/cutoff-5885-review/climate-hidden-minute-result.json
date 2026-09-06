@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0122",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "fcef4f9879f16a34c723bfb5356885ec18a29463777e5c14e7dcbd3a3a125647",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { ClimateArchive, type Reading } from './solution';\nconst reading: Reading = {minute:0, temperature:20, humidity:50, code:'A'};\nObject.defineProperty(reading, 'minute', {enumerable:false});\nif (new ClimateArchive([reading]).latest()?.minute !== 0) throw new Error('Required minute lost');\n",
+        "sha256": "56d5bc3e1863dc9d5b19a735fe186224d4aaabc1d85909363c77a7ac519ce575"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d7c03ac54ac31762a3e9616f1a513e53ec51d00a01a958bc09b77e084c72ae96",
+      "text": "Implement a complete TypeScript source file exporting `TemperatureUnit`, `Reading`, `ConvertedReading`, and `ClimateArchive`.\n\nA `Reading` contains an integer `minute`, Celsius `temperature`, relative `humidity`, and `code`. `ClimateArchive` is constructed from readings and must defensively copy and sort them by ascending minute. It must reject non-integer or duplicate minutes, non-finite temperatures, humidity outside 0\u2013100, and blank codes.\n\nExport these methods:\n- `latest(unit?: TemperatureUnit): ConvertedReading | undefined`, returning the greatest-minute reading or `undefined` when empty.\n- `window(startMinute: number, count: number, unit?: TemperatureUnit): readonly ConvertedReading[]`, returning at most `count` readings whose minute is at least `startMinute`, in ascending order.\n\n`TemperatureUnit` is `'C' | 'F'`; the default is `'C'`. Fahrenheit conversion is `C * 9 / 5 + 32`. Reject non-integer `startMinute`, and reject non-integer or negative `count`. A zero count returns an empty array. Returned objects and arrays must not alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d7c03ac54ac31762a3e9616f1a513e53ec51d00a01a958bc09b77e084c72ae96",
+      "text": "Implement a complete TypeScript source file exporting `TemperatureUnit`, `Reading`, `ConvertedReading`, and `ClimateArchive`.\n\nA `Reading` contains an integer `minute`, Celsius `temperature`, relative `humidity`, and `code`. `ClimateArchive` is constructed from readings and must defensively copy and sort them by ascending minute. It must reject non-integer or duplicate minutes, non-finite temperatures, humidity outside 0\u2013100, and blank codes.\n\nExport these methods:\n- `latest(unit?: TemperatureUnit): ConvertedReading | undefined`, returning the greatest-minute reading or `undefined` when empty.\n- `window(startMinute: number, count: number, unit?: TemperatureUnit): readonly ConvertedReading[]`, returning at most `count` readings whose minute is at least `startMinute`, in ascending order.\n\n`TemperatureUnit` is `'C' | 'F'`; the default is `'C'`. Fahrenheit conversion is `C * 9 / 5 + 32`. Reject non-integer `startMinute`, and reject non-integer or negative `count`. A zero count returns an empty array. Returned objects and arrays must not alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0122",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type TemperatureUnit = \"C\" | \"F\";\n\nexport interface Reading {\n  minute: number;\n  temperature: number;\n  humidity: number;\n  code: string;\n}\n\nexport interface ConvertedReading extends Reading {\n  unit: TemperatureUnit;\n}\n\nexport class ClimateArchive {\n  private readonly readings: Reading[];\n\n  constructor(input: readonly Reading[]) {\n    const seen = new Set<number>();\n    this.readings = input.map((reading) => {\n      if (!Number.isInteger(reading.minute) || seen.has(reading.minute)) {\n        throw new Error(\"Minutes must be unique integers\");\n      }\n      if (!Number.isFinite(reading.temperature)) {\n        throw new Error(\"Temperature must be finite\");\n      }\n      if (!Number.isFinite(reading.humidity) || reading.humidity < 0 || reading.humidity > 100) {\n        throw new Error(\"Humidity must be between 0 and 100\");\n      }\n      if (reading.code.trim() === \"\") throw new Error(\"Code must be non-blank\");\n      seen.add(reading.minute);\n      return { ...reading };\n    }).sort((a, b) => a.minute - b.minute);\n  }\n\n  latest(unit: TemperatureUnit = \"C\"): ConvertedReading | undefined {\n    const reading = this.readings[this.readings.length - 1];\n    return reading === undefined ? undefined : this.convert(reading, unit);\n  }\n\n  window(startMinute: number, count: number, unit: TemperatureUnit = \"C\"): readonly ConvertedReading[] {\n    if (!Number.isInteger(startMinute)) throw new Error(\"Start minute must be an integer\");\n    if (!Number.isInteger(count) || count < 0) throw new Error(\"Count must be a non-negative integer\");\n    return this.readings\n      .filter((reading) => reading.minute >= startMinute)\n      .slice(0, count)\n      .map((reading) => this.convert(reading, unit));\n  }\n\n  private convert(reading: Reading, unit: TemperatureUnit): ConvertedReading {\n    const temperature = unit === \"F\" ? reading.temperature * 9 / 5 : reading.temperature;\n    return { ...reading, temperature, unit };\n  }\n}\n",
+          "label": "Fahrenheit conversion omits the required 32-degree offset.",
+          "sha256": "5d31b9ef45ebd2de4e345153bcef98eb0a0d44da34c005c1f8e41ce59ea16360"
+        }
+      ],
+      "reference": {
+        "code": "export type TemperatureUnit = \"C\" | \"F\";\n\nexport interface Reading {\n  minute: number;\n  temperature: number;\n  humidity: number;\n  code: string;\n}\n\nexport interface ConvertedReading extends Reading {\n  unit: TemperatureUnit;\n}\n\nexport class ClimateArchive {\n  private readonly readings: Reading[];\n\n  constructor(input: readonly Reading[]) {\n    const seen = new Set<number>();\n    this.readings = input.map((reading) => {\n      if (!Number.isInteger(reading.minute) || seen.has(reading.minute)) {\n        throw new Error(\"Minutes must be unique integers\");\n      }\n      if (!Number.isFinite(reading.temperature)) {\n        throw new Error(\"Temperature must be finite\");\n      }\n      if (!Number.isFinite(reading.humidity) || reading.humidity < 0 || reading.humidity > 100) {\n        throw new Error(\"Humidity must be between 0 and 100\");\n      }\n      if (reading.code.trim() === \"\") throw new Error(\"Code must be non-blank\");\n      seen.add(reading.minute);\n      return { ...reading };\n    }).sort((a, b) => a.minute - b.minute);\n  }\n\n  latest(unit: TemperatureUnit = \"C\"): ConvertedReading | undefined {\n    const reading = this.readings[this.readings.length - 1];\n    return reading === undefined ? undefined : this.convert(reading, unit);\n  }\n\n  window(startMinute: number, count: number, unit: TemperatureUnit = \"C\"): readonly ConvertedReading[] {\n    if (!Number.isInteger(startMinute)) throw new Error(\"Start minute must be an integer\");\n    if (!Number.isInteger(count) || count < 0) throw new Error(\"Count must be a non-negative integer\");\n    return this.readings\n      .filter((reading) => reading.minute >= startMinute)\n      .slice(0, count)\n      .map((reading) => this.convert(reading, unit));\n  }\n\n  private convert(reading: Reading, unit: TemperatureUnit): ConvertedReading {\n    const temperature = unit === \"F\" ? reading.temperature * 9 / 5 + 32 : reading.temperature;\n    return { ...reading, temperature, unit };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fba0ec89f182dd40eefa5de43c73a456b0ad3a5f4c4b6c6519c24dbdee98ee84"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { ClimateArchive } from './solution';\nimport type { ConvertedReading, Reading, TemperatureUnit } from './solution';\n\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n}\nfunction throws(action: () => unknown, message: string): void {\n  let failed = false;\n  try { action(); } catch (error) { failed = error instanceof Error; }\n  if (!failed) throw new Error(message);\n}\n\nconst empty = new ClimateArchive([]);\nequal(empty.latest(), undefined, 'empty latest');\nequal(empty.window(0, 5).length, 0, 'empty window');\n\nconst invalidReadings: Reading[] = [\n  { minute: 1.5, temperature: 20, humidity: 50, code: 'x' },\n  { minute: 1, temperature: Number.NaN, humidity: 50, code: 'x' },\n  { minute: 1, temperature: Number.POSITIVE_INFINITY, humidity: 50, code: 'x' },\n  { minute: 1, temperature: 20, humidity: -1, code: 'x' },\n  { minute: 1, temperature: 20, humidity: 101, code: 'x' },\n  { minute: 1, temperature: 20, humidity: 50, code: '   ' }\n];\nfor (const reading of invalidReadings) throws(() => new ClimateArchive([reading]), 'invalid reading must throw');\nthrows(() => new ClimateArchive([\n  { minute: 2, temperature: 1, humidity: 1, code: 'a' },\n  { minute: 2, temperature: 2, humidity: 2, code: 'b' }\n]), 'duplicate minute must throw');\n\nconst mutable: Reading[] = [\n  { minute: 20, temperature: 10, humidity: 40, code: 'late' },\n  { minute: -2, temperature: -40, humidity: 0, code: 'early' },\n  { minute: 5, temperature: 0, humidity: 100, code: 'middle' }\n];\nconst archive = new ClimateArchive(mutable);\nmutable[0].temperature = 999;\nmutable.splice(0, mutable.length);\n\nconst all = archive.window(-2, 10);\nequal(all.length, 3, 'window count');\nequal(all[0].minute, -2, 'sorted first');\nequal(all[1].minute, 5, 'sorted second');\nequal(all[2].minute, 20, 'sorted third');\nequal(all[2].temperature, 10, 'constructor copy');\nequal(all[2].unit, 'C', 'default unit');\n\nconst fahrenheit: TemperatureUnit = 'F';\nconst converted = archive.window(0, 2, fahrenheit);\nequal(converted.length, 2, 'count limits window');\nequal(converted[0].minute, 5, 'start minute filter');\nequal(converted[0].temperature, 32, 'freezing conversion');\nequal(converted[1].temperature, 50, 'fahrenheit conversion');\nequal(converted[0].unit, 'F', 'reported unit');\n\nconst latest = archive.latest('F');\nif (latest === undefined) throw new Error('latest should exist');\nequal(latest.minute, 20, 'latest minute');\nequal(latest.temperature, 50, 'latest conversion');\n(latest as { temperature: number }).temperature = -999;\n(converted as ConvertedReading[]).reverse();\n(converted[1] as { code: string }).code = 'changed';\nequal(archive.latest('F')?.temperature, 50, 'latest is defensive');\nequal(archive.window(0, 2, 'F')[0].code, 'middle', 'window is defensive');\n\nequal(archive.window(0, 0).length, 0, 'zero count');\nthrows(() => archive.window(0.5, 1), 'noninteger start');\nthrows(() => archive.window(0, -1), 'negative count');\nthrows(() => archive.window(0, 1.5), 'noninteger count');\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "6ebf915825dce8f01d8b26cb0495288db0dc5429365b11522b083a63138519d3"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "d7c03ac54ac31762a3e9616f1a513e53ec51d00a01a958bc09b77e084c72ae96",
+      "text": "Implement a complete TypeScript source file exporting `TemperatureUnit`, `Reading`, `ConvertedReading`, and `ClimateArchive`.\n\nA `Reading` contains an integer `minute`, Celsius `temperature`, relative `humidity`, and `code`. `ClimateArchive` is constructed from readings and must defensively copy and sort them by ascending minute. It must reject non-integer or duplicate minutes, non-finite temperatures, humidity outside 0\u2013100, and blank codes.\n\nExport these methods:\n- `latest(unit?: TemperatureUnit): ConvertedReading | undefined`, returning the greatest-minute reading or `undefined` when empty.\n- `window(startMinute: number, count: number, unit?: TemperatureUnit): readonly ConvertedReading[]`, returning at most `count` readings whose minute is at least `startMinute`, in ascending order.\n\n`TemperatureUnit` is `'C' | 'F'`; the default is `'C'`. Fahrenheit conversion is `C * 9 / 5 + 32`. Reject non-integer `startMinute`, and reject non-integer or negative `count`. A zero count returns an empty array. Returned objects and arrays must not alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "d7c03ac54ac31762a3e9616f1a513e53ec51d00a01a958bc09b77e084c72ae96",
+      "text": "Implement a complete TypeScript source file exporting `TemperatureUnit`, `Reading`, `ConvertedReading`, and `ClimateArchive`.\n\nA `Reading` contains an integer `minute`, Celsius `temperature`, relative `humidity`, and `code`. `ClimateArchive` is constructed from readings and must defensively copy and sort them by ascending minute. It must reject non-integer or duplicate minutes, non-finite temperatures, humidity outside 0\u2013100, and blank codes.\n\nExport these methods:\n- `latest(unit?: TemperatureUnit): ConvertedReading | undefined`, returning the greatest-minute reading or `undefined` when empty.\n- `window(startMinute: number, count: number, unit?: TemperatureUnit): readonly ConvertedReading[]`, returning at most `count` readings whose minute is at least `startMinute`, in ascending order.\n\n`TemperatureUnit` is `'C' | 'F'`; the default is `'C'`. Fahrenheit conversion is `C * 9 / 5 + 32`. Reject non-integer `startMinute`, and reject non-integer or negative `count`. A zero count returns an empty array. Returned objects and arrays must not alias internal state.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0122",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export type TemperatureUnit = \"C\" | \"F\";\n\nexport interface Reading {\n  minute: number;\n  temperature: number;\n  humidity: number;\n  code: string;\n}\n\nexport interface ConvertedReading extends Reading {\n  unit: TemperatureUnit;\n}\n\nexport class ClimateArchive {\n  private readonly readings: Reading[];\n\n  constructor(input: readonly Reading[]) {\n    const seen = new Set<number>();\n    this.readings = input.map((reading) => {\n      if (!Number.isInteger(reading.minute) || seen.has(reading.minute)) {\n        throw new Error(\"Minutes must be unique integers\");\n      }\n      if (!Number.isFinite(reading.temperature)) {\n        throw new Error(\"Temperature must be finite\");\n      }\n      if (!Number.isFinite(reading.humidity) || reading.humidity < 0 || reading.humidity > 100) {\n        throw new Error(\"Humidity must be between 0 and 100\");\n      }\n      if (reading.code.trim() === \"\") throw new Error(\"Code must be non-blank\");\n      seen.add(reading.minute);\n      return { ...reading };\n    }).sort((a, b) => a.minute - b.minute);\n  }\n\n  latest(unit: TemperatureUnit = \"C\"): ConvertedReading | undefined {\n    const reading = this.readings[this.readings.length - 1];\n    return reading === undefined ? undefined : this.convert(reading, unit);\n  }\n\n  window(startMinute: number, count: number, unit: TemperatureUnit = \"C\"): readonly ConvertedReading[] {\n    if (!Number.isInteger(startMinute)) throw new Error(\"Start minute must be an integer\");\n    if (!Number.isInteger(count) || count < 0) throw new Error(\"Count must be a non-negative integer\");\n    return this.readings\n      .filter((reading) => reading.minute >= startMinute)\n      .slice(0, count)\n      .map((reading) => this.convert(reading, unit));\n  }\n\n  private convert(reading: Reading, unit: TemperatureUnit): ConvertedReading {\n    const temperature = unit === \"F\" ? reading.temperature * 9 / 5 : reading.temperature;\n    return { ...reading, temperature, unit };\n  }\n}\n",
+          "label": "Fahrenheit conversion omits the required 32-degree offset.",
+          "sha256": "5d31b9ef45ebd2de4e345153bcef98eb0a0d44da34c005c1f8e41ce59ea16360"
+        }
+      ],
+      "reference": {
+        "code": "export type TemperatureUnit = \"C\" | \"F\";\n\nexport interface Reading {\n  minute: number;\n  temperature: number;\n  humidity: number;\n  code: string;\n}\n\nexport interface ConvertedReading extends Reading {\n  unit: TemperatureUnit;\n}\n\nexport class ClimateArchive {\n  private readonly readings: Reading[];\n\n  constructor(input: readonly Reading[]) {\n    const seen = new Set<number>();\n    this.readings = input.map((reading) => {\n      if (!Number.isInteger(reading.minute) || seen.has(reading.minute)) {\n        throw new Error(\"Minutes must be unique integers\");\n      }\n      if (!Number.isFinite(reading.temperature)) {\n        throw new Error(\"Temperature must be finite\");\n      }\n      if (!Number.isFinite(reading.humidity) || reading.humidity < 0 || reading.humidity > 100) {\n        throw new Error(\"Humidity must be between 0 and 100\");\n      }\n      if (reading.code.trim() === \"\") throw new Error(\"Code must be non-blank\");\n      seen.add(reading.minute);\n      return { ...reading };\n    }).sort((a, b) => a.minute - b.minute);\n  }\n\n  latest(unit: TemperatureUnit = \"C\"): ConvertedReading | undefined {\n    const reading = this.readings[this.readings.length - 1];\n    return reading === undefined ? undefined : this.convert(reading, unit);\n  }\n\n  window(startMinute: number, count: number, unit: TemperatureUnit = \"C\"): readonly ConvertedReading[] {\n    if (!Number.isInteger(startMinute)) throw new Error(\"Start minute must be an integer\");\n    if (!Number.isInteger(count) || count < 0) throw new Error(\"Count must be a non-negative integer\");\n    return this.readings\n      .filter((reading) => reading.minute >= startMinute)\n      .slice(0, count)\n      .map((reading) => this.convert(reading, unit));\n  }\n\n  private convert(reading: Reading, unit: TemperatureUnit): ConvertedReading {\n    const temperature = unit === \"F\" ? reading.temperature * 9 / 5 + 32 : reading.temperature;\n    return { ...reading, temperature, unit };\n  }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "fba0ec89f182dd40eefa5de43c73a456b0ad3a5f4c4b6c6519c24dbdee98ee84"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:7\n    throw new Error('Required minute lost');\n    ^\n\nError: Required minute lost\n    at Object.<anonymous> (/work/solution.test.js:7:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "e64b6095b73562d77f30ed511f83e6982d754cc3c8c66f707fe573ee031ff797",
+    "duration_ms": 2037,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

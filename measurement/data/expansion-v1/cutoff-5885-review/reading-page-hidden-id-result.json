@@ -1,0 +1,146 @@
+{
+  "id": "exp-v1-typescript-generation-0111",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bc7f78e6e6f3cce3e00078a30a51b7e3c6501fd1f8777f88a0c4e8d7dddfa73a",
+  "task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.ts",
+        "role": "test",
+        "content": "import { queryReadings, type Reading } from './solution';\nconst reading: Reading = {id:'X', value:1, recordedAt:0, station:'A'};\nObject.defineProperty(reading, 'id', {enumerable:false});\nif (queryReadings([reading], {page:1, pageSize:1, sortBy:'id', direction:'asc'}).items[0].id !== 'X') throw new Error('Required reading ID lost');\n",
+        "sha256": "04267a536c41b82ca5328d2f05bffb06465196c89127e195b766084456855d0f"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5f2763cfbcf971cd2a44d4ef8586e4654f1919a8d34d41702c9b037e846cae22",
+      "text": "Create a pure TypeScript module for sorting and paging sensor readings.\n\nExport these declarations:\n\n```ts\nexport interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage;\n```\n\n`page` is one-based and must be an integer at least 1. `pageSize` must be an integer from 1 through 100. Every reading must have a nonempty ID and station, finite value, and integer `recordedAt`; otherwise throw `RangeError`. Sort by the requested field, ascending or descending. String fields use ordinary code-unit comparison. Equal keys retain source order. A page beyond the last page returns no items while preserving the requested page. Empty input has zero total pages. Returned items must be copies, and neither the source array nor its objects may be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5f2763cfbcf971cd2a44d4ef8586e4654f1919a8d34d41702c9b037e846cae22",
+      "text": "Create a pure TypeScript module for sorting and paging sensor readings.\n\nExport these declarations:\n\n```ts\nexport interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage;\n```\n\n`page` is one-based and must be an integer at least 1. `pageSize` must be an integer from 1 through 100. Every reading must have a nonempty ID and station, finite value, and integer `recordedAt`; otherwise throw `RangeError`. Sort by the requested field, ascending or descending. String fields use ordinary code-unit comparison. Equal keys retain source order. A page beyond the last page returns no items while preserving the requested page. Empty input has zero total pages. Returned items must be copies, and neither the source array nor its objects may be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-typescript-generation-0111",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\n\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage {\n  if (!Number.isInteger(query.page) || query.page < 1 ||\n      !Number.isInteger(query.pageSize) || query.pageSize < 1 || query.pageSize > 100) {\n    throw new RangeError(\"Invalid pagination\");\n  }\n\n  const indexed = source.map((reading, index) => {\n    if (reading.id === \"\" || reading.station === \"\" ||\n        !Number.isFinite(reading.value) || !Number.isInteger(reading.recordedAt)) {\n      throw new RangeError(\"Invalid reading\");\n    }\n    return { reading: { ...reading }, index };\n  });\n\n  indexed.sort((a, b) => {\n    const left = a.reading[query.sortBy];\n    const right = b.reading[query.sortBy];\n    const comparison = left < right ? -1 : left > right ? 1 : 0;\n    return (query.direction === \"asc\" ? comparison : comparison) || a.index - b.index;\n  });\n\n  const start = (query.page - 1) * query.pageSize;\n  return {\n    items: indexed.slice(start, start + query.pageSize).map(item => item.reading),\n    page: query.page,\n    pageSize: query.pageSize,\n    totalItems: source.length,\n    totalPages: Math.ceil(source.length / query.pageSize),\n  };\n}\n",
+          "label": "Descending queries use the ascending comparison instead of reversing it.",
+          "sha256": "94051cf304b3dfd87b54cf91049d267e14a1d669ce0bee849aa3bb8466b4ea57"
+        }
+      ],
+      "reference": {
+        "code": "export interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\n\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage {\n  if (!Number.isInteger(query.page) || query.page < 1 ||\n      !Number.isInteger(query.pageSize) || query.pageSize < 1 || query.pageSize > 100) {\n    throw new RangeError(\"Invalid pagination\");\n  }\n\n  const indexed = source.map((reading, index) => {\n    if (reading.id === \"\" || reading.station === \"\" ||\n        !Number.isFinite(reading.value) || !Number.isInteger(reading.recordedAt)) {\n      throw new RangeError(\"Invalid reading\");\n    }\n    return { reading: { ...reading }, index };\n  });\n\n  indexed.sort((a, b) => {\n    const left = a.reading[query.sortBy];\n    const right = b.reading[query.sortBy];\n    const comparison = left < right ? -1 : left > right ? 1 : 0;\n    return (query.direction === \"asc\" ? comparison : -comparison) || a.index - b.index;\n  });\n\n  const start = (query.page - 1) * query.pageSize;\n  return {\n    items: indexed.slice(start, start + query.pageSize).map(item => item.reading),\n    page: query.page,\n    pageSize: query.pageSize,\n    totalItems: source.length,\n    totalPages: Math.ceil(source.length / query.pageSize),\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3fd210ea26d479a8462f62b6493bfde059ff5607d7593c19146b8163f7a3baf5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.ts",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "import { queryReadings, Reading } from \"./solution\";\n\nfunction assert(condition: unknown, message: string): asserts condition {\n  if (!condition) throw new Error(message);\n}\nfunction equal(actual: unknown, expected: unknown, message: string): void {\n  if (JSON.stringify(actual) !== JSON.stringify(expected)) {\n    throw new Error(`${message}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);\n  }\n}\nfunction rangeError(fn: () => unknown, message: string): void {\n  try { fn(); } catch (error) {\n    assert(error instanceof RangeError, `${message}: wrong error type`);\n    return;\n  }\n  throw new Error(`${message}: did not throw`);\n}\n\nconst source: Reading[] = [\n  { id: \"b\", value: 2, recordedAt: 20, station: \"S1\" },\n  { id: \"a\", value: 2, recordedAt: 30, station: \"S2\" },\n  { id: \"c\", value: -1, recordedAt: 10, station: \"S3\" },\n  { id: \"d\", value: 2, recordedAt: 40, station: \"S4\" },\n];\nconst snapshot = JSON.stringify(source);\nconst page = queryReadings(source, { page: 1, pageSize: 2, sortBy: \"value\", direction: \"asc\" });\nequal(page.items.map(item => item.id), [\"c\", \"b\"], \"ascending stable sort and first page\");\nequal({ page: page.page, pageSize: page.pageSize, totalItems: page.totalItems, totalPages: page.totalPages },\n  { page: 1, pageSize: 2, totalItems: 4, totalPages: 2 }, \"page metadata\");\nconst second = queryReadings(source, { page: 2, pageSize: 2, sortBy: \"value\", direction: \"desc\" });\nequal(second.items.map(item => item.id), [\"d\", \"c\"], \"descending stable sort and paging\");\nconst byId = queryReadings(source, { page: 1, pageSize: 100, sortBy: \"id\", direction: \"asc\" });\nequal(byId.items.map(item => item.id), [\"a\", \"b\", \"c\", \"d\"], \"code-unit string sorting\");\nassert(JSON.stringify(source) === snapshot, \"source was mutated\");\nassert(page.items[1] !== source[0], \"returned item aliases source\");\n(page.items[1] as { value: number }).value = 999;\nassert(source[0].value === 2, \"mutating returned item changed source\");\n\nconst beyond = queryReadings(source, { page: 8, pageSize: 3, sortBy: \"recordedAt\", direction: \"asc\" });\nequal(beyond.items, [], \"page beyond last is empty\");\nassert(beyond.page === 8 && beyond.totalPages === 2, \"beyond-last metadata\");\nconst empty = queryReadings([], { page: 3, pageSize: 1, sortBy: \"id\", direction: \"asc\" });\nequal(empty, { items: [], page: 3, pageSize: 1, totalItems: 0, totalPages: 0 }, \"empty input page\");\n\nrangeError(() => queryReadings([], { page: 0, pageSize: 1, sortBy: \"id\", direction: \"asc\" }), \"page lower bound\");\nrangeError(() => queryReadings([], { page: 1.2, pageSize: 1, sortBy: \"id\", direction: \"asc\" }), \"noninteger page\");\nrangeError(() => queryReadings([], { page: 1, pageSize: 0, sortBy: \"id\", direction: \"asc\" }), \"page size lower bound\");\nrangeError(() => queryReadings([], { page: 1, pageSize: 101, sortBy: \"id\", direction: \"asc\" }), \"page size upper bound\");\nrangeError(() => queryReadings([{ id: \"\", value: 1, recordedAt: 1, station: \"S\" }], { page: 1, pageSize: 1, sortBy: \"id\", direction: \"asc\" }), \"empty ID\");\nrangeError(() => queryReadings([{ id: \"X\", value: Infinity, recordedAt: 1, station: \"S\" }], { page: 1, pageSize: 1, sortBy: \"id\", direction: \"asc\" }), \"nonfinite value\");\nrangeError(() => queryReadings([{ id: \"X\", value: 1, recordedAt: 1.5, station: \"S\" }], { page: 1, pageSize: 1, sortBy: \"id\", direction: \"asc\" }), \"noninteger time\");\nrangeError(() => queryReadings([{ id: \"X\", value: 1, recordedAt: 1, station: \"\" }], { page: 1, pageSize: 1, sortBy: \"id\", direction: \"asc\" }), \"empty station\");\n",
+        "path": "solution.test.ts",
+        "role": "test",
+        "sha256": "0b033fee03c2e6a6fdcb622d2e605b26036145d961833c48e45f0f7445d01238"
+      }
+    ],
+    "language": "typescript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5f2763cfbcf971cd2a44d4ef8586e4654f1919a8d34d41702c9b037e846cae22",
+      "text": "Create a pure TypeScript module for sorting and paging sensor readings.\n\nExport these declarations:\n\n```ts\nexport interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage;\n```\n\n`page` is one-based and must be an integer at least 1. `pageSize` must be an integer from 1 through 100. Every reading must have a nonempty ID and station, finite value, and integer `recordedAt`; otherwise throw `RangeError`. Sort by the requested field, ascending or descending. String fields use ordinary code-unit comparison. Equal keys retain source order. A page beyond the last page returns no items while preserving the requested page. Empty input has zero total pages. Returned items must be copies, and neither the source array nor its objects may be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5f2763cfbcf971cd2a44d4ef8586e4654f1919a8d34d41702c9b037e846cae22",
+      "text": "Create a pure TypeScript module for sorting and paging sensor readings.\n\nExport these declarations:\n\n```ts\nexport interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage;\n```\n\n`page` is one-based and must be an integer at least 1. `pageSize` must be an integer from 1 through 100. Every reading must have a nonempty ID and station, finite value, and integer `recordedAt`; otherwise throw `RangeError`. Sort by the requested field, ascending or descending. String fields use ordinary code-unit comparison. Equal keys retain source order. A page beyond the last page returns no items while preserving the requested page. Empty input has zero total pages. Returned items must be copies, and neither the source array nor its objects may be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "typescript-5.5.4-node-22",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-typescript-generation-0111",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "export interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\n\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage {\n  if (!Number.isInteger(query.page) || query.page < 1 ||\n      !Number.isInteger(query.pageSize) || query.pageSize < 1 || query.pageSize > 100) {\n    throw new RangeError(\"Invalid pagination\");\n  }\n\n  const indexed = source.map((reading, index) => {\n    if (reading.id === \"\" || reading.station === \"\" ||\n        !Number.isFinite(reading.value) || !Number.isInteger(reading.recordedAt)) {\n      throw new RangeError(\"Invalid reading\");\n    }\n    return { reading: { ...reading }, index };\n  });\n\n  indexed.sort((a, b) => {\n    const left = a.reading[query.sortBy];\n    const right = b.reading[query.sortBy];\n    const comparison = left < right ? -1 : left > right ? 1 : 0;\n    return (query.direction === \"asc\" ? comparison : comparison) || a.index - b.index;\n  });\n\n  const start = (query.page - 1) * query.pageSize;\n  return {\n    items: indexed.slice(start, start + query.pageSize).map(item => item.reading),\n    page: query.page,\n    pageSize: query.pageSize,\n    totalItems: source.length,\n    totalPages: Math.ceil(source.length / query.pageSize),\n  };\n}\n",
+          "label": "Descending queries use the ascending comparison instead of reversing it.",
+          "sha256": "94051cf304b3dfd87b54cf91049d267e14a1d669ce0bee849aa3bb8466b4ea57"
+        }
+      ],
+      "reference": {
+        "code": "export interface Reading {\n  readonly id: string;\n  readonly value: number;\n  readonly recordedAt: number;\n  readonly station: string;\n}\nexport type ReadingSort = \"id\" | \"value\" | \"recordedAt\";\nexport interface ReadingQuery {\n  readonly page: number;\n  readonly pageSize: number;\n  readonly sortBy: ReadingSort;\n  readonly direction: \"asc\" | \"desc\";\n}\nexport interface ReadingPage {\n  readonly items: Reading[];\n  readonly page: number;\n  readonly pageSize: number;\n  readonly totalItems: number;\n  readonly totalPages: number;\n}\n\nexport function queryReadings(source: readonly Reading[], query: ReadingQuery): ReadingPage {\n  if (!Number.isInteger(query.page) || query.page < 1 ||\n      !Number.isInteger(query.pageSize) || query.pageSize < 1 || query.pageSize > 100) {\n    throw new RangeError(\"Invalid pagination\");\n  }\n\n  const indexed = source.map((reading, index) => {\n    if (reading.id === \"\" || reading.station === \"\" ||\n        !Number.isFinite(reading.value) || !Number.isInteger(reading.recordedAt)) {\n      throw new RangeError(\"Invalid reading\");\n    }\n    return { reading: { ...reading }, index };\n  });\n\n  indexed.sort((a, b) => {\n    const left = a.reading[query.sortBy];\n    const right = b.reading[query.sortBy];\n    const comparison = left < right ? -1 : left > right ? 1 : 0;\n    return (query.direction === \"asc\" ? comparison : -comparison) || a.index - b.index;\n  });\n\n  const start = (query.page - 1) * query.pageSize;\n  return {\n    items: indexed.slice(start, start + query.pageSize).map(item => item.reading),\n    page: query.page,\n    pageSize: query.pageSize,\n    totalItems: source.length,\n    totalPages: Math.ceil(source.length / query.pageSize),\n  };\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "3fd210ea26d479a8462f62b6493bfde059ff5607d7593c19146b8163f7a3baf5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "typescript-5.5.4-node-22",
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.test.js:7\n    throw new Error('Required reading ID lost');\n    ^\n\nError: Required reading ID lost\n    at Object.<anonymous> (/work/solution.test.js:7:11)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "c56ef536e5da7fc548ef6f2cb5591d17937e8fb96c9bda29dc122d46317a2074",
+    "duration_ms": 1988,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

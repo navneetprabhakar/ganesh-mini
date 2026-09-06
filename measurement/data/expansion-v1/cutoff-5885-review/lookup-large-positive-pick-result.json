@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0140",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "5e07c96b04a359ae3878e78ef2b81b6a1f5f2f81b57a5beb8a1ca1e697cf5b3b",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { interpretLookup } = require('./solution');\nassert.equal(interpretLookup('/pick:9007199254740992 q', []), 'No results.');\n",
+        "sha256": "c6d01333f679e295f08ed147a93fddb1030eebaa8b53c533048d1a47a06a153a"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0b30c20a558048bf97647de68ea8841cb457bde322001a5d38168f37cb207d39",
+      "text": "Implement a CommonJS module exporting exactly `{ interpretLookup }`. `interpretLookup(command, candidates)` formats already-supplied lookup results without performing I/O. Supported commands are `/find query`, `/brief query`, and `/pick:N query`, where `N` is a positive decimal integer. Only the first 50 input candidates may be considered. A valid candidate is an object with a non-empty string `title` and an absolute `http:` or `https:` URL in `url`; invalid candidates within that window are ignored. `summary` is optional and is treated as empty unless it is a string. `/find` returns every valid candidate as blocks formatted `title\\nurl\\nsummary`, separated by blank lines. `/brief` returns `title \u2014 url` lines. `/pick:N` returns the Nth valid candidate using the full block format, or `No results.` if N exceeds the valid count. Return `Invalid command.` for malformed commands, missing queries, invalid N values, non-string commands, or a non-array `candidates` value. Return `No results.` when a valid command has no selectable results. Preserve candidate order and do not mutate the command, array, or candidate objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0b30c20a558048bf97647de68ea8841cb457bde322001a5d38168f37cb207d39",
+      "text": "Implement a CommonJS module exporting exactly `{ interpretLookup }`. `interpretLookup(command, candidates)` formats already-supplied lookup results without performing I/O. Supported commands are `/find query`, `/brief query`, and `/pick:N query`, where `N` is a positive decimal integer. Only the first 50 input candidates may be considered. A valid candidate is an object with a non-empty string `title` and an absolute `http:` or `https:` URL in `url`; invalid candidates within that window are ignored. `summary` is optional and is treated as empty unless it is a string. `/find` returns every valid candidate as blocks formatted `title\\nurl\\nsummary`, separated by blank lines. `/brief` returns `title \u2014 url` lines. `/pick:N` returns the Nth valid candidate using the full block format, or `No results.` if N exceeds the valid count. Return `Invalid command.` for malformed commands, missing queries, invalid N values, non-string commands, or a non-array `candidates` value. Return `No results.` when a valid command has no selectable results. Preserve candidate order and do not mutate the command, array, or candidate objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0140",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction isValidCandidate(value) {\n  if (!value || typeof value !== 'object' || typeof value.title !== 'string' || !value.title.trim()) {\n    return false;\n  }\n  if (typeof value.url !== 'string') return false;\n  try {\n    const parsed = new URL(value.url);\n    return parsed.protocol === 'http:' || parsed.protocol === 'https:';\n  } catch {\n    return false;\n  }\n}\n\nfunction full(candidate) {\n  const summary = typeof candidate.summary === 'string' ? candidate.summary : '';\n  return `${candidate.title}\\n${candidate.url}\\n${summary}`;\n}\n\nfunction interpretLookup(command, candidates) {\n  if (typeof command !== 'string' || !Array.isArray(candidates)) return 'Invalid command.';\n\n  const match = command.match(/^\\/(find|brief|pick:(\\d+))\\s+(.\\S*(?:\\s.*)?)$/);\n  if (!match || !match[3].trim()) return 'Invalid command.';\n\n  const mode = match[1];\n  const limit = match[2] === undefined ? null : Number(match[2]);\n  if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1)) return 'Invalid command.';\n\n  const valid = candidates.filter(isValidCandidate).slice(0, 50);\n  if (valid.length === 0) return 'No results.';\n\n  if (mode === 'brief') {\n    return valid.map((item) => `${item.title} \u2014 ${item.url}`).join('\\n');\n  }\n  if (mode.startsWith('pick:')) {\n    return limit <= valid.length ? full(valid[limit - 1]) : 'No results.';\n  }\n  return valid.map(full).join('\\n\\n');\n}\n\nmodule.exports = { interpretLookup };\n",
+          "label": "It filters before enforcing the 50-candidate boundary, allowing later input records to leak into the result.",
+          "sha256": "caa36c22c15d0cc8ae95054bfc98e2b93581735fbc942069c45a33765122ddfc"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction isValidCandidate(value) {\n  if (!value || typeof value !== 'object' || typeof value.title !== 'string' || !value.title.trim()) {\n    return false;\n  }\n  if (typeof value.url !== 'string') return false;\n  try {\n    const parsed = new URL(value.url);\n    return parsed.protocol === 'http:' || parsed.protocol === 'https:';\n  } catch {\n    return false;\n  }\n}\n\nfunction full(candidate) {\n  const summary = typeof candidate.summary === 'string' ? candidate.summary : '';\n  return `${candidate.title}\\n${candidate.url}\\n${summary}`;\n}\n\nfunction interpretLookup(command, candidates) {\n  if (typeof command !== 'string' || !Array.isArray(candidates)) return 'Invalid command.';\n\n  const match = command.match(/^\\/(find|brief|pick:(\\d+))\\s+(.\\S*(?:\\s.*)?)$/);\n  if (!match || !match[3].trim()) return 'Invalid command.';\n\n  const mode = match[1];\n  const limit = match[2] === undefined ? null : Number(match[2]);\n  if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1)) return 'Invalid command.';\n\n  const valid = candidates.slice(0, 50).filter(isValidCandidate);\n  if (valid.length === 0) return 'No results.';\n\n  if (mode === 'brief') {\n    return valid.map((item) => `${item.title} \u2014 ${item.url}`).join('\\n');\n  }\n  if (mode.startsWith('pick:')) {\n    return limit <= valid.length ? full(valid[limit - 1]) : 'No results.';\n  }\n  return valid.map(full).join('\\n\\n');\n}\n\nmodule.exports = { interpretLookup };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "076d7d8bc0da65a2fc1b822acfb7ca908fc56fee43a352a37ecf65e8846bba18"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\n\nassert.deepStrictEqual(Object.keys(api), ['interpretLookup']);\nconst { interpretLookup } = api;\n\nconst candidates = [\n  { title: 'Alpha', url: 'https://example.com/a', summary: 'First' },\n  { title: '', url: 'https://example.com/empty', summary: 'ignored' },\n  { title: 'Bad URL', url: '/relative', summary: 'ignored' },\n  { title: 'Beta', url: 'http://example.org/b', summary: 42 },\n  { title: 'Gamma', url: 'https://example.com/g?q=1', summary: '' }\n];\nconst snapshot = candidates.map(candidate => ({ ...candidate }));\n\nassert.strictEqual(\n  interpretLookup('/find anything', candidates),\n  'Alpha\\nhttps://example.com/a\\nFirst\\n\\nBeta\\nhttp://example.org/b\\n\\n\\nGamma\\nhttps://example.com/g?q=1\\n'\n);\nassert.strictEqual(\n  interpretLookup('/brief anything', candidates),\n  'Alpha \u2014 https://example.com/a\\nBeta \u2014 http://example.org/b\\nGamma \u2014 https://example.com/g?q=1'\n);\nassert.strictEqual(\n  interpretLookup('/pick:2 anything', candidates),\n  'Beta\\nhttp://example.org/b\\n'\n);\nassert.strictEqual(interpretLookup('/pick:4 anything', candidates), 'No results.');\nassert.deepStrictEqual(candidates, snapshot);\n\nassert.strictEqual(interpretLookup('/find q', []), 'No results.');\nassert.strictEqual(\n  interpretLookup('/brief q', [null, 1, {}, { title: 'x', url: 'ftp://example.com' }]),\n  'No results.'\n);\nassert.strictEqual(\n  interpretLookup('/pick:1 q', [{ title: 'x', url: 'not a url' }]),\n  'No results.'\n);\n\nconst fiftyOne = Array.from({ length: 51 }, (_, index) => ({\n  title: `T${index + 1}`,\n  url: `https://example.com/${index + 1}`,\n  summary: `S${index + 1}`\n}));\nassert.strictEqual(\n  interpretLookup('/pick:50 q', fiftyOne),\n  'T50\\nhttps://example.com/50\\nS50'\n);\nassert.strictEqual(interpretLookup('/pick:51 q', fiftyOne), 'No results.');\n\nconst validOnlyAfterWindow = Array.from({ length: 51 }, (_, index) =>\n  index < 50\n    ? { title: '', url: `https://example.com/${index}` }\n    : { title: 'Late', url: 'https://example.com/late', summary: 'ignored' }\n);\nassert.strictEqual(interpretLookup('/find q', validOnlyAfterWindow), 'No results.');\n\nfor (const command of [\n  null,\n  undefined,\n  1,\n  '',\n  ' ',\n  '/find',\n  '/find   ',\n  '/brief',\n  '/pick:1',\n  '/pick:0 q',\n  '/pick:-1 q',\n  '/pick:+1 q',\n  '/pick:1.5 q',\n  '/pick:01x q',\n  '/pick: q',\n  '/unknown q',\n  'find q'\n]) {\n  assert.strictEqual(interpretLookup(command, []), 'Invalid command.');\n}\n\nassert.strictEqual(interpretLookup('/find q', null), 'Invalid command.');\nassert.strictEqual(interpretLookup('/brief q', {}), 'Invalid command.');\nassert.strictEqual(interpretLookup('/pick:1 q', 'no'), 'Invalid command.');\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "579683a252460496fe6c0ad41cb95ebb4679d71200d0e740b83e460d2a071375"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "0b30c20a558048bf97647de68ea8841cb457bde322001a5d38168f37cb207d39",
+      "text": "Implement a CommonJS module exporting exactly `{ interpretLookup }`. `interpretLookup(command, candidates)` formats already-supplied lookup results without performing I/O. Supported commands are `/find query`, `/brief query`, and `/pick:N query`, where `N` is a positive decimal integer. Only the first 50 input candidates may be considered. A valid candidate is an object with a non-empty string `title` and an absolute `http:` or `https:` URL in `url`; invalid candidates within that window are ignored. `summary` is optional and is treated as empty unless it is a string. `/find` returns every valid candidate as blocks formatted `title\\nurl\\nsummary`, separated by blank lines. `/brief` returns `title \u2014 url` lines. `/pick:N` returns the Nth valid candidate using the full block format, or `No results.` if N exceeds the valid count. Return `Invalid command.` for malformed commands, missing queries, invalid N values, non-string commands, or a non-array `candidates` value. Return `No results.` when a valid command has no selectable results. Preserve candidate order and do not mutate the command, array, or candidate objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "0b30c20a558048bf97647de68ea8841cb457bde322001a5d38168f37cb207d39",
+      "text": "Implement a CommonJS module exporting exactly `{ interpretLookup }`. `interpretLookup(command, candidates)` formats already-supplied lookup results without performing I/O. Supported commands are `/find query`, `/brief query`, and `/pick:N query`, where `N` is a positive decimal integer. Only the first 50 input candidates may be considered. A valid candidate is an object with a non-empty string `title` and an absolute `http:` or `https:` URL in `url`; invalid candidates within that window are ignored. `summary` is optional and is treated as empty unless it is a string. `/find` returns every valid candidate as blocks formatted `title\\nurl\\nsummary`, separated by blank lines. `/brief` returns `title \u2014 url` lines. `/pick:N` returns the Nth valid candidate using the full block format, or `No results.` if N exceeds the valid count. Return `Invalid command.` for malformed commands, missing queries, invalid N values, non-string commands, or a non-array `candidates` value. Return `No results.` when a valid command has no selectable results. Preserve candidate order and do not mutate the command, array, or candidate objects.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0140",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction isValidCandidate(value) {\n  if (!value || typeof value !== 'object' || typeof value.title !== 'string' || !value.title.trim()) {\n    return false;\n  }\n  if (typeof value.url !== 'string') return false;\n  try {\n    const parsed = new URL(value.url);\n    return parsed.protocol === 'http:' || parsed.protocol === 'https:';\n  } catch {\n    return false;\n  }\n}\n\nfunction full(candidate) {\n  const summary = typeof candidate.summary === 'string' ? candidate.summary : '';\n  return `${candidate.title}\\n${candidate.url}\\n${summary}`;\n}\n\nfunction interpretLookup(command, candidates) {\n  if (typeof command !== 'string' || !Array.isArray(candidates)) return 'Invalid command.';\n\n  const match = command.match(/^\\/(find|brief|pick:(\\d+))\\s+(.\\S*(?:\\s.*)?)$/);\n  if (!match || !match[3].trim()) return 'Invalid command.';\n\n  const mode = match[1];\n  const limit = match[2] === undefined ? null : Number(match[2]);\n  if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1)) return 'Invalid command.';\n\n  const valid = candidates.filter(isValidCandidate).slice(0, 50);\n  if (valid.length === 0) return 'No results.';\n\n  if (mode === 'brief') {\n    return valid.map((item) => `${item.title} \u2014 ${item.url}`).join('\\n');\n  }\n  if (mode.startsWith('pick:')) {\n    return limit <= valid.length ? full(valid[limit - 1]) : 'No results.';\n  }\n  return valid.map(full).join('\\n\\n');\n}\n\nmodule.exports = { interpretLookup };\n",
+          "label": "It filters before enforcing the 50-candidate boundary, allowing later input records to leak into the result.",
+          "sha256": "caa36c22c15d0cc8ae95054bfc98e2b93581735fbc942069c45a33765122ddfc"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction isValidCandidate(value) {\n  if (!value || typeof value !== 'object' || typeof value.title !== 'string' || !value.title.trim()) {\n    return false;\n  }\n  if (typeof value.url !== 'string') return false;\n  try {\n    const parsed = new URL(value.url);\n    return parsed.protocol === 'http:' || parsed.protocol === 'https:';\n  } catch {\n    return false;\n  }\n}\n\nfunction full(candidate) {\n  const summary = typeof candidate.summary === 'string' ? candidate.summary : '';\n  return `${candidate.title}\\n${candidate.url}\\n${summary}`;\n}\n\nfunction interpretLookup(command, candidates) {\n  if (typeof command !== 'string' || !Array.isArray(candidates)) return 'Invalid command.';\n\n  const match = command.match(/^\\/(find|brief|pick:(\\d+))\\s+(.\\S*(?:\\s.*)?)$/);\n  if (!match || !match[3].trim()) return 'Invalid command.';\n\n  const mode = match[1];\n  const limit = match[2] === undefined ? null : Number(match[2]);\n  if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1)) return 'Invalid command.';\n\n  const valid = candidates.slice(0, 50).filter(isValidCandidate);\n  if (valid.length === 0) return 'No results.';\n\n  if (mode === 'brief') {\n    return valid.map((item) => `${item.title} \u2014 ${item.url}`).join('\\n');\n  }\n  if (mode.startsWith('pick:')) {\n    return limit <= valid.length ? full(valid[limit - 1]) : 'No results.';\n  }\n  return valid.map(full).join('\\n\\n');\n}\n\nmodule.exports = { interpretLookup };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "076d7d8bc0da65a2fc1b822acfb7ca908fc56fee43a352a37ecf65e8846bba18"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Invalid command.'\n- 'No results.'\n\n    at Object.<anonymous> (/work/solution.test.js:3:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 'Invalid command.',\n  expected: 'No results.',\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "0419d78ef5c3f43a62d7aea38db94b1ec353facc38ccde66c02dd20687c8abc4",
+    "duration_ms": 539,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

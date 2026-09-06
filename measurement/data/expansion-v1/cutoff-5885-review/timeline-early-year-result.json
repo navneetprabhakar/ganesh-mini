@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0174",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e80e4edb13c688190434e508f3a7ffb2589562dc2888ec56e1830235b20dca95",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "const assert = require('node:assert/strict');\nconst { buildTimeline } = require('./solution');\nconst entry = {id:'a',date:'0099-01-01',time:'00:00',text:'',city:'',image:null};\nassert.deepEqual(buildTimeline([entry], null), [entry]);\n",
+        "sha256": "0d5524ff3f58bf23f563d186b3dbd9dc9f89f77a32891c68e1b12ec75d8628b3"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e58714acd9e7d9a9c45ae3e0ee6bc017b29b908aff6d44acce716558d73cfd99",
+      "text": "Implement pure operations for a journal timeline.\n\nExport exactly `{ buildTimeline, deleteEntry, edgeIndex }` using `module.exports`.\n\nEvery entry must be `{ id, date, time, text, city, image }`: `id`, `text`, and `city` are strings with non-empty IDs; `date` is a real `YYYY-MM-DD` date; `time` is valid 24-hour `HH:MM`; and `image` is either `null` or a string. IDs must be unique.\n\n`buildTimeline(entries, dateQuery)` validates all entries. `dateQuery` must be `null` or a valid date. Filter by exact date when non-null, then return detached entry copies ordered newest date/time first. Entries with identical date and time retain their original relative order. Empty input returns an empty array.\n\n`deleteEntry(entries, id)` validates the entries and requires a string ID. Return detached copies excluding every matching ID; an absent ID changes only object identity, not content or order.\n\n`edgeIndex(entries, edge)` validates entries in their supplied order. Return `-1` for an empty array, otherwise `0` for `\"top\"` and `entries.length - 1` for `\"bottom\"`. Reject other edges with `TypeError`.\n\nNone of the functions may mutate or alias input entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e58714acd9e7d9a9c45ae3e0ee6bc017b29b908aff6d44acce716558d73cfd99",
+      "text": "Implement pure operations for a journal timeline.\n\nExport exactly `{ buildTimeline, deleteEntry, edgeIndex }` using `module.exports`.\n\nEvery entry must be `{ id, date, time, text, city, image }`: `id`, `text`, and `city` are strings with non-empty IDs; `date` is a real `YYYY-MM-DD` date; `time` is valid 24-hour `HH:MM`; and `image` is either `null` or a string. IDs must be unique.\n\n`buildTimeline(entries, dateQuery)` validates all entries. `dateQuery` must be `null` or a valid date. Filter by exact date when non-null, then return detached entry copies ordered newest date/time first. Entries with identical date and time retain their original relative order. Empty input returns an empty array.\n\n`deleteEntry(entries, id)` validates the entries and requires a string ID. Return detached copies excluding every matching ID; an absent ID changes only object identity, not content or order.\n\n`edgeIndex(entries, edge)` validates entries in their supplied order. Return `-1` for an empty array, otherwise `0` for `\"top\"` and `entries.length - 1` for `\"bottom\"`. Reject other edges with `TypeError`.\n\nNone of the functions may mutate or alias input entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0174",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "\"use strict\";\n\nfunction validDate(value) {\n  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);\n  if (!match) return false;\n  const date = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]));\n  return date.getUTCFullYear() === +match[1] &&\n    date.getUTCMonth() === +match[2] - 1 && date.getUTCDate() === +match[3];\n}\n\nfunction validateEntries(entries) {\n  if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n  const ids = new Set();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== \"object\" ||\n        typeof entry.id !== \"string\" || entry.id.length === 0 || ids.has(entry.id) ||\n        typeof entry.date !== \"string\" || !validDate(entry.date) ||\n        typeof entry.time !== \"string\" || !/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(entry.time) ||\n        typeof entry.text !== \"string\" || typeof entry.city !== \"string\" ||\n        (entry.image !== null && typeof entry.image !== \"string\")) {\n      throw new TypeError(\"invalid entry\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nfunction clone(entry) {\n  return { id: entry.id, date: entry.date, time: entry.time,\n    text: entry.text, city: entry.city, image: entry.image };\n}\n\nfunction buildTimeline(entries, dateQuery) {\n  validateEntries(entries);\n  if (dateQuery !== null && (typeof dateQuery !== \"string\" || !validDate(dateQuery))) {\n    throw new TypeError(\"invalid date query\");\n  }\n  return entries\n    .map((entry, index) => ({ entry, index }))\n    .filter(({ entry }) => dateQuery === null || entry.date === dateQuery)\n    .sort((a, b) => {\n      const comparison = (a.entry.date + a.entry.time).localeCompare(b.entry.date + b.entry.time);\n      return comparison || a.index - b.index;\n    })\n    .map(({ entry }) => clone(entry));\n}\n\nfunction deleteEntry(entries, id) {\n  validateEntries(entries);\n  if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n  return entries.filter((entry) => entry.id !== id).map(clone);\n}\n\nfunction edgeIndex(entries, edge) {\n  validateEntries(entries);\n  if (edge !== \"top\" && edge !== \"bottom\") throw new TypeError(\"invalid edge\");\n  if (entries.length === 0) return -1;\n  return edge === \"top\" ? 0 : entries.length - 1;\n}\n\nmodule.exports = { buildTimeline, deleteEntry, edgeIndex };\n",
+          "label": "buildTimeline sorts entries oldest-first rather than newest-first.",
+          "sha256": "9061eaa889b50779bb0b62a9d83d9a12ac9c9c8d91f99430050cabaf5dc8abae"
+        }
+      ],
+      "reference": {
+        "code": "\"use strict\";\n\nfunction validDate(value) {\n  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);\n  if (!match) return false;\n  const date = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]));\n  return date.getUTCFullYear() === +match[1] &&\n    date.getUTCMonth() === +match[2] - 1 && date.getUTCDate() === +match[3];\n}\n\nfunction validateEntries(entries) {\n  if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n  const ids = new Set();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== \"object\" ||\n        typeof entry.id !== \"string\" || entry.id.length === 0 || ids.has(entry.id) ||\n        typeof entry.date !== \"string\" || !validDate(entry.date) ||\n        typeof entry.time !== \"string\" || !/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(entry.time) ||\n        typeof entry.text !== \"string\" || typeof entry.city !== \"string\" ||\n        (entry.image !== null && typeof entry.image !== \"string\")) {\n      throw new TypeError(\"invalid entry\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nfunction clone(entry) {\n  return { id: entry.id, date: entry.date, time: entry.time,\n    text: entry.text, city: entry.city, image: entry.image };\n}\n\nfunction buildTimeline(entries, dateQuery) {\n  validateEntries(entries);\n  if (dateQuery !== null && (typeof dateQuery !== \"string\" || !validDate(dateQuery))) {\n    throw new TypeError(\"invalid date query\");\n  }\n  return entries\n    .map((entry, index) => ({ entry, index }))\n    .filter(({ entry }) => dateQuery === null || entry.date === dateQuery)\n    .sort((a, b) => {\n      const comparison = (b.entry.date + b.entry.time).localeCompare(a.entry.date + a.entry.time);\n      return comparison || a.index - b.index;\n    })\n    .map(({ entry }) => clone(entry));\n}\n\nfunction deleteEntry(entries, id) {\n  validateEntries(entries);\n  if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n  return entries.filter((entry) => entry.id !== id).map(clone);\n}\n\nfunction edgeIndex(entries, edge) {\n  validateEntries(entries);\n  if (edge !== \"top\" && edge !== \"bottom\") throw new TypeError(\"invalid edge\");\n  if (entries.length === 0) return -1;\n  return edge === \"top\" ? 0 : entries.length - 1;\n}\n\nmodule.exports = { buildTimeline, deleteEntry, edgeIndex };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4f93c924afd59f083b728486681f88b6a5bff34fd1d8624576543bec0f055df7"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "\"use strict\";\n\nconst assert = require(\"node:assert/strict\");\nconst api = require(\"./solution\");\nassert.deepStrictEqual(Object.keys(api).sort(), [\"buildTimeline\", \"deleteEntry\", \"edgeIndex\"]);\nconst { buildTimeline, deleteEntry, edgeIndex } = api;\n\nconst entries = [\n  { id: \"a\", date: \"2024-02-29\", time: \"09:30\", text: \"first\", city: \"Pune\", image: null },\n  { id: \"b\", date: \"2025-01-01\", time: \"00:00\", text: \"new year\", city: \"Delhi\", image: \"b.jpg\" },\n  { id: \"c\", date: \"2024-02-29\", time: \"09:30\", text: \"second\", city: \"\", image: \"\" },\n  { id: \"d\", date: \"2024-02-29\", time: \"23:59\", text: \"late\", city: \"Mumbai\", image: null }\n];\nconst snapshot = entries.map((entry) => ({ ...entry }));\nconst timeline = buildTimeline(entries, null);\nassert.deepStrictEqual(timeline.map((entry) => entry.id), [\"b\", \"d\", \"a\", \"c\"]);\nassert.deepStrictEqual(entries, snapshot);\nfor (const result of timeline) {\n  assert.notStrictEqual(result, entries.find((entry) => entry.id === result.id));\n}\ntimeline[0].text = \"changed\";\nassert.strictEqual(entries[1].text, \"new year\");\n\nconst filtered = buildTimeline(entries, \"2024-02-29\");\nassert.deepStrictEqual(filtered.map((entry) => entry.id), [\"d\", \"a\", \"c\"]);\nassert.deepStrictEqual(buildTimeline([], null), []);\n\nconst deleted = deleteEntry(entries, \"b\");\nassert.deepStrictEqual(deleted.map((entry) => entry.id), [\"a\", \"c\", \"d\"]);\nassert.deepStrictEqual(entries, snapshot);\nfor (let i = 0; i < deleted.length; i += 1) {\n  assert.notStrictEqual(deleted[i], entries.find((entry) => entry.id === deleted[i].id));\n}\nconst absent = deleteEntry(entries, \"missing\");\nassert.deepStrictEqual(absent, entries);\nassert.notStrictEqual(absent, entries);\nfor (let i = 0; i < entries.length; i += 1) assert.notStrictEqual(absent[i], entries[i]);\nassert.deepStrictEqual(deleteEntry(entries, \"\"), entries);\n\nassert.strictEqual(edgeIndex([], \"top\"), -1);\nassert.strictEqual(edgeIndex([], \"bottom\"), -1);\nassert.strictEqual(edgeIndex(entries, \"top\"), 0);\nassert.strictEqual(edgeIndex(entries, \"bottom\"), entries.length - 1);\nassert.throws(() => edgeIndex(entries, \"left\"), TypeError);\nassert.throws(() => edgeIndex(entries, null), TypeError);\n\nconst valid = entries[0];\nconst invalidEntries = [\n  null,\n  {},\n  [null],\n  [{ ...valid, id: \"\" }],\n  [{ ...valid, id: 1 }],\n  [{ ...valid, text: 1 }],\n  [{ ...valid, city: null }],\n  [{ ...valid, date: \"2023-02-29\" }],\n  [{ ...valid, date: \"2024-2-29\" }],\n  [{ ...valid, time: \"24:00\" }],\n  [{ ...valid, time: \"9:30\" }],\n  [{ ...valid, image: 3 }],\n  [valid, { ...valid }]\n];\nfor (const invalid of invalidEntries) {\n  assert.throws(() => buildTimeline(invalid, null), TypeError);\n  assert.throws(() => deleteEntry(invalid, \"a\"), TypeError);\n  assert.throws(() => edgeIndex(invalid, \"top\"), TypeError);\n}\nfor (const invalidDate of [\"\", \"2025-02-29\", \"2025-13-01\", \"2025-01-32\", 1, undefined]) {\n  assert.throws(() => buildTimeline(entries, invalidDate), TypeError);\n}\nfor (const invalidId of [null, 1, {}, []]) {\n  assert.throws(() => deleteEntry(entries, invalidId), TypeError);\n}\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "f705c2df66e40b39ae3fa7ce6fd1fb7611ece630c6b431781457c1aefc62775d"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e58714acd9e7d9a9c45ae3e0ee6bc017b29b908aff6d44acce716558d73cfd99",
+      "text": "Implement pure operations for a journal timeline.\n\nExport exactly `{ buildTimeline, deleteEntry, edgeIndex }` using `module.exports`.\n\nEvery entry must be `{ id, date, time, text, city, image }`: `id`, `text`, and `city` are strings with non-empty IDs; `date` is a real `YYYY-MM-DD` date; `time` is valid 24-hour `HH:MM`; and `image` is either `null` or a string. IDs must be unique.\n\n`buildTimeline(entries, dateQuery)` validates all entries. `dateQuery` must be `null` or a valid date. Filter by exact date when non-null, then return detached entry copies ordered newest date/time first. Entries with identical date and time retain their original relative order. Empty input returns an empty array.\n\n`deleteEntry(entries, id)` validates the entries and requires a string ID. Return detached copies excluding every matching ID; an absent ID changes only object identity, not content or order.\n\n`edgeIndex(entries, edge)` validates entries in their supplied order. Return `-1` for an empty array, otherwise `0` for `\"top\"` and `entries.length - 1` for `\"bottom\"`. Reject other edges with `TypeError`.\n\nNone of the functions may mutate or alias input entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e58714acd9e7d9a9c45ae3e0ee6bc017b29b908aff6d44acce716558d73cfd99",
+      "text": "Implement pure operations for a journal timeline.\n\nExport exactly `{ buildTimeline, deleteEntry, edgeIndex }` using `module.exports`.\n\nEvery entry must be `{ id, date, time, text, city, image }`: `id`, `text`, and `city` are strings with non-empty IDs; `date` is a real `YYYY-MM-DD` date; `time` is valid 24-hour `HH:MM`; and `image` is either `null` or a string. IDs must be unique.\n\n`buildTimeline(entries, dateQuery)` validates all entries. `dateQuery` must be `null` or a valid date. Filter by exact date when non-null, then return detached entry copies ordered newest date/time first. Entries with identical date and time retain their original relative order. Empty input returns an empty array.\n\n`deleteEntry(entries, id)` validates the entries and requires a string ID. Return detached copies excluding every matching ID; an absent ID changes only object identity, not content or order.\n\n`edgeIndex(entries, edge)` validates entries in their supplied order. Return `-1` for an empty array, otherwise `0` for `\"top\"` and `entries.length - 1` for `\"bottom\"`. Reject other edges with `TypeError`.\n\nNone of the functions may mutate or alias input entries.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0174",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "\"use strict\";\n\nfunction validDate(value) {\n  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);\n  if (!match) return false;\n  const date = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]));\n  return date.getUTCFullYear() === +match[1] &&\n    date.getUTCMonth() === +match[2] - 1 && date.getUTCDate() === +match[3];\n}\n\nfunction validateEntries(entries) {\n  if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n  const ids = new Set();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== \"object\" ||\n        typeof entry.id !== \"string\" || entry.id.length === 0 || ids.has(entry.id) ||\n        typeof entry.date !== \"string\" || !validDate(entry.date) ||\n        typeof entry.time !== \"string\" || !/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(entry.time) ||\n        typeof entry.text !== \"string\" || typeof entry.city !== \"string\" ||\n        (entry.image !== null && typeof entry.image !== \"string\")) {\n      throw new TypeError(\"invalid entry\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nfunction clone(entry) {\n  return { id: entry.id, date: entry.date, time: entry.time,\n    text: entry.text, city: entry.city, image: entry.image };\n}\n\nfunction buildTimeline(entries, dateQuery) {\n  validateEntries(entries);\n  if (dateQuery !== null && (typeof dateQuery !== \"string\" || !validDate(dateQuery))) {\n    throw new TypeError(\"invalid date query\");\n  }\n  return entries\n    .map((entry, index) => ({ entry, index }))\n    .filter(({ entry }) => dateQuery === null || entry.date === dateQuery)\n    .sort((a, b) => {\n      const comparison = (a.entry.date + a.entry.time).localeCompare(b.entry.date + b.entry.time);\n      return comparison || a.index - b.index;\n    })\n    .map(({ entry }) => clone(entry));\n}\n\nfunction deleteEntry(entries, id) {\n  validateEntries(entries);\n  if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n  return entries.filter((entry) => entry.id !== id).map(clone);\n}\n\nfunction edgeIndex(entries, edge) {\n  validateEntries(entries);\n  if (edge !== \"top\" && edge !== \"bottom\") throw new TypeError(\"invalid edge\");\n  if (entries.length === 0) return -1;\n  return edge === \"top\" ? 0 : entries.length - 1;\n}\n\nmodule.exports = { buildTimeline, deleteEntry, edgeIndex };\n",
+          "label": "buildTimeline sorts entries oldest-first rather than newest-first.",
+          "sha256": "9061eaa889b50779bb0b62a9d83d9a12ac9c9c8d91f99430050cabaf5dc8abae"
+        }
+      ],
+      "reference": {
+        "code": "\"use strict\";\n\nfunction validDate(value) {\n  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);\n  if (!match) return false;\n  const date = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3]));\n  return date.getUTCFullYear() === +match[1] &&\n    date.getUTCMonth() === +match[2] - 1 && date.getUTCDate() === +match[3];\n}\n\nfunction validateEntries(entries) {\n  if (!Array.isArray(entries)) throw new TypeError(\"entries must be an array\");\n  const ids = new Set();\n  for (const entry of entries) {\n    if (entry === null || typeof entry !== \"object\" ||\n        typeof entry.id !== \"string\" || entry.id.length === 0 || ids.has(entry.id) ||\n        typeof entry.date !== \"string\" || !validDate(entry.date) ||\n        typeof entry.time !== \"string\" || !/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(entry.time) ||\n        typeof entry.text !== \"string\" || typeof entry.city !== \"string\" ||\n        (entry.image !== null && typeof entry.image !== \"string\")) {\n      throw new TypeError(\"invalid entry\");\n    }\n    ids.add(entry.id);\n  }\n}\n\nfunction clone(entry) {\n  return { id: entry.id, date: entry.date, time: entry.time,\n    text: entry.text, city: entry.city, image: entry.image };\n}\n\nfunction buildTimeline(entries, dateQuery) {\n  validateEntries(entries);\n  if (dateQuery !== null && (typeof dateQuery !== \"string\" || !validDate(dateQuery))) {\n    throw new TypeError(\"invalid date query\");\n  }\n  return entries\n    .map((entry, index) => ({ entry, index }))\n    .filter(({ entry }) => dateQuery === null || entry.date === dateQuery)\n    .sort((a, b) => {\n      const comparison = (b.entry.date + b.entry.time).localeCompare(a.entry.date + a.entry.time);\n      return comparison || a.index - b.index;\n    })\n    .map(({ entry }) => clone(entry));\n}\n\nfunction deleteEntry(entries, id) {\n  validateEntries(entries);\n  if (typeof id !== \"string\") throw new TypeError(\"id must be a string\");\n  return entries.filter((entry) => entry.id !== id).map(clone);\n}\n\nfunction edgeIndex(entries, edge) {\n  validateEntries(entries);\n  if (edge !== \"top\" && edge !== \"bottom\") throw new TypeError(\"invalid edge\");\n  if (entries.length === 0) return -1;\n  return edge === \"top\" ? 0 : entries.length - 1;\n}\n\nmodule.exports = { buildTimeline, deleteEntry, edgeIndex };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "4f93c924afd59f083b728486681f88b6a5bff34fd1d8624576543bec0f055df7"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "/work/solution.js:21\n      throw new TypeError(\"invalid entry\");\n      ^\n\nTypeError: invalid entry\n    at validateEntries (/work/solution.js:21:13)\n    at buildTimeline (/work/solution.js:33:3)\n    at Object.<anonymous> (/work/solution.test.js:4:18)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "73ce4cbdf222672ebed534ccd6477ef31a7b97ee48cc86432ecaba36f46532e7",
+    "duration_ms": 396,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

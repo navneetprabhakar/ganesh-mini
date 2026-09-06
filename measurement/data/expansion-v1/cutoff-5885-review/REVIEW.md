@@ -1,5 +1,16 @@
 # Cutoff quality review — in progress
 
+Latest: **129 holds (126 additive plus historical three)**; 159 unique outside-
+sample targeted inspections plus unchanged 300 sample. Batch 10 preserved;
+continue array-hit position 151. GCS verified through 119 holds, batch 10 pending.
+No new VM, revised partition or training seal. Earlier checkpoint history follows.
+
+Current: **119 holds**, 116 additive plus historical three; 144 unique outside-
+sample targeted inspections. See `ARRAY_STRATUM_REVIEW_9.md`.
+
+Current: **110 holds**, 107 additive plus historical three; 129 unique outside-
+sample targeted inspections. See `ARRAY_STRATUM_REVIEW_8.md`.
+
 Current: **104 holds**, 101 additive plus historical three; 114 unique outside-
 sample targeted inspections. See `ARRAY_STRATUM_REVIEW_7.md`.
 

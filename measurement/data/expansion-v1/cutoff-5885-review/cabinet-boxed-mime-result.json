@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0094",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "701f890bd2fa5274c3480bb7e061c0a4533512765b82f423953c5e23886913c4",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createImageCabinet } = require('./solution');\nassert.throws(() => createImageCabinet().add({id: 'a', mime: new String('image/png'), bytes: [1]}));\n",
+        "sha256": "88e252a6e538211712ee36c6e9027d98c28b130466f22d748f6f8b367416874d"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "63e37050b50948288891e2f25e83a68c688a5f58b86ab8bb9427e8bc2fafaf22",
+      "text": "Implement a memory-only image cabinet and export exactly `{ createImageCabinet }` with CommonJS.\n\n`createImageCabinet()` returns `{ add, list, remove }`. `add({ id, mime, bytes })` accepts a non-empty alphanumeric/hyphen ID, MIME type `image/jpeg` or `image/png`, and a non-empty `Uint8Array` or array of integer bytes from 0 through 255. It stores a copy and returns `{ fileName, size }`, using `.jpg` or `.png`. Generated filenames must be unique; duplicate IDs throw even when MIME types differ.\n\n`list()` returns metadata `{ fileName, size }` in reverse insertion order. `remove(fileName)` deletes an exact stored filename and returns `true`; a missing or malformed name returns `false`. No returned value may expose stored byte data, and later mutation of input bytes must not affect the cabinet. A rejected addition must leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "63e37050b50948288891e2f25e83a68c688a5f58b86ab8bb9427e8bc2fafaf22",
+      "text": "Implement a memory-only image cabinet and export exactly `{ createImageCabinet }` with CommonJS.\n\n`createImageCabinet()` returns `{ add, list, remove }`. `add({ id, mime, bytes })` accepts a non-empty alphanumeric/hyphen ID, MIME type `image/jpeg` or `image/png`, and a non-empty `Uint8Array` or array of integer bytes from 0 through 255. It stores a copy and returns `{ fileName, size }`, using `.jpg` or `.png`. Generated filenames must be unique; duplicate IDs throw even when MIME types differ.\n\n`list()` returns metadata `{ fileName, size }` in reverse insertion order. `remove(fileName)` deletes an exact stored filename and returns `true`; a missing or malformed name returns `false`. No returned value may expose stored byte data, and later mutation of input bytes must not affect the cabinet. A rejected addition must leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0094",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createImageCabinet() {\n  const files = new Map();\n  const ids = new Set();\n  const order = [];\n\n  function add(input) {\n    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('input must be an object');\n    if (typeof input.id !== 'string' || !/^[A-Za-z0-9-]+$/.test(input.id)) throw new TypeError('invalid id');\n    const extensions = { 'image/jpeg': '.jpg', 'image/png': '.png' };\n    if (input.mime !== 'image/jpeg' || input.mime !== 'image/png') throw new TypeError('unsupported mime');\n    const source = input.bytes;\n    if (!(source instanceof Uint8Array) && !Array.isArray(source)) throw new TypeError('invalid bytes');\n    const bytes = Array.from(source);\n    if (bytes.length === 0 || bytes.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n      throw new TypeError('invalid bytes');\n    }\n    if (ids.has(input.id)) throw new Error('duplicate id');\n    const fileName = input.id + extensions[input.mime];\n    files.set(fileName, Uint8Array.from(bytes));\n    ids.add(input.id);\n    order.push(fileName);\n    return { fileName, size: bytes.length };\n  }\n\n  function list() {\n    return order.slice().reverse().map(fileName => ({ fileName, size: files.get(fileName).length }));\n  }\n\n  function remove(fileName) {\n    if (typeof fileName !== 'string' || !files.has(fileName)) return false;\n    files.delete(fileName);\n    ids.delete(fileName.slice(0, fileName.lastIndexOf('.')));\n    order.splice(order.indexOf(fileName), 1);\n    return true;\n  }\n\n  return { add, list, remove };\n}\n\nmodule.exports = { createImageCabinet };\n",
+          "label": "The MIME check uses `||`, making every MIME type invalid because no value can equal both allowed types.",
+          "sha256": "f451a6fcaa410f34682f027de12de24c6b1c13f7b3c43a5e70b204c1bf8b38bb"
+        }
+      ],
+      "reference": {
+        "code": "function createImageCabinet() {\n  const files = new Map();\n  const ids = new Set();\n  const order = [];\n\n  function add(input) {\n    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('input must be an object');\n    if (typeof input.id !== 'string' || !/^[A-Za-z0-9-]+$/.test(input.id)) throw new TypeError('invalid id');\n    const extensions = { 'image/jpeg': '.jpg', 'image/png': '.png' };\n    if (!Object.prototype.hasOwnProperty.call(extensions, input.mime)) throw new TypeError('unsupported mime');\n    const source = input.bytes;\n    if (!(source instanceof Uint8Array) && !Array.isArray(source)) throw new TypeError('invalid bytes');\n    const bytes = Array.from(source);\n    if (bytes.length === 0 || bytes.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n      throw new TypeError('invalid bytes');\n    }\n    if (ids.has(input.id)) throw new Error('duplicate id');\n    const fileName = input.id + extensions[input.mime];\n    files.set(fileName, Uint8Array.from(bytes));\n    ids.add(input.id);\n    order.push(fileName);\n    return { fileName, size: bytes.length };\n  }\n\n  function list() {\n    return order.slice().reverse().map(fileName => ({ fileName, size: files.get(fileName).length }));\n  }\n\n  function remove(fileName) {\n    if (typeof fileName !== 'string' || !files.has(fileName)) return false;\n    files.delete(fileName);\n    ids.delete(fileName.slice(0, fileName.lastIndexOf('.')));\n    order.splice(order.indexOf(fileName), 1);\n    return true;\n  }\n\n  return { add, list, remove };\n}\n\nmodule.exports = { createImageCabinet };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "dd1de7c5cdcbdd8c7daca0134f3083d7d77a9c9de474d7bbfa9f22ae2e939c08"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['createImageCabinet']);\nconst cabinet = api.createImageCabinet();\nassert.deepStrictEqual(Object.keys(cabinet).sort(), ['add', 'list', 'remove']);\nassert.deepStrictEqual(cabinet.list(), []);\n\nconst jpegBytes = new Uint8Array([0, 127, 255]);\nassert.deepStrictEqual(cabinet.add({ id: 'hero-1', mime: 'image/jpeg', bytes: jpegBytes }), {\n  fileName: 'hero-1.jpg', size: 3\n});\njpegBytes[0] = 99;\nconst pngBytes = [1, 2, 3, 4];\nassert.deepStrictEqual(cabinet.add({ id: 'logo2', mime: 'image/png', bytes: pngBytes }), {\n  fileName: 'logo2.png', size: 4\n});\npngBytes.push(5);\nassert.deepStrictEqual(cabinet.list(), [\n  { fileName: 'logo2.png', size: 4 },\n  { fileName: 'hero-1.jpg', size: 3 }\n]);\n\nconst firstList = cabinet.list();\nfirstList.pop();\nfirstList[0].fileName = 'changed.png';\nassert.deepStrictEqual(cabinet.list(), [\n  { fileName: 'logo2.png', size: 4 },\n  { fileName: 'hero-1.jpg', size: 3 }\n]);\nassert.strictEqual(Object.prototype.hasOwnProperty.call(cabinet.list()[0], 'bytes'), false);\n\nassert.throws(() => cabinet.add({ id: 'hero-1', mime: 'image/png', bytes: [8] }));\nassert.strictEqual(cabinet.list().length, 2);\nconst invalidAdds = [\n  null,\n  { id: '', mime: 'image/png', bytes: [1] },\n  { id: 'bad_id', mime: 'image/png', bytes: [1] },\n  { id: 'x', mime: 'image/gif', bytes: [1] },\n  { id: 'x', mime: 'image/png', bytes: [] },\n  { id: 'x', mime: 'image/png', bytes: [256] },\n  { id: 'x', mime: 'image/png', bytes: [-1] },\n  { id: 'x', mime: 'image/png', bytes: [1.5] },\n  { id: 'x', mime: 'image/png', bytes: '123' }\n];\nfor (const input of invalidAdds) {\n  assert.throws(() => cabinet.add(input));\n  assert.strictEqual(cabinet.list().length, 2);\n}\n\nassert.strictEqual(cabinet.remove('hero-1.png'), false);\nassert.strictEqual(cabinet.remove(' hero-1.jpg'), false);\nassert.strictEqual(cabinet.remove(null), false);\nassert.strictEqual(cabinet.remove('hero-1.jpg'), true);\nassert.strictEqual(cabinet.remove('hero-1.jpg'), false);\nassert.deepStrictEqual(cabinet.list(), [{ fileName: 'logo2.png', size: 4 }]);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "a7a458f766fc45ae2f4fc0d8bea09192457dc96954ac0684c34c3f30e604473f"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "63e37050b50948288891e2f25e83a68c688a5f58b86ab8bb9427e8bc2fafaf22",
+      "text": "Implement a memory-only image cabinet and export exactly `{ createImageCabinet }` with CommonJS.\n\n`createImageCabinet()` returns `{ add, list, remove }`. `add({ id, mime, bytes })` accepts a non-empty alphanumeric/hyphen ID, MIME type `image/jpeg` or `image/png`, and a non-empty `Uint8Array` or array of integer bytes from 0 through 255. It stores a copy and returns `{ fileName, size }`, using `.jpg` or `.png`. Generated filenames must be unique; duplicate IDs throw even when MIME types differ.\n\n`list()` returns metadata `{ fileName, size }` in reverse insertion order. `remove(fileName)` deletes an exact stored filename and returns `true`; a missing or malformed name returns `false`. No returned value may expose stored byte data, and later mutation of input bytes must not affect the cabinet. A rejected addition must leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "63e37050b50948288891e2f25e83a68c688a5f58b86ab8bb9427e8bc2fafaf22",
+      "text": "Implement a memory-only image cabinet and export exactly `{ createImageCabinet }` with CommonJS.\n\n`createImageCabinet()` returns `{ add, list, remove }`. `add({ id, mime, bytes })` accepts a non-empty alphanumeric/hyphen ID, MIME type `image/jpeg` or `image/png`, and a non-empty `Uint8Array` or array of integer bytes from 0 through 255. It stores a copy and returns `{ fileName, size }`, using `.jpg` or `.png`. Generated filenames must be unique; duplicate IDs throw even when MIME types differ.\n\n`list()` returns metadata `{ fileName, size }` in reverse insertion order. `remove(fileName)` deletes an exact stored filename and returns `true`; a missing or malformed name returns `false`. No returned value may expose stored byte data, and later mutation of input bytes must not affect the cabinet. A rejected addition must leave state unchanged.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0094",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function createImageCabinet() {\n  const files = new Map();\n  const ids = new Set();\n  const order = [];\n\n  function add(input) {\n    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('input must be an object');\n    if (typeof input.id !== 'string' || !/^[A-Za-z0-9-]+$/.test(input.id)) throw new TypeError('invalid id');\n    const extensions = { 'image/jpeg': '.jpg', 'image/png': '.png' };\n    if (input.mime !== 'image/jpeg' || input.mime !== 'image/png') throw new TypeError('unsupported mime');\n    const source = input.bytes;\n    if (!(source instanceof Uint8Array) && !Array.isArray(source)) throw new TypeError('invalid bytes');\n    const bytes = Array.from(source);\n    if (bytes.length === 0 || bytes.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n      throw new TypeError('invalid bytes');\n    }\n    if (ids.has(input.id)) throw new Error('duplicate id');\n    const fileName = input.id + extensions[input.mime];\n    files.set(fileName, Uint8Array.from(bytes));\n    ids.add(input.id);\n    order.push(fileName);\n    return { fileName, size: bytes.length };\n  }\n\n  function list() {\n    return order.slice().reverse().map(fileName => ({ fileName, size: files.get(fileName).length }));\n  }\n\n  function remove(fileName) {\n    if (typeof fileName !== 'string' || !files.has(fileName)) return false;\n    files.delete(fileName);\n    ids.delete(fileName.slice(0, fileName.lastIndexOf('.')));\n    order.splice(order.indexOf(fileName), 1);\n    return true;\n  }\n\n  return { add, list, remove };\n}\n\nmodule.exports = { createImageCabinet };\n",
+          "label": "The MIME check uses `||`, making every MIME type invalid because no value can equal both allowed types.",
+          "sha256": "f451a6fcaa410f34682f027de12de24c6b1c13f7b3c43a5e70b204c1bf8b38bb"
+        }
+      ],
+      "reference": {
+        "code": "function createImageCabinet() {\n  const files = new Map();\n  const ids = new Set();\n  const order = [];\n\n  function add(input) {\n    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('input must be an object');\n    if (typeof input.id !== 'string' || !/^[A-Za-z0-9-]+$/.test(input.id)) throw new TypeError('invalid id');\n    const extensions = { 'image/jpeg': '.jpg', 'image/png': '.png' };\n    if (!Object.prototype.hasOwnProperty.call(extensions, input.mime)) throw new TypeError('unsupported mime');\n    const source = input.bytes;\n    if (!(source instanceof Uint8Array) && !Array.isArray(source)) throw new TypeError('invalid bytes');\n    const bytes = Array.from(source);\n    if (bytes.length === 0 || bytes.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {\n      throw new TypeError('invalid bytes');\n    }\n    if (ids.has(input.id)) throw new Error('duplicate id');\n    const fileName = input.id + extensions[input.mime];\n    files.set(fileName, Uint8Array.from(bytes));\n    ids.add(input.id);\n    order.push(fileName);\n    return { fileName, size: bytes.length };\n  }\n\n  function list() {\n    return order.slice().reverse().map(fileName => ({ fileName, size: files.get(fileName).length }));\n  }\n\n  function remove(fileName) {\n    if (typeof fileName !== 'string' || !files.has(fileName)) return false;\n    files.delete(fileName);\n    ids.delete(fileName.slice(0, fileName.lastIndexOf('.')));\n    order.splice(order.indexOf(fileName), 1);\n    return true;\n  }\n\n  return { add, list, remove };\n}\n\nmodule.exports = { createImageCabinet };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "dd1de7c5cdcbdd8c7daca0134f3083d7d77a9c9de474d7bbfa9f22ae2e939c08"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception.\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: undefined,\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "adcfa5af306f5219afe10d79c7230e71e374679acb31e6ba66664976d100e45d",
+    "duration_ms": 340,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,5 +1,17 @@
 # Quality follow-up decision
 
+Latest: **119 total holds** after array batch 9; initial sample unchanged.
+
+Scope v3: **nine groups / 14 strata / 3,085 records** require resolution, not
+automatic rejection. Two added groups bind repeated prototype-key storage loss
+and required-property copy loss to executed diagnostic/candidate hashes.
+`followup-systematic-groups-v3.json` and `stratum-followup-inventory-v3.json`
+preserve v1/v2. Report SHA-256:
+`9e684fb786c217c67f68037b30bea000b7dbc0adee91a55dfef47abc2596e7a6`.
+All 97 data tooling tests pass. No automatic labels or frozen-sample enlargement.
+
+Latest: **110 total holds** after array batch 8; initial sample unchanged.
+
 Latest: **104 total holds** after array batch 7; initial sample unchanged.
 
 Latest: **96 total holds** after array batch 6; initial sample unchanged.

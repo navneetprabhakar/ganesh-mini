@@ -2,6 +2,36 @@
 
 ## Quality review continuation — 2026-09-06
 
+Latest: **131 holds (128 additive plus three historical)**; 164 unique outside-
+sample inspections. Batch 11 partial covers positions 151–155; resume 156.
+GCS verified through 129 holds; these latest five inspections are local only.
+All 97 tooling tests pass. Frozen sample/partition unchanged; no training seal.
+
+Backup update: 129-hold / batch-10 checkpoint is exact-generation GCS
+roundtrip verified; see `QUALITY_STRATUM_129_BACKUP.md`. Next batch in progress.
+
+Latest: **129 holds (126 additive plus historical three)**; 159 unique outside-
+sample targeted inspections plus unchanged 300 sample. Batch 10 preserved;
+continue array-hit position 151. GCS verified through 119 holds, batch 10 pending.
+No new VM, revised partition or training seal. Earlier checkpoint history follows.
+
+Current: **119 holds (116 additive plus historical three)**. Array batch 9 adds
+15 inspections / nine holds / ten reproduced failures; 144 unique outside-
+sample targeted inspections. Continue at array-hit position 136. Frozen sample
+300 unchanged. GCS verified through 110 holds and v3 scope; batch 9 pending.
+All 97 tooling tests pass. No new VM, revised partition or training seal.
+
+Scope v3 now records nine systematic groups / 14 strata / 3,085 records,
+NOT a rejection count. Key-storage/property-copy groups are candidate-bound.
+All 97 tooling tests pass. Continue array inventory at position 121; batch 8
+and v3 scope postdate the verified 104-hold GCS archive.
+
+Current: **110 holds (107 additive plus historical three)**. Array batch 8 adds
+15 inspections / six holds / seven reproduced failures; 129 unique outside-
+sample targeted inspections. Continue at array-hit position 121. Frozen sample
+remains 300. GCS verified through 104 holds; batch 8 pending. No training seal,
+new VM or revised partition. All 97 tooling tests pass.
+
 Backup update: evidence through 104 holds / array batch 7 passed exact-generation
 GCS download/hash comparison; see `QUALITY_STRATUM_104_BACKUP.md`. Resume array
 hit position 106; no change to frozen sample/partition or training readiness.

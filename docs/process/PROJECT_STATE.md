@@ -4,6 +4,31 @@ Last updated: 2026-09-06
 
 ## Current gate
 
+Latest: 131 holds / 164 outside-sample inspections; batch 11 partial through
+position 155. GCS verified through 129 holds, later five inspections pending.
+Continue at 156. Frozen sample unchanged; no training seal or new VM.
+
+Backup update: batch 10 / 129 holds now GCS roundtrip verified;
+`QUALITY_STRATUM_129_BACKUP.md`. Subsequent reviews remain separate.
+
+Latest: **129 holds (126 additive plus historical three)**; 159 unique outside-
+sample targeted inspections plus unchanged 300 sample. Batch 10 preserved;
+continue array-hit position 151. GCS verified through 119 holds, batch 10 pending.
+No new VM, revised partition or training seal. Earlier checkpoint history follows.
+
+Current: **119 holds (116 additive plus historical three)**; 144 unique outside-
+sample targeted inspections plus unchanged 300 sample. Array batch 9 preserved.
+GCS verified through 110 holds / v3 scope; batch 9 pending. All 97 tooling tests
+pass. No new VM, revised partition or training seal.
+
+Systematic review scope v3: nine groups / 14 strata / 3,085 records, not
+automatic rejections. Key-storage and required-property copy findings included.
+All 97 tooling tests pass; v3 scope awaits its GCS checkpoint.
+
+Current: **110 holds (107 additive plus historical three)**; 129 unique outside-
+sample targeted inspections plus unchanged 300. Array batch 8 preserved. GCS
+verified through 104 holds; batch 8 pending. No training seal or new VM.
+
 Backup update: 104-hold checkpoint (through array batch 7) is GCS roundtrip
 verified. See `QUALITY_STRATUM_104_BACKUP.md`; later evidence remains separate.
 

@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0081",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "1fc943196ba757517246e4ab938db335d21dc0c89f1ebf6df81a933dda617a13",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { createBody, advanceBody } = require('./solution');\nconst body = createBody({x: 1, y: 2, width: 1, height: 1, mass: Number.MIN_VALUE});\nconst result = advanceBody(body, {x: 1, y: 1}, 0);\nassert.deepEqual(result, body, 'Zero duration must leave finite body values unchanged');\nassert.notEqual(result, body);\n",
+        "sha256": "9d6e9fa384af5f69f2d8fcd353a887b40bc898edff60ff390939aee43acfed35"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ea55c178799d14d3323f0d46730a3629e5a25680e66a61e200337463b2d3a0aa",
+      "text": "Implement a CommonJS module exporting exactly `{ createBody, advanceBody, getCorners }` for immutable rectangular-body calculations. `createBody(options)` requires a plain object containing finite `x`, `y`, positive `width`, positive `height`, and positive `mass`. Optional finite `vx`, `vy`, and `angle` default to zero. Optional restitution defaults to 0.25 but must be within 0 through 1, including an explicitly supplied zero. Invalid input throws `TypeError`. Return a frozen body. `advanceBody(body, force, dt)` requires a valid body, a force object with finite `x` and `y`, and finite `dt >= 0`. It must use semi-implicit Euler integration: new velocity equals old velocity plus force divided by mass times dt; new position equals old position plus the new velocity times dt. Angle and all dimensions remain unchanged. Return a new frozen body without mutation. `getCorners(body)` returns four fresh `{ x, y }` objects for the rectangle's corners in clockwise order starting at the unrotated top-left corner, rotated around the body's center by `angle`. Empty or malformed arguments throw `TypeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ea55c178799d14d3323f0d46730a3629e5a25680e66a61e200337463b2d3a0aa",
+      "text": "Implement a CommonJS module exporting exactly `{ createBody, advanceBody, getCorners }` for immutable rectangular-body calculations. `createBody(options)` requires a plain object containing finite `x`, `y`, positive `width`, positive `height`, and positive `mass`. Optional finite `vx`, `vy`, and `angle` default to zero. Optional restitution defaults to 0.25 but must be within 0 through 1, including an explicitly supplied zero. Invalid input throws `TypeError`. Return a frozen body. `advanceBody(body, force, dt)` requires a valid body, a force object with finite `x` and `y`, and finite `dt >= 0`. It must use semi-implicit Euler integration: new velocity equals old velocity plus force divided by mass times dt; new position equals old position plus the new velocity times dt. Angle and all dimensions remain unchanged. Return a new frozen body without mutation. `getCorners(body)` returns four fresh `{ x, y }` objects for the rectangle's corners in clockwise order starting at the unrotated top-left corner, rotated around the body's center by `angle`. Empty or malformed arguments throw `TypeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0081",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction finite(value) {\n  return typeof value === 'number' && Number.isFinite(value);\n}\n\nfunction plainObject(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction validateBody(body) {\n  if (!plainObject(body) ||\n      !finite(body.x) || !finite(body.y) ||\n      !finite(body.width) || body.width <= 0 ||\n      !finite(body.height) || body.height <= 0 ||\n      !finite(body.mass) || body.mass <= 0 ||\n      !finite(body.vx) || !finite(body.vy) || !finite(body.angle) ||\n      !finite(body.restitution) || body.restitution < 0 || body.restitution > 1) {\n    throw new TypeError('Invalid body');\n  }\n}\n\nfunction createBody(options) {\n  if (!plainObject(options)) {\n    throw new TypeError('Options must be a plain object');\n  }\n  const body = {\n    x: options.x,\n    y: options.y,\n    width: options.width,\n    height: options.height,\n    mass: options.mass,\n    vx: options.vx === undefined ? 0 : options.vx,\n    vy: options.vy === undefined ? 0 : options.vy,\n    angle: options.angle === undefined ? 0 : options.angle,\n    restitution: options.restitution || 0.25\n  };\n  validateBody(body);\n  return Object.freeze(body);\n}\n\nfunction advanceBody(body, force, dt) {\n  validateBody(body);\n  if (!plainObject(force) || !finite(force.x) || !finite(force.y) ||\n      !finite(dt) || dt < 0) {\n    throw new TypeError('Invalid integration arguments');\n  }\n  const vx = body.vx + (force.x / body.mass) * dt;\n  const vy = body.vy + (force.y / body.mass) * dt;\n  return Object.freeze({\n    ...body,\n    x: body.x + vx * dt,\n    y: body.y + vy * dt,\n    vx,\n    vy\n  });\n}\n\nfunction getCorners(body) {\n  validateBody(body);\n  const centerX = body.x + body.width / 2;\n  const centerY = body.y + body.height / 2;\n  const cos = Math.cos(body.angle);\n  const sin = Math.sin(body.angle);\n  const offsets = [\n    [-body.width / 2, -body.height / 2],\n    [body.width / 2, -body.height / 2],\n    [body.width / 2, body.height / 2],\n    [-body.width / 2, body.height / 2]\n  ];\n  return offsets.map(([dx, dy]) => ({\n    x: centerX + dx * cos - dy * sin,\n    y: centerY + dx * sin + dy * cos\n  }));\n}\n\nmodule.exports = { createBody, advanceBody, getCorners };\n",
+          "label": "An explicit restitution of zero is incorrectly replaced by the default.",
+          "sha256": "7bd6b46c5d3c958ed3667850f3c49ad7dbe3bf89bc2e6dcf3a8088672f70aeac"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction finite(value) {\n  return typeof value === 'number' && Number.isFinite(value);\n}\n\nfunction plainObject(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction validateBody(body) {\n  if (!plainObject(body) ||\n      !finite(body.x) || !finite(body.y) ||\n      !finite(body.width) || body.width <= 0 ||\n      !finite(body.height) || body.height <= 0 ||\n      !finite(body.mass) || body.mass <= 0 ||\n      !finite(body.vx) || !finite(body.vy) || !finite(body.angle) ||\n      !finite(body.restitution) || body.restitution < 0 || body.restitution > 1) {\n    throw new TypeError('Invalid body');\n  }\n}\n\nfunction createBody(options) {\n  if (!plainObject(options)) {\n    throw new TypeError('Options must be a plain object');\n  }\n  const body = {\n    x: options.x,\n    y: options.y,\n    width: options.width,\n    height: options.height,\n    mass: options.mass,\n    vx: options.vx === undefined ? 0 : options.vx,\n    vy: options.vy === undefined ? 0 : options.vy,\n    angle: options.angle === undefined ? 0 : options.angle,\n    restitution: options.restitution === undefined ? 0.25 : options.restitution\n  };\n  validateBody(body);\n  return Object.freeze(body);\n}\n\nfunction advanceBody(body, force, dt) {\n  validateBody(body);\n  if (!plainObject(force) || !finite(force.x) || !finite(force.y) ||\n      !finite(dt) || dt < 0) {\n    throw new TypeError('Invalid integration arguments');\n  }\n  const vx = body.vx + (force.x / body.mass) * dt;\n  const vy = body.vy + (force.y / body.mass) * dt;\n  return Object.freeze({\n    ...body,\n    x: body.x + vx * dt,\n    y: body.y + vy * dt,\n    vx,\n    vy\n  });\n}\n\nfunction getCorners(body) {\n  validateBody(body);\n  const centerX = body.x + body.width / 2;\n  const centerY = body.y + body.height / 2;\n  const cos = Math.cos(body.angle);\n  const sin = Math.sin(body.angle);\n  const offsets = [\n    [-body.width / 2, -body.height / 2],\n    [body.width / 2, -body.height / 2],\n    [body.width / 2, body.height / 2],\n    [-body.width / 2, body.height / 2]\n  ];\n  return offsets.map(([dx, dy]) => ({\n    x: centerX + dx * cos - dy * sin,\n    y: centerY + dx * sin + dy * cos\n  }));\n}\n\nmodule.exports = { createBody, advanceBody, getCorners };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ec3be669cb1b5e4e1d73416ae4737f8722cc92d94d1ceeb341c9eba467cd75f8"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst api = require('./solution');\nassert.deepEqual(Object.keys(api).sort(), ['advanceBody', 'createBody', 'getCorners']);\nconst { createBody, advanceBody, getCorners } = api;\n\nconst body = createBody({ x: 1, y: 2, width: 4, height: 2, mass: 2 });\nassert.deepEqual(body, { x: 1, y: 2, width: 4, height: 2, mass: 2, vx: 0, vy: 0, angle: 0, restitution: 0.25 });\nassert.equal(Object.isFrozen(body), true);\nconst zeroRestitution = createBody({ x: 0, y: 0, width: 1, height: 1, mass: 1, vx: -2, vy: 3, angle: 0.5, restitution: 0 });\nassert.equal(zeroRestitution.restitution, 0);\n\nfor (const options of [null, [], {}, { x: 0, y: 0, width: 0, height: 1, mass: 1 }, { x: 0, y: 0, width: 1, height: -1, mass: 1 }, { x: 0, y: 0, width: 1, height: 1, mass: 0 }, { x: Infinity, y: 0, width: 1, height: 1, mass: 1 }, { x: 0, y: 0, width: 1, height: 1, mass: 1, vx: NaN }, { x: 0, y: 0, width: 1, height: 1, mass: 1, restitution: -0.1 }, { x: 0, y: 0, width: 1, height: 1, mass: 1, restitution: 1.1 }]) {\n  assert.throws(() => createBody(options), TypeError);\n}\n\nconst moving = createBody({ x: 1, y: 2, width: 4, height: 2, mass: 2, vx: 3, vy: -1, angle: 0.4, restitution: 1 });\nconst force = { x: 4, y: 6 };\nconst advanced = advanceBody(moving, force, 0.5);\nassert.deepEqual(advanced, { x: 3, y: 2.25, width: 4, height: 2, mass: 2, vx: 4, vy: 0.5, angle: 0.4, restitution: 1 });\nassert.equal(Object.isFrozen(advanced), true);\nassert.notStrictEqual(advanced, moving);\nassert.deepEqual(moving, { x: 1, y: 2, width: 4, height: 2, mass: 2, vx: 3, vy: -1, angle: 0.4, restitution: 1 });\nassert.deepEqual(force, { x: 4, y: 6 });\nconst dtZero = advanceBody(moving, { x: 100, y: 100 }, 0);\nassert.notStrictEqual(dtZero, moving);\nassert.deepEqual(dtZero, moving);\nfor (const args of [[{}, force, 1], [moving, null, 1], [moving, { x: 1 }, 1], [moving, { x: NaN, y: 0 }, 1], [moving, force, -1], [moving, force, Infinity]]) {\n  assert.throws(() => advanceBody(...args), TypeError);\n}\n\nconst axisBody = createBody({ x: 10, y: 20, width: 4, height: 2, mass: 1 });\nconst corners = getCorners(axisBody);\nassert.deepEqual(corners, [{ x: 10, y: 20 }, { x: 14, y: 20 }, { x: 14, y: 22 }, { x: 10, y: 22 }]);\nconst cornersAgain = getCorners(axisBody);\nassert.notStrictEqual(cornersAgain, corners);\nfor (let i = 0; i < 4; i++) assert.notStrictEqual(cornersAgain[i], corners[i]);\ncorners[0].x = 999;\nassert.equal(cornersAgain[0].x, 10);\n\nconst rotated = getCorners(createBody({ x: 0, y: 0, width: 2, height: 2, mass: 1, angle: Math.PI / 2 }));\nconst expected = [{ x: 2, y: 0 }, { x: 2, y: 2 }, { x: 0, y: 2 }, { x: 0, y: 0 }];\nrotated.forEach((point, i) => {\n  assert.ok(Math.abs(point.x - expected[i].x) < 1e-12);\n  assert.ok(Math.abs(point.y - expected[i].y) < 1e-12);\n});\nassert.throws(() => getCorners(), TypeError);\nassert.throws(() => getCorners({}), TypeError);\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "ac0779a99f188a9ad6906d4564e5949a64853dd488c8893dd2a1aa522df3d7bd"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "ea55c178799d14d3323f0d46730a3629e5a25680e66a61e200337463b2d3a0aa",
+      "text": "Implement a CommonJS module exporting exactly `{ createBody, advanceBody, getCorners }` for immutable rectangular-body calculations. `createBody(options)` requires a plain object containing finite `x`, `y`, positive `width`, positive `height`, and positive `mass`. Optional finite `vx`, `vy`, and `angle` default to zero. Optional restitution defaults to 0.25 but must be within 0 through 1, including an explicitly supplied zero. Invalid input throws `TypeError`. Return a frozen body. `advanceBody(body, force, dt)` requires a valid body, a force object with finite `x` and `y`, and finite `dt >= 0`. It must use semi-implicit Euler integration: new velocity equals old velocity plus force divided by mass times dt; new position equals old position plus the new velocity times dt. Angle and all dimensions remain unchanged. Return a new frozen body without mutation. `getCorners(body)` returns four fresh `{ x, y }` objects for the rectangle's corners in clockwise order starting at the unrotated top-left corner, rotated around the body's center by `angle`. Empty or malformed arguments throw `TypeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "ea55c178799d14d3323f0d46730a3629e5a25680e66a61e200337463b2d3a0aa",
+      "text": "Implement a CommonJS module exporting exactly `{ createBody, advanceBody, getCorners }` for immutable rectangular-body calculations. `createBody(options)` requires a plain object containing finite `x`, `y`, positive `width`, positive `height`, and positive `mass`. Optional finite `vx`, `vy`, and `angle` default to zero. Optional restitution defaults to 0.25 but must be within 0 through 1, including an explicitly supplied zero. Invalid input throws `TypeError`. Return a frozen body. `advanceBody(body, force, dt)` requires a valid body, a force object with finite `x` and `y`, and finite `dt >= 0`. It must use semi-implicit Euler integration: new velocity equals old velocity plus force divided by mass times dt; new position equals old position plus the new velocity times dt. Angle and all dimensions remain unchanged. Return a new frozen body without mutation. `getCorners(body)` returns four fresh `{ x, y }` objects for the rectangle's corners in clockwise order starting at the unrotated top-left corner, rotated around the body's center by `angle`. Empty or malformed arguments throw `TypeError`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0081",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "'use strict';\n\nfunction finite(value) {\n  return typeof value === 'number' && Number.isFinite(value);\n}\n\nfunction plainObject(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction validateBody(body) {\n  if (!plainObject(body) ||\n      !finite(body.x) || !finite(body.y) ||\n      !finite(body.width) || body.width <= 0 ||\n      !finite(body.height) || body.height <= 0 ||\n      !finite(body.mass) || body.mass <= 0 ||\n      !finite(body.vx) || !finite(body.vy) || !finite(body.angle) ||\n      !finite(body.restitution) || body.restitution < 0 || body.restitution > 1) {\n    throw new TypeError('Invalid body');\n  }\n}\n\nfunction createBody(options) {\n  if (!plainObject(options)) {\n    throw new TypeError('Options must be a plain object');\n  }\n  const body = {\n    x: options.x,\n    y: options.y,\n    width: options.width,\n    height: options.height,\n    mass: options.mass,\n    vx: options.vx === undefined ? 0 : options.vx,\n    vy: options.vy === undefined ? 0 : options.vy,\n    angle: options.angle === undefined ? 0 : options.angle,\n    restitution: options.restitution || 0.25\n  };\n  validateBody(body);\n  return Object.freeze(body);\n}\n\nfunction advanceBody(body, force, dt) {\n  validateBody(body);\n  if (!plainObject(force) || !finite(force.x) || !finite(force.y) ||\n      !finite(dt) || dt < 0) {\n    throw new TypeError('Invalid integration arguments');\n  }\n  const vx = body.vx + (force.x / body.mass) * dt;\n  const vy = body.vy + (force.y / body.mass) * dt;\n  return Object.freeze({\n    ...body,\n    x: body.x + vx * dt,\n    y: body.y + vy * dt,\n    vx,\n    vy\n  });\n}\n\nfunction getCorners(body) {\n  validateBody(body);\n  const centerX = body.x + body.width / 2;\n  const centerY = body.y + body.height / 2;\n  const cos = Math.cos(body.angle);\n  const sin = Math.sin(body.angle);\n  const offsets = [\n    [-body.width / 2, -body.height / 2],\n    [body.width / 2, -body.height / 2],\n    [body.width / 2, body.height / 2],\n    [-body.width / 2, body.height / 2]\n  ];\n  return offsets.map(([dx, dy]) => ({\n    x: centerX + dx * cos - dy * sin,\n    y: centerY + dx * sin + dy * cos\n  }));\n}\n\nmodule.exports = { createBody, advanceBody, getCorners };\n",
+          "label": "An explicit restitution of zero is incorrectly replaced by the default.",
+          "sha256": "7bd6b46c5d3c958ed3667850f3c49ad7dbe3bf89bc2e6dcf3a8088672f70aeac"
+        }
+      ],
+      "reference": {
+        "code": "'use strict';\n\nfunction finite(value) {\n  return typeof value === 'number' && Number.isFinite(value);\n}\n\nfunction plainObject(value) {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction validateBody(body) {\n  if (!plainObject(body) ||\n      !finite(body.x) || !finite(body.y) ||\n      !finite(body.width) || body.width <= 0 ||\n      !finite(body.height) || body.height <= 0 ||\n      !finite(body.mass) || body.mass <= 0 ||\n      !finite(body.vx) || !finite(body.vy) || !finite(body.angle) ||\n      !finite(body.restitution) || body.restitution < 0 || body.restitution > 1) {\n    throw new TypeError('Invalid body');\n  }\n}\n\nfunction createBody(options) {\n  if (!plainObject(options)) {\n    throw new TypeError('Options must be a plain object');\n  }\n  const body = {\n    x: options.x,\n    y: options.y,\n    width: options.width,\n    height: options.height,\n    mass: options.mass,\n    vx: options.vx === undefined ? 0 : options.vx,\n    vy: options.vy === undefined ? 0 : options.vy,\n    angle: options.angle === undefined ? 0 : options.angle,\n    restitution: options.restitution === undefined ? 0.25 : options.restitution\n  };\n  validateBody(body);\n  return Object.freeze(body);\n}\n\nfunction advanceBody(body, force, dt) {\n  validateBody(body);\n  if (!plainObject(force) || !finite(force.x) || !finite(force.y) ||\n      !finite(dt) || dt < 0) {\n    throw new TypeError('Invalid integration arguments');\n  }\n  const vx = body.vx + (force.x / body.mass) * dt;\n  const vy = body.vy + (force.y / body.mass) * dt;\n  return Object.freeze({\n    ...body,\n    x: body.x + vx * dt,\n    y: body.y + vy * dt,\n    vx,\n    vy\n  });\n}\n\nfunction getCorners(body) {\n  validateBody(body);\n  const centerX = body.x + body.width / 2;\n  const centerY = body.y + body.height / 2;\n  const cos = Math.cos(body.angle);\n  const sin = Math.sin(body.angle);\n  const offsets = [\n    [-body.width / 2, -body.height / 2],\n    [body.width / 2, -body.height / 2],\n    [body.width / 2, body.height / 2],\n    [-body.width / 2, body.height / 2]\n  ];\n  return offsets.map(([dx, dy]) => ({\n    x: centerX + dx * cos - dy * sin,\n    y: centerY + dx * sin + dy * cos\n  }));\n}\n\nmodule.exports = { createBody, advanceBody, getCorners };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ec3be669cb1b5e4e1d73416ae4737f8722cc92d94d1ceeb341c9eba467cd75f8"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Zero duration must leave finite body values unchanged\n+ actual - expected\n\n  {\n    angle: 0,\n    height: 1,\n    mass: 5e-324,\n    restitution: 0.25,\n+   vx: NaN,\n+   vy: NaN,\n-   vx: 0,\n-   vy: 0,\n    width: 1,\n+   x: NaN,\n+   y: NaN\n-   x: 1,\n-   y: 2\n  }\n\n    at Object.<anonymous> (/work/solution.test.js:6:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: {\n    x: NaN,\n    y: NaN,\n    width: 1,\n    height: 1,\n    mass: 5e-324,\n    vx: NaN,\n    vy: NaN,\n    angle: 0,\n    restitution: 0.25\n  },\n  expected: {\n    x: 1,\n    y: 2,\n    width: 1,\n    height: 1,\n    mass: 5e-324,\n    vx: 0,\n    vy: 0,\n    angle: 0,\n    restitution: 0.25\n  },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "ea93496cd165e534c0d3418d63e8d960e5ff8edfc5a0209545e3967d3dfc1c4a",
+    "duration_ms": 341,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

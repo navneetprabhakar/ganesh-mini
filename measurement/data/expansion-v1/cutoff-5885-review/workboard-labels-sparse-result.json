@@ -1,0 +1,125 @@
+{
+  "id": "exp-v1-javascript-generation-0092",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "78d56e183284a694bc14738fca85942791a31fd06322fe37b4e21da31099c8a1",
+  "task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "path": "solution.test.js",
+        "role": "test",
+        "content": "'use strict';\nconst assert = require('node:assert/strict');\nconst { buildWorkBoard } = require('./solution');\nassert.throws(() => buildWorkBoard([{type: 'add', id: 'a', summary: 'A', severity: 'standard', labels: new Array(1)}]));\n",
+        "sha256": "27c5e82600425aee348031ba5647fab7cfd9469bda4d4a7e4016aaaf20dea611"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a68b9848aff44c3bb08ed8a39c20839eb52cd03e166f44b767d83ad4f8ebb428",
+      "text": "Implement `buildWorkBoard(commands)` and export exactly `{ buildWorkBoard }` with CommonJS.\n\nThe function starts with empty `queued`, `working`, and `finished` lanes and processes commands in order. An `add` command has `{ type: 'add', id, summary, severity, labels }`; all text fields must be non-empty, severity must be `critical`, `standard`, or `deferred`, labels must be an array of strings, and IDs must be unique. New cards enter `queued`. A `move` command has `{ type: 'move', id, lane }` and moves an existing card to the end of the named lane. Moving to its current lane also moves it to that lane's end. Unknown cards, lanes, command types, and malformed input throw.\n\nReturn `{ queued, working, finished, queuedCount }`. Each card contains `{ id, summary, severity, marker, labels }`, where markers are `red`, `blue`, and `gray` for the three severities. Preserve relative order except for explicit moves. An empty command array returns an empty board. Neither commands nor their nested arrays may be mutated or retained by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a68b9848aff44c3bb08ed8a39c20839eb52cd03e166f44b767d83ad4f8ebb428",
+      "text": "Implement `buildWorkBoard(commands)` and export exactly `{ buildWorkBoard }` with CommonJS.\n\nThe function starts with empty `queued`, `working`, and `finished` lanes and processes commands in order. An `add` command has `{ type: 'add', id, summary, severity, labels }`; all text fields must be non-empty, severity must be `critical`, `standard`, or `deferred`, labels must be an array of strings, and IDs must be unique. New cards enter `queued`. A `move` command has `{ type: 'move', id, lane }` and moves an existing card to the end of the named lane. Moving to its current lane also moves it to that lane's end. Unknown cards, lanes, command types, and malformed input throw.\n\nReturn `{ queued, working, finished, queuedCount }`. Each card contains `{ id, summary, severity, marker, labels }`, where markers are `red`, `blue`, and `gray` for the three severities. Preserve relative order except for explicit moves. An empty command array returns an empty board. Neither commands nor their nested arrays may be mutated or retained by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-javascript-generation-0092",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function buildWorkBoard(commands) {\n  if (!Array.isArray(commands)) throw new TypeError('commands must be an array');\n  const board = { queued: [], working: [], finished: [] };\n  const ids = new Set();\n  const markers = { critical: 'red', standard: 'blue', deferred: 'gray' };\n  const lanes = new Set(Object.keys(board));\n  const requireText = (value, name) => {\n    if (typeof value !== 'string' || value.trim() === '') throw new TypeError(name + ' must be non-empty');\n    return value.trim();\n  };\n\n  for (const command of commands) {\n    if (!command || typeof command !== 'object' || Array.isArray(command)) throw new TypeError('invalid command');\n    if (command.type === 'add') {\n      const id = requireText(command.id, 'id');\n      const summary = requireText(command.summary, 'summary');\n      if (ids.has(id)) throw new Error('duplicate id');\n      if (!Object.prototype.hasOwnProperty.call(markers, command.severity)) throw new TypeError('invalid severity');\n      if (!Array.isArray(command.labels) || command.labels.some(label => typeof label !== 'string' || label.trim() === '')) {\n        throw new TypeError('labels must be an array of non-empty strings');\n      }\n      board.queued.push({\n        id,\n        summary,\n        severity: command.severity,\n        marker: markers[command.severity],\n        labels: command.labels\n      });\n      ids.add(id);\n    } else if (command.type === 'move') {\n      const id = requireText(command.id, 'id');\n      if (!lanes.has(command.lane)) throw new TypeError('invalid lane');\n      let card = null;\n      for (const lane of lanes) {\n        const index = board[lane].findIndex(item => item.id === id);\n        if (index !== -1) card = board[lane].splice(index, 1)[0];\n      }\n      if (!card) throw new Error('unknown card');\n      board[command.lane].push(card);\n    } else {\n      throw new TypeError('unknown command type');\n    }\n  }\n\n  return { ...board, queuedCount: board.queued.length };\n}\n\nmodule.exports = { buildWorkBoard };\n",
+          "label": "Added cards retain the caller's `labels` array by reference instead of copying it.",
+          "sha256": "e7697424c3158870bcce23837255512f282d50e834b359b2b7be24a52933eb92"
+        }
+      ],
+      "reference": {
+        "code": "function buildWorkBoard(commands) {\n  if (!Array.isArray(commands)) throw new TypeError('commands must be an array');\n  const board = { queued: [], working: [], finished: [] };\n  const ids = new Set();\n  const markers = { critical: 'red', standard: 'blue', deferred: 'gray' };\n  const lanes = new Set(Object.keys(board));\n  const requireText = (value, name) => {\n    if (typeof value !== 'string' || value.trim() === '') throw new TypeError(name + ' must be non-empty');\n    return value.trim();\n  };\n\n  for (const command of commands) {\n    if (!command || typeof command !== 'object' || Array.isArray(command)) throw new TypeError('invalid command');\n    if (command.type === 'add') {\n      const id = requireText(command.id, 'id');\n      const summary = requireText(command.summary, 'summary');\n      if (ids.has(id)) throw new Error('duplicate id');\n      if (!Object.prototype.hasOwnProperty.call(markers, command.severity)) throw new TypeError('invalid severity');\n      if (!Array.isArray(command.labels) || command.labels.some(label => typeof label !== 'string' || label.trim() === '')) {\n        throw new TypeError('labels must be an array of non-empty strings');\n      }\n      board.queued.push({\n        id,\n        summary,\n        severity: command.severity,\n        marker: markers[command.severity],\n        labels: command.labels.slice()\n      });\n      ids.add(id);\n    } else if (command.type === 'move') {\n      const id = requireText(command.id, 'id');\n      if (!lanes.has(command.lane)) throw new TypeError('invalid lane');\n      let card = null;\n      for (const lane of lanes) {\n        const index = board[lane].findIndex(item => item.id === id);\n        if (index !== -1) card = board[lane].splice(index, 1)[0];\n      }\n      if (!card) throw new Error('unknown card');\n      board[command.lane].push(card);\n    } else {\n      throw new TypeError('unknown command type');\n    }\n  }\n\n  return { ...board, queuedCount: board.queued.length };\n}\n\nmodule.exports = { buildWorkBoard };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0cb002258b788eb6de16c7d61fd26271d93ccb9a615c76dfdd0c6ad39835411f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.js",
+    "family": "javascript_typescript",
+    "files": [
+      {
+        "content": "'use strict';\nconst assert = require('node:assert');\nconst api = require('./solution');\nassert.deepStrictEqual(Object.keys(api), ['buildWorkBoard']);\nconst { buildWorkBoard } = api;\n\nassert.deepStrictEqual(buildWorkBoard([]), { queued: [], working: [], finished: [], queuedCount: 0 });\n\nconst labels = ['backend', 'urgent'];\nconst commands = [\n  { type: 'add', id: 'a', summary: 'Alpha', severity: 'critical', labels },\n  { type: 'add', id: 'b', summary: 'Beta', severity: 'standard', labels: [] },\n  { type: 'add', id: 'c', summary: 'Gamma', severity: 'deferred', labels: ['later'] },\n  { type: 'move', id: 'a', lane: 'working' },\n  { type: 'move', id: 'b', lane: 'working' },\n  { type: 'move', id: 'a', lane: 'working' },\n  { type: 'move', id: 'c', lane: 'finished' }\n];\nconst board = buildWorkBoard(commands);\nassert.deepStrictEqual(board, {\n  queued: [],\n  working: [\n    { id: 'b', summary: 'Beta', severity: 'standard', marker: 'blue', labels: [] },\n    { id: 'a', summary: 'Alpha', severity: 'critical', marker: 'red', labels: ['backend', 'urgent'] }\n  ],\n  finished: [\n    { id: 'c', summary: 'Gamma', severity: 'deferred', marker: 'gray', labels: ['later'] }\n  ],\n  queuedCount: 0\n});\nlabels[0] = 'changed';\ncommands[1].summary = 'changed';\nassert.deepStrictEqual(board.working[1].labels, ['backend', 'urgent']);\nassert.strictEqual(board.working[0].summary, 'Beta');\n\nconst ordering = buildWorkBoard([\n  { type: 'add', id: '1', summary: 'One', severity: 'standard', labels: [] },\n  { type: 'add', id: '2', summary: 'Two', severity: 'standard', labels: [] },\n  { type: 'add', id: '3', summary: 'Three', severity: 'standard', labels: [] },\n  { type: 'move', id: '1', lane: 'queued' }\n]);\nassert.deepStrictEqual(ordering.queued.map(card => card.id), ['2', '3', '1']);\nassert.strictEqual(ordering.queuedCount, 3);\n\nconst invalidInputs = [\n  null,\n  {},\n  [{ type: 'unknown' }],\n  [{ type: 'move', id: 'missing', lane: 'queued' }],\n  [{ type: 'add', id: '', summary: 'x', severity: 'standard', labels: [] }],\n  [{ type: 'add', id: 'x', summary: '', severity: 'standard', labels: [] }],\n  [{ type: 'add', id: 'x', summary: 'x', severity: 'urgent', labels: [] }],\n  [{ type: 'add', id: 'x', summary: 'x', severity: 'standard', labels: 'tag' }],\n  [{ type: 'add', id: 'x', summary: 'x', severity: 'standard', labels: [''] }],\n  [\n    { type: 'add', id: 'x', summary: 'x', severity: 'standard', labels: [] },\n    { type: 'add', id: 'x', summary: 'again', severity: 'critical', labels: [] }\n  ],\n  [\n    { type: 'add', id: 'x', summary: 'x', severity: 'standard', labels: [] },\n    { type: 'move', id: 'x', lane: 'invalid' }\n  ]\n];\nfor (const input of invalidInputs) assert.throws(() => buildWorkBoard(input));\n",
+        "path": "solution.test.js",
+        "role": "test",
+        "sha256": "a9efa7df9358551fb368d126f3e82d0bebf45480fff91215062f227b905f814c"
+      }
+    ],
+    "language": "javascript",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a68b9848aff44c3bb08ed8a39c20839eb52cd03e166f44b767d83ad4f8ebb428",
+      "text": "Implement `buildWorkBoard(commands)` and export exactly `{ buildWorkBoard }` with CommonJS.\n\nThe function starts with empty `queued`, `working`, and `finished` lanes and processes commands in order. An `add` command has `{ type: 'add', id, summary, severity, labels }`; all text fields must be non-empty, severity must be `critical`, `standard`, or `deferred`, labels must be an array of strings, and IDs must be unique. New cards enter `queued`. A `move` command has `{ type: 'move', id, lane }` and moves an existing card to the end of the named lane. Moving to its current lane also moves it to that lane's end. Unknown cards, lanes, command types, and malformed input throw.\n\nReturn `{ queued, working, finished, queuedCount }`. Each card contains `{ id, summary, severity, marker, labels }`, where markers are `red`, `blue`, and `gray` for the three severities. Preserve relative order except for explicit moves. An empty command array returns an empty board. Neither commands nor their nested arrays may be mutated or retained by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a68b9848aff44c3bb08ed8a39c20839eb52cd03e166f44b767d83ad4f8ebb428",
+      "text": "Implement `buildWorkBoard(commands)` and export exactly `{ buildWorkBoard }` with CommonJS.\n\nThe function starts with empty `queued`, `working`, and `finished` lanes and processes commands in order. An `add` command has `{ type: 'add', id, summary, severity, labels }`; all text fields must be non-empty, severity must be `critical`, `standard`, or `deferred`, labels must be an array of strings, and IDs must be unique. New cards enter `queued`. A `move` command has `{ type: 'move', id, lane }` and moves an existing card to the end of the named lane. Moving to its current lane also moves it to that lane's end. Unknown cards, lanes, command types, and malformed input throw.\n\nReturn `{ queued, working, finished, queuedCount }`. Each card contains `{ id, summary, severity, marker, labels }`, where markers are `red`, `blue`, and `gray` for the three severities. Preserve relative order except for explicit moves. An empty command array returns an empty board. Neither commands nor their nested arrays may be mutated or retained by alias.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "javascript-node-22.23.2",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-javascript-generation-0092",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "function buildWorkBoard(commands) {\n  if (!Array.isArray(commands)) throw new TypeError('commands must be an array');\n  const board = { queued: [], working: [], finished: [] };\n  const ids = new Set();\n  const markers = { critical: 'red', standard: 'blue', deferred: 'gray' };\n  const lanes = new Set(Object.keys(board));\n  const requireText = (value, name) => {\n    if (typeof value !== 'string' || value.trim() === '') throw new TypeError(name + ' must be non-empty');\n    return value.trim();\n  };\n\n  for (const command of commands) {\n    if (!command || typeof command !== 'object' || Array.isArray(command)) throw new TypeError('invalid command');\n    if (command.type === 'add') {\n      const id = requireText(command.id, 'id');\n      const summary = requireText(command.summary, 'summary');\n      if (ids.has(id)) throw new Error('duplicate id');\n      if (!Object.prototype.hasOwnProperty.call(markers, command.severity)) throw new TypeError('invalid severity');\n      if (!Array.isArray(command.labels) || command.labels.some(label => typeof label !== 'string' || label.trim() === '')) {\n        throw new TypeError('labels must be an array of non-empty strings');\n      }\n      board.queued.push({\n        id,\n        summary,\n        severity: command.severity,\n        marker: markers[command.severity],\n        labels: command.labels\n      });\n      ids.add(id);\n    } else if (command.type === 'move') {\n      const id = requireText(command.id, 'id');\n      if (!lanes.has(command.lane)) throw new TypeError('invalid lane');\n      let card = null;\n      for (const lane of lanes) {\n        const index = board[lane].findIndex(item => item.id === id);\n        if (index !== -1) card = board[lane].splice(index, 1)[0];\n      }\n      if (!card) throw new Error('unknown card');\n      board[command.lane].push(card);\n    } else {\n      throw new TypeError('unknown command type');\n    }\n  }\n\n  return { ...board, queuedCount: board.queued.length };\n}\n\nmodule.exports = { buildWorkBoard };\n",
+          "label": "Added cards retain the caller's `labels` array by reference instead of copying it.",
+          "sha256": "e7697424c3158870bcce23837255512f282d50e834b359b2b7be24a52933eb92"
+        }
+      ],
+      "reference": {
+        "code": "function buildWorkBoard(commands) {\n  if (!Array.isArray(commands)) throw new TypeError('commands must be an array');\n  const board = { queued: [], working: [], finished: [] };\n  const ids = new Set();\n  const markers = { critical: 'red', standard: 'blue', deferred: 'gray' };\n  const lanes = new Set(Object.keys(board));\n  const requireText = (value, name) => {\n    if (typeof value !== 'string' || value.trim() === '') throw new TypeError(name + ' must be non-empty');\n    return value.trim();\n  };\n\n  for (const command of commands) {\n    if (!command || typeof command !== 'object' || Array.isArray(command)) throw new TypeError('invalid command');\n    if (command.type === 'add') {\n      const id = requireText(command.id, 'id');\n      const summary = requireText(command.summary, 'summary');\n      if (ids.has(id)) throw new Error('duplicate id');\n      if (!Object.prototype.hasOwnProperty.call(markers, command.severity)) throw new TypeError('invalid severity');\n      if (!Array.isArray(command.labels) || command.labels.some(label => typeof label !== 'string' || label.trim() === '')) {\n        throw new TypeError('labels must be an array of non-empty strings');\n      }\n      board.queued.push({\n        id,\n        summary,\n        severity: command.severity,\n        marker: markers[command.severity],\n        labels: command.labels.slice()\n      });\n      ids.add(id);\n    } else if (command.type === 'move') {\n      const id = requireText(command.id, 'id');\n      if (!lanes.has(command.lane)) throw new TypeError('invalid lane');\n      let card = null;\n      for (const lane of lanes) {\n        const index = board[lane].findIndex(item => item.id === id);\n        if (index !== -1) card = board[lane].splice(index, 1)[0];\n      }\n      if (!card) throw new Error('unknown card');\n      board[command.lane].push(card);\n    } else {\n      throw new TypeError('unknown command type');\n    }\n  }\n\n  return { ...board, queuedCount: board.queued.length };\n}\n\nmodule.exports = { buildWorkBoard };\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0cb002258b788eb6de16c7d61fd26271d93ccb9a615c76dfdd0c6ad39835411f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "javascript-node-22.23.2",
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception.\n    at Object.<anonymous> (/work/solution.test.js:4:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: undefined,\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "adcfa5af306f5219afe10d79c7230e71e374679acb31e6ba66664976d100e45d",
+    "duration_ms": 415,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

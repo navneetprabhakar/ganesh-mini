@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0639",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bec3c68dc046c7c61d90252bcba304c6791ba18d85a6a83d3ba7bddf03a9bc28",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import StrokeBuffer\n\n\nclass FiniteCoordinateTests(unittest.TestCase):\n    def test_finite_large_integer_point(self):\n        buffer = StrokeBuffer()\n        buffer.start(\"black\")\n        buffer.add(10 ** 400, 0)\n        self.assertEqual(buffer.stop()[\"points\"], [(10 ** 400, 0)])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "e50cd6c9959e658bb6f2bdab3b6640df29f663c8421ad92f33518e039da82f6f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "00761a4db668dfebd719356cdbdcb0460fed034463c87503c8dba3e11a3777cc",
+      "text": "Implement a state-only tracing component in `solution.py` named `StrokeBuffer`. Its constructor takes no arguments. `start(color, stride=1)` begins a stroke, accepting only the exact colors `black`, `amber`, `cyan`, and `violet`, and a non-boolean integer stride from 1 through 3. Starting while active raises `RuntimeError`. `add(x, y)` accepts finite real coordinates only while active. It counts every accepted point but stores only the first point and then every `stride`th point by zero-based index. `stop(clear=False)` ends the stroke and returns a deep-copied dictionary containing its color and stored coordinate tuples; if `clear` is true, all completed strokes are removed after preparing that return value. Stopping while inactive raises `RuntimeError`. `clear()` removes completed strokes but does not alter an active stroke. `snapshot()` returns a deep copy of completed strokes in completion order. Empty snapshots are valid. Returned structures must never alias internal mutable state, and caller mutation of returned values must not affect later snapshots.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "00761a4db668dfebd719356cdbdcb0460fed034463c87503c8dba3e11a3777cc",
+      "text": "Implement a state-only tracing component in `solution.py` named `StrokeBuffer`. Its constructor takes no arguments. `start(color, stride=1)` begins a stroke, accepting only the exact colors `black`, `amber`, `cyan`, and `violet`, and a non-boolean integer stride from 1 through 3. Starting while active raises `RuntimeError`. `add(x, y)` accepts finite real coordinates only while active. It counts every accepted point but stores only the first point and then every `stride`th point by zero-based index. `stop(clear=False)` ends the stroke and returns a deep-copied dictionary containing its color and stored coordinate tuples; if `clear` is true, all completed strokes are removed after preparing that return value. Stopping while inactive raises `RuntimeError`. `clear()` removes completed strokes but does not alter an active stroke. `snapshot()` returns a deep copy of completed strokes in completion order. Empty snapshots are valid. Returned structures must never alias internal mutable state, and caller mutation of returned values must not affect later snapshots.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0639",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass StrokeBuffer:\n    COLORS = {\"black\", \"amber\", \"cyan\", \"violet\"}\n\n    def __init__(self):\n        self._completed = []\n        self._active = None\n\n    def start(self, color, stride=1):\n        if self._active is not None:\n            raise RuntimeError(\"a stroke is already active\")\n        if not isinstance(color, str):\n            raise TypeError(\"color must be a string\")\n        if color not in self.COLORS:\n            raise ValueError(\"unsupported color\")\n        if isinstance(stride, bool) or not isinstance(stride, int):\n            raise TypeError(\"stride must be an integer\")\n        if not 1 <= stride <= 3:\n            raise ValueError(\"stride must be between 1 and 3\")\n        self._active = {\"color\": color, \"stride\": stride, \"seen\": 0, \"points\": []}\n\n    def add(self, x, y):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, Real) or not isinstance(y, Real):\n            raise TypeError(\"coordinates must be real numbers\")\n        if not isfinite(x) or not isfinite(y):\n            raise ValueError(\"coordinates must be finite\")\n        index = self._active[\"seen\"]\n        if (index + 1) % self._active[\"stride\"] == 0:\n            self._active[\"points\"].append((x, y))\n        self._active[\"seen\"] += 1\n\n    def stop(self, clear=False):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if not isinstance(clear, bool):\n            raise TypeError(\"clear must be a boolean\")\n        stroke = {\n            \"color\": self._active[\"color\"],\n            \"points\": list(self._active[\"points\"]),\n        }\n        self._completed.append(stroke)\n        self._active = None\n        result = deepcopy(stroke)\n        if clear:\n            self._completed.clear()\n        return result\n\n    def clear(self):\n        self._completed.clear()\n\n    def snapshot(self):\n        return deepcopy(self._completed)\n",
+          "label": "Stride sampling is offset, so strides greater than one omit the required first point.",
+          "sha256": "b4f3ee15f239e0510f46cdfaf8c712c28eb52a087513b5817d229dfab14fef53"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass StrokeBuffer:\n    COLORS = {\"black\", \"amber\", \"cyan\", \"violet\"}\n\n    def __init__(self):\n        self._completed = []\n        self._active = None\n\n    def start(self, color, stride=1):\n        if self._active is not None:\n            raise RuntimeError(\"a stroke is already active\")\n        if not isinstance(color, str):\n            raise TypeError(\"color must be a string\")\n        if color not in self.COLORS:\n            raise ValueError(\"unsupported color\")\n        if isinstance(stride, bool) or not isinstance(stride, int):\n            raise TypeError(\"stride must be an integer\")\n        if not 1 <= stride <= 3:\n            raise ValueError(\"stride must be between 1 and 3\")\n        self._active = {\"color\": color, \"stride\": stride, \"seen\": 0, \"points\": []}\n\n    def add(self, x, y):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, Real) or not isinstance(y, Real):\n            raise TypeError(\"coordinates must be real numbers\")\n        if not isfinite(x) or not isfinite(y):\n            raise ValueError(\"coordinates must be finite\")\n        index = self._active[\"seen\"]\n        if index % self._active[\"stride\"] == 0:\n            self._active[\"points\"].append((x, y))\n        self._active[\"seen\"] += 1\n\n    def stop(self, clear=False):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if not isinstance(clear, bool):\n            raise TypeError(\"clear must be a boolean\")\n        stroke = {\n            \"color\": self._active[\"color\"],\n            \"points\": list(self._active[\"points\"]),\n        }\n        self._completed.append(stroke)\n        self._active = None\n        result = deepcopy(stroke)\n        if clear:\n            self._completed.clear()\n        return result\n\n    def clear(self):\n        self._completed.clear()\n\n    def snapshot(self):\n        return deepcopy(self._completed)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a61800b47fc19334fb30272cc0504c4346f7906419cca00dbd2fa6770cc671fe"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import StrokeBuffer\n\n\nclass StrokeBufferTests(unittest.TestCase):\n    def test_empty_snapshot(self):\n        buffer = StrokeBuffer()\n        self.assertEqual(buffer.snapshot(), [])\n\n    def test_stride_storage_and_completion_order(self):\n        buffer = StrokeBuffer()\n        buffer.start(\"cyan\", stride=2)\n        for point in [(0, 0), (1, 1), (2, 4), (3, 9), (4, 16)]:\n            buffer.add(*point)\n        returned = buffer.stop()\n        self.assertEqual(returned, {\n            \"color\": \"cyan\",\n            \"points\": [(0, 0), (2, 4), (4, 16)],\n        })\n        buffer.start(\"amber\", stride=1)\n        buffer.add(-1.5, 2.25)\n        buffer.stop()\n        self.assertEqual(buffer.snapshot(), [\n            {\"color\": \"cyan\", \"points\": [(0, 0), (2, 4), (4, 16)]},\n            {\"color\": \"amber\", \"points\": [(-1.5, 2.25)]},\n        ])\n\n    def test_zero_point_stroke_is_valid(self):\n        buffer = StrokeBuffer()\n        result = buffer.start(\"black\")\n        self.assertIsNone(result)\n        self.assertEqual(buffer.stop(), {\"color\": \"black\", \"points\": []})\n\n    def test_counts_indices_even_when_points_are_not_stored(self):\n        buffer = StrokeBuffer()\n        buffer.start(\"violet\", 3)\n        for index in range(8):\n            buffer.add(index, -index)\n        self.assertEqual(buffer.stop()[\"points\"], [(0, 0), (3, -3), (6, -6)])\n\n    def test_clear_does_not_change_active_stroke(self):\n        buffer = StrokeBuffer()\n        buffer.start(\"black\")\n        buffer.add(1, 1)\n        buffer.stop()\n        buffer.start(\"amber\", 2)\n        buffer.add(10, 20)\n        buffer.clear()\n        buffer.add(11, 21)\n        buffer.add(12, 22)\n        self.assertEqual(buffer.stop(), {\n            \"color\": \"amber\", \"points\": [(10, 20), (12, 22)]\n        })\n        self.assertEqual(len(buffer.snapshot()), 1)\n\n    def test_stop_clear_returns_stroke_then_removes_all_completed(self):\n        buffer = StrokeBuffer()\n        buffer.start(\"black\")\n        buffer.add(1, 2)\n        buffer.stop()\n        buffer.start(\"cyan\")\n        buffer.add(3, 4)\n        returned = buffer.stop(clear=True)\n        self.assertEqual(returned, {\"color\": \"cyan\", \"points\": [(3, 4)]})\n        self.assertEqual(buffer.snapshot(), [])\n\n    def test_returned_data_never_aliases_internal_state(self):\n        buffer = StrokeBuffer()\n        buffer.start(\"black\")\n        buffer.add(1, 2)\n        returned = buffer.stop()\n        returned[\"color\"] = \"changed\"\n        returned[\"points\"].append((8, 9))\n        first_snapshot = buffer.snapshot()\n        first_snapshot[0][\"points\"].append((10, 11))\n        first_snapshot.append({\"color\": \"fake\", \"points\": []})\n        self.assertEqual(buffer.snapshot(), [\n            {\"color\": \"black\", \"points\": [(1, 2)]}\n        ])\n\n    def test_state_errors(self):\n        buffer = StrokeBuffer()\n        with self.assertRaises(RuntimeError):\n            buffer.add(1, 2)\n        with self.assertRaises(RuntimeError):\n            buffer.stop()\n        buffer.start(\"black\")\n        with self.assertRaises(RuntimeError):\n            buffer.start(\"cyan\")\n\n    def test_invalid_colors_and_strides(self):\n        for color in [\"Black\", \"red\", \"\", 1, None]:\n            with self.subTest(color=color):\n                with self.assertRaises((TypeError, ValueError)):\n                    StrokeBuffer().start(color)\n        for stride in [True, False, 0, 4, -1, 1.0, \"1\"]:\n            with self.subTest(stride=stride):\n                with self.assertRaises((TypeError, ValueError)):\n                    StrokeBuffer().start(\"black\", stride)\n        for stride in [1, 2, 3]:\n            buffer = StrokeBuffer()\n            buffer.start(\"black\", stride)\n            buffer.stop()\n\n    def test_invalid_coordinates_do_not_become_accepted_points(self):\n        for x, y in [(True, 0), (0, False), (\"1\", 0), (0, None),\n                     (math.inf, 0), (0, math.nan), (1 + 2j, 0)]:\n            buffer = StrokeBuffer()\n            buffer.start(\"black\")\n            with self.subTest(x=x, y=y):\n                with self.assertRaises((TypeError, ValueError)):\n                    buffer.add(x, y)\n            self.assertEqual(buffer.stop()[\"points\"], [])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "0ce416e130b25c59327896b3ecd0f631960d5492f606e82b4c930b53078530af"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "00761a4db668dfebd719356cdbdcb0460fed034463c87503c8dba3e11a3777cc",
+      "text": "Implement a state-only tracing component in `solution.py` named `StrokeBuffer`. Its constructor takes no arguments. `start(color, stride=1)` begins a stroke, accepting only the exact colors `black`, `amber`, `cyan`, and `violet`, and a non-boolean integer stride from 1 through 3. Starting while active raises `RuntimeError`. `add(x, y)` accepts finite real coordinates only while active. It counts every accepted point but stores only the first point and then every `stride`th point by zero-based index. `stop(clear=False)` ends the stroke and returns a deep-copied dictionary containing its color and stored coordinate tuples; if `clear` is true, all completed strokes are removed after preparing that return value. Stopping while inactive raises `RuntimeError`. `clear()` removes completed strokes but does not alter an active stroke. `snapshot()` returns a deep copy of completed strokes in completion order. Empty snapshots are valid. Returned structures must never alias internal mutable state, and caller mutation of returned values must not affect later snapshots.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "00761a4db668dfebd719356cdbdcb0460fed034463c87503c8dba3e11a3777cc",
+      "text": "Implement a state-only tracing component in `solution.py` named `StrokeBuffer`. Its constructor takes no arguments. `start(color, stride=1)` begins a stroke, accepting only the exact colors `black`, `amber`, `cyan`, and `violet`, and a non-boolean integer stride from 1 through 3. Starting while active raises `RuntimeError`. `add(x, y)` accepts finite real coordinates only while active. It counts every accepted point but stores only the first point and then every `stride`th point by zero-based index. `stop(clear=False)` ends the stroke and returns a deep-copied dictionary containing its color and stored coordinate tuples; if `clear` is true, all completed strokes are removed after preparing that return value. Stopping while inactive raises `RuntimeError`. `clear()` removes completed strokes but does not alter an active stroke. `snapshot()` returns a deep copy of completed strokes in completion order. Empty snapshots are valid. Returned structures must never alias internal mutable state, and caller mutation of returned values must not affect later snapshots.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0639",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass StrokeBuffer:\n    COLORS = {\"black\", \"amber\", \"cyan\", \"violet\"}\n\n    def __init__(self):\n        self._completed = []\n        self._active = None\n\n    def start(self, color, stride=1):\n        if self._active is not None:\n            raise RuntimeError(\"a stroke is already active\")\n        if not isinstance(color, str):\n            raise TypeError(\"color must be a string\")\n        if color not in self.COLORS:\n            raise ValueError(\"unsupported color\")\n        if isinstance(stride, bool) or not isinstance(stride, int):\n            raise TypeError(\"stride must be an integer\")\n        if not 1 <= stride <= 3:\n            raise ValueError(\"stride must be between 1 and 3\")\n        self._active = {\"color\": color, \"stride\": stride, \"seen\": 0, \"points\": []}\n\n    def add(self, x, y):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, Real) or not isinstance(y, Real):\n            raise TypeError(\"coordinates must be real numbers\")\n        if not isfinite(x) or not isfinite(y):\n            raise ValueError(\"coordinates must be finite\")\n        index = self._active[\"seen\"]\n        if (index + 1) % self._active[\"stride\"] == 0:\n            self._active[\"points\"].append((x, y))\n        self._active[\"seen\"] += 1\n\n    def stop(self, clear=False):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if not isinstance(clear, bool):\n            raise TypeError(\"clear must be a boolean\")\n        stroke = {\n            \"color\": self._active[\"color\"],\n            \"points\": list(self._active[\"points\"]),\n        }\n        self._completed.append(stroke)\n        self._active = None\n        result = deepcopy(stroke)\n        if clear:\n            self._completed.clear()\n        return result\n\n    def clear(self):\n        self._completed.clear()\n\n    def snapshot(self):\n        return deepcopy(self._completed)\n",
+          "label": "Stride sampling is offset, so strides greater than one omit the required first point.",
+          "sha256": "b4f3ee15f239e0510f46cdfaf8c712c28eb52a087513b5817d229dfab14fef53"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom math import isfinite\nfrom numbers import Real\n\n\nclass StrokeBuffer:\n    COLORS = {\"black\", \"amber\", \"cyan\", \"violet\"}\n\n    def __init__(self):\n        self._completed = []\n        self._active = None\n\n    def start(self, color, stride=1):\n        if self._active is not None:\n            raise RuntimeError(\"a stroke is already active\")\n        if not isinstance(color, str):\n            raise TypeError(\"color must be a string\")\n        if color not in self.COLORS:\n            raise ValueError(\"unsupported color\")\n        if isinstance(stride, bool) or not isinstance(stride, int):\n            raise TypeError(\"stride must be an integer\")\n        if not 1 <= stride <= 3:\n            raise ValueError(\"stride must be between 1 and 3\")\n        self._active = {\"color\": color, \"stride\": stride, \"seen\": 0, \"points\": []}\n\n    def add(self, x, y):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, Real) or not isinstance(y, Real):\n            raise TypeError(\"coordinates must be real numbers\")\n        if not isfinite(x) or not isfinite(y):\n            raise ValueError(\"coordinates must be finite\")\n        index = self._active[\"seen\"]\n        if index % self._active[\"stride\"] == 0:\n            self._active[\"points\"].append((x, y))\n        self._active[\"seen\"] += 1\n\n    def stop(self, clear=False):\n        if self._active is None:\n            raise RuntimeError(\"no stroke is active\")\n        if not isinstance(clear, bool):\n            raise TypeError(\"clear must be a boolean\")\n        stroke = {\n            \"color\": self._active[\"color\"],\n            \"points\": list(self._active[\"points\"]),\n        }\n        self._completed.append(stroke)\n        self._active = None\n        result = deepcopy(stroke)\n        if clear:\n            self._completed.clear()\n        return result\n\n    def clear(self):\n        self._completed.clear()\n\n    def snapshot(self):\n        return deepcopy(self._completed)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a61800b47fc19334fb30272cc0504c4346f7906419cca00dbd2fa6770cc671fe"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_finite_large_integer_point (__main__.FiniteCoordinateTests.test_finite_large_integer_point)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 10, in test_finite_large_integer_point\n    buffer.add(10 ** 400, 0)\n  File \"/work/solution.py\", line 31, in add\n    if not isfinite(x) or not isfinite(y):\n           ^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "ad5c146561a50006ba61df8226f2699cf17e7968a125fdd5d9f742fb2bff27a5",
+    "duration_ms": 434,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

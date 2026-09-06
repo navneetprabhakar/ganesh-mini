@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0628",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "fb7083d71e688be1911c7681ca23adc97f48a4bf7c7caf3e55d9b3ea8cd140b7",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import CallablePipeline\n\n\nclass FiniteRealTests(unittest.TestCase):\n    def test_large_integer_reaches_identity_model(self):\n        rows = [[10 ** 400]]\n        result = CallablePipeline(model=lambda data: data).predict(rows)\n        self.assertEqual(result, rows)\n        self.assertIsNot(result[0], rows[0])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "f3bc5400bbee8493839b2bb3316d023d897dffe1ba7298d7e0956e5af97e3169"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "15577489bf0593a252d65629ea2a8513328f6f080a6d855de38fee5220b52618",
+      "text": "Implement a standard-library-only class `CallablePipeline` in `solution.py`.\n\nConstructor: `CallablePipeline(model=None, loader=None, transformer=None)`. If `model` is `None`, `loader` must be callable and is called exactly once to obtain the model. The resulting model must be callable; otherwise raise `TypeError`. A supplied `model` takes precedence and the loader must not be called. If supplied, `transformer` must be callable. The constructor must call `model.set_evaluation(True)` exactly once when that attribute exists and is callable.\n\nMethods:\n\n- `predict(rows, transform=True)`: `rows` must be a list of rows, where every row is a list of finite real numbers, booleans excluded. Empty `rows` is valid. Rows may have different widths. Deep-copy the input before any processing. If `transform` is exactly `True` and a transformer exists, pass that copy to the transformer and use its result. If `transform` is not a boolean, raise `TypeError`. Call the model once with the prepared data and return a deep copy of its result. Neither transformer nor model mutations may affect `rows`.\n- `output_width(input_width)`: `input_width` must be a non-negative integer other than `bool`. Call `predict` with one row of that many zeroes and transformation disabled. The prediction must be a list containing exactly one list; return that inner list's length. Otherwise raise `ValueError`.\n\nExceptions raised by the loader, transformer, model, or evaluation hook must propagate unchanged. Returned mutable values must not alias model-owned data. Write a new complete implementation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "15577489bf0593a252d65629ea2a8513328f6f080a6d855de38fee5220b52618",
+      "text": "Implement a standard-library-only class `CallablePipeline` in `solution.py`.\n\nConstructor: `CallablePipeline(model=None, loader=None, transformer=None)`. If `model` is `None`, `loader` must be callable and is called exactly once to obtain the model. The resulting model must be callable; otherwise raise `TypeError`. A supplied `model` takes precedence and the loader must not be called. If supplied, `transformer` must be callable. The constructor must call `model.set_evaluation(True)` exactly once when that attribute exists and is callable.\n\nMethods:\n\n- `predict(rows, transform=True)`: `rows` must be a list of rows, where every row is a list of finite real numbers, booleans excluded. Empty `rows` is valid. Rows may have different widths. Deep-copy the input before any processing. If `transform` is exactly `True` and a transformer exists, pass that copy to the transformer and use its result. If `transform` is not a boolean, raise `TypeError`. Call the model once with the prepared data and return a deep copy of its result. Neither transformer nor model mutations may affect `rows`.\n- `output_width(input_width)`: `input_width` must be a non-negative integer other than `bool`. Call `predict` with one row of that many zeroes and transformation disabled. The prediction must be a list containing exactly one list; return that inner list's length. Otherwise raise `ValueError`.\n\nExceptions raised by the loader, transformer, model, or evaluation hook must propagate unchanged. Returned mutable values must not alias model-owned data. Write a new complete implementation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0628",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport math\nfrom numbers import Real\n\n\nclass CallablePipeline:\n    def __init__(self, model=None, loader=None, transformer=None):\n        if model is None:\n            if not callable(loader):\n                raise TypeError(\"a callable loader is required\")\n            model = loader()\n        if not callable(model):\n            raise TypeError(\"model must be callable\")\n        if transformer is not None and not callable(transformer):\n            raise TypeError(\"transformer must be callable\")\n        self._model = model\n        self._transformer = transformer\n        hook = getattr(model, \"set_evaluation\", None)\n        if callable(hook):\n            hook(True)\n\n    @staticmethod\n    def _valid_rows(rows):\n        if not isinstance(rows, list):\n            return False\n        for row in rows:\n            if not isinstance(row, list):\n                return False\n            for value in row:\n                if (isinstance(value, bool) or not isinstance(value, Real)\n                        or not math.isfinite(value)):\n                    return False\n        return True\n\n    def predict(self, rows, transform=True):\n        if not isinstance(transform, bool):\n            raise TypeError(\"transform must be boolean\")\n        if not self._valid_rows(rows):\n            raise ValueError(\"invalid rows\")\n        prepared = rows\n        if transform and self._transformer is not None:\n            prepared = self._transformer(prepared)\n        return deepcopy(self._model(prepared))\n\n    def output_width(self, input_width):\n        if isinstance(input_width, bool) or not isinstance(input_width, int) or input_width < 0:\n            raise ValueError(\"invalid input width\")\n        prediction = self.predict([[0.0] * input_width], transform=False)\n        if (not isinstance(prediction, list) or len(prediction) != 1\n                or not isinstance(prediction[0], list)):\n            raise ValueError(\"invalid model output\")\n        return len(prediction[0])\n",
+          "label": "`predict` passes the caller's rows directly to collaborators, allowing transformer or model mutations to alter the input.",
+          "sha256": "ddb37b98c69e21a5ead48b612cf3ddc182546c2b61128dac76e260cdd8e06ddc"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport math\nfrom numbers import Real\n\n\nclass CallablePipeline:\n    def __init__(self, model=None, loader=None, transformer=None):\n        if model is None:\n            if not callable(loader):\n                raise TypeError(\"a callable loader is required\")\n            model = loader()\n        if not callable(model):\n            raise TypeError(\"model must be callable\")\n        if transformer is not None and not callable(transformer):\n            raise TypeError(\"transformer must be callable\")\n        self._model = model\n        self._transformer = transformer\n        hook = getattr(model, \"set_evaluation\", None)\n        if callable(hook):\n            hook(True)\n\n    @staticmethod\n    def _valid_rows(rows):\n        if not isinstance(rows, list):\n            return False\n        for row in rows:\n            if not isinstance(row, list):\n                return False\n            for value in row:\n                if (isinstance(value, bool) or not isinstance(value, Real)\n                        or not math.isfinite(value)):\n                    return False\n        return True\n\n    def predict(self, rows, transform=True):\n        if not isinstance(transform, bool):\n            raise TypeError(\"transform must be boolean\")\n        if not self._valid_rows(rows):\n            raise ValueError(\"invalid rows\")\n        prepared = deepcopy(rows)\n        if transform and self._transformer is not None:\n            prepared = self._transformer(prepared)\n        return deepcopy(self._model(prepared))\n\n    def output_width(self, input_width):\n        if isinstance(input_width, bool) or not isinstance(input_width, int) or input_width < 0:\n            raise ValueError(\"invalid input width\")\n        prediction = self.predict([[0.0] * input_width], transform=False)\n        if (not isinstance(prediction, list) or len(prediction) != 1\n                or not isinstance(prediction[0], list)):\n            raise ValueError(\"invalid model output\")\n        return len(prediction[0])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9f7cca3cf97982eeb5c9e7944bece70e2ed44d7577b6998e91ccf6ea821a85eb"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import CallablePipeline\n\n\nclass TrackingModel:\n    def __init__(self):\n        self.evaluation_calls = []\n        self.calls = []\n        self.output = [[10, 20]]\n\n    def set_evaluation(self, value):\n        self.evaluation_calls.append(value)\n\n    def __call__(self, rows):\n        self.calls.append(rows)\n        if rows:\n            rows[0].append(999)\n        return self.output\n\n\nclass CallablePipelineTests(unittest.TestCase):\n    def test_loader_evaluation_transform_copying_and_result_copying(self):\n        model = TrackingModel()\n        loader_calls = []\n        transformed_inputs = []\n\n        def loader():\n            loader_calls.append(True)\n            return model\n\n        def transformer(rows):\n            transformed_inputs.append(rows)\n            rows[0][0] = 50\n            return rows\n\n        pipeline = CallablePipeline(loader=loader, transformer=transformer)\n        self.assertEqual(len(loader_calls), 1)\n        self.assertEqual(model.evaluation_calls, [True])\n\n        rows = [[1.0, 2], [3]]\n        result = pipeline.predict(rows)\n        self.assertEqual(rows, [[1.0, 2], [3]])\n        self.assertEqual(transformed_inputs[0][0], [50, 2, 999])\n        self.assertIsNot(transformed_inputs[0], rows)\n        self.assertEqual(result, [[10, 20]])\n        result[0].append(30)\n        self.assertEqual(model.output, [[10, 20]])\n\n    def test_supplied_model_precedes_loader_and_transform_false_skips_transformer(self):\n        model = TrackingModel()\n\n        def forbidden_loader():\n            raise AssertionError(\"loader must not be called\")\n\n        def forbidden_transformer(rows):\n            raise AssertionError(\"transformer must not be called\")\n\n        pipeline = CallablePipeline(model=model, loader=forbidden_loader,\n                                    transformer=forbidden_transformer)\n        rows = [[4]]\n        pipeline.predict(rows, transform=False)\n        self.assertEqual(rows, [[4]])\n        self.assertEqual(model.calls[0], [[4, 999]])\n\n    def test_empty_rows_and_ragged_rows_are_valid(self):\n        calls = []\n\n        def model(rows):\n            calls.append(rows)\n            return []\n\n        pipeline = CallablePipeline(model=model)\n        self.assertEqual(pipeline.predict([]), [])\n        self.assertEqual(pipeline.predict([[], [1, 2.5], [3]]), [])\n        self.assertEqual(calls, [[], [[], [1, 2.5], [3]]])\n\n    def test_output_width_and_prediction_shape_validation(self):\n        seen = []\n\n        def model(rows):\n            seen.append(rows)\n            return [[1, 2, 3]]\n\n        pipeline = CallablePipeline(model=model, transformer=lambda rows: (_ for _ in ()).throw(AssertionError()))\n        self.assertEqual(pipeline.output_width(4), 3)\n        self.assertEqual(seen, [[[0, 0, 0, 0]]])\n\n        for bad in (True, -1, 2.0):\n            with self.subTest(width=bad):\n                with self.assertRaises((TypeError, ValueError)):\n                    pipeline.output_width(bad)\n\n        for output in ([], [1], [[1], [2]], \"bad\"):\n            with self.subTest(output=output):\n                with self.assertRaises(ValueError):\n                    CallablePipeline(model=lambda rows, value=output: value).output_width(1)\n\n    def test_invalid_constructor_predict_arguments_and_transform_flag(self):\n        with self.assertRaises(TypeError):\n            CallablePipeline()\n        with self.assertRaises(TypeError):\n            CallablePipeline(model=object())\n        with self.assertRaises(TypeError):\n            CallablePipeline(model=lambda rows: rows, transformer=object())\n\n        pipeline = CallablePipeline(model=lambda rows: rows)\n        invalid_rows = [\n            None, (), [1], [[True]], [[math.nan]], [[math.inf]], [[1, \"2\"]]\n        ]\n        for rows in invalid_rows:\n            with self.subTest(rows=rows):\n                with self.assertRaises((TypeError, ValueError)):\n                    pipeline.predict(rows)\n        for flag in (1, None, \"true\"):\n            with self.subTest(flag=flag):\n                with self.assertRaises(TypeError):\n                    pipeline.predict([], transform=flag)\n\n    def test_dependency_exceptions_propagate_unchanged(self):\n        marker = RuntimeError(\"marker\")\n\n        def raise_marker(*args):\n            raise marker\n\n        with self.assertRaises(RuntimeError) as caught:\n            CallablePipeline(loader=raise_marker)\n        self.assertIs(caught.exception, marker)\n\n        pipeline = CallablePipeline(model=lambda rows: rows, transformer=raise_marker)\n        with self.assertRaises(RuntimeError) as caught:\n            pipeline.predict([[1]])\n        self.assertIs(caught.exception, marker)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "72f65033ee57f94e8d0c812277e6969674a440ff648637eb129ae476d9ee89b5"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "15577489bf0593a252d65629ea2a8513328f6f080a6d855de38fee5220b52618",
+      "text": "Implement a standard-library-only class `CallablePipeline` in `solution.py`.\n\nConstructor: `CallablePipeline(model=None, loader=None, transformer=None)`. If `model` is `None`, `loader` must be callable and is called exactly once to obtain the model. The resulting model must be callable; otherwise raise `TypeError`. A supplied `model` takes precedence and the loader must not be called. If supplied, `transformer` must be callable. The constructor must call `model.set_evaluation(True)` exactly once when that attribute exists and is callable.\n\nMethods:\n\n- `predict(rows, transform=True)`: `rows` must be a list of rows, where every row is a list of finite real numbers, booleans excluded. Empty `rows` is valid. Rows may have different widths. Deep-copy the input before any processing. If `transform` is exactly `True` and a transformer exists, pass that copy to the transformer and use its result. If `transform` is not a boolean, raise `TypeError`. Call the model once with the prepared data and return a deep copy of its result. Neither transformer nor model mutations may affect `rows`.\n- `output_width(input_width)`: `input_width` must be a non-negative integer other than `bool`. Call `predict` with one row of that many zeroes and transformation disabled. The prediction must be a list containing exactly one list; return that inner list's length. Otherwise raise `ValueError`.\n\nExceptions raised by the loader, transformer, model, or evaluation hook must propagate unchanged. Returned mutable values must not alias model-owned data. Write a new complete implementation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "15577489bf0593a252d65629ea2a8513328f6f080a6d855de38fee5220b52618",
+      "text": "Implement a standard-library-only class `CallablePipeline` in `solution.py`.\n\nConstructor: `CallablePipeline(model=None, loader=None, transformer=None)`. If `model` is `None`, `loader` must be callable and is called exactly once to obtain the model. The resulting model must be callable; otherwise raise `TypeError`. A supplied `model` takes precedence and the loader must not be called. If supplied, `transformer` must be callable. The constructor must call `model.set_evaluation(True)` exactly once when that attribute exists and is callable.\n\nMethods:\n\n- `predict(rows, transform=True)`: `rows` must be a list of rows, where every row is a list of finite real numbers, booleans excluded. Empty `rows` is valid. Rows may have different widths. Deep-copy the input before any processing. If `transform` is exactly `True` and a transformer exists, pass that copy to the transformer and use its result. If `transform` is not a boolean, raise `TypeError`. Call the model once with the prepared data and return a deep copy of its result. Neither transformer nor model mutations may affect `rows`.\n- `output_width(input_width)`: `input_width` must be a non-negative integer other than `bool`. Call `predict` with one row of that many zeroes and transformation disabled. The prediction must be a list containing exactly one list; return that inner list's length. Otherwise raise `ValueError`.\n\nExceptions raised by the loader, transformer, model, or evaluation hook must propagate unchanged. Returned mutable values must not alias model-owned data. Write a new complete implementation.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0628",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nimport math\nfrom numbers import Real\n\n\nclass CallablePipeline:\n    def __init__(self, model=None, loader=None, transformer=None):\n        if model is None:\n            if not callable(loader):\n                raise TypeError(\"a callable loader is required\")\n            model = loader()\n        if not callable(model):\n            raise TypeError(\"model must be callable\")\n        if transformer is not None and not callable(transformer):\n            raise TypeError(\"transformer must be callable\")\n        self._model = model\n        self._transformer = transformer\n        hook = getattr(model, \"set_evaluation\", None)\n        if callable(hook):\n            hook(True)\n\n    @staticmethod\n    def _valid_rows(rows):\n        if not isinstance(rows, list):\n            return False\n        for row in rows:\n            if not isinstance(row, list):\n                return False\n            for value in row:\n                if (isinstance(value, bool) or not isinstance(value, Real)\n                        or not math.isfinite(value)):\n                    return False\n        return True\n\n    def predict(self, rows, transform=True):\n        if not isinstance(transform, bool):\n            raise TypeError(\"transform must be boolean\")\n        if not self._valid_rows(rows):\n            raise ValueError(\"invalid rows\")\n        prepared = rows\n        if transform and self._transformer is not None:\n            prepared = self._transformer(prepared)\n        return deepcopy(self._model(prepared))\n\n    def output_width(self, input_width):\n        if isinstance(input_width, bool) or not isinstance(input_width, int) or input_width < 0:\n            raise ValueError(\"invalid input width\")\n        prediction = self.predict([[0.0] * input_width], transform=False)\n        if (not isinstance(prediction, list) or len(prediction) != 1\n                or not isinstance(prediction[0], list)):\n            raise ValueError(\"invalid model output\")\n        return len(prediction[0])\n",
+          "label": "`predict` passes the caller's rows directly to collaborators, allowing transformer or model mutations to alter the input.",
+          "sha256": "ddb37b98c69e21a5ead48b612cf3ddc182546c2b61128dac76e260cdd8e06ddc"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nimport math\nfrom numbers import Real\n\n\nclass CallablePipeline:\n    def __init__(self, model=None, loader=None, transformer=None):\n        if model is None:\n            if not callable(loader):\n                raise TypeError(\"a callable loader is required\")\n            model = loader()\n        if not callable(model):\n            raise TypeError(\"model must be callable\")\n        if transformer is not None and not callable(transformer):\n            raise TypeError(\"transformer must be callable\")\n        self._model = model\n        self._transformer = transformer\n        hook = getattr(model, \"set_evaluation\", None)\n        if callable(hook):\n            hook(True)\n\n    @staticmethod\n    def _valid_rows(rows):\n        if not isinstance(rows, list):\n            return False\n        for row in rows:\n            if not isinstance(row, list):\n                return False\n            for value in row:\n                if (isinstance(value, bool) or not isinstance(value, Real)\n                        or not math.isfinite(value)):\n                    return False\n        return True\n\n    def predict(self, rows, transform=True):\n        if not isinstance(transform, bool):\n            raise TypeError(\"transform must be boolean\")\n        if not self._valid_rows(rows):\n            raise ValueError(\"invalid rows\")\n        prepared = deepcopy(rows)\n        if transform and self._transformer is not None:\n            prepared = self._transformer(prepared)\n        return deepcopy(self._model(prepared))\n\n    def output_width(self, input_width):\n        if isinstance(input_width, bool) or not isinstance(input_width, int) or input_width < 0:\n            raise ValueError(\"invalid input width\")\n        prediction = self.predict([[0.0] * input_width], transform=False)\n        if (not isinstance(prediction, list) or len(prediction) != 1\n                or not isinstance(prediction[0], list)):\n            raise ValueError(\"invalid model output\")\n        return len(prediction[0])\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9f7cca3cf97982eeb5c9e7944bece70e2ed44d7577b6998e91ccf6ea821a85eb"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_large_integer_reaches_identity_model (__main__.FiniteRealTests.test_large_integer_reaches_identity_model)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_large_integer_reaches_identity_model\n    result = CallablePipeline(model=lambda data: data).predict(rows)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 38, in predict\n    if not self._valid_rows(rows):\n           ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 31, in _valid_rows\n    or not math.isfinite(value)):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "b5c88b46f12a653fa97620e75c1532d7eb9b607e33dc84a87390be6152fec031",
+    "duration_ms": 472,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

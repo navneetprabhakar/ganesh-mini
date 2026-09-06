@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0641",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "4e9c8a9ec0a98109075b3ae2c5fd90ee7429f65fe597c7d187ca4a115de678d1",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import select_values\n\n\nclass DecimalIndexTests(unittest.TestCase):\n    def test_long_zero_index_selects_first_value(self):\n        self.assertEqual(select_values([\"first\"], \"0\" * 5000), [\"first\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "6947506c7fd717a2935ce70afe89ca212f474b2cd054f61e309c36d4fa93e71e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1ccb6cd217b97bce48e93b86f64b21b4db28ca334b799fcbd0f16cca3af5d078",
+      "text": "Implement `select_values(document, path, variables=None)` in `solution.py` for JSON-like dictionaries, lists, and scalar leaves. A path is a slash-separated string. An empty path selects the entire document. Literal segments select dictionary keys; decimal segments index lists; `*` expands all dictionary values in insertion order or all list items in index order; and `$name` substitutes a segment from `variables`, whose value must be a string. Empty non-root segments, missing variables, malformed variable names, negative or out-of-range indexes, incompatible container types, and missing keys raise `ValueError`, `KeyError`, `IndexError`, or `TypeError` as appropriate. `variables` defaults to an empty mapping and is never mutated. Return a list of deep-copied selected values in deterministic expansion order. If multiple selected positions refer to the same mutable object, preserve that alias inside the returned list, while sharing no mutable objects with the input. Reject non-string paths and non-mapping variables.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1ccb6cd217b97bce48e93b86f64b21b4db28ca334b799fcbd0f16cca3af5d078",
+      "text": "Implement `select_values(document, path, variables=None)` in `solution.py` for JSON-like dictionaries, lists, and scalar leaves. A path is a slash-separated string. An empty path selects the entire document. Literal segments select dictionary keys; decimal segments index lists; `*` expands all dictionary values in insertion order or all list items in index order; and `$name` substitutes a segment from `variables`, whose value must be a string. Empty non-root segments, missing variables, malformed variable names, negative or out-of-range indexes, incompatible container types, and missing keys raise `ValueError`, `KeyError`, `IndexError`, or `TypeError` as appropriate. `variables` defaults to an empty mapping and is never mutated. Return a list of deep-copied selected values in deterministic expansion order. If multiple selected positions refer to the same mutable object, preserve that alias inside the returned list, while sharing no mutable objects with the input. Reject non-string paths and non-mapping variables.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0641",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\ndef select_values(document, path, variables=None):\n    if not isinstance(path, str):\n        raise TypeError(\"path must be a string\")\n    if variables is None:\n        variables = {}\n    if not isinstance(variables, Mapping):\n        raise TypeError(\"variables must be a mapping\")\n    if path == \"\":\n        return deepcopy([document])\n\n    segments = path.split(\"/\")\n    if any(segment == \"\" for segment in segments):\n        raise ValueError(\"path contains an empty segment\")\n\n    current = [document]\n    for raw_segment in segments:\n        segment = raw_segment\n        if raw_segment.startswith(\"$\"):\n            name = raw_segment[1:]\n            if not name or not name.isidentifier():\n                raise ValueError(\"invalid variable segment\")\n            if name not in variables:\n                raise KeyError(name)\n            segment = variables[name]\n            if not isinstance(segment, str):\n                raise TypeError(\"variable values must be strings\")\n            if segment == \"\":\n                raise ValueError(\"variable produced an empty segment\")\n\n        following = []\n        for value in current:\n            if segment == \"*\":\n                if isinstance(value, Mapping):\n                    following.extend(value.values())\n                elif isinstance(value, list):\n                    following.extend(value)\n                else:\n                    raise TypeError(\"wildcard requires a dictionary or list\")\n            elif isinstance(value, Mapping):\n                if segment not in value:\n                    raise KeyError(segment)\n                following.append(value[segment])\n            elif isinstance(value, list):\n                if segment.startswith(\"-\") and segment[1:].isdecimal():\n                    raise IndexError(int(segment))\n                if not segment.isdecimal():\n                    raise TypeError(\"list indexes must be non-negative decimals\")\n                index = int(segment)\n                if index >= len(value):\n                    raise IndexError(index)\n                following.append(value[index])\n            else:\n                raise TypeError(\"cannot descend into a scalar\")\n        current = following\n\n    return current\n",
+          "label": "Selected mutable values are returned as aliases of the input document instead of as one deep-copied result graph.",
+          "sha256": "5e45d1c9ada4cbcd027bce9b1c192f0000ac8a99dc7e8d616103bf34cc903ed7"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\ndef select_values(document, path, variables=None):\n    if not isinstance(path, str):\n        raise TypeError(\"path must be a string\")\n    if variables is None:\n        variables = {}\n    if not isinstance(variables, Mapping):\n        raise TypeError(\"variables must be a mapping\")\n    if path == \"\":\n        return deepcopy([document])\n\n    segments = path.split(\"/\")\n    if any(segment == \"\" for segment in segments):\n        raise ValueError(\"path contains an empty segment\")\n\n    current = [document]\n    for raw_segment in segments:\n        segment = raw_segment\n        if raw_segment.startswith(\"$\"):\n            name = raw_segment[1:]\n            if not name or not name.isidentifier():\n                raise ValueError(\"invalid variable segment\")\n            if name not in variables:\n                raise KeyError(name)\n            segment = variables[name]\n            if not isinstance(segment, str):\n                raise TypeError(\"variable values must be strings\")\n            if segment == \"\":\n                raise ValueError(\"variable produced an empty segment\")\n\n        following = []\n        for value in current:\n            if segment == \"*\":\n                if isinstance(value, Mapping):\n                    following.extend(value.values())\n                elif isinstance(value, list):\n                    following.extend(value)\n                else:\n                    raise TypeError(\"wildcard requires a dictionary or list\")\n            elif isinstance(value, Mapping):\n                if segment not in value:\n                    raise KeyError(segment)\n                following.append(value[segment])\n            elif isinstance(value, list):\n                if segment.startswith(\"-\") and segment[1:].isdecimal():\n                    raise IndexError(int(segment))\n                if not segment.isdecimal():\n                    raise TypeError(\"list indexes must be non-negative decimals\")\n                index = int(segment)\n                if index >= len(value):\n                    raise IndexError(index)\n                following.append(value[index])\n            else:\n                raise TypeError(\"cannot descend into a scalar\")\n        current = following\n\n    return deepcopy(current)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5a82a02233c734c0f8a6be02cf014b65d937745c3c3bca250f0ed194c97502b6"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import OrderedDict\n\nfrom solution import select_values\n\n\nclass SelectValuesTests(unittest.TestCase):\n    def test_empty_path_selects_deep_copy_of_entire_document(self):\n        document = {\"a\": [1, {\"b\": 2}]}\n        selected = select_values(document, \"\")\n        self.assertEqual(selected, [document])\n        self.assertIsNot(selected[0], document)\n        self.assertIsNot(selected[0][\"a\"], document[\"a\"])\n        selected[0][\"a\"][1][\"b\"] = 99\n        self.assertEqual(document[\"a\"][1][\"b\"], 2)\n\n    def test_literals_list_indexes_and_wildcards(self):\n        document = OrderedDict([\n            (\"groups\", [\n                {\"name\": \"first\", \"values\": [10, 11]},\n                {\"name\": \"second\", \"values\": [20, 21]},\n            ]),\n            (\"tail\", 99),\n        ])\n        self.assertEqual(select_values(document, \"groups/1/name\"), [\"second\"])\n        self.assertEqual(select_values(document, \"groups/*/values/0\"), [10, 20])\n        self.assertEqual(select_values(document, \"*\"), [document[\"groups\"], 99])\n\n    def test_nested_wildcards_have_deterministic_expansion_order(self):\n        document = {\n            \"left\": {\"a\": 1, \"b\": 2},\n            \"right\": {\"c\": 3, \"d\": 4},\n        }\n        self.assertEqual(select_values(document, \"*/*\"), [1, 2, 3, 4])\n\n    def test_variable_substitution_and_variables_not_mutated(self):\n        document = {\"users\": [{\"name\": \"a\"}, {\"name\": \"b\"}]}\n        variables = {\"index\": \"1\", \"field\": \"name\"}\n        original = dict(variables)\n        self.assertEqual(\n            select_values(document, \"users/$index/$field\", variables), [\"b\"]\n        )\n        self.assertEqual(variables, original)\n\n    def test_alias_is_preserved_in_output_but_detached_from_input(self):\n        shared = {\"items\": []}\n        document = {\"a\": shared, \"b\": shared}\n        selected = select_values(document, \"*\")\n        self.assertIs(selected[0], selected[1])\n        self.assertIsNot(selected[0], shared)\n        selected[0][\"items\"].append(1)\n        self.assertEqual(selected[1][\"items\"], [1])\n        self.assertEqual(shared, {\"items\": []})\n\n    def test_missing_keys_variables_and_bad_indexes(self):\n        with self.assertRaises(KeyError):\n            select_values({\"a\": 1}, \"missing\")\n        with self.assertRaises(KeyError):\n            select_values({\"a\": 1}, \"$missing\", {})\n        with self.assertRaises(IndexError):\n            select_values([1], \"1\")\n        with self.assertRaises(IndexError):\n            select_values([1], \"-1\")\n        with self.assertRaises(ValueError):\n            select_values({\"a\": 1}, \"\") if False else select_values({\"a\": 1}, \"a/\")\n\n    def test_incompatible_containers_and_malformed_segments(self):\n        with self.assertRaises(TypeError):\n            select_values({\"a\": 1}, \"a/b\")\n        with self.assertRaises(TypeError):\n            select_values([1, 2], \"not-an-index\")\n        with self.assertRaises(ValueError):\n            select_values({\"a\": 1}, \"/a\")\n        with self.assertRaises(ValueError):\n            select_values({\"a\": 1}, \"a//b\")\n        with self.assertRaises(ValueError):\n            select_values({\"a\": 1}, \"$\", {})\n\n    def test_argument_type_validation(self):\n        for path in [None, 1, b\"a\"]:\n            with self.subTest(path=path):\n                with self.assertRaises(TypeError):\n                    select_values({}, path)\n        for variables in [[], \"x\", 1]:\n            with self.subTest(variables=variables):\n                with self.assertRaises(TypeError):\n                    select_values({}, \"\", variables)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "6313f8df1fa4968c9df21e59371d1fe62af6513692dc81610ff14324752b34fc"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1ccb6cd217b97bce48e93b86f64b21b4db28ca334b799fcbd0f16cca3af5d078",
+      "text": "Implement `select_values(document, path, variables=None)` in `solution.py` for JSON-like dictionaries, lists, and scalar leaves. A path is a slash-separated string. An empty path selects the entire document. Literal segments select dictionary keys; decimal segments index lists; `*` expands all dictionary values in insertion order or all list items in index order; and `$name` substitutes a segment from `variables`, whose value must be a string. Empty non-root segments, missing variables, malformed variable names, negative or out-of-range indexes, incompatible container types, and missing keys raise `ValueError`, `KeyError`, `IndexError`, or `TypeError` as appropriate. `variables` defaults to an empty mapping and is never mutated. Return a list of deep-copied selected values in deterministic expansion order. If multiple selected positions refer to the same mutable object, preserve that alias inside the returned list, while sharing no mutable objects with the input. Reject non-string paths and non-mapping variables.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1ccb6cd217b97bce48e93b86f64b21b4db28ca334b799fcbd0f16cca3af5d078",
+      "text": "Implement `select_values(document, path, variables=None)` in `solution.py` for JSON-like dictionaries, lists, and scalar leaves. A path is a slash-separated string. An empty path selects the entire document. Literal segments select dictionary keys; decimal segments index lists; `*` expands all dictionary values in insertion order or all list items in index order; and `$name` substitutes a segment from `variables`, whose value must be a string. Empty non-root segments, missing variables, malformed variable names, negative or out-of-range indexes, incompatible container types, and missing keys raise `ValueError`, `KeyError`, `IndexError`, or `TypeError` as appropriate. `variables` defaults to an empty mapping and is never mutated. Return a list of deep-copied selected values in deterministic expansion order. If multiple selected positions refer to the same mutable object, preserve that alias inside the returned list, while sharing no mutable objects with the input. Reject non-string paths and non-mapping variables.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0641",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\ndef select_values(document, path, variables=None):\n    if not isinstance(path, str):\n        raise TypeError(\"path must be a string\")\n    if variables is None:\n        variables = {}\n    if not isinstance(variables, Mapping):\n        raise TypeError(\"variables must be a mapping\")\n    if path == \"\":\n        return deepcopy([document])\n\n    segments = path.split(\"/\")\n    if any(segment == \"\" for segment in segments):\n        raise ValueError(\"path contains an empty segment\")\n\n    current = [document]\n    for raw_segment in segments:\n        segment = raw_segment\n        if raw_segment.startswith(\"$\"):\n            name = raw_segment[1:]\n            if not name or not name.isidentifier():\n                raise ValueError(\"invalid variable segment\")\n            if name not in variables:\n                raise KeyError(name)\n            segment = variables[name]\n            if not isinstance(segment, str):\n                raise TypeError(\"variable values must be strings\")\n            if segment == \"\":\n                raise ValueError(\"variable produced an empty segment\")\n\n        following = []\n        for value in current:\n            if segment == \"*\":\n                if isinstance(value, Mapping):\n                    following.extend(value.values())\n                elif isinstance(value, list):\n                    following.extend(value)\n                else:\n                    raise TypeError(\"wildcard requires a dictionary or list\")\n            elif isinstance(value, Mapping):\n                if segment not in value:\n                    raise KeyError(segment)\n                following.append(value[segment])\n            elif isinstance(value, list):\n                if segment.startswith(\"-\") and segment[1:].isdecimal():\n                    raise IndexError(int(segment))\n                if not segment.isdecimal():\n                    raise TypeError(\"list indexes must be non-negative decimals\")\n                index = int(segment)\n                if index >= len(value):\n                    raise IndexError(index)\n                following.append(value[index])\n            else:\n                raise TypeError(\"cannot descend into a scalar\")\n        current = following\n\n    return current\n",
+          "label": "Selected mutable values are returned as aliases of the input document instead of as one deep-copied result graph.",
+          "sha256": "5e45d1c9ada4cbcd027bce9b1c192f0000ac8a99dc7e8d616103bf34cc903ed7"
+        }
+      ],
+      "reference": {
+        "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\ndef select_values(document, path, variables=None):\n    if not isinstance(path, str):\n        raise TypeError(\"path must be a string\")\n    if variables is None:\n        variables = {}\n    if not isinstance(variables, Mapping):\n        raise TypeError(\"variables must be a mapping\")\n    if path == \"\":\n        return deepcopy([document])\n\n    segments = path.split(\"/\")\n    if any(segment == \"\" for segment in segments):\n        raise ValueError(\"path contains an empty segment\")\n\n    current = [document]\n    for raw_segment in segments:\n        segment = raw_segment\n        if raw_segment.startswith(\"$\"):\n            name = raw_segment[1:]\n            if not name or not name.isidentifier():\n                raise ValueError(\"invalid variable segment\")\n            if name not in variables:\n                raise KeyError(name)\n            segment = variables[name]\n            if not isinstance(segment, str):\n                raise TypeError(\"variable values must be strings\")\n            if segment == \"\":\n                raise ValueError(\"variable produced an empty segment\")\n\n        following = []\n        for value in current:\n            if segment == \"*\":\n                if isinstance(value, Mapping):\n                    following.extend(value.values())\n                elif isinstance(value, list):\n                    following.extend(value)\n                else:\n                    raise TypeError(\"wildcard requires a dictionary or list\")\n            elif isinstance(value, Mapping):\n                if segment not in value:\n                    raise KeyError(segment)\n                following.append(value[segment])\n            elif isinstance(value, list):\n                if segment.startswith(\"-\") and segment[1:].isdecimal():\n                    raise IndexError(int(segment))\n                if not segment.isdecimal():\n                    raise TypeError(\"list indexes must be non-negative decimals\")\n                index = int(segment)\n                if index >= len(value):\n                    raise IndexError(index)\n                following.append(value[index])\n            else:\n                raise TypeError(\"cannot descend into a scalar\")\n        current = following\n\n    return deepcopy(current)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5a82a02233c734c0f8a6be02cf014b65d937745c3c3bca250f0ed194c97502b6"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_long_zero_index_selects_first_value (__main__.DecimalIndexTests.test_long_zero_index_selects_first_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_long_zero_index_selects_first_value\n    self.assertEqual(select_values([\"first\"], \"0\" * 5000), [\"first\"])\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 52, in select_values\n    index = int(segment)\n            ^^^^^^^^^^^^\nValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5000 digits; use sys.set_int_max_str_digits() to increase the limit\n\n----------------------------------------------------------------------\nRan 1 test in 0.013s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "9db0fcf6851fac1b367ed70a1bc74773a63c457526d8efed9f671d7964581dc1",
+    "duration_ms": 494,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

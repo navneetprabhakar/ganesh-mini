@@ -24,8 +24,8 @@ inspections. No seven-criterion approval. Continue position 526.
 | 525 | 0617 | Ordinary local/shared copies, instance separation and class replacement visibility agree. Arbitrary deepcopy-compatible values pending; no new hold. |
 
 Candidate SHA-256: `680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec`.
-Original candidates/tests/sample/partition unchanged. This batch awaits backup;
-last verified backup is through 663 holds / Python position 510.
+Original candidates/tests/sample/partition unchanged. This batch is backed up
+through 674 holds / Python position 540; see QUALITY_STRATUM_674_BACKUP.md.
 
 Four pinned Python 3.11.15 probes, network disabled/resource limited; all
 exit 1 without timeout. Holds are review items, not final rejections.

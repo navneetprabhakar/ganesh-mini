@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0636",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "06ac060f4ac355e6d36cd8ab6ca07df8478f5ced72c2cf2d89ebb4ac81e49541",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import build_absence_report\n\n\nclass MalformedAbsenceTests(unittest.TestCase):\n    def test_noniterable_absence_raises_value_error(self):\n        with self.assertRaises(ValueError):\n            build_absence_report({\"a\": \"g\"}, [\n                {\"day\": 1, \"absent\": None, \"unreported_groups\": []}\n            ], 1)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "8a6433c8fccbb0e6fe4ef59252bf5a8c3f9d8c312c71904c3c2a151d16645de4"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b45d03adbdfda140af11aba7926781c962e156f626d813000716990f262bf464",
+      "text": "In `solution.py`, implement `build_absence_report(people, sessions, end_day, window=7)`.\n\n`people` maps unique non-empty person identifiers to non-empty group names. `sessions` is an iterable of dictionaries, each containing exactly `day`, `absent`, and `unreported_groups`. A day is an integer excluding booleans. `absent` is an iterable of person identifiers and `unreported_groups` is an iterable of group names; neither may contain duplicates. Unknown people or group names are invalid. Session days must be unique.\n\nInclude sessions with days from `end_day - window + 1` through `end_day`, inclusive. Return a dictionary with `absence_counts`, mapping every person to their count in that range in original `people` order, and `unreported_groups`, a tuple of distinct group names that were unreported in the range. Order that tuple by each group's first qualifying session day, breaking ties by the order within that session. Empty inputs are valid. `window` must be a positive integer excluding booleans. Raise `ValueError` for malformed input. Do not mutate inputs, and ensure returned collections do not alias mutable input collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b45d03adbdfda140af11aba7926781c962e156f626d813000716990f262bf464",
+      "text": "In `solution.py`, implement `build_absence_report(people, sessions, end_day, window=7)`.\n\n`people` maps unique non-empty person identifiers to non-empty group names. `sessions` is an iterable of dictionaries, each containing exactly `day`, `absent`, and `unreported_groups`. A day is an integer excluding booleans. `absent` is an iterable of person identifiers and `unreported_groups` is an iterable of group names; neither may contain duplicates. Unknown people or group names are invalid. Session days must be unique.\n\nInclude sessions with days from `end_day - window + 1` through `end_day`, inclusive. Return a dictionary with `absence_counts`, mapping every person to their count in that range in original `people` order, and `unreported_groups`, a tuple of distinct group names that were unreported in the range. Order that tuple by each group's first qualifying session day, breaking ties by the order within that session. Empty inputs are valid. `window` must be a positive integer excluding booleans. Raise `ValueError` for malformed input. Do not mutate inputs, and ensure returned collections do not alias mutable input collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0636",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def build_absence_report(people, sessions, end_day, window=7):\n    if not hasattr(people, \"items\"):\n        raise ValueError(\"people must be a mapping\")\n    if isinstance(end_day, bool) or not isinstance(end_day, int):\n        raise ValueError(\"invalid end day\")\n    if isinstance(window, bool) or not isinstance(window, int) or window <= 0:\n        raise ValueError(\"invalid window\")\n\n    person_items = list(people.items())\n    for person, group in person_items:\n        if not isinstance(person, str) or not person or not isinstance(group, str) or not group:\n            raise ValueError(\"invalid person or group\")\n    known_people = {person for person, _ in person_items}\n    known_groups = {group for _, group in person_items}\n    parsed = []\n    seen_days = set()\n\n    for session in sessions:\n        if not hasattr(session, \"keys\") or set(session.keys()) != {\"day\", \"absent\", \"unreported_groups\"}:\n            raise ValueError(\"malformed session\")\n        day = session[\"day\"]\n        if isinstance(day, bool) or not isinstance(day, int) or day in seen_days:\n            raise ValueError(\"invalid or duplicate day\")\n        seen_days.add(day)\n        absent = tuple(session[\"absent\"])\n        unreported = tuple(session[\"unreported_groups\"])\n        if len(set(absent)) != len(absent) or any(person not in known_people for person in absent):\n            raise ValueError(\"invalid absent list\")\n        if len(set(unreported)) != len(unreported) or any(group not in known_groups for group in unreported):\n            raise ValueError(\"invalid unreported group list\")\n        parsed.append((day, absent, unreported))\n\n    start = end_day - window + 1\n    counts = {person: 0 for person, _ in person_items}\n    ordered_groups = []\n    seen_groups = set()\n    for day, absent, unreported in sorted(parsed, key=lambda row: row[0]):\n        if start < day <= end_day:\n            for person in absent:\n                counts[person] += 1\n            for group in unreported:\n                if group not in seen_groups:\n                    seen_groups.add(group)\n                    ordered_groups.append(group)\n    return {\"absence_counts\": counts, \"unreported_groups\": tuple(ordered_groups)}\n",
+          "label": "The first day of the inclusive reporting window is incorrectly excluded.",
+          "sha256": "4f48ccfeb22bbc15e8255e41d7eb461f14f63e849fe1e224590e8f8e067caed2"
+        }
+      ],
+      "reference": {
+        "code": "def build_absence_report(people, sessions, end_day, window=7):\n    if not hasattr(people, \"items\"):\n        raise ValueError(\"people must be a mapping\")\n    if isinstance(end_day, bool) or not isinstance(end_day, int):\n        raise ValueError(\"invalid end day\")\n    if isinstance(window, bool) or not isinstance(window, int) or window <= 0:\n        raise ValueError(\"invalid window\")\n\n    person_items = list(people.items())\n    for person, group in person_items:\n        if not isinstance(person, str) or not person or not isinstance(group, str) or not group:\n            raise ValueError(\"invalid person or group\")\n    known_people = {person for person, _ in person_items}\n    known_groups = {group for _, group in person_items}\n    parsed = []\n    seen_days = set()\n\n    for session in sessions:\n        if not hasattr(session, \"keys\") or set(session.keys()) != {\"day\", \"absent\", \"unreported_groups\"}:\n            raise ValueError(\"malformed session\")\n        day = session[\"day\"]\n        if isinstance(day, bool) or not isinstance(day, int) or day in seen_days:\n            raise ValueError(\"invalid or duplicate day\")\n        seen_days.add(day)\n        absent = tuple(session[\"absent\"])\n        unreported = tuple(session[\"unreported_groups\"])\n        if len(set(absent)) != len(absent) or any(person not in known_people for person in absent):\n            raise ValueError(\"invalid absent list\")\n        if len(set(unreported)) != len(unreported) or any(group not in known_groups for group in unreported):\n            raise ValueError(\"invalid unreported group list\")\n        parsed.append((day, absent, unreported))\n\n    start = end_day - window + 1\n    counts = {person: 0 for person, _ in person_items}\n    ordered_groups = []\n    seen_groups = set()\n    for day, absent, unreported in sorted(parsed, key=lambda row: row[0]):\n        if start <= day <= end_day:\n            for person in absent:\n                counts[person] += 1\n            for group in unreported:\n                if group not in seen_groups:\n                    seen_groups.add(group)\n                    ordered_groups.append(group)\n    return {\"absence_counts\": counts, \"unreported_groups\": tuple(ordered_groups)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a6e012103f108b9a28f4a0752c3ca769d0188a5426c7c72128d7dabaa8456dc0"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom collections import OrderedDict\n\nfrom solution import build_absence_report\n\n\nclass AbsenceReportTests(unittest.TestCase):\n    def test_empty(self):\n        self.assertEqual(build_absence_report({}, [], end_day=10), {\n            'absence_counts': {}, 'unreported_groups': ()\n        })\n\n    def test_window_counts_order_ties_and_nonmutation(self):\n        people = OrderedDict([('p2', 'blue'), ('p1', 'red'), ('p3', 'blue')])\n        sessions = [\n            {'day': 7, 'absent': ['p1'], 'unreported_groups': ['red']},\n            {'day': 10, 'absent': ['p2', 'p1'], 'unreported_groups': ['blue', 'red']},\n            {'day': 8, 'absent': ['p3'], 'unreported_groups': ['red']},\n            {'day': 11, 'absent': ['p2'], 'unreported_groups': ['blue']},\n        ]\n        snapshot = [\n            {'day': row['day'], 'absent': list(row['absent']),\n             'unreported_groups': list(row['unreported_groups'])}\n            for row in sessions\n        ]\n        result = build_absence_report(people, sessions, end_day=10, window=3)\n        self.assertEqual(list(result['absence_counts']), ['p2', 'p1', 'p3'])\n        self.assertEqual(result['absence_counts'], {'p2': 1, 'p1': 1, 'p3': 1})\n        self.assertEqual(result['unreported_groups'], ('red', 'blue'))\n        self.assertIsInstance(result['unreported_groups'], tuple)\n        self.assertEqual(sessions, snapshot)\n\n        sessions[1]['absent'].clear()\n        self.assertEqual(result['absence_counts']['p2'], 1)\n\n    def test_boundary_days_are_inclusive(self):\n        people = {'a': 'g'}\n        sessions = [\n            {'day': 3, 'absent': ['a'], 'unreported_groups': []},\n            {'day': 4, 'absent': ['a'], 'unreported_groups': []},\n            {'day': 10, 'absent': ['a'], 'unreported_groups': []},\n            {'day': 11, 'absent': ['a'], 'unreported_groups': []},\n        ]\n        result = build_absence_report(people, sessions, end_day=10, window=7)\n        self.assertEqual(result['absence_counts'], {'a': 2})\n\n    def test_accepts_one_pass_session_and_member_iterables(self):\n        sessions = iter([{\n            'day': 1,\n            'absent': iter(['a']),\n            'unreported_groups': iter(['g']),\n        }])\n        self.assertEqual(build_absence_report({'a': 'g'}, sessions, 1), {\n            'absence_counts': {'a': 1}, 'unreported_groups': ('g',)\n        })\n\n    def test_rejects_invalid_people_window_and_end_day(self):\n        for people in [[], {'': 'g'}, {1: 'g'}, {'a': ''}, {'a': 2}]:\n            with self.subTest(people=people):\n                with self.assertRaises(ValueError):\n                    build_absence_report(people, [], 1)\n        for window in [0, -1, True, 2.5]:\n            with self.subTest(window=window):\n                with self.assertRaises(ValueError):\n                    build_absence_report({}, [], 1, window)\n        for end_day in [True, 1.5, '1']:\n            with self.subTest(end_day=end_day):\n                with self.assertRaises(ValueError):\n                    build_absence_report({}, [], end_day)\n\n    def test_rejects_malformed_sessions_even_outside_window(self):\n        valid = {'day': 1, 'absent': [], 'unreported_groups': []}\n        cases = [\n            [42],\n            [{k: v for k, v in valid.items() if k != 'absent'}],\n            [dict(valid, extra=[])],\n            [dict(valid, day=True)],\n            [{'day': 1, 'absent': ['missing'], 'unreported_groups': []}],\n            [{'day': 1, 'absent': [], 'unreported_groups': ['missing']}],\n            [{'day': 1, 'absent': ['a', 'a'], 'unreported_groups': []}],\n            [{'day': 1, 'absent': [], 'unreported_groups': ['g', 'g']}],\n            [valid, dict(valid)],\n        ]\n        for sessions in cases:\n            with self.subTest(sessions=sessions):\n                with self.assertRaises(ValueError):\n                    build_absence_report({'a': 'g'}, sessions, end_day=100, window=1)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "d429fa1c1175b5cab318ee34c5115e714863c632c63c1dd138bd3f5acd89b60e"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "b45d03adbdfda140af11aba7926781c962e156f626d813000716990f262bf464",
+      "text": "In `solution.py`, implement `build_absence_report(people, sessions, end_day, window=7)`.\n\n`people` maps unique non-empty person identifiers to non-empty group names. `sessions` is an iterable of dictionaries, each containing exactly `day`, `absent`, and `unreported_groups`. A day is an integer excluding booleans. `absent` is an iterable of person identifiers and `unreported_groups` is an iterable of group names; neither may contain duplicates. Unknown people or group names are invalid. Session days must be unique.\n\nInclude sessions with days from `end_day - window + 1` through `end_day`, inclusive. Return a dictionary with `absence_counts`, mapping every person to their count in that range in original `people` order, and `unreported_groups`, a tuple of distinct group names that were unreported in the range. Order that tuple by each group's first qualifying session day, breaking ties by the order within that session. Empty inputs are valid. `window` must be a positive integer excluding booleans. Raise `ValueError` for malformed input. Do not mutate inputs, and ensure returned collections do not alias mutable input collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "b45d03adbdfda140af11aba7926781c962e156f626d813000716990f262bf464",
+      "text": "In `solution.py`, implement `build_absence_report(people, sessions, end_day, window=7)`.\n\n`people` maps unique non-empty person identifiers to non-empty group names. `sessions` is an iterable of dictionaries, each containing exactly `day`, `absent`, and `unreported_groups`. A day is an integer excluding booleans. `absent` is an iterable of person identifiers and `unreported_groups` is an iterable of group names; neither may contain duplicates. Unknown people or group names are invalid. Session days must be unique.\n\nInclude sessions with days from `end_day - window + 1` through `end_day`, inclusive. Return a dictionary with `absence_counts`, mapping every person to their count in that range in original `people` order, and `unreported_groups`, a tuple of distinct group names that were unreported in the range. Order that tuple by each group's first qualifying session day, breaking ties by the order within that session. Empty inputs are valid. `window` must be a positive integer excluding booleans. Raise `ValueError` for malformed input. Do not mutate inputs, and ensure returned collections do not alias mutable input collections.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0636",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "def build_absence_report(people, sessions, end_day, window=7):\n    if not hasattr(people, \"items\"):\n        raise ValueError(\"people must be a mapping\")\n    if isinstance(end_day, bool) or not isinstance(end_day, int):\n        raise ValueError(\"invalid end day\")\n    if isinstance(window, bool) or not isinstance(window, int) or window <= 0:\n        raise ValueError(\"invalid window\")\n\n    person_items = list(people.items())\n    for person, group in person_items:\n        if not isinstance(person, str) or not person or not isinstance(group, str) or not group:\n            raise ValueError(\"invalid person or group\")\n    known_people = {person for person, _ in person_items}\n    known_groups = {group for _, group in person_items}\n    parsed = []\n    seen_days = set()\n\n    for session in sessions:\n        if not hasattr(session, \"keys\") or set(session.keys()) != {\"day\", \"absent\", \"unreported_groups\"}:\n            raise ValueError(\"malformed session\")\n        day = session[\"day\"]\n        if isinstance(day, bool) or not isinstance(day, int) or day in seen_days:\n            raise ValueError(\"invalid or duplicate day\")\n        seen_days.add(day)\n        absent = tuple(session[\"absent\"])\n        unreported = tuple(session[\"unreported_groups\"])\n        if len(set(absent)) != len(absent) or any(person not in known_people for person in absent):\n            raise ValueError(\"invalid absent list\")\n        if len(set(unreported)) != len(unreported) or any(group not in known_groups for group in unreported):\n            raise ValueError(\"invalid unreported group list\")\n        parsed.append((day, absent, unreported))\n\n    start = end_day - window + 1\n    counts = {person: 0 for person, _ in person_items}\n    ordered_groups = []\n    seen_groups = set()\n    for day, absent, unreported in sorted(parsed, key=lambda row: row[0]):\n        if start < day <= end_day:\n            for person in absent:\n                counts[person] += 1\n            for group in unreported:\n                if group not in seen_groups:\n                    seen_groups.add(group)\n                    ordered_groups.append(group)\n    return {\"absence_counts\": counts, \"unreported_groups\": tuple(ordered_groups)}\n",
+          "label": "The first day of the inclusive reporting window is incorrectly excluded.",
+          "sha256": "4f48ccfeb22bbc15e8255e41d7eb461f14f63e849fe1e224590e8f8e067caed2"
+        }
+      ],
+      "reference": {
+        "code": "def build_absence_report(people, sessions, end_day, window=7):\n    if not hasattr(people, \"items\"):\n        raise ValueError(\"people must be a mapping\")\n    if isinstance(end_day, bool) or not isinstance(end_day, int):\n        raise ValueError(\"invalid end day\")\n    if isinstance(window, bool) or not isinstance(window, int) or window <= 0:\n        raise ValueError(\"invalid window\")\n\n    person_items = list(people.items())\n    for person, group in person_items:\n        if not isinstance(person, str) or not person or not isinstance(group, str) or not group:\n            raise ValueError(\"invalid person or group\")\n    known_people = {person for person, _ in person_items}\n    known_groups = {group for _, group in person_items}\n    parsed = []\n    seen_days = set()\n\n    for session in sessions:\n        if not hasattr(session, \"keys\") or set(session.keys()) != {\"day\", \"absent\", \"unreported_groups\"}:\n            raise ValueError(\"malformed session\")\n        day = session[\"day\"]\n        if isinstance(day, bool) or not isinstance(day, int) or day in seen_days:\n            raise ValueError(\"invalid or duplicate day\")\n        seen_days.add(day)\n        absent = tuple(session[\"absent\"])\n        unreported = tuple(session[\"unreported_groups\"])\n        if len(set(absent)) != len(absent) or any(person not in known_people for person in absent):\n            raise ValueError(\"invalid absent list\")\n        if len(set(unreported)) != len(unreported) or any(group not in known_groups for group in unreported):\n            raise ValueError(\"invalid unreported group list\")\n        parsed.append((day, absent, unreported))\n\n    start = end_day - window + 1\n    counts = {person: 0 for person, _ in person_items}\n    ordered_groups = []\n    seen_groups = set()\n    for day, absent, unreported in sorted(parsed, key=lambda row: row[0]):\n        if start <= day <= end_day:\n            for person in absent:\n                counts[person] += 1\n            for group in unreported:\n                if group not in seen_groups:\n                    seen_groups.add(group)\n                    ordered_groups.append(group)\n    return {\"absence_counts\": counts, \"unreported_groups\": tuple(ordered_groups)}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a6e012103f108b9a28f4a0752c3ca769d0188a5426c7c72128d7dabaa8456dc0"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_noniterable_absence_raises_value_error (__main__.MalformedAbsenceTests.test_noniterable_absence_raises_value_error)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 9, in test_noniterable_absence_raises_value_error\n    build_absence_report({\"a\": \"g\"}, [\n  File \"/work/solution.py\", line 25, in build_absence_report\n    absent = tuple(session[\"absent\"])\n             ^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: 'NoneType' object is not iterable\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "6152f1f75939ecf860584573b81725d5811a4e0e759acd4e2656313949a2c28d",
+    "duration_ms": 622,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0624",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a5ca30268ad9b2cdeb69de5a2dfda2aaa4c70b8526cbda40052175d2294a6ff4",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import render_parcel_manifest\n\n\nclass ManifestLineTests(unittest.TestCase):\n    def test_text_newline_cannot_break_fixed_width_lines(self):\n        result = render_parcel_manifest([\n            {\"tracking\": \"A\\nB\", \"zone\": \"z\", \"weight\": 1, \"note\": \"n\"}\n        ], 60)\n        self.assertTrue(all(len(line) == 60 for line in result.split(\"\\n\")), repr(result))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "9a41a8861384bd3e755cebd6681afed77009988ef9132b674378a6e925f1db92"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5f6f077e71f191c84de9929a6e99f973318d747be7a646d384e19c11c2ee2444",
+      "text": "Create `solution.py` with a top-level function `render_parcel_manifest(parcels, width=76)` that returns a formatted string and does not print.\n\n`parcels` must be a list of dictionaries containing exactly usable fields `tracking`, `zone`, `weight`, and `note`; extra fields are ignored. `tracking`, `zone`, and `note` must be strings. `weight` must be a finite, non-negative int or float, excluding booleans. Rows preserve input order and the input is not mutated.\n\nEvery output line must contain exactly `width` characters. `width` must be an integer, excluding booleans, and at least 47. Each line begins with a two-space margin. The fixed column widths are 18 for `Tracking`, 14 for `Zone`, and 12 for `Weight`; `Note` receives all remaining width. Text longer than its column is truncated and shorter text is right-padded. Weight is rendered with one digit after the decimal point. The first line is the header. It is followed by a separator made of spaces for the margin and hyphens afterward. Add the same separator after every parcel row. With no parcels, return only the header and its separator, joined by `\\n`, with no trailing newline. Raise `TypeError` for wrong types and `ValueError` for missing fields, invalid numeric values, or insufficient width.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5f6f077e71f191c84de9929a6e99f973318d747be7a646d384e19c11c2ee2444",
+      "text": "Create `solution.py` with a top-level function `render_parcel_manifest(parcels, width=76)` that returns a formatted string and does not print.\n\n`parcels` must be a list of dictionaries containing exactly usable fields `tracking`, `zone`, `weight`, and `note`; extra fields are ignored. `tracking`, `zone`, and `note` must be strings. `weight` must be a finite, non-negative int or float, excluding booleans. Rows preserve input order and the input is not mutated.\n\nEvery output line must contain exactly `width` characters. `width` must be an integer, excluding booleans, and at least 47. Each line begins with a two-space margin. The fixed column widths are 18 for `Tracking`, 14 for `Zone`, and 12 for `Weight`; `Note` receives all remaining width. Text longer than its column is truncated and shorter text is right-padded. Weight is rendered with one digit after the decimal point. The first line is the header. It is followed by a separator made of spaces for the margin and hyphens afterward. Add the same separator after every parcel row. With no parcels, return only the header and its separator, joined by `\\n`, with no trailing newline. Raise `TypeError` for wrong types and `ValueError` for missing fields, invalid numeric values, or insufficient width.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0624",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\n_MARGIN = 2\n_FIXED_WIDTHS = (18, 14, 12)\n\n\ndef _cell(value, size):\n    return value[:size].ljust(size)\n\n\ndef render_parcel_manifest(parcels, width=76):\n    if not isinstance(parcels, list):\n        raise TypeError(\"parcels must be a list\")\n    if isinstance(width, bool) or not isinstance(width, int):\n        raise TypeError(\"width must be an integer\")\n    if width < 47:\n        raise ValueError(\"width is too small\")\n\n    validated = []\n    for parcel in parcels:\n        if not isinstance(parcel, dict):\n            raise TypeError(\"each parcel must be a dictionary\")\n        required = (\"tracking\", \"zone\", \"weight\", \"note\")\n        if any(key not in parcel for key in required):\n            raise ValueError(\"parcel is missing a required field\")\n        if any(not isinstance(parcel[key], str) for key in (\"tracking\", \"zone\", \"note\")):\n            raise TypeError(\"parcel text fields must be strings\")\n        weight = parcel[\"weight\"]\n        if isinstance(weight, bool) or not isinstance(weight, (int, float)):\n            raise TypeError(\"weight must be numeric\")\n        if not math.isfinite(weight) or weight < 0:\n            raise ValueError(\"weight must be finite and non-negative\")\n        validated.append((parcel[\"tracking\"], parcel[\"zone\"], weight, parcel[\"note\"]))\n\n    note_width = width - _MARGIN - sum(_FIXED_WIDTHS)\n\n    def row(tracking, zone, weight, note):\n        return (\n            \" \" * _MARGIN\n            + _cell(tracking, 18)\n            + _cell(zone, 14)\n            + _cell(weight, 12)\n            + _cell(note, note_width)\n        )\n\n    lines = [row(\"Tracking\", \"Zone\", \"Weight\", \"Note\")]\n    separator = \" \" * _MARGIN + \"-\" * width\n    lines.append(separator)\n    for tracking, zone, weight, note in validated:\n        lines.append(row(tracking, zone, f\"{weight:.1f}\", note))\n        lines.append(separator)\n    return \"\\n\".join(lines)\n",
+          "label": "Separator lines add width hyphens after the margin, making them two characters longer than the required total width.",
+          "sha256": "ad0c5c8a561cce779ada0c1f773fc0ef186ad068a1c0befd639273fee6e28582"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\n_MARGIN = 2\n_FIXED_WIDTHS = (18, 14, 12)\n\n\ndef _cell(value, size):\n    return value[:size].ljust(size)\n\n\ndef render_parcel_manifest(parcels, width=76):\n    if not isinstance(parcels, list):\n        raise TypeError(\"parcels must be a list\")\n    if isinstance(width, bool) or not isinstance(width, int):\n        raise TypeError(\"width must be an integer\")\n    if width < 47:\n        raise ValueError(\"width is too small\")\n\n    validated = []\n    for parcel in parcels:\n        if not isinstance(parcel, dict):\n            raise TypeError(\"each parcel must be a dictionary\")\n        required = (\"tracking\", \"zone\", \"weight\", \"note\")\n        if any(key not in parcel for key in required):\n            raise ValueError(\"parcel is missing a required field\")\n        if any(not isinstance(parcel[key], str) for key in (\"tracking\", \"zone\", \"note\")):\n            raise TypeError(\"parcel text fields must be strings\")\n        weight = parcel[\"weight\"]\n        if isinstance(weight, bool) or not isinstance(weight, (int, float)):\n            raise TypeError(\"weight must be numeric\")\n        if not math.isfinite(weight) or weight < 0:\n            raise ValueError(\"weight must be finite and non-negative\")\n        validated.append((parcel[\"tracking\"], parcel[\"zone\"], weight, parcel[\"note\"]))\n\n    note_width = width - _MARGIN - sum(_FIXED_WIDTHS)\n\n    def row(tracking, zone, weight, note):\n        return (\n            \" \" * _MARGIN\n            + _cell(tracking, 18)\n            + _cell(zone, 14)\n            + _cell(weight, 12)\n            + _cell(note, note_width)\n        )\n\n    lines = [row(\"Tracking\", \"Zone\", \"Weight\", \"Note\")]\n    separator = \" \" * _MARGIN + \"-\" * (width - _MARGIN)\n    lines.append(separator)\n    for tracking, zone, weight, note in validated:\n        lines.append(row(tracking, zone, f\"{weight:.1f}\", note))\n        lines.append(separator)\n    return \"\\n\".join(lines)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "87cb055d85b19842cabf159f223c4e97b283054badc43ac03f30c78cb4ce8e3b"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import render_parcel_manifest\n\n\nclass RenderParcelManifestTests(unittest.TestCase):\n    @staticmethod\n    def field(value, width):\n        return str(value)[:width].ljust(width)\n\n    def expected_header(self, width):\n        note_width = width - 46\n        return \"  \" + self.field(\"Tracking\", 18) + self.field(\"Zone\", 14) + self.field(\"Weight\", 12) + self.field(\"Note\", note_width)\n\n    def expected_row(self, parcel, width):\n        note_width = width - 46\n        return (\n            \"  \"\n            + self.field(parcel[\"tracking\"], 18)\n            + self.field(parcel[\"zone\"], 14)\n            + self.field(f'{parcel[\"weight\"]:.1f}', 12)\n            + self.field(parcel[\"note\"], note_width)\n        )\n\n    def test_empty_manifest(self):\n        width = 47\n        separator = \"  \" + \"-\" * (width - 2)\n        result = render_parcel_manifest([], width)\n        self.assertEqual(result, self.expected_header(width) + \"\\n\" + separator)\n        self.assertFalse(result.endswith(\"\\n\"))\n        self.assertTrue(all(len(line) == width for line in result.splitlines()))\n\n    def test_rows_order_formatting_and_separators(self):\n        width = 60\n        parcels = [\n            {\"tracking\": \"T1\", \"zone\": \"North\", \"weight\": 2, \"note\": \"ready\"},\n            {\"tracking\": \"T2\", \"zone\": \"South\", \"weight\": 0.25, \"note\": \"hold\"},\n        ]\n        separator = \"  \" + \"-\" * (width - 2)\n        expected = \"\\n\".join([\n            self.expected_header(width),\n            separator,\n            self.expected_row(parcels[0], width),\n            separator,\n            self.expected_row(parcels[1], width),\n            separator,\n        ])\n        result = render_parcel_manifest(parcels, width)\n        self.assertEqual(result, expected)\n        self.assertTrue(all(len(line) == width for line in result.split(\"\\n\")))\n\n    def test_truncation_exact_width_and_extra_fields(self):\n        parcel = {\n            \"tracking\": \"T\" * 30,\n            \"zone\": \"Z\" * 20,\n            \"weight\": 123456789012345.0,\n            \"note\": \"a long note\",\n            \"ignored\": {\"nested\": [1]},\n        }\n        width = 47\n        result = render_parcel_manifest([parcel], width)\n        row = result.split(\"\\n\")[2]\n        self.assertEqual(row, self.expected_row(parcel, width))\n        self.assertEqual(row[2:20], \"T\" * 18)\n        self.assertEqual(row[20:34], \"Z\" * 14)\n        self.assertEqual(row[-1], \"a\")\n        self.assertTrue(all(len(line) == width for line in result.split(\"\\n\")))\n\n    def test_input_is_not_mutated(self):\n        parcels = [{\"tracking\": \"x\", \"zone\": \"z\", \"weight\": 1, \"note\": \"n\", \"extra\": [1]}]\n        before = [{\"tracking\": \"x\", \"zone\": \"z\", \"weight\": 1, \"note\": \"n\", \"extra\": [1]}]\n        render_parcel_manifest(parcels)\n        self.assertEqual(parcels, before)\n\n    def test_invalid_width(self):\n        for width in [True, False, 47.0, \"47\", None]:\n            with self.subTest(width=width):\n                with self.assertRaises(TypeError):\n                    render_parcel_manifest([], width)\n        for width in [-1, 0, 46]:\n            with self.subTest(width=width):\n                with self.assertRaises(ValueError):\n                    render_parcel_manifest([], width)\n\n    def test_invalid_container_and_records(self):\n        for parcels in [None, (), {}, \"parcels\"]:\n            with self.subTest(parcels=parcels):\n                with self.assertRaises(TypeError):\n                    render_parcel_manifest(parcels)\n        for record in [None, [], \"parcel\", 1]:\n            with self.subTest(record=record):\n                with self.assertRaises(TypeError):\n                    render_parcel_manifest([record])\n\n    def test_missing_and_wrong_field_types(self):\n        base = {\"tracking\": \"t\", \"zone\": \"z\", \"weight\": 1, \"note\": \"n\"}\n        for field in base:\n            parcel = dict(base)\n            del parcel[field]\n            with self.subTest(missing=field):\n                with self.assertRaises(ValueError):\n                    render_parcel_manifest([parcel])\n        for field in [\"tracking\", \"zone\", \"note\"]:\n            for bad in [None, 1, False, []]:\n                parcel = dict(base)\n                parcel[field] = bad\n                with self.subTest(field=field, bad=bad):\n                    with self.assertRaises(TypeError):\n                        render_parcel_manifest([parcel])\n        for bad in [True, False, \"1\", None, []]:\n            parcel = dict(base)\n            parcel[\"weight\"] = bad\n            with self.subTest(weight=bad):\n                with self.assertRaises(TypeError):\n                    render_parcel_manifest([parcel])\n\n    def test_invalid_weight_values(self):\n        base = {\"tracking\": \"t\", \"zone\": \"z\", \"weight\": 1, \"note\": \"n\"}\n        for bad in [-0.1, math.inf, -math.inf, math.nan]:\n            parcel = dict(base)\n            parcel[\"weight\"] = bad\n            with self.subTest(weight=bad):\n                with self.assertRaises(ValueError):\n                    render_parcel_manifest([parcel])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "8fef7bde81b136fef480814d810b861237c47f8def104dee4c4e9198cb025128"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5f6f077e71f191c84de9929a6e99f973318d747be7a646d384e19c11c2ee2444",
+      "text": "Create `solution.py` with a top-level function `render_parcel_manifest(parcels, width=76)` that returns a formatted string and does not print.\n\n`parcels` must be a list of dictionaries containing exactly usable fields `tracking`, `zone`, `weight`, and `note`; extra fields are ignored. `tracking`, `zone`, and `note` must be strings. `weight` must be a finite, non-negative int or float, excluding booleans. Rows preserve input order and the input is not mutated.\n\nEvery output line must contain exactly `width` characters. `width` must be an integer, excluding booleans, and at least 47. Each line begins with a two-space margin. The fixed column widths are 18 for `Tracking`, 14 for `Zone`, and 12 for `Weight`; `Note` receives all remaining width. Text longer than its column is truncated and shorter text is right-padded. Weight is rendered with one digit after the decimal point. The first line is the header. It is followed by a separator made of spaces for the margin and hyphens afterward. Add the same separator after every parcel row. With no parcels, return only the header and its separator, joined by `\\n`, with no trailing newline. Raise `TypeError` for wrong types and `ValueError` for missing fields, invalid numeric values, or insufficient width.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5f6f077e71f191c84de9929a6e99f973318d747be7a646d384e19c11c2ee2444",
+      "text": "Create `solution.py` with a top-level function `render_parcel_manifest(parcels, width=76)` that returns a formatted string and does not print.\n\n`parcels` must be a list of dictionaries containing exactly usable fields `tracking`, `zone`, `weight`, and `note`; extra fields are ignored. `tracking`, `zone`, and `note` must be strings. `weight` must be a finite, non-negative int or float, excluding booleans. Rows preserve input order and the input is not mutated.\n\nEvery output line must contain exactly `width` characters. `width` must be an integer, excluding booleans, and at least 47. Each line begins with a two-space margin. The fixed column widths are 18 for `Tracking`, 14 for `Zone`, and 12 for `Weight`; `Note` receives all remaining width. Text longer than its column is truncated and shorter text is right-padded. Weight is rendered with one digit after the decimal point. The first line is the header. It is followed by a separator made of spaces for the margin and hyphens afterward. Add the same separator after every parcel row. With no parcels, return only the header and its separator, joined by `\\n`, with no trailing newline. Raise `TypeError` for wrong types and `ValueError` for missing fields, invalid numeric values, or insufficient width.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0624",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\n_MARGIN = 2\n_FIXED_WIDTHS = (18, 14, 12)\n\n\ndef _cell(value, size):\n    return value[:size].ljust(size)\n\n\ndef render_parcel_manifest(parcels, width=76):\n    if not isinstance(parcels, list):\n        raise TypeError(\"parcels must be a list\")\n    if isinstance(width, bool) or not isinstance(width, int):\n        raise TypeError(\"width must be an integer\")\n    if width < 47:\n        raise ValueError(\"width is too small\")\n\n    validated = []\n    for parcel in parcels:\n        if not isinstance(parcel, dict):\n            raise TypeError(\"each parcel must be a dictionary\")\n        required = (\"tracking\", \"zone\", \"weight\", \"note\")\n        if any(key not in parcel for key in required):\n            raise ValueError(\"parcel is missing a required field\")\n        if any(not isinstance(parcel[key], str) for key in (\"tracking\", \"zone\", \"note\")):\n            raise TypeError(\"parcel text fields must be strings\")\n        weight = parcel[\"weight\"]\n        if isinstance(weight, bool) or not isinstance(weight, (int, float)):\n            raise TypeError(\"weight must be numeric\")\n        if not math.isfinite(weight) or weight < 0:\n            raise ValueError(\"weight must be finite and non-negative\")\n        validated.append((parcel[\"tracking\"], parcel[\"zone\"], weight, parcel[\"note\"]))\n\n    note_width = width - _MARGIN - sum(_FIXED_WIDTHS)\n\n    def row(tracking, zone, weight, note):\n        return (\n            \" \" * _MARGIN\n            + _cell(tracking, 18)\n            + _cell(zone, 14)\n            + _cell(weight, 12)\n            + _cell(note, note_width)\n        )\n\n    lines = [row(\"Tracking\", \"Zone\", \"Weight\", \"Note\")]\n    separator = \" \" * _MARGIN + \"-\" * width\n    lines.append(separator)\n    for tracking, zone, weight, note in validated:\n        lines.append(row(tracking, zone, f\"{weight:.1f}\", note))\n        lines.append(separator)\n    return \"\\n\".join(lines)\n",
+          "label": "Separator lines add width hyphens after the margin, making them two characters longer than the required total width.",
+          "sha256": "ad0c5c8a561cce779ada0c1f773fc0ef186ad068a1c0befd639273fee6e28582"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\n_MARGIN = 2\n_FIXED_WIDTHS = (18, 14, 12)\n\n\ndef _cell(value, size):\n    return value[:size].ljust(size)\n\n\ndef render_parcel_manifest(parcels, width=76):\n    if not isinstance(parcels, list):\n        raise TypeError(\"parcels must be a list\")\n    if isinstance(width, bool) or not isinstance(width, int):\n        raise TypeError(\"width must be an integer\")\n    if width < 47:\n        raise ValueError(\"width is too small\")\n\n    validated = []\n    for parcel in parcels:\n        if not isinstance(parcel, dict):\n            raise TypeError(\"each parcel must be a dictionary\")\n        required = (\"tracking\", \"zone\", \"weight\", \"note\")\n        if any(key not in parcel for key in required):\n            raise ValueError(\"parcel is missing a required field\")\n        if any(not isinstance(parcel[key], str) for key in (\"tracking\", \"zone\", \"note\")):\n            raise TypeError(\"parcel text fields must be strings\")\n        weight = parcel[\"weight\"]\n        if isinstance(weight, bool) or not isinstance(weight, (int, float)):\n            raise TypeError(\"weight must be numeric\")\n        if not math.isfinite(weight) or weight < 0:\n            raise ValueError(\"weight must be finite and non-negative\")\n        validated.append((parcel[\"tracking\"], parcel[\"zone\"], weight, parcel[\"note\"]))\n\n    note_width = width - _MARGIN - sum(_FIXED_WIDTHS)\n\n    def row(tracking, zone, weight, note):\n        return (\n            \" \" * _MARGIN\n            + _cell(tracking, 18)\n            + _cell(zone, 14)\n            + _cell(weight, 12)\n            + _cell(note, note_width)\n        )\n\n    lines = [row(\"Tracking\", \"Zone\", \"Weight\", \"Note\")]\n    separator = \" \" * _MARGIN + \"-\" * (width - _MARGIN)\n    lines.append(separator)\n    for tracking, zone, weight, note in validated:\n        lines.append(row(tracking, zone, f\"{weight:.1f}\", note))\n        lines.append(separator)\n    return \"\\n\".join(lines)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "87cb055d85b19842cabf159f223c4e97b283054badc43ac03f30c78cb4ce8e3b"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_text_newline_cannot_break_fixed_width_lines (__main__.ManifestLineTests.test_text_newline_cannot_break_fixed_width_lines)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_text_newline_cannot_break_fixed_width_lines\n    self.assertTrue(all(len(line) == 60 for line in result.split(\"\\n\")), repr(result))\nAssertionError: False is not true : '  Tracking          Zone          Weight      Note          \\n  ----------------------------------------------------------\\n  A\\nB               z             1.0         n             \\n  ----------------------------------------------------------'\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "fb5cb4a56ad5ddb16f960d7d5174b65b04f1ab837c8bc09a108b9df3bb9d6361",
+    "duration_ms": 415,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

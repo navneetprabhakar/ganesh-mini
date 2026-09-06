@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0634",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "c628aef1041b50c3664f27fc1c92222989bf27e781947d6f18892c1a300c0773",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\n\nfrom solution import check_endpoints\n\n\nclass LongPortTests(unittest.IsolatedAsyncioTestCase):\n    async def test_oversized_port_is_unsuccessful_not_global_exception(self):\n        called = []\n\n        async def probe(candidate):\n            called.append(candidate)\n            return True\n\n        result = await check_endpoints([\"bad:\" + \"9\" * 5000, \"good:80\"], probe)\n        self.assertEqual(result, [\"good:80\"])\n        self.assertEqual(called, [\"good:80\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "dd101ce821b24982364741ab89aa8dcf5b90ee289b3cb23c245286cb2bcbd468"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c0866254a16b779316d157dba1a8781992ae80cb1d8b76b67dcb3c3779e526f1",
+      "text": "In `solution.py`, implement the asynchronous function `check_endpoints(candidates, probe, limit=20)` using only the standard library.\n\n`candidates` is an iterable of strings in the exact form `host:port`. A host must be non-empty and contain neither whitespace nor another colon. A port must contain only decimal digits and have a value from 1 through 65535. Malformed candidates are treated as unsuccessful and must not be passed to `probe`.\n\nFor every valid occurrence, call `await probe(candidate)`. Calls should run concurrently, with at most `limit` calls active. A candidate succeeds only when the probe returns the singleton `True`; false values and exceptions mean failure. Return a list containing successful candidate occurrences in original input order. Preserve duplicates. Empty input returns an empty list. `limit` must be a positive integer excluding booleans, otherwise raise `ValueError`. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c0866254a16b779316d157dba1a8781992ae80cb1d8b76b67dcb3c3779e526f1",
+      "text": "In `solution.py`, implement the asynchronous function `check_endpoints(candidates, probe, limit=20)` using only the standard library.\n\n`candidates` is an iterable of strings in the exact form `host:port`. A host must be non-empty and contain neither whitespace nor another colon. A port must contain only decimal digits and have a value from 1 through 65535. Malformed candidates are treated as unsuccessful and must not be passed to `probe`.\n\nFor every valid occurrence, call `await probe(candidate)`. Calls should run concurrently, with at most `limit` calls active. A candidate succeeds only when the probe returns the singleton `True`; false values and exceptions mean failure. Return a list containing successful candidate occurrences in original input order. Preserve duplicates. Empty input returns an empty list. `limit` must be a positive integer excluding booleans, otherwise raise `ValueError`. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0634",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import asyncio\n\n\ndef _valid_endpoint(candidate):\n    if not isinstance(candidate, str) or candidate.count(\":\") != 1:\n        return False\n    host, port_text = candidate.split(\":\")\n    return (\n        bool(host)\n        and not any(char.isspace() for char in host)\n        and port_text.isascii()\n        and port_text.isdecimal()\n        and 0 <= int(port_text) <= 65535\n    )\n\n\nasync def check_endpoints(candidates, probe, limit=20):\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    values = list(candidates)\n    semaphore = asyncio.Semaphore(limit)\n\n    async def check(candidate):\n        if not _valid_endpoint(candidate):\n            return False\n        try:\n            async with semaphore:\n                return await probe(candidate) is True\n        except Exception:\n            return False\n\n    outcomes = await asyncio.gather(*(check(value) for value in values))\n    return [value for value, ok in zip(values, outcomes) if ok]\n",
+          "label": "Port zero is incorrectly accepted as a valid endpoint port.",
+          "sha256": "60523c4eae12c5e2afbf53cda429133c239516a31eee1de3cb0117022586d92a"
+        }
+      ],
+      "reference": {
+        "code": "import asyncio\n\n\ndef _valid_endpoint(candidate):\n    if not isinstance(candidate, str) or candidate.count(\":\") != 1:\n        return False\n    host, port_text = candidate.split(\":\")\n    return (\n        bool(host)\n        and not any(char.isspace() for char in host)\n        and port_text.isascii()\n        and port_text.isdecimal()\n        and 1 <= int(port_text) <= 65535\n    )\n\n\nasync def check_endpoints(candidates, probe, limit=20):\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    values = list(candidates)\n    semaphore = asyncio.Semaphore(limit)\n\n    async def check(candidate):\n        if not _valid_endpoint(candidate):\n            return False\n        try:\n            async with semaphore:\n                return await probe(candidate) is True\n        except Exception:\n            return False\n\n    outcomes = await asyncio.gather(*(check(value) for value in values))\n    return [value for value, ok in zip(values, outcomes) if ok]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "de95154d0b08a7a9c2e0f7e5a0af4668e6a84f6a7e9ddd47aded30050101351d"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import asyncio\nimport unittest\n\nfrom solution import check_endpoints\n\n\nclass CheckEndpointsTests(unittest.IsolatedAsyncioTestCase):\n    async def test_empty(self):\n        called = []\n        async def probe(candidate):\n            called.append(candidate)\n            return True\n        self.assertEqual(await check_endpoints([], probe), [])\n        self.assertEqual(called, [])\n\n    async def test_order_duplicates_failures_exceptions_and_singleton_true(self):\n        candidates = ['slow:1', 'bad', 'fast:2', 'one:3', 'boom:4', 'slow:1']\n        snapshot = list(candidates)\n        calls = []\n\n        async def probe(candidate):\n            calls.append(candidate)\n            if candidate == 'slow:1':\n                await asyncio.sleep(0.01)\n                return True\n            if candidate == 'fast:2':\n                return True\n            if candidate == 'one:3':\n                return 1\n            raise RuntimeError('failed')\n\n        result = await check_endpoints(candidates, probe, limit=3)\n        self.assertEqual(result, ['slow:1', 'fast:2', 'slow:1'])\n        self.assertEqual(calls.count('slow:1'), 2)\n        self.assertCountEqual(calls, ['slow:1', 'fast:2', 'one:3', 'boom:4', 'slow:1'])\n        self.assertEqual(candidates, snapshot)\n\n    async def test_concurrency_never_exceeds_limit(self):\n        active = 0\n        peak = 0\n        gate = asyncio.Event()\n\n        async def probe(candidate):\n            nonlocal active, peak\n            active += 1\n            peak = max(peak, active)\n            await gate.wait()\n            active -= 1\n            return True\n\n        task = asyncio.create_task(check_endpoints((f'h{i}:80' for i in range(7)), probe, limit=2))\n        for _ in range(100):\n            if peak == 2:\n                break\n            await asyncio.sleep(0)\n        self.assertEqual(peak, 2)\n        gate.set()\n        self.assertEqual(await task, [f'h{i}:80' for i in range(7)])\n        self.assertLessEqual(peak, 2)\n\n    async def test_port_boundaries(self):\n        called = []\n        async def probe(candidate):\n            called.append(candidate)\n            return True\n        candidates = ['a:1', 'b:65535', 'c:0', 'd:65536', ':2', 'a:b', 'a:2:3', 'a b:2', 'a:\\t2', 'a:+2', 'a:2.0']\n        result = await check_endpoints(candidates, probe)\n        self.assertEqual(result, ['a:1', 'b:65535'])\n        self.assertEqual(called, ['a:1', 'b:65535'])\n\n    async def test_invalid_limits(self):\n        async def probe(candidate):\n            return True\n        for limit in [0, -1, True, False, 1.5, '2']:\n            with self.subTest(limit=limit):\n                with self.assertRaises(ValueError):\n                    await check_endpoints(['host:80'], probe, limit=limit)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "658317fc7b3d481a044ac3a28c218ac426a2a99e5aff7a43ed87fc40e025780f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c0866254a16b779316d157dba1a8781992ae80cb1d8b76b67dcb3c3779e526f1",
+      "text": "In `solution.py`, implement the asynchronous function `check_endpoints(candidates, probe, limit=20)` using only the standard library.\n\n`candidates` is an iterable of strings in the exact form `host:port`. A host must be non-empty and contain neither whitespace nor another colon. A port must contain only decimal digits and have a value from 1 through 65535. Malformed candidates are treated as unsuccessful and must not be passed to `probe`.\n\nFor every valid occurrence, call `await probe(candidate)`. Calls should run concurrently, with at most `limit` calls active. A candidate succeeds only when the probe returns the singleton `True`; false values and exceptions mean failure. Return a list containing successful candidate occurrences in original input order. Preserve duplicates. Empty input returns an empty list. `limit` must be a positive integer excluding booleans, otherwise raise `ValueError`. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c0866254a16b779316d157dba1a8781992ae80cb1d8b76b67dcb3c3779e526f1",
+      "text": "In `solution.py`, implement the asynchronous function `check_endpoints(candidates, probe, limit=20)` using only the standard library.\n\n`candidates` is an iterable of strings in the exact form `host:port`. A host must be non-empty and contain neither whitespace nor another colon. A port must contain only decimal digits and have a value from 1 through 65535. Malformed candidates are treated as unsuccessful and must not be passed to `probe`.\n\nFor every valid occurrence, call `await probe(candidate)`. Calls should run concurrently, with at most `limit` calls active. A candidate succeeds only when the probe returns the singleton `True`; false values and exceptions mean failure. Return a list containing successful candidate occurrences in original input order. Preserve duplicates. Empty input returns an empty list. `limit` must be a positive integer excluding booleans, otherwise raise `ValueError`. Do not mutate the input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0634",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import asyncio\n\n\ndef _valid_endpoint(candidate):\n    if not isinstance(candidate, str) or candidate.count(\":\") != 1:\n        return False\n    host, port_text = candidate.split(\":\")\n    return (\n        bool(host)\n        and not any(char.isspace() for char in host)\n        and port_text.isascii()\n        and port_text.isdecimal()\n        and 0 <= int(port_text) <= 65535\n    )\n\n\nasync def check_endpoints(candidates, probe, limit=20):\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    values = list(candidates)\n    semaphore = asyncio.Semaphore(limit)\n\n    async def check(candidate):\n        if not _valid_endpoint(candidate):\n            return False\n        try:\n            async with semaphore:\n                return await probe(candidate) is True\n        except Exception:\n            return False\n\n    outcomes = await asyncio.gather(*(check(value) for value in values))\n    return [value for value, ok in zip(values, outcomes) if ok]\n",
+          "label": "Port zero is incorrectly accepted as a valid endpoint port.",
+          "sha256": "60523c4eae12c5e2afbf53cda429133c239516a31eee1de3cb0117022586d92a"
+        }
+      ],
+      "reference": {
+        "code": "import asyncio\n\n\ndef _valid_endpoint(candidate):\n    if not isinstance(candidate, str) or candidate.count(\":\") != 1:\n        return False\n    host, port_text = candidate.split(\":\")\n    return (\n        bool(host)\n        and not any(char.isspace() for char in host)\n        and port_text.isascii()\n        and port_text.isdecimal()\n        and 1 <= int(port_text) <= 65535\n    )\n\n\nasync def check_endpoints(candidates, probe, limit=20):\n    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:\n        raise ValueError(\"limit must be a positive integer\")\n    values = list(candidates)\n    semaphore = asyncio.Semaphore(limit)\n\n    async def check(candidate):\n        if not _valid_endpoint(candidate):\n            return False\n        try:\n            async with semaphore:\n                return await probe(candidate) is True\n        except Exception:\n            return False\n\n    outcomes = await asyncio.gather(*(check(value) for value in values))\n    return [value for value, ok in zip(values, outcomes) if ok]\n",
+        "label": "codex-teacher-reference",
+        "sha256": "de95154d0b08a7a9c2e0f7e5a0af4668e6a84f6a7e9ddd47aded30050101351d"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_oversized_port_is_unsuccessful_not_global_exception (__main__.LongPortTests.test_oversized_port_is_unsuccessful_not_global_exception)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.11/unittest/async_case.py\", line 90, in _callTestMethod\n    if self._callMaybeAsync(method) is not None:\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/unittest/async_case.py\", line 112, in _callMaybeAsync\n    return self._asyncioRunner.run(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/asyncio/base_events.py\", line 654, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"test_solution.py\", line 14, in test_oversized_port_is_unsuccessful_not_global_exception\n    result = await check_endpoints([\"bad:\" + \"9\" * 5000, \"good:80\"], probe)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 32, in check_endpoints\n    outcomes = await asyncio.gather(*(check(value) for value in values))\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 24, in check\n    if not _valid_endpoint(candidate):\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 13, in _valid_endpoint\n    and 1 <= int(port_text) <= 65535\n             ^^^^^^^^^^^^^^\nValueError: Exceeds the limit (4300 digits) for integer string conversion: value has 5000 digits; use sys.set_int_max_str_digits() to increase the limit\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "cfb5ab0bfebb7efa43ea84e38ed216b3b2c850fb1fca66d09d8e8e54d2f6021a",
+    "duration_ms": 537,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

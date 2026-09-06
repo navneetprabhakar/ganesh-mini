@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0756",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bb0ddabed21cc36d50dde43088cb8474368e89fa1bb8fa7ec403e6cd4cfbf87a",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import collect_button_actions\n\n\nclass VisibleButtonTests(unittest.TestCase):\n    def test_script_text_not_visible_button_label(self):\n        self.assertEqual(collect_button_actions('<button data-action=\"save\">Save<script>hidden()</script></button>'), {\"Save\": \"save\"})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "d022653d4ee4160f36430d59004ac1ac204f6364e771cf3d63d9171134281c1a"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "115e2b5f032ec72a313e68ac7072ab349379ba693b70c30318eafa0f040acab9",
+      "text": "Implement `collect_button_actions(markup)` in `solution.py` using only the standard library.\n\n`markup` must be a string; otherwise raise `TypeError`. Find `button` elements with a `data-action` attribute. For each, collapse all whitespace in its visible text\u2014including text inside nested elements\u2014to single spaces and strip its ends. Strip the attribute value as well. Ignore a button when either result is empty. Attribute order and case must not matter, and character/entity references must be decoded.\n\nReturn a dictionary mapping normalized button text to its action. Preserve first-insertion key order, but if later markup repeats the same normalized text, replace that key's value with the later action. Gracefully accept incomplete markup: finalize an unclosed button at end of input, ignore unmatched closing tags, and when a new button begins inside an unclosed button, finalize the earlier one first. Return `{}` for empty input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "115e2b5f032ec72a313e68ac7072ab349379ba693b70c30318eafa0f040acab9",
+      "text": "Implement `collect_button_actions(markup)` in `solution.py` using only the standard library.\n\n`markup` must be a string; otherwise raise `TypeError`. Find `button` elements with a `data-action` attribute. For each, collapse all whitespace in its visible text\u2014including text inside nested elements\u2014to single spaces and strip its ends. Strip the attribute value as well. Ignore a button when either result is empty. Attribute order and case must not matter, and character/entity references must be decoded.\n\nReturn a dictionary mapping normalized button text to its action. Preserve first-insertion key order, but if later markup repeats the same normalized text, replace that key's value with the later action. Gracefully accept incomplete markup: finalize an unclosed button at end of input, ignore unmatched closing tags, and when a new button begins inside an unclosed button, finalize the earlier one first. Return `{}` for empty input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0756",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from html.parser import HTMLParser\n\n\nclass _ButtonParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.result = {}\n        self.action = None\n        self.parts = []\n\n    def _finish(self):\n        if self.action is None:\n            return\n        text = \" \".join(\"\".join(self.parts).split())\n        action = self.action.strip()\n        if text and action:\n            self.result.setdefault(text, action)\n        self.action = None\n        self.parts = []\n\n    def handle_starttag(self, tag, attrs):\n        if tag.lower() == \"button\":\n            self._finish()\n            values = {name.lower(): value for name, value in attrs}\n            self.action = values.get(\"data-action\")\n            self.parts = []\n\n    def handle_endtag(self, tag):\n        if tag.lower() == \"button\":\n            self._finish()\n\n    def handle_data(self, data):\n        if self.action is not None:\n            self.parts.append(data)\n\n\ndef collect_button_actions(markup):\n    if not isinstance(markup, str):\n        raise TypeError(\"markup must be a string\")\n    parser = _ButtonParser()\n    parser.feed(markup)\n    parser.close()\n    parser._finish()\n    return parser.result\n",
+          "label": "Keeps the first action for duplicate button text instead of replacing it with the later action.",
+          "sha256": "163f57f66aaea4ccdc1934950cc4b49defe2bd1d6d906e312cffdd698bb9d7b3"
+        }
+      ],
+      "reference": {
+        "code": "from html.parser import HTMLParser\n\n\nclass _ButtonParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.result = {}\n        self.action = None\n        self.parts = []\n\n    def _finish(self):\n        if self.action is None:\n            return\n        text = \" \".join(\"\".join(self.parts).split())\n        action = self.action.strip()\n        if text and action:\n            self.result[text] = action\n        self.action = None\n        self.parts = []\n\n    def handle_starttag(self, tag, attrs):\n        if tag.lower() == \"button\":\n            self._finish()\n            values = {name.lower(): value for name, value in attrs}\n            self.action = values.get(\"data-action\")\n            self.parts = []\n\n    def handle_endtag(self, tag):\n        if tag.lower() == \"button\":\n            self._finish()\n\n    def handle_data(self, data):\n        if self.action is not None:\n            self.parts.append(data)\n\n\ndef collect_button_actions(markup):\n    if not isinstance(markup, str):\n        raise TypeError(\"markup must be a string\")\n    parser = _ButtonParser()\n    parser.feed(markup)\n    parser.close()\n    parser._finish()\n    return parser.result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1a39b03ec6801840ca964fa4d3573df79366e021cda203319c4df00ede668608"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom solution import collect_button_actions\n\n\nclass CollectButtonActionsTests(unittest.TestCase):\n    def test_nested_visible_text_attributes_entities_and_case(self):\n        markup = '''\n        <BUTTON disabled DATA-ACTION=\"  save&amp;close  \">\n          Save <span> &amp; <b>Close</b></span>\n        </BUTTON>\n        <button class=\"x\" data-action=\"next\"> Go&nbsp;Next </button>\n        '''\n        self.assertEqual(\n            collect_button_actions(markup),\n            {'Save & Close': 'save&close', 'Go Next': 'next'},\n        )\n\n    def test_ignores_missing_or_empty_values(self):\n        markup = (\n            '<button>missing action</button>'\n            '<button data-action=\"   \">Empty action</button>'\n            '<button data-action=\"ok\">  \\n\\t </button>'\n            '<div data-action=\"wrong\">Not a button</div>'\n        )\n        self.assertEqual(collect_button_actions(markup), {})\n\n    def test_duplicate_text_replaces_value_without_reordering(self):\n        markup = (\n            '<button data-action=\"one\">Same</button>'\n            '<button data-action=\"middle\">Other</button>'\n            '<button data-action=\"two\"> Same </button>'\n        )\n        result = collect_button_actions(markup)\n        self.assertEqual(list(result.items()), [('Same', 'two'), ('Other', 'middle')])\n\n    def test_incomplete_nested_button_finalization(self):\n        markup = (\n            '</button>'\n            '<button data-action=\"first\">First <i>unfinished'\n            '<button data-action=\"second\">Second <b>button</b>'\n        )\n        self.assertEqual(\n            collect_button_actions(markup),\n            {'First unfinished': 'first', 'Second button': 'second'},\n        )\n\n    def test_empty_and_type_validation(self):\n        self.assertEqual(collect_button_actions(''), {})\n        for value in (None, b'<button>', 12, []):\n            with self.subTest(value=value):\n                with self.assertRaises(TypeError):\n                    collect_button_actions(value)\n\n    def test_each_call_returns_new_dictionary(self):\n        markup = '<button data-action=\"x\">X</button>'\n        first = collect_button_actions(markup)\n        second = collect_button_actions(markup)\n        self.assertEqual(first, second)\n        self.assertIsNot(first, second)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "26449fd94087354c974cfd4582ae38def6f75722d30066c86a78c572e91c524b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "115e2b5f032ec72a313e68ac7072ab349379ba693b70c30318eafa0f040acab9",
+      "text": "Implement `collect_button_actions(markup)` in `solution.py` using only the standard library.\n\n`markup` must be a string; otherwise raise `TypeError`. Find `button` elements with a `data-action` attribute. For each, collapse all whitespace in its visible text\u2014including text inside nested elements\u2014to single spaces and strip its ends. Strip the attribute value as well. Ignore a button when either result is empty. Attribute order and case must not matter, and character/entity references must be decoded.\n\nReturn a dictionary mapping normalized button text to its action. Preserve first-insertion key order, but if later markup repeats the same normalized text, replace that key's value with the later action. Gracefully accept incomplete markup: finalize an unclosed button at end of input, ignore unmatched closing tags, and when a new button begins inside an unclosed button, finalize the earlier one first. Return `{}` for empty input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "115e2b5f032ec72a313e68ac7072ab349379ba693b70c30318eafa0f040acab9",
+      "text": "Implement `collect_button_actions(markup)` in `solution.py` using only the standard library.\n\n`markup` must be a string; otherwise raise `TypeError`. Find `button` elements with a `data-action` attribute. For each, collapse all whitespace in its visible text\u2014including text inside nested elements\u2014to single spaces and strip its ends. Strip the attribute value as well. Ignore a button when either result is empty. Attribute order and case must not matter, and character/entity references must be decoded.\n\nReturn a dictionary mapping normalized button text to its action. Preserve first-insertion key order, but if later markup repeats the same normalized text, replace that key's value with the later action. Gracefully accept incomplete markup: finalize an unclosed button at end of input, ignore unmatched closing tags, and when a new button begins inside an unclosed button, finalize the earlier one first. Return `{}` for empty input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0756",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from html.parser import HTMLParser\n\n\nclass _ButtonParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.result = {}\n        self.action = None\n        self.parts = []\n\n    def _finish(self):\n        if self.action is None:\n            return\n        text = \" \".join(\"\".join(self.parts).split())\n        action = self.action.strip()\n        if text and action:\n            self.result.setdefault(text, action)\n        self.action = None\n        self.parts = []\n\n    def handle_starttag(self, tag, attrs):\n        if tag.lower() == \"button\":\n            self._finish()\n            values = {name.lower(): value for name, value in attrs}\n            self.action = values.get(\"data-action\")\n            self.parts = []\n\n    def handle_endtag(self, tag):\n        if tag.lower() == \"button\":\n            self._finish()\n\n    def handle_data(self, data):\n        if self.action is not None:\n            self.parts.append(data)\n\n\ndef collect_button_actions(markup):\n    if not isinstance(markup, str):\n        raise TypeError(\"markup must be a string\")\n    parser = _ButtonParser()\n    parser.feed(markup)\n    parser.close()\n    parser._finish()\n    return parser.result\n",
+          "label": "Keeps the first action for duplicate button text instead of replacing it with the later action.",
+          "sha256": "163f57f66aaea4ccdc1934950cc4b49defe2bd1d6d906e312cffdd698bb9d7b3"
+        }
+      ],
+      "reference": {
+        "code": "from html.parser import HTMLParser\n\n\nclass _ButtonParser(HTMLParser):\n    def __init__(self):\n        super().__init__(convert_charrefs=True)\n        self.result = {}\n        self.action = None\n        self.parts = []\n\n    def _finish(self):\n        if self.action is None:\n            return\n        text = \" \".join(\"\".join(self.parts).split())\n        action = self.action.strip()\n        if text and action:\n            self.result[text] = action\n        self.action = None\n        self.parts = []\n\n    def handle_starttag(self, tag, attrs):\n        if tag.lower() == \"button\":\n            self._finish()\n            values = {name.lower(): value for name, value in attrs}\n            self.action = values.get(\"data-action\")\n            self.parts = []\n\n    def handle_endtag(self, tag):\n        if tag.lower() == \"button\":\n            self._finish()\n\n    def handle_data(self, data):\n        if self.action is not None:\n            self.parts.append(data)\n\n\ndef collect_button_actions(markup):\n    if not isinstance(markup, str):\n        raise TypeError(\"markup must be a string\")\n    parser = _ButtonParser()\n    parser.feed(markup)\n    parser.close()\n    parser._finish()\n    return parser.result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1a39b03ec6801840ca964fa4d3573df79366e021cda203319c4df00ede668608"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_script_text_not_visible_button_label (__main__.VisibleButtonTests.test_script_text_not_visible_button_label)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_script_text_not_visible_button_label\n    self.assertEqual(collect_button_actions('<button data-action=\"save\">Save<script>hidden()</script></button>'), {\"Save\": \"save\"})\nAssertionError: {'Savehidden()': 'save'} != {'Save': 'save'}\n- {'Savehidden()': 'save'}\n?       --------\n\n+ {'Save': 'save'}\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "a92c6214983118283b9b1999cde4ead03de29b7b503953bc314c75bb26d6a3f3",
+    "duration_ms": 671,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

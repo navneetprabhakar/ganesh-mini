@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0771",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "da16ed546444a9cec30bcfe5d78c5c3b346221cc2e3e725f4c1de7f8715c3466",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import extract_epoch_series\n\n\nclass EpochIntegerTests(unittest.TestCase):\n    def test_nonnegative_integer_with_leading_zero(self):\n        result = extract_epoch_series(\"epoch=01;validation_score=1;validation_error=2;learning_score=3;learning_error=4\")\n        self.assertEqual([r[\"epochs\"] for r in result], [[1]])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "b066c2d9ff2bb66484b1a44a22a2ec99a27c99fabf6483f1ff8ed213541863cf"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a3ed823785440143f95b68993389867793f6dc5848c11677841aac5d6ae02761",
+      "text": "Create `solution.py` implementing `extract_epoch_series(text)`. The input is a string containing sections separated by any line whose stripped form starts with `::`. A valid data line contains exactly these semicolon-separated fields, in any order: `epoch`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`. `epoch` must be a non-negative integer; the other values must be finite floats. Blank and malformed lines are ignored. Empty sections and sections with no valid lines are omitted. Within a section, a later valid line replaces an earlier line with the same epoch. Return one dictionary per retained section, in source order, with keys `epochs`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`; each value is a list ordered by ascending epoch. Raise `TypeError` if `text` is not a string. Every returned list and dictionary must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a3ed823785440143f95b68993389867793f6dc5848c11677841aac5d6ae02761",
+      "text": "Create `solution.py` implementing `extract_epoch_series(text)`. The input is a string containing sections separated by any line whose stripped form starts with `::`. A valid data line contains exactly these semicolon-separated fields, in any order: `epoch`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`. `epoch` must be a non-negative integer; the other values must be finite floats. Blank and malformed lines are ignored. Empty sections and sections with no valid lines are omitted. Within a section, a later valid line replaces an earlier line with the same epoch. Return one dictionary per retained section, in source order, with keys `epochs`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`; each value is a list ordered by ascending epoch. Raise `TypeError` if `text` is not a string. Every returned list and dictionary must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0771",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n_FIELDS = {\n    \"epoch\",\n    \"validation_score\",\n    \"validation_error\",\n    \"learning_score\",\n    \"learning_error\",\n}\n\n\ndef _parse_line(line):\n    pieces = line.split(\";\")\n    values = {}\n    for piece in pieces:\n        if \"=\" not in piece:\n            return None\n        key, value = piece.split(\"=\", 1)\n        key = key.strip()\n        if key in values:\n            return None\n        values[key] = value.strip()\n    if set(values) != _FIELDS:\n        return None\n    try:\n        epoch = int(values[\"epoch\"])\n        if epoch < 0 or str(epoch) != values[\"epoch\"]:\n            return None\n        metrics = {key: float(values[key]) for key in _FIELDS - {\"epoch\"}}\n    except ValueError:\n        return None\n    if not all(math.isfinite(value) for value in metrics.values()):\n        return None\n    metrics[\"epoch\"] = epoch\n    return metrics\n\n\ndef extract_epoch_series(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    sections = [[]]\n    for line in text.splitlines():\n        if line.strip().startswith(\"::\"):\n            sections.append([])\n        else:\n            sections[-1].append(line)\n\n    result = []\n    for lines in sections:\n        by_epoch = {}\n        for line in lines:\n            parsed = _parse_line(line.strip())\n            if parsed is not None and parsed[\"epoch\"] not in by_epoch:\n                by_epoch[parsed[\"epoch\"]] = parsed\n        if not by_epoch:\n            continue\n        ordered = [by_epoch[epoch] for epoch in sorted(by_epoch)]\n        result.append({\n            \"epochs\": [row[\"epoch\"] for row in ordered],\n            \"validation_score\": [row[\"validation_score\"] for row in ordered],\n            \"validation_error\": [row[\"validation_error\"] for row in ordered],\n            \"learning_score\": [row[\"learning_score\"] for row in ordered],\n            \"learning_error\": [row[\"learning_error\"] for row in ordered],\n        })\n    return result\n",
+          "label": "Duplicate epochs incorrectly keep the first valid line instead of the last.",
+          "sha256": "0d033e06d3b2edb9c2f073c60874860494fc9c08d520d5e78057e52e84b79aa9"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n_FIELDS = {\n    \"epoch\",\n    \"validation_score\",\n    \"validation_error\",\n    \"learning_score\",\n    \"learning_error\",\n}\n\n\ndef _parse_line(line):\n    pieces = line.split(\";\")\n    values = {}\n    for piece in pieces:\n        if \"=\" not in piece:\n            return None\n        key, value = piece.split(\"=\", 1)\n        key = key.strip()\n        if key in values:\n            return None\n        values[key] = value.strip()\n    if set(values) != _FIELDS:\n        return None\n    try:\n        epoch = int(values[\"epoch\"])\n        if epoch < 0 or str(epoch) != values[\"epoch\"]:\n            return None\n        metrics = {key: float(values[key]) for key in _FIELDS - {\"epoch\"}}\n    except ValueError:\n        return None\n    if not all(math.isfinite(value) for value in metrics.values()):\n        return None\n    metrics[\"epoch\"] = epoch\n    return metrics\n\n\ndef extract_epoch_series(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    sections = [[]]\n    for line in text.splitlines():\n        if line.strip().startswith(\"::\"):\n            sections.append([])\n        else:\n            sections[-1].append(line)\n\n    result = []\n    for lines in sections:\n        by_epoch = {}\n        for line in lines:\n            parsed = _parse_line(line.strip())\n            if parsed is not None:\n                by_epoch[parsed[\"epoch\"]] = parsed\n        if not by_epoch:\n            continue\n        ordered = [by_epoch[epoch] for epoch in sorted(by_epoch)]\n        result.append({\n            \"epochs\": [row[\"epoch\"] for row in ordered],\n            \"validation_score\": [row[\"validation_score\"] for row in ordered],\n            \"validation_error\": [row[\"validation_error\"] for row in ordered],\n            \"learning_score\": [row[\"learning_score\"] for row in ordered],\n            \"learning_error\": [row[\"learning_error\"] for row in ordered],\n        })\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5c6213effe97b303d7a712fa08356afdaea721ba89d1ee6c49363d4e61fb15ee"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nimport math\nfrom solution import extract_epoch_series\n\n\nclass ExtractEpochSeriesTests(unittest.TestCase):\n    def test_sections_replacement_sorting_and_malformed_lines(self):\n        text = (\n            \"ignored\\n\"\n            \"epoch=2; validation_score=0.2; validation_error=2; learning_score=0.3; learning_error=3\\n\"\n            \"epoch=0;validation_error=1;learning_error=4;validation_score=0.5;learning_score=0.6\\n\"\n            \"epoch=2;validation_score=0.9;validation_error=9;learning_score=0.8;learning_error=8\\n\"\n            \":: next\\n\"\n            \"bad line\\n\"\n            \"epoch=-1;validation_score=1;validation_error=1;learning_score=1;learning_error=1\\n\"\n            \":: empty\\n\"\n            \"epoch=3;validation_score=1.5;validation_error=0.1;learning_score=1.2;learning_error=0.2\\n\"\n        )\n        self.assertEqual(extract_epoch_series(text), [\n            {\n                'epochs': [0, 2],\n                'validation_score': [0.5, 0.9],\n                'validation_error': [1.0, 9.0],\n                'learning_score': [0.6, 0.8],\n                'learning_error': [4.0, 8.0],\n            },\n            {\n                'epochs': [3],\n                'validation_score': [1.5],\n                'validation_error': [0.1],\n                'learning_score': [1.2],\n                'learning_error': [0.2],\n            },\n        ])\n\n    def test_extra_missing_duplicate_and_nonfinite_fields_are_ignored(self):\n        text = (\n            \"epoch=0;validation_score=1;validation_error=2;learning_score=3\\n\"\n            \"epoch=0;validation_score=1;validation_error=2;learning_score=3;learning_error=4;extra=5\\n\"\n            \"epoch=0;epoch=1;validation_score=1;validation_error=2;learning_score=3;learning_error=4\\n\"\n            \"epoch=0;validation_score=nan;validation_error=2;learning_score=3;learning_error=4\\n\"\n            \"epoch=1.0;validation_score=1;validation_error=2;learning_score=3;learning_error=4\\n\"\n        )\n        self.assertEqual(extract_epoch_series(text), [])\n\n    def test_empty_and_only_separators(self):\n        self.assertEqual(extract_epoch_series(\"\"), [])\n        self.assertEqual(extract_epoch_series(\" \\n :: a\\n\\n::b\\n\"), [])\n\n    def test_type_error_and_fresh_allocations(self):\n        for value in (None, 3, [], b'x'):\n            with self.assertRaises(TypeError):\n                extract_epoch_series(value)\n        text = \"epoch=0;validation_score=1;validation_error=2;learning_score=3;learning_error=4\"\n        first = extract_epoch_series(text)\n        second = extract_epoch_series(text)\n        self.assertIsNot(first, second)\n        self.assertIsNot(first[0], second[0])\n        for key in first[0]:\n            self.assertIsNot(first[0][key], second[0][key])\n        first[0]['epochs'].append(99)\n        self.assertEqual(second[0]['epochs'], [0])\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "164dece38aeadac0f874c7c791684683393a0813641d7d3b62c1aa0ce55c416f"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a3ed823785440143f95b68993389867793f6dc5848c11677841aac5d6ae02761",
+      "text": "Create `solution.py` implementing `extract_epoch_series(text)`. The input is a string containing sections separated by any line whose stripped form starts with `::`. A valid data line contains exactly these semicolon-separated fields, in any order: `epoch`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`. `epoch` must be a non-negative integer; the other values must be finite floats. Blank and malformed lines are ignored. Empty sections and sections with no valid lines are omitted. Within a section, a later valid line replaces an earlier line with the same epoch. Return one dictionary per retained section, in source order, with keys `epochs`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`; each value is a list ordered by ascending epoch. Raise `TypeError` if `text` is not a string. Every returned list and dictionary must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a3ed823785440143f95b68993389867793f6dc5848c11677841aac5d6ae02761",
+      "text": "Create `solution.py` implementing `extract_epoch_series(text)`. The input is a string containing sections separated by any line whose stripped form starts with `::`. A valid data line contains exactly these semicolon-separated fields, in any order: `epoch`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`. `epoch` must be a non-negative integer; the other values must be finite floats. Blank and malformed lines are ignored. Empty sections and sections with no valid lines are omitted. Within a section, a later valid line replaces an earlier line with the same epoch. Return one dictionary per retained section, in source order, with keys `epochs`, `validation_score`, `validation_error`, `learning_score`, and `learning_error`; each value is a list ordered by ascending epoch. Raise `TypeError` if `text` is not a string. Every returned list and dictionary must be newly allocated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0771",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n_FIELDS = {\n    \"epoch\",\n    \"validation_score\",\n    \"validation_error\",\n    \"learning_score\",\n    \"learning_error\",\n}\n\n\ndef _parse_line(line):\n    pieces = line.split(\";\")\n    values = {}\n    for piece in pieces:\n        if \"=\" not in piece:\n            return None\n        key, value = piece.split(\"=\", 1)\n        key = key.strip()\n        if key in values:\n            return None\n        values[key] = value.strip()\n    if set(values) != _FIELDS:\n        return None\n    try:\n        epoch = int(values[\"epoch\"])\n        if epoch < 0 or str(epoch) != values[\"epoch\"]:\n            return None\n        metrics = {key: float(values[key]) for key in _FIELDS - {\"epoch\"}}\n    except ValueError:\n        return None\n    if not all(math.isfinite(value) for value in metrics.values()):\n        return None\n    metrics[\"epoch\"] = epoch\n    return metrics\n\n\ndef extract_epoch_series(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    sections = [[]]\n    for line in text.splitlines():\n        if line.strip().startswith(\"::\"):\n            sections.append([])\n        else:\n            sections[-1].append(line)\n\n    result = []\n    for lines in sections:\n        by_epoch = {}\n        for line in lines:\n            parsed = _parse_line(line.strip())\n            if parsed is not None and parsed[\"epoch\"] not in by_epoch:\n                by_epoch[parsed[\"epoch\"]] = parsed\n        if not by_epoch:\n            continue\n        ordered = [by_epoch[epoch] for epoch in sorted(by_epoch)]\n        result.append({\n            \"epochs\": [row[\"epoch\"] for row in ordered],\n            \"validation_score\": [row[\"validation_score\"] for row in ordered],\n            \"validation_error\": [row[\"validation_error\"] for row in ordered],\n            \"learning_score\": [row[\"learning_score\"] for row in ordered],\n            \"learning_error\": [row[\"learning_error\"] for row in ordered],\n        })\n    return result\n",
+          "label": "Duplicate epochs incorrectly keep the first valid line instead of the last.",
+          "sha256": "0d033e06d3b2edb9c2f073c60874860494fc9c08d520d5e78057e52e84b79aa9"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n_FIELDS = {\n    \"epoch\",\n    \"validation_score\",\n    \"validation_error\",\n    \"learning_score\",\n    \"learning_error\",\n}\n\n\ndef _parse_line(line):\n    pieces = line.split(\";\")\n    values = {}\n    for piece in pieces:\n        if \"=\" not in piece:\n            return None\n        key, value = piece.split(\"=\", 1)\n        key = key.strip()\n        if key in values:\n            return None\n        values[key] = value.strip()\n    if set(values) != _FIELDS:\n        return None\n    try:\n        epoch = int(values[\"epoch\"])\n        if epoch < 0 or str(epoch) != values[\"epoch\"]:\n            return None\n        metrics = {key: float(values[key]) for key in _FIELDS - {\"epoch\"}}\n    except ValueError:\n        return None\n    if not all(math.isfinite(value) for value in metrics.values()):\n        return None\n    metrics[\"epoch\"] = epoch\n    return metrics\n\n\ndef extract_epoch_series(text):\n    if not isinstance(text, str):\n        raise TypeError(\"text must be a string\")\n    sections = [[]]\n    for line in text.splitlines():\n        if line.strip().startswith(\"::\"):\n            sections.append([])\n        else:\n            sections[-1].append(line)\n\n    result = []\n    for lines in sections:\n        by_epoch = {}\n        for line in lines:\n            parsed = _parse_line(line.strip())\n            if parsed is not None:\n                by_epoch[parsed[\"epoch\"]] = parsed\n        if not by_epoch:\n            continue\n        ordered = [by_epoch[epoch] for epoch in sorted(by_epoch)]\n        result.append({\n            \"epochs\": [row[\"epoch\"] for row in ordered],\n            \"validation_score\": [row[\"validation_score\"] for row in ordered],\n            \"validation_error\": [row[\"validation_error\"] for row in ordered],\n            \"learning_score\": [row[\"learning_score\"] for row in ordered],\n            \"learning_error\": [row[\"learning_error\"] for row in ordered],\n        })\n    return result\n",
+        "label": "codex-teacher-reference",
+        "sha256": "5c6213effe97b303d7a712fa08356afdaea721ba89d1ee6c49363d4e61fb15ee"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_nonnegative_integer_with_leading_zero (__main__.EpochIntegerTests.test_nonnegative_integer_with_leading_zero)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_nonnegative_integer_with_leading_zero\n    self.assertEqual([r[\"epochs\"] for r in result], [[1]])\nAssertionError: Lists differ: [] != [[1]]\n\nSecond list contains 1 additional elements.\nFirst extra element 0:\n[1]\n\n- []\n+ [[1]]\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "ebb174b454c5a56b6d3eda99acdc9f17677c92c8f458841d69b15b734edd8c17",
+    "duration_ms": 424,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

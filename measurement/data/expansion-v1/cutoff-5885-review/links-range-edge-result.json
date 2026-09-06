@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0774",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "a2add3b0ca84c942239aaad135ec7c817117908de5c97dd3c5b7d91c37a2a24e",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import select_links\n\n\nclass LinkSequenceTests(unittest.TestCase):\n    def test_range_endpoint_pair(self):\n        self.assertEqual(select_links([(0, 0), (1, 0)], [range(2)], 1),\n                         {\"edges\": [(0, 1)], \"cost\": 1.0, \"degrees\": [1, 1]})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "4765fe18877a3adc486fcd1453774fc9ea956907bf040df99ebdaa3b6f0d21c2"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a73d3fe8a5d6d2248d60cf8e14f9954e91ecb2d9a61a933484beee67ea8cf88b",
+      "text": "Create `solution.py` implementing `select_links(points, candidates, degree_limit)`. `points` is a sequence of distinct finite `(x, y)` numeric pairs. `candidates` is a sequence of two-integer endpoint pairs referring to point indices. Self-links and out-of-range endpoints are invalid; reversed or repeated links are treated as one link. `degree_limit` is a positive integer excluding bool. Construct a deterministic degree-limited spanning tree using Kruskal's procedure: sort unique candidate links by Euclidean length, then by normalized endpoints; accept a link only if it joins different components and neither endpoint has reached the degree limit. Raise `ValueError` if all points cannot be connected. Zero or one point yields no links. Return `{'edges': [(u, v), ...], 'cost': float, 'degrees': [...]}`, with normalized edges in acceptance order. Validate all input before constructing the result and do not mutate inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a73d3fe8a5d6d2248d60cf8e14f9954e91ecb2d9a61a933484beee67ea8cf88b",
+      "text": "Create `solution.py` implementing `select_links(points, candidates, degree_limit)`. `points` is a sequence of distinct finite `(x, y)` numeric pairs. `candidates` is a sequence of two-integer endpoint pairs referring to point indices. Self-links and out-of-range endpoints are invalid; reversed or repeated links are treated as one link. `degree_limit` is a positive integer excluding bool. Construct a deterministic degree-limited spanning tree using Kruskal's procedure: sort unique candidate links by Euclidean length, then by normalized endpoints; accept a link only if it joins different components and neither endpoint has reached the degree limit. Raise `ValueError` if all points cannot be connected. Zero or one point yields no links. Return `{'edges': [(u, v), ...], 'cost': float, 'degrees': [...]}`, with normalized edges in acceptance order. Validate all input before constructing the result and do not mutate inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0774",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef select_links(points, candidates, degree_limit):\n    if isinstance(degree_limit, bool) or not isinstance(degree_limit, int):\n        raise TypeError(\"degree_limit must be an integer\")\n    if degree_limit <= 0:\n        raise ValueError(\"degree_limit must be positive\")\n    if not isinstance(points, (list, tuple)) or not isinstance(candidates, (list, tuple)):\n        raise TypeError(\"points and candidates must be sequences\")\n\n    checked_points = []\n    for point in points:\n        if not isinstance(point, (list, tuple)) or len(point) != 2:\n            raise ValueError(\"invalid point\")\n        if any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in point):\n            raise TypeError(\"coordinates must be numeric\")\n        if not all(math.isfinite(v) for v in point):\n            raise ValueError(\"coordinates must be finite\")\n        pair = (point[0], point[1])\n        if pair in checked_points:\n            raise ValueError(\"points must be distinct\")\n        checked_points.append(pair)\n\n    unique = set()\n    for edge in candidates:\n        if not isinstance(edge, (list, tuple)) or len(edge) != 2:\n            raise ValueError(\"invalid candidate\")\n        u, v = edge\n        if isinstance(u, bool) or isinstance(v, bool) or not isinstance(u, int) or not isinstance(v, int):\n            raise TypeError(\"endpoints must be integers\")\n        if not (0 <= u < len(points) and 0 <= v < len(points)) or u == v:\n            raise ValueError(\"invalid endpoint\")\n        unique.add((min(u, v), max(u, v)))\n\n    weighted = []\n    for u, v in unique:\n        distance = math.hypot(checked_points[u][0] - checked_points[v][0], checked_points[u][1] - checked_points[v][1])\n        weighted.append((distance, u, v))\n    weighted.sort(reverse=True)\n\n    parent = list(range(len(points)))\n    degrees = [0] * len(points)\n\n    def find(node):\n        while parent[node] != node:\n            parent[node] = parent[parent[node]]\n            node = parent[node]\n        return node\n\n    accepted = []\n    cost = 0.0\n    for distance, u, v in weighted:\n        ru, rv = find(u), find(v)\n        if ru != rv and degrees[u] < degree_limit and degrees[v] < degree_limit:\n            parent[ru] = rv\n            degrees[u] += 1\n            degrees[v] += 1\n            accepted.append((u, v))\n            cost += distance\n            if len(accepted) == max(0, len(points) - 1):\n                break\n    if len(accepted) != max(0, len(points) - 1):\n        raise ValueError(\"candidates cannot produce the requested tree\")\n    return {\"edges\": accepted, \"cost\": cost, \"degrees\": degrees}\n",
+          "label": "Candidate links are processed from longest to shortest instead of shortest to longest.",
+          "sha256": "6c3f02d44221f621a2bc89c46225bc9b208859972e67d9377ad69f649540b76c"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef select_links(points, candidates, degree_limit):\n    if isinstance(degree_limit, bool) or not isinstance(degree_limit, int):\n        raise TypeError(\"degree_limit must be an integer\")\n    if degree_limit <= 0:\n        raise ValueError(\"degree_limit must be positive\")\n    if not isinstance(points, (list, tuple)) or not isinstance(candidates, (list, tuple)):\n        raise TypeError(\"points and candidates must be sequences\")\n\n    checked_points = []\n    for point in points:\n        if not isinstance(point, (list, tuple)) or len(point) != 2:\n            raise ValueError(\"invalid point\")\n        if any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in point):\n            raise TypeError(\"coordinates must be numeric\")\n        if not all(math.isfinite(v) for v in point):\n            raise ValueError(\"coordinates must be finite\")\n        pair = (point[0], point[1])\n        if pair in checked_points:\n            raise ValueError(\"points must be distinct\")\n        checked_points.append(pair)\n\n    unique = set()\n    for edge in candidates:\n        if not isinstance(edge, (list, tuple)) or len(edge) != 2:\n            raise ValueError(\"invalid candidate\")\n        u, v = edge\n        if isinstance(u, bool) or isinstance(v, bool) or not isinstance(u, int) or not isinstance(v, int):\n            raise TypeError(\"endpoints must be integers\")\n        if not (0 <= u < len(points) and 0 <= v < len(points)) or u == v:\n            raise ValueError(\"invalid endpoint\")\n        unique.add((min(u, v), max(u, v)))\n\n    weighted = []\n    for u, v in unique:\n        distance = math.hypot(checked_points[u][0] - checked_points[v][0], checked_points[u][1] - checked_points[v][1])\n        weighted.append((distance, u, v))\n    weighted.sort()\n\n    parent = list(range(len(points)))\n    degrees = [0] * len(points)\n\n    def find(node):\n        while parent[node] != node:\n            parent[node] = parent[parent[node]]\n            node = parent[node]\n        return node\n\n    accepted = []\n    cost = 0.0\n    for distance, u, v in weighted:\n        ru, rv = find(u), find(v)\n        if ru != rv and degrees[u] < degree_limit and degrees[v] < degree_limit:\n            parent[ru] = rv\n            degrees[u] += 1\n            degrees[v] += 1\n            accepted.append((u, v))\n            cost += distance\n            if len(accepted) == max(0, len(points) - 1):\n                break\n    if len(accepted) != max(0, len(points) - 1):\n        raise ValueError(\"candidates cannot produce the requested tree\")\n    return {\"edges\": accepted, \"cost\": cost, \"degrees\": degrees}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2c1a8418c545e39ce966d9d7d42186fe422bd49c6d563e5fbd77f542f211f503"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nimport math\nfrom solution import select_links\n\n\nclass SelectLinksTests(unittest.TestCase):\n    def test_kruskal_order_deduplication_cost_and_degrees(self):\n        points = [(0, 0), (1, 0), (0, 1), (1, 1)]\n        candidates = [(1, 0), (0, 1), (2, 0), (1, 3), (3, 2), (0, 3), (1, 2)]\n        result = select_links(points, candidates, 2)\n        self.assertEqual(result['edges'], [(0, 1), (0, 2), (1, 3)])\n        self.assertAlmostEqual(result['cost'], 3.0)\n        self.assertEqual(result['degrees'], [2, 2, 1, 1])\n        self.assertEqual(points, [(0, 0), (1, 0), (0, 1), (1, 1)])\n        self.assertEqual(candidates, [(1, 0), (0, 1), (2, 0), (1, 3), (3, 2), (0, 3), (1, 2)])\n\n    def test_degree_constraint_can_make_connection_impossible(self):\n        points = [(0, 0), (1, 0), (2, 0)]\n        with self.assertRaises(ValueError):\n            select_links(points, [(0, 1), (1, 2), (0, 2)], 1)\n        with self.assertRaises(ValueError):\n            select_links(points, [(0, 1)], 2)\n\n    def test_zero_and_one_point(self):\n        self.assertEqual(select_links([], [], 1),\n                         {'edges': [], 'cost': 0.0, 'degrees': []})\n        self.assertEqual(select_links([(2, 3)], [], 4),\n                         {'edges': [], 'cost': 0.0, 'degrees': [0]})\n\n    def test_input_validation(self):\n        cases = [\n            (None, [], 1), ([], None, 1),\n            ([(0, 0), (0, 0)], [], 1),\n            ([(0,)], [], 1),\n            ([(0, math.inf)], [], 1),\n            ([(0, True)], [], 1),\n            ([(0, 0), (1, 1)], [(0, 0)], 2),\n            ([(0, 0), (1, 1)], [(0, 2)], 2),\n            ([(0, 0), (1, 1)], [(0.0, 1)], 2),\n            ([], [], 0), ([], [], True), ([], [], 1.5),\n        ]\n        for points, candidates, limit in cases:\n            with self.assertRaises((TypeError, ValueError)):\n                select_links(points, candidates, limit)\n\n    def test_all_input_is_validated_even_for_trivial_graph(self):\n        with self.assertRaises(ValueError):\n            select_links([(0, 0)], [(0, 0)], 2)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "177bf0ae2fb6146a52baf7ee19e155a4ebf92c4ff36949296398ad587f97586b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "a73d3fe8a5d6d2248d60cf8e14f9954e91ecb2d9a61a933484beee67ea8cf88b",
+      "text": "Create `solution.py` implementing `select_links(points, candidates, degree_limit)`. `points` is a sequence of distinct finite `(x, y)` numeric pairs. `candidates` is a sequence of two-integer endpoint pairs referring to point indices. Self-links and out-of-range endpoints are invalid; reversed or repeated links are treated as one link. `degree_limit` is a positive integer excluding bool. Construct a deterministic degree-limited spanning tree using Kruskal's procedure: sort unique candidate links by Euclidean length, then by normalized endpoints; accept a link only if it joins different components and neither endpoint has reached the degree limit. Raise `ValueError` if all points cannot be connected. Zero or one point yields no links. Return `{'edges': [(u, v), ...], 'cost': float, 'degrees': [...]}`, with normalized edges in acceptance order. Validate all input before constructing the result and do not mutate inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "a73d3fe8a5d6d2248d60cf8e14f9954e91ecb2d9a61a933484beee67ea8cf88b",
+      "text": "Create `solution.py` implementing `select_links(points, candidates, degree_limit)`. `points` is a sequence of distinct finite `(x, y)` numeric pairs. `candidates` is a sequence of two-integer endpoint pairs referring to point indices. Self-links and out-of-range endpoints are invalid; reversed or repeated links are treated as one link. `degree_limit` is a positive integer excluding bool. Construct a deterministic degree-limited spanning tree using Kruskal's procedure: sort unique candidate links by Euclidean length, then by normalized endpoints; accept a link only if it joins different components and neither endpoint has reached the degree limit. Raise `ValueError` if all points cannot be connected. Zero or one point yields no links. Return `{'edges': [(u, v), ...], 'cost': float, 'degrees': [...]}`, with normalized edges in acceptance order. Validate all input before constructing the result and do not mutate inputs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0774",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import math\n\n\ndef select_links(points, candidates, degree_limit):\n    if isinstance(degree_limit, bool) or not isinstance(degree_limit, int):\n        raise TypeError(\"degree_limit must be an integer\")\n    if degree_limit <= 0:\n        raise ValueError(\"degree_limit must be positive\")\n    if not isinstance(points, (list, tuple)) or not isinstance(candidates, (list, tuple)):\n        raise TypeError(\"points and candidates must be sequences\")\n\n    checked_points = []\n    for point in points:\n        if not isinstance(point, (list, tuple)) or len(point) != 2:\n            raise ValueError(\"invalid point\")\n        if any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in point):\n            raise TypeError(\"coordinates must be numeric\")\n        if not all(math.isfinite(v) for v in point):\n            raise ValueError(\"coordinates must be finite\")\n        pair = (point[0], point[1])\n        if pair in checked_points:\n            raise ValueError(\"points must be distinct\")\n        checked_points.append(pair)\n\n    unique = set()\n    for edge in candidates:\n        if not isinstance(edge, (list, tuple)) or len(edge) != 2:\n            raise ValueError(\"invalid candidate\")\n        u, v = edge\n        if isinstance(u, bool) or isinstance(v, bool) or not isinstance(u, int) or not isinstance(v, int):\n            raise TypeError(\"endpoints must be integers\")\n        if not (0 <= u < len(points) and 0 <= v < len(points)) or u == v:\n            raise ValueError(\"invalid endpoint\")\n        unique.add((min(u, v), max(u, v)))\n\n    weighted = []\n    for u, v in unique:\n        distance = math.hypot(checked_points[u][0] - checked_points[v][0], checked_points[u][1] - checked_points[v][1])\n        weighted.append((distance, u, v))\n    weighted.sort(reverse=True)\n\n    parent = list(range(len(points)))\n    degrees = [0] * len(points)\n\n    def find(node):\n        while parent[node] != node:\n            parent[node] = parent[parent[node]]\n            node = parent[node]\n        return node\n\n    accepted = []\n    cost = 0.0\n    for distance, u, v in weighted:\n        ru, rv = find(u), find(v)\n        if ru != rv and degrees[u] < degree_limit and degrees[v] < degree_limit:\n            parent[ru] = rv\n            degrees[u] += 1\n            degrees[v] += 1\n            accepted.append((u, v))\n            cost += distance\n            if len(accepted) == max(0, len(points) - 1):\n                break\n    if len(accepted) != max(0, len(points) - 1):\n        raise ValueError(\"candidates cannot produce the requested tree\")\n    return {\"edges\": accepted, \"cost\": cost, \"degrees\": degrees}\n",
+          "label": "Candidate links are processed from longest to shortest instead of shortest to longest.",
+          "sha256": "6c3f02d44221f621a2bc89c46225bc9b208859972e67d9377ad69f649540b76c"
+        }
+      ],
+      "reference": {
+        "code": "import math\n\n\ndef select_links(points, candidates, degree_limit):\n    if isinstance(degree_limit, bool) or not isinstance(degree_limit, int):\n        raise TypeError(\"degree_limit must be an integer\")\n    if degree_limit <= 0:\n        raise ValueError(\"degree_limit must be positive\")\n    if not isinstance(points, (list, tuple)) or not isinstance(candidates, (list, tuple)):\n        raise TypeError(\"points and candidates must be sequences\")\n\n    checked_points = []\n    for point in points:\n        if not isinstance(point, (list, tuple)) or len(point) != 2:\n            raise ValueError(\"invalid point\")\n        if any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in point):\n            raise TypeError(\"coordinates must be numeric\")\n        if not all(math.isfinite(v) for v in point):\n            raise ValueError(\"coordinates must be finite\")\n        pair = (point[0], point[1])\n        if pair in checked_points:\n            raise ValueError(\"points must be distinct\")\n        checked_points.append(pair)\n\n    unique = set()\n    for edge in candidates:\n        if not isinstance(edge, (list, tuple)) or len(edge) != 2:\n            raise ValueError(\"invalid candidate\")\n        u, v = edge\n        if isinstance(u, bool) or isinstance(v, bool) or not isinstance(u, int) or not isinstance(v, int):\n            raise TypeError(\"endpoints must be integers\")\n        if not (0 <= u < len(points) and 0 <= v < len(points)) or u == v:\n            raise ValueError(\"invalid endpoint\")\n        unique.add((min(u, v), max(u, v)))\n\n    weighted = []\n    for u, v in unique:\n        distance = math.hypot(checked_points[u][0] - checked_points[v][0], checked_points[u][1] - checked_points[v][1])\n        weighted.append((distance, u, v))\n    weighted.sort()\n\n    parent = list(range(len(points)))\n    degrees = [0] * len(points)\n\n    def find(node):\n        while parent[node] != node:\n            parent[node] = parent[parent[node]]\n            node = parent[node]\n        return node\n\n    accepted = []\n    cost = 0.0\n    for distance, u, v in weighted:\n        ru, rv = find(u), find(v)\n        if ru != rv and degrees[u] < degree_limit and degrees[v] < degree_limit:\n            parent[ru] = rv\n            degrees[u] += 1\n            degrees[v] += 1\n            accepted.append((u, v))\n            cost += distance\n            if len(accepted) == max(0, len(points) - 1):\n                break\n    if len(accepted) != max(0, len(points) - 1):\n        raise ValueError(\"candidates cannot produce the requested tree\")\n    return {\"edges\": accepted, \"cost\": cost, \"degrees\": degrees}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2c1a8418c545e39ce966d9d7d42186fe422bd49c6d563e5fbd77f542f211f503"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_range_endpoint_pair (__main__.LinkSequenceTests.test_range_endpoint_pair)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 7, in test_range_endpoint_pair\n    self.assertEqual(select_links([(0, 0), (1, 0)], [range(2)], 1),\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 28, in select_links\n    raise ValueError(\"invalid candidate\")\nValueError: invalid candidate\n\n----------------------------------------------------------------------\nRan 1 test in 0.008s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "946961bbf2bfd39ef197947fdff48441d1ba1405c19f96480c908140b96a664c",
+    "duration_ms": 821,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

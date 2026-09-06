@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0769",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "45407c853836ce5eb12e4216948d8bb68f8fff695ffdb0a309519570d25c6db7",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import mix_drive\n\n\nclass DriveCancellationTests(unittest.TestCase):\n    def test_balanced_finite_signals_have_zero_mean(self):\n        commands = mix_drive({\"samples\": [1e308, 1e308, -1e308, -1e308]}, {\"samples\": [0]})\n        self.assertEqual([c.velocity for c in commands], [0.0] * 4)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "2e6ddd2427e9ef8ff3527c8cb167a8bbcdfc32d28304e11d611f451e7d1e21b8"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1ad547df42127f3f3b03213781bae9bd00f42bbe17ba0bab5e391d9decc3b0b5",
+      "text": "Create `solution.py` defining a dataclass `ActuatorCommand` and a function `mix_drive(left_signal, right_signal)`.\n\n`ActuatorCommand` has fields `name: str` and `velocity: float = 0.0`.\n\nEach non-`None` signal must be a dictionary containing `samples`, which must be a non-empty list or tuple of finite integers or floats; booleans are invalid samples. A side's drive value is the arithmetic mean of its samples, clamped to the inclusive range from -1.0 to 1.0, then multiplied by 6.0. Inputs must not be mutated.\n\nReturn four distinct `ActuatorCommand` objects in this exact order and with these exact names: `cart/rear_port`, `cart/rear_starboard`, `cart/front_port`, `cart/front_starboard`. Port commands use the left drive value, and starboard commands use the right drive value.\n\nIf either signal is `None`, return all four commands with velocity `0.0` without validating the other signal. Otherwise, malformed dictionaries, missing fields, or invalid sample containers and elements must raise `TypeError`, except empty samples or non-finite samples must raise `ValueError`. The four objects must not alias one another; mutating one returned command must not change another.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1ad547df42127f3f3b03213781bae9bd00f42bbe17ba0bab5e391d9decc3b0b5",
+      "text": "Create `solution.py` defining a dataclass `ActuatorCommand` and a function `mix_drive(left_signal, right_signal)`.\n\n`ActuatorCommand` has fields `name: str` and `velocity: float = 0.0`.\n\nEach non-`None` signal must be a dictionary containing `samples`, which must be a non-empty list or tuple of finite integers or floats; booleans are invalid samples. A side's drive value is the arithmetic mean of its samples, clamped to the inclusive range from -1.0 to 1.0, then multiplied by 6.0. Inputs must not be mutated.\n\nReturn four distinct `ActuatorCommand` objects in this exact order and with these exact names: `cart/rear_port`, `cart/rear_starboard`, `cart/front_port`, `cart/front_starboard`. Port commands use the left drive value, and starboard commands use the right drive value.\n\nIf either signal is `None`, return all four commands with velocity `0.0` without validating the other signal. Otherwise, malformed dictionaries, missing fields, or invalid sample containers and elements must raise `TypeError`, except empty samples or non-finite samples must raise `ValueError`. The four objects must not alias one another; mutating one returned command must not change another.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0769",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nimport math\n\n\n@dataclass\nclass ActuatorCommand:\n    name: str\n    velocity: float = 0.0\n\n\ndef _drive_value(signal, side):\n    if not isinstance(signal, dict):\n        raise TypeError(f\"{side}_signal must be a dictionary\")\n    if \"samples\" not in signal:\n        raise TypeError(f\"{side}_signal requires samples\")\n    samples = signal[\"samples\"]\n    if not isinstance(samples, (list, tuple)):\n        raise TypeError(\"samples must be a list or tuple\")\n    if not samples:\n        raise ValueError(\"samples must not be empty\")\n    checked = []\n    for sample in samples:\n        if isinstance(sample, bool) or not isinstance(sample, (int, float)):\n            raise TypeError(\"samples must be numeric\")\n        if not math.isfinite(sample):\n            raise ValueError(\"samples must be finite\")\n        checked.append(sample)\n    mean = sum(checked) / len(checked)\n    return max(-1.0, min(1.0, mean)) * 6.0\n\n\ndef mix_drive(left_signal, right_signal):\n    commands = [\n        ActuatorCommand(\"cart/rear_port\"),\n        ActuatorCommand(\"cart/rear_starboard\"),\n        ActuatorCommand(\"cart/front_port\"),\n        ActuatorCommand(\"cart/front_starboard\"),\n    ]\n    if left_signal is None or right_signal is None:\n        return commands\n\n    left = _drive_value(left_signal, \"left\")\n    right = _drive_value(right_signal, \"right\")\n    commands[0].velocity = left\n    commands[1].velocity = right\n    commands[2].velocity = left\n    commands[3].velocity = left\n    return commands\n",
+          "label": "Assigns the left drive value to the front starboard actuator instead of the right drive value.",
+          "sha256": "9967a0bbac0feefdf431b1d04fd8758919cfeb6fc148783eeff8d9e03124ceec"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nimport math\n\n\n@dataclass\nclass ActuatorCommand:\n    name: str\n    velocity: float = 0.0\n\n\ndef _drive_value(signal, side):\n    if not isinstance(signal, dict):\n        raise TypeError(f\"{side}_signal must be a dictionary\")\n    if \"samples\" not in signal:\n        raise TypeError(f\"{side}_signal requires samples\")\n    samples = signal[\"samples\"]\n    if not isinstance(samples, (list, tuple)):\n        raise TypeError(\"samples must be a list or tuple\")\n    if not samples:\n        raise ValueError(\"samples must not be empty\")\n    checked = []\n    for sample in samples:\n        if isinstance(sample, bool) or not isinstance(sample, (int, float)):\n            raise TypeError(\"samples must be numeric\")\n        if not math.isfinite(sample):\n            raise ValueError(\"samples must be finite\")\n        checked.append(sample)\n    mean = sum(checked) / len(checked)\n    return max(-1.0, min(1.0, mean)) * 6.0\n\n\ndef mix_drive(left_signal, right_signal):\n    commands = [\n        ActuatorCommand(\"cart/rear_port\"),\n        ActuatorCommand(\"cart/rear_starboard\"),\n        ActuatorCommand(\"cart/front_port\"),\n        ActuatorCommand(\"cart/front_starboard\"),\n    ]\n    if left_signal is None or right_signal is None:\n        return commands\n\n    left = _drive_value(left_signal, \"left\")\n    right = _drive_value(right_signal, \"right\")\n    commands[0].velocity = left\n    commands[1].velocity = right\n    commands[2].velocity = left\n    commands[3].velocity = right\n    return commands\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b208de334001b82224314c8c72cd1cf26525ad8ced56abdad1cbd645f16707d4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\nfrom dataclasses import is_dataclass\n\nfrom solution import ActuatorCommand, mix_drive\n\n\nNAMES = [\n    \"cart/rear_port\",\n    \"cart/rear_starboard\",\n    \"cart/front_port\",\n    \"cart/front_starboard\",\n]\n\n\nclass MixDriveTests(unittest.TestCase):\n    def test_dataclass_defaults(self):\n        self.assertTrue(is_dataclass(ActuatorCommand))\n        command = ActuatorCommand(\"test\")\n        self.assertEqual(command.name, \"test\")\n        self.assertEqual(command.velocity, 0.0)\n\n    def test_means_clamping_names_and_order(self):\n        left = {\"samples\": [2, 4], \"ignored\": [1]}\n        right = {\"samples\": (-0.5, -1.5)}\n        commands = mix_drive(left, right)\n        self.assertEqual([c.name for c in commands], NAMES)\n        self.assertEqual([c.velocity for c in commands], [6.0, -6.0, 6.0, -6.0])\n        self.assertEqual(left, {\"samples\": [2, 4], \"ignored\": [1]})\n        self.assertEqual(right, {\"samples\": (-0.5, -1.5)})\n\n    def test_unclamped_arithmetic_means(self):\n        commands = mix_drive({\"samples\": [0.0, 0.5, 1.0]}, {\"samples\": [-0.5, 0.5]})\n        self.assertEqual([c.velocity for c in commands], [3.0, 0.0, 3.0, 0.0])\n\n    def test_none_short_circuits_all_validation(self):\n        malformed_values = [object(), {\"missing\": 1}, {\"samples\": []}, {\"samples\": [math.nan]}]\n        for malformed in malformed_values:\n            with self.subTest(side=\"right\", malformed=malformed):\n                commands = mix_drive(None, malformed)\n                self.assertEqual([c.name for c in commands], NAMES)\n                self.assertEqual([c.velocity for c in commands], [0.0] * 4)\n            with self.subTest(side=\"left\", malformed=malformed):\n                commands = mix_drive(malformed, None)\n                self.assertEqual([c.velocity for c in commands], [0.0] * 4)\n\n    def test_commands_are_four_distinct_objects(self):\n        commands = mix_drive({\"samples\": [1]}, {\"samples\": [1]})\n        self.assertEqual(len(commands), 4)\n        self.assertEqual(len({id(c) for c in commands}), 4)\n        commands[0].velocity = 123\n        commands[0].name = \"changed\"\n        self.assertEqual(commands[1].velocity, 6.0)\n        self.assertEqual(commands[2].name, \"cart/front_port\")\n\n    def test_validation_when_both_signals_present(self):\n        valid = {\"samples\": [0]}\n        for bad in (1, [], \"signal\", object()):\n            with self.subTest(bad=bad):\n                with self.assertRaises(TypeError):\n                    mix_drive(bad, valid)\n                with self.assertRaises(TypeError):\n                    mix_drive(valid, bad)\n        for bad in ({}, {\"other\": [1]}, {\"samples\": \"123\"}, {\"samples\": {1, 2}}):\n            with self.subTest(bad=bad):\n                with self.assertRaises(TypeError):\n                    mix_drive(bad, valid)\n        for sample in (True, False, \"1\", None):\n            with self.subTest(sample=sample):\n                with self.assertRaises(TypeError):\n                    mix_drive({\"samples\": [sample]}, valid)\n        for samples in ([], (), [math.inf], [-math.inf], [math.nan], [0, math.nan]):\n            with self.subTest(samples=samples):\n                with self.assertRaises(ValueError):\n                    mix_drive({\"samples\": samples}, valid)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "7527a9dedf67871cd28e18ae27179f69ac618334aaf3f5fe58be251f94a6388c"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1ad547df42127f3f3b03213781bae9bd00f42bbe17ba0bab5e391d9decc3b0b5",
+      "text": "Create `solution.py` defining a dataclass `ActuatorCommand` and a function `mix_drive(left_signal, right_signal)`.\n\n`ActuatorCommand` has fields `name: str` and `velocity: float = 0.0`.\n\nEach non-`None` signal must be a dictionary containing `samples`, which must be a non-empty list or tuple of finite integers or floats; booleans are invalid samples. A side's drive value is the arithmetic mean of its samples, clamped to the inclusive range from -1.0 to 1.0, then multiplied by 6.0. Inputs must not be mutated.\n\nReturn four distinct `ActuatorCommand` objects in this exact order and with these exact names: `cart/rear_port`, `cart/rear_starboard`, `cart/front_port`, `cart/front_starboard`. Port commands use the left drive value, and starboard commands use the right drive value.\n\nIf either signal is `None`, return all four commands with velocity `0.0` without validating the other signal. Otherwise, malformed dictionaries, missing fields, or invalid sample containers and elements must raise `TypeError`, except empty samples or non-finite samples must raise `ValueError`. The four objects must not alias one another; mutating one returned command must not change another.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1ad547df42127f3f3b03213781bae9bd00f42bbe17ba0bab5e391d9decc3b0b5",
+      "text": "Create `solution.py` defining a dataclass `ActuatorCommand` and a function `mix_drive(left_signal, right_signal)`.\n\n`ActuatorCommand` has fields `name: str` and `velocity: float = 0.0`.\n\nEach non-`None` signal must be a dictionary containing `samples`, which must be a non-empty list or tuple of finite integers or floats; booleans are invalid samples. A side's drive value is the arithmetic mean of its samples, clamped to the inclusive range from -1.0 to 1.0, then multiplied by 6.0. Inputs must not be mutated.\n\nReturn four distinct `ActuatorCommand` objects in this exact order and with these exact names: `cart/rear_port`, `cart/rear_starboard`, `cart/front_port`, `cart/front_starboard`. Port commands use the left drive value, and starboard commands use the right drive value.\n\nIf either signal is `None`, return all four commands with velocity `0.0` without validating the other signal. Otherwise, malformed dictionaries, missing fields, or invalid sample containers and elements must raise `TypeError`, except empty samples or non-finite samples must raise `ValueError`. The four objects must not alias one another; mutating one returned command must not change another.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0769",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from dataclasses import dataclass\nimport math\n\n\n@dataclass\nclass ActuatorCommand:\n    name: str\n    velocity: float = 0.0\n\n\ndef _drive_value(signal, side):\n    if not isinstance(signal, dict):\n        raise TypeError(f\"{side}_signal must be a dictionary\")\n    if \"samples\" not in signal:\n        raise TypeError(f\"{side}_signal requires samples\")\n    samples = signal[\"samples\"]\n    if not isinstance(samples, (list, tuple)):\n        raise TypeError(\"samples must be a list or tuple\")\n    if not samples:\n        raise ValueError(\"samples must not be empty\")\n    checked = []\n    for sample in samples:\n        if isinstance(sample, bool) or not isinstance(sample, (int, float)):\n            raise TypeError(\"samples must be numeric\")\n        if not math.isfinite(sample):\n            raise ValueError(\"samples must be finite\")\n        checked.append(sample)\n    mean = sum(checked) / len(checked)\n    return max(-1.0, min(1.0, mean)) * 6.0\n\n\ndef mix_drive(left_signal, right_signal):\n    commands = [\n        ActuatorCommand(\"cart/rear_port\"),\n        ActuatorCommand(\"cart/rear_starboard\"),\n        ActuatorCommand(\"cart/front_port\"),\n        ActuatorCommand(\"cart/front_starboard\"),\n    ]\n    if left_signal is None or right_signal is None:\n        return commands\n\n    left = _drive_value(left_signal, \"left\")\n    right = _drive_value(right_signal, \"right\")\n    commands[0].velocity = left\n    commands[1].velocity = right\n    commands[2].velocity = left\n    commands[3].velocity = left\n    return commands\n",
+          "label": "Assigns the left drive value to the front starboard actuator instead of the right drive value.",
+          "sha256": "9967a0bbac0feefdf431b1d04fd8758919cfeb6fc148783eeff8d9e03124ceec"
+        }
+      ],
+      "reference": {
+        "code": "from dataclasses import dataclass\nimport math\n\n\n@dataclass\nclass ActuatorCommand:\n    name: str\n    velocity: float = 0.0\n\n\ndef _drive_value(signal, side):\n    if not isinstance(signal, dict):\n        raise TypeError(f\"{side}_signal must be a dictionary\")\n    if \"samples\" not in signal:\n        raise TypeError(f\"{side}_signal requires samples\")\n    samples = signal[\"samples\"]\n    if not isinstance(samples, (list, tuple)):\n        raise TypeError(\"samples must be a list or tuple\")\n    if not samples:\n        raise ValueError(\"samples must not be empty\")\n    checked = []\n    for sample in samples:\n        if isinstance(sample, bool) or not isinstance(sample, (int, float)):\n            raise TypeError(\"samples must be numeric\")\n        if not math.isfinite(sample):\n            raise ValueError(\"samples must be finite\")\n        checked.append(sample)\n    mean = sum(checked) / len(checked)\n    return max(-1.0, min(1.0, mean)) * 6.0\n\n\ndef mix_drive(left_signal, right_signal):\n    commands = [\n        ActuatorCommand(\"cart/rear_port\"),\n        ActuatorCommand(\"cart/rear_starboard\"),\n        ActuatorCommand(\"cart/front_port\"),\n        ActuatorCommand(\"cart/front_starboard\"),\n    ]\n    if left_signal is None or right_signal is None:\n        return commands\n\n    left = _drive_value(left_signal, \"left\")\n    right = _drive_value(right_signal, \"right\")\n    commands[0].velocity = left\n    commands[1].velocity = right\n    commands[2].velocity = left\n    commands[3].velocity = right\n    return commands\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b208de334001b82224314c8c72cd1cf26525ad8ced56abdad1cbd645f16707d4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_balanced_finite_signals_have_zero_mean (__main__.DriveCancellationTests.test_balanced_finite_signals_have_zero_mean)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_balanced_finite_signals_have_zero_mean\n    self.assertEqual([c.velocity for c in commands], [0.0] * 4)\nAssertionError: Lists differ: [6.0, 0.0, 6.0, 0.0] != [0.0, 0.0, 0.0, 0.0]\n\nFirst differing element 0:\n6.0\n0.0\n\n- [6.0, 0.0, 6.0, 0.0]\n+ [0.0, 0.0, 0.0, 0.0]\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "c59fc380952e447e626c3c1215c06435b2397e72c97fb6657f608348c9c2d762",
+    "duration_ms": 433,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

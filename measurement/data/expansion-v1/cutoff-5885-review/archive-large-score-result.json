@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0762",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "819bc21de143bf6fe8dfd634f12a4130ca9775dc041a28476f67abf7d444e985",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import MemoryArchive\n\n\nclass ArchiveIntegerTests(unittest.TestCase):\n    def test_finite_integer_score(self):\n        archive = MemoryArchive(1)\n        self.assertEqual(archive.record(1, {}, 10 ** 400), (\"step-1\", \"best-1\"))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "278253f3191296512b07bd90df7dca45845c9ad7f5c81e52dcad693fc7c5cee6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "547bf21418c815e944575038dccb371d6d06a30442e9e4bce3220ab712b7c568",
+      "text": "Create `solution.py` defining a class `MemoryArchive` with this public API:\n\n- `MemoryArchive(interval, retain_best=True)`\n- `record(step, state, score, milestone=False)`\n- `export()`\n\n`interval` must be a positive integer other than `bool`. `retain_best` and `milestone` must be booleans. `step` must be a non-negative integer other than `bool`. `state` must be a dictionary. `score` must be a finite integer or float other than `bool`. Use `TypeError` for incorrect types and `ValueError` for invalid numeric values.\n\n`record` stores a periodic snapshot when `step` is divisible by `interval` or `milestone` is true. Its label is `step-N`, where `N` is the step. If `retain_best` is true, it also stores a best snapshot whenever the score is strictly greater than every earlier recorded score. Equal scores do not replace or create a best snapshot. Its label is `best-N`. Periodic storage is considered before best storage, and `record` returns a tuple of the labels stored in that order. A record that qualifies for neither returns an empty tuple.\n\nEach stored value is a dictionary containing `step`, `score`, and `state`. Every stored state must be an independent deep copy: it must not alias the argument or another stored snapshot. If copying fails, `record` must leave the archive and best-score tracking unchanged while propagating the copying exception.\n\nRepeated use of a label replaces that label without changing its original insertion position. `export()` returns a deep copy of all snapshots in insertion order; modifying it must not affect the archive.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "547bf21418c815e944575038dccb371d6d06a30442e9e4bce3220ab712b7c568",
+      "text": "Create `solution.py` defining a class `MemoryArchive` with this public API:\n\n- `MemoryArchive(interval, retain_best=True)`\n- `record(step, state, score, milestone=False)`\n- `export()`\n\n`interval` must be a positive integer other than `bool`. `retain_best` and `milestone` must be booleans. `step` must be a non-negative integer other than `bool`. `state` must be a dictionary. `score` must be a finite integer or float other than `bool`. Use `TypeError` for incorrect types and `ValueError` for invalid numeric values.\n\n`record` stores a periodic snapshot when `step` is divisible by `interval` or `milestone` is true. Its label is `step-N`, where `N` is the step. If `retain_best` is true, it also stores a best snapshot whenever the score is strictly greater than every earlier recorded score. Equal scores do not replace or create a best snapshot. Its label is `best-N`. Periodic storage is considered before best storage, and `record` returns a tuple of the labels stored in that order. A record that qualifies for neither returns an empty tuple.\n\nEach stored value is a dictionary containing `step`, `score`, and `state`. Every stored state must be an independent deep copy: it must not alias the argument or another stored snapshot. If copying fails, `record` must leave the archive and best-score tracking unchanged while propagating the copying exception.\n\nRepeated use of a label replaces that label without changing its original insertion position. `export()` returns a deep copy of all snapshots in insertion order; modifying it must not affect the archive.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0762",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport math\n\n\nclass MemoryArchive:\n    def __init__(self, interval, retain_best=True):\n        if isinstance(interval, bool) or not isinstance(interval, int):\n            raise TypeError(\"interval must be an integer\")\n        if interval <= 0:\n            raise ValueError(\"interval must be positive\")\n        if not isinstance(retain_best, bool):\n            raise TypeError(\"retain_best must be a boolean\")\n        self.interval = interval\n        self.retain_best = retain_best\n        self._snapshots = {}\n        self._best_score = None\n\n    def record(self, step, state, score, milestone=False):\n        if isinstance(step, bool) or not isinstance(step, int):\n            raise TypeError(\"step must be an integer\")\n        if step < 0:\n            raise ValueError(\"step must be non-negative\")\n        if not isinstance(state, dict):\n            raise TypeError(\"state must be a dictionary\")\n        if isinstance(score, bool) or not isinstance(score, (int, float)):\n            raise TypeError(\"score must be numeric\")\n        if not math.isfinite(score):\n            raise ValueError(\"score must be finite\")\n        if not isinstance(milestone, bool):\n            raise TypeError(\"milestone must be a boolean\")\n\n        periodic = milestone or step % self.interval == 0\n        is_best = self.retain_best and (\n            self._best_score is None or score >= self._best_score\n        )\n        labels = []\n        planned = []\n        if periodic:\n            labels.append(f\"step-{step}\")\n        if is_best:\n            labels.append(f\"best-{step}\")\n\n        for label in labels:\n            planned.append(\n                (\n                    label,\n                    {\n                        \"step\": step,\n                        \"score\": score,\n                        \"state\": copy.deepcopy(state),\n                    },\n                )\n            )\n\n        for label, snapshot in planned:\n            self._snapshots[label] = snapshot\n        if is_best:\n            self._best_score = score\n        return tuple(labels)\n\n    def export(self):\n        return copy.deepcopy(self._snapshots)\n",
+          "label": "Treats a score tied with the current best as a new best snapshot instead of requiring strict improvement.",
+          "sha256": "f6218a3b802b5243601bf0b6027c6957eddd76406d821ec854b6614a1e2064c1"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport math\n\n\nclass MemoryArchive:\n    def __init__(self, interval, retain_best=True):\n        if isinstance(interval, bool) or not isinstance(interval, int):\n            raise TypeError(\"interval must be an integer\")\n        if interval <= 0:\n            raise ValueError(\"interval must be positive\")\n        if not isinstance(retain_best, bool):\n            raise TypeError(\"retain_best must be a boolean\")\n        self.interval = interval\n        self.retain_best = retain_best\n        self._snapshots = {}\n        self._best_score = None\n\n    def record(self, step, state, score, milestone=False):\n        if isinstance(step, bool) or not isinstance(step, int):\n            raise TypeError(\"step must be an integer\")\n        if step < 0:\n            raise ValueError(\"step must be non-negative\")\n        if not isinstance(state, dict):\n            raise TypeError(\"state must be a dictionary\")\n        if isinstance(score, bool) or not isinstance(score, (int, float)):\n            raise TypeError(\"score must be numeric\")\n        if not math.isfinite(score):\n            raise ValueError(\"score must be finite\")\n        if not isinstance(milestone, bool):\n            raise TypeError(\"milestone must be a boolean\")\n\n        periodic = milestone or step % self.interval == 0\n        is_best = self.retain_best and (\n            self._best_score is None or score > self._best_score\n        )\n        labels = []\n        planned = []\n        if periodic:\n            labels.append(f\"step-{step}\")\n        if is_best:\n            labels.append(f\"best-{step}\")\n\n        for label in labels:\n            planned.append(\n                (\n                    label,\n                    {\n                        \"step\": step,\n                        \"score\": score,\n                        \"state\": copy.deepcopy(state),\n                    },\n                )\n            )\n\n        for label, snapshot in planned:\n            self._snapshots[label] = snapshot\n        if is_best:\n            self._best_score = score\n        return tuple(labels)\n\n    def export(self):\n        return copy.deepcopy(self._snapshots)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1170d312267a43835f2bdbb53867bdbf0f314ddd31a8491785ab3233f68bef0e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import MemoryArchive\n\n\nclass CopyBomb:\n    def __deepcopy__(self, memo):\n        raise RuntimeError(\"copy failed\")\n\n\nclass MemoryArchiveTests(unittest.TestCase):\n    def test_constructor_validation(self):\n        for interval in (True, False, 0, -1, 1.5, \"2\", None):\n            exc = TypeError if isinstance(interval, (bool, float, str)) or interval is None else ValueError\n            with self.subTest(interval=interval):\n                with self.assertRaises(exc):\n                    MemoryArchive(interval)\n        for retain in (0, 1, None, \"yes\"):\n            with self.subTest(retain=retain):\n                with self.assertRaises(TypeError):\n                    MemoryArchive(1, retain)\n\n    def test_periodic_and_best_order_with_independent_states(self):\n        archive = MemoryArchive(2)\n        state = {\"nested\": [1]}\n        self.assertEqual(archive.record(2, state, 4.5), (\"step-2\", \"best-2\"))\n        state[\"nested\"].append(99)\n        exported = archive.export()\n        self.assertEqual(list(exported), [\"step-2\", \"best-2\"])\n        self.assertEqual(exported[\"step-2\"], {\"step\": 2, \"score\": 4.5, \"state\": {\"nested\": [1]}})\n        self.assertEqual(exported[\"best-2\"][\"state\"], {\"nested\": [1]})\n        self.assertIsNot(exported[\"step-2\"][\"state\"], exported[\"best-2\"][\"state\"])\n\n    def test_milestone_nonperiodic_best_and_equal_score(self):\n        archive = MemoryArchive(10)\n        self.assertEqual(archive.record(1, {\"v\": 1}, 3), (\"best-1\",))\n        self.assertEqual(archive.record(2, {\"v\": 2}, 3), ())\n        self.assertEqual(archive.record(3, {\"v\": 3}, 2, milestone=True), (\"step-3\",))\n        self.assertEqual(archive.record(4, {\"v\": 4}, 4), (\"best-4\",))\n        self.assertEqual(list(archive.export()), [\"best-1\", \"step-3\", \"best-4\"])\n\n    def test_retain_best_false_and_repeated_label_position(self):\n        archive = MemoryArchive(1, retain_best=False)\n        self.assertEqual(archive.record(0, {\"version\": 1}, 1), (\"step-0\",))\n        self.assertEqual(archive.record(1, {\"other\": True}, 5), (\"step-1\",))\n        self.assertEqual(archive.record(0, {\"version\": 2}, 9), (\"step-0\",))\n        exported = archive.export()\n        self.assertEqual(list(exported), [\"step-0\", \"step-1\"])\n        self.assertEqual(exported[\"step-0\"][\"state\"], {\"version\": 2})\n\n    def test_export_is_deep_and_fresh(self):\n        archive = MemoryArchive(1)\n        archive.record(1, {\"a\": [{\"b\": 2}]}, 1)\n        first = archive.export()\n        first[\"step-1\"][\"state\"][\"a\"][0][\"b\"] = 100\n        first.pop(\"best-1\")\n        second = archive.export()\n        self.assertEqual(second[\"step-1\"][\"state\"][\"a\"][0][\"b\"], 2)\n        self.assertIn(\"best-1\", second)\n        self.assertIsNot(first, second)\n\n    def test_record_validation_and_no_state_change(self):\n        archive = MemoryArchive(2)\n        archive.record(2, {\"ok\": True}, 5)\n        baseline = archive.export()\n        cases = [\n            ((True, {}, 1), TypeError),\n            ((-1, {}, 1), ValueError),\n            ((1.5, {}, 1), TypeError),\n            ((1, [], 1), TypeError),\n            ((1, {}, True), TypeError),\n            ((1, {}, \"1\"), TypeError),\n            ((1, {}, math.inf), ValueError),\n            ((1, {}, math.nan), ValueError),\n            ((1, {}, 1, 1), TypeError),\n        ]\n        for args, exc in cases:\n            with self.subTest(args=args):\n                with self.assertRaises(exc):\n                    archive.record(*args)\n                self.assertEqual(archive.export(), baseline)\n\n    def test_copy_failure_is_atomic_including_best_tracking(self):\n        archive = MemoryArchive(3)\n        archive.record(1, {\"ok\": 1}, 10)\n        baseline = archive.export()\n        with self.assertRaises(RuntimeError):\n            archive.record(3, {\"bad\": CopyBomb()}, 100)\n        self.assertEqual(archive.export(), baseline)\n        self.assertEqual(archive.record(4, {\"ok\": 2}, 50), (\"best-4\",))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "16eab8b8beb26c2cb387c20aa8a79907b6b56152f00cc901bbdbd03cc3bc3aac"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "547bf21418c815e944575038dccb371d6d06a30442e9e4bce3220ab712b7c568",
+      "text": "Create `solution.py` defining a class `MemoryArchive` with this public API:\n\n- `MemoryArchive(interval, retain_best=True)`\n- `record(step, state, score, milestone=False)`\n- `export()`\n\n`interval` must be a positive integer other than `bool`. `retain_best` and `milestone` must be booleans. `step` must be a non-negative integer other than `bool`. `state` must be a dictionary. `score` must be a finite integer or float other than `bool`. Use `TypeError` for incorrect types and `ValueError` for invalid numeric values.\n\n`record` stores a periodic snapshot when `step` is divisible by `interval` or `milestone` is true. Its label is `step-N`, where `N` is the step. If `retain_best` is true, it also stores a best snapshot whenever the score is strictly greater than every earlier recorded score. Equal scores do not replace or create a best snapshot. Its label is `best-N`. Periodic storage is considered before best storage, and `record` returns a tuple of the labels stored in that order. A record that qualifies for neither returns an empty tuple.\n\nEach stored value is a dictionary containing `step`, `score`, and `state`. Every stored state must be an independent deep copy: it must not alias the argument or another stored snapshot. If copying fails, `record` must leave the archive and best-score tracking unchanged while propagating the copying exception.\n\nRepeated use of a label replaces that label without changing its original insertion position. `export()` returns a deep copy of all snapshots in insertion order; modifying it must not affect the archive.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "547bf21418c815e944575038dccb371d6d06a30442e9e4bce3220ab712b7c568",
+      "text": "Create `solution.py` defining a class `MemoryArchive` with this public API:\n\n- `MemoryArchive(interval, retain_best=True)`\n- `record(step, state, score, milestone=False)`\n- `export()`\n\n`interval` must be a positive integer other than `bool`. `retain_best` and `milestone` must be booleans. `step` must be a non-negative integer other than `bool`. `state` must be a dictionary. `score` must be a finite integer or float other than `bool`. Use `TypeError` for incorrect types and `ValueError` for invalid numeric values.\n\n`record` stores a periodic snapshot when `step` is divisible by `interval` or `milestone` is true. Its label is `step-N`, where `N` is the step. If `retain_best` is true, it also stores a best snapshot whenever the score is strictly greater than every earlier recorded score. Equal scores do not replace or create a best snapshot. Its label is `best-N`. Periodic storage is considered before best storage, and `record` returns a tuple of the labels stored in that order. A record that qualifies for neither returns an empty tuple.\n\nEach stored value is a dictionary containing `step`, `score`, and `state`. Every stored state must be an independent deep copy: it must not alias the argument or another stored snapshot. If copying fails, `record` must leave the archive and best-score tracking unchanged while propagating the copying exception.\n\nRepeated use of a label replaces that label without changing its original insertion position. `export()` returns a deep copy of all snapshots in insertion order; modifying it must not affect the archive.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0762",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport math\n\n\nclass MemoryArchive:\n    def __init__(self, interval, retain_best=True):\n        if isinstance(interval, bool) or not isinstance(interval, int):\n            raise TypeError(\"interval must be an integer\")\n        if interval <= 0:\n            raise ValueError(\"interval must be positive\")\n        if not isinstance(retain_best, bool):\n            raise TypeError(\"retain_best must be a boolean\")\n        self.interval = interval\n        self.retain_best = retain_best\n        self._snapshots = {}\n        self._best_score = None\n\n    def record(self, step, state, score, milestone=False):\n        if isinstance(step, bool) or not isinstance(step, int):\n            raise TypeError(\"step must be an integer\")\n        if step < 0:\n            raise ValueError(\"step must be non-negative\")\n        if not isinstance(state, dict):\n            raise TypeError(\"state must be a dictionary\")\n        if isinstance(score, bool) or not isinstance(score, (int, float)):\n            raise TypeError(\"score must be numeric\")\n        if not math.isfinite(score):\n            raise ValueError(\"score must be finite\")\n        if not isinstance(milestone, bool):\n            raise TypeError(\"milestone must be a boolean\")\n\n        periodic = milestone or step % self.interval == 0\n        is_best = self.retain_best and (\n            self._best_score is None or score >= self._best_score\n        )\n        labels = []\n        planned = []\n        if periodic:\n            labels.append(f\"step-{step}\")\n        if is_best:\n            labels.append(f\"best-{step}\")\n\n        for label in labels:\n            planned.append(\n                (\n                    label,\n                    {\n                        \"step\": step,\n                        \"score\": score,\n                        \"state\": copy.deepcopy(state),\n                    },\n                )\n            )\n\n        for label, snapshot in planned:\n            self._snapshots[label] = snapshot\n        if is_best:\n            self._best_score = score\n        return tuple(labels)\n\n    def export(self):\n        return copy.deepcopy(self._snapshots)\n",
+          "label": "Treats a score tied with the current best as a new best snapshot instead of requiring strict improvement.",
+          "sha256": "f6218a3b802b5243601bf0b6027c6957eddd76406d821ec854b6614a1e2064c1"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport math\n\n\nclass MemoryArchive:\n    def __init__(self, interval, retain_best=True):\n        if isinstance(interval, bool) or not isinstance(interval, int):\n            raise TypeError(\"interval must be an integer\")\n        if interval <= 0:\n            raise ValueError(\"interval must be positive\")\n        if not isinstance(retain_best, bool):\n            raise TypeError(\"retain_best must be a boolean\")\n        self.interval = interval\n        self.retain_best = retain_best\n        self._snapshots = {}\n        self._best_score = None\n\n    def record(self, step, state, score, milestone=False):\n        if isinstance(step, bool) or not isinstance(step, int):\n            raise TypeError(\"step must be an integer\")\n        if step < 0:\n            raise ValueError(\"step must be non-negative\")\n        if not isinstance(state, dict):\n            raise TypeError(\"state must be a dictionary\")\n        if isinstance(score, bool) or not isinstance(score, (int, float)):\n            raise TypeError(\"score must be numeric\")\n        if not math.isfinite(score):\n            raise ValueError(\"score must be finite\")\n        if not isinstance(milestone, bool):\n            raise TypeError(\"milestone must be a boolean\")\n\n        periodic = milestone or step % self.interval == 0\n        is_best = self.retain_best and (\n            self._best_score is None or score > self._best_score\n        )\n        labels = []\n        planned = []\n        if periodic:\n            labels.append(f\"step-{step}\")\n        if is_best:\n            labels.append(f\"best-{step}\")\n\n        for label in labels:\n            planned.append(\n                (\n                    label,\n                    {\n                        \"step\": step,\n                        \"score\": score,\n                        \"state\": copy.deepcopy(state),\n                    },\n                )\n            )\n\n        for label, snapshot in planned:\n            self._snapshots[label] = snapshot\n        if is_best:\n            self._best_score = score\n        return tuple(labels)\n\n    def export(self):\n        return copy.deepcopy(self._snapshots)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1170d312267a43835f2bdbb53867bdbf0f314ddd31a8491785ab3233f68bef0e"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_finite_integer_score (__main__.ArchiveIntegerTests.test_finite_integer_score)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_finite_integer_score\n    self.assertEqual(archive.record(1, {}, 10 ** 400), (\"step-1\", \"best-1\"))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 27, in record\n    if not math.isfinite(score):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "62a622499f5300d83c661311fd8ea8e22d0afb9982883bd0d94b479be213033b",
+    "duration_ms": 407,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

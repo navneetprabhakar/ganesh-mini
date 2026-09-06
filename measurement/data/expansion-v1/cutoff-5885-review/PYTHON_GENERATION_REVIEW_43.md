@@ -24,8 +24,8 @@ inspections. No seven-criterion approval. Continue position 646.
 | 645 | 0755 | Ordinary shared IDs, explicit IDs, rendering and positional/keyword configuration agree. Square width/height direct mutation and failed-construction counter consumption semantics pending; no new hold. |
 
 Candidate SHA-256: `680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec`.
-Original candidates/tests/sample/partition unchanged. This batch awaits backup;
-last verified backup is through 705 holds / Python position 630.
+Original candidates/tests/sample/partition unchanged. This batch is backed up;
+see QUALITY_STRATUM_721_BACKUP.md for verified backup through Python position 660.
 
 Eight pinned Python 3.11.15 probes, network disabled/resource limited; all
 exit 1 without timeout. Holds are review items, not final rejections.
@@ -40,4 +40,3 @@ exit 1 without timeout. Holds are review items, not final rejections.
 | 0747 | panel_nonstring_auth_probe.py / panel-nonstring-auth-result.json | 511 | UserString yes authenticates. |
 | 0751 | dispatch_identifier_mutation_probe.py / dispatch-identifier-mutation-result.json | 439 | Submit mutates caller identifier list. |
 | 0753 | compound_single_split_depth_probe.py / compound-single-split-depth-result.json | 454 | RecursionError on one-split input. |
-

@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0800",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "b94792d4dcaae169029ac161467e6aee6c6c69a866860f0b254453c5c6009ceb",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import MembershipBoard\n\n\nclass TeamRoleCollisionTests(unittest.TestCase):\n    def test_pending_team_does_not_allow_reverification(self):\n        board = MembershipBoard([\"pending\"])\n        board.add_member(\"m\")\n        board.verify(\"m\")\n        board.choose_team(\"m\", \"pending\")\n        with self.assertRaises(ValueError):\n            board.verify(\"m\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "c5383d7b0810c91ce194a25d2de06bc97471643da95579ec09ac2347e551bfc6"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fd063593302aa45205d83215e251e560f21703f94eefb79f60c6f29b46bb8701",
+      "text": "In `solution.py`, implement a public class `MembershipBoard(teams)` for an in-memory club workflow.\n\n`teams` must be a list of unique, non-empty strings. Wrong types raise `TypeError`; empty or duplicate team names raise `ValueError`. An empty team list is allowed.\n\n`add_member(member_id)` accepts a non-empty string, creates that member with only the `pending` role, and appends `Welcome MEMBER_ID` to the event log. A duplicate ID raises `KeyError`. `verify(member_id)` replaces `pending` with `member` and adds `unassigned`; verifying an already verified member raises `ValueError`. `choose_team(member_id, team)` requires a verified member and a configured team. It removes `unassigned` and every configured team role, then assigns the selected team. Unknown members raise `KeyError`; malformed IDs or team values raise `TypeError` or `ValueError` as appropriate.\n\n`roles(member_id)` returns role names as a sorted tuple. `events()` returns logged messages as a tuple in occurrence order. Failed operations must not change state. Returned values must not expose mutable internal state, and separate boards must be independent.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fd063593302aa45205d83215e251e560f21703f94eefb79f60c6f29b46bb8701",
+      "text": "In `solution.py`, implement a public class `MembershipBoard(teams)` for an in-memory club workflow.\n\n`teams` must be a list of unique, non-empty strings. Wrong types raise `TypeError`; empty or duplicate team names raise `ValueError`. An empty team list is allowed.\n\n`add_member(member_id)` accepts a non-empty string, creates that member with only the `pending` role, and appends `Welcome MEMBER_ID` to the event log. A duplicate ID raises `KeyError`. `verify(member_id)` replaces `pending` with `member` and adds `unassigned`; verifying an already verified member raises `ValueError`. `choose_team(member_id, team)` requires a verified member and a configured team. It removes `unassigned` and every configured team role, then assigns the selected team. Unknown members raise `KeyError`; malformed IDs or team values raise `TypeError` or `ValueError` as appropriate.\n\n`roles(member_id)` returns role names as a sorted tuple. `events()` returns logged messages as a tuple in occurrence order. Failed operations must not change state. Returned values must not expose mutable internal state, and separate boards must be independent.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0800",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class MembershipBoard:\n    def __init__(self, teams):\n        if not isinstance(teams, list):\n            raise TypeError(\"teams must be a list\")\n        if any(not isinstance(team, str) for team in teams):\n            raise TypeError(\"team names must be strings\")\n        if any(not team for team in teams) or len(set(teams)) != len(teams):\n            raise ValueError(\"team names must be non-empty and unique\")\n        self._teams = tuple(teams)\n        self._members = {}\n        self._events = []\n\n    @staticmethod\n    def _text(value, label):\n        if not isinstance(value, str):\n            raise TypeError(f\"{label} must be a string\")\n        if not value:\n            raise ValueError(f\"{label} must not be empty\")\n\n    def add_member(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id in self._members:\n            raise KeyError(member_id)\n        self._members[member_id] = {\"pending\"}\n        self._events.append(f\"Welcome {member_id}\")\n\n    def verify(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if \"pending\" not in self._members[member_id]:\n            raise ValueError(\"member is already verified\")\n        self._members[member_id].remove(\"pending\")\n        self._members[member_id].update((\"member\", \"unassigned\"))\n\n    def choose_team(self, member_id, team):\n        self._text(member_id, \"member_id\")\n        self._text(team, \"team\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if team not in self._teams:\n            raise ValueError(\"unknown team\")\n        current = self._members[member_id]\n        if \"member\" not in current:\n            raise ValueError(\"member is not verified\")\n        current.discard(\"pending\")\n        current.difference_update(self._teams)\n        current.add(team)\n\n    def roles(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        return tuple(sorted(self._members[member_id]))\n\n    def events(self):\n        return tuple(self._events)\n",
+          "label": "Selecting a team leaves the unassigned role attached to the member.",
+          "sha256": "32cdc49c0f8a302193dc07f3a53c9fc0f57bdb78fc85fb1910e37714e42167f5"
+        }
+      ],
+      "reference": {
+        "code": "class MembershipBoard:\n    def __init__(self, teams):\n        if not isinstance(teams, list):\n            raise TypeError(\"teams must be a list\")\n        if any(not isinstance(team, str) for team in teams):\n            raise TypeError(\"team names must be strings\")\n        if any(not team for team in teams) or len(set(teams)) != len(teams):\n            raise ValueError(\"team names must be non-empty and unique\")\n        self._teams = tuple(teams)\n        self._members = {}\n        self._events = []\n\n    @staticmethod\n    def _text(value, label):\n        if not isinstance(value, str):\n            raise TypeError(f\"{label} must be a string\")\n        if not value:\n            raise ValueError(f\"{label} must not be empty\")\n\n    def add_member(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id in self._members:\n            raise KeyError(member_id)\n        self._members[member_id] = {\"pending\"}\n        self._events.append(f\"Welcome {member_id}\")\n\n    def verify(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if \"pending\" not in self._members[member_id]:\n            raise ValueError(\"member is already verified\")\n        self._members[member_id].remove(\"pending\")\n        self._members[member_id].update((\"member\", \"unassigned\"))\n\n    def choose_team(self, member_id, team):\n        self._text(member_id, \"member_id\")\n        self._text(team, \"team\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if team not in self._teams:\n            raise ValueError(\"unknown team\")\n        current = self._members[member_id]\n        if \"member\" not in current:\n            raise ValueError(\"member is not verified\")\n        current.discard(\"unassigned\")\n        current.difference_update(self._teams)\n        current.add(team)\n\n    def roles(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        return tuple(sorted(self._members[member_id]))\n\n    def events(self):\n        return tuple(self._events)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bf99607fd2a2e717d2a78e7eaa37428779ee084f79e63135cf44bd0f9b87889f"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import MembershipBoard\n\n\nclass MembershipBoardTests(unittest.TestCase):\n    def test_team_validation(self):\n        for bad in (None, (), \"team\", {}):\n            with self.subTest(bad=bad):\n                with self.assertRaises(TypeError):\n                    MembershipBoard(bad)\n        for teams in ([1], [\"A\", None]):\n            with self.subTest(teams=teams):\n                with self.assertRaises(TypeError):\n                    MembershipBoard(teams)\n        for teams in ([\"\"], [\"A\", \"A\"]):\n            with self.subTest(teams=teams):\n                with self.assertRaises(ValueError):\n                    MembershipBoard(teams)\n        self.assertEqual(MembershipBoard([]).events(), ())\n\n    def test_member_lifecycle(self):\n        board = MembershipBoard([\"red\", \"blue\"])\n        board.add_member(\"m1\")\n        self.assertEqual(board.roles(\"m1\"), (\"pending\",))\n        self.assertEqual(board.events(), (\"Welcome m1\",))\n        board.verify(\"m1\")\n        self.assertEqual(board.roles(\"m1\"), (\"member\", \"unassigned\"))\n        board.choose_team(\"m1\", \"blue\")\n        self.assertEqual(board.roles(\"m1\"), (\"blue\", \"member\"))\n        board.choose_team(\"m1\", \"red\")\n        self.assertEqual(board.roles(\"m1\"), (\"member\", \"red\"))\n        self.assertEqual(board.events(), (\"Welcome m1\",))\n\n    def test_events_preserve_occurrence_order(self):\n        board = MembershipBoard([])\n        board.add_member(\"second\")\n        board.add_member(\"first\")\n        self.assertEqual(board.events(), (\"Welcome second\", \"Welcome first\"))\n\n    def test_duplicate_and_reverification_fail_without_state_change(self):\n        board = MembershipBoard([\"A\"])\n        board.add_member(\"m\")\n        before_roles = board.roles(\"m\")\n        before_events = board.events()\n        with self.assertRaises(KeyError):\n            board.add_member(\"m\")\n        self.assertEqual(board.roles(\"m\"), before_roles)\n        self.assertEqual(board.events(), before_events)\n        board.verify(\"m\")\n        before_roles = board.roles(\"m\")\n        with self.assertRaises(ValueError):\n            board.verify(\"m\")\n        self.assertEqual(board.roles(\"m\"), before_roles)\n        self.assertEqual(board.events(), before_events)\n\n    def test_unknown_members(self):\n        board = MembershipBoard([\"A\"])\n        with self.assertRaises(KeyError):\n            board.verify(\"missing\")\n        with self.assertRaises(KeyError):\n            board.choose_team(\"missing\", \"A\")\n        with self.assertRaises(KeyError):\n            board.roles(\"missing\")\n        self.assertEqual(board.events(), ())\n\n    def test_choose_team_requires_verified_member_and_known_team(self):\n        board = MembershipBoard([\"A\", \"B\"])\n        board.add_member(\"m\")\n        with self.assertRaises(ValueError):\n            board.choose_team(\"m\", \"A\")\n        self.assertEqual(board.roles(\"m\"), (\"pending\",))\n        board.verify(\"m\")\n        before = board.roles(\"m\")\n        with self.assertRaises(ValueError):\n            board.choose_team(\"m\", \"unknown\")\n        self.assertEqual(board.roles(\"m\"), before)\n\n    def test_malformed_member_ids_and_team_values(self):\n        board = MembershipBoard([\"A\"])\n        for bad in (None, 1, True, []):\n            with self.subTest(operation=\"add\", bad=bad):\n                with self.assertRaises(TypeError):\n                    board.add_member(bad)\n        with self.assertRaises(ValueError):\n            board.add_member(\"\")\n        board.add_member(\"m\")\n        board.verify(\"m\")\n        for bad in (None, 1, True, []):\n            with self.subTest(operation=\"team\", bad=bad):\n                with self.assertRaises(TypeError):\n                    board.choose_team(\"m\", bad)\n        with self.assertRaises(ValueError):\n            board.choose_team(\"m\", \"\")\n        self.assertEqual(board.roles(\"m\"), (\"member\", \"unassigned\"))\n\n    def test_instances_and_return_values_are_independent(self):\n        teams = [\"A\"]\n        first = MembershipBoard(teams)\n        second = MembershipBoard(teams)\n        teams.append(\"B\")\n        first.add_member(\"x\")\n        self.assertEqual(second.events(), ())\n        self.assertIsInstance(first.roles(\"x\"), tuple)\n        self.assertIsInstance(first.events(), tuple)\n        with self.assertRaises(ValueError):\n            first.choose_team(\"x\", \"B\")\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "f3af5334f8dde58609147c6098bad0f3ba2e5e96fa88bfdd40b04425a053654d"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "fd063593302aa45205d83215e251e560f21703f94eefb79f60c6f29b46bb8701",
+      "text": "In `solution.py`, implement a public class `MembershipBoard(teams)` for an in-memory club workflow.\n\n`teams` must be a list of unique, non-empty strings. Wrong types raise `TypeError`; empty or duplicate team names raise `ValueError`. An empty team list is allowed.\n\n`add_member(member_id)` accepts a non-empty string, creates that member with only the `pending` role, and appends `Welcome MEMBER_ID` to the event log. A duplicate ID raises `KeyError`. `verify(member_id)` replaces `pending` with `member` and adds `unassigned`; verifying an already verified member raises `ValueError`. `choose_team(member_id, team)` requires a verified member and a configured team. It removes `unassigned` and every configured team role, then assigns the selected team. Unknown members raise `KeyError`; malformed IDs or team values raise `TypeError` or `ValueError` as appropriate.\n\n`roles(member_id)` returns role names as a sorted tuple. `events()` returns logged messages as a tuple in occurrence order. Failed operations must not change state. Returned values must not expose mutable internal state, and separate boards must be independent.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "fd063593302aa45205d83215e251e560f21703f94eefb79f60c6f29b46bb8701",
+      "text": "In `solution.py`, implement a public class `MembershipBoard(teams)` for an in-memory club workflow.\n\n`teams` must be a list of unique, non-empty strings. Wrong types raise `TypeError`; empty or duplicate team names raise `ValueError`. An empty team list is allowed.\n\n`add_member(member_id)` accepts a non-empty string, creates that member with only the `pending` role, and appends `Welcome MEMBER_ID` to the event log. A duplicate ID raises `KeyError`. `verify(member_id)` replaces `pending` with `member` and adds `unassigned`; verifying an already verified member raises `ValueError`. `choose_team(member_id, team)` requires a verified member and a configured team. It removes `unassigned` and every configured team role, then assigns the selected team. Unknown members raise `KeyError`; malformed IDs or team values raise `TypeError` or `ValueError` as appropriate.\n\n`roles(member_id)` returns role names as a sorted tuple. `events()` returns logged messages as a tuple in occurrence order. Failed operations must not change state. Returned values must not expose mutable internal state, and separate boards must be independent.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0800",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "class MembershipBoard:\n    def __init__(self, teams):\n        if not isinstance(teams, list):\n            raise TypeError(\"teams must be a list\")\n        if any(not isinstance(team, str) for team in teams):\n            raise TypeError(\"team names must be strings\")\n        if any(not team for team in teams) or len(set(teams)) != len(teams):\n            raise ValueError(\"team names must be non-empty and unique\")\n        self._teams = tuple(teams)\n        self._members = {}\n        self._events = []\n\n    @staticmethod\n    def _text(value, label):\n        if not isinstance(value, str):\n            raise TypeError(f\"{label} must be a string\")\n        if not value:\n            raise ValueError(f\"{label} must not be empty\")\n\n    def add_member(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id in self._members:\n            raise KeyError(member_id)\n        self._members[member_id] = {\"pending\"}\n        self._events.append(f\"Welcome {member_id}\")\n\n    def verify(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if \"pending\" not in self._members[member_id]:\n            raise ValueError(\"member is already verified\")\n        self._members[member_id].remove(\"pending\")\n        self._members[member_id].update((\"member\", \"unassigned\"))\n\n    def choose_team(self, member_id, team):\n        self._text(member_id, \"member_id\")\n        self._text(team, \"team\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if team not in self._teams:\n            raise ValueError(\"unknown team\")\n        current = self._members[member_id]\n        if \"member\" not in current:\n            raise ValueError(\"member is not verified\")\n        current.discard(\"pending\")\n        current.difference_update(self._teams)\n        current.add(team)\n\n    def roles(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        return tuple(sorted(self._members[member_id]))\n\n    def events(self):\n        return tuple(self._events)\n",
+          "label": "Selecting a team leaves the unassigned role attached to the member.",
+          "sha256": "32cdc49c0f8a302193dc07f3a53c9fc0f57bdb78fc85fb1910e37714e42167f5"
+        }
+      ],
+      "reference": {
+        "code": "class MembershipBoard:\n    def __init__(self, teams):\n        if not isinstance(teams, list):\n            raise TypeError(\"teams must be a list\")\n        if any(not isinstance(team, str) for team in teams):\n            raise TypeError(\"team names must be strings\")\n        if any(not team for team in teams) or len(set(teams)) != len(teams):\n            raise ValueError(\"team names must be non-empty and unique\")\n        self._teams = tuple(teams)\n        self._members = {}\n        self._events = []\n\n    @staticmethod\n    def _text(value, label):\n        if not isinstance(value, str):\n            raise TypeError(f\"{label} must be a string\")\n        if not value:\n            raise ValueError(f\"{label} must not be empty\")\n\n    def add_member(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id in self._members:\n            raise KeyError(member_id)\n        self._members[member_id] = {\"pending\"}\n        self._events.append(f\"Welcome {member_id}\")\n\n    def verify(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if \"pending\" not in self._members[member_id]:\n            raise ValueError(\"member is already verified\")\n        self._members[member_id].remove(\"pending\")\n        self._members[member_id].update((\"member\", \"unassigned\"))\n\n    def choose_team(self, member_id, team):\n        self._text(member_id, \"member_id\")\n        self._text(team, \"team\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        if team not in self._teams:\n            raise ValueError(\"unknown team\")\n        current = self._members[member_id]\n        if \"member\" not in current:\n            raise ValueError(\"member is not verified\")\n        current.discard(\"unassigned\")\n        current.difference_update(self._teams)\n        current.add(team)\n\n    def roles(self, member_id):\n        self._text(member_id, \"member_id\")\n        if member_id not in self._members:\n            raise KeyError(member_id)\n        return tuple(sorted(self._members[member_id]))\n\n    def events(self):\n        return tuple(self._events)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "bf99607fd2a2e717d2a78e7eaa37428779ee084f79e63135cf44bd0f9b87889f"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "F\n======================================================================\nFAIL: test_pending_team_does_not_allow_reverification (__main__.TeamRoleCollisionTests.test_pending_team_does_not_allow_reverification)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 11, in test_pending_team_does_not_allow_reverification\n    with self.assertRaises(ValueError):\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (failures=1)\n",
+    "stderr_sha256": "44cdd93050a4a34817ef596c625959c569afa79ff19d2da1a7d9d53ed86d03b5",
+    "duration_ms": 417,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

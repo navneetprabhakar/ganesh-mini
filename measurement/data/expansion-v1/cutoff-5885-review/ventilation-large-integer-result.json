@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0763",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "54c0b9da89e2f2a9a74e615f12d9786b4be67a8b5cb00e3c10a453abb21a8268",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "import unittest\nfrom solution import VentilationMonitor\n\n\nclass MonitorIntegerTests(unittest.TestCase):\n    def test_finite_integer_temperature(self):\n        monitor = VentilationMonitor(20, 50)\n        result = monitor.observe({\"temperature\": 10 ** 400, \"humidity\": 0})\n        self.assertTrue(result[\"fan_on\"])\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "sha256": "32cd17b1c0b965524017ae33d1d55e42e90506f9537ba74265467e5d72c59672"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1928663cfcfa871fdf3e56acec43ff6199f3a731a52a8825fce417f516d912ab",
+      "text": "Create `solution.py` defining `VentilationMonitor(temp_limit, moisture_limit)`.\n\nBoth limits must be finite integers or floats other than booleans. `moisture_limit` must lie from 0 through 100 inclusive. Incorrect types raise `TypeError`; non-finite or out-of-range values raise `ValueError`.\n\nThe method `observe(sample)` accepts a dictionary with `temperature` and `humidity` fields. Their values must be finite integers or floats other than booleans, and humidity must be between 0 and 100 inclusive. Additional fields are ignored. Validate the sample fully before changing any state.\n\nA fan is on exactly when temperature is strictly greater than `temp_limit` or humidity is strictly greater than `moisture_limit`. Each successful observation returns a new dictionary with keys, in this order: `sequence`, `temperature`, `humidity`, `fan_on`, and `reasons`. Sequence numbers start at 1. `reasons` is a tuple containing `temperature` first when its limit was exceeded and `humidity` second when its limit was exceeded.\n\nThe method `history()` returns a deep copy of all result dictionaries in observation order. Neither input samples nor returned values may alias internal history, and invalid observations must not increment the sequence or alter fan state. The read-only `fan_on` property exposes the current state, initially `False`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1928663cfcfa871fdf3e56acec43ff6199f3a731a52a8825fce417f516d912ab",
+      "text": "Create `solution.py` defining `VentilationMonitor(temp_limit, moisture_limit)`.\n\nBoth limits must be finite integers or floats other than booleans. `moisture_limit` must lie from 0 through 100 inclusive. Incorrect types raise `TypeError`; non-finite or out-of-range values raise `ValueError`.\n\nThe method `observe(sample)` accepts a dictionary with `temperature` and `humidity` fields. Their values must be finite integers or floats other than booleans, and humidity must be between 0 and 100 inclusive. Additional fields are ignored. Validate the sample fully before changing any state.\n\nA fan is on exactly when temperature is strictly greater than `temp_limit` or humidity is strictly greater than `moisture_limit`. Each successful observation returns a new dictionary with keys, in this order: `sequence`, `temperature`, `humidity`, `fan_on`, and `reasons`. Sequence numbers start at 1. `reasons` is a tuple containing `temperature` first when its limit was exceeded and `humidity` second when its limit was exceeded.\n\nThe method `history()` returns a deep copy of all result dictionaries in observation order. Neither input samples nor returned values may alias internal history, and invalid observations must not increment the sequence or alter fan state. The read-only `fan_on` property exposes the current state, initially `False`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0763",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport math\n\n\nclass VentilationMonitor:\n    def __init__(self, temp_limit, moisture_limit):\n        self._validate_number(temp_limit, \"temp_limit\")\n        self._validate_number(moisture_limit, \"moisture_limit\")\n        if not 0 <= moisture_limit <= 100:\n            raise ValueError(\"moisture_limit must be between 0 and 100\")\n        self.temp_limit = temp_limit\n        self.moisture_limit = moisture_limit\n        self._fan_on = False\n        self._history = []\n\n    @staticmethod\n    def _validate_number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n\n    @property\n    def fan_on(self):\n        return self._fan_on\n\n    def observe(self, sample):\n        if not isinstance(sample, dict):\n            raise TypeError(\"sample must be a dictionary\")\n        if \"temperature\" not in sample or \"humidity\" not in sample:\n            raise TypeError(\"sample requires temperature and humidity\")\n        temperature = sample[\"temperature\"]\n        humidity = sample[\"humidity\"]\n        self._validate_number(temperature, \"temperature\")\n        self._validate_number(humidity, \"humidity\")\n        if not 0 <= humidity <= 100:\n            raise ValueError(\"humidity must be between 0 and 100\")\n\n        reasons = []\n        if temperature >= self.temp_limit:\n            reasons.append(\"temperature\")\n        if humidity > self.moisture_limit:\n            reasons.append(\"humidity\")\n        fan_on = bool(reasons)\n        result = {\n            \"sequence\": len(self._history) + 1,\n            \"temperature\": temperature,\n            \"humidity\": humidity,\n            \"fan_on\": fan_on,\n            \"reasons\": tuple(reasons),\n        }\n        self._fan_on = fan_on\n        self._history.append(copy.deepcopy(result))\n        return copy.deepcopy(result)\n\n    def history(self):\n        return copy.deepcopy(self._history)\n",
+          "label": "Turns the fan on when temperature merely equals its limit, although the limit must be strictly exceeded.",
+          "sha256": "8a0b5a2664b6d88dabd8862d5e95a3b9ba460c2f65e9f61f472d2afbdd63960a"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport math\n\n\nclass VentilationMonitor:\n    def __init__(self, temp_limit, moisture_limit):\n        self._validate_number(temp_limit, \"temp_limit\")\n        self._validate_number(moisture_limit, \"moisture_limit\")\n        if not 0 <= moisture_limit <= 100:\n            raise ValueError(\"moisture_limit must be between 0 and 100\")\n        self.temp_limit = temp_limit\n        self.moisture_limit = moisture_limit\n        self._fan_on = False\n        self._history = []\n\n    @staticmethod\n    def _validate_number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n\n    @property\n    def fan_on(self):\n        return self._fan_on\n\n    def observe(self, sample):\n        if not isinstance(sample, dict):\n            raise TypeError(\"sample must be a dictionary\")\n        if \"temperature\" not in sample or \"humidity\" not in sample:\n            raise TypeError(\"sample requires temperature and humidity\")\n        temperature = sample[\"temperature\"]\n        humidity = sample[\"humidity\"]\n        self._validate_number(temperature, \"temperature\")\n        self._validate_number(humidity, \"humidity\")\n        if not 0 <= humidity <= 100:\n            raise ValueError(\"humidity must be between 0 and 100\")\n\n        reasons = []\n        if temperature > self.temp_limit:\n            reasons.append(\"temperature\")\n        if humidity > self.moisture_limit:\n            reasons.append(\"humidity\")\n        fan_on = bool(reasons)\n        result = {\n            \"sequence\": len(self._history) + 1,\n            \"temperature\": temperature,\n            \"humidity\": humidity,\n            \"fan_on\": fan_on,\n            \"reasons\": tuple(reasons),\n        }\n        self._fan_on = fan_on\n        self._history.append(copy.deepcopy(result))\n        return copy.deepcopy(result)\n\n    def history(self):\n        return copy.deepcopy(self._history)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2fc39b2b6f460cc88bfb5cbe753f6c779e0816c57ed09b2cda037c22652e8f8e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import math\nimport unittest\n\nfrom solution import VentilationMonitor\n\n\nclass VentilationMonitorTests(unittest.TestCase):\n    def test_limit_validation(self):\n        for temp in (True, \"20\", None, math.inf, math.nan):\n            exc = TypeError if isinstance(temp, (bool, str)) or temp is None else ValueError\n            with self.subTest(temp=temp):\n                with self.assertRaises(exc):\n                    VentilationMonitor(temp, 50)\n        for moisture in (True, \"50\", None, math.inf, math.nan, -0.1, 100.1):\n            exc = TypeError if isinstance(moisture, (bool, str)) or moisture is None else ValueError\n            with self.subTest(moisture=moisture):\n                with self.assertRaises(exc):\n                    VentilationMonitor(20, moisture)\n        VentilationMonitor(-100.5, 0)\n        VentilationMonitor(100, 100)\n\n    def test_observations_order_reasons_and_strict_limits(self):\n        monitor = VentilationMonitor(25, 60)\n        self.assertFalse(monitor.fan_on)\n        exact = monitor.observe({\"temperature\": 25, \"humidity\": 60, \"ignored\": object()})\n        self.assertEqual(list(exact), [\"sequence\", \"temperature\", \"humidity\", \"fan_on\", \"reasons\"])\n        self.assertEqual(exact, {\n            \"sequence\": 1, \"temperature\": 25, \"humidity\": 60,\n            \"fan_on\": False, \"reasons\": ()\n        })\n        both = monitor.observe({\"temperature\": 26.5, \"humidity\": 61})\n        self.assertEqual(both[\"sequence\"], 2)\n        self.assertTrue(both[\"fan_on\"])\n        self.assertEqual(both[\"reasons\"], (\"temperature\", \"humidity\"))\n        humidity = monitor.observe({\"temperature\": 20, \"humidity\": 100})\n        self.assertEqual(humidity[\"reasons\"], (\"humidity\",))\n        self.assertTrue(monitor.fan_on)\n        cool = monitor.observe({\"temperature\": -5, \"humidity\": 0})\n        self.assertFalse(cool[\"fan_on\"])\n        self.assertFalse(monitor.fan_on)\n\n    def test_input_and_results_do_not_alias_history(self):\n        monitor = VentilationMonitor(10, 20)\n        sample = {\"temperature\": 11, \"humidity\": 5, \"nested\": [1]}\n        result = monitor.observe(sample)\n        sample[\"temperature\"] = -100\n        result[\"temperature\"] = 999\n        result[\"reasons\"] = (\"changed\",)\n        history = monitor.history()\n        self.assertEqual(history[0][\"temperature\"], 11)\n        self.assertEqual(history[0][\"reasons\"], (\"temperature\",))\n        history[0][\"temperature\"] = 500\n        history.append({})\n        again = monitor.history()\n        self.assertEqual(len(again), 1)\n        self.assertEqual(again[0][\"temperature\"], 11)\n        self.assertIsNot(history, again)\n\n    def test_invalid_samples_are_atomic(self):\n        monitor = VentilationMonitor(10, 50)\n        monitor.observe({\"temperature\": 20, \"humidity\": 40})\n        self.assertTrue(monitor.fan_on)\n        baseline = monitor.history()\n        cases = [\n            (None, TypeError),\n            ([], TypeError),\n            ({\"humidity\": 20}, TypeError),\n            ({\"temperature\": 20}, TypeError),\n            ({\"temperature\": True, \"humidity\": 20}, TypeError),\n            ({\"temperature\": 20, \"humidity\": False}, TypeError),\n            ({\"temperature\": \"20\", \"humidity\": 20}, TypeError),\n            ({\"temperature\": math.inf, \"humidity\": 20}, ValueError),\n            ({\"temperature\": 20, \"humidity\": math.nan}, ValueError),\n            ({\"temperature\": 20, \"humidity\": -1}, ValueError),\n            ({\"temperature\": 20, \"humidity\": 101}, ValueError),\n        ]\n        for sample, exc in cases:\n            with self.subTest(sample=sample):\n                with self.assertRaises(exc):\n                    monitor.observe(sample)\n                self.assertEqual(monitor.history(), baseline)\n                self.assertTrue(monitor.fan_on)\n        next_result = monitor.observe({\"temperature\": 0, \"humidity\": 0})\n        self.assertEqual(next_result[\"sequence\"], 2)\n\n    def test_fan_property_is_read_only(self):\n        monitor = VentilationMonitor(1, 1)\n        with self.assertRaises(AttributeError):\n            monitor.fan_on = True\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "5c81129b9fce0a770531de98cf2b44ed776c5b48df4971cb0c3682e0b68ca13b"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "1928663cfcfa871fdf3e56acec43ff6199f3a731a52a8825fce417f516d912ab",
+      "text": "Create `solution.py` defining `VentilationMonitor(temp_limit, moisture_limit)`.\n\nBoth limits must be finite integers or floats other than booleans. `moisture_limit` must lie from 0 through 100 inclusive. Incorrect types raise `TypeError`; non-finite or out-of-range values raise `ValueError`.\n\nThe method `observe(sample)` accepts a dictionary with `temperature` and `humidity` fields. Their values must be finite integers or floats other than booleans, and humidity must be between 0 and 100 inclusive. Additional fields are ignored. Validate the sample fully before changing any state.\n\nA fan is on exactly when temperature is strictly greater than `temp_limit` or humidity is strictly greater than `moisture_limit`. Each successful observation returns a new dictionary with keys, in this order: `sequence`, `temperature`, `humidity`, `fan_on`, and `reasons`. Sequence numbers start at 1. `reasons` is a tuple containing `temperature` first when its limit was exceeded and `humidity` second when its limit was exceeded.\n\nThe method `history()` returns a deep copy of all result dictionaries in observation order. Neither input samples nor returned values may alias internal history, and invalid observations must not increment the sequence or alter fan state. The read-only `fan_on` property exposes the current state, initially `False`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "1928663cfcfa871fdf3e56acec43ff6199f3a731a52a8825fce417f516d912ab",
+      "text": "Create `solution.py` defining `VentilationMonitor(temp_limit, moisture_limit)`.\n\nBoth limits must be finite integers or floats other than booleans. `moisture_limit` must lie from 0 through 100 inclusive. Incorrect types raise `TypeError`; non-finite or out-of-range values raise `ValueError`.\n\nThe method `observe(sample)` accepts a dictionary with `temperature` and `humidity` fields. Their values must be finite integers or floats other than booleans, and humidity must be between 0 and 100 inclusive. Additional fields are ignored. Validate the sample fully before changing any state.\n\nA fan is on exactly when temperature is strictly greater than `temp_limit` or humidity is strictly greater than `moisture_limit`. Each successful observation returns a new dictionary with keys, in this order: `sequence`, `temperature`, `humidity`, `fan_on`, and `reasons`. Sequence numbers start at 1. `reasons` is a tuple containing `temperature` first when its limit was exceeded and `humidity` second when its limit was exceeded.\n\nThe method `history()` returns a deep copy of all result dictionaries in observation order. Neither input samples nor returned values may alias internal history, and invalid observations must not increment the sequence or alter fan state. The read-only `fan_on` property exposes the current state, initially `False`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0763",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import copy\nimport math\n\n\nclass VentilationMonitor:\n    def __init__(self, temp_limit, moisture_limit):\n        self._validate_number(temp_limit, \"temp_limit\")\n        self._validate_number(moisture_limit, \"moisture_limit\")\n        if not 0 <= moisture_limit <= 100:\n            raise ValueError(\"moisture_limit must be between 0 and 100\")\n        self.temp_limit = temp_limit\n        self.moisture_limit = moisture_limit\n        self._fan_on = False\n        self._history = []\n\n    @staticmethod\n    def _validate_number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n\n    @property\n    def fan_on(self):\n        return self._fan_on\n\n    def observe(self, sample):\n        if not isinstance(sample, dict):\n            raise TypeError(\"sample must be a dictionary\")\n        if \"temperature\" not in sample or \"humidity\" not in sample:\n            raise TypeError(\"sample requires temperature and humidity\")\n        temperature = sample[\"temperature\"]\n        humidity = sample[\"humidity\"]\n        self._validate_number(temperature, \"temperature\")\n        self._validate_number(humidity, \"humidity\")\n        if not 0 <= humidity <= 100:\n            raise ValueError(\"humidity must be between 0 and 100\")\n\n        reasons = []\n        if temperature >= self.temp_limit:\n            reasons.append(\"temperature\")\n        if humidity > self.moisture_limit:\n            reasons.append(\"humidity\")\n        fan_on = bool(reasons)\n        result = {\n            \"sequence\": len(self._history) + 1,\n            \"temperature\": temperature,\n            \"humidity\": humidity,\n            \"fan_on\": fan_on,\n            \"reasons\": tuple(reasons),\n        }\n        self._fan_on = fan_on\n        self._history.append(copy.deepcopy(result))\n        return copy.deepcopy(result)\n\n    def history(self):\n        return copy.deepcopy(self._history)\n",
+          "label": "Turns the fan on when temperature merely equals its limit, although the limit must be strictly exceeded.",
+          "sha256": "8a0b5a2664b6d88dabd8862d5e95a3b9ba460c2f65e9f61f472d2afbdd63960a"
+        }
+      ],
+      "reference": {
+        "code": "import copy\nimport math\n\n\nclass VentilationMonitor:\n    def __init__(self, temp_limit, moisture_limit):\n        self._validate_number(temp_limit, \"temp_limit\")\n        self._validate_number(moisture_limit, \"moisture_limit\")\n        if not 0 <= moisture_limit <= 100:\n            raise ValueError(\"moisture_limit must be between 0 and 100\")\n        self.temp_limit = temp_limit\n        self.moisture_limit = moisture_limit\n        self._fan_on = False\n        self._history = []\n\n    @staticmethod\n    def _validate_number(value, name):\n        if isinstance(value, bool) or not isinstance(value, (int, float)):\n            raise TypeError(f\"{name} must be numeric\")\n        if not math.isfinite(value):\n            raise ValueError(f\"{name} must be finite\")\n\n    @property\n    def fan_on(self):\n        return self._fan_on\n\n    def observe(self, sample):\n        if not isinstance(sample, dict):\n            raise TypeError(\"sample must be a dictionary\")\n        if \"temperature\" not in sample or \"humidity\" not in sample:\n            raise TypeError(\"sample requires temperature and humidity\")\n        temperature = sample[\"temperature\"]\n        humidity = sample[\"humidity\"]\n        self._validate_number(temperature, \"temperature\")\n        self._validate_number(humidity, \"humidity\")\n        if not 0 <= humidity <= 100:\n            raise ValueError(\"humidity must be between 0 and 100\")\n\n        reasons = []\n        if temperature > self.temp_limit:\n            reasons.append(\"temperature\")\n        if humidity > self.moisture_limit:\n            reasons.append(\"humidity\")\n        fan_on = bool(reasons)\n        result = {\n            \"sequence\": len(self._history) + 1,\n            \"temperature\": temperature,\n            \"humidity\": humidity,\n            \"fan_on\": fan_on,\n            \"reasons\": tuple(reasons),\n        }\n        self._fan_on = fan_on\n        self._history.append(copy.deepcopy(result))\n        return copy.deepcopy(result)\n\n    def history(self):\n        return copy.deepcopy(self._history)\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2fc39b2b6f460cc88bfb5cbe753f6c779e0816c57ed09b2cda037c22652e8f8e"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "E\n======================================================================\nERROR: test_finite_integer_temperature (__main__.MonitorIntegerTests.test_finite_integer_temperature)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 8, in test_finite_integer_temperature\n    result = monitor.observe({\"temperature\": 10 ** 400, \"humidity\": 0})\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 34, in observe\n    self._validate_number(temperature, \"temperature\")\n  File \"/work/solution.py\", line 20, in _validate_number\n    if not math.isfinite(value):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "7273b42124090091a7def64d42ffbca7c90c2ce51873779a80a6bfa7730efd99",
+    "duration_ms": 434,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

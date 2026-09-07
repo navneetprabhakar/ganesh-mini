@@ -2,8 +2,8 @@
 
 ## Quality review continuation — 2026-09-06
 
-Current checkpoint: **1636 holds (1633 additive plus historical three)**;
-4,047 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **1645 holds (1642 additive plus historical three)**;
+4,062 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 170 positive, 130 held. By lane: Go 39/17,
 Java 34/26, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v1.json.
@@ -16,16 +16,16 @@ Java null-query list validation and percentage arithmetic require reconciliation
 including prior sample positives. Sample dispositions above predate these groups.
 New criterion scopes require explicit reconciliation against existing notes;
 no automatic reuse or new-inspection credit. Go non-triviality757/757 complete.
-Java combined queue360/1112 reviewed (684 generation,428 repair total); resume361.
+Java combined queue375/1112 reviewed (684 generation,428 repair total); resume376.
 Additional non-triviality
 scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through 1584 holds / Go757 / Java270. See QUALITY_JAVA_1584_BACKUP.md.
-Java batches19–24 await backup. GCS reauthentication required;1617 archive upload
-failed before remote verification. Archive remains local. Frozen inputs unchanged.
-At most4249 rows remain outside holds, only249 above the planned4000 lower bound;
+GCS verified through 1645 holds / Go757 / Java375. See QUALITY_JAVA_1645_BACKUP.md.
+Authentication restored; the previous backup blocker is resolved. All completed
+Java batches are backed up. Frozen inputs unchanged.
+At most4240 rows remain outside holds, only240 above the planned4000 lower bound;
 this is a corpus-sufficiency risk, not admission or a verified shortfall yet.
 No training seal or new VM. Older entries are historical.
 

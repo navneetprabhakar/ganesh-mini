@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-java-generation-0401",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "43885d6d2a58c34fed2559302652384b2801eebf34029ec7b10ab980eddc234f",
+  "task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "path": "SolutionTest.java",
+        "role": "test",
+        "content": "public class SolutionTest {\n    private static Solution.Node leaf(Solution.Node root, int index, int depth) {\n        Solution.Node node = root;\n        for (int bit = depth - 1; bit >= 0; bit--) {\n            if (((index >>> bit) & 1) == 0) {\n                if (node.left == null) node.left = new Solution.Node(0);\n                node = node.left;\n            } else {\n                if (node.right == null) node.right = new Solution.Node(0);\n                node = node.right;\n            }\n        }\n        return node;\n    }\n    public static void main(String[] args) {\n        Solution.Node root = new Solution.Node(0);\n        leaf(root, 0, 31);\n        leaf(root, 536870912, 31).left = new Solution.Node(0);\n        leaf(root, 1610612736, 31).left = new Solution.Node(0);\n        int actual = Solution.widestSpan(root);\n        if (actual != Integer.MAX_VALUE) {\n            throw new AssertionError(\"expected saturated width, got \" + actual);\n        }\n    }\n}\n",
+        "sha256": "b5363516a0c4c3295aafd97efdf4c5740f94d1b5e753ade2bd44d1f630e6e84e"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4004e782ae1d7a5cf9fddee2b89f90f9f73d2d8093cffea775a6c150ec3c3ecc",
+      "text": "Implement `Solution.java` with nested public class `Node`, containing public `int value`, `Node left`, and `Node right`, and public static method `int widestSpan(Node root)`. Treat each level as positions in a complete binary tree: a node at position p has children at 2p and 2p+1. A level's span is the inclusive distance from its leftmost present node to its rightmost present node, so absent positions between them count. Return the maximum span, 0 for a null root, and `Integer.MAX_VALUE` if the mathematical width exceeds that value. The method must not modify the tree and must avoid numeric overflow even for very deep sparse trees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4004e782ae1d7a5cf9fddee2b89f90f9f73d2d8093cffea775a6c150ec3c3ecc",
+      "text": "Implement `Solution.java` with nested public class `Node`, containing public `int value`, `Node left`, and `Node right`, and public static method `int widestSpan(Node root)`. Treat each level as positions in a complete binary tree: a node at position p has children at 2p and 2p+1. A level's span is the inclusive distance from its leftmost present node to its rightmost present node, so absent positions between them count. Return the maximum span, 0 for a null root, and `Integer.MAX_VALUE` if the mathematical width exceeds that value. The method must not modify the tree and must avoid numeric overflow even for very deep sparse trees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-java-generation-0401",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.*;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static class Node {\n        public int value;\n        public Node left;\n        public Node right;\n\n        public Node() {}\n        public Node(int value) { this.value = value; }\n    }\n\n    private static final class Entry {\n        final Node node;\n        final long index;\n\n        Entry(Node node, long index) {\n            this.node = node;\n            this.index = index;\n        }\n    }\n\n    public static int widestSpan(Node root) {\n        if (root == null) return 0;\n\n        Deque<Entry> queue = new ArrayDeque<>();\n        queue.addLast(new Entry(root, 0));\n        long best = 1;\n\n        while (!queue.isEmpty()) {\n            int levelSize = queue.size();\n            long base = queue.peekFirst().index;\n            long first = 0;\n            long last = 0;\n\n            for (int i = 0; i < levelSize; i++) {\n                Entry entry = queue.removeFirst();\n                long index = entry.index - base;\n                if (i == 0) first = index;\n                if (i == levelSize - 1) last = index;\n\n                if (entry.node.left != null) {\n                    queue.addLast(new Entry(entry.node.left, childIndex(index, false)));\n                }\n                if (entry.node.right != null) {\n                    queue.addLast(new Entry(entry.node.right, childIndex(index, true)));\n                }\n            }\n\n            best = Math.max(best, levelSize);\n            if (best >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        }\n\n        return (int) best;\n    }\n\n    private static long childIndex(long index, boolean right) {\n        if (index >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        long child = index * 2L + (right ? 1L : 0L);\n        return Math.min(child, (long) Integer.MAX_VALUE);\n    }\n\n    private static long width(long first, long last) {\n        if (last >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        return last - first + 1L;\n    }\n}\n",
+          "label": "each level uses its node count instead of its inclusive positional span",
+          "sha256": "0e9b69eb194664db791c2402ad6b2a58f737c757113c7a775ca1841e178dff27"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.*;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static class Node {\n        public int value;\n        public Node left;\n        public Node right;\n\n        public Node() {}\n        public Node(int value) { this.value = value; }\n    }\n\n    private static final class Entry {\n        final Node node;\n        final long index;\n\n        Entry(Node node, long index) {\n            this.node = node;\n            this.index = index;\n        }\n    }\n\n    public static int widestSpan(Node root) {\n        if (root == null) return 0;\n\n        Deque<Entry> queue = new ArrayDeque<>();\n        queue.addLast(new Entry(root, 0));\n        long best = 1;\n\n        while (!queue.isEmpty()) {\n            int levelSize = queue.size();\n            long base = queue.peekFirst().index;\n            long first = 0;\n            long last = 0;\n\n            for (int i = 0; i < levelSize; i++) {\n                Entry entry = queue.removeFirst();\n                long index = entry.index - base;\n                if (i == 0) first = index;\n                if (i == levelSize - 1) last = index;\n\n                if (entry.node.left != null) {\n                    queue.addLast(new Entry(entry.node.left, childIndex(index, false)));\n                }\n                if (entry.node.right != null) {\n                    queue.addLast(new Entry(entry.node.right, childIndex(index, true)));\n                }\n            }\n\n            best = Math.max(best, width(first, last));\n            if (best >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        }\n\n        return (int) best;\n    }\n\n    private static long childIndex(long index, boolean right) {\n        if (index >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        long child = index * 2L + (right ? 1L : 0L);\n        return Math.min(child, (long) Integer.MAX_VALUE);\n    }\n\n    private static long width(long first, long last) {\n        if (last >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        return last - first + 1L;\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2c897bfbef10982cbc9ca2dc729f88c6634ddf6a3b95a80c44ca176eebc356c4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "content": "public class SolutionTest {\n    public static void main(String[] args) {\n        eq(0, Solution.widestSpan(null));\n\n        Solution.Node single = node(10);\n        eq(1, Solution.widestSpan(single));\n        check(single.left == null && single.right == null && single.value == 10,\n                \"single-node tree was modified\");\n\n        Solution.Node root = node(1);\n        root.left = node(2);\n        root.right = node(3);\n        root.left.left = node(4);\n        root.right.right = node(5);\n        root.left.left.right = node(6);\n        root.right.right.left = node(7);\n        Solution.Node savedLeft = root.left;\n        Solution.Node savedRight = root.right;\n        eq(6, Solution.widestSpan(root));\n        check(root.left == savedLeft && root.right == savedRight, \"tree links were modified\");\n        eq(1, root.value);\n        eq(6, root.left.left.right.value);\n        eq(7, root.right.right.left.value);\n\n        Solution.Node oneSided = node(0);\n        Solution.Node cursor = oneSided;\n        for (int i = 0; i < 3000; i++) {\n            cursor.left = node(i);\n            cursor = cursor.left;\n        }\n        eq(1, Solution.widestSpan(oneSided));\n\n        Solution.Node huge = node(0);\n        Solution.Node left = huge;\n        Solution.Node right = huge;\n        for (int i = 0; i < 40; i++) {\n            left.left = node(i);\n            left = left.left;\n            right.right = node(-i);\n            right = right.right;\n        }\n        eq(Integer.MAX_VALUE, Solution.widestSpan(huge));\n        check(huge.left != null && huge.right != null, \"deep tree was modified\");\n    }\n\n    private static Solution.Node node(int value) {\n        Solution.Node node = new Solution.Node();\n        node.value = value;\n        return node;\n    }\n\n    private static void eq(int expected, int actual) {\n        if (expected != actual)\n            throw new AssertionError(\"expected <\" + expected + \"> but was <\" + actual + \">\");\n    }\n\n    private static void check(boolean condition, String message) {\n        if (!condition) throw new AssertionError(message);\n    }\n}\n",
+        "path": "SolutionTest.java",
+        "role": "test",
+        "sha256": "2bc474df262a7b9924a91cf80b7c83d3df4a0c5d44448001c9270f0ea37dfc80"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "4004e782ae1d7a5cf9fddee2b89f90f9f73d2d8093cffea775a6c150ec3c3ecc",
+      "text": "Implement `Solution.java` with nested public class `Node`, containing public `int value`, `Node left`, and `Node right`, and public static method `int widestSpan(Node root)`. Treat each level as positions in a complete binary tree: a node at position p has children at 2p and 2p+1. A level's span is the inclusive distance from its leftmost present node to its rightmost present node, so absent positions between them count. Return the maximum span, 0 for a null root, and `Integer.MAX_VALUE` if the mathematical width exceeds that value. The method must not modify the tree and must avoid numeric overflow even for very deep sparse trees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "4004e782ae1d7a5cf9fddee2b89f90f9f73d2d8093cffea775a6c150ec3c3ecc",
+      "text": "Implement `Solution.java` with nested public class `Node`, containing public `int value`, `Node left`, and `Node right`, and public static method `int widestSpan(Node root)`. Treat each level as positions in a complete binary tree: a node at position p has children at 2p and 2p+1. A level's span is the inclusive distance from its leftmost present node to its rightmost present node, so absent positions between them count. Return the maximum span, 0 for a null root, and `Integer.MAX_VALUE` if the mathematical width exceeds that value. The method must not modify the tree and must avoid numeric overflow even for very deep sparse trees.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-java-generation-0401",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.*;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static class Node {\n        public int value;\n        public Node left;\n        public Node right;\n\n        public Node() {}\n        public Node(int value) { this.value = value; }\n    }\n\n    private static final class Entry {\n        final Node node;\n        final long index;\n\n        Entry(Node node, long index) {\n            this.node = node;\n            this.index = index;\n        }\n    }\n\n    public static int widestSpan(Node root) {\n        if (root == null) return 0;\n\n        Deque<Entry> queue = new ArrayDeque<>();\n        queue.addLast(new Entry(root, 0));\n        long best = 1;\n\n        while (!queue.isEmpty()) {\n            int levelSize = queue.size();\n            long base = queue.peekFirst().index;\n            long first = 0;\n            long last = 0;\n\n            for (int i = 0; i < levelSize; i++) {\n                Entry entry = queue.removeFirst();\n                long index = entry.index - base;\n                if (i == 0) first = index;\n                if (i == levelSize - 1) last = index;\n\n                if (entry.node.left != null) {\n                    queue.addLast(new Entry(entry.node.left, childIndex(index, false)));\n                }\n                if (entry.node.right != null) {\n                    queue.addLast(new Entry(entry.node.right, childIndex(index, true)));\n                }\n            }\n\n            best = Math.max(best, levelSize);\n            if (best >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        }\n\n        return (int) best;\n    }\n\n    private static long childIndex(long index, boolean right) {\n        if (index >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        long child = index * 2L + (right ? 1L : 0L);\n        return Math.min(child, (long) Integer.MAX_VALUE);\n    }\n\n    private static long width(long first, long last) {\n        if (last >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        return last - first + 1L;\n    }\n}\n",
+          "label": "each level uses its node count instead of its inclusive positional span",
+          "sha256": "0e9b69eb194664db791c2402ad6b2a58f737c757113c7a775ca1841e178dff27"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.*;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static class Node {\n        public int value;\n        public Node left;\n        public Node right;\n\n        public Node() {}\n        public Node(int value) { this.value = value; }\n    }\n\n    private static final class Entry {\n        final Node node;\n        final long index;\n\n        Entry(Node node, long index) {\n            this.node = node;\n            this.index = index;\n        }\n    }\n\n    public static int widestSpan(Node root) {\n        if (root == null) return 0;\n\n        Deque<Entry> queue = new ArrayDeque<>();\n        queue.addLast(new Entry(root, 0));\n        long best = 1;\n\n        while (!queue.isEmpty()) {\n            int levelSize = queue.size();\n            long base = queue.peekFirst().index;\n            long first = 0;\n            long last = 0;\n\n            for (int i = 0; i < levelSize; i++) {\n                Entry entry = queue.removeFirst();\n                long index = entry.index - base;\n                if (i == 0) first = index;\n                if (i == levelSize - 1) last = index;\n\n                if (entry.node.left != null) {\n                    queue.addLast(new Entry(entry.node.left, childIndex(index, false)));\n                }\n                if (entry.node.right != null) {\n                    queue.addLast(new Entry(entry.node.right, childIndex(index, true)));\n                }\n            }\n\n            best = Math.max(best, width(first, last));\n            if (best >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        }\n\n        return (int) best;\n    }\n\n    private static long childIndex(long index, boolean right) {\n        if (index >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        long child = index * 2L + (right ? 1L : 0L);\n        return Math.min(child, (long) Integer.MAX_VALUE);\n    }\n\n    private static long width(long first, long last) {\n        if (last >= Integer.MAX_VALUE) return Integer.MAX_VALUE;\n        return last - first + 1L;\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2c897bfbef10982cbc9ca2dc729f88c6634ddf6a3b95a80c44ca176eebc356c4"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "java-21.0.11",
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: expected saturated width, got 1610612737\n\tat SolutionTest.main(SolutionTest.java:22)\n",
+    "stderr_sha256": "0e80683d112429b5628fa44f105ab297c32f7f57161a91cc28360e1b8619577e",
+    "duration_ms": 3283,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

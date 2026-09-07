@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-java-generation-0165",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e23d18250d8c12c9ba27c5908c538667ecbf309004980fbc496a590955d35743",
+  "task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "path": "SolutionTest.java",
+        "role": "test",
+        "content": "import java.util.concurrent.atomic.AtomicInteger;\n\npublic class SolutionTest {\n    public static void main(String[] args) throws Exception {\n        Solution.acquire(\"group\", \"key\");\n        Solution.acquire(\"group\", \"key\");\n        AtomicInteger observed = new AtomicInteger(-1);\n        try {\n            Thread observer = new Thread(() -> observed.set(Solution.holdCount(\"group\", \"key\")));\n            observer.start();\n            observer.join(2000);\n            if (observer.isAlive()) throw new AssertionError(\"Observer did not finish\");\n            if (observed.get() != 2) {\n                throw new AssertionError(\"Total reentrant hold count expected 2, got \" + observed.get());\n            }\n        } finally {\n            Solution.release(\"group\", \"key\");\n            Solution.release(\"group\", \"key\");\n        }\n    }\n}\n",
+        "sha256": "85798570355f6c27171ab4b00bb73409848fa26d3e50b66d32938bfd265b3fda"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48f468021f484d6bdc0d851d0abd41d35e87e404a25b9aea2079090d40c8496b",
+      "text": "Implement `Solution.java` using only the Java standard library. Create a `public final class Solution` with public static methods:\n\n- `void acquire(String group, String key) throws InterruptedException`\n- `void release(String group, String key)`\n- `boolean isHeld(String group, String key)`\n- `int holdCount(String group, String key)`\n- `void clearUnused()`\n\nRules:\n1. Null or empty group/key values are malformed and cause `IllegalArgumentException`; whitespace is significant and must not be trimmed.\n2. Each `(group, key)` pair identifies an independent reentrant lock. The same key in different groups must not share a lock.\n3. `acquire` blocks interruptibly until available. Repeated acquisition by the owning thread increments its hold count.\n4. `release` decrements the current thread's hold count. A non-owner release throws `IllegalMonitorStateException`. The lock becomes available only when the count reaches zero.\n5. `isHeld` reports whether any thread owns the lock. `holdCount` reports the current total reentrant hold count, or zero if absent.\n6. Concurrent calls must be safe. `clearUnused` may remove only currently unlocked entries and must not affect locked entries.\n\nProvide a new complete implementation. Do not add other public APIs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48f468021f484d6bdc0d851d0abd41d35e87e404a25b9aea2079090d40c8496b",
+      "text": "Implement `Solution.java` using only the Java standard library. Create a `public final class Solution` with public static methods:\n\n- `void acquire(String group, String key) throws InterruptedException`\n- `void release(String group, String key)`\n- `boolean isHeld(String group, String key)`\n- `int holdCount(String group, String key)`\n- `void clearUnused()`\n\nRules:\n1. Null or empty group/key values are malformed and cause `IllegalArgumentException`; whitespace is significant and must not be trimmed.\n2. Each `(group, key)` pair identifies an independent reentrant lock. The same key in different groups must not share a lock.\n3. `acquire` blocks interruptibly until available. Repeated acquisition by the owning thread increments its hold count.\n4. `release` decrements the current thread's hold count. A non-owner release throws `IllegalMonitorStateException`. The lock becomes available only when the count reaches zero.\n5. `isHeld` reports whether any thread owns the lock. `holdCount` reports the current total reentrant hold count, or zero if absent.\n6. Concurrent calls must be safe. `clearUnused` may remove only currently unlocked entries and must not affect locked entries.\n\nProvide a new complete implementation. Do not add other public APIs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-java-generation-0165",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.concurrent.locks.ReentrantLock;\n\npublic final class Solution {\n    private record LockKey(String group, String key) {}\n    private static final Object MONITOR = new Object();\n    private static final Map<LockKey, ReentrantLock> LOCKS = new HashMap<>();\n\n    private Solution() {}\n\n    public static void acquire(String group, String key) throws InterruptedException {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.computeIfAbsent(lockKey, ignored -> new ReentrantLock());\n        }\n        lock.lockInterruptibly();\n    }\n\n    public static void release(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.get(lockKey);\n        }\n        if (lock == null || !lock.isHeldByCurrentThread()) throw new IllegalMonitorStateException();\n        lock.unlock();\n    }\n\n    public static boolean isHeld(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock != null && lock.isLocked();\n        }\n    }\n\n    public static int holdCount(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock == null ? 0 : lock.getQueueLength();\n        }\n    }\n\n    public static void clearUnused() {\n        synchronized (MONITOR) {\n            LOCKS.entrySet().removeIf(entry -> !entry.getValue().isLocked() && !entry.getValue().hasQueuedThreads());\n        }\n    }\n\n    private static LockKey checked(String group, String key) {\n        if (group == null || group.isEmpty() || key == null || key.isEmpty()) throw new IllegalArgumentException();\n        return new LockKey(group, key);\n    }\n}\n",
+          "label": "holdCount returns the number of waiting threads rather than the current thread's reentrant acquisition count.",
+          "sha256": "fd734d1881d143142e9dbf1a824e608aba98b37cdf0460edbe328291d2a32f1e"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.concurrent.locks.ReentrantLock;\n\npublic final class Solution {\n    private record LockKey(String group, String key) {}\n    private static final Object MONITOR = new Object();\n    private static final Map<LockKey, ReentrantLock> LOCKS = new HashMap<>();\n\n    private Solution() {}\n\n    public static void acquire(String group, String key) throws InterruptedException {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.computeIfAbsent(lockKey, ignored -> new ReentrantLock());\n        }\n        lock.lockInterruptibly();\n    }\n\n    public static void release(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.get(lockKey);\n        }\n        if (lock == null || !lock.isHeldByCurrentThread()) throw new IllegalMonitorStateException();\n        lock.unlock();\n    }\n\n    public static boolean isHeld(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock != null && lock.isLocked();\n        }\n    }\n\n    public static int holdCount(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock == null ? 0 : lock.getHoldCount();\n        }\n    }\n\n    public static void clearUnused() {\n        synchronized (MONITOR) {\n            LOCKS.entrySet().removeIf(entry -> !entry.getValue().isLocked() && !entry.getValue().hasQueuedThreads());\n        }\n    }\n\n    private static LockKey checked(String group, String key) {\n        if (group == null || group.isEmpty() || key == null || key.isEmpty()) throw new IllegalArgumentException();\n        return new LockKey(group, key);\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "69936a7139e4dbb5ee3bbe08a05d5272f3d478e2addcad491f7202da5665bd0e"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "content": "import java.util.concurrent.CountDownLatch;\nimport java.util.concurrent.TimeUnit;\nimport java.util.concurrent.atomic.AtomicBoolean;\nimport java.util.concurrent.atomic.AtomicReference;\n\npublic class SolutionTest {\n    public static void main(String[] args) throws Exception {\n        expectIAE(() -> Solution.isHeld(null, \"k\"));\n        expectIAE(() -> Solution.isHeld(\"\", \"k\"));\n        expectIAE(() -> Solution.holdCount(\"g\", null));\n        expectIAE(() -> Solution.release(\"g\", \"\"));\n        expectAcquireIAE(\"\", \"k\");\n\n        Solution.clearUnused();\n        Solution.acquire(\"g\", \"k\");\n        Solution.acquire(\"g\", \"k\");\n        check(Solution.isHeld(\"g\", \"k\"), \"lock should be held\");\n        check(Solution.holdCount(\"g\", \"k\") == 2, \"reentrant count\");\n        check(!Solution.isHeld(\"other\", \"k\"), \"different group shared lock\");\n\n        AtomicReference<Throwable> nonOwnerResult = new AtomicReference<>();\n        Thread nonOwner = new Thread(() -> {\n            try {\n                Solution.release(\"g\", \"k\");\n                nonOwnerResult.set(new AssertionError(\"non-owner release succeeded\"));\n            } catch (Throwable t) {\n                nonOwnerResult.set(t);\n            }\n        });\n        nonOwner.start();\n        nonOwner.join();\n        check(nonOwnerResult.get() instanceof IllegalMonitorStateException, \"non-owner exception\");\n        check(Solution.holdCount(\"g\", \"k\") == 2, \"non-owner changed count\");\n\n        Solution.clearUnused();\n        check(Solution.holdCount(\"g\", \"k\") == 2, \"clearUnused removed held lock\");\n\n        CountDownLatch attempting = new CountDownLatch(1);\n        AtomicBoolean acquired = new AtomicBoolean();\n        AtomicReference<Throwable> waiterProblem = new AtomicReference<>();\n        Thread waiter = new Thread(() -> {\n            attempting.countDown();\n            try {\n                Solution.acquire(\"g\", \"k\");\n                acquired.set(true);\n                Solution.release(\"g\", \"k\");\n            } catch (Throwable t) {\n                waiterProblem.set(t);\n            }\n        });\n        waiter.start();\n        check(attempting.await(1, TimeUnit.SECONDS), \"waiter did not start\");\n        Thread.sleep(100);\n        check(!acquired.get(), \"waiter acquired held lock\");\n        Solution.release(\"g\", \"k\");\n        check(Solution.holdCount(\"g\", \"k\") == 1, \"partial release count\");\n        Thread.sleep(50);\n        check(!acquired.get(), \"lock released before count reached zero\");\n        Solution.release(\"g\", \"k\");\n        waiter.join(2000);\n        check(!waiter.isAlive(), \"waiter remained blocked\");\n        check(waiterProblem.get() == null, \"waiter failed: \" + waiterProblem.get());\n        check(acquired.get(), \"waiter never acquired\");\n        check(!Solution.isHeld(\"g\", \"k\") && Solution.holdCount(\"g\", \"k\") == 0, \"released state\");\n\n        Solution.acquire(\"interrupt\", \"key\");\n        CountDownLatch interruptAttempt = new CountDownLatch(1);\n        AtomicBoolean interrupted = new AtomicBoolean();\n        Thread interruptible = new Thread(() -> {\n            interruptAttempt.countDown();\n            try {\n                Solution.acquire(\"interrupt\", \"key\");\n            } catch (InterruptedException expected) {\n                interrupted.set(true);\n            }\n        });\n        interruptible.start();\n        interruptAttempt.await();\n        Thread.sleep(100);\n        interruptible.interrupt();\n        interruptible.join(2000);\n        check(interrupted.get(), \"acquire was not interruptible\");\n        check(Solution.holdCount(\"interrupt\", \"key\") == 1, \"interruption changed owner count\");\n        Solution.release(\"interrupt\", \"key\");\n\n        Solution.acquire(\"space\", \"key\");\n        AtomicBoolean distinctAcquired = new AtomicBoolean();\n        Thread distinct = new Thread(() -> {\n            try {\n                Solution.acquire(\" space\", \"key\");\n                distinctAcquired.set(true);\n                Solution.release(\" space\", \"key\");\n            } catch (InterruptedException e) {\n                throw new AssertionError(e);\n            }\n        });\n        distinct.start();\n        distinct.join(2000);\n        check(distinctAcquired.get(), \"whitespace-significant group was not independent\");\n        Solution.release(\"space\", \"key\");\n\n        expectThrows(IllegalMonitorStateException.class, () -> Solution.release(\"absent\", \"key\"));\n        Solution.clearUnused();\n    }\n\n    private static void expectAcquireIAE(String group, String key) {\n        try {\n            Solution.acquire(group, key);\n            throw new AssertionError(\"expected IllegalArgumentException\");\n        } catch (IllegalArgumentException expected) {\n        } catch (InterruptedException e) {\n            throw new AssertionError(e);\n        }\n    }\n\n    private static void expectIAE(Runnable action) {\n        expectThrows(IllegalArgumentException.class, action);\n    }\n\n    private static void expectThrows(Class<? extends Throwable> type, Runnable action) {\n        try {\n            action.run();\n        } catch (Throwable t) {\n            if (type.isInstance(t)) return;\n            throw new AssertionError(\"wrong exception\", t);\n        }\n        throw new AssertionError(\"expected \" + type.getSimpleName());\n    }\n\n    private static void check(boolean condition, String message) {\n        if (!condition) throw new AssertionError(message);\n    }\n}\n",
+        "path": "SolutionTest.java",
+        "role": "test",
+        "sha256": "f56a34e15c1554e7514e0b9cd1ff69ca9b9d4a85cf67d71111f4a2150ea7e0e7"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "48f468021f484d6bdc0d851d0abd41d35e87e404a25b9aea2079090d40c8496b",
+      "text": "Implement `Solution.java` using only the Java standard library. Create a `public final class Solution` with public static methods:\n\n- `void acquire(String group, String key) throws InterruptedException`\n- `void release(String group, String key)`\n- `boolean isHeld(String group, String key)`\n- `int holdCount(String group, String key)`\n- `void clearUnused()`\n\nRules:\n1. Null or empty group/key values are malformed and cause `IllegalArgumentException`; whitespace is significant and must not be trimmed.\n2. Each `(group, key)` pair identifies an independent reentrant lock. The same key in different groups must not share a lock.\n3. `acquire` blocks interruptibly until available. Repeated acquisition by the owning thread increments its hold count.\n4. `release` decrements the current thread's hold count. A non-owner release throws `IllegalMonitorStateException`. The lock becomes available only when the count reaches zero.\n5. `isHeld` reports whether any thread owns the lock. `holdCount` reports the current total reentrant hold count, or zero if absent.\n6. Concurrent calls must be safe. `clearUnused` may remove only currently unlocked entries and must not affect locked entries.\n\nProvide a new complete implementation. Do not add other public APIs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "48f468021f484d6bdc0d851d0abd41d35e87e404a25b9aea2079090d40c8496b",
+      "text": "Implement `Solution.java` using only the Java standard library. Create a `public final class Solution` with public static methods:\n\n- `void acquire(String group, String key) throws InterruptedException`\n- `void release(String group, String key)`\n- `boolean isHeld(String group, String key)`\n- `int holdCount(String group, String key)`\n- `void clearUnused()`\n\nRules:\n1. Null or empty group/key values are malformed and cause `IllegalArgumentException`; whitespace is significant and must not be trimmed.\n2. Each `(group, key)` pair identifies an independent reentrant lock. The same key in different groups must not share a lock.\n3. `acquire` blocks interruptibly until available. Repeated acquisition by the owning thread increments its hold count.\n4. `release` decrements the current thread's hold count. A non-owner release throws `IllegalMonitorStateException`. The lock becomes available only when the count reaches zero.\n5. `isHeld` reports whether any thread owns the lock. `holdCount` reports the current total reentrant hold count, or zero if absent.\n6. Concurrent calls must be safe. `clearUnused` may remove only currently unlocked entries and must not affect locked entries.\n\nProvide a new complete implementation. Do not add other public APIs.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-java-generation-0165",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.concurrent.locks.ReentrantLock;\n\npublic final class Solution {\n    private record LockKey(String group, String key) {}\n    private static final Object MONITOR = new Object();\n    private static final Map<LockKey, ReentrantLock> LOCKS = new HashMap<>();\n\n    private Solution() {}\n\n    public static void acquire(String group, String key) throws InterruptedException {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.computeIfAbsent(lockKey, ignored -> new ReentrantLock());\n        }\n        lock.lockInterruptibly();\n    }\n\n    public static void release(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.get(lockKey);\n        }\n        if (lock == null || !lock.isHeldByCurrentThread()) throw new IllegalMonitorStateException();\n        lock.unlock();\n    }\n\n    public static boolean isHeld(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock != null && lock.isLocked();\n        }\n    }\n\n    public static int holdCount(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock == null ? 0 : lock.getQueueLength();\n        }\n    }\n\n    public static void clearUnused() {\n        synchronized (MONITOR) {\n            LOCKS.entrySet().removeIf(entry -> !entry.getValue().isLocked() && !entry.getValue().hasQueuedThreads());\n        }\n    }\n\n    private static LockKey checked(String group, String key) {\n        if (group == null || group.isEmpty() || key == null || key.isEmpty()) throw new IllegalArgumentException();\n        return new LockKey(group, key);\n    }\n}\n",
+          "label": "holdCount returns the number of waiting threads rather than the current thread's reentrant acquisition count.",
+          "sha256": "fd734d1881d143142e9dbf1a824e608aba98b37cdf0460edbe328291d2a32f1e"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.concurrent.locks.ReentrantLock;\n\npublic final class Solution {\n    private record LockKey(String group, String key) {}\n    private static final Object MONITOR = new Object();\n    private static final Map<LockKey, ReentrantLock> LOCKS = new HashMap<>();\n\n    private Solution() {}\n\n    public static void acquire(String group, String key) throws InterruptedException {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.computeIfAbsent(lockKey, ignored -> new ReentrantLock());\n        }\n        lock.lockInterruptibly();\n    }\n\n    public static void release(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        ReentrantLock lock;\n        synchronized (MONITOR) {\n            lock = LOCKS.get(lockKey);\n        }\n        if (lock == null || !lock.isHeldByCurrentThread()) throw new IllegalMonitorStateException();\n        lock.unlock();\n    }\n\n    public static boolean isHeld(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock != null && lock.isLocked();\n        }\n    }\n\n    public static int holdCount(String group, String key) {\n        LockKey lockKey = checked(group, key);\n        synchronized (MONITOR) {\n            ReentrantLock lock = LOCKS.get(lockKey);\n            return lock == null ? 0 : lock.getHoldCount();\n        }\n    }\n\n    public static void clearUnused() {\n        synchronized (MONITOR) {\n            LOCKS.entrySet().removeIf(entry -> !entry.getValue().isLocked() && !entry.getValue().hasQueuedThreads());\n        }\n    }\n\n    private static LockKey checked(String group, String key) {\n        if (group == null || group.isEmpty() || key == null || key.isEmpty()) throw new IllegalArgumentException();\n        return new LockKey(group, key);\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "69936a7139e4dbb5ee3bbe08a05d5272f3d478e2addcad491f7202da5665bd0e"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "java-21.0.11",
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: Total reentrant hold count expected 2, got 0\n\tat SolutionTest.main(SolutionTest.java:14)\n",
+    "stderr_sha256": "44613dc2a0f59624c583dbb53907ef8a17a9916f874d61a0c415e7ea1542dd49",
+    "duration_ms": 3004,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

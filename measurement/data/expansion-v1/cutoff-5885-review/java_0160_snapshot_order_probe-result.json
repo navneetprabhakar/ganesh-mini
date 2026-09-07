@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-java-generation-0160",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e2711ff7dc04c71ddb43b6eb631c7d0f01c9be76c40d815ce30b150606739cd3",
+  "task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "path": "SolutionTest.java",
+        "role": "test",
+        "content": "import java.util.Arrays;\n\npublic class SolutionTest {\n    public static void main(String[] args) {\n        Solution.clear();\n        if (!Solution.write(\"A\", \"x\") || !Solution.write(\"A0\", \"y\")) {\n            throw new AssertionError(\"valid writes rejected\");\n        }\n        String[] actual = Solution.snapshot();\n        String[] expected = {\"A=x\", \"A0=y\"};\n        if (!Arrays.equals(expected, actual)) {\n            throw new AssertionError(\"Expected key order \" + Arrays.toString(expected)\n                    + \" but received \" + Arrays.toString(actual));\n        }\n    }\n}\n",
+        "sha256": "94b23f062723b66703729e25b0885f9fb9e8ba219fd8d50fdcb48d8d758c5a60"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5b524a114301b0170e5a2417976159d11da7940c986f519dd10483721cd4ab81",
+      "text": "Implement a thread-safe string ledger. Expose `public static boolean write(String key, String value)`, `public static String read(String key)`, `public static String[] snapshot()`, and `public static void clear()`. A key is valid when non-null, 1\u201332 characters, and every character is an ASCII letter or digit. Values must be non-null and at most 256 characters; the empty value is valid. Invalid writes return false without mutation. Valid writes atomically insert or overwrite and return true. Invalid or absent reads return null. `snapshot` returns a newly allocated array of `key=value` strings sorted lexicographically by key; an empty ledger produces an empty array. Concurrent operations must not corrupt state, and each snapshot must represent one coherent point between method calls.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5b524a114301b0170e5a2417976159d11da7940c986f519dd10483721cd4ab81",
+      "text": "Implement a thread-safe string ledger. Expose `public static boolean write(String key, String value)`, `public static String read(String key)`, `public static String[] snapshot()`, and `public static void clear()`. A key is valid when non-null, 1\u201332 characters, and every character is an ASCII letter or digit. Values must be non-null and at most 256 characters; the empty value is valid. Invalid writes return false without mutation. Valid writes atomically insert or overwrite and return true. Invalid or absent reads return null. `snapshot` returns a newly allocated array of `key=value` strings sorted lexicographically by key; an empty ledger produces an empty array. Concurrent operations must not corrupt state, and each snapshot must represent one coherent point between method calls.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-java-generation-0160",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.Arrays;\nimport java.util.Map;\nimport java.util.TreeMap;\n\npublic final class Solution {\n    private static final Map<String, String> DATA = new TreeMap<>();\n    private Solution() {}\n\n    public static synchronized boolean write(String key, String value) {\n        if (!validKey(key) || value == null || value.length() >= 256) return false;\n        DATA.put(key, value);\n        return true;\n    }\n\n    public static synchronized String read(String key) {\n        return validKey(key) ? DATA.get(key) : null;\n    }\n\n    public static synchronized String[] snapshot() {\n        String[] result = new String[DATA.size()];\n        int i = 0;\n        for (Map.Entry<String, String> entry : DATA.entrySet())\n            result[i++] = entry.getKey() + \"=\" + entry.getValue();\n        Arrays.sort(result);\n        return result;\n    }\n\n    public static synchronized void clear() { DATA.clear(); }\n\n    private static boolean validKey(String key) {\n        if (key == null || key.length() < 1 || key.length() > 32) return false;\n        for (int i = 0; i < key.length(); i++) {\n            char c = key.charAt(i);\n            if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9')) return false;\n        }\n        return true;\n    }\n}\n",
+          "label": "Rejects values of exactly 256 characters even though the upper boundary is valid.",
+          "sha256": "709957523032eb24d7062a6958624905791af8e0333d52bd5426533407f7b95b"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.Arrays;\nimport java.util.Map;\nimport java.util.TreeMap;\n\npublic final class Solution {\n    private static final Map<String, String> DATA = new TreeMap<>();\n    private Solution() {}\n\n    public static synchronized boolean write(String key, String value) {\n        if (!validKey(key) || value == null || value.length() > 256) return false;\n        DATA.put(key, value);\n        return true;\n    }\n\n    public static synchronized String read(String key) {\n        return validKey(key) ? DATA.get(key) : null;\n    }\n\n    public static synchronized String[] snapshot() {\n        String[] result = new String[DATA.size()];\n        int i = 0;\n        for (Map.Entry<String, String> entry : DATA.entrySet())\n            result[i++] = entry.getKey() + \"=\" + entry.getValue();\n        Arrays.sort(result);\n        return result;\n    }\n\n    public static synchronized void clear() { DATA.clear(); }\n\n    private static boolean validKey(String key) {\n        if (key == null || key.length() < 1 || key.length() > 32) return false;\n        for (int i = 0; i < key.length(); i++) {\n            char c = key.charAt(i);\n            if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9')) return false;\n        }\n        return true;\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "12c7fd6af703cbf551a20c8551a4953956a23784343bfe5ba66a1a391e37ffa3"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "content": "import java.util.Arrays;\nimport java.util.concurrent.CountDownLatch;\nimport java.util.concurrent.atomic.AtomicReference;\n\npublic class SolutionTest {\n    private static void check(boolean condition, String message) {\n        if (!condition) throw new AssertionError(message);\n    }\n\n    private static void arrayEquals(String[] expected, String[] actual, String message) {\n        if (!Arrays.equals(expected, actual))\n            throw new AssertionError(message + \": expected=\" + Arrays.toString(expected)\n                    + \", actual=\" + Arrays.toString(actual));\n    }\n\n    private static String repeat(char c, int count) {\n        StringBuilder value = new StringBuilder();\n        for (int i = 0; i < count; i++) value.append(c);\n        return value.toString();\n    }\n\n    public static void main(String[] args) throws Exception {\n        Solution.clear();\n        check(Solution.read(\"missing\") == null, \"empty read\");\n        check(Solution.read(null) == null, \"null read\");\n        check(Solution.read(\"bad-key\") == null, \"malformed read\");\n        String[] empty1 = Solution.snapshot();\n        String[] empty2 = Solution.snapshot();\n        arrayEquals(new String[0], empty1, \"empty snapshot\");\n        check(empty1 != empty2, \"empty snapshots alias\");\n\n        check(Solution.write(\"b2\", \"two\"), \"valid write rejected\");\n        check(Solution.write(\"A1\", \"\"), \"empty value rejected\");\n        check(Solution.write(\"a3\", repeat('v', 256)), \"boundary value rejected\");\n        check(\"\".equals(Solution.read(\"A1\")), \"empty value read incorrectly\");\n        arrayEquals(new String[]{\"A1=\", \"a3=\" + repeat('v', 256), \"b2=two\"},\n                Solution.snapshot(), \"snapshot ordering/content\");\n\n        check(Solution.write(\"b2\", \"updated\"), \"overwrite rejected\");\n        check(\"updated\".equals(Solution.read(\"b2\")), \"overwrite missing\");\n        check(!Solution.write(null, \"x\"), \"null key accepted\");\n        check(!Solution.write(\"\", \"x\"), \"empty key accepted\");\n        check(!Solution.write(repeat('k', 33), \"x\"), \"long key accepted\");\n        check(!Solution.write(\"bad_key\", \"x\"), \"punctuated key accepted\");\n        check(!Solution.write(\"\u00e9\", \"x\"), \"non-ASCII key accepted\");\n        check(!Solution.write(\"valid\", null), \"null value accepted\");\n        check(!Solution.write(\"valid\", repeat('x', 257)), \"long value accepted\");\n        check(\"updated\".equals(Solution.read(\"b2\")), \"invalid write mutated ledger\");\n\n        String[] exposed = Solution.snapshot();\n        String[] independent = Solution.snapshot();\n        check(exposed != independent, \"snapshots alias\");\n        exposed[0] = \"corrupted\";\n        check(!\"corrupted\".equals(Solution.snapshot()[0]), \"snapshot exposed ledger state\");\n\n        Solution.clear();\n        final int threads = 4;\n        final int writes = 150;\n        CountDownLatch start = new CountDownLatch(1);\n        AtomicReference<Throwable> failure = new AtomicReference<>();\n        Thread[] workers = new Thread[threads];\n        for (int t = 0; t < threads; t++) {\n            final int worker = t;\n            workers[t] = new Thread(() -> {\n                try {\n                    start.await();\n                    for (int i = 0; i < writes; i++) {\n                        String key = \"T\" + worker + \"K\" + i;\n                        if (!Solution.write(key, Integer.toString(i)))\n                            throw new AssertionError(\"concurrent write rejected\");\n                        String[] snap = Solution.snapshot();\n                        for (int j = 1; j < snap.length; j++)\n                            if (snap[j - 1].compareTo(snap[j]) >= 0)\n                                throw new AssertionError(\"incoherent or unsorted snapshot\");\n                    }\n                } catch (Throwable ex) {\n                    failure.compareAndSet(null, ex);\n                }\n            });\n            workers[t].start();\n        }\n        start.countDown();\n        for (Thread worker : workers) worker.join();\n        if (failure.get() != null) throw new AssertionError(\"concurrent operation failed\", failure.get());\n        check(Solution.snapshot().length == threads * writes, \"concurrent entries lost\");\n        for (int t = 0; t < threads; t++)\n            for (int i = 0; i < writes; i++)\n                check(Integer.toString(i).equals(Solution.read(\"T\" + t + \"K\" + i)), \"wrong concurrent value\");\n\n        Solution.clear();\n        arrayEquals(new String[0], Solution.snapshot(), \"clear failed\");\n    }\n}\n",
+        "path": "SolutionTest.java",
+        "role": "test",
+        "sha256": "e93da8d71bc74833d2bb2d2c752977b27e3bdee6fc42b9a7de0c8d2ca8a2ff2a"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5b524a114301b0170e5a2417976159d11da7940c986f519dd10483721cd4ab81",
+      "text": "Implement a thread-safe string ledger. Expose `public static boolean write(String key, String value)`, `public static String read(String key)`, `public static String[] snapshot()`, and `public static void clear()`. A key is valid when non-null, 1\u201332 characters, and every character is an ASCII letter or digit. Values must be non-null and at most 256 characters; the empty value is valid. Invalid writes return false without mutation. Valid writes atomically insert or overwrite and return true. Invalid or absent reads return null. `snapshot` returns a newly allocated array of `key=value` strings sorted lexicographically by key; an empty ledger produces an empty array. Concurrent operations must not corrupt state, and each snapshot must represent one coherent point between method calls.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5b524a114301b0170e5a2417976159d11da7940c986f519dd10483721cd4ab81",
+      "text": "Implement a thread-safe string ledger. Expose `public static boolean write(String key, String value)`, `public static String read(String key)`, `public static String[] snapshot()`, and `public static void clear()`. A key is valid when non-null, 1\u201332 characters, and every character is an ASCII letter or digit. Values must be non-null and at most 256 characters; the empty value is valid. Invalid writes return false without mutation. Valid writes atomically insert or overwrite and return true. Invalid or absent reads return null. `snapshot` returns a newly allocated array of `key=value` strings sorted lexicographically by key; an empty ledger produces an empty array. Concurrent operations must not corrupt state, and each snapshot must represent one coherent point between method calls.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-java-generation-0160",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.Arrays;\nimport java.util.Map;\nimport java.util.TreeMap;\n\npublic final class Solution {\n    private static final Map<String, String> DATA = new TreeMap<>();\n    private Solution() {}\n\n    public static synchronized boolean write(String key, String value) {\n        if (!validKey(key) || value == null || value.length() >= 256) return false;\n        DATA.put(key, value);\n        return true;\n    }\n\n    public static synchronized String read(String key) {\n        return validKey(key) ? DATA.get(key) : null;\n    }\n\n    public static synchronized String[] snapshot() {\n        String[] result = new String[DATA.size()];\n        int i = 0;\n        for (Map.Entry<String, String> entry : DATA.entrySet())\n            result[i++] = entry.getKey() + \"=\" + entry.getValue();\n        Arrays.sort(result);\n        return result;\n    }\n\n    public static synchronized void clear() { DATA.clear(); }\n\n    private static boolean validKey(String key) {\n        if (key == null || key.length() < 1 || key.length() > 32) return false;\n        for (int i = 0; i < key.length(); i++) {\n            char c = key.charAt(i);\n            if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9')) return false;\n        }\n        return true;\n    }\n}\n",
+          "label": "Rejects values of exactly 256 characters even though the upper boundary is valid.",
+          "sha256": "709957523032eb24d7062a6958624905791af8e0333d52bd5426533407f7b95b"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.Arrays;\nimport java.util.Map;\nimport java.util.TreeMap;\n\npublic final class Solution {\n    private static final Map<String, String> DATA = new TreeMap<>();\n    private Solution() {}\n\n    public static synchronized boolean write(String key, String value) {\n        if (!validKey(key) || value == null || value.length() > 256) return false;\n        DATA.put(key, value);\n        return true;\n    }\n\n    public static synchronized String read(String key) {\n        return validKey(key) ? DATA.get(key) : null;\n    }\n\n    public static synchronized String[] snapshot() {\n        String[] result = new String[DATA.size()];\n        int i = 0;\n        for (Map.Entry<String, String> entry : DATA.entrySet())\n            result[i++] = entry.getKey() + \"=\" + entry.getValue();\n        Arrays.sort(result);\n        return result;\n    }\n\n    public static synchronized void clear() { DATA.clear(); }\n\n    private static boolean validKey(String key) {\n        if (key == null || key.length() < 1 || key.length() > 32) return false;\n        for (int i = 0; i < key.length(); i++) {\n            char c = key.charAt(i);\n            if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9')) return false;\n        }\n        return true;\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "12c7fd6af703cbf551a20c8551a4953956a23784343bfe5ba66a1a391e37ffa3"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "java-21.0.11",
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: Expected key order [A=x, A0=y] but received [A0=y, A=x]\n\tat SolutionTest.main(SolutionTest.java:13)\n",
+    "stderr_sha256": "9855edffb7a89eaad36155db39039eedbbca934ae5be397cc7671d63ca1d0636",
+    "duration_ms": 2486,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

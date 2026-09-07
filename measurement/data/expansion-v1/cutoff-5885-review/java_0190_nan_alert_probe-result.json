@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-java-generation-0190",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "1b741738449462341fc073a2fc574903c42e97c182ac1e14b8439b5a667ee1e0",
+  "task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "path": "SolutionTest.java",
+        "role": "test",
+        "content": "public class SolutionTest {\n    public static void main(String[] args) {\n        Solution.Reading reading = new Solution.Reading(\"id\", \"label\", 80, \"120/80\", Double.NaN);\n        if (!Solution.alerts(reading).contains(\"temperature\")) {\n            throw new AssertionError(\"NaN is outside the normal temperature interval but produces no alert\");\n        }\n    }\n}\n",
+        "sha256": "31bd8f400fb85438d1386f0dcb239f7ee97b361402571d723281d18fd22944d0"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "28d9ab5da173e89d7bb59f2c0fe9ff6f7e4be3be3d18b708065f7092e1d0a529",
+      "text": "Implement an immutable `Reading`, `encode`, `decode`, and `alerts` API. Encoding is exactly five pipe-separated fields: ID, Base64-encoded UTF-8 patient label, pulse, Base64-encoded UTF-8 pressure, and decimal temperature. IDs and labels must be non-blank; pressure must be non-null. `decode` must reject a wrong field count, invalid Base64, invalid numbers, blank ID, or blank decoded label by throwing `IllegalArgumentException`. `alerts` returns an unmodifiable list in this fixed order: `pulse`, `pressure`, `temperature`. Pulse is normal from 60 through 100 inclusive, pressure only when exactly `120/80`, and temperature from 36.5 through 37.5 inclusive. Null arguments throw `NullPointerException`; no method mutates its input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "28d9ab5da173e89d7bb59f2c0fe9ff6f7e4be3be3d18b708065f7092e1d0a529",
+      "text": "Implement an immutable `Reading`, `encode`, `decode`, and `alerts` API. Encoding is exactly five pipe-separated fields: ID, Base64-encoded UTF-8 patient label, pulse, Base64-encoded UTF-8 pressure, and decimal temperature. IDs and labels must be non-blank; pressure must be non-null. `decode` must reject a wrong field count, invalid Base64, invalid numbers, blank ID, or blank decoded label by throwing `IllegalArgumentException`. `alerts` returns an unmodifiable list in this fixed order: `pulse`, `pressure`, `temperature`. Pulse is normal from 60 through 100 inclusive, pressure only when exactly `120/80`, and temperature from 36.5 through 37.5 inclusive. Null arguments throw `NullPointerException`; no method mutates its input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-java-generation-0190",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.nio.charset.StandardCharsets;\nimport java.util.ArrayList;\nimport java.util.Base64;\nimport java.util.List;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static final class Reading {\n        private final String id;\n        private final String label;\n        private final int pulse;\n        private final String pressure;\n        private final double temperature;\n\n        public Reading(String id, String label, int pulse, String pressure, double temperature) {\n            if (id == null || id.isBlank()) throw new IllegalArgumentException(\"blank id\");\n            if (label == null || label.isBlank()) throw new IllegalArgumentException(\"blank label\");\n            if (pressure == null) throw new IllegalArgumentException(\"null pressure\");\n            this.id = id;\n            this.label = label;\n            this.pulse = pulse;\n            this.pressure = pressure;\n            this.temperature = temperature;\n        }\n\n        public String id() { return id; }\n        public String label() { return label; }\n        public int pulse() { return pulse; }\n        public String pressure() { return pressure; }\n        public double temperature() { return temperature; }\n    }\n\n    public static String encode(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        Base64.Encoder encoder = Base64.getEncoder();\n        String label = encoder.encodeToString(reading.label().getBytes(StandardCharsets.UTF_8));\n        String pressure = encoder.encodeToString(reading.pressure().getBytes(StandardCharsets.UTF_8));\n        return reading.id() + \"|\" + label + \"|\" + reading.pulse() + \"|\" + pressure + \"|\" + reading.temperature();\n    }\n\n    public static Reading decode(String encoded) {\n        Objects.requireNonNull(encoded, \"encoded\");\n        String[] fields = encoded.split(\"\\\\|\", -1);\n        if (fields.length != 5) throw new IllegalArgumentException(\"wrong field count\");\n        try {\n            Base64.Decoder decoder = Base64.getDecoder();\n            String label = new String(decoder.decode(fields[1]), StandardCharsets.UTF_8);\n            String pressure = new String(decoder.decode(fields[3]), StandardCharsets.UTF_8);\n            return new Reading(fields[0], label, Integer.parseInt(fields[2]), pressure,\n                    Double.parseDouble(fields[4]));\n        } catch (RuntimeException ex) {\n            if (ex instanceof IllegalArgumentException) throw (IllegalArgumentException) ex;\n            throw new IllegalArgumentException(\"malformed input\", ex);\n        }\n    }\n\n    public static List<String> alerts(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        List<String> result = new ArrayList<>();\n        if (reading.pulse() < 60 || reading.pulse() > 100) result.add(\"pulse\");\n        if (!reading.pressure().equals(\"120/80\")) result.add(\"pressure\");\n        if (reading.temperature() < 36.5 || reading.temperature() >= 37.5) result.add(\"temperature\");\n        return List.copyOf(result);\n    }\n}\n",
+          "label": "Treats the inclusive upper temperature boundary of 37.5 as abnormal.",
+          "sha256": "28fc124cf5bb183c266229dd6b4637e3a8a50f51044f1c01084418e436b68749"
+        }
+      ],
+      "reference": {
+        "code": "import java.nio.charset.StandardCharsets;\nimport java.util.ArrayList;\nimport java.util.Base64;\nimport java.util.List;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static final class Reading {\n        private final String id;\n        private final String label;\n        private final int pulse;\n        private final String pressure;\n        private final double temperature;\n\n        public Reading(String id, String label, int pulse, String pressure, double temperature) {\n            if (id == null || id.isBlank()) throw new IllegalArgumentException(\"blank id\");\n            if (label == null || label.isBlank()) throw new IllegalArgumentException(\"blank label\");\n            if (pressure == null) throw new IllegalArgumentException(\"null pressure\");\n            this.id = id;\n            this.label = label;\n            this.pulse = pulse;\n            this.pressure = pressure;\n            this.temperature = temperature;\n        }\n\n        public String id() { return id; }\n        public String label() { return label; }\n        public int pulse() { return pulse; }\n        public String pressure() { return pressure; }\n        public double temperature() { return temperature; }\n    }\n\n    public static String encode(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        Base64.Encoder encoder = Base64.getEncoder();\n        String label = encoder.encodeToString(reading.label().getBytes(StandardCharsets.UTF_8));\n        String pressure = encoder.encodeToString(reading.pressure().getBytes(StandardCharsets.UTF_8));\n        return reading.id() + \"|\" + label + \"|\" + reading.pulse() + \"|\" + pressure + \"|\" + reading.temperature();\n    }\n\n    public static Reading decode(String encoded) {\n        Objects.requireNonNull(encoded, \"encoded\");\n        String[] fields = encoded.split(\"\\\\|\", -1);\n        if (fields.length != 5) throw new IllegalArgumentException(\"wrong field count\");\n        try {\n            Base64.Decoder decoder = Base64.getDecoder();\n            String label = new String(decoder.decode(fields[1]), StandardCharsets.UTF_8);\n            String pressure = new String(decoder.decode(fields[3]), StandardCharsets.UTF_8);\n            return new Reading(fields[0], label, Integer.parseInt(fields[2]), pressure,\n                    Double.parseDouble(fields[4]));\n        } catch (RuntimeException ex) {\n            if (ex instanceof IllegalArgumentException) throw (IllegalArgumentException) ex;\n            throw new IllegalArgumentException(\"malformed input\", ex);\n        }\n    }\n\n    public static List<String> alerts(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        List<String> result = new ArrayList<>();\n        if (reading.pulse() < 60 || reading.pulse() > 100) result.add(\"pulse\");\n        if (!reading.pressure().equals(\"120/80\")) result.add(\"pressure\");\n        if (reading.temperature() < 36.5 || reading.temperature() > 37.5) result.add(\"temperature\");\n        return List.copyOf(result);\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6419af4bae08ca99a80ab4175c28757ab7aab2c3d78e66f5f9441e4a721c6402"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "content": "import java.lang.reflect.Constructor;\nimport java.lang.reflect.Field;\nimport java.lang.reflect.InvocationTargetException;\nimport java.lang.reflect.Method;\nimport java.lang.reflect.Modifier;\nimport java.nio.charset.StandardCharsets;\nimport java.util.Base64;\nimport java.util.List;\n\npublic class SolutionTest {\n    public static void main(String[] args) throws Exception {\n        Class<?> readingType = Class.forName(\"Solution$Reading\");\n        Object reading = construct(readingType, \"r-1\", \"J\u00f6hn | Doe\", 101, \"120/80\", 37.5);\n        String label64 = Base64.getEncoder().encodeToString(\"J\u00f6hn | Doe\".getBytes(StandardCharsets.UTF_8));\n        String pressure64 = Base64.getEncoder().encodeToString(\"120/80\".getBytes(StandardCharsets.UTF_8));\n        String encoded = (String) call(\"encode\", reading);\n        assertEquals(\"r-1|\" + label64 + \"|101|\" + pressure64 + \"|37.5\", encoded);\n\n        Object decoded = call(\"decode\", encoded);\n        assertEquals(\"r-1\", property(decoded, \"id\"));\n        assertEquals(\"J\u00f6hn | Doe\", property(decoded, \"patientLabel\", \"label\"));\n        assertEquals(101, ((Number) property(decoded, \"pulse\")).intValue());\n        assertEquals(\"120/80\", property(decoded, \"pressure\"));\n        assertEquals(37.5, ((Number) property(decoded, \"temperature\")).doubleValue());\n\n        List<?> alerts = (List<?>) call(\"alerts\", reading);\n        assertEquals(List.of(\"pulse\"), alerts);\n        expect(UnsupportedOperationException.class, () -> ((List<Object>) alerts).add(\"x\"));\n\n        assertEquals(List.of(), call(\"alerts\", construct(readingType, \"ok\", \"Patient\", 60, \"120/80\", 36.5)));\n        assertEquals(List.of(), call(\"alerts\", construct(readingType, \"ok\", \"Patient\", 100, \"120/80\", 37.5)));\n        assertEquals(List.of(\"pulse\", \"pressure\", \"temperature\"),\n                call(\"alerts\", construct(readingType, \"bad\", \"Patient\", 59, \"121/80\", 36.4)));\n        assertEquals(List.of(\"pulse\", \"pressure\", \"temperature\"),\n                call(\"alerts\", construct(readingType, \"bad\", \"Patient\", 101, \"120/080\", 37.6)));\n\n        expect(NullPointerException.class, () -> call(\"encode\", (Object) null));\n        expect(NullPointerException.class, () -> call(\"decode\", (Object) null));\n        expect(NullPointerException.class, () -> call(\"alerts\", (Object) null));\n        expect(IllegalArgumentException.class, () -> call(\"decode\", \"a|b|1|c\"));\n        expect(IllegalArgumentException.class, () -> call(\"decode\", \"id|%%%|60|MTIwLzgw|37.0\"));\n        expect(IllegalArgumentException.class, () -> call(\"decode\", \"id|UGF0aWVudA==|x|MTIwLzgw|37.0\"));\n        expect(IllegalArgumentException.class, () -> call(\"decode\", \"id|UGF0aWVudA==|60|MTIwLzgw|x\"));\n        expect(IllegalArgumentException.class, () -> call(\"decode\", \" |UGF0aWVudA==|60|MTIwLzgw|37.0\"));\n        expect(IllegalArgumentException.class, () -> call(\"decode\", \"id|ICAg|60|MTIwLzgw|37.0\"));\n\n        for (Field field : readingType.getDeclaredFields()) {\n            if (!field.isSynthetic() && !Modifier.isFinal(field.getModifiers())) {\n                throw new AssertionError(\"Reading field is mutable: \" + field.getName());\n            }\n        }\n    }\n\n    private static Object construct(Class<?> type, Object... arguments) {\n        try {\n            Constructor<?> constructor = type.getDeclaredConstructor(String.class, String.class, int.class, String.class, double.class);\n            constructor.setAccessible(true);\n            return constructor.newInstance(arguments);\n        } catch (InvocationTargetException error) { throw rethrow(error.getCause()); }\n        catch (Exception error) { throw new RuntimeException(error); }\n    }\n\n    private static Object call(String name, Object... arguments) {\n        try {\n            for (Method method : Solution.class.getMethods()) {\n                if (method.getName().equals(name) && method.getParameterCount() == arguments.length) return method.invoke(null, arguments);\n            }\n            throw new AssertionError(\"missing method \" + name);\n        } catch (InvocationTargetException error) { throw rethrow(error.getCause()); }\n        catch (ReflectiveOperationException error) { throw new RuntimeException(error); }\n    }\n\n    private static Object property(Object target, String... names) {\n        for (String name : names) {\n            try { return target.getClass().getMethod(name).invoke(target); }\n            catch (NoSuchMethodException ignored) { }\n            catch (Exception error) { throw new RuntimeException(error); }\n        }\n        throw new AssertionError(\"missing property accessor\");\n    }\n\n    private static RuntimeException rethrow(Throwable error) {\n        if (error instanceof RuntimeException) return (RuntimeException) error;\n        if (error instanceof Error) throw (Error) error;\n        return new RuntimeException(error);\n    }\n\n    private static void expect(Class<? extends Throwable> type, Runnable action) {\n        try { action.run(); } catch (Throwable error) {\n            if (type.isInstance(error)) return;\n            throw new AssertionError(\"expected \" + type.getName() + \" but got \" + error, error);\n        }\n        throw new AssertionError(\"expected \" + type.getName());\n    }\n\n    private static void assertEquals(Object expected, Object actual) {\n        if (expected instanceof Double && actual instanceof Double) {\n            if (Double.compare((Double) expected, (Double) actual) == 0) return;\n        } else if (expected.equals(actual)) return;\n        throw new AssertionError(\"expected \" + expected + \" but got \" + actual);\n    }\n}\n",
+        "path": "SolutionTest.java",
+        "role": "test",
+        "sha256": "11446fef2df093febfb8894ae567d80fa29225d5f2385f0b0c9a0dccaec36d19"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "28d9ab5da173e89d7bb59f2c0fe9ff6f7e4be3be3d18b708065f7092e1d0a529",
+      "text": "Implement an immutable `Reading`, `encode`, `decode`, and `alerts` API. Encoding is exactly five pipe-separated fields: ID, Base64-encoded UTF-8 patient label, pulse, Base64-encoded UTF-8 pressure, and decimal temperature. IDs and labels must be non-blank; pressure must be non-null. `decode` must reject a wrong field count, invalid Base64, invalid numbers, blank ID, or blank decoded label by throwing `IllegalArgumentException`. `alerts` returns an unmodifiable list in this fixed order: `pulse`, `pressure`, `temperature`. Pulse is normal from 60 through 100 inclusive, pressure only when exactly `120/80`, and temperature from 36.5 through 37.5 inclusive. Null arguments throw `NullPointerException`; no method mutates its input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "28d9ab5da173e89d7bb59f2c0fe9ff6f7e4be3be3d18b708065f7092e1d0a529",
+      "text": "Implement an immutable `Reading`, `encode`, `decode`, and `alerts` API. Encoding is exactly five pipe-separated fields: ID, Base64-encoded UTF-8 patient label, pulse, Base64-encoded UTF-8 pressure, and decimal temperature. IDs and labels must be non-blank; pressure must be non-null. `decode` must reject a wrong field count, invalid Base64, invalid numbers, blank ID, or blank decoded label by throwing `IllegalArgumentException`. `alerts` returns an unmodifiable list in this fixed order: `pulse`, `pressure`, `temperature`. Pulse is normal from 60 through 100 inclusive, pressure only when exactly `120/80`, and temperature from 36.5 through 37.5 inclusive. Null arguments throw `NullPointerException`; no method mutates its input.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-java-generation-0190",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.nio.charset.StandardCharsets;\nimport java.util.ArrayList;\nimport java.util.Base64;\nimport java.util.List;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static final class Reading {\n        private final String id;\n        private final String label;\n        private final int pulse;\n        private final String pressure;\n        private final double temperature;\n\n        public Reading(String id, String label, int pulse, String pressure, double temperature) {\n            if (id == null || id.isBlank()) throw new IllegalArgumentException(\"blank id\");\n            if (label == null || label.isBlank()) throw new IllegalArgumentException(\"blank label\");\n            if (pressure == null) throw new IllegalArgumentException(\"null pressure\");\n            this.id = id;\n            this.label = label;\n            this.pulse = pulse;\n            this.pressure = pressure;\n            this.temperature = temperature;\n        }\n\n        public String id() { return id; }\n        public String label() { return label; }\n        public int pulse() { return pulse; }\n        public String pressure() { return pressure; }\n        public double temperature() { return temperature; }\n    }\n\n    public static String encode(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        Base64.Encoder encoder = Base64.getEncoder();\n        String label = encoder.encodeToString(reading.label().getBytes(StandardCharsets.UTF_8));\n        String pressure = encoder.encodeToString(reading.pressure().getBytes(StandardCharsets.UTF_8));\n        return reading.id() + \"|\" + label + \"|\" + reading.pulse() + \"|\" + pressure + \"|\" + reading.temperature();\n    }\n\n    public static Reading decode(String encoded) {\n        Objects.requireNonNull(encoded, \"encoded\");\n        String[] fields = encoded.split(\"\\\\|\", -1);\n        if (fields.length != 5) throw new IllegalArgumentException(\"wrong field count\");\n        try {\n            Base64.Decoder decoder = Base64.getDecoder();\n            String label = new String(decoder.decode(fields[1]), StandardCharsets.UTF_8);\n            String pressure = new String(decoder.decode(fields[3]), StandardCharsets.UTF_8);\n            return new Reading(fields[0], label, Integer.parseInt(fields[2]), pressure,\n                    Double.parseDouble(fields[4]));\n        } catch (RuntimeException ex) {\n            if (ex instanceof IllegalArgumentException) throw (IllegalArgumentException) ex;\n            throw new IllegalArgumentException(\"malformed input\", ex);\n        }\n    }\n\n    public static List<String> alerts(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        List<String> result = new ArrayList<>();\n        if (reading.pulse() < 60 || reading.pulse() > 100) result.add(\"pulse\");\n        if (!reading.pressure().equals(\"120/80\")) result.add(\"pressure\");\n        if (reading.temperature() < 36.5 || reading.temperature() >= 37.5) result.add(\"temperature\");\n        return List.copyOf(result);\n    }\n}\n",
+          "label": "Treats the inclusive upper temperature boundary of 37.5 as abnormal.",
+          "sha256": "28fc124cf5bb183c266229dd6b4637e3a8a50f51044f1c01084418e436b68749"
+        }
+      ],
+      "reference": {
+        "code": "import java.nio.charset.StandardCharsets;\nimport java.util.ArrayList;\nimport java.util.Base64;\nimport java.util.List;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static final class Reading {\n        private final String id;\n        private final String label;\n        private final int pulse;\n        private final String pressure;\n        private final double temperature;\n\n        public Reading(String id, String label, int pulse, String pressure, double temperature) {\n            if (id == null || id.isBlank()) throw new IllegalArgumentException(\"blank id\");\n            if (label == null || label.isBlank()) throw new IllegalArgumentException(\"blank label\");\n            if (pressure == null) throw new IllegalArgumentException(\"null pressure\");\n            this.id = id;\n            this.label = label;\n            this.pulse = pulse;\n            this.pressure = pressure;\n            this.temperature = temperature;\n        }\n\n        public String id() { return id; }\n        public String label() { return label; }\n        public int pulse() { return pulse; }\n        public String pressure() { return pressure; }\n        public double temperature() { return temperature; }\n    }\n\n    public static String encode(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        Base64.Encoder encoder = Base64.getEncoder();\n        String label = encoder.encodeToString(reading.label().getBytes(StandardCharsets.UTF_8));\n        String pressure = encoder.encodeToString(reading.pressure().getBytes(StandardCharsets.UTF_8));\n        return reading.id() + \"|\" + label + \"|\" + reading.pulse() + \"|\" + pressure + \"|\" + reading.temperature();\n    }\n\n    public static Reading decode(String encoded) {\n        Objects.requireNonNull(encoded, \"encoded\");\n        String[] fields = encoded.split(\"\\\\|\", -1);\n        if (fields.length != 5) throw new IllegalArgumentException(\"wrong field count\");\n        try {\n            Base64.Decoder decoder = Base64.getDecoder();\n            String label = new String(decoder.decode(fields[1]), StandardCharsets.UTF_8);\n            String pressure = new String(decoder.decode(fields[3]), StandardCharsets.UTF_8);\n            return new Reading(fields[0], label, Integer.parseInt(fields[2]), pressure,\n                    Double.parseDouble(fields[4]));\n        } catch (RuntimeException ex) {\n            if (ex instanceof IllegalArgumentException) throw (IllegalArgumentException) ex;\n            throw new IllegalArgumentException(\"malformed input\", ex);\n        }\n    }\n\n    public static List<String> alerts(Reading reading) {\n        Objects.requireNonNull(reading, \"reading\");\n        List<String> result = new ArrayList<>();\n        if (reading.pulse() < 60 || reading.pulse() > 100) result.add(\"pulse\");\n        if (!reading.pressure().equals(\"120/80\")) result.add(\"pressure\");\n        if (reading.temperature() < 36.5 || reading.temperature() > 37.5) result.add(\"temperature\");\n        return List.copyOf(result);\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "6419af4bae08ca99a80ab4175c28757ab7aab2c3d78e66f5f9441e4a721c6402"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "java-21.0.11",
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: NaN is outside the normal temperature interval but produces no alert\n\tat SolutionTest.main(SolutionTest.java:5)\n",
+    "stderr_sha256": "49cd8c2cf63b89f1f5b747c5f1b589dd61fd531ce9f4f6143c32709a06ac998a",
+    "duration_ms": 2640,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

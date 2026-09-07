@@ -1,7 +1,7 @@
 # Quality follow-up decision
 
-Current checkpoint: **1389 holds (1386 additive plus historical three)**;
-3,545 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **1411 holds (1408 additive plus historical three)**;
+3,687 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 170 positive, 130 held. By lane: Go 39/17,
 Java 34/26, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v1.json.
@@ -11,14 +11,14 @@ Old focused queues completed: arrays544, Rust generation684, Python generation68
 Python repair426, JS/TS residual587. Historical v6 coverage is reconciled.
 Latest scope v13: 19 groups, 21 strata, 5,500 records (278 sample, 5,222 outside).
 New criterion scopes require explicit reconciliation against existing notes;
-no automatic reuse or new-inspection credit. Go non-triviality615/757 complete,
-resume616. Java generation684 and repair428 remain. Additional non-triviality
+no automatic reuse or new-inspection credit. Go non-triviality757/757 complete.
+Java generation684 and repair428 remain. Additional non-triviality
 scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through 1386 holds / Go position600. See QUALITY_GO_1386_BACKUP.md.
-Go batch41 awaits backup. Frozen inputs unchanged.
+GCS verified through 1411 holds / Go position757. See QUALITY_GO_1411_BACKUP.md.
+All Go focused batches are backed up. Frozen inputs unchanged.
 No training seal or new VM. Older entries are historical.
 
 V6 adds contradictory_suffix_uniqueness, supported by TS generation0173/0190.

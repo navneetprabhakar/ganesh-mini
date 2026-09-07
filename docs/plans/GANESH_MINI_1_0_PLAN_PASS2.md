@@ -151,6 +151,13 @@ quality-review, or 20%-per-family supervised-token requirements.
 and admission contract. Another training run is prohibited until its sealed
 dataset exists and a deterministic quality sample passes.
 
+On2026-09-07, after quality holds reduced the maximum unheld population below4000,
+Navneet approved completing review and repairing recoverable held examples in a
+separately versioned derived dataset. Preserve the original5885 unchanged and
+retain parent IDs/hashes plus repair and execution lineage. Recheck affected
+execution, quality and evaluation separation before admission; this does not
+waive the4000-record diagnostic minimum, token balance or training seal.
+
 Composition rules:
 
 - balance training tokens 20% each across Go, Java, JavaScript/TypeScript,

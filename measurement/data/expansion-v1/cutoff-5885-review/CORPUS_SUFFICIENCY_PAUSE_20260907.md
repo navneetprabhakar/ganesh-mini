@@ -1,5 +1,13 @@
 # Corpus sufficiency: verified plan mismatch, pending user direction
 
+## Resolution — approved2026-09-07
+
+Navneet replied "approve" to finishing review and repairing recoverable held
+examples in a versioned dataset while preserving the original5885. The specific
+pause below is resolved; resume Java856 and remaining scope reconciliation.
+The following finding and backup remain historical evidence, not an active stop.
+No admission minimum, quality gate or GCloud compute boundary was waived.
+
 2026-09-07. Current gate: expansion quality review before training admission.
 
 The controlling plan at docs/plans/GANESH_MINI_1_0_PLAN_PASS2.md requires a

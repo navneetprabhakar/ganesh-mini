@@ -1,5 +1,19 @@
 # Decisions
 
+## 2026-09-07 — Approved review completion and versioned recovery
+
+Navneet approved the proposal to finish remaining quality review and then repair
+recoverable held examples in a separately versioned derived dataset, preserving
+the original5885 candidates and their evidence. This resolves the corpus-sufficiency
+pause recorded at1890 holds/3995 maximum unheld rows. Continue review from Java856
+and complete systematic-scope reconciliation before selecting recovery work.
+Preserve parent IDs, original and revised hashes, repair rationale, tests and
+execution lineage. Recovered rows require fresh affected execution, quality and
+evaluation-separation checks; historical holds are not silently erased.
+The4000-record diagnostic minimum is not waived. Do not expand original candidate
+construction or train on unsealed data. Existing GCS backup authorization remains;
+new GCloud compute still needs a specific scope and cost ceiling.
+
 ## 2026-09-06 — Continue through training closure under the frozen gates
 
 Navneet requested: "keep going till we close training, you have my auth".

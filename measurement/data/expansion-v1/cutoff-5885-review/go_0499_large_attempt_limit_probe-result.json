@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0499",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9b190e492fd3f7c21c17423635bda2b301fe9e435f0d9ef658187c2d06a407c2",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"errors\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestRunWeightedStopsOnSuccess(t *testing.T) {\n\tstopErr := errors.New(\"retry\")\n\tcalls := 0\n\tused, err := RunWeighted(5, 3, func(weight int) error {\n\t\tcalls++\n\t\tif calls < 3 {\n\t\t\treturn stopErr\n\t\t}\n\t\treturn nil\n\t})\n\tif err != nil {\n\t\tt.Fatalf(\"RunWeighted returned error: %v\", err)\n\t}\n\tif want := []int{3, 6, 12}; !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n\tif calls != 3 {\n\t\tt.Fatalf(\"action called %d times, want 3\", calls)\n\t}\n}\n\nfunc TestRunWeightedExhaustionReturnsFinalError(t *testing.T) {\n\terrs := []error{errors.New(\"first\"), errors.New(\"second\"), errors.New(\"final\")}\n\tcalls := 0\n\tused, err := RunWeighted(3, 1, func(weight int) error {\n\t\te := errs[calls]\n\t\tcalls++\n\t\treturn e\n\t})\n\tif err != errs[2] {\n\t\tt.Fatalf(\"error = %v, want final action error\", err)\n\t}\n\tif want := []int{1, 2, 4}; !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n\tif calls != 3 {\n\t\tt.Fatalf(\"action called %d times, want 3\", calls)\n\t}\n}\n\nfunc TestRunWeightedSaturatesAtMaximumInt(t *testing.T) {\n\tmaxInt := int(^uint(0) >> 1)\n\tstart := maxInt/2 + 1\n\tfailure := errors.New(\"failure\")\n\tused, err := RunWeighted(4, start, func(int) error { return failure })\n\tif err != failure {\n\t\tt.Fatalf(\"error = %v, want %v\", err, failure)\n\t}\n\twant := []int{start, maxInt, maxInt, maxInt}\n\tif !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n}\n\nfunc TestRunWeightedSingleAttempt(t *testing.T) {\n\tfailure := errors.New(\"only failure\")\n\tused, err := RunWeighted(1, 7, func(weight int) error {\n\t\tif weight != 7 {\n\t\t\tt.Fatalf(\"weight = %d, want 7\", weight)\n\t\t}\n\t\treturn failure\n\t})\n\tif err != failure {\n\t\tt.Fatalf(\"error = %v, want %v\", err, failure)\n\t}\n\tif want := []int{7}; !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n}\n\nfunc TestRunWeightedRejectsInvalidInputWithoutCallingAction(t *testing.T) {\n\tcases := []struct {\n\t\tname     string\n\t\tattempts int\n\t\tweight   int\n\t}{\n\t\t{name: \"zero attempts\", attempts: 0, weight: 1},\n\t\t{name: \"negative attempts\", attempts: -1, weight: 1},\n\t\t{name: \"zero weight\", attempts: 1, weight: 0},\n\t\t{name: \"negative weight\", attempts: 1, weight: -1},\n\t}\n\tfor _, tc := range cases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tcalls := 0\n\t\t\tused, err := RunWeighted(tc.attempts, tc.weight, func(int) error {\n\t\t\t\tcalls++\n\t\t\t\treturn nil\n\t\t\t})\n\t\t\tif err == nil {\n\t\t\t\tt.Fatal(\"expected non-nil error\")\n\t\t\t}\n\t\t\tif used != nil {\n\t\t\t\tt.Fatalf(\"used = %#v, want nil\", used)\n\t\t\t}\n\t\t\tif calls != 0 {\n\t\t\t\tt.Fatalf(\"action called %d times, want 0\", calls)\n\t\t\t}\n\t\t})\n\t}\n\n\tused, err := RunWeighted(1, 1, nil)\n\tif err == nil {\n\t\tt.Fatal(\"nil action: expected non-nil error\")\n\t}\n\tif used != nil {\n\t\tt.Fatalf(\"nil action: used = %#v, want nil\", used)\n\t}\n}\n\nfunc TestRunWeightedDoesNotRecoverActionPanic(t *testing.T) {\n\tmarker := &struct{}{}\n\tcalled := false\n\treturned := false\n\n\tfunc() {\n\t\tdefer func() {\n\t\t\trecovered := recover()\n\t\t\tif recovered != marker {\n\t\t\t\tt.Fatalf(\"recovered panic = %#v, want marker %#v\", recovered, marker)\n\t\t\t}\n\t\t}()\n\t\tRunWeighted(3, 2, func(int) error {\n\t\t\tcalled = true\n\t\t\tpanic(marker)\n\t\t})\n\t\treturned = true\n\t}()\n\n\tif !called {\n\t\tt.Fatal(\"action was not called\")\n\t}\n\tif returned {\n\t\tt.Fatal(\"RunWeighted returned after action panic\")\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "0b7984623f76361cabd05cf6eb2fb3ff82ee16b0e82c1ddb4420650f1967b250"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewLargeAttemptLimitEarlySuccess(t *testing.T) {\n\tcalls := 0\n\tused, err := RunWeighted(int(^uint(0)>>1), 1, func(weight int) error {\n\t\tcalls++\n\t\treturn nil\n\t})\n\tif err != nil || calls != 1 || len(used) != 1 || used[0] != 1 {\n\t\tt.Fatalf(\"used=%v calls=%d err=%v\", used, calls, err)\n\t}\n}\n",
+        "sha256": "0e47a7f94ce32f2e219602c5309e024295ef14ae2a77c161527caf051fc5d319"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7e6d01de53e438d7f112a3db35b3414ff6c0a1435bccff1e2463ca2fad434f44",
+      "text": "Implement package `solution` using only the standard library.\n\nExport:\n\n```go\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) (used []int, err error)\n```\n\n`RunWeighted` invokes `action` until it succeeds or the attempt limit is exhausted. The first invocation receives `initialWeight`; each later weight is twice the previous one. If doubling would exceed the largest representable `int`, use that largest value for that and all subsequent attempts.\n\nAppend a weight to `used` immediately before invoking `action` with it. Stop and return `used, nil` on the first nil result. If every invocation fails, return all used weights and the error from the final invocation.\n\nReturn a non-nil error without invoking `action` when `attempts <= 0`, `initialWeight <= 0`, or `action` is nil. For invalid input, `used` must be nil. The function must not recover panics raised by `action`. Provide a complete source file without a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7e6d01de53e438d7f112a3db35b3414ff6c0a1435bccff1e2463ca2fad434f44",
+      "text": "Implement package `solution` using only the standard library.\n\nExport:\n\n```go\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) (used []int, err error)\n```\n\n`RunWeighted` invokes `action` until it succeeds or the attempt limit is exhausted. The first invocation receives `initialWeight`; each later weight is twice the previous one. If doubling would exceed the largest representable `int`, use that largest value for that and all subsequent attempts.\n\nAppend a weight to `used` immediately before invoking `action` with it. Stop and return `used, nil` on the first nil result. If every invocation fails, return all used weights and the error from the final invocation.\n\nReturn a non-nil error without invoking `action` when `attempts <= 0`, `initialWeight <= 0`, or `action` is nil. For invalid input, `used` must be nil. The function must not recover panics raised by `action`. Provide a complete source file without a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0499",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"errors\"\n\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) ([]int, error) {\n\tif attempts <= 0 {\n\t\treturn nil, errors.New(\"attempts must be positive\")\n\t}\n\tif initialWeight <= 0 {\n\t\treturn nil, errors.New(\"initial weight must be positive\")\n\t}\n\tif action == nil {\n\t\treturn nil, errors.New(\"action must not be nil\")\n\t}\n\n\tused := make([]int, 0, attempts)\n\tweight := initialWeight\n\tvar lastErr error\n\n\tfor i := 0; i < attempts; i++ {\n\t\tused = append(used, weight)\n\t\tlastErr = action(weight)\n\t\tif lastErr == nil {\n\t\t\treturn used, nil\n\t\t}\n\t\tweight *= 2\n\t}\n\treturn used, lastErr\n}\n",
+          "label": "The retry weight is doubled without overflow protection instead of saturating at the maximum int value.",
+          "sha256": "e711b983f852ecec632b8aa518437c349e554db40ed9be79cb766b869cb19a3c"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport \"errors\"\n\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) ([]int, error) {\n\tif attempts <= 0 {\n\t\treturn nil, errors.New(\"attempts must be positive\")\n\t}\n\tif initialWeight <= 0 {\n\t\treturn nil, errors.New(\"initial weight must be positive\")\n\t}\n\tif action == nil {\n\t\treturn nil, errors.New(\"action must not be nil\")\n\t}\n\n\tused := make([]int, 0, attempts)\n\tweight := initialWeight\n\tmaxInt := int(^uint(0) >> 1)\n\tvar lastErr error\n\n\tfor i := 0; i < attempts; i++ {\n\t\tused = append(used, weight)\n\t\tlastErr = action(weight)\n\t\tif lastErr == nil {\n\t\t\treturn used, nil\n\t\t}\n\t\tif weight > maxInt/2 {\n\t\t\tweight = maxInt\n\t\t} else {\n\t\t\tweight *= 2\n\t\t}\n\t}\n\treturn used, lastErr\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0d31e0c2315337bc102dbfb098435908e484008b2d57c72a6a4377d890f34898"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"errors\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestRunWeightedStopsOnSuccess(t *testing.T) {\n\tstopErr := errors.New(\"retry\")\n\tcalls := 0\n\tused, err := RunWeighted(5, 3, func(weight int) error {\n\t\tcalls++\n\t\tif calls < 3 {\n\t\t\treturn stopErr\n\t\t}\n\t\treturn nil\n\t})\n\tif err != nil {\n\t\tt.Fatalf(\"RunWeighted returned error: %v\", err)\n\t}\n\tif want := []int{3, 6, 12}; !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n\tif calls != 3 {\n\t\tt.Fatalf(\"action called %d times, want 3\", calls)\n\t}\n}\n\nfunc TestRunWeightedExhaustionReturnsFinalError(t *testing.T) {\n\terrs := []error{errors.New(\"first\"), errors.New(\"second\"), errors.New(\"final\")}\n\tcalls := 0\n\tused, err := RunWeighted(3, 1, func(weight int) error {\n\t\te := errs[calls]\n\t\tcalls++\n\t\treturn e\n\t})\n\tif err != errs[2] {\n\t\tt.Fatalf(\"error = %v, want final action error\", err)\n\t}\n\tif want := []int{1, 2, 4}; !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n\tif calls != 3 {\n\t\tt.Fatalf(\"action called %d times, want 3\", calls)\n\t}\n}\n\nfunc TestRunWeightedSaturatesAtMaximumInt(t *testing.T) {\n\tmaxInt := int(^uint(0) >> 1)\n\tstart := maxInt/2 + 1\n\tfailure := errors.New(\"failure\")\n\tused, err := RunWeighted(4, start, func(int) error { return failure })\n\tif err != failure {\n\t\tt.Fatalf(\"error = %v, want %v\", err, failure)\n\t}\n\twant := []int{start, maxInt, maxInt, maxInt}\n\tif !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n}\n\nfunc TestRunWeightedSingleAttempt(t *testing.T) {\n\tfailure := errors.New(\"only failure\")\n\tused, err := RunWeighted(1, 7, func(weight int) error {\n\t\tif weight != 7 {\n\t\t\tt.Fatalf(\"weight = %d, want 7\", weight)\n\t\t}\n\t\treturn failure\n\t})\n\tif err != failure {\n\t\tt.Fatalf(\"error = %v, want %v\", err, failure)\n\t}\n\tif want := []int{7}; !reflect.DeepEqual(used, want) {\n\t\tt.Fatalf(\"used = %v, want %v\", used, want)\n\t}\n}\n\nfunc TestRunWeightedRejectsInvalidInputWithoutCallingAction(t *testing.T) {\n\tcases := []struct {\n\t\tname     string\n\t\tattempts int\n\t\tweight   int\n\t}{\n\t\t{name: \"zero attempts\", attempts: 0, weight: 1},\n\t\t{name: \"negative attempts\", attempts: -1, weight: 1},\n\t\t{name: \"zero weight\", attempts: 1, weight: 0},\n\t\t{name: \"negative weight\", attempts: 1, weight: -1},\n\t}\n\tfor _, tc := range cases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tcalls := 0\n\t\t\tused, err := RunWeighted(tc.attempts, tc.weight, func(int) error {\n\t\t\t\tcalls++\n\t\t\t\treturn nil\n\t\t\t})\n\t\t\tif err == nil {\n\t\t\t\tt.Fatal(\"expected non-nil error\")\n\t\t\t}\n\t\t\tif used != nil {\n\t\t\t\tt.Fatalf(\"used = %#v, want nil\", used)\n\t\t\t}\n\t\t\tif calls != 0 {\n\t\t\t\tt.Fatalf(\"action called %d times, want 0\", calls)\n\t\t\t}\n\t\t})\n\t}\n\n\tused, err := RunWeighted(1, 1, nil)\n\tif err == nil {\n\t\tt.Fatal(\"nil action: expected non-nil error\")\n\t}\n\tif used != nil {\n\t\tt.Fatalf(\"nil action: used = %#v, want nil\", used)\n\t}\n}\n\nfunc TestRunWeightedDoesNotRecoverActionPanic(t *testing.T) {\n\tmarker := &struct{}{}\n\tcalled := false\n\treturned := false\n\n\tfunc() {\n\t\tdefer func() {\n\t\t\trecovered := recover()\n\t\t\tif recovered != marker {\n\t\t\t\tt.Fatalf(\"recovered panic = %#v, want marker %#v\", recovered, marker)\n\t\t\t}\n\t\t}()\n\t\tRunWeighted(3, 2, func(int) error {\n\t\t\tcalled = true\n\t\t\tpanic(marker)\n\t\t})\n\t\treturned = true\n\t}()\n\n\tif !called {\n\t\tt.Fatal(\"action was not called\")\n\t}\n\tif returned {\n\t\tt.Fatal(\"RunWeighted returned after action panic\")\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "0b7984623f76361cabd05cf6eb2fb3ff82ee16b0e82c1ddb4420650f1967b250"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "7e6d01de53e438d7f112a3db35b3414ff6c0a1435bccff1e2463ca2fad434f44",
+      "text": "Implement package `solution` using only the standard library.\n\nExport:\n\n```go\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) (used []int, err error)\n```\n\n`RunWeighted` invokes `action` until it succeeds or the attempt limit is exhausted. The first invocation receives `initialWeight`; each later weight is twice the previous one. If doubling would exceed the largest representable `int`, use that largest value for that and all subsequent attempts.\n\nAppend a weight to `used` immediately before invoking `action` with it. Stop and return `used, nil` on the first nil result. If every invocation fails, return all used weights and the error from the final invocation.\n\nReturn a non-nil error without invoking `action` when `attempts <= 0`, `initialWeight <= 0`, or `action` is nil. For invalid input, `used` must be nil. The function must not recover panics raised by `action`. Provide a complete source file without a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "7e6d01de53e438d7f112a3db35b3414ff6c0a1435bccff1e2463ca2fad434f44",
+      "text": "Implement package `solution` using only the standard library.\n\nExport:\n\n```go\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) (used []int, err error)\n```\n\n`RunWeighted` invokes `action` until it succeeds or the attempt limit is exhausted. The first invocation receives `initialWeight`; each later weight is twice the previous one. If doubling would exceed the largest representable `int`, use that largest value for that and all subsequent attempts.\n\nAppend a weight to `used` immediately before invoking `action` with it. Stop and return `used, nil` on the first nil result. If every invocation fails, return all used weights and the error from the final invocation.\n\nReturn a non-nil error without invoking `action` when `attempts <= 0`, `initialWeight <= 0`, or `action` is nil. For invalid input, `used` must be nil. The function must not recover panics raised by `action`. Provide a complete source file without a main function.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0499",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport \"errors\"\n\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) ([]int, error) {\n\tif attempts <= 0 {\n\t\treturn nil, errors.New(\"attempts must be positive\")\n\t}\n\tif initialWeight <= 0 {\n\t\treturn nil, errors.New(\"initial weight must be positive\")\n\t}\n\tif action == nil {\n\t\treturn nil, errors.New(\"action must not be nil\")\n\t}\n\n\tused := make([]int, 0, attempts)\n\tweight := initialWeight\n\tvar lastErr error\n\n\tfor i := 0; i < attempts; i++ {\n\t\tused = append(used, weight)\n\t\tlastErr = action(weight)\n\t\tif lastErr == nil {\n\t\t\treturn used, nil\n\t\t}\n\t\tweight *= 2\n\t}\n\treturn used, lastErr\n}\n",
+          "label": "The retry weight is doubled without overflow protection instead of saturating at the maximum int value.",
+          "sha256": "e711b983f852ecec632b8aa518437c349e554db40ed9be79cb766b869cb19a3c"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport \"errors\"\n\nfunc RunWeighted(attempts int, initialWeight int, action func(weight int) error) ([]int, error) {\n\tif attempts <= 0 {\n\t\treturn nil, errors.New(\"attempts must be positive\")\n\t}\n\tif initialWeight <= 0 {\n\t\treturn nil, errors.New(\"initial weight must be positive\")\n\t}\n\tif action == nil {\n\t\treturn nil, errors.New(\"action must not be nil\")\n\t}\n\n\tused := make([]int, 0, attempts)\n\tweight := initialWeight\n\tmaxInt := int(^uint(0) >> 1)\n\tvar lastErr error\n\n\tfor i := 0; i < attempts; i++ {\n\t\tused = append(used, weight)\n\t\tlastErr = action(weight)\n\t\tif lastErr == nil {\n\t\t\treturn used, nil\n\t\t}\n\t\tif weight > maxInt/2 {\n\t\t\tweight = maxInt\n\t\t} else {\n\t\t\tweight *= 2\n\t\t}\n\t}\n\treturn used, lastErr\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "0d31e0c2315337bc102dbfb098435908e484008b2d57c72a6a4377d890f34898"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewLargeAttemptLimitEarlySuccess (0.00s)\npanic: runtime error: makeslice: cap out of range [recovered]\n\tpanic: runtime error: makeslice: cap out of range\n\ngoroutine 6 [running]:\ntesting.tRunner.func1.2({0x5207e0, 0x5756f0})\n\t/usr/local/go/src/testing/testing.go:1631 +0x24a\ntesting.tRunner.func1()\n\t/usr/local/go/src/testing/testing.go:1634 +0x377\npanic({0x5207e0?, 0x5756f0?})\n\t/usr/local/go/src/runtime/panic.go:770 +0x132\nganesh.invalid/expansion.RunWeighted(0x7fffffffffffffff, 0x1, 0xc00009df20)\n\t/work/solution.go:16 +0x50\nganesh.invalid/expansion.TestReviewLargeAttemptLimitEarlySuccess(0xc0000864e0)\n\t/work/review_test.go:7 +0x65\ntesting.tRunner(0xc0000864e0, 0x54dda8)\n\t/usr/local/go/src/testing/testing.go:1689 +0xfb\ncreated by testing.(*T).Run in goroutine 1\n\t/usr/local/go/src/testing/testing.go:1742 +0x390\nFAIL\tganesh.invalid/expansion\t0.020s\nFAIL\n",
+    "stdout_sha256": "22fdd62001e7372214085a3deb117e8bd1f7c46db2ca87d6819ac69c4c5f2999",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 26005,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

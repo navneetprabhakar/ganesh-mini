@@ -1,7 +1,7 @@
 # Cutoff quality review — in progress
 
-Current checkpoint: **1521 holds (1518 additive plus historical three)**;
-3,852 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **1553 holds (1550 additive plus historical three)**;
+3,912 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 170 positive, 130 held. By lane: Go 39/17,
 Java 34/26, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v1.json.
@@ -14,14 +14,14 @@ Java null-query list validation and percentage arithmetic require reconciliation
 including prior sample positives. Sample dispositions above predate these groups.
 New criterion scopes require explicit reconciliation against existing notes;
 no automatic reuse or new-inspection credit. Go non-triviality757/757 complete.
-Java combined queue165/1112 reviewed (684 generation,428 repair total); resume166.
+Java combined queue225/1112 reviewed (684 generation,428 repair total); resume226.
 Additional non-triviality
 scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through 1509 holds / Go757 / Java150. See QUALITY_JAVA_1509_BACKUP.md.
-Java batch11 awaits backup. Frozen inputs unchanged.
+GCS verified through 1549 holds / Go757 / Java210. See QUALITY_JAVA_1549_BACKUP.md.
+Java batch15 awaits backup. Frozen inputs unchanged.
 No training seal or new VM. Older entries are historical.
 
 Current checkpoint: **223 holds (220 additive plus historical three)**; 308

@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-java-generation-0123",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "8f23c06357bc9e5422f9849fcd12ee7764b3c71ddb90654d2fa9bf2fdbc11b2f",
+  "task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "path": "SolutionTest.java",
+        "role": "test",
+        "content": "public class SolutionTest {\n    public static void main(String[] args) {\n        Solution.clear();\n        if (!Solution.send(\"a\", \"b\\u0000c\")) throw new AssertionError(\"send\");\n        if (!Solution.decide(\"a\", \"b\\u0000c\", Solution.Decision.ACCEPTED)) {\n            throw new AssertionError(\"accept\");\n        }\n        if (Solution.connected(\"a\\u0000b\", \"c\")) {\n            throw new AssertionError(\"Unrelated identifiers collide with the accepted pair\");\n        }\n    }\n}\n",
+        "sha256": "7a5a2fe42fec6294a0341f2583cef63f723a48b33f69ad2306257cdd6be25b57"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "549b56d62328e9d6c9022a26e8c16aae073dda4223153c89ecb4f5e57cefa0d0",
+      "text": "Implement an in-memory invitation registry in `Solution.java`. Define nested public record `Invite(String sender, String recipient)` and public enum `Decision { ACCEPTED, DECLINED }`. Expose public static methods `void clear()`, `boolean send(String sender, String recipient)`, `boolean decide(String sender, String recipient, Decision decision)`, `List<Invite> receivedBy(String recipient)`, and `boolean connected(String first, String second)`. Identifiers are normalized by trimming and converting to lowercase with `Locale.ROOT`; null or empty identifiers are malformed and must cause `IllegalArgumentException`. Self-invitations are rejected by returning false. `send` returns false if the users are already connected or if an invitation exists in either direction. `decide` returns false if the directed invitation does not exist; otherwise it removes it and, when accepted, creates a symmetric connection. Received invitations are returned in ascending sender order as a new unmodifiable list. `connected(x,x)` is always false. No returned collection may expose mutable internal state. Implement a new standard-library-only solution.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "549b56d62328e9d6c9022a26e8c16aae073dda4223153c89ecb4f5e57cefa0d0",
+      "text": "Implement an in-memory invitation registry in `Solution.java`. Define nested public record `Invite(String sender, String recipient)` and public enum `Decision { ACCEPTED, DECLINED }`. Expose public static methods `void clear()`, `boolean send(String sender, String recipient)`, `boolean decide(String sender, String recipient, Decision decision)`, `List<Invite> receivedBy(String recipient)`, and `boolean connected(String first, String second)`. Identifiers are normalized by trimming and converting to lowercase with `Locale.ROOT`; null or empty identifiers are malformed and must cause `IllegalArgumentException`. Self-invitations are rejected by returning false. `send` returns false if the users are already connected or if an invitation exists in either direction. `decide` returns false if the directed invitation does not exist; otherwise it removes it and, when accepted, creates a symmetric connection. Received invitations are returned in ascending sender order as a new unmodifiable list. `connected(x,x)` is always false. No returned collection may expose mutable internal state. Implement a new standard-library-only solution.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-java-generation-0123",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Locale;\nimport java.util.Set;\n\npublic final class Solution {\n    private Solution() {}\n\n    public record Invite(String sender, String recipient) {}\n    public enum Decision { ACCEPTED, DECLINED }\n\n    private static final Set<Invite> INVITES = new HashSet<>();\n    private static final Set<String> LINKS = new HashSet<>();\n\n    public static void clear() {\n        INVITES.clear();\n        LINKS.clear();\n    }\n\n    public static boolean send(String sender, String recipient) {\n        String a = id(sender), b = id(recipient);\n        if (a.equals(b) || connected(a, b)) return false;\n        if (INVITES.contains(new Invite(a, b)) || INVITES.contains(new Invite(b, a))) return false;\n        return INVITES.add(new Invite(a, b));\n    }\n\n    public static boolean decide(String sender, String recipient, Decision decision) {\n        if (decision == null) throw new IllegalArgumentException(\"null decision\");\n        String a = id(sender), b = id(recipient);\n        if (!INVITES.remove(new Invite(a, b))) return false;\n        if (decision == Decision.ACCEPTED) LINKS.add(a + \"\\u0000\" + b);\n        return true;\n    }\n\n    public static List<Invite> receivedBy(String recipient) {\n        String target = id(recipient);\n        List<Invite> result = new ArrayList<>();\n        for (Invite invite : INVITES) if (invite.recipient().equals(target)) result.add(invite);\n        result.sort((x, y) -> x.sender().compareTo(y.sender()));\n        return Collections.unmodifiableList(result);\n    }\n\n    public static boolean connected(String first, String second) {\n        String a = id(first), b = id(second);\n        return !a.equals(b) && LINKS.contains(pair(a, b));\n    }\n\n    private static String id(String value) {\n        if (value == null) throw new IllegalArgumentException(\"null identifier\");\n        String normalized = value.trim().toLowerCase(Locale.ROOT);\n        if (normalized.isEmpty()) throw new IllegalArgumentException(\"empty identifier\");\n        return normalized;\n    }\n\n    private static String pair(String a, String b) {\n        return a.compareTo(b) < 0 ? a + \"\\u0000\" + b : b + \"\\u0000\" + a;\n    }\n}\n",
+          "label": "Stores an accepted connection in request direction rather than canonical order, making some accepted pairs appear disconnected.",
+          "sha256": "8e79cc6da5134fe90ff3bc1959b42f691e017b8ad5ece819e88e1fd7bc313553"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Locale;\nimport java.util.Set;\n\npublic final class Solution {\n    private Solution() {}\n\n    public record Invite(String sender, String recipient) {}\n    public enum Decision { ACCEPTED, DECLINED }\n\n    private static final Set<Invite> INVITES = new HashSet<>();\n    private static final Set<String> LINKS = new HashSet<>();\n\n    public static void clear() {\n        INVITES.clear();\n        LINKS.clear();\n    }\n\n    public static boolean send(String sender, String recipient) {\n        String a = id(sender), b = id(recipient);\n        if (a.equals(b) || connected(a, b)) return false;\n        if (INVITES.contains(new Invite(a, b)) || INVITES.contains(new Invite(b, a))) return false;\n        return INVITES.add(new Invite(a, b));\n    }\n\n    public static boolean decide(String sender, String recipient, Decision decision) {\n        if (decision == null) throw new IllegalArgumentException(\"null decision\");\n        String a = id(sender), b = id(recipient);\n        if (!INVITES.remove(new Invite(a, b))) return false;\n        if (decision == Decision.ACCEPTED) LINKS.add(pair(a, b));\n        return true;\n    }\n\n    public static List<Invite> receivedBy(String recipient) {\n        String target = id(recipient);\n        List<Invite> result = new ArrayList<>();\n        for (Invite invite : INVITES) if (invite.recipient().equals(target)) result.add(invite);\n        result.sort((x, y) -> x.sender().compareTo(y.sender()));\n        return Collections.unmodifiableList(result);\n    }\n\n    public static boolean connected(String first, String second) {\n        String a = id(first), b = id(second);\n        return !a.equals(b) && LINKS.contains(pair(a, b));\n    }\n\n    private static String id(String value) {\n        if (value == null) throw new IllegalArgumentException(\"null identifier\");\n        String normalized = value.trim().toLowerCase(Locale.ROOT);\n        if (normalized.isEmpty()) throw new IllegalArgumentException(\"empty identifier\");\n        return normalized;\n    }\n\n    private static String pair(String a, String b) {\n        return a.compareTo(b) < 0 ? a + \"\\u0000\" + b : b + \"\\u0000\" + a;\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "dcdf4bee21158dbbf0c6920245120b2fad35d062e691b72cfe9893178d2d7506"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "content": "import java.util.List;\nimport java.util.Locale;\n\npublic class SolutionTest {\n    public static void main(String[] args) {\n        Solution.clear();\n        expect(IllegalArgumentException.class, () -> Solution.send(null, \"bob\"));\n        expect(IllegalArgumentException.class, () -> Solution.send(\"alice\", \"  \"));\n        expect(IllegalArgumentException.class, () -> Solution.receivedBy(null));\n        expect(IllegalArgumentException.class, () -> Solution.connected(\"alice\", \"\"));\n        expect(IllegalArgumentException.class, () -> Solution.decide(\" \", \"bob\", Solution.Decision.ACCEPTED));\n\n        check(!Solution.send(\" Alice \", \"alice\"), \"normalized self-invitation rejected\");\n        check(!Solution.connected(\"same\", \" SAME \"), \"self is never connected\");\n\n        check(Solution.send(\"Charlie\", \" Bob \"), \"first invitation\");\n        check(Solution.send(\"alice\", \"bob\"), \"second invitation\");\n        check(!Solution.send(\" ALICE \", \" BOB \"), \"duplicate invitation rejected\");\n        check(!Solution.send(\"bob\", \"ALICE\"), \"reverse invitation rejected\");\n\n        List<Solution.Invite> received1 = Solution.receivedBy(\" BOB \");\n        List<Solution.Invite> received2 = Solution.receivedBy(\"bob\");\n        check(received1.equals(List.of(\n                new Solution.Invite(\"alice\", \"bob\"),\n                new Solution.Invite(\"charlie\", \"bob\"))), \"received invitations sorted and normalized\");\n        check(received1 != received2, \"received lists newly allocated\");\n        expect(UnsupportedOperationException.class, () -> received1.clear());\n\n        check(Solution.decide(\"ALICE\", \"Bob\", Solution.Decision.DECLINED), \"decline existing invitation\");\n        check(!Solution.decide(\"alice\", \"bob\", Solution.Decision.ACCEPTED), \"removed invitation cannot be decided twice\");\n        check(!Solution.connected(\"alice\", \"bob\"), \"decline does not connect\");\n\n        check(Solution.decide(\" charlie \", \"BOB\", Solution.Decision.ACCEPTED), \"accept invitation\");\n        check(Solution.connected(\"charlie\", \"bob\"), \"forward connection\");\n        check(Solution.connected(\" BOB \", \" CHARLIE \"), \"symmetric connection\");\n        check(!Solution.send(\"bob\", \"charlie\"), \"connected users cannot invite\");\n        check(Solution.receivedBy(\"bob\").isEmpty(), \"decided invitations removed\");\n\n        Locale previous = Locale.getDefault();\n        try {\n            Locale.setDefault(new Locale(\"tr\", \"TR\"));\n            Solution.clear();\n            check(Solution.send(\" I \", \"USER\"), \"send under Turkish default locale\");\n            check(Solution.receivedBy(\"user\").equals(List.of(new Solution.Invite(\"i\", \"user\"))), \"Locale.ROOT normalization\");\n        } finally {\n            Locale.setDefault(previous);\n        }\n\n        Solution.clear();\n        Solution.clear();\n        check(Solution.receivedBy(\"nobody\").isEmpty(), \"clear is idempotent\");\n    }\n\n    private static void check(boolean condition, String message) {\n        if (!condition) throw new AssertionError(message);\n    }\n\n    private static void expect(Class<? extends Throwable> type, Runnable action) {\n        try {\n            action.run();\n        } catch (Throwable error) {\n            if (type.isInstance(error)) return;\n            throw new AssertionError(\"expected \" + type.getName() + \" but got \" + error, error);\n        }\n        throw new AssertionError(\"expected \" + type.getName());\n    }\n}\n",
+        "path": "SolutionTest.java",
+        "role": "test",
+        "sha256": "ea7f302a0219df0da5e98104cef7f799cdf7cc50ca3ab0af0a5914e73248d20a"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "549b56d62328e9d6c9022a26e8c16aae073dda4223153c89ecb4f5e57cefa0d0",
+      "text": "Implement an in-memory invitation registry in `Solution.java`. Define nested public record `Invite(String sender, String recipient)` and public enum `Decision { ACCEPTED, DECLINED }`. Expose public static methods `void clear()`, `boolean send(String sender, String recipient)`, `boolean decide(String sender, String recipient, Decision decision)`, `List<Invite> receivedBy(String recipient)`, and `boolean connected(String first, String second)`. Identifiers are normalized by trimming and converting to lowercase with `Locale.ROOT`; null or empty identifiers are malformed and must cause `IllegalArgumentException`. Self-invitations are rejected by returning false. `send` returns false if the users are already connected or if an invitation exists in either direction. `decide` returns false if the directed invitation does not exist; otherwise it removes it and, when accepted, creates a symmetric connection. Received invitations are returned in ascending sender order as a new unmodifiable list. `connected(x,x)` is always false. No returned collection may expose mutable internal state. Implement a new standard-library-only solution.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "549b56d62328e9d6c9022a26e8c16aae073dda4223153c89ecb4f5e57cefa0d0",
+      "text": "Implement an in-memory invitation registry in `Solution.java`. Define nested public record `Invite(String sender, String recipient)` and public enum `Decision { ACCEPTED, DECLINED }`. Expose public static methods `void clear()`, `boolean send(String sender, String recipient)`, `boolean decide(String sender, String recipient, Decision decision)`, `List<Invite> receivedBy(String recipient)`, and `boolean connected(String first, String second)`. Identifiers are normalized by trimming and converting to lowercase with `Locale.ROOT`; null or empty identifiers are malformed and must cause `IllegalArgumentException`. Self-invitations are rejected by returning false. `send` returns false if the users are already connected or if an invitation exists in either direction. `decide` returns false if the directed invitation does not exist; otherwise it removes it and, when accepted, creates a symmetric connection. Received invitations are returned in ascending sender order as a new unmodifiable list. `connected(x,x)` is always false. No returned collection may expose mutable internal state. Implement a new standard-library-only solution.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-java-generation-0123",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Locale;\nimport java.util.Set;\n\npublic final class Solution {\n    private Solution() {}\n\n    public record Invite(String sender, String recipient) {}\n    public enum Decision { ACCEPTED, DECLINED }\n\n    private static final Set<Invite> INVITES = new HashSet<>();\n    private static final Set<String> LINKS = new HashSet<>();\n\n    public static void clear() {\n        INVITES.clear();\n        LINKS.clear();\n    }\n\n    public static boolean send(String sender, String recipient) {\n        String a = id(sender), b = id(recipient);\n        if (a.equals(b) || connected(a, b)) return false;\n        if (INVITES.contains(new Invite(a, b)) || INVITES.contains(new Invite(b, a))) return false;\n        return INVITES.add(new Invite(a, b));\n    }\n\n    public static boolean decide(String sender, String recipient, Decision decision) {\n        if (decision == null) throw new IllegalArgumentException(\"null decision\");\n        String a = id(sender), b = id(recipient);\n        if (!INVITES.remove(new Invite(a, b))) return false;\n        if (decision == Decision.ACCEPTED) LINKS.add(a + \"\\u0000\" + b);\n        return true;\n    }\n\n    public static List<Invite> receivedBy(String recipient) {\n        String target = id(recipient);\n        List<Invite> result = new ArrayList<>();\n        for (Invite invite : INVITES) if (invite.recipient().equals(target)) result.add(invite);\n        result.sort((x, y) -> x.sender().compareTo(y.sender()));\n        return Collections.unmodifiableList(result);\n    }\n\n    public static boolean connected(String first, String second) {\n        String a = id(first), b = id(second);\n        return !a.equals(b) && LINKS.contains(pair(a, b));\n    }\n\n    private static String id(String value) {\n        if (value == null) throw new IllegalArgumentException(\"null identifier\");\n        String normalized = value.trim().toLowerCase(Locale.ROOT);\n        if (normalized.isEmpty()) throw new IllegalArgumentException(\"empty identifier\");\n        return normalized;\n    }\n\n    private static String pair(String a, String b) {\n        return a.compareTo(b) < 0 ? a + \"\\u0000\" + b : b + \"\\u0000\" + a;\n    }\n}\n",
+          "label": "Stores an accepted connection in request direction rather than canonical order, making some accepted pairs appear disconnected.",
+          "sha256": "8e79cc6da5134fe90ff3bc1959b42f691e017b8ad5ece819e88e1fd7bc313553"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Locale;\nimport java.util.Set;\n\npublic final class Solution {\n    private Solution() {}\n\n    public record Invite(String sender, String recipient) {}\n    public enum Decision { ACCEPTED, DECLINED }\n\n    private static final Set<Invite> INVITES = new HashSet<>();\n    private static final Set<String> LINKS = new HashSet<>();\n\n    public static void clear() {\n        INVITES.clear();\n        LINKS.clear();\n    }\n\n    public static boolean send(String sender, String recipient) {\n        String a = id(sender), b = id(recipient);\n        if (a.equals(b) || connected(a, b)) return false;\n        if (INVITES.contains(new Invite(a, b)) || INVITES.contains(new Invite(b, a))) return false;\n        return INVITES.add(new Invite(a, b));\n    }\n\n    public static boolean decide(String sender, String recipient, Decision decision) {\n        if (decision == null) throw new IllegalArgumentException(\"null decision\");\n        String a = id(sender), b = id(recipient);\n        if (!INVITES.remove(new Invite(a, b))) return false;\n        if (decision == Decision.ACCEPTED) LINKS.add(pair(a, b));\n        return true;\n    }\n\n    public static List<Invite> receivedBy(String recipient) {\n        String target = id(recipient);\n        List<Invite> result = new ArrayList<>();\n        for (Invite invite : INVITES) if (invite.recipient().equals(target)) result.add(invite);\n        result.sort((x, y) -> x.sender().compareTo(y.sender()));\n        return Collections.unmodifiableList(result);\n    }\n\n    public static boolean connected(String first, String second) {\n        String a = id(first), b = id(second);\n        return !a.equals(b) && LINKS.contains(pair(a, b));\n    }\n\n    private static String id(String value) {\n        if (value == null) throw new IllegalArgumentException(\"null identifier\");\n        String normalized = value.trim().toLowerCase(Locale.ROOT);\n        if (normalized.isEmpty()) throw new IllegalArgumentException(\"empty identifier\");\n        return normalized;\n    }\n\n    private static String pair(String a, String b) {\n        return a.compareTo(b) < 0 ? a + \"\\u0000\" + b : b + \"\\u0000\" + a;\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "dcdf4bee21158dbbf0c6920245120b2fad35d062e691b72cfe9893178d2d7506"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "java-21.0.11",
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: Unrelated identifiers collide with the accepted pair\n\tat SolutionTest.main(SolutionTest.java:9)\n",
+    "stderr_sha256": "646b323b37e4fca102caec17a33bcca89f007dd6474d98937d081cc703864cd6",
+    "duration_ms": 2977,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

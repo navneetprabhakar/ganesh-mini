@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-repair-0093",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "805513319a63a05270191a0ae8a05d0fdaa76bf24f3104ee3177f137025ba7de",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\n#[test]\nfn finite_weights_do_not_make_valid_distribution_absent() {\n    let actual = solution::weighted_decay_cdf(&[(f64::MAX, 1.0), (f64::MAX, 1.0)], 1.0);\n    let expected = 1.0 - (-1.0f64).exp();\n    assert!(actual.is_some(), \"valid finite component weights returned None\");\n    assert!((actual.unwrap() - expected).abs() < 1e-14);\n}\n\n#[test]\nfn finite_interval_interpolation_avoids_intermediate_overflow() {\n    let actual = solution::interval_cdf(-f64::MAX, f64::MAX, 0.0).unwrap();\n    assert!((actual - 0.5).abs() < 1e-14, \"midpoint was {actual}\");\n}\n",
+        "sha256": "2b9807b96aa886660ad45ea1d051b8d226bdaff8f8bdbc365f770283c5df1991"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c88fd55ad273f532e6967730564779a2f69c89f3acda79ada05866a89220f449",
+      "text": "Repair the complete source below and return a corrected complete `solution.rs` using only the standard library. The public function `weighted_decay_cdf(parts, x)` interprets each pair as `(weight, rate)`. It returns `None` when the slice is empty, `x` is non-finite, any component is non-finite, any weight is negative, any rate is not positive, or total weight is zero. Otherwise it returns zero for `x <= 0` and the normalized weighted sum of `1 - exp(-rate*x)` for positive `x`. `interval_cdf(low, high, x)` returns `None` unless all inputs are finite and `low < high`; otherwise it returns zero at or below `low`, one at or above `high`, and linear interpolation inside. Results must remain in `[0,1]`, inputs are borrowed and unmodified, and component ordering must not affect the result.\n\nKnown-bad source:\n```rust\npub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (-rate * x).exp()).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c88fd55ad273f532e6967730564779a2f69c89f3acda79ada05866a89220f449",
+      "text": "Repair the complete source below and return a corrected complete `solution.rs` using only the standard library. The public function `weighted_decay_cdf(parts, x)` interprets each pair as `(weight, rate)`. It returns `None` when the slice is empty, `x` is non-finite, any component is non-finite, any weight is negative, any rate is not positive, or total weight is zero. Otherwise it returns zero for `x <= 0` and the normalized weighted sum of `1 - exp(-rate*x)` for positive `x`. `interval_cdf(low, high, x)` returns `None` unless all inputs are finite and `low < high`; otherwise it returns zero at or below `low`, one at or above `high`, and linear interpolation inside. Results must remain in `[0,1]`, inputs are borrowed and unmodified, and component ordering must not affect the result.\n\nKnown-bad source:\n```rust\npub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (-rate * x).exp()).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-repair-0093",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "pub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (-rate * x).exp()).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n",
+          "label": "Computes the survival function for each decay component instead of its cumulative probability.",
+          "sha256": "110b24c59983765ea17476ac5432529787baed726daae7d5ab75360a648920ff"
+        }
+      ],
+      "reference": {
+        "code": "pub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (1.0 - (-rate * x).exp())).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ddd60e42d929e79792d7cb0358334112b9cb81524e5e3c868c339d46e4ccc1e5"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{interval_cdf, weighted_decay_cdf};\n\nfn close(actual: f64, expected: f64, tolerance: f64) {\n    assert!((actual - expected).abs() <= tolerance, \"actual={actual}, expected={expected}\");\n}\n\n#[test]\nfn weighted_decay_uses_one_minus_exponential_decay() {\n    let parts = [(1.0, 1.0)];\n    close(weighted_decay_cdf(&parts, 1.0).unwrap(), 1.0 - (-1.0f64).exp(), 1e-14);\n    close(weighted_decay_cdf(&parts, 2.0).unwrap(), 1.0 - (-2.0f64).exp(), 1e-14);\n}\n\n#[test]\nfn weighted_decay_normalizes_weights_and_is_order_stable() {\n    let a = [(1.0, 0.5), (3.0, 2.0), (2.0, 1.25)];\n    let b = [(2.0, 1.25), (1.0, 0.5), (3.0, 2.0)];\n    let expected = (1.0 * (1.0 - (-0.5f64).exp())\n        + 3.0 * (1.0 - (-2.0f64).exp())\n        + 2.0 * (1.0 - (-1.25f64).exp())) / 6.0;\n    let va = weighted_decay_cdf(&a, 1.0).unwrap();\n    let vb = weighted_decay_cdf(&b, 1.0).unwrap();\n    close(va, expected, 1e-14);\n    close(vb, expected, 1e-14);\n    close(va, vb, 1e-14);\n}\n\n#[test]\nfn weighted_decay_handles_boundaries_and_zero_weight_components() {\n    let parts = [(0.0, 100.0), (2.0, 0.25)];\n    assert_eq!(weighted_decay_cdf(&parts, 0.0), Some(0.0));\n    assert_eq!(weighted_decay_cdf(&parts, -10.0), Some(0.0));\n    let value = weighted_decay_cdf(&parts, 1.0e300).unwrap();\n    assert!((0.0..=1.0).contains(&value));\n    close(value, 1.0, 1e-15);\n}\n\n#[test]\nfn weighted_decay_rejects_invalid_inputs() {\n    assert_eq!(weighted_decay_cdf(&[], 1.0), None);\n    assert_eq!(weighted_decay_cdf(&[(0.0, 1.0)], 1.0), None);\n    for x in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {\n        assert_eq!(weighted_decay_cdf(&[(1.0, 1.0)], x), None);\n    }\n    for parts in [\n        vec![(f64::NAN, 1.0)],\n        vec![(f64::INFINITY, 1.0)],\n        vec![(-1.0, 1.0)],\n        vec![(1.0, 0.0)],\n        vec![(1.0, -1.0)],\n        vec![(1.0, f64::INFINITY)],\n    ] {\n        assert_eq!(weighted_decay_cdf(&parts, 1.0), None);\n    }\n}\n\n#[test]\nfn weighted_decay_does_not_mutate_parts() {\n    let parts = [(2.0, 0.5), (4.0, 1.5)];\n    let original = parts;\n    let _ = weighted_decay_cdf(&parts, 3.0);\n    assert_eq!(parts, original);\n}\n\n#[test]\nfn interval_cdf_has_closed_boundaries_and_linear_interior() {\n    assert_eq!(interval_cdf(2.0, 6.0, 1.0), Some(0.0));\n    assert_eq!(interval_cdf(2.0, 6.0, 2.0), Some(0.0));\n    assert_eq!(interval_cdf(2.0, 6.0, 4.0), Some(0.5));\n    assert_eq!(interval_cdf(2.0, 6.0, 6.0), Some(1.0));\n    assert_eq!(interval_cdf(2.0, 6.0, 7.0), Some(1.0));\n}\n\n#[test]\nfn interval_cdf_rejects_nonfinite_or_invalid_intervals() {\n    assert_eq!(interval_cdf(1.0, 1.0, 1.0), None);\n    assert_eq!(interval_cdf(2.0, 1.0, 1.5), None);\n    assert_eq!(interval_cdf(f64::NAN, 2.0, 1.0), None);\n    assert_eq!(interval_cdf(0.0, f64::INFINITY, 1.0), None);\n    assert_eq!(interval_cdf(0.0, 2.0, f64::NEG_INFINITY), None);\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "3035e1a1106b0097f70b36f52158dbc858b51fd39aa396ba1af100c128a8272b"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "c88fd55ad273f532e6967730564779a2f69c89f3acda79ada05866a89220f449",
+      "text": "Repair the complete source below and return a corrected complete `solution.rs` using only the standard library. The public function `weighted_decay_cdf(parts, x)` interprets each pair as `(weight, rate)`. It returns `None` when the slice is empty, `x` is non-finite, any component is non-finite, any weight is negative, any rate is not positive, or total weight is zero. Otherwise it returns zero for `x <= 0` and the normalized weighted sum of `1 - exp(-rate*x)` for positive `x`. `interval_cdf(low, high, x)` returns `None` unless all inputs are finite and `low < high`; otherwise it returns zero at or below `low`, one at or above `high`, and linear interpolation inside. Results must remain in `[0,1]`, inputs are borrowed and unmodified, and component ordering must not affect the result.\n\nKnown-bad source:\n```rust\npub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (-rate * x).exp()).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "c88fd55ad273f532e6967730564779a2f69c89f3acda79ada05866a89220f449",
+      "text": "Repair the complete source below and return a corrected complete `solution.rs` using only the standard library. The public function `weighted_decay_cdf(parts, x)` interprets each pair as `(weight, rate)`. It returns `None` when the slice is empty, `x` is non-finite, any component is non-finite, any weight is negative, any rate is not positive, or total weight is zero. Otherwise it returns zero for `x <= 0` and the normalized weighted sum of `1 - exp(-rate*x)` for positive `x`. `interval_cdf(low, high, x)` returns `None` unless all inputs are finite and `low < high`; otherwise it returns zero at or below `low`, one at or above `high`, and linear interpolation inside. Results must remain in `[0,1]`, inputs are borrowed and unmodified, and component ordering must not affect the result.\n\nKnown-bad source:\n```rust\npub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (-rate * x).exp()).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-repair-0093",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "pub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (-rate * x).exp()).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n",
+          "label": "Computes the survival function for each decay component instead of its cumulative probability.",
+          "sha256": "110b24c59983765ea17476ac5432529787baed726daae7d5ab75360a648920ff"
+        }
+      ],
+      "reference": {
+        "code": "pub fn weighted_decay_cdf(parts: &[(f64, f64)], x: f64) -> Option<f64> {\n    if parts.is_empty() || !x.is_finite() { return None; }\n    let mut weight_sum = 0.0;\n    for &(weight, rate) in parts {\n        if !weight.is_finite() || !rate.is_finite() || weight < 0.0 || rate <= 0.0 { return None; }\n        weight_sum += weight;\n    }\n    if weight_sum == 0.0 || !weight_sum.is_finite() { return None; }\n    if x <= 0.0 { return Some(0.0); }\n    let value = parts.iter().map(|&(weight, rate)| weight * (1.0 - (-rate * x).exp())).sum::<f64>() / weight_sum;\n    Some(value.clamp(0.0, 1.0))\n}\n\npub fn interval_cdf(low: f64, high: f64, x: f64) -> Option<f64> {\n    if !low.is_finite() || !high.is_finite() || !x.is_finite() || low >= high { return None; }\n    Some(if x <= low { 0.0 } else if x >= high { 1.0 } else { (x - low) / (high - low) })\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "ddd60e42d929e79792d7cb0358334112b9cb81524e5e3c868c339d46e4ccc1e5"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 2 tests\ntest finite_interval_interpolation_avoids_intermediate_overflow ... FAILED\ntest finite_weights_do_not_make_valid_distribution_absent ... FAILED\n\nfailures:\n\n---- finite_interval_interpolation_avoids_intermediate_overflow stdout ----\n\nthread 'finite_interval_interpolation_avoids_intermediate_overflow' panicked at solution_test.rs:15:5:\nmidpoint was 0\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- finite_weights_do_not_make_valid_distribution_absent stdout ----\n\nthread 'finite_weights_do_not_make_valid_distribution_absent' panicked at solution_test.rs:8:5:\nvalid finite component weights returned None\n\n\nfailures:\n    finite_interval_interpolation_avoids_intermediate_overflow\n    finite_weights_do_not_make_valid_distribution_absent\n\ntest result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "53b20f2964b0f26f3a25f0096e690197e92c3e4ceccffc5c36e6cc317da82310",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 1916,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

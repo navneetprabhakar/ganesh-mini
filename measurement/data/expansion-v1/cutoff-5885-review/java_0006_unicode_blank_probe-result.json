@@ -1,0 +1,132 @@
+{
+  "id": "exp-v1-java-generation-0006",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "056d9aee27351afe38bb9fffd9b88aac3cdf6e7511f151eadbfa73939578c133",
+  "task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "path": "SolutionTest.java",
+        "role": "test",
+        "content": "public class SolutionTest {\n    public static void main(String[] args) {\n        boolean rejected=false; try { new Solution.Profile(\"\\u2003\", java.util.List.of()); } catch (IllegalArgumentException expected) { rejected=true; } if (!rejected) throw new AssertionError(\"blank handle accepted\");\n    }\n}\n",
+        "sha256": "25da3b5fd1b5095b4843160bd6ab4fe1433e47cc673b71987f2a1c82dcc7e4ca"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8c097891e1953f9b88150b03f4f7ce1049ad8f92c1d3877f39d85de427788d74",
+      "text": "Create a new standard-library-only implementation in `Solution.java` that models two service endpoints without a web framework. Define nested interface `Directory` with `Profile find(long id)`, nested immutable `Profile` with `String handle()` and `List<String> channels()`, and nested immutable generic `Reply<T>` with `int status()` and `T body()`. `Profile` must reject a null or blank handle, trim it, treat a null channel list as empty, reject null channel elements, and take an unmodifiable snapshot preserving order and duplicates. Define `public static Reply<Map<String, Integer>> channelCount(Directory directory, long id)` and `public static Reply<List<String>> channels(Directory directory, long id)`. A null directory throws `NullPointerException`. If `find` returns null, `channelCount` returns status 204 with a null body, while `channels` returns status 404 with an empty unmodifiable list. For a found profile, both return status 200; the count body contains only key `channelCount`, and the channel list is an unmodifiable snapshot. Propagate exceptions thrown by `Directory.find`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8c097891e1953f9b88150b03f4f7ce1049ad8f92c1d3877f39d85de427788d74",
+      "text": "Create a new standard-library-only implementation in `Solution.java` that models two service endpoints without a web framework. Define nested interface `Directory` with `Profile find(long id)`, nested immutable `Profile` with `String handle()` and `List<String> channels()`, and nested immutable generic `Reply<T>` with `int status()` and `T body()`. `Profile` must reject a null or blank handle, trim it, treat a null channel list as empty, reject null channel elements, and take an unmodifiable snapshot preserving order and duplicates. Define `public static Reply<Map<String, Integer>> channelCount(Directory directory, long id)` and `public static Reply<List<String>> channels(Directory directory, long id)`. A null directory throws `NullPointerException`. If `find` returns null, `channelCount` returns status 204 with a null body, while `channels` returns status 404 with an empty unmodifiable list. For a found profile, both return status 200; the count body contains only key `channelCount`, and the channel list is an unmodifiable snapshot. Propagate exceptions thrown by `Directory.find`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-java-generation-0006",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.LinkedHashMap;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {\n    }\n\n    public interface Directory {\n        Profile find(long id);\n    }\n\n    public static final class Profile {\n        private final String handle;\n        private final List<String> channels;\n\n        public Profile(String handle, List<String> channels) {\n            if (handle == null || handle.trim().isEmpty()) {\n                throw new IllegalArgumentException(\"invalid handle\");\n            }\n            this.handle = handle.trim();\n            List<String> copy = new ArrayList<>();\n            if (channels != null) {\n                for (String channel : channels) {\n                    copy.add(Objects.requireNonNull(channel, \"channel\"));\n                }\n            }\n            this.channels = Collections.unmodifiableList(copy);\n        }\n\n        public String handle() { return handle; }\n        public List<String> channels() { return channels; }\n    }\n\n    public static final class Reply<T> {\n        private final int status;\n        private final T body;\n\n        public Reply(int status, T body) {\n            this.status = status;\n            this.body = body;\n        }\n\n        public int status() { return status; }\n        public T body() { return body; }\n    }\n\n    public static Reply<Map<String, Integer>> channelCount(Directory directory,\n                                                            long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) return new Reply<>(204, null);\n\n        Map<String, Integer> body = new LinkedHashMap<>();\n        body.put(\"channelCount\", profile.channels().size());\n        return new Reply<>(200, Collections.unmodifiableMap(body));\n    }\n\n    public static Reply<List<String>> channels(Directory directory, long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) {\n            return new Reply<>(204, Collections.emptyList());\n        }\n        return new Reply<>(200, Collections.unmodifiableList(\n                new ArrayList<>(profile.channels())));\n    }\n}\n",
+          "label": "The channels endpoint returns status 204 instead of 404 when the profile is absent.",
+          "sha256": "f96d0048df3263b13aa8ac1ff435102c89ad2a1c89472b803fa5ba0ade7a0a3b"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.LinkedHashMap;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {\n    }\n\n    public interface Directory {\n        Profile find(long id);\n    }\n\n    public static final class Profile {\n        private final String handle;\n        private final List<String> channels;\n\n        public Profile(String handle, List<String> channels) {\n            if (handle == null || handle.trim().isEmpty()) {\n                throw new IllegalArgumentException(\"invalid handle\");\n            }\n            this.handle = handle.trim();\n            List<String> copy = new ArrayList<>();\n            if (channels != null) {\n                for (String channel : channels) {\n                    copy.add(Objects.requireNonNull(channel, \"channel\"));\n                }\n            }\n            this.channels = Collections.unmodifiableList(copy);\n        }\n\n        public String handle() { return handle; }\n        public List<String> channels() { return channels; }\n    }\n\n    public static final class Reply<T> {\n        private final int status;\n        private final T body;\n\n        public Reply(int status, T body) {\n            this.status = status;\n            this.body = body;\n        }\n\n        public int status() { return status; }\n        public T body() { return body; }\n    }\n\n    public static Reply<Map<String, Integer>> channelCount(Directory directory,\n                                                            long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) return new Reply<>(204, null);\n\n        Map<String, Integer> body = new LinkedHashMap<>();\n        body.put(\"channelCount\", profile.channels().size());\n        return new Reply<>(200, Collections.unmodifiableMap(body));\n    }\n\n    public static Reply<List<String>> channels(Directory directory, long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) {\n            return new Reply<>(404, Collections.emptyList());\n        }\n        return new Reply<>(200, Collections.unmodifiableList(\n                new ArrayList<>(profile.channels())));\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1366234437f6cccdfd9517cf0d0a0b44f390beb9afb3a55d69f5a8b66b8fa85c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "Solution.java",
+    "family": "java",
+    "files": [
+      {
+        "content": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\n\npublic class SolutionTest {\n    public static void main(String[] args) {\n        List<String> source = new ArrayList<String>(Arrays.asList(\"email\", \"sms\", \"email\"));\n        Solution.Profile profile = new Solution.Profile(\" user \", source);\n        assertEquals(\"user\", profile.handle());\n        assertEquals(Arrays.asList(\"email\", \"sms\", \"email\"), profile.channels());\n        source.clear();\n        assertEquals(Arrays.asList(\"email\", \"sms\", \"email\"), profile.channels());\n        expectUnsupported(new Runnable() {\n            public void run() { profile.channels().add(\"push\"); }\n        });\n\n        Solution.Profile noChannels = new Solution.Profile(\"empty\", null);\n        assertTrue(noChannels.channels().isEmpty(), \"null channels should become empty\");\n        expectIllegalArgument(new Runnable() {\n            public void run() { new Solution.Profile(null, Collections.<String>emptyList()); }\n        });\n        expectIllegalArgument(new Runnable() {\n            public void run() { new Solution.Profile(\"  \", Collections.<String>emptyList()); }\n        });\n        expectNullPointer(new Runnable() {\n            public void run() { new Solution.Profile(\"ok\", Arrays.asList(\"x\", null)); }\n        });\n\n        Solution.Directory found = new Solution.Directory() {\n            public Solution.Profile find(long id) { return profile; }\n        };\n        Solution.Reply<Map<String, Integer>> count = Solution.channelCount(found, 9L);\n        assertEquals(200, count.status());\n        assertEquals(1, count.body().size());\n        assertEquals(Integer.valueOf(3), count.body().get(\"channelCount\"));\n        assertTrue(count.body().containsKey(\"channelCount\"), \"required count key missing\");\n\n        Solution.Reply<List<String>> channels = Solution.channels(found, 9L);\n        assertEquals(200, channels.status());\n        assertEquals(Arrays.asList(\"email\", \"sms\", \"email\"), channels.body());\n        expectUnsupported(new Runnable() {\n            public void run() { channels.body().clear(); }\n        });\n\n        Solution.Directory missing = new Solution.Directory() {\n            public Solution.Profile find(long id) { return null; }\n        };\n        Solution.Reply<Map<String, Integer>> noCount = Solution.channelCount(missing, 1L);\n        assertEquals(204, noCount.status());\n        assertEquals(null, noCount.body());\n        Solution.Reply<List<String>> noList = Solution.channels(missing, 1L);\n        assertEquals(404, noList.status());\n        assertTrue(noList.body() != null && noList.body().isEmpty(), \"404 body must be empty\");\n        expectUnsupported(new Runnable() {\n            public void run() { noList.body().add(\"x\"); }\n        });\n\n        expectNullPointer(new Runnable() {\n            public void run() { Solution.channelCount(null, 1L); }\n        });\n        expectNullPointer(new Runnable() {\n            public void run() { Solution.channels(null, 1L); }\n        });\n\n        final RuntimeException failure = new RuntimeException(\"directory failure\");\n        Solution.Directory throwing = new Solution.Directory() {\n            public Solution.Profile find(long id) { throw failure; }\n        };\n        assertSameThrown(failure, new Runnable() {\n            public void run() { Solution.channelCount(throwing, 1L); }\n        });\n        assertSameThrown(failure, new Runnable() {\n            public void run() { Solution.channels(throwing, 1L); }\n        });\n    }\n\n    private static void assertSameThrown(RuntimeException expected, Runnable action) {\n        try {\n            action.run();\n            throw new AssertionError(\"expected exception\");\n        } catch (RuntimeException actual) {\n            if (actual != expected) throw new AssertionError(\"exception was not propagated unchanged\");\n        }\n    }\n\n    private static void expectIllegalArgument(Runnable action) {\n        try {\n            action.run();\n            throw new AssertionError(\"expected IllegalArgumentException\");\n        } catch (IllegalArgumentException expected) {\n        }\n    }\n\n    private static void expectNullPointer(Runnable action) {\n        try {\n            action.run();\n            throw new AssertionError(\"expected NullPointerException\");\n        } catch (NullPointerException expected) {\n        }\n    }\n\n    private static void expectUnsupported(Runnable action) {\n        try {\n            action.run();\n            throw new AssertionError(\"expected UnsupportedOperationException\");\n        } catch (UnsupportedOperationException expected) {\n        }\n    }\n\n    private static void assertTrue(boolean condition, String message) {\n        if (!condition) throw new AssertionError(message);\n    }\n\n    private static void assertEquals(Object expected, Object actual) {\n        if (expected == null ? actual != null : !expected.equals(actual)) {\n            throw new AssertionError(\"expected \" + expected + \" but got \" + actual);\n        }\n    }\n}\n",
+        "path": "SolutionTest.java",
+        "role": "test",
+        "sha256": "55d4f31538ff2786dca9179e6d1837709346c9fcc77e720154371d97547f5bc9"
+      }
+    ],
+    "language": "java",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8c097891e1953f9b88150b03f4f7ce1049ad8f92c1d3877f39d85de427788d74",
+      "text": "Create a new standard-library-only implementation in `Solution.java` that models two service endpoints without a web framework. Define nested interface `Directory` with `Profile find(long id)`, nested immutable `Profile` with `String handle()` and `List<String> channels()`, and nested immutable generic `Reply<T>` with `int status()` and `T body()`. `Profile` must reject a null or blank handle, trim it, treat a null channel list as empty, reject null channel elements, and take an unmodifiable snapshot preserving order and duplicates. Define `public static Reply<Map<String, Integer>> channelCount(Directory directory, long id)` and `public static Reply<List<String>> channels(Directory directory, long id)`. A null directory throws `NullPointerException`. If `find` returns null, `channelCount` returns status 204 with a null body, while `channels` returns status 404 with an empty unmodifiable list. For a found profile, both return status 200; the count body contains only key `channelCount`, and the channel list is an unmodifiable snapshot. Propagate exceptions thrown by `Directory.find`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8c097891e1953f9b88150b03f4f7ce1049ad8f92c1d3877f39d85de427788d74",
+      "text": "Create a new standard-library-only implementation in `Solution.java` that models two service endpoints without a web framework. Define nested interface `Directory` with `Profile find(long id)`, nested immutable `Profile` with `String handle()` and `List<String> channels()`, and nested immutable generic `Reply<T>` with `int status()` and `T body()`. `Profile` must reject a null or blank handle, trim it, treat a null channel list as empty, reject null channel elements, and take an unmodifiable snapshot preserving order and duplicates. Define `public static Reply<Map<String, Integer>> channelCount(Directory directory, long id)` and `public static Reply<List<String>> channels(Directory directory, long id)`. A null directory throws `NullPointerException`. If `find` returns null, `channelCount` returns status 204 with a null body, while `channels` returns status 404 with an empty unmodifiable list. For a found profile, both return status 200; the count body contains only key `channelCount`, and the channel list is an unmodifiable snapshot. Propagate exceptions thrown by `Directory.find`.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "java-21.0.11",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-java-generation-0006",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.LinkedHashMap;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {\n    }\n\n    public interface Directory {\n        Profile find(long id);\n    }\n\n    public static final class Profile {\n        private final String handle;\n        private final List<String> channels;\n\n        public Profile(String handle, List<String> channels) {\n            if (handle == null || handle.trim().isEmpty()) {\n                throw new IllegalArgumentException(\"invalid handle\");\n            }\n            this.handle = handle.trim();\n            List<String> copy = new ArrayList<>();\n            if (channels != null) {\n                for (String channel : channels) {\n                    copy.add(Objects.requireNonNull(channel, \"channel\"));\n                }\n            }\n            this.channels = Collections.unmodifiableList(copy);\n        }\n\n        public String handle() { return handle; }\n        public List<String> channels() { return channels; }\n    }\n\n    public static final class Reply<T> {\n        private final int status;\n        private final T body;\n\n        public Reply(int status, T body) {\n            this.status = status;\n            this.body = body;\n        }\n\n        public int status() { return status; }\n        public T body() { return body; }\n    }\n\n    public static Reply<Map<String, Integer>> channelCount(Directory directory,\n                                                            long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) return new Reply<>(204, null);\n\n        Map<String, Integer> body = new LinkedHashMap<>();\n        body.put(\"channelCount\", profile.channels().size());\n        return new Reply<>(200, Collections.unmodifiableMap(body));\n    }\n\n    public static Reply<List<String>> channels(Directory directory, long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) {\n            return new Reply<>(204, Collections.emptyList());\n        }\n        return new Reply<>(200, Collections.unmodifiableList(\n                new ArrayList<>(profile.channels())));\n    }\n}\n",
+          "label": "The channels endpoint returns status 204 instead of 404 when the profile is absent.",
+          "sha256": "f96d0048df3263b13aa8ac1ff435102c89ad2a1c89472b803fa5ba0ade7a0a3b"
+        }
+      ],
+      "reference": {
+        "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.LinkedHashMap;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Objects;\n\npublic final class Solution {\n    private Solution() {\n    }\n\n    public interface Directory {\n        Profile find(long id);\n    }\n\n    public static final class Profile {\n        private final String handle;\n        private final List<String> channels;\n\n        public Profile(String handle, List<String> channels) {\n            if (handle == null || handle.trim().isEmpty()) {\n                throw new IllegalArgumentException(\"invalid handle\");\n            }\n            this.handle = handle.trim();\n            List<String> copy = new ArrayList<>();\n            if (channels != null) {\n                for (String channel : channels) {\n                    copy.add(Objects.requireNonNull(channel, \"channel\"));\n                }\n            }\n            this.channels = Collections.unmodifiableList(copy);\n        }\n\n        public String handle() { return handle; }\n        public List<String> channels() { return channels; }\n    }\n\n    public static final class Reply<T> {\n        private final int status;\n        private final T body;\n\n        public Reply(int status, T body) {\n            this.status = status;\n            this.body = body;\n        }\n\n        public int status() { return status; }\n        public T body() { return body; }\n    }\n\n    public static Reply<Map<String, Integer>> channelCount(Directory directory,\n                                                            long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) return new Reply<>(204, null);\n\n        Map<String, Integer> body = new LinkedHashMap<>();\n        body.put(\"channelCount\", profile.channels().size());\n        return new Reply<>(200, Collections.unmodifiableMap(body));\n    }\n\n    public static Reply<List<String>> channels(Directory directory, long id) {\n        Objects.requireNonNull(directory, \"directory\");\n        Profile profile = directory.find(id);\n        if (profile == null) {\n            return new Reply<>(404, Collections.emptyList());\n        }\n        return new Reply<>(200, Collections.unmodifiableList(\n                new ArrayList<>(profile.channels())));\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "1366234437f6cccdfd9517cf0d0a0b44f390beb9afb3a55d69f5a8b66b8fa85c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "java-21.0.11",
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: blank handle accepted\n\tat SolutionTest.main(SolutionTest.java:3)\n",
+    "stderr_sha256": "59238d254b45afce6e02ce1584dc2e8771b9eda4dcba4aba53ad7f9d557f45d4",
+    "duration_ms": 3096,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

@@ -1,7 +1,7 @@
 # Java frozen-sample criterion dispositions — 2026-09-07
 
-All 60 original Java sample records are dispositioned below: 34 positive
-seven-criterion reviews and 26 holds. This does not approve a stratum or seal
+All 60 original Java sample records are dispositioned below: 29 positive
+seven-criterion reviews and 31 holds. This does not approve a stratum or seal
 training data. Original sample/candidate bytes remain unchanged. Initial full
 prompt/reference/test/known-bad reviews are in SECOND_BATCH_REVIEW.md and
 THIRD_BATCH_REVIEW.md; open cases were reread during this adjudication.
@@ -12,7 +12,10 @@ SEVEN_CRITERIA_GO.md. Archived independent test lineage and standard-library
 dependency isolation are established for all 60. Neither establishes reference
 correctness. Holds remain reversible review exclusions, not final rejections.
 
-## Positive sample decisions (34)
+Five previous positives are superseded by JAVA_SAMPLE_SCOPE_RECONCILIATION_V2.md.
+Historical reconciliation-v1 preserves the earlier judgments and their hashes.
+
+## Positive sample decisions (29)
 
 Prefix for IDs: exp-v1-java-. Full original notes retain mutation/test evidence.
 Acceptance is a bounded review judgment, not a proof over all Java objects,
@@ -28,7 +31,6 @@ arbitrary subclass behavior or allocations beyond the pinned sandbox envelope.
 | generation-0379 | Distinct synchronized mirror, sorted detached output and null validation. Prevalidation before mutation is a valid stronger implementation; not presented as a separately explicit rollback promise. |
 | generation-0384 | Structured field parsing, exact flags, integer bounds and preserved description. No unrequested ASCII-only numeric grammar. |
 | generation-0393 | Floor-modulo indexing, per-call accounting and independent arrays. |
-| generation-0394 | Signed token parsing, separate checked sums and canonical rendering. |
 | generation-0395 | Odd/even center expansion, earliest maximal tie and copying. No unstated linear-time requirement. |
 | generation-0406 | Stateful stack machine, checked arithmetic, underflow and nondestructive emission. |
 | generation-0434 | Simulated-time state transitions, inclusive threshold and checked addition. No invented invalid-state combinations. |
@@ -36,16 +38,12 @@ arbitrary subclass behavior or allocations beyond the pinned sandbox envelope.
 | generation-0636 | Exactly-once provider construction, same-panel delegation and error identity. Contract governs supplied Panel semantics, not deliberately misbehaving subclasses. Initial hidden state is permissible, not claimed uniquely mandated. |
 | generation-0680 | First-ID position with last-value replacement, explicit null arrays and fresh output contacts. |
 | generation-0739 | Atomic uniqueness, sorted kind indexes and immutable snapshots. |
-| generation-0782 | Normalized capability keys, scoped revoke, checked missing behavior and independent tables. |
 | repair-0140 | Value-based ROOT comparison with complete null validation, including a malformed suffix after a match. |
 | repair-0030 | Long rather than int parse domain, malformed-token handling and prescribed wrapping sum. |
-| repair-0041 | Immutable cached parse results, put-if-absent and source-defined trimming. No unrequested unbounded-cache/concurrency claim. |
 | repair-0068 | Revision-based hit preserving cached null, no writes on hit and atomic replacement. |
 | repair-0147 | Code-point prefix boundaries translated to UTF-16 offsets without splitting surrogate pairs. |
 | repair-0184 | Long-width shifts repair both distance masking and sign-extension errors. Small patch, substantive language-width boundary. |
 | repair-0219 | Coordinate shape derives the vertex bound used across all indexes; correction preserves divisibility/empty/domain checks. |
-| repair-0241 | Null-safe value equality, complete validation and ordered change reporting; supplied source defines trim behavior. |
-| repair-0243 | Constructor and getter copy boundaries, exact retained strings and independent empty results. Supplied source defines blank checking. |
 | repair-0372 | Common sampling factor, ceiling dimensions and deep copies within feasible primitive-array sizes. Integer-overflow concern requires multi-gigabyte primitive arrays outside the 512-MiB execution envelope; not claimed universally overflow-safe. |
 | repair-0376 | Full null validation, FIFO bounded eviction and fresh mutable outputs. |
 | repair-0414 | FIFO wraparound, unsigned byte read, clear/reset and full/empty errors. The unexecuted >1-GiB capacity index-overflow concern is outside the pinned 512-MiB envelope; no private-field manipulation used. |
@@ -55,10 +53,15 @@ arbitrary subclass behavior or allocations beyond the pinned sandbox envelope.
 | repair-0499 | Frequency counts, ascending tie breaks, zero limit and copied mutable results. |
 | repair-0512 | Copied ordered maps, checked accumulation and overflow atomicity. |
 
-## Held sample decisions (26)
+## Held sample decisions (31)
 
 | ID suffix | Blocking criterion / evidence |
 | --- | --- |
+| generation-0394 | Executed U+2003-only input throws instead of zero; see JAVA_SAMPLE_SCOPE_RECONCILIATION_V2.md. |
+| generation-0782 | Executed U+2003-only resource key accepted under nonblank contract; see v2 reconciliation. |
+| repair-0041 | Executed U+2003-only segment accepted. Known-bad source trim does not unambiguously narrow prose nonblank contract; v2 supersedes earlier rationale. |
+| repair-0241 | Executed U+2003-only property name accepted. Known-bad source trim does not unambiguously narrow prose nonblank contract; v2 supersedes earlier rationale. |
+| repair-0243 | Executed U+2003-only snapshot name accepted. Known-bad source trim does not unambiguously narrow prose blank contract; v2 supersedes earlier rationale. |
 | generation-0549 | Existing prompt/test contradiction: missing ID exception versus required null. |
 | generation-0080 | Existing configuration-preservation versus normalization conflict. |
 | generation-0514 | Existing full-validation failure after an early false result. |

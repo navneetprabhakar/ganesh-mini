@@ -4,32 +4,39 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Current checkpoint: **1941 holds (1938 additive plus historical three)**;
-4,632 unique outside-sample inspections. All 300 frozen sample records now have
-seven-criterion dispositions: 170 positive, 130 held. By lane: Go 39/17,
-Java 34/26, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
-(positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v1.json.
+Current checkpoint: **2099 holds (2096 additive plus historical three)**;
+4,799 unique outside-sample inspections. All 300 frozen sample records now have
+seven-criterion dispositions: 165 positive, 135 held. By lane: Go 39/17,
+Java 29/31, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
+(positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v2.json.
 All 103 data-tooling tests pass. Review positives are not admission.
 
 Old focused queues completed: arrays544, Rust generation684, Python generation684,
 Python repair426, JS/TS residual587. Historical v6 coverage is reconciled.
 Latest scope v14: 21 groups, 21 strata, 5,500 records (278 sample, 5,222 outside).
-Java null-query list validation and percentage arithmetic require reconciliation,
-including prior sample positives. Sample dispositions above predate these groups.
+Java sample positives reconciled against null-query/percentage/page patterns;
+five blank-domain holds added. See JAVA_SAMPLE_SCOPE_RECONCILIATION_V2.md.
 New criterion scopes require explicit reconciliation against existing notes;
 no automatic reuse or new-inspection credit. Go non-triviality757/757 complete.
-Java combined queue945/1112 reviewed (684 generation,428 repair total).
-RESUMED2026-09-07: user approved completing review and versioned recovery; resume946.
+Java combined queue1112/1112 complete (684 generation,428 repair total).
+RESUMED2026-09-07: user approved review completion and versioned recovery.
+Next: TypeScript/Python/Rust scope reconciliation, then versioned recovery.
 Additional non-triviality
 scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through 1932 holds / Go757 / Java930. See QUALITY_JAVA_1932_BACKUP.md.
-Authentication restored; batch63 awaits backup. Approval decision is backed up.
-Earlier evidence has exact-generation roundtrip proof. Frozen inputs unchanged. Page-end overflow in
-repair0318 requires prior page-arithmetic reconciliation before admission.
-At most3944 rows remain outside holds, below the planned4000 lower bound.
+GCS verified through2089 holds including Java reconciliation and JS batches1–4.
+See QUALITY_JS_2089_BACKUP.md. JS elementary queue200:76 already held;
+unheld124/124 reconciled with60 new holds and64 criterion positives. JS outside
+scope complete and backed up. TypeScript queue262:107 initially held;
+unheld30/155 reviewed,10 new holds. Continue unheld31. TS batch1/probe await backup.
+Executed generation0710 batch overflow and repair0460 forbidden negative zero;
+see JAVA_RECOVERY_PROBES_20260907.md. Both compile, then fail assertions/runtime.
+Earlier evidence has exact-generation roundtrip proof. Frozen inputs unchanged.
+Prior page arithmetic reconciled; generation0716 eager-allocation hold added.
+See JAVA_PAGE_RECONCILIATION_20260907.md. Cross-lane scopes remain open.
+At most3786 rows remain outside holds, below the planned4000 lower bound.
 The user approved versioned recovery to address this shortfall without lowering
 quality gates. See CORPUS_SUFFICIENCY_PAUSE_20260907.md for the resolved pause.
 No training seal or new VM. Complete review, then recover suitable held examples

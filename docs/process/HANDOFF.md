@@ -2,8 +2,8 @@
 
 ## Quality review continuation — 2026-09-06
 
-Current checkpoint: **1814 holds (1811 additive plus historical three)**;
-4,392 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **1890 holds (1887 additive plus historical three)**;
+4,542 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 170 positive, 130 held. By lane: Go 39/17,
 Java 34/26, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v1.json.
@@ -16,19 +16,22 @@ Java null-query list validation and percentage arithmetic require reconciliation
 including prior sample positives. Sample dispositions above predate these groups.
 New criterion scopes require explicit reconciliation against existing notes;
 no automatic reuse or new-inspection credit. Go non-triviality757/757 complete.
-Java combined queue705/1112 reviewed (684 generation,428 repair total); resume706.
+Java combined queue855/1112 reviewed (684 generation,428 repair total).
+PAUSED: verified corpus/plan mismatch; resume856 only after user direction.
 Additional non-triviality
 scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through 1810 holds / Go757 / Java690. See QUALITY_JAVA_1810_BACKUP.md.
-Authentication restored; the previous backup blocker is resolved. Java batch47
-awaits the next backup. Frozen inputs unchanged. Executed page-end overflow in
+GCS verified through 1890 holds / Go757 / Java855. See QUALITY_JAVA_1890_BACKUP.md.
+Authentication restored; all current review batches and probe evidence are backed
+up with exact-generation roundtrip proof. Frozen inputs unchanged. Page-end overflow in
 repair0318 requires prior page-arithmetic reconciliation before admission.
-At most4071 rows remain outside holds, only71 above the planned4000 lower bound;
-this is a corpus-sufficiency risk, not admission or a verified shortfall yet.
-No training seal or new VM. Older entries are historical.
+At most3995 rows remain outside holds, five below the planned4000 lower bound.
+This is a verified mismatch under the current hold partition, not a failed-training
+claim or permanent rejection. See CORPUS_SUFFICIENCY_PAUSE_20260907.md.
+No training seal or new VM. Only evidence preservation continues pending direction.
+Older entries are historical.
 
 Current checkpoint: **223 holds (220 additive plus historical three)**; 308
 unique outside-sample inspections. Batch 20 complete through position 300;

@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0327",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "9243974513083f41dc16e1ba30f135bd76a34c1f3bec416aaa358d3e2c488aab",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"sync\"\n\t\"testing\"\n)\n\nfunc TestLedgerValidationOrderingAndCopies(t *testing.T) {\n\tvar l Ledger\n\tbad := []struct{k string; v float64; tick int64}{{\"\",1,0},{\"x\",1,-1},{\"x\",math.NaN(),0},{\"x\",math.Inf(1),0},{\"x\",math.Inf(-1),0}}\n\tfor _, b := range bad { if err := l.Append(b.k,b.v,b.tick); err == nil { t.Fatalf(\"accepted %+v\", b) } }\n\tif h, ok := l.History(\"x\"); ok || h.Values != nil || h.Ticks != nil || h.Min != 0 || h.Max != 0 { t.Fatalf(\"missing history = %+v, %v\", h, ok) }\n\tif m, ok := l.Mean(\"x\"); ok || m != 0 { t.Fatalf(\"missing mean = %v, %v\", m, ok) }\n\tfor _, x := range []struct{v float64; tick int64}{{3,1},{-1,1},{5,4}} { if err := l.Append(\"x\",x.v,x.tick); err != nil { t.Fatal(err) } }\n\tif err := l.Append(\"x\",99,3); err == nil { t.Fatal(\"accepted decreasing tick\") }\n\th, ok := l.History(\"x\")\n\tif !ok || len(h.Values)!=3 || h.Values[0]!=3 || h.Values[1]!=-1 || h.Values[2]!=5 || h.Ticks[0]!=1 || h.Ticks[1]!=1 || h.Ticks[2]!=4 || h.Min!=-1 || h.Max!=5 { t.Fatalf(\"bad history: %+v, %v\", h, ok) }\n\th.Values[0]=100; h.Ticks[0]=100\n\th2, _ := l.History(\"x\")\n\tif h2.Values[0]!=3 || h2.Ticks[0]!=1 { t.Fatal(\"History aliases storage\") }\n\tif mean, ok := l.Mean(\"x\"); !ok || mean != 7.0/3.0 { t.Fatalf(\"Mean = %v, %v\", mean, ok) }\n}\n\nfunc TestLedgerConcurrentKeys(t *testing.T) {\n\tl := NewLedger()\n\tconst n=30\n\tvar wg sync.WaitGroup\n\tfor i:=0;i<n;i++ { i:=i; wg.Add(1); go func(){ defer wg.Done(); if err:=l.Append(\"k\"+string(rune('A'+i)),float64(i),0); err!=nil { t.Errorf(\"Append: %v\",err) } }() }\n\twg.Wait()\n\tfor i:=0;i<n;i++ { h,ok:=l.History(\"k\"+string(rune('A'+i))); if !ok || len(h.Values)!=1 || h.Values[0]!=float64(i) { t.Fatalf(\"entry %d: %+v, %v\",i,h,ok) } }\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "c2b8c9fefe35a03dccf4a579b718957d193c13bede863691cf3973b62942b669"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"testing\"\n)\n\nfunc TestReviewFiniteMean0327(t *testing.T) {\n\tl := NewLedger()\n\tfor i := 0; i < 2; i++ { if err := l.Append(\"a\", math.MaxFloat64, int64(i)); err != nil { t.Fatal(err) } }\n\tgot, ok := l.Mean(\"a\")\n\tif !ok || got != math.MaxFloat64 { t.Fatalf(\"mean of two identical finite values=%v ok=%v, want MaxFloat64\", got, ok) }\n}\n",
+        "sha256": "dd8529aed2263ec0fd36aa5105ebf26421cff0cd41e5b9a77d1f0ee85889e303"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8f3fdc51e6cca5ac33f0911819ed4392687ad4e80e28552f66dff0fae7d470a1",
+      "text": "Implement a concurrent in-memory measurement ledger in package solution using only the standard library.\n\nExport:\n- type History struct { Values []float64; Ticks []int64; Min, Max float64 }\n- type Ledger\n- func NewLedger() *Ledger\n- func (l *Ledger) Append(key string, value float64, tick int64) error\n- func (l *Ledger) History(key string) (History, bool)\n- func (l *Ledger) Mean(key string) (float64, bool)\n\nKeys must be non-empty, ticks non-negative, and values finite. For each key, ticks must be appended in nondecreasing order; invalid appends must not mutate state. History preserves append order. A missing key returns a zero History and false; Mean behaves similarly. Returned slices must never alias internal storage. The zero-value Ledger must work, and all methods must be safe for concurrent use.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8f3fdc51e6cca5ac33f0911819ed4392687ad4e80e28552f66dff0fae7d470a1",
+      "text": "Implement a concurrent in-memory measurement ledger in package solution using only the standard library.\n\nExport:\n- type History struct { Values []float64; Ticks []int64; Min, Max float64 }\n- type Ledger\n- func NewLedger() *Ledger\n- func (l *Ledger) Append(key string, value float64, tick int64) error\n- func (l *Ledger) History(key string) (History, bool)\n- func (l *Ledger) Mean(key string) (float64, bool)\n\nKeys must be non-empty, ticks non-negative, and values finite. For each key, ticks must be appended in nondecreasing order; invalid appends must not mutate state. History preserves append order. A missing key returns a zero History and false; Mean behaves similarly. Returned slices must never alias internal storage. The zero-value Ledger must work, and all methods must be safe for concurrent use.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0327",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n\t\"sync\"\n)\n\ntype History struct { Values []float64; Ticks []int64; Min, Max float64 }\ntype Ledger struct {\n\tmu sync.RWMutex\n\tvalues map[string][]float64\n\tticks map[string][]int64\n}\nfunc NewLedger() *Ledger { return &Ledger{} }\nfunc (l *Ledger) init() {\n\tif l.values == nil { l.values = make(map[string][]float64); l.ticks = make(map[string][]int64) }\n}\nfunc (l *Ledger) Append(key string, value float64, tick int64) error {\n\tif key == \"\" || tick < 0 || math.IsNaN(value) || math.IsInf(value, 0) { return errors.New(\"invalid measurement\") }\n\tl.mu.Lock(); defer l.mu.Unlock(); l.init()\n\tts := l.ticks[key]\n\tif len(ts) > 0 && tick < ts[len(ts)-1] { return errors.New(\"tick out of order\") }\n\tl.values[key] = append(l.values[key], value); l.ticks[key] = append(ts, tick); return nil\n}\nfunc (l *Ledger) History(key string) (History, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock()\n\tvs, ok := l.values[key]; if !ok { return History{}, false }\n\tout := History{Values:vs, Ticks:append([]int64(nil), l.ticks[key]...), Min:vs[0], Max:vs[0]}\n\tfor _, v := range vs[1:] { if v < out.Min { out.Min = v }; if v > out.Max { out.Max = v } }\n\treturn out, true\n}\nfunc (l *Ledger) Mean(key string) (float64, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock(); vs, ok := l.values[key]; if !ok { return 0, false }\n\tvar sum float64; for _, v := range vs { sum += v }; return sum/float64(len(vs)), true\n}\n",
+          "label": "History exposes the ledger's internal values slice to caller mutation.",
+          "sha256": "f051a06bc77bad82e8ad57e2d76fa20456f14f0d18f9f9078b06c2ff0071928f"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n\t\"sync\"\n)\n\ntype History struct { Values []float64; Ticks []int64; Min, Max float64 }\ntype Ledger struct {\n\tmu sync.RWMutex\n\tvalues map[string][]float64\n\tticks map[string][]int64\n}\nfunc NewLedger() *Ledger { return &Ledger{} }\nfunc (l *Ledger) init() {\n\tif l.values == nil { l.values = make(map[string][]float64); l.ticks = make(map[string][]int64) }\n}\nfunc (l *Ledger) Append(key string, value float64, tick int64) error {\n\tif key == \"\" || tick < 0 || math.IsNaN(value) || math.IsInf(value, 0) { return errors.New(\"invalid measurement\") }\n\tl.mu.Lock(); defer l.mu.Unlock(); l.init()\n\tts := l.ticks[key]\n\tif len(ts) > 0 && tick < ts[len(ts)-1] { return errors.New(\"tick out of order\") }\n\tl.values[key] = append(l.values[key], value); l.ticks[key] = append(ts, tick); return nil\n}\nfunc (l *Ledger) History(key string) (History, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock()\n\tvs, ok := l.values[key]; if !ok { return History{}, false }\n\tout := History{Values:append([]float64(nil), vs...), Ticks:append([]int64(nil), l.ticks[key]...), Min:vs[0], Max:vs[0]}\n\tfor _, v := range vs[1:] { if v < out.Min { out.Min = v }; if v > out.Max { out.Max = v } }\n\treturn out, true\n}\nfunc (l *Ledger) Mean(key string) (float64, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock(); vs, ok := l.values[key]; if !ok { return 0, false }\n\tvar sum float64; for _, v := range vs { sum += v }; return sum/float64(len(vs)), true\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9326449e3ea77c8a28ba3d4cf99c9abec609c79c2b3203fd9eb4dcebdc28baa4"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"sync\"\n\t\"testing\"\n)\n\nfunc TestLedgerValidationOrderingAndCopies(t *testing.T) {\n\tvar l Ledger\n\tbad := []struct{k string; v float64; tick int64}{{\"\",1,0},{\"x\",1,-1},{\"x\",math.NaN(),0},{\"x\",math.Inf(1),0},{\"x\",math.Inf(-1),0}}\n\tfor _, b := range bad { if err := l.Append(b.k,b.v,b.tick); err == nil { t.Fatalf(\"accepted %+v\", b) } }\n\tif h, ok := l.History(\"x\"); ok || h.Values != nil || h.Ticks != nil || h.Min != 0 || h.Max != 0 { t.Fatalf(\"missing history = %+v, %v\", h, ok) }\n\tif m, ok := l.Mean(\"x\"); ok || m != 0 { t.Fatalf(\"missing mean = %v, %v\", m, ok) }\n\tfor _, x := range []struct{v float64; tick int64}{{3,1},{-1,1},{5,4}} { if err := l.Append(\"x\",x.v,x.tick); err != nil { t.Fatal(err) } }\n\tif err := l.Append(\"x\",99,3); err == nil { t.Fatal(\"accepted decreasing tick\") }\n\th, ok := l.History(\"x\")\n\tif !ok || len(h.Values)!=3 || h.Values[0]!=3 || h.Values[1]!=-1 || h.Values[2]!=5 || h.Ticks[0]!=1 || h.Ticks[1]!=1 || h.Ticks[2]!=4 || h.Min!=-1 || h.Max!=5 { t.Fatalf(\"bad history: %+v, %v\", h, ok) }\n\th.Values[0]=100; h.Ticks[0]=100\n\th2, _ := l.History(\"x\")\n\tif h2.Values[0]!=3 || h2.Ticks[0]!=1 { t.Fatal(\"History aliases storage\") }\n\tif mean, ok := l.Mean(\"x\"); !ok || mean != 7.0/3.0 { t.Fatalf(\"Mean = %v, %v\", mean, ok) }\n}\n\nfunc TestLedgerConcurrentKeys(t *testing.T) {\n\tl := NewLedger()\n\tconst n=30\n\tvar wg sync.WaitGroup\n\tfor i:=0;i<n;i++ { i:=i; wg.Add(1); go func(){ defer wg.Done(); if err:=l.Append(\"k\"+string(rune('A'+i)),float64(i),0); err!=nil { t.Errorf(\"Append: %v\",err) } }() }\n\twg.Wait()\n\tfor i:=0;i<n;i++ { h,ok:=l.History(\"k\"+string(rune('A'+i))); if !ok || len(h.Values)!=1 || h.Values[0]!=float64(i) { t.Fatalf(\"entry %d: %+v, %v\",i,h,ok) } }\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "c2b8c9fefe35a03dccf4a579b718957d193c13bede863691cf3973b62942b669"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "8f3fdc51e6cca5ac33f0911819ed4392687ad4e80e28552f66dff0fae7d470a1",
+      "text": "Implement a concurrent in-memory measurement ledger in package solution using only the standard library.\n\nExport:\n- type History struct { Values []float64; Ticks []int64; Min, Max float64 }\n- type Ledger\n- func NewLedger() *Ledger\n- func (l *Ledger) Append(key string, value float64, tick int64) error\n- func (l *Ledger) History(key string) (History, bool)\n- func (l *Ledger) Mean(key string) (float64, bool)\n\nKeys must be non-empty, ticks non-negative, and values finite. For each key, ticks must be appended in nondecreasing order; invalid appends must not mutate state. History preserves append order. A missing key returns a zero History and false; Mean behaves similarly. Returned slices must never alias internal storage. The zero-value Ledger must work, and all methods must be safe for concurrent use.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "8f3fdc51e6cca5ac33f0911819ed4392687ad4e80e28552f66dff0fae7d470a1",
+      "text": "Implement a concurrent in-memory measurement ledger in package solution using only the standard library.\n\nExport:\n- type History struct { Values []float64; Ticks []int64; Min, Max float64 }\n- type Ledger\n- func NewLedger() *Ledger\n- func (l *Ledger) Append(key string, value float64, tick int64) error\n- func (l *Ledger) History(key string) (History, bool)\n- func (l *Ledger) Mean(key string) (float64, bool)\n\nKeys must be non-empty, ticks non-negative, and values finite. For each key, ticks must be appended in nondecreasing order; invalid appends must not mutate state. History preserves append order. A missing key returns a zero History and false; Mean behaves similarly. Returned slices must never alias internal storage. The zero-value Ledger must work, and all methods must be safe for concurrent use.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0327",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n\t\"sync\"\n)\n\ntype History struct { Values []float64; Ticks []int64; Min, Max float64 }\ntype Ledger struct {\n\tmu sync.RWMutex\n\tvalues map[string][]float64\n\tticks map[string][]int64\n}\nfunc NewLedger() *Ledger { return &Ledger{} }\nfunc (l *Ledger) init() {\n\tif l.values == nil { l.values = make(map[string][]float64); l.ticks = make(map[string][]int64) }\n}\nfunc (l *Ledger) Append(key string, value float64, tick int64) error {\n\tif key == \"\" || tick < 0 || math.IsNaN(value) || math.IsInf(value, 0) { return errors.New(\"invalid measurement\") }\n\tl.mu.Lock(); defer l.mu.Unlock(); l.init()\n\tts := l.ticks[key]\n\tif len(ts) > 0 && tick < ts[len(ts)-1] { return errors.New(\"tick out of order\") }\n\tl.values[key] = append(l.values[key], value); l.ticks[key] = append(ts, tick); return nil\n}\nfunc (l *Ledger) History(key string) (History, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock()\n\tvs, ok := l.values[key]; if !ok { return History{}, false }\n\tout := History{Values:vs, Ticks:append([]int64(nil), l.ticks[key]...), Min:vs[0], Max:vs[0]}\n\tfor _, v := range vs[1:] { if v < out.Min { out.Min = v }; if v > out.Max { out.Max = v } }\n\treturn out, true\n}\nfunc (l *Ledger) Mean(key string) (float64, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock(); vs, ok := l.values[key]; if !ok { return 0, false }\n\tvar sum float64; for _, v := range vs { sum += v }; return sum/float64(len(vs)), true\n}\n",
+          "label": "History exposes the ledger's internal values slice to caller mutation.",
+          "sha256": "f051a06bc77bad82e8ad57e2d76fa20456f14f0d18f9f9078b06c2ff0071928f"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n\t\"sync\"\n)\n\ntype History struct { Values []float64; Ticks []int64; Min, Max float64 }\ntype Ledger struct {\n\tmu sync.RWMutex\n\tvalues map[string][]float64\n\tticks map[string][]int64\n}\nfunc NewLedger() *Ledger { return &Ledger{} }\nfunc (l *Ledger) init() {\n\tif l.values == nil { l.values = make(map[string][]float64); l.ticks = make(map[string][]int64) }\n}\nfunc (l *Ledger) Append(key string, value float64, tick int64) error {\n\tif key == \"\" || tick < 0 || math.IsNaN(value) || math.IsInf(value, 0) { return errors.New(\"invalid measurement\") }\n\tl.mu.Lock(); defer l.mu.Unlock(); l.init()\n\tts := l.ticks[key]\n\tif len(ts) > 0 && tick < ts[len(ts)-1] { return errors.New(\"tick out of order\") }\n\tl.values[key] = append(l.values[key], value); l.ticks[key] = append(ts, tick); return nil\n}\nfunc (l *Ledger) History(key string) (History, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock()\n\tvs, ok := l.values[key]; if !ok { return History{}, false }\n\tout := History{Values:append([]float64(nil), vs...), Ticks:append([]int64(nil), l.ticks[key]...), Min:vs[0], Max:vs[0]}\n\tfor _, v := range vs[1:] { if v < out.Min { out.Min = v }; if v > out.Max { out.Max = v } }\n\treturn out, true\n}\nfunc (l *Ledger) Mean(key string) (float64, bool) {\n\tl.mu.RLock(); defer l.mu.RUnlock(); vs, ok := l.values[key]; if !ok { return 0, false }\n\tvar sum float64; for _, v := range vs { sum += v }; return sum/float64(len(vs)), true\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "9326449e3ea77c8a28ba3d4cf99c9abec609c79c2b3203fd9eb4dcebdc28baa4"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewFiniteMean0327 (0.00s)\n    review_test.go:12: mean of two identical finite values=+Inf ok=true, want MaxFloat64\nFAIL\nFAIL\tganesh.invalid/expansion\t0.027s\nFAIL\n",
+    "stdout_sha256": "c8fb29783bc23ed81a7258a380d65560ece91c9e56b2dadf1be7f6aa6c10959e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 29856,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

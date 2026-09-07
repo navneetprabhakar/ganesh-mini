@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0360",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "64b45b8fc1a1ce9398a14fb2e1bee722871bd506168b02d7dc1f2a95efe05846",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestParseSeverity(t *testing.T) {\n\tcases := []struct {\n\t\tinput string\n\t\twant  Severity\n\t}{\n\t\t{\"debug\", Debug}, {\" INFO \", Info}, {\"WaRn\", Warn}, {\"\\terror\\n\", Error}, {\"FATAL\", Fatal},\n\t}\n\tfor _, tc := range cases {\n\t\tgot, err := ParseSeverity(tc.input)\n\t\tif err != nil || got != tc.want {\n\t\t\tt.Fatalf(\"ParseSeverity(%q) = %v, %v\", tc.input, got, err)\n\t\t}\n\t}\n\tfor _, input := range []string{\"\", \"  \", \"warning\", \"trace\", \"\u00e9rror\", \"info!\"} {\n\t\tif _, err := ParseSeverity(input); err != ErrInvalidLevel {\n\t\t\tt.Fatalf(\"ParseSeverity(%q) error = %v\", input, err)\n\t\t}\n\t}\n\tif !(Debug < Info && Info < Warn && Warn < Error && Error < Fatal) {\n\t\tt.Fatalf(\"severity constants are not strictly increasing: %v %v %v %v %v\", Debug, Info, Warn, Error, Fatal)\n\t}\n}\n\nfunc TestFilterLogsPreservesOrderDuplicatesAndStorageIsolation(t *testing.T) {\n\tentries := []LogEntry{\n\t\t{Level: Debug, Message: \"debug\"},\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Warn, Message: \"\"},\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Fatal, Message: \"fatal\"},\n\t}\n\toriginal := append([]LogEntry(nil), entries...)\n\tgot, err := FilterLogs(\" warn \", entries)\n\twant := []LogEntry{\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Warn, Message: \"\"},\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Fatal, Message: \"fatal\"},\n\t}\n\tif err != nil || !reflect.DeepEqual(got, want) {\n\t\tt.Fatalf(\"FilterLogs = %#v, %v; want %#v\", got, err, want)\n\t}\n\tif !reflect.DeepEqual(entries, original) {\n\t\tt.Fatalf(\"input mutated: %#v\", entries)\n\t}\n\tgot[0].Message = \"changed\"\n\tif entries[1].Message != \"same\" {\n\t\tt.Fatal(\"result aliases input\")\n\t}\n\n\tnone, err := FilterLogs(\"fatal\", []LogEntry{{Level: Info, Message: \"x\"}})\n\tif err != nil || none == nil || len(none) != 0 {\n\t\tt.Fatalf(\"no matches = %#v, %v\", none, err)\n\t}\n\tempty, err := FilterLogs(\"debug\", nil)\n\tif err != nil || empty == nil || len(empty) != 0 {\n\t\tt.Fatalf(\"nil input = %#v, %v\", empty, err)\n\t}\n}\n\nfunc TestFilterLogsValidationIsAtomic(t *testing.T) {\n\tvalidEntries := []LogEntry{{Level: Debug, Message: \"x\"}}\n\tif got, err := FilterLogs(\"bogus\", validEntries); err != ErrInvalidLevel || got != nil {\n\t\tt.Fatalf(\"invalid minimum = %#v, %v\", got, err)\n\t}\n\n\tentries := []LogEntry{\n\t\t{Level: Fatal, Message: \"would match\"},\n\t\t{Level: Severity(int(Fatal) + 1), Message: \"invalid\"},\n\t\t{Level: Error, Message: \"also match\"},\n\t}\n\toriginal := append([]LogEntry(nil), entries...)\n\tgot, err := FilterLogs(\"debug\", entries)\n\tif err != ErrInvalidLevel || got != nil {\n\t\tt.Fatalf(\"invalid entry = %#v, %v\", got, err)\n\t}\n\tif !reflect.DeepEqual(entries, original) {\n\t\tt.Fatalf(\"input mutated: %#v\", entries)\n\t}\n\n\tnegative := []LogEntry{{Level: Severity(-1), Message: \"invalid\"}}\n\tif got, err := FilterLogs(\"debug\", negative); err != ErrInvalidLevel || got != nil {\n\t\tt.Fatalf(\"negative level = %#v, %v\", got, err)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "0be0628557943604e305ffb78b07d9050f62f3214a7b53a0f588f1cf11c861ec"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewASCIICase0360(t *testing.T) {\n\tif got, err := ParseSeverity(\"\\u0130NFO\"); err == nil { t.Fatalf(\"accepted non-ASCII dotted-I severity as %v\", got) }\n}\n",
+        "sha256": "602f7d4def2aa6050210ba9689b2a82b93916f2682a30e8fa4ba93f6a6f7c047"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5fc2df7593c4518ab20f0a229bce250148172018bf5ed9bc7ea494b6b888dc4b",
+      "text": "Implement an in-memory severity filter in package solution.\n\nExport Severity, constants Debug, Info, Warn, Error, Fatal in increasing severity order, LogEntry with Level Severity and Message string, ErrInvalidLevel, ParseSeverity(string) (Severity, error), and FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error).\n\nParsing trims whitespace and is ASCII case-insensitive for debug, info, warn, error, and fatal; all other values, including empty input, are invalid. FilterLogs first validates the minimum and every entry severity. Invalid input returns nil and ErrInvalidLevel without a partial result. Return entries whose severity is at least the minimum, preserving order and duplicates. Empty messages are valid. Return a non-nil empty slice if nothing matches. The result must use fresh storage and the input must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5fc2df7593c4518ab20f0a229bce250148172018bf5ed9bc7ea494b6b888dc4b",
+      "text": "Implement an in-memory severity filter in package solution.\n\nExport Severity, constants Debug, Info, Warn, Error, Fatal in increasing severity order, LogEntry with Level Severity and Message string, ErrInvalidLevel, ParseSeverity(string) (Severity, error), and FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error).\n\nParsing trims whitespace and is ASCII case-insensitive for debug, info, warn, error, and fatal; all other values, including empty input, are invalid. FilterLogs first validates the minimum and every entry severity. Invalid input returns nil and ErrInvalidLevel without a partial result. Return entries whose severity is at least the minimum, preserving order and duplicates. Empty messages are valid. Return a non-nil empty slice if nothing matches. The result must use fresh storage and the input must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0360",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"strings\"\n)\n\nvar ErrInvalidLevel = errors.New(\"invalid log level\")\n\ntype Severity int\n\nconst (\n\tDebug Severity = iota\n\tInfo\n\tWarn\n\tError\n\tFatal\n)\n\ntype LogEntry struct {\n\tLevel Severity\n\tMessage string\n}\n\nfunc ParseSeverity(value string) (Severity, error) {\n\tswitch strings.ToLower(strings.TrimSpace(value)) {\n\tcase \"debug\": return Debug, nil\n\tcase \"info\": return Info, nil\n\tcase \"warn\": return Warn, nil\n\tcase \"error\": return Error, nil\n\tcase \"fatal\": return Fatal, nil\n\tdefault: return Debug, ErrInvalidLevel\n\t}\n}\n\nfunc FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error) {\n\tlevel, err := ParseSeverity(minimum)\n\tif err != nil { return nil, err }\n\tfor _, entry := range entries {\n\t\tif entry.Level < Debug || entry.Level > Fatal { return nil, ErrInvalidLevel }\n\t}\n\tresult := make([]LogEntry, 0)\n\tfor _, entry := range entries {\n\t\tif entry.Level <= level { result = append(result, entry) }\n\t}\n\treturn result, nil\n}\n",
+          "label": "The filter comparison is reversed, retaining lower-severity messages instead of messages at or above the threshold.",
+          "sha256": "19b3a90cdf334cc8744ecf7e35d966c7845c66eca3d7912c4c697b6baecd2316"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"strings\"\n)\n\nvar ErrInvalidLevel = errors.New(\"invalid log level\")\n\ntype Severity int\n\nconst (\n\tDebug Severity = iota\n\tInfo\n\tWarn\n\tError\n\tFatal\n)\n\ntype LogEntry struct {\n\tLevel Severity\n\tMessage string\n}\n\nfunc ParseSeverity(value string) (Severity, error) {\n\tswitch strings.ToLower(strings.TrimSpace(value)) {\n\tcase \"debug\": return Debug, nil\n\tcase \"info\": return Info, nil\n\tcase \"warn\": return Warn, nil\n\tcase \"error\": return Error, nil\n\tcase \"fatal\": return Fatal, nil\n\tdefault: return Debug, ErrInvalidLevel\n\t}\n}\n\nfunc FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error) {\n\tlevel, err := ParseSeverity(minimum)\n\tif err != nil { return nil, err }\n\tfor _, entry := range entries {\n\t\tif entry.Level < Debug || entry.Level > Fatal { return nil, ErrInvalidLevel }\n\t}\n\tresult := make([]LogEntry, 0)\n\tfor _, entry := range entries {\n\t\tif entry.Level >= level { result = append(result, entry) }\n\t}\n\treturn result, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "27f0a0e4a2fcf194a8096273ae3d9c1c36674eda77da1830c6b323a023687397"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestParseSeverity(t *testing.T) {\n\tcases := []struct {\n\t\tinput string\n\t\twant  Severity\n\t}{\n\t\t{\"debug\", Debug}, {\" INFO \", Info}, {\"WaRn\", Warn}, {\"\\terror\\n\", Error}, {\"FATAL\", Fatal},\n\t}\n\tfor _, tc := range cases {\n\t\tgot, err := ParseSeverity(tc.input)\n\t\tif err != nil || got != tc.want {\n\t\t\tt.Fatalf(\"ParseSeverity(%q) = %v, %v\", tc.input, got, err)\n\t\t}\n\t}\n\tfor _, input := range []string{\"\", \"  \", \"warning\", \"trace\", \"\u00e9rror\", \"info!\"} {\n\t\tif _, err := ParseSeverity(input); err != ErrInvalidLevel {\n\t\t\tt.Fatalf(\"ParseSeverity(%q) error = %v\", input, err)\n\t\t}\n\t}\n\tif !(Debug < Info && Info < Warn && Warn < Error && Error < Fatal) {\n\t\tt.Fatalf(\"severity constants are not strictly increasing: %v %v %v %v %v\", Debug, Info, Warn, Error, Fatal)\n\t}\n}\n\nfunc TestFilterLogsPreservesOrderDuplicatesAndStorageIsolation(t *testing.T) {\n\tentries := []LogEntry{\n\t\t{Level: Debug, Message: \"debug\"},\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Warn, Message: \"\"},\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Fatal, Message: \"fatal\"},\n\t}\n\toriginal := append([]LogEntry(nil), entries...)\n\tgot, err := FilterLogs(\" warn \", entries)\n\twant := []LogEntry{\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Warn, Message: \"\"},\n\t\t{Level: Error, Message: \"same\"},\n\t\t{Level: Fatal, Message: \"fatal\"},\n\t}\n\tif err != nil || !reflect.DeepEqual(got, want) {\n\t\tt.Fatalf(\"FilterLogs = %#v, %v; want %#v\", got, err, want)\n\t}\n\tif !reflect.DeepEqual(entries, original) {\n\t\tt.Fatalf(\"input mutated: %#v\", entries)\n\t}\n\tgot[0].Message = \"changed\"\n\tif entries[1].Message != \"same\" {\n\t\tt.Fatal(\"result aliases input\")\n\t}\n\n\tnone, err := FilterLogs(\"fatal\", []LogEntry{{Level: Info, Message: \"x\"}})\n\tif err != nil || none == nil || len(none) != 0 {\n\t\tt.Fatalf(\"no matches = %#v, %v\", none, err)\n\t}\n\tempty, err := FilterLogs(\"debug\", nil)\n\tif err != nil || empty == nil || len(empty) != 0 {\n\t\tt.Fatalf(\"nil input = %#v, %v\", empty, err)\n\t}\n}\n\nfunc TestFilterLogsValidationIsAtomic(t *testing.T) {\n\tvalidEntries := []LogEntry{{Level: Debug, Message: \"x\"}}\n\tif got, err := FilterLogs(\"bogus\", validEntries); err != ErrInvalidLevel || got != nil {\n\t\tt.Fatalf(\"invalid minimum = %#v, %v\", got, err)\n\t}\n\n\tentries := []LogEntry{\n\t\t{Level: Fatal, Message: \"would match\"},\n\t\t{Level: Severity(int(Fatal) + 1), Message: \"invalid\"},\n\t\t{Level: Error, Message: \"also match\"},\n\t}\n\toriginal := append([]LogEntry(nil), entries...)\n\tgot, err := FilterLogs(\"debug\", entries)\n\tif err != ErrInvalidLevel || got != nil {\n\t\tt.Fatalf(\"invalid entry = %#v, %v\", got, err)\n\t}\n\tif !reflect.DeepEqual(entries, original) {\n\t\tt.Fatalf(\"input mutated: %#v\", entries)\n\t}\n\n\tnegative := []LogEntry{{Level: Severity(-1), Message: \"invalid\"}}\n\tif got, err := FilterLogs(\"debug\", negative); err != ErrInvalidLevel || got != nil {\n\t\tt.Fatalf(\"negative level = %#v, %v\", got, err)\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "0be0628557943604e305ffb78b07d9050f62f3214a7b53a0f588f1cf11c861ec"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "5fc2df7593c4518ab20f0a229bce250148172018bf5ed9bc7ea494b6b888dc4b",
+      "text": "Implement an in-memory severity filter in package solution.\n\nExport Severity, constants Debug, Info, Warn, Error, Fatal in increasing severity order, LogEntry with Level Severity and Message string, ErrInvalidLevel, ParseSeverity(string) (Severity, error), and FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error).\n\nParsing trims whitespace and is ASCII case-insensitive for debug, info, warn, error, and fatal; all other values, including empty input, are invalid. FilterLogs first validates the minimum and every entry severity. Invalid input returns nil and ErrInvalidLevel without a partial result. Return entries whose severity is at least the minimum, preserving order and duplicates. Empty messages are valid. Return a non-nil empty slice if nothing matches. The result must use fresh storage and the input must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "5fc2df7593c4518ab20f0a229bce250148172018bf5ed9bc7ea494b6b888dc4b",
+      "text": "Implement an in-memory severity filter in package solution.\n\nExport Severity, constants Debug, Info, Warn, Error, Fatal in increasing severity order, LogEntry with Level Severity and Message string, ErrInvalidLevel, ParseSeverity(string) (Severity, error), and FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error).\n\nParsing trims whitespace and is ASCII case-insensitive for debug, info, warn, error, and fatal; all other values, including empty input, are invalid. FilterLogs first validates the minimum and every entry severity. Invalid input returns nil and ErrInvalidLevel without a partial result. Return entries whose severity is at least the minimum, preserving order and duplicates. Empty messages are valid. Return a non-nil empty slice if nothing matches. The result must use fresh storage and the input must not be mutated.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0360",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"strings\"\n)\n\nvar ErrInvalidLevel = errors.New(\"invalid log level\")\n\ntype Severity int\n\nconst (\n\tDebug Severity = iota\n\tInfo\n\tWarn\n\tError\n\tFatal\n)\n\ntype LogEntry struct {\n\tLevel Severity\n\tMessage string\n}\n\nfunc ParseSeverity(value string) (Severity, error) {\n\tswitch strings.ToLower(strings.TrimSpace(value)) {\n\tcase \"debug\": return Debug, nil\n\tcase \"info\": return Info, nil\n\tcase \"warn\": return Warn, nil\n\tcase \"error\": return Error, nil\n\tcase \"fatal\": return Fatal, nil\n\tdefault: return Debug, ErrInvalidLevel\n\t}\n}\n\nfunc FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error) {\n\tlevel, err := ParseSeverity(minimum)\n\tif err != nil { return nil, err }\n\tfor _, entry := range entries {\n\t\tif entry.Level < Debug || entry.Level > Fatal { return nil, ErrInvalidLevel }\n\t}\n\tresult := make([]LogEntry, 0)\n\tfor _, entry := range entries {\n\t\tif entry.Level <= level { result = append(result, entry) }\n\t}\n\treturn result, nil\n}\n",
+          "label": "The filter comparison is reversed, retaining lower-severity messages instead of messages at or above the threshold.",
+          "sha256": "19b3a90cdf334cc8744ecf7e35d966c7845c66eca3d7912c4c697b6baecd2316"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"strings\"\n)\n\nvar ErrInvalidLevel = errors.New(\"invalid log level\")\n\ntype Severity int\n\nconst (\n\tDebug Severity = iota\n\tInfo\n\tWarn\n\tError\n\tFatal\n)\n\ntype LogEntry struct {\n\tLevel Severity\n\tMessage string\n}\n\nfunc ParseSeverity(value string) (Severity, error) {\n\tswitch strings.ToLower(strings.TrimSpace(value)) {\n\tcase \"debug\": return Debug, nil\n\tcase \"info\": return Info, nil\n\tcase \"warn\": return Warn, nil\n\tcase \"error\": return Error, nil\n\tcase \"fatal\": return Fatal, nil\n\tdefault: return Debug, ErrInvalidLevel\n\t}\n}\n\nfunc FilterLogs(minimum string, entries []LogEntry) ([]LogEntry, error) {\n\tlevel, err := ParseSeverity(minimum)\n\tif err != nil { return nil, err }\n\tfor _, entry := range entries {\n\t\tif entry.Level < Debug || entry.Level > Fatal { return nil, ErrInvalidLevel }\n\t}\n\tresult := make([]LogEntry, 0)\n\tfor _, entry := range entries {\n\t\tif entry.Level >= level { result = append(result, entry) }\n\t}\n\treturn result, nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "27f0a0e4a2fcf194a8096273ae3d9c1c36674eda77da1830c6b323a023687397"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewASCIICase0360 (0.00s)\n    review_test.go:6: accepted non-ASCII dotted-I severity as 1\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "5b0e37b05f551b5108ad1b246fc0b73c9504698294b4f32638b4ad0f6b5081f9",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 27451,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

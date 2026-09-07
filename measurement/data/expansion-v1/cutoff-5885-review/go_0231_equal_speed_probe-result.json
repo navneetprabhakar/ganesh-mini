@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-repair-0231",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "7a6a68aad2f7390d7a8ed3fb1ac2b37ef2bb870ef33e4899a571c40dbda6c098",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestBestGateSelectsNearestUsableGate(t *testing.T) {\n\tgates := []Gate{\n\t\t{Distance: 20, Grace: 10},\n\t\t{Distance: 4, Grace: 1},\n\t\t{Distance: 10, Grace: 5},\n\t}\n\toriginal := append([]Gate(nil), gates...)\n\n\ttravelTime, ok, err := BestGate(gates, 1, 2)\n\tif err != nil {\n\t\tt.Fatalf(\"BestGate returned error: %v\", err)\n\t}\n\tif !ok || travelTime != 10 {\n\t\tt.Fatalf(\"BestGate returned (%v, %v), want (10, true)\", travelTime, ok)\n\t}\n\tif !reflect.DeepEqual(gates, original) {\n\t\tt.Fatal(\"BestGate mutated its gate slice\")\n\t}\n}\n\nfunc TestBestGateGraceBoundaryAndZeroDistance(t *testing.T) {\n\ttravelTime, ok, err := BestGate([]Gate{{Distance: 2, Grace: 1}}, 1, 2)\n\tif err != nil || !ok || travelTime != 2 {\n\t\tt.Fatalf(\"boundary gate returned (%v, %v, %v), want (2, true, nil)\", travelTime, ok, err)\n\t}\n\n\ttravelTime, ok, err = BestGate([]Gate{{Distance: 0, Grace: 0}}, 3, 3)\n\tif err != nil || !ok || travelTime != 0 {\n\t\tt.Fatalf(\"zero-distance gate returned (%v, %v, %v), want (0, true, nil)\", travelTime, ok, err)\n\t}\n}\n\nfunc TestBestGateEmptyAndUnusableInputs(t *testing.T) {\n\ttests := [][]Gate{\n\t\tnil,\n\t\t{},\n\t\t{{Distance: 10, Grace: 4}},\n\t}\n\tfor i, gates := range tests {\n\t\ttravelTime, ok, err := BestGate(gates, 1, 2)\n\t\tif err != nil || ok || travelTime != 0 {\n\t\t\tt.Errorf(\"case %d returned (%v, %v, %v), want (0, false, nil)\", i, travelTime, ok, err)\n\t\t}\n\t}\n}\n\nfunc TestBestGateRejectsInvalidSpeeds(t *testing.T) {\n\tinvalid := [][2]float64{\n\t\t{0, 1},\n\t\t{-1, 1},\n\t\t{2, 1},\n\t\t{math.NaN(), 1},\n\t\t{1, math.NaN()},\n\t\t{math.Inf(1), math.Inf(1)},\n\t\t{1, math.Inf(1)},\n\t\t{math.Inf(-1), 1},\n\t}\n\tfor i, speeds := range invalid {\n\t\ttravelTime, ok, err := BestGate(nil, speeds[0], speeds[1])\n\t\tif err == nil || ok || travelTime != 0 {\n\t\t\tt.Errorf(\"case %d returned (%v, %v, %v), want zero, false, error\", i, travelTime, ok, err)\n\t\t}\n\t}\n}\n\nfunc TestBestGateRejectsEveryMalformedGate(t *testing.T) {\n\tinvalidGates := []Gate{\n\t\t{Distance: -1, Grace: 0},\n\t\t{Distance: 1, Grace: -1},\n\t\t{Distance: math.NaN(), Grace: 0},\n\t\t{Distance: 1, Grace: math.NaN()},\n\t\t{Distance: math.Inf(1), Grace: 0},\n\t\t{Distance: 1, Grace: math.Inf(-1)},\n\t}\n\tfor i, gate := range invalidGates {\n\t\tgates := []Gate{{Distance: 0, Grace: 0}, gate}\n\t\ttravelTime, ok, err := BestGate(gates, 1, 2)\n\t\tif err == nil || ok || travelTime != 0 {\n\t\t\tt.Errorf(\"case %d returned (%v, %v, %v), want zero, false, error\", i, travelTime, ok, err)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "2116d2301ac41cecdad16c2de1d76cf823f52e68c40f94143f39711bdde04f80"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"testing\"\n)\n\nfunc TestReviewEqualSpeed0231(t *testing.T) {\n\t_, found, err := BestGate([]Gate{{Distance: 1, Grace: 0}}, math.SmallestNonzeroFloat64, math.SmallestNonzeroFloat64)\n\tif err != nil || !found { t.Fatalf(\"equal speeds have zero arrival gap: found=%v err=%v\", found, err) }\n}\n",
+        "sha256": "2a023da23a91a85837538cf7dacdb447d9508d3efa3012ae3da0709249441a4e"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e8c45d51d7f059f272c06c01b0ed04f5537251ee884455d0d36c2dfaa1e4080f",
+      "text": "Repair the complete source below and return a corrected complete source file in package `solution`.\n\nA group travels together toward one of several gates. For a gate at distance `d`, the fastest member arrives at `d/fast`, after which the gate remains open for `Grace` time. The slowest member arrives at `d/slow`, so a gate is usable when the arrival difference is less than or equal to its grace period.\n\nExported behavior:\n\n- `BestGate` validates that `slow` and `fast` are finite and positive, with `slow <= fast`.\n- Every gate's `Distance` and `Grace` must be finite and non-negative. Any malformed value returns `(0, false, error)`.\n- Among usable gates, select the smallest distance; equal distances retain the earliest input gate.\n- Return the slowest member's travel time and `true` for the selected gate.\n- Nil, empty, or entirely unusable input returns `(0, false, nil)`.\n- Do not mutate the gate slice.\n\n```go\npackage solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap < gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e8c45d51d7f059f272c06c01b0ed04f5537251ee884455d0d36c2dfaa1e4080f",
+      "text": "Repair the complete source below and return a corrected complete source file in package `solution`.\n\nA group travels together toward one of several gates. For a gate at distance `d`, the fastest member arrives at `d/fast`, after which the gate remains open for `Grace` time. The slowest member arrives at `d/slow`, so a gate is usable when the arrival difference is less than or equal to its grace period.\n\nExported behavior:\n\n- `BestGate` validates that `slow` and `fast` are finite and positive, with `slow <= fast`.\n- Every gate's `Distance` and `Grace` must be finite and non-negative. Any malformed value returns `(0, false, error)`.\n- Among usable gates, select the smallest distance; equal distances retain the earliest input gate.\n- Return the slowest member's travel time and `true` for the selected gate.\n- Nil, empty, or entirely unusable input returns `(0, false, nil)`.\n- Do not mutate the gate slice.\n\n```go\npackage solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap < gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-repair-0231",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap < gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n",
+          "label": "Treats a gate whose arrival gap exactly equals its grace period as unusable.",
+          "sha256": "dc8e02b6ec95a98dadc7f25d1868e519128240629c56e1dca831182b2e3fa35b"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap <= gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2123bc0a8877c04b28338d34249b7ce0a0fcef72cfd852001254d6011d0249bb"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport (\n\t\"math\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestBestGateSelectsNearestUsableGate(t *testing.T) {\n\tgates := []Gate{\n\t\t{Distance: 20, Grace: 10},\n\t\t{Distance: 4, Grace: 1},\n\t\t{Distance: 10, Grace: 5},\n\t}\n\toriginal := append([]Gate(nil), gates...)\n\n\ttravelTime, ok, err := BestGate(gates, 1, 2)\n\tif err != nil {\n\t\tt.Fatalf(\"BestGate returned error: %v\", err)\n\t}\n\tif !ok || travelTime != 10 {\n\t\tt.Fatalf(\"BestGate returned (%v, %v), want (10, true)\", travelTime, ok)\n\t}\n\tif !reflect.DeepEqual(gates, original) {\n\t\tt.Fatal(\"BestGate mutated its gate slice\")\n\t}\n}\n\nfunc TestBestGateGraceBoundaryAndZeroDistance(t *testing.T) {\n\ttravelTime, ok, err := BestGate([]Gate{{Distance: 2, Grace: 1}}, 1, 2)\n\tif err != nil || !ok || travelTime != 2 {\n\t\tt.Fatalf(\"boundary gate returned (%v, %v, %v), want (2, true, nil)\", travelTime, ok, err)\n\t}\n\n\ttravelTime, ok, err = BestGate([]Gate{{Distance: 0, Grace: 0}}, 3, 3)\n\tif err != nil || !ok || travelTime != 0 {\n\t\tt.Fatalf(\"zero-distance gate returned (%v, %v, %v), want (0, true, nil)\", travelTime, ok, err)\n\t}\n}\n\nfunc TestBestGateEmptyAndUnusableInputs(t *testing.T) {\n\ttests := [][]Gate{\n\t\tnil,\n\t\t{},\n\t\t{{Distance: 10, Grace: 4}},\n\t}\n\tfor i, gates := range tests {\n\t\ttravelTime, ok, err := BestGate(gates, 1, 2)\n\t\tif err != nil || ok || travelTime != 0 {\n\t\t\tt.Errorf(\"case %d returned (%v, %v, %v), want (0, false, nil)\", i, travelTime, ok, err)\n\t\t}\n\t}\n}\n\nfunc TestBestGateRejectsInvalidSpeeds(t *testing.T) {\n\tinvalid := [][2]float64{\n\t\t{0, 1},\n\t\t{-1, 1},\n\t\t{2, 1},\n\t\t{math.NaN(), 1},\n\t\t{1, math.NaN()},\n\t\t{math.Inf(1), math.Inf(1)},\n\t\t{1, math.Inf(1)},\n\t\t{math.Inf(-1), 1},\n\t}\n\tfor i, speeds := range invalid {\n\t\ttravelTime, ok, err := BestGate(nil, speeds[0], speeds[1])\n\t\tif err == nil || ok || travelTime != 0 {\n\t\t\tt.Errorf(\"case %d returned (%v, %v, %v), want zero, false, error\", i, travelTime, ok, err)\n\t\t}\n\t}\n}\n\nfunc TestBestGateRejectsEveryMalformedGate(t *testing.T) {\n\tinvalidGates := []Gate{\n\t\t{Distance: -1, Grace: 0},\n\t\t{Distance: 1, Grace: -1},\n\t\t{Distance: math.NaN(), Grace: 0},\n\t\t{Distance: 1, Grace: math.NaN()},\n\t\t{Distance: math.Inf(1), Grace: 0},\n\t\t{Distance: 1, Grace: math.Inf(-1)},\n\t}\n\tfor i, gate := range invalidGates {\n\t\tgates := []Gate{{Distance: 0, Grace: 0}, gate}\n\t\ttravelTime, ok, err := BestGate(gates, 1, 2)\n\t\tif err == nil || ok || travelTime != 0 {\n\t\t\tt.Errorf(\"case %d returned (%v, %v, %v), want zero, false, error\", i, travelTime, ok, err)\n\t\t}\n\t}\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "2116d2301ac41cecdad16c2de1d76cf823f52e68c40f94143f39711bdde04f80"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "e8c45d51d7f059f272c06c01b0ed04f5537251ee884455d0d36c2dfaa1e4080f",
+      "text": "Repair the complete source below and return a corrected complete source file in package `solution`.\n\nA group travels together toward one of several gates. For a gate at distance `d`, the fastest member arrives at `d/fast`, after which the gate remains open for `Grace` time. The slowest member arrives at `d/slow`, so a gate is usable when the arrival difference is less than or equal to its grace period.\n\nExported behavior:\n\n- `BestGate` validates that `slow` and `fast` are finite and positive, with `slow <= fast`.\n- Every gate's `Distance` and `Grace` must be finite and non-negative. Any malformed value returns `(0, false, error)`.\n- Among usable gates, select the smallest distance; equal distances retain the earliest input gate.\n- Return the slowest member's travel time and `true` for the selected gate.\n- Nil, empty, or entirely unusable input returns `(0, false, nil)`.\n- Do not mutate the gate slice.\n\n```go\npackage solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap < gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "e8c45d51d7f059f272c06c01b0ed04f5537251ee884455d0d36c2dfaa1e4080f",
+      "text": "Repair the complete source below and return a corrected complete source file in package `solution`.\n\nA group travels together toward one of several gates. For a gate at distance `d`, the fastest member arrives at `d/fast`, after which the gate remains open for `Grace` time. The slowest member arrives at `d/slow`, so a gate is usable when the arrival difference is less than or equal to its grace period.\n\nExported behavior:\n\n- `BestGate` validates that `slow` and `fast` are finite and positive, with `slow <= fast`.\n- Every gate's `Distance` and `Grace` must be finite and non-negative. Any malformed value returns `(0, false, error)`.\n- Among usable gates, select the smallest distance; equal distances retain the earliest input gate.\n- Return the slowest member's travel time and `true` for the selected gate.\n- Nil, empty, or entirely unusable input returns `(0, false, nil)`.\n- Do not mutate the gate slice.\n\n```go\npackage solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap < gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n```\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-repair-0231",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap < gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n",
+          "label": "Treats a gate whose arrival gap exactly equals its grace period as unusable.",
+          "sha256": "dc8e02b6ec95a98dadc7f25d1868e519128240629c56e1dca831182b2e3fa35b"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"math\"\n)\n\ntype Gate struct {\n\tDistance float64\n\tGrace    float64\n}\n\nfunc BestGate(gates []Gate, slow, fast float64) (float64, bool, error) {\n\tif invalidNumber(slow) || invalidNumber(fast) || slow <= 0 || fast <= 0 || slow > fast {\n\t\treturn 0, false, errors.New(\"invalid speeds\")\n\t}\n\tbestDistance := 0.0\n\tfound := false\n\tfor _, gate := range gates {\n\t\tif invalidNumber(gate.Distance) || invalidNumber(gate.Grace) || gate.Distance < 0 || gate.Grace < 0 {\n\t\t\treturn 0, false, errors.New(\"invalid gate\")\n\t\t}\n\t\tarrivalGap := gate.Distance/slow - gate.Distance/fast\n\t\tif arrivalGap <= gate.Grace && (!found || gate.Distance < bestDistance) {\n\t\t\tbestDistance = gate.Distance\n\t\t\tfound = true\n\t\t}\n\t}\n\tif !found {\n\t\treturn 0, false, nil\n\t}\n\treturn bestDistance / slow, true, nil\n}\n\nfunc invalidNumber(value float64) bool {\n\treturn math.IsNaN(value) || math.IsInf(value, 0)\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "2123bc0a8877c04b28338d34249b7ce0a0fcef72cfd852001254d6011d0249bb"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewEqualSpeed0231 (0.00s)\n    review_test.go:10: equal speeds have zero arrival gap: found=false err=<nil>\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "9e5b377d1d3afafe70c6988a8a9862ee7aaf1e5362a58f69f8e74c08bb20aec0",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 27101,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

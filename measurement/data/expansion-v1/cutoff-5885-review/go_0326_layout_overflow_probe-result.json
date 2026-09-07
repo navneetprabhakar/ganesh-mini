@@ -1,0 +1,144 @@
+{
+  "id": "exp-v1-go-generation-0326",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "643ed0c3f460d89800673636d0609ac2250861752908ecb56f713e0ed0737198",
+  "task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestEncodeLayoutExactAndNonMutation(t *testing.T) {\n\tl := Layout{Material:\"steel\", Capacity:10, Gap:2, Segments:[]Segment{{\"A\",3},{\"B\",4}}, Marks:[]int{0,10,4}}\n\twant := \"LAYOUT/1\\n[base]\\nmaterial=steel\\ncapacity=10\\n[segments]\\nA:3\\nB:4\\n[marks]\\n0\\n10\\n4\\n[totals]\\nused=9\\nremaining=1\\n\"\n\tgot, err := EncodeLayout(l)\n\tif err != nil || got != want { t.Fatalf(\"got %q, %v; want %q\", got, err, want) }\n\tif l.Segments[0] != (Segment{\"A\",3}) || l.Marks[1] != 10 { t.Fatal(\"input mutated\") }\n}\n\nfunc TestEncodeLayoutEmptyLists(t *testing.T) {\n\tgot, err := EncodeLayout(Layout{Material:\"m\", Capacity:0})\n\twant := \"LAYOUT/1\\n[base]\\nmaterial=m\\ncapacity=0\\n[segments]\\n[marks]\\n[totals]\\nused=0\\nremaining=0\\n\"\n\tif err != nil || got != want { t.Fatalf(\"got %q, %v\", got, err) }\n}\n\nfunc TestEncodeLayoutRejectsMalformed(t *testing.T) {\n\tcases := []Layout{\n\t\t{Capacity:1},\n\t\t{Material:\"m\", Capacity:-1},\n\t\t{Material:\"m\", Capacity:1, Gap:-1},\n\t\t{Material:\"m\", Capacity:1, Segments:[]Segment{{\"\",1}}},\n\t\t{Material:\"m\", Capacity:1, Segments:[]Segment{{\"x\",0}}},\n\t\t{Material:\"m\", Capacity:1, Segments:[]Segment{{\"x\",-1}}},\n\t\t{Material:\"m\", Capacity:1, Marks:[]int{-1}},\n\t\t{Material:\"m\", Capacity:1, Marks:[]int{2}},\n\t\t{Material:\"m\", Capacity:5, Gap:2, Segments:[]Segment{{\"x\",2},{\"y\",2}}},\n\t}\n\tfor i, tc := range cases { if _, err := EncodeLayout(tc); err == nil { t.Errorf(\"case %d accepted: %+v\", i, tc) } }\n}\n\nfunc TestEncodeLayoutGapOnlyBetweenSegments(t *testing.T) {\n\tgot, err := EncodeLayout(Layout{Material:\"m\", Capacity:3, Gap:99, Segments:[]Segment{{\"x\",3}}})\n\tif err != nil { t.Fatal(err) }\n\tif got != \"LAYOUT/1\\n[base]\\nmaterial=m\\ncapacity=3\\n[segments]\\nx:3\\n[marks]\\n[totals]\\nused=3\\nremaining=0\\n\" { t.Fatalf(\"unexpected encoding %q\", got) }\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "b852e0b574ce2a71071a4d0c69327cb8134769384b545a45ac56c9f4f223fd02"
+      },
+      {
+        "path": "review_test.go",
+        "role": "test",
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestReviewLayoutOverflow0326(t *testing.T) {\n\tmaximum := int(^uint(0) >> 1)\n\t_, err := EncodeLayout(Layout{Material: \"m\", Capacity: maximum, Segments: []Segment{{Code: \"a\", Span: maximum}, {Code: \"b\", Span: 1}}})\n\tif err == nil { t.Fatal(\"accepted total span MaxInt+1 exceeding capacity MaxInt\") }\n}\n",
+        "sha256": "2bb7deef658f320b84dcd87316a6d06c7a63d47139d8bb299731f728e2f9c789"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "27b49d1da63279c5a563c33db59445f9b0a302ebb4520388f79629af6453be4d",
+      "text": "Implement a deterministic encoder for an assembly layout in package solution using only the standard library.\n\nExport:\n- type Segment struct { Code string; Span int }\n- type Layout struct { Material string; Capacity, Gap int; Segments []Segment; Marks []int }\n- func EncodeLayout(layout Layout) (string, error)\n\nMaterial and every segment Code must be non-empty. Capacity, Gap, segment spans, and marks must be non-negative; spans must be positive. Marks may not exceed Capacity. Consumed span is the sum of segment spans plus Gap between adjacent segments only. Reject a layout whose consumed span exceeds Capacity. Preserve segment and mark order and do not mutate input slices. Return exactly this format, including final newline:\nLAYOUT/1\n[base]\nmaterial=<value>\ncapacity=<value>\n[segments]\n<code>:<span> (one per segment)\n[marks]\n<mark> (one per mark)\n[totals]\nused=<value>\nremaining=<value>\nEmpty segment and mark lists produce their headers followed immediately by the next section.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "27b49d1da63279c5a563c33db59445f9b0a302ebb4520388f79629af6453be4d",
+      "text": "Implement a deterministic encoder for an assembly layout in package solution using only the standard library.\n\nExport:\n- type Segment struct { Code string; Span int }\n- type Layout struct { Material string; Capacity, Gap int; Segments []Segment; Marks []int }\n- func EncodeLayout(layout Layout) (string, error)\n\nMaterial and every segment Code must be non-empty. Capacity, Gap, segment spans, and marks must be non-negative; spans must be positive. Marks may not exceed Capacity. Consumed span is the sum of segment spans plus Gap between adjacent segments only. Reject a layout whose consumed span exceeds Capacity. Preserve segment and mark order and do not mutate input slices. Return exactly this format, including final newline:\nLAYOUT/1\n[base]\nmaterial=<value>\ncapacity=<value>\n[segments]\n<code>:<span> (one per segment)\n[marks]\n<mark> (one per mark)\n[totals]\nused=<value>\nremaining=<value>\nEmpty segment and mark lists produce their headers followed immediately by the next section.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-go-generation-0326",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"strings\"\n)\n\ntype Segment struct { Code string; Span int }\ntype Layout struct {\n\tMaterial string\n\tCapacity, Gap int\n\tSegments []Segment\n\tMarks []int\n}\n\nfunc EncodeLayout(x Layout) (string, error) {\n\tif x.Material == \"\" || x.Capacity < 0 || x.Gap < 0 { return \"\", errors.New(\"invalid layout\") }\n\tused := 0\n\tfor _, s := range x.Segments {\n\t\tif s.Code == \"\" || s.Span <= 0 { return \"\", errors.New(\"invalid segment\") }\n\t\tused += s.Span + x.Gap\n\t}\n\tfor _, m := range x.Marks {\n\t\tif m < 0 || m > x.Capacity { return \"\", errors.New(\"invalid mark\") }\n\t}\n\tif used > x.Capacity { return \"\", errors.New(\"layout exceeds capacity\") }\n\tvar b strings.Builder\n\tfmt.Fprintf(&b, \"LAYOUT/1\\n[base]\\nmaterial=%s\\ncapacity=%d\\n[segments]\\n\", x.Material, x.Capacity)\n\tfor _, s := range x.Segments { fmt.Fprintf(&b, \"%s:%d\\n\", s.Code, s.Span) }\n\tb.WriteString(\"[marks]\\n\")\n\tfor _, m := range x.Marks { fmt.Fprintf(&b, \"%d\\n\", m) }\n\tfmt.Fprintf(&b, \"[totals]\\nused=%d\\nremaining=%d\\n\", used, x.Capacity-used)\n\treturn b.String(), nil\n}\n",
+          "label": "The encoder charges a trailing gap after the final segment.",
+          "sha256": "926484d7a37a9368b04b4ec8a761717cc7768c0365072ad3fe51866ed180dff4"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"strings\"\n)\n\ntype Segment struct { Code string; Span int }\ntype Layout struct {\n\tMaterial string\n\tCapacity, Gap int\n\tSegments []Segment\n\tMarks []int\n}\n\nfunc EncodeLayout(x Layout) (string, error) {\n\tif x.Material == \"\" || x.Capacity < 0 || x.Gap < 0 { return \"\", errors.New(\"invalid layout\") }\n\tused := 0\n\tfor i, s := range x.Segments {\n\t\tif s.Code == \"\" || s.Span <= 0 { return \"\", errors.New(\"invalid segment\") }\n\t\tused += s.Span\n\t\tif i > 0 { used += x.Gap }\n\t}\n\tfor _, m := range x.Marks {\n\t\tif m < 0 || m > x.Capacity { return \"\", errors.New(\"invalid mark\") }\n\t}\n\tif used > x.Capacity { return \"\", errors.New(\"layout exceeds capacity\") }\n\tvar b strings.Builder\n\tfmt.Fprintf(&b, \"LAYOUT/1\\n[base]\\nmaterial=%s\\ncapacity=%d\\n[segments]\\n\", x.Material, x.Capacity)\n\tfor _, s := range x.Segments { fmt.Fprintf(&b, \"%s:%d\\n\", s.Code, s.Span) }\n\tb.WriteString(\"[marks]\\n\")\n\tfor _, m := range x.Marks { fmt.Fprintf(&b, \"%d\\n\", m) }\n\tfmt.Fprintf(&b, \"[totals]\\nused=%d\\nremaining=%d\\n\", used, x.Capacity-used)\n\treturn b.String(), nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "045ab73fd3bb5bdd5ce0b8bb74dff911df74137d342cde3df6bce77482c76ffd"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.go",
+    "family": "go",
+    "files": [
+      {
+        "content": "module ganesh.invalid/expansion\n\ngo 1.22\n",
+        "path": "go.mod",
+        "role": "support",
+        "sha256": "96608ba4d2790dd50587db4a263b8eb3cec88a704fe4c3d57363e81e7bf58905"
+      },
+      {
+        "content": "package solution\n\nimport \"testing\"\n\nfunc TestEncodeLayoutExactAndNonMutation(t *testing.T) {\n\tl := Layout{Material:\"steel\", Capacity:10, Gap:2, Segments:[]Segment{{\"A\",3},{\"B\",4}}, Marks:[]int{0,10,4}}\n\twant := \"LAYOUT/1\\n[base]\\nmaterial=steel\\ncapacity=10\\n[segments]\\nA:3\\nB:4\\n[marks]\\n0\\n10\\n4\\n[totals]\\nused=9\\nremaining=1\\n\"\n\tgot, err := EncodeLayout(l)\n\tif err != nil || got != want { t.Fatalf(\"got %q, %v; want %q\", got, err, want) }\n\tif l.Segments[0] != (Segment{\"A\",3}) || l.Marks[1] != 10 { t.Fatal(\"input mutated\") }\n}\n\nfunc TestEncodeLayoutEmptyLists(t *testing.T) {\n\tgot, err := EncodeLayout(Layout{Material:\"m\", Capacity:0})\n\twant := \"LAYOUT/1\\n[base]\\nmaterial=m\\ncapacity=0\\n[segments]\\n[marks]\\n[totals]\\nused=0\\nremaining=0\\n\"\n\tif err != nil || got != want { t.Fatalf(\"got %q, %v\", got, err) }\n}\n\nfunc TestEncodeLayoutRejectsMalformed(t *testing.T) {\n\tcases := []Layout{\n\t\t{Capacity:1},\n\t\t{Material:\"m\", Capacity:-1},\n\t\t{Material:\"m\", Capacity:1, Gap:-1},\n\t\t{Material:\"m\", Capacity:1, Segments:[]Segment{{\"\",1}}},\n\t\t{Material:\"m\", Capacity:1, Segments:[]Segment{{\"x\",0}}},\n\t\t{Material:\"m\", Capacity:1, Segments:[]Segment{{\"x\",-1}}},\n\t\t{Material:\"m\", Capacity:1, Marks:[]int{-1}},\n\t\t{Material:\"m\", Capacity:1, Marks:[]int{2}},\n\t\t{Material:\"m\", Capacity:5, Gap:2, Segments:[]Segment{{\"x\",2},{\"y\",2}}},\n\t}\n\tfor i, tc := range cases { if _, err := EncodeLayout(tc); err == nil { t.Errorf(\"case %d accepted: %+v\", i, tc) } }\n}\n\nfunc TestEncodeLayoutGapOnlyBetweenSegments(t *testing.T) {\n\tgot, err := EncodeLayout(Layout{Material:\"m\", Capacity:3, Gap:99, Segments:[]Segment{{\"x\",3}}})\n\tif err != nil { t.Fatal(err) }\n\tif got != \"LAYOUT/1\\n[base]\\nmaterial=m\\ncapacity=3\\n[segments]\\nx:3\\n[marks]\\n[totals]\\nused=3\\nremaining=0\\n\" { t.Fatalf(\"unexpected encoding %q\", got) }\n}\n",
+        "path": "solution_test.go",
+        "role": "test",
+        "sha256": "b852e0b574ce2a71071a4d0c69327cb8134769384b545a45ac56c9f4f223fd02"
+      }
+    ],
+    "language": "go",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "27b49d1da63279c5a563c33db59445f9b0a302ebb4520388f79629af6453be4d",
+      "text": "Implement a deterministic encoder for an assembly layout in package solution using only the standard library.\n\nExport:\n- type Segment struct { Code string; Span int }\n- type Layout struct { Material string; Capacity, Gap int; Segments []Segment; Marks []int }\n- func EncodeLayout(layout Layout) (string, error)\n\nMaterial and every segment Code must be non-empty. Capacity, Gap, segment spans, and marks must be non-negative; spans must be positive. Marks may not exceed Capacity. Consumed span is the sum of segment spans plus Gap between adjacent segments only. Reject a layout whose consumed span exceeds Capacity. Preserve segment and mark order and do not mutate input slices. Return exactly this format, including final newline:\nLAYOUT/1\n[base]\nmaterial=<value>\ncapacity=<value>\n[segments]\n<code>:<span> (one per segment)\n[marks]\n<mark> (one per mark)\n[totals]\nused=<value>\nremaining=<value>\nEmpty segment and mark lists produce their headers followed immediately by the next section.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "27b49d1da63279c5a563c33db59445f9b0a302ebb4520388f79629af6453be4d",
+      "text": "Implement a deterministic encoder for an assembly layout in package solution using only the standard library.\n\nExport:\n- type Segment struct { Code string; Span int }\n- type Layout struct { Material string; Capacity, Gap int; Segments []Segment; Marks []int }\n- func EncodeLayout(layout Layout) (string, error)\n\nMaterial and every segment Code must be non-empty. Capacity, Gap, segment spans, and marks must be non-negative; spans must be positive. Marks may not exceed Capacity. Consumed span is the sum of segment spans plus Gap between adjacent segments only. Reject a layout whose consumed span exceeds Capacity. Preserve segment and mark order and do not mutate input slices. Return exactly this format, including final newline:\nLAYOUT/1\n[base]\nmaterial=<value>\ncapacity=<value>\n[segments]\n<code>:<span> (one per segment)\n[marks]\n<mark> (one per mark)\n[totals]\nused=<value>\nremaining=<value>\nEmpty segment and mark lists produce their headers followed immediately by the next section.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "go-1.22.12",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-go-generation-0326",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"strings\"\n)\n\ntype Segment struct { Code string; Span int }\ntype Layout struct {\n\tMaterial string\n\tCapacity, Gap int\n\tSegments []Segment\n\tMarks []int\n}\n\nfunc EncodeLayout(x Layout) (string, error) {\n\tif x.Material == \"\" || x.Capacity < 0 || x.Gap < 0 { return \"\", errors.New(\"invalid layout\") }\n\tused := 0\n\tfor _, s := range x.Segments {\n\t\tif s.Code == \"\" || s.Span <= 0 { return \"\", errors.New(\"invalid segment\") }\n\t\tused += s.Span + x.Gap\n\t}\n\tfor _, m := range x.Marks {\n\t\tif m < 0 || m > x.Capacity { return \"\", errors.New(\"invalid mark\") }\n\t}\n\tif used > x.Capacity { return \"\", errors.New(\"layout exceeds capacity\") }\n\tvar b strings.Builder\n\tfmt.Fprintf(&b, \"LAYOUT/1\\n[base]\\nmaterial=%s\\ncapacity=%d\\n[segments]\\n\", x.Material, x.Capacity)\n\tfor _, s := range x.Segments { fmt.Fprintf(&b, \"%s:%d\\n\", s.Code, s.Span) }\n\tb.WriteString(\"[marks]\\n\")\n\tfor _, m := range x.Marks { fmt.Fprintf(&b, \"%d\\n\", m) }\n\tfmt.Fprintf(&b, \"[totals]\\nused=%d\\nremaining=%d\\n\", used, x.Capacity-used)\n\treturn b.String(), nil\n}\n",
+          "label": "The encoder charges a trailing gap after the final segment.",
+          "sha256": "926484d7a37a9368b04b4ec8a761717cc7768c0365072ad3fe51866ed180dff4"
+        }
+      ],
+      "reference": {
+        "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"strings\"\n)\n\ntype Segment struct { Code string; Span int }\ntype Layout struct {\n\tMaterial string\n\tCapacity, Gap int\n\tSegments []Segment\n\tMarks []int\n}\n\nfunc EncodeLayout(x Layout) (string, error) {\n\tif x.Material == \"\" || x.Capacity < 0 || x.Gap < 0 { return \"\", errors.New(\"invalid layout\") }\n\tused := 0\n\tfor i, s := range x.Segments {\n\t\tif s.Code == \"\" || s.Span <= 0 { return \"\", errors.New(\"invalid segment\") }\n\t\tused += s.Span\n\t\tif i > 0 { used += x.Gap }\n\t}\n\tfor _, m := range x.Marks {\n\t\tif m < 0 || m > x.Capacity { return \"\", errors.New(\"invalid mark\") }\n\t}\n\tif used > x.Capacity { return \"\", errors.New(\"layout exceeds capacity\") }\n\tvar b strings.Builder\n\tfmt.Fprintf(&b, \"LAYOUT/1\\n[base]\\nmaterial=%s\\ncapacity=%d\\n[segments]\\n\", x.Material, x.Capacity)\n\tfor _, s := range x.Segments { fmt.Fprintf(&b, \"%s:%d\\n\", s.Code, s.Span) }\n\tb.WriteString(\"[marks]\\n\")\n\tfor _, m := range x.Marks { fmt.Fprintf(&b, \"%d\\n\", m) }\n\tfmt.Fprintf(&b, \"[totals]\\nused=%d\\nremaining=%d\\n\", used, x.Capacity-used)\n\treturn b.String(), nil\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "045ab73fd3bb5bdd5ce0b8bb74dff911df74137d342cde3df6bce77482c76ffd"
+      }
+    }
+  },
+  "probe_mode": "additive",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "go-1.22.12",
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "--- FAIL: TestReviewLayoutOverflow0326 (0.00s)\n    review_test.go:8: accepted total span MaxInt+1 exceeding capacity MaxInt\nFAIL\nFAIL\tganesh.invalid/expansion\t0.023s\nFAIL\n",
+    "stdout_sha256": "adb2b139ae372db51cb66e664b46cc576eb7d21d55ac4b145e0ddee79f9a8b97",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "duration_ms": 29648,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

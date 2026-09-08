@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "e3cefa7fb6972e2d7c4f64e7a2a76f86aff643d9f4cca0fd47583131d6dc4690",
+  "code": "'use strict';\n\nconst kinds = new Set(['lab', 'kitchen', 'garden', 'studio']);\nconst nonEmpty = value => typeof value === 'string' && value.trim().length > 0;\nconst hasExactKeys = (value, expected) => {\n  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;\n  const keys = Object.keys(value);\n  return keys.length === expected.length && expected.every(key => Object.prototype.hasOwnProperty.call(value, key));\n};\n\nfunction createWorkshopRegistry(initialHosts = []) {\n  if (!Array.isArray(initialHosts)) throw new TypeError('initialHosts must be an array');\n\n  const hosts = new Map();\n  for (const host of initialHosts) {\n    if (!hasExactKeys(host, ['id', 'name']) || !nonEmpty(host.id) || !nonEmpty(host.name)) {\n      throw new TypeError('invalid host');\n    }\n    if (hosts.has(host.id)) throw new RangeError('duplicate host');\n    hosts.set(host.id, { id: host.id, name: host.name });\n  }\n\n  const workshops = [];\n  const names = new Set();\n  const copy = item => ({\n    name: item.name,\n    kind: item.kind,\n    address: item.address,\n    host: { id: item.host.id, name: item.host.name }\n  });\n\n  function register(input) {\n    if (!hasExactKeys(input, ['name', 'kind', 'address', 'host']) ||\n        !nonEmpty(input.name) || !kinds.has(input.kind) || !nonEmpty(input.address)) {\n      throw new TypeError('invalid workshop');\n    }\n\n    const key = input.name.trim().toLowerCase();\n    if (names.has(key)) throw new RangeError('duplicate workshop');\n\n    let resolvedHost;\n    let pendingHost = null;\n\n    if (hasExactKeys(input.host, ['id'])) {\n      if (!nonEmpty(input.host.id) || !hosts.has(input.host.id)) {\n        throw new TypeError('invalid host selection');\n      }\n      resolvedHost = hosts.get(input.host.id);\n    } else if (hasExactKeys(input.host, ['newHost'])) {\n      const candidate = input.host.newHost;\n      if (!hasExactKeys(candidate, ['id', 'name']) || !nonEmpty(candidate.id) || !nonEmpty(candidate.name)) {\n        throw new TypeError('invalid new host');\n      }\n      if (hosts.has(candidate.id)) throw new RangeError('duplicate host');\n      pendingHost = { id: candidate.id, name: candidate.name };\n      resolvedHost = pendingHost;\n    } else {\n      throw new TypeError('invalid host selection');\n    }\n\n    const workshop = {\n      name: input.name,\n      kind: input.kind,\n      address: input.address,\n      host: { id: resolvedHost.id, name: resolvedHost.name }\n    };\n\n    if (pendingHost) hosts.set(pendingHost.id, { ...pendingHost });\n    names.add(key);\n    workshops.push(workshop);\n    return copy(workshop);\n  }\n\n  return {\n    register,\n    list() {\n      return workshops.map(copy);\n    }\n  };\n}\n\nmodule.exports = { createWorkshopRegistry };\n",
+  "code_sha256": "3248c5d66e3ad1661936484ae07908705af79b56e6f0c9f83e700c9f6eb39582",
+  "evidence_sha256": "298400da683365befc2ef2512c8b02c6802f9b203baec53ede455aa468d1ae1d",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "2cf9f5f966b6ebf90bd0478cee68748624b1d576a048c6e6615ffef14a2430b7",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 866,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "/work/solution.js:17\n      throw new TypeError('invalid host');\n      ^\n\nTypeError: invalid host\n    at createWorkshopRegistry (/work/solution.js:17:13)\n    at Object.<anonymous> (/work/solution.test.js:38:18)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "6256bc94041de40b49e3713384b91f19afa75078fee6e5a30d5a216da328a877",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

@@ -1,5 +1,33 @@
 # Project state
 
+## Admission60 — 2026-09-08
+
+R11 adds10actualadmissions: cumulative60 (Go12,Java12,JS11,TS11,Python8,Rust6),
+generation53/repair7. Max combined3133,min remaining867 before exclusions/token
+balance. See RECOVERY_R11_ADMISSION60_20260908.md. No corpus/trainingseal.
+LatestverifiedGCScheckpoint50 excludes theselatest10/r11diagnostics; preserve
+fornextbatchbackup. R12generation, first27serialdiagnostics andthree disjoint
+reviewersactive. Approvedr13/r14 correctionsnotyetlaunched. ExactqueuesHANDOFF.
+
+## Recovery admission50; accelerated r12 active — 2026-09-08
+
+Cumulative50 recoveries admitted, allgeneration: Go11,Java12,JS9,TS7,Python8,
+Rust3. Latest25 accepted/0 rejected after independent quality, fresh controls,
+retained/prior-recovery dedup and546-file evaluation separation. Go0439/0522
+also passed actual pinned race qualification. See RECOVERY_ADMISSION50_20260908.md.
+Original5885/holds2812 unchanged; maximum combined3123, minimum additional877
+before further exclusions and token balancing. Candidate balance is false;
+no final corpus seal, no training/release promotion.
+
+R11 partial generation12 completed (Python lane strict-ID failure preserved).
+All12 reviewed:10 static positives, Rust0102 compile hold and0361 bounded-witness
+hold; actual serial diagnostics active. R12 main-approved51 generation requests
+are running with3 lane workers. Main read all three disjoint reviewer proposals
+and validated exact hashes; TS0241/0242 are explicitly deferred, not reserved.
+Current exact session/backup/assignment state is in HANDOFF.md. No new VM usage;
+existing GCS backup approval remains. Training/release estimates50%/35% only;
+full-delivery ETA awaits corpus sufficiency and measured pilot throughput.
+
 ## First nine recoveries admitted; next selection in progress — 2026-09-08
 
 **9 candidate admissions /0 rejected**, all generation: Go2,Java2,JS2,TS2,Python1,

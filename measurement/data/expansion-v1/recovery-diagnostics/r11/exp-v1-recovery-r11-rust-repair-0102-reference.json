@@ -1,0 +1,37 @@
+{
+  "candidate_sha256": "f70b7ac81d2125c7e961f70a586cd9a2f35e09c85da8dc365bac48b700c939a8",
+  "code": "use std::collections::BTreeSet;\n\npub fn qualified_ref(kind: &str, name: &str) -> Option<String> {\n    if name.is_empty() || name.starts_with('/') || name.chars().any(|c| c.is_ascii_whitespace() || c == ':') {\n        return None;\n    }\n    let section = match kind { \"branch\" => \"heads\", \"tag\" => \"tags\", _ => return None };\n    Some(format!(\"refs/{section}/{name}:refs/{section}/{name}\"))\n}\n\npub fn project_slug(remote: &str) -> Option<String> {\n    let clean = remote.trim_matches(char::is_ascii_whitespace).trim_end_matches('/');\n    let leaf = clean.rsplit(['/', ':']).next()?;\n    let slug = leaf.strip_suffix(\".git\").unwrap_or(leaf);\n    (!slug.is_empty()).then(|| slug.to_string())\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct RepoPlan {\n    pub primary: String,\n    pub supporting: Vec<String>,\n    pub tags: Vec<String>,\n}\n\nimpl RepoPlan {\n    pub fn tracked_refs(&self) -> Vec<String> {\n        let mut seen = BTreeSet::new();\n        let mut out = Vec::new();\n        for (kind, name) in std::iter::once((\"branch\", &self.primary))\n            .chain(self.supporting.iter().map(|n| (\"branch\", n)))\n            .chain(self.tags.iter().map(|n| (\"tag\", n)))\n        {\n            if let Some(reference) = qualified_ref(kind, name) {\n                if seen.insert(reference.clone()) { out.push(reference); }\n            }\n        }\n        out\n    }\n}\n",
+  "code_sha256": "175291dbe4db834527336b4b9af08c114779ee6a7bcdea8276048cdae53a0b69",
+  "evidence_sha256": "5cd8811341c2349578c216cca9a06ba1a40a0490acd83bd0ac832b56ea55d052",
+  "label": "reference",
+  "outcome": "compile-or-load-failure-not-semantic-proof",
+  "parent_candidate_sha256": "8c2b016284660327c9d77e34b6ccf76585bcaf4e147c761ef4d9bfe7d4a923f0",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1220,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "error[E0631]: type mismatch in function arguments\n  --> solution.rs:12:37\n   |\n12 |     let clean = remote.trim_matches(char::is_ascii_whitespace).trim_end_matches('/');\n   |                        ------------ ^^^^^^^^^^^^^^^^^^^^^^^^^\n   |                        |            |\n   |                        |            expected due to this\n   |                        |            found signature defined here\n   |                        required by a bound introduced by this call\n   |\n   = note: expected function signature `fn(_) -> _`\n              found function signature `fn(&_) -> _`\n   = note: required for `for<'a> fn(&'a char) -> bool {char::methods::<impl char>::is_ascii_whitespace}` to implement `Pattern`\nnote: required by a bound in `core::str::<impl str>::trim_matches`\n  --> /rustc/4d91de4e48198da2e33413efdcd9cd2cc0c46688/library/core/src/str/mod.rs:2139:5\nhelp: consider wrapping the function in a closure\n   |\n12 |     let clean = remote.trim_matches(|arg0: char| char::is_ascii_whitespace(&arg0)).trim_end_matches('/');\n   |                                     ++++++++++++                          +++++++\n\nerror: aborting due to 1 previous error\n\nFor more information about this error, try `rustc --explain E0631`.\n",
+    "stderr_sha256": "1a17aa54b83dfeaf70ca0a7d52faa20098464f7c68efe301f95e0021a9c9e35f",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

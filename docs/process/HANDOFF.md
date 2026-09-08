@@ -1,6 +1,133 @@
 # Ganesh Mini 1.0 handoff
 
+## Admission60; serial r12-first27 now running — 2026-09-08
+
+Queue80706 exited0:10accepted/0rejected. Cumulative60=Go12/Java12/JS11/TS11/
+Python8/Rust6, generation53/repair7. Max combined3133,minimumremaining867.
+See RECOVERY_R11_ADMISSION60_20260908.md. LatestverifiedGCScheckpoint50 does
+NOT cover these10 or r11diagnostics; include them in nextterminalbackup.
+
+ONE new serialdiagnostic queue30205: r12Java8 ->Python9 ->Rust10, outputdir
+recovery-diagnostics/r12-first27. R12teacher57681 continues remainingGo/JS/TS.
+Reviewerassignments unchanged: rust451_480Java8,rust421_450Python9,rust391_420Rust10.
+Drafts notyetmainread/integrated. Don'trunadmissionorGo/race concurrently.
+R13onecritic andr14twoarchitectureplansapprovedbutnotlaunched; keepteachermax3.
+R12Go/JS/TScandidatereviews stillneeddispatchafterfilesexist/slotsfree.
+
+Batchcommit includes terminaldiagnostics throughr11, admissions60 andplansr10-r14;
+noactive r12diagnostic artifacts orunfinishedreviews. Trailingblanklines in
+hash-bound review/request evidence are preserved intentionally; don't reformat.
+All144datatests pass. Originalreviewclosed/holdsunchanged/no trainingseal.
+
+## Post-backup exact queue checkpoint — 2026-09-08
+
+Cumulative50 unchanged at this checkpoint. Terminal admission50 archive AND
+receipt exact-generation download/cmp PASS; see RECOVERY_ADMISSION50_BACKUP.md.
+Covers terminalr6-r10 plus r11generation/reviews, not r11diagnostics/r12generation
+or later r13/r14 plans. No cleanup/VM/billing certification.144data tests pass.
+
+R11 diagnostics session12474 DONE:10 directionality positives, Rust0361
+referencepass/bothcontrolstimeout, Rust0102 referencecompilefailure with both
+controlsbehavioralfail. Fullthreequalityreportsmainintegrated. ONE active
+prep/admission queue80706 for10 positives, output recovery-admission/r11-ten-v1,
+selection recovery-admission-r11-ten.json. Prepared against3073 originals+50
+priorrecoveries withzerooverlap; notyetadmitted. Do not parallelize execution.
+
+R12 generation57681 stillactive with3teacherlane workers. Java8/Python9/Rust10
+candidatefiles nowexist; assigned reviewers rust451_480Java8,
+rust421_450Python9,rust391_420Rust10. Isolated RECOVERY_R12_*_REVIEW_20260908.md
+outputs; drafts notmainintegrated yet. OtherGo/JS/TSlanes stillgenerationpending.
+Do not duplicate these assignments or launch anynewselection campaign.
+
+Main fullyread/validated/approved finalr13 request/feedback: one test-only
+Rust0361 correction, prior-run r11, plan SHA
+6659bda4b3701570d6f60becde828d288df12744712859ae4c4179e5b0c6e903.
+Main fullyread/validated/approved r14two fresharchitecture retries Py0138/Rust0102,
+plan SHA d940f00a1c6b1669cec71865040489c9cd3890bf3a6bdb43490df3bf807d153b.
+Neither generationregistryreserved/launched; wait untilr12complete or explicitly
+verified availableteacher slots. No automatic repeatedcritic. See R13/R14_SELECTION
+notes for exactscope; provisionalartifacts preserved. No originalholds changed.
+
+Next: finishr11admission, serialr12diagnostics ofemittedlanes whileintegrating
+reviews, launchapprovedr13/r14 withboundedteacher capacity, terminalbackupoflater
+evidence. Training/release estimates50%/35%; actualgeneration/admission/review
+working; next10–30minlowconfidence, overallETAnotdefensible. No currentapproval
+blocker. NewGCloudcompute stillrequires scope/costceiling.
+
+## Exact resume: admission50, r11 diagnostics and r12 generation — 2026-09-08
+
+Admission queue13583 exited0:25 accepted/0 rejected, cumulative50 (Go11,Java12,
+JS9,TS7,Python8,Rust3), allgeneration. Max combined3123,min additional877 before
+further exclusions/tokenbalance. See RECOVERY_ADMISSION50_20260908.md. No seal.
+
+ONE serial verifier session12474 now runs all12 emitted r11 candidates, output
+recovery-diagnostics/r11. All three r11 quality reports main-fully-read:10 static
+positives (Go1/Rust3/JS2/TS4); Rust0102 predicate-signature reference hold and
+Rust0361 missing bounded arithmetic witness (huge mutant loop likelytimeout).
+Do not classify compile/timeout as semantic failure or start parallel execution.
+R11 Python raw exact-ID failure remains preserved; no candidate to review.
+
+R12 generation session57681 active,3 lane workers,51 new generation parents
+(Go10/Java8/Python9/Rust10/JS7/TS7). Plan logical SHA
+3edbe358f89bc7396eb1ae1c694acf685213164bda40030cf54c5c033467f78d.
+Main fully read/validated all three next-selection reports and parent/test/source/
+rights/evidence hashes;51 selected from53. TS0241/0242 deferred explicitly;
+see RECOVERY_R12_SELECTION_20260908.md. All51 disjoint from prior69; current
+unique reserved parents120. No duplicate launch/version reuse. Reviewersidle
+after completed r11 reports; dispatch next disjoint candidate reviews only when
+r12 files exist. No new selection task is needed until these51 are processed.
+
+Next: terminal r6-r10/admission50 GCS checkpoint plus r11 generation/reviews;
+exclude active r11 diagnostics and r12 generation from that snapshot, then save
+their terminal evidence later. Latest verified backup still admission21 until
+new exact-generation proof. No cleanup/VM/training. Continue r11 admission and
+bounded correction decisions, then r12 review/verification. Estimates50%/35%,
+working, next10–30minlowconfidence; full deliveryETAnotdefensible. No approval
+needed for current work; newcloudcompute requires scoped budget.
+
+## Exact resume: admission batch25 active — 2026-09-08
+
+User confirmed acceleration authorization. No new cloud resources or uncapped
+cloud budget inferred. Current gate2; no runtime/model/gate changes.
+Serial diagnostic queue39155 exited0: r7 Go0439/0522 actual-race directionality
+passed; r10 Java0641/0617/0687/0762 normal directionality passed. All selected
+candidate file hashes were checked against their main-read quality reports.
+
+ONE active preparation/admission queue session13583: r7 Go9 +r8 Java6 +r9
+Python4/Rust2 +r10 Java4 (25 total). Selection is
+cutoff-5885-review/recovery-admission-r7-r10-selected25.json; output directory
+recovery-admission/r7-r10-selected25-v1. Race summary/reference file hashes for
+Go0439/0522 additionally bound and candidate canonical hashes verified. Do not
+start another verifier/admission until this queue exits. Actual admitted count
+remains25, max combined3098, minimum gap902 until this admission completes.
+
+R11 generation session44585 exited1, preserving partial completion:12 candidates
+across Go1/Rust5/JS2/TS4; Python0138 failed strict returned-ID guard (original
+parent ID returned instead of requested derived ID). Do not rename output,
+overwrite r11, or count it as a complete generation. Completed candidates still
+need independent quality review and serial diagnostics. Raw failure preserved.
+
+Three next-selection reviewer reports completed: RECOVERY_NEXT_GO_JAVA_20
+(18 proposals), RECOVERY_NEXT_PYTHON_RUST_20 (19), RECOVERY_NEXT_JS_TS_20 (16),
+all suffixed _20260908.md. Main has NOT fully read/approved these53 proposals;
+no new reservations. Reviewers idle. Existing69 unique parent exclusions apply.
+
+Next: finish batch admission, integrate/review r11 and next-selection evidence,
+then batch a verified GCS backup covering terminal r6-r11 and new admissions.
+Latest verified GCS checkpoint remains admission21; no cleanup authorized by
+an incomplete backup. Training/release estimates50%/35%, not measured fractions;
+admission active, no training active. Next admission estimate10–20min low
+confidence; full delivery ETA not yet defensible.
+
 ## Exact resume: admission25 and serial queue41369 — 2026-09-08
+
+Latest after commit4090ef6 (push SUCCESS): queue41369 completed r9all6 directionality
+positive, r8six directionalitypositive matching staticpositives;0641/0617 allthree
+pass,0687/0762 allthree behavioralfail. Queue is now running r7Go9. Do not start
+admission/race until queuefinishes. Those12 new qualified r9/r8 candidates are not
+yetadmitted. r10provisional request/feedback drafts completed; main has NOT read
+or approved them. All reviewersidle. Next main: read/validate r10 then launchone
+bounded testcorrection while serialGo continues; batch12 admission afterGo/race.
 
 Post-checkpoint main FULLY READ final r8Java report: sixstaticpositives0710/0642/
 0647/0677/0785/0763, fourholds0641/0617/0687/0762 as described below. Reviewer

@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "567a025cfaa43c977ed91be995bcd9ff9b1c003cf230fa85d81ef70349633b4c",
+  "code": "from copy import deepcopy\nfrom difflib import SequenceMatcher\nimport math\n\n\nclass MemoryCatalog:\n    def __init__(self, entries):\n        if isinstance(entries, (str, bytes)):\n            raise TypeError(\"entries must be an iterable\")\n        try:\n            values = list(entries)\n        except TypeError as exc:\n            raise TypeError(\"entries must be iterable\") from exc\n        seen = set()\n        required = {\"id\", \"title\", \"category\", \"enabled\", \"rank\"}\n        for entry in values:\n            if not isinstance(entry, dict):\n                raise TypeError(\"entries must be dictionaries\")\n            if set(entry) != required:\n                raise ValueError(\"invalid entry fields\")\n            if not isinstance(entry[\"id\"], str) or not entry[\"id\"]:\n                raise ValueError(\"id must be a non-empty string\")\n            if entry[\"id\"] in seen:\n                raise ValueError(\"duplicate id\")\n            seen.add(entry[\"id\"])\n            if not isinstance(entry[\"title\"], str) or not isinstance(entry[\"category\"], str):\n                raise TypeError(\"title and category must be strings\")\n            if not isinstance(entry[\"enabled\"], bool):\n                raise TypeError(\"enabled must be boolean\")\n            rank = entry[\"rank\"]\n            if isinstance(rank, bool) or not isinstance(rank, (int, float)):\n                raise TypeError(\"rank must be numeric\")\n            if isinstance(rank, float) and not math.isfinite(rank):\n                raise ValueError(\"rank must be finite\")\n        self._entries = deepcopy(values)\n\n    def search(self, term, category=None, enabled=None, offset=0, limit=20):\n        if not isinstance(term, str):\n            raise TypeError(\"term must be a string\")\n        if category is not None and not isinstance(category, str):\n            raise TypeError(\"category must be a string or None\")\n        if enabled is not None and not isinstance(enabled, bool):\n            raise TypeError(\"enabled must be boolean or None\")\n        for name, value in ((\"offset\", offset), (\"limit\", limit)):\n            if isinstance(value, bool) or not isinstance(value, int):\n                raise TypeError(f\"{name} must be an integer\")\n            if value < 0:\n                raise ValueError(f\"{name} must be non-negative\")\n        needle = term.casefold()\n        matches = []\n        for entry in self._entries:\n            title = entry[\"title\"].casefold()\n            text_match = not needle or needle in title or SequenceMatcher(None, needle, title).ratio() >= 0.6\n            if text_match and (category is None or entry[\"category\"] == category) and (enabled is None or entry[\"enabled\"] is enabled):\n                matches.append(entry)\n        matches.sort(key=lambda entry: (-entry[\"rank\"], entry[\"title\"].casefold(), entry[\"id\"]))\n        return deepcopy(matches[offset:offset + limit])\n",
+  "code_sha256": "1db93a06df2d1135256d32098a38b9794804ca8ff4bbdd519dbed04031323774",
+  "evidence_sha256": "57fb5b318bd0f9db6c4e6e3eacb67ffa41c7cdc5ce7e9520ca8149051bef1e02",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "e2c534bf1c6c91ab58615e9bf378f93e983c48e24dbc05497c88d853847d6d74",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 449,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.002s\n\nOK\n",
+    "stderr_sha256": "75ff54e727b57e4bd7b88956ed0c92c4b9a416e6f0976707e8fb54aa385ac0bd",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

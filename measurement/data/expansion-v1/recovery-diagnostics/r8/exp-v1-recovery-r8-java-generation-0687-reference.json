@@ -1,0 +1,37 @@
+{
+  "candidate_sha256": "c443705f56e9e980f4bce91359b24add5c4cef155a47835f3f282e6619fa559e",
+  "code": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Set;\nimport java.util.TreeMap;\nimport java.util.TreeSet;\n\npublic final class Solution {\n    private Solution() {}\n\n    public enum Kind { CREATE, REPLACE, DELETE }\n\n    public static final class Change {\n        private final Kind kind;\n        private final int groupId;\n        private final List<Integer> permissionIds;\n\n        public Change(Kind kind, int groupId, Collection<Integer> permissionIds) {\n            if (kind == null || groupId <= 0) {\n                throw new IllegalArgumentException(\"invalid change\");\n            }\n            if (permissionIds == null && kind != Kind.DELETE) {\n                throw new IllegalArgumentException(\"permissions must not be null\");\n            }\n            this.kind = kind;\n            this.groupId = groupId;\n            this.permissionIds = permissionIds == null\n                    ? Collections.emptyList()\n                    : new ArrayList<>(permissionIds);\n        }\n    }\n\n    public static Map<Integer, Set<Integer>> apply(\n            Map<Integer, ? extends Collection<Integer>> initial,\n            List<Change> changes) {\n        if (initial == null || changes == null) {\n            throw new IllegalArgumentException(\"inputs must not be null\");\n        }\n\n        TreeMap<Integer, TreeSet<Integer>> working = new TreeMap<>();\n        for (Map.Entry<Integer, ? extends Collection<Integer>> entry : initial.entrySet()) {\n            Integer id = entry.getKey();\n            if (id == null || id <= 0 || entry.getValue() == null) {\n                throw new IllegalArgumentException(\"invalid initial group\");\n            }\n            working.put(id, checkedSet(entry.getValue()));\n        }\n\n        for (Change change : changes) {\n            if (change == null) {\n                throw new IllegalArgumentException(\"null change\");\n            }\n            boolean exists = working.containsKey(change.groupId);\n            TreeSet<Integer> permissions = checkedSet(change.permissionIds);\n            if (change.kind == Kind.CREATE) {\n                if (exists) {\n                    throw new IllegalArgumentException(\"group already exists\");\n                }\n                working.put(change.groupId, permissions);\n            } else if (change.kind == Kind.REPLACE) {\n                if (!exists) {\n                    throw new IllegalArgumentException(\"group does not exist\");\n                }\n                working.put(change.groupId, permissions);\n            } else {\n                if (!exists) {\n                    throw new IllegalArgumentException(\"group does not exist\");\n                }\n                working.remove(change.groupId);\n            }\n        }\n\n        Map<Integer, Set<Integer>> result = new TreeMap<>();\n        for (Map.Entry<Integer, TreeSet<Integer>> entry : working.entrySet()) {\n            result.put(entry.getKey(),\n                    Collections.unmodifiableSet(new TreeSet<>(entry.getValue())));\n        }\n        return Collections.unmodifiableMap(result);\n    }\n\n    private static TreeSet<Integer> checkedSet(Collection<Integer> values) {\n        TreeSet<Integer> set = new TreeSet<>();\n        for (Integer value : values) {\n            if (value == null || value <= 0) {\n                throw new IllegalArgumentException(\"invalid permission ID\");\n            }\n            set.add(value);\n        }\n        return set;\n    }\n}\n",
+  "code_sha256": "3664fcc73dfc737189c1b484773ada4d4d942dd417c0268ca13919cb34175113",
+  "evidence_sha256": "2b9b33910d8f968280436a781a7444f0e7e534a6af3c0eb646a59f9c9f7474a4",
+  "label": "reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "e5a6f0e44d9ced2427c0bfda943feb34de77df5c2640a159a0ec01f5726b900c",
+  "result": {
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "duration_ms": 3645,
+    "exit_codes": [
+      0,
+      1
+    ],
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "runtime_id": "java-21.0.11",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: expected IllegalArgumentException\n\tat SolutionTest.expectIae(SolutionTest.java:80)\n\tat SolutionTest.main(SolutionTest.java:46)\n",
+    "stderr_sha256": "49ecd9f663107492ddc0101bada26b1550e4020f1c441d9acc875f0d4d234fd6",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

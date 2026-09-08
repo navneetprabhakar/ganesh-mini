@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "1b7f04fe9ccdca833f66702a114b67447fc9b0feea5b511007ad6e9a1a674421",
+  "code": "use std::collections::HashSet;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RecordFormat {\n    Lines,\n    Bracketed,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum TranscodeError {\n    Malformed,\n    DuplicateKey,\n    InvalidUtf8,\n}\n\nfn valid_key(key: &str) -> bool {\n    !key.is_empty() && key.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')\n}\n\nfn hex_value(byte: u8) -> Option<u8> {\n    match byte {\n        b'0'..=b'9' => Some(byte - b'0'),\n        b'a'..=b'f' => Some(byte - b'a' + 10),\n        b'A'..=b'F' => Some(byte - b'A' + 10),\n        _ => None,\n    }\n}\n\nfn decode(value: &str) -> Result<String, TranscodeError> {\n    let bytes = value.as_bytes();\n    let mut output = Vec::new();\n    let mut index = 0;\n\n    while index < bytes.len() {\n        let byte = bytes[index];\n        if byte == b'%' {\n            if index + 2 >= bytes.len() {\n                return Err(TranscodeError::Malformed);\n            }\n            let high = hex_value(bytes[index + 1]).ok_or(TranscodeError::Malformed)?;\n            let low = hex_value(bytes[index + 2]).ok_or(TranscodeError::Malformed)?;\n            output.push((high << 4) | low);\n            index += 3;\n        } else if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~') {\n            output.push(byte);\n            index += 1;\n        } else {\n            return Err(TranscodeError::Malformed);\n        }\n    }\n\n    String::from_utf8(output).map_err(|_| TranscodeError::InvalidUtf8)\n}\n\nfn encode(value: &str) -> String {\n    const HEX: &[u8; 16] = b\"0123456789ABCDEF\";\n    let mut output = String::new();\n\n    for byte in value.bytes() {\n        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~') {\n            output.push(char::from(byte));\n        } else {\n            output.push('%');\n            output.push(char::from(HEX[(byte >> 4) as usize]));\n            output.push(char::from(HEX[(byte & 0x0f) as usize]));\n        }\n    }\n\n    output\n}\n\nfn parse_record(record: &str) -> Result<(String, String), TranscodeError> {\n    let (key, value) = record.split_once('=').ok_or(TranscodeError::Malformed)?;\n    if !valid_key(key) || value.contains('=') {\n        return Err(TranscodeError::Malformed);\n    }\n    Ok((key.to_owned(), decode(value)?))\n}\n\nfn trim_record_spaces(record: &str) -> &str {\n    record.trim_matches(' ')\n}\n\npub fn transcode_records(\n    input: &str,\n    from: RecordFormat,\n    to: RecordFormat,\n    compact: bool,\n) -> Result<String, TranscodeError> {\n    let mut records = Vec::new();\n\n    match from {\n        RecordFormat::Lines => {\n            if input.contains('\\r') || input == \"\\n\" {\n                return Err(TranscodeError::Malformed);\n            }\n\n            let body = input.strip_suffix('\\n').unwrap_or(input);\n            if !body.is_empty() {\n                for record in body.split('\\n') {\n                    if record.is_empty() {\n                        return Err(TranscodeError::Malformed);\n                    }\n                    records.push(parse_record(record)?);\n                }\n            }\n        }\n        RecordFormat::Bracketed => {\n            let trimmed = input.trim_ascii();\n            if trimmed.len() < 2 || !trimmed.starts_with('[') || !trimmed.ends_with(']') {\n                return Err(TranscodeError::Malformed);\n            }\n\n            let inner = &trimmed[1..trimmed.len() - 1];\n            let inner = trim_record_spaces(inner);\n            if !inner.is_empty() {\n                for part in inner.split(',') {\n                    let record = trim_record_spaces(part);\n                    if record.is_empty() {\n                        return Err(TranscodeError::Malformed);\n                    }\n                    records.push(parse_record(record)?);\n                }\n            }\n        }\n    }\n\n    let mut seen = HashSet::new();\n    for (key, _) in &records {\n        if !seen.insert(key.clone()) {\n            return Err(TranscodeError::DuplicateKey);\n        }\n    }\n\n    records.sort_by(|left, right| left.0.cmp(&right.0));\n    let rendered: Vec<String> = records\n        .iter()\n        .map(|(key, value)| format!(\"{}={}\", key, encode(value)))\n        .collect();\n\n    Ok(match to {\n        RecordFormat::Lines => {\n            if rendered.is_empty() {\n                String::new()\n            } else {\n                format!(\"{}\\n\", rendered.join(\"\\n\"))\n            }\n        }\n        RecordFormat::Bracketed => {\n            if rendered.is_empty() {\n                if compact {\n                    \"[]\".to_owned()\n                } else {\n                    \"[ ]\".to_owned()\n                }\n            } else if compact {\n                format!(\"[{}]\", rendered.join(\",\"))\n            } else {\n                format!(\"[ {} ]\", rendered.join(\", \"))\n            }\n        }\n    })\n}\n",
+  "code_sha256": "28fd769b7714cfa448eb86aec061ce2a6b6d602a368de55eede7532ad16ca989",
+  "evidence_sha256": "af273367201443b604eed897572c5430716b7f23dfb60869a414a474b77b7ce3",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "e37bd12235442df21853d1913997f065186671d0f5077ab950f00a6b0c44232d",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1791,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 11 tests\ntest bracketed_ascii_whitespace_is_accepted_around_records_and_container ... FAILED\ntest compact_and_spaced_bracketed_forms_are_exact ... ok\ntest decoded_values_must_be_utf8 ... ok\ntest duplicate_keys_are_errors_but_case_variants_are_distinct ... ok\ntest empty_inputs_have_canonical_outputs ... ok\ntest keys_are_validated_and_remain_case_sensitive ... ok\ntest lines_are_sorted_and_encoding_is_canonicalized ... ok\ntest malformed_bracket_structure_and_blank_records_are_rejected ... ok\ntest malformed_lines_records_are_rejected ... ok\ntest raw_disallowed_value_bytes_and_bad_percent_escapes_are_malformed ... ok\ntest repeated_transcoding_is_stable_and_does_not_change_the_input ... ok\n\nfailures:\n\n---- bracketed_ascii_whitespace_is_accepted_around_records_and_container stdout ----\n\nthread 'bracketed_ascii_whitespace_is_accepted_around_records_and_container' panicked at solution_test.rs:9:19:\nexpected successful transcode\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    bracketed_ascii_whitespace_is_accepted_around_records_and_container\n\ntest result: FAILED. 10 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "8005671ae2e4de70f003458c71c6e643a19aa3692d01c1c9ee181788baede664",
+    "timed_out": false
+  }
+}

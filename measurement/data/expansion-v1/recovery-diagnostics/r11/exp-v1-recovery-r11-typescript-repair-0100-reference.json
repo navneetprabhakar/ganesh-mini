@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "6cdfab4b343723fb39fb13d15c3df1bbe33cf040c4b2610ec0f2044909f1859b",
+  "code": "export interface Exhibit {\n  readonly key: string;\n  readonly caption: string;\n  readonly artwork: string;\n  readonly rating: number;\n}\n\nexport interface ExhibitEvents {\n  captionChanged: string;\n  artworkChanged: string;\n  ratingChanged: number;\n}\n\ntype ExhibitListener<K extends keyof ExhibitEvents> = (value: ExhibitEvents[K]) => void;\ntype ExhibitRegistration<K extends keyof ExhibitEvents> = {\n  readonly listener: ExhibitListener<K>;\n};\n\nexport class ExhibitController {\n  private listeners: { [K in keyof ExhibitEvents]: Array<ExhibitRegistration<K>> } = {\n    captionChanged: [],\n    artworkChanged: [],\n    ratingChanged: [],\n  };\n\n  public constructor(\n    private readonly _key: string,\n    private _caption: string,\n    private _artwork: string,\n    private _rating: number,\n  ) {\n    this.assertRating(_rating);\n  }\n\n  public get key(): string { return this._key; }\n  public get caption(): string { return this._caption; }\n  public get artwork(): string { return this._artwork; }\n  public get rating(): number { return this._rating; }\n\n  public set caption(value: string) {\n    if (value === this._caption) return;\n    this._caption = value;\n    this.emit('captionChanged', value);\n  }\n\n  public set artwork(value: string) {\n    if (value === this._artwork) return;\n    this._artwork = value;\n    this.emit('artworkChanged', value);\n  }\n\n  public set rating(value: number) {\n    this.assertRating(value);\n    if (value === this._rating) return;\n    this._rating = value;\n    this.emit('ratingChanged', value);\n  }\n\n  public get state(): Exhibit {\n    return { key: this._key, caption: this._caption, artwork: this._artwork, rating: this._rating };\n  }\n\n  public update(next: Exhibit): void {\n    this.assertRating(next.rating);\n    this.caption = next.caption;\n    this.artwork = next.artwork;\n    this.rating = next.rating;\n  }\n\n  public on<K extends keyof ExhibitEvents>(event: K, listener: ExhibitListener<K>): () => void {\n    const bucket = this.listeners[event];\n    const registration: ExhibitRegistration<K> = { listener };\n    bucket.push(registration);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = bucket.indexOf(registration);\n      if (index >= 0) bucket.splice(index, 1);\n    };\n  }\n\n  private emit<K extends keyof ExhibitEvents>(event: K, value: ExhibitEvents[K]): void {\n    const snapshot = this.listeners[event].map(({ listener }) => listener);\n    for (const listener of snapshot) listener(value);\n  }\n\n  private assertRating(value: number): void {\n    if (!Number.isFinite(value) || value < 0 || value > 5) {\n      throw new RangeError('rating must be between 0 and 5');\n    }\n  }\n}\n",
+  "code_sha256": "c3af3205413ae5902149c995fa783b32fe813e23b64b6772e7226cd992ad6bdb",
+  "evidence_sha256": "33cf840a56a814d1487e2903321e4f14a6f3f31932c60a81676636b2cf41b683",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "0c9f232fce163505b6652cfa7e6053964dbd919796ca2219933b2dd408fbb9f6",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 3484,
+    "exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

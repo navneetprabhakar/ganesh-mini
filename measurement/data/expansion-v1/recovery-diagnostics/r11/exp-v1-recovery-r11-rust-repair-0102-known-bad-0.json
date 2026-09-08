@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "f70b7ac81d2125c7e961f70a586cd9a2f35e09c85da8dc365bac48b700c939a8",
+  "code": "use std::collections::BTreeSet;\n\npub fn qualified_ref(kind: &str, name: &str) -> Option<String> {\n    if name.is_empty() || name.starts_with('/') || name.chars().any(|c| c.is_ascii_whitespace() || c == ':') {\n        return None;\n    }\n    let section = match kind { \"branch\" => \"heads\", \"tag\" => \"tags\", _ => return None };\n    Some(format!(\"refs/{section}/{name}:refs/{section}/{name}\"))\n}\n\npub fn project_slug(remote: &str) -> Option<String> {\n    let clean = remote.trim().trim_end_matches('/');\n    let leaf = clean.rsplit(['/', ':']).next()?;\n    let slug = leaf.strip_suffix(\".git\").unwrap_or(leaf);\n    (!slug.is_empty()).then(|| slug.to_string())\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct RepoPlan {\n    pub primary: String,\n    pub supporting: Vec<String>,\n    pub tags: Vec<String>,\n}\n\nimpl RepoPlan {\n    pub fn tracked_refs(&self) -> Vec<String> {\n        let mut seen = BTreeSet::new();\n        let mut out = Vec::new();\n        for (kind, name) in std::iter::once((\"branch\", &self.primary))\n            .chain(self.supporting.iter().map(|n| (\"branch\", n)))\n            .chain(self.tags.iter().map(|n| (\"tag\", n)))\n        {\n            if let Some(reference) = qualified_ref(kind, name) {\n                if seen.insert(reference.clone()) { out.push(reference); }\n            }\n        }\n        out\n    }\n}\n",
+  "code_sha256": "6b2ec40b5b9a4653c04112c1490efe0704952f24c0bede3e1b95de727ea94637",
+  "evidence_sha256": "6cf289652f1a6c56fc4bf88ee5a5cbc535cdefe520becd538dc67d19c9801f3f",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "8c2b016284660327c9d77e34b6ccf76585bcaf4e147c761ef4d9bfe7d4a923f0",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 2301,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 7 tests\ntest invalid_primary_is_skipped_and_stored_strings_are_unchanged ... ok\ntest non_ascii_whitespace_is_ordinary_reference_text ... ok\ntest project_slug_preserves_non_ascii_whitespace ... FAILED\ntest project_slug_removes_exactly_one_git_suffix_and_rejects_empty_leaf ... ok\ntest project_slug_trims_only_ascii_whitespace_and_trailing_slashes ... ok\ntest qualifies_only_valid_branch_and_tag_names ... ok\ntest tracked_refs_preserve_group_order_uniqueness_and_kind_identity ... ok\n\nfailures:\n\n---- project_slug_preserves_non_ascii_whitespace stdout ----\n\nthread 'project_slug_preserves_non_ascii_whitespace' panicked at solution_test.rs:48:5:\nassertion `left == right` failed\n  left: Some(\"repo\")\n right: Some(\"\\u{2003}repo.git\\u{2003}\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    project_slug_preserves_non_ascii_whitespace\n\ntest result: FAILED. 6 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "4d8779b9459dfacef0e9d3add8de8309101640e0d120df081d4d1926ce2dcf3a",
+    "timed_out": false
+  }
+}

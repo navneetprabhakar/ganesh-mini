@@ -1,5 +1,22 @@
 # Decisions
 
+## 2026-09-08 — Admission50 and larger versioned recovery batch
+
+Main accepts25 additional candidate admissions from r7/r8/r9/r10 after exact
+quality-report bindings, directionality, retained/prior dedup and evaluation
+separation. Cumulative50 is not a training seal; original holds stay intact.
+R7 Go0439/0522 have additional actual race evidence. Preserve all failed prior
+versions and bounded-coverage qualifications.
+
+Approve51 of53 next-generation proposals as r12, at most3 concurrent lanes
+and10 records per lane. Exact original/source/rights/test/evidence hashes and
+prior69 unique-parent exclusions were checked. Defer TS0241 optional-undefined
+scope and TS0242 oracle/API-only disposition; do not force a semantic control
+failure. Details in RECOVERY_R12_SELECTION_20260908.md. Original review stays
+closed; no new coverage credit or gate waiver. Repair test authors legitimately
+see embedded broken task input; never claim blindness to that input. Existing
+GCS evidence preservation is approved, but no uncapped/new compute inference.
+
 ## 2026-09-08 — Bounded recovery test correction and first admission selection
 
 Preserve all12 r1 outputs and36 diagnostic executions. The original defects are

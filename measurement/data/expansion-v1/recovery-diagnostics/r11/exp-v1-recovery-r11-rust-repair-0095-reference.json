@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "c73de157b4544c808a2c70fe5b016843b2db4736b7abf54d4310d6085312979f",
+  "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Permission { Reader, Owner }\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Identity { pub id: u64, pub address: String, secret: String, pub permission: Permission }\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum IdentityError { EmptyAddress, EmptySecret, DuplicateAddress }\n\n#[derive(Debug)]\npub struct IdentityBook { next_id: u64, entries: BTreeMap<String, Identity> }\n\nimpl Default for IdentityBook {\n    fn default() -> Self { Self::new() }\n}\n\nimpl IdentityBook {\n    pub fn new() -> Self { Self { next_id: 1, entries: BTreeMap::new() } }\n    pub fn add(&mut self, address: String, secret: String, permission: Permission) -> Result<u64, IdentityError> {\n        if address.is_empty() { return Err(IdentityError::EmptyAddress); }\n        if secret.is_empty() { return Err(IdentityError::EmptySecret); }\n        if self.entries.contains_key(&address) { return Err(IdentityError::DuplicateAddress); }\n        let id = self.next_id;\n        self.entries.insert(address.clone(), Identity { id, address, secret, permission });\n        self.next_id += 1;\n        Ok(id)\n    }\n    pub fn authenticate(&self, address: &str, secret: &str) -> bool {\n        self.entries.get(address).map_or(false, |entry| entry.address == address && entry.secret == secret)\n    }\n    pub fn permission(&self, address: &str) -> Option<Permission> {\n        self.entries.get(address).map(|entry| entry.permission)\n    }\n    pub fn len(&self) -> usize { self.entries.len() }\n    pub fn is_empty(&self) -> bool { self.entries.is_empty() }\n}\n",
+  "code_sha256": "2d07025a2822e3dff34e72f04fb9f7e604a19a557fba26dbcf1ed84ad6b49f6a",
+  "evidence_sha256": "035bc5115c3c141ccaf86484f218eb5f05b4ee0e7fde62b683f65137662ee3f1",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "1f0349892f99919906a6a1150d189fdeb1404b3d04dc11a6db486c2478f36ad7",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 2116,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 5 tests\ntest authentication_requires_exact_address_and_secret ... ok\ntest blank_but_nonempty_credentials_are_not_normalized ... ok\ntest new_and_default_are_independent_and_start_ids_at_one ... ok\ntest permission_lookup_is_exact_and_observers_are_stable ... ok\ntest validation_order_and_failed_additions_do_not_consume_ids ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "e3567753c4685aef365216e3a2f72f9eb20bf330428399dde3685fcc3054d14f",
+    "timed_out": false
+  }
+}

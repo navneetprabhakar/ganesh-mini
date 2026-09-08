@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "fc724e17e1ab43ea3112bcf57cd6cd342f4f2797b9cff9720d9d67fb1816260b",
+  "code": "package solution\n\nimport (\n\t\"fmt\"\n\t\"reflect\"\n\t\"sort\"\n)\n\ntype MethodSignature struct {\n\tName    string\n\tInputs  []reflect.Type\n\tOutputs []reflect.Type\n}\n\nfunc receiverValue(receiver any) (reflect.Value, error) {\n\tif receiver == nil {\n\t\treturn reflect.Value{}, fmt.Errorf(\"nil receiver\")\n\t}\n\tvalue := reflect.ValueOf(receiver)\n\tif value.Kind() == reflect.Ptr && value.IsNil() {\n\t\treturn reflect.Value{}, fmt.Errorf(\"nil receiver\")\n\t}\n\treturn value, nil\n}\n\nfunc ListCallable(receiver any) ([]MethodSignature, error) {\n\tvalue, err := receiverValue(receiver)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\ttyp := value.Type()\n\tout := make([]MethodSignature, 0, typ.NumMethod())\n\tfor i := 0; i < typ.NumMethod(); i++ {\n\t\tmethod := typ.Method(i)\n\t\tbound := value.MethodByName(method.Name).Type()\n\t\tinputs := make([]reflect.Type, bound.NumIn())\n\t\tfor j := range inputs {\n\t\t\tinputs[j] = bound.In(j)\n\t\t}\n\t\toutputs := make([]reflect.Type, bound.NumOut())\n\t\tfor j := range outputs {\n\t\t\toutputs[j] = bound.Out(j)\n\t\t}\n\t\tout = append(out, MethodSignature{Name: method.Name, Inputs: inputs, Outputs: outputs})\n\t}\n\tsort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })\n\treturn out, nil\n}\n\nfunc nilCapable(kind reflect.Kind) bool {\n\tswitch kind {\n\tcase reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:\n\t\treturn true\n\tdefault:\n\t\treturn false\n\t}\n}\n\nfunc Invoke(receiver any, method string, args []any) (results []any, err error) {\n\tvalue, err := receiverValue(receiver)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif method == \"\" {\n\t\treturn nil, fmt.Errorf(\"blank method name\")\n\t}\n\tcallable := value.MethodByName(method)\n\tif !callable.IsValid() {\n\t\treturn nil, fmt.Errorf(\"method not found\")\n\t}\n\ttyp := callable.Type()\n\tif len(args) != typ.NumIn() {\n\t\treturn nil, fmt.Errorf(\"wrong argument count\")\n\t}\n\tvalues := make([]reflect.Value, len(args))\n\tfor i, arg := range args {\n\t\twant := typ.In(i)\n\t\tif arg == nil {\n\t\t\tif !nilCapable(want.Kind()) {\n\t\t\t\treturn nil, fmt.Errorf(\"argument %d cannot be nil\", i)\n\t\t\t}\n\t\t\tvalues[i] = reflect.Zero(want)\n\t\t\tcontinue\n\t\t}\n\t\tgot := reflect.ValueOf(arg)\n\t\tif !got.Type().AssignableTo(want) {\n\t\t\treturn nil, fmt.Errorf(\"argument %d has incompatible type\", i)\n\t\t}\n\t\tvalues[i] = got\n\t}\n\tdefer func() {\n\t\tif recovered := recover(); recovered != nil {\n\t\t\tresults = nil\n\t\t\terr = fmt.Errorf(\"method panicked: %v\", recovered)\n\t\t}\n\t}()\n\treturned := callable.Call(values)\n\tresults = make([]any, len(returned))\n\tfor i, result := range returned {\n\t\tresults[i] = result.Interface()\n\t}\n\treturn results, nil\n}\n",
+  "code_sha256": "d72666588fc6396e0868c31f239306aa72bfebaa1f4efad253cc5daa39192e69",
+  "evidence_sha256": "95d04c40bb704e69ab296f240cfd3963f94581883c194c3ff52389540d8fdd99",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "4853e6847f4cd0226bb6f87ae406b5f5460ec83791ce0426d046ac63ece981d4",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 25829,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestInvokeVariadicUsesDeclaredSliceArgument (0.00s)\n    solution_test.go:80: Variadic=[]interface {}(nil) err=method panicked: reflect: cannot use []string as type string in Call\n--- FAIL: TestInvokeNilArguments (0.00s)\n    solution_test.go:98: nil unsafe pointer: []interface {}(nil) argument 0 cannot be nil\nFAIL\nFAIL\tganesh.invalid/expansion\t0.022s\nFAIL\n",
+    "stdout_sha256": "f9c70bdba93045d989fbeb923d977c4ae9ba95c6b9577dd8a76deb3219b6173f",
+    "timed_out": false
+  }
+}

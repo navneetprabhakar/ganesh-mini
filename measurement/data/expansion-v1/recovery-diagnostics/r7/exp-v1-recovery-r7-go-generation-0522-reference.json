@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "3a20d4e335c8894279b410d081cb92bbe6b639330fc05b5f8f93ead04567960c",
+  "code": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"errors\"\n\t\"reflect\"\n\t\"sort\"\n\t\"sync\"\n)\n\ntype Registry struct {\n\tmu   sync.RWMutex\n\tdata map[string][]byte\n}\n\nfunc NewRegistry() *Registry {\n\treturn &Registry{data: make(map[string][]byte)}\n}\n\nfunc (r *Registry) Put(key string, value any) error {\n\tif key == \"\" {\n\t\treturn errors.New(\"empty key\")\n\t}\n\tencoded, err := json.Marshal(value)\n\tif err != nil {\n\t\treturn err\n\t}\n\tstored := append([]byte(nil), encoded...)\n\tr.mu.Lock()\n\tif r.data == nil {\n\t\tr.data = make(map[string][]byte)\n\t}\n\tr.data[key] = stored\n\tr.mu.Unlock()\n\treturn nil\n}\n\nfunc (r *Registry) Get(key string, dst any) (bool, error) {\n\tif key == \"\" {\n\t\treturn false, errors.New(\"empty key\")\n\t}\n\tif dst == nil {\n\t\treturn false, errors.New(\"nil destination\")\n\t}\n\tdestination := reflect.ValueOf(dst)\n\tif destination.Kind() != reflect.Ptr || destination.IsNil() {\n\t\treturn false, errors.New(\"destination must be a non-nil pointer\")\n\t}\n\tr.mu.RLock()\n\tencoded, ok := r.data[key]\n\tcopyOfValue := append([]byte(nil), encoded...)\n\tr.mu.RUnlock()\n\tif !ok {\n\t\treturn false, nil\n\t}\n\tif err := json.Unmarshal(copyOfValue, dst); err != nil {\n\t\treturn true, err\n\t}\n\treturn true, nil\n}\n\nfunc (r *Registry) Delete(key string) bool {\n\tif key == \"\" {\n\t\treturn false\n\t}\n\tr.mu.Lock()\n\t_, ok := r.data[key]\n\tif ok {\n\t\tdelete(r.data, key)\n\t}\n\tr.mu.Unlock()\n\treturn ok\n}\n\nfunc (r *Registry) Has(key string) bool {\n\tif key == \"\" {\n\t\treturn false\n\t}\n\tr.mu.RLock()\n\t_, ok := r.data[key]\n\tr.mu.RUnlock()\n\treturn ok\n}\n\nfunc (r *Registry) Keys() []string {\n\tr.mu.RLock()\n\tkeys := make([]string, 0, len(r.data))\n\tfor key := range r.data {\n\t\tkeys = append(keys, key)\n\t}\n\tr.mu.RUnlock()\n\tsort.Strings(keys)\n\treturn keys\n}\n",
+  "code_sha256": "2354a90060d7ec1c1c581f2cde229843e45918d85867ccb47d365e787f7f13c7",
+  "evidence_sha256": "4e842a50aa0d186d72394bb505d82e131345e32bba5137018f94444c2b2b00c3",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "ce7690df2df169a97c0b73bce989ce42a742bb3ed8912b8bb6bc63f1fae90645",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26070,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.023s\n",
+    "stdout_sha256": "4125dc7d45999d2e2a15747bcd6209c14866065684faa920fec21646efff8f7a",
+    "timed_out": false
+  }
+}

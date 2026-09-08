@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "6cdfab4b343723fb39fb13d15c3df1bbe33cf040c4b2610ec0f2044909f1859b",
+  "code": "export interface Exhibit {\n  readonly key: string;\n  readonly caption: string;\n  readonly artwork: string;\n  readonly rating: number;\n}\n\nexport interface ExhibitEvents {\n  captionChanged: string;\n  artworkChanged: string;\n  ratingChanged: number;\n}\n\nexport class ExhibitController {\n  private listeners: { [K in keyof ExhibitEvents]: Array<(value: ExhibitEvents[K]) => void> } = {\n    captionChanged: [],\n    artworkChanged: [],\n    ratingChanged: [],\n  };\n\n  public constructor(\n    private _key: string,\n    private _caption: string,\n    private _artwork: string,\n    private _rating: number,\n  ) {\n    this.assertRating(_rating);\n  }\n\n  public get key(): string { return this._key; }\n  public get caption(): string { return this._caption; }\n  public get artwork(): string { return this._artwork; }\n  public get rating(): number { return this._rating; }\n\n  public set caption(value: string) {\n    if (value === this._caption) return;\n    this._caption = value;\n    this.emit('captionChanged', value);\n  }\n\n  public set artwork(value: string) {\n    if (value === this._artwork) return;\n    this._artwork = value;\n    this.emit('artworkChanged', value);\n  }\n\n  public set rating(value: number) {\n    this.assertRating(value);\n    if (value === this._rating) return;\n    this._rating = value;\n    this.emit('ratingChanged', value);\n  }\n\n  public get state(): Exhibit {\n    return { key: this._key, caption: this._caption, artwork: this._artwork, rating: this._rating };\n  }\n\n  public update(next: Exhibit): void {\n    this.assertRating(next.rating);\n    this.caption = next.caption;\n    this.artwork = next.artwork;\n    this.rating = next.rating;\n  }\n\n  public on<K extends keyof ExhibitEvents>(event: K, listener: (value: ExhibitEvents[K]) => void): () => void {\n    const bucket = this.listeners[event] as Array<(value: ExhibitEvents[K]) => void>;\n    bucket.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = bucket.indexOf(listener);\n      if (index >= 0) bucket.splice(index, 1);\n    };\n  }\n\n  private emit<K extends keyof ExhibitEvents>(event: K, value: ExhibitEvents[K]): void {\n    const snapshot = [...this.listeners[event]] as Array<(item: ExhibitEvents[K]) => void>;\n    for (const listener of snapshot) listener(value);\n  }\n\n  private assertRating(value: number): void {\n    if (!Number.isFinite(value) || value < 0 || value > 5) {\n      throw new RangeError('rating must be between 0 and 5');\n    }\n  }\n}\n",
+  "code_sha256": "f182cd21d551ba4b15e673281419d5079210649cce077b64b1d57bf3458f7aeb",
+  "evidence_sha256": "456ff47a1268ad265e8440ebe46e83c4a50dd66642ec820085603ee8b44f1992",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "0c9f232fce163505b6652cfa7e6053964dbd919796ca2219933b2dd408fbb9f6",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 3436,
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "/work/solution.test.js:10\n        throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);\n        ^\n\nError: duplicate subscriptions must be independently removable at 0: expected shared:one, got middle:one\n    at equal (/work/solution.test.js:10:15)\n    at equalArray (/work/solution.test.js:16:9)\n    at Object.<anonymous> (/work/solution.test.js:95:5)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "92b901d45f30ddc39ccf78b2b5a9f30595cbbb0f21e0f18f264dbeb640cda6f3",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

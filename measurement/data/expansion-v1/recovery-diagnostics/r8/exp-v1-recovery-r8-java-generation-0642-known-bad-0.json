@@ -1,0 +1,37 @@
+{
+  "candidate_sha256": "5fd8df5363158478b54fc4393ad065417b54a5daa7674d05e9664153195db131",
+  "code": "import java.util.List;\nimport java.util.Locale;\n\npublic final class Solution {\n    private Solution() {}\n\n    public interface TextConversion {\n        boolean supports(String mediaType, Class<?> targetType);\n        Object convert(String body);\n    }\n\n    public static final class ParseException extends Exception {\n        public ParseException(String message) {\n            super(message);\n        }\n\n        public ParseException(String message, Throwable cause) {\n            super(message, cause);\n        }\n    }\n\n    public static Object parse(String body, String contentType, Class<?> targetType,\n                               List<TextConversion> conversions) throws ParseException {\n        if (body == null || contentType == null || targetType == null || conversions == null) {\n            throw new IllegalArgumentException(\"arguments must not be null\");\n        }\n        for (TextConversion conversion : conversions) {\n            if (conversion == null) {\n                throw new IllegalArgumentException(\"conversion must not be null\");\n            }\n        }\n        String mediaType = normalize(contentType);\n        for (TextConversion conversion : conversions) {\n            if (conversion.supports(mediaType, targetType)) {\n                try {\n                    Object value = conversion.convert(body);\n                    if (value != null && !targetType.isInstance(value)) {\n                        throw new ParseException(\"conversion returned the wrong type\");\n                    }\n                    return value;\n                } catch (ParseException exception) {\n                    throw exception;\n                } catch (RuntimeException exception) {\n                    throw new ParseException(\"custom conversion failed\", exception);\n                }\n            }\n        }\n        try {\n            if (mediaType.equals(\"text/plain\") && targetType == String.class) {\n                return body;\n            }\n            if (mediaType.equals(\"application/integer\") && targetType == Integer.class) {\n                return Integer.valueOf(body.trim());\n            }\n            if (mediaType.equals(\"application/boolean\") && targetType == Boolean.class) {\n                String value = body.trim();\n                if (value.equalsIgnoreCase(\"true\")) return Boolean.TRUE;\n                if (value.equalsIgnoreCase(\"false\")) return Boolean.FALSE;\n                throw new IllegalArgumentException(\"invalid boolean\");\n            }\n        } catch (RuntimeException exception) {\n            throw new ParseException(\"built-in conversion failed\", exception);\n        }\n        throw new ParseException(\"unsupported conversion\");\n    }\n\n    private static String normalize(String contentType) {\n        int semicolon = contentType.indexOf(';');\n        String value = semicolon < 0 ? contentType : contentType.substring(0, semicolon);\n        return value.trim().toLowerCase(Locale.ROOT);\n    }\n}\n",
+  "code_sha256": "e29e07fb86f5053be6efee3d1001516f011c3400ecbd14a36efe9e16ac2db36f",
+  "evidence_sha256": "f3d705187a042141f0130d5665301a1a928dfda492fdbe9420c1d9926fba1d49",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "bdaff47154330203d59478fa0605a34583cb422feedd40e507c22a9d80917fe3",
+  "result": {
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "duration_ms": 2993,
+    "exit_codes": [
+      0,
+      1
+    ],
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "runtime_id": "java-21.0.11",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "Exception in thread \"main\" java.lang.RuntimeException: support\n\tat SolutionTest.main(SolutionTest.java:46)\n",
+    "stderr_sha256": "372a27f8201e8d0550f4f850c2b833b34ccbe7b74ef6fd20daba4003bac008c0",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

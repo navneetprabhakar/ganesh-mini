@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "8c22ca5a7619f1426aec517588fd4a6c5669184f7d0b6504d2f01af6802126dd",
+  "code": "use std::collections::BTreeMap;\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Tool { pub id: u64, pub name: String, pub zone: String }\n#[derive(Clone, Debug, PartialEq, Eq, Default)]\npub struct Workshop {\n    pub name: String,\n    pub zones: BTreeMap<String, Vec<u64>>,\n    pub tools: BTreeMap<u64, Tool>,\n}\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum Command {\n    Health, Summary, Zone(String), AddZone(String), RemoveZone(String),\n    Tool(u64), AddTool { id: u64, name: String, zone: String }, RemoveTool(u64),\n}\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum Reply { Text(String), Changed, NotFound, Conflict, Invalid }\n\npub fn dispatch(workshop: &mut Workshop, command: Command) -> Reply {\n    match command {\n        Command::Health => Reply::Text(\"ready\".into()),\n        Command::Summary => Reply::Text(format!(\"{}|{}\", workshop.name, workshop.zones.keys().cloned().collect::<Vec<_>>().join(\",\"))),\n        Command::Zone(zone) => match workshop.zones.get(zone.trim()) {\n            Some(ids) => Reply::Text(ids.iter().map(u64::to_string).collect::<Vec<_>>().join(\",\")),\n            None => Reply::NotFound,\n        },\n        Command::AddZone(zone) => {\n            let zone = zone.trim();\n            if zone.is_empty() { Reply::Invalid }\n            else if workshop.zones.contains_key(zone) { Reply::Conflict }\n            else { workshop.zones.insert(zone.into(), Vec::new()); Reply::Changed }\n        }\n        Command::RemoveZone(zone) => {\n            let zone = zone.trim();\n            if zone.is_empty() { return Reply::Invalid; }\n            let Some(ids) = workshop.zones.remove(zone) else { return Reply::NotFound; };\n            for id in ids { workshop.tools.remove(&id); }\n            Reply::Changed\n        }\n        Command::Tool(id) => match workshop.tools.get(&id) {\n            Some(tool) => Reply::Text(format!(\"{}|{}|{}\", tool.id, tool.name, tool.zone)),\n            None => Reply::NotFound,\n        },\n        Command::AddTool { id, name, zone } => {\n            let name = name.trim(); let zone = zone.trim();\n            if name.is_empty() || zone.is_empty() { return Reply::Invalid; }\n            if workshop.tools.contains_key(&id) { return Reply::Conflict; }\n            let Some(ids) = workshop.zones.get_mut(zone) else { return Reply::NotFound; };\n            ids.push(id);\n            workshop.tools.insert(id, Tool { id, name: name.into(), zone: zone.into() });\n            Reply::Changed\n        }\n        Command::RemoveTool(id) => {\n            let Some(tool) = workshop.tools.remove(&id) else { return Reply::NotFound; };\n            if let Some(ids) = workshop.zones.get_mut(&tool.zone) { ids.retain(|x| *x != id); }\n            Reply::Changed\n        }\n    }\n}\n",
+  "code_sha256": "1102f4fb30a4ccb75a80112246414eaf39b5b6c6c5df6a66cf74c05cce805116",
+  "evidence_sha256": "f55b3bb2f08bd155d299c7b14e6e7377dc76361b28aed44404c3e2a96f62105e",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "aa56c6090a2bfa2124c29e7066c9d42c995b3c6cd4e026063007dfa8ce6786f5",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1904,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 8 tests\ntest duplicate_tool_id_conflicts_without_disturbing_original ... ok\ntest health_and_empty_summary_are_exact_and_non_mutating ... ok\ntest malformed_zone_names_and_lookups_are_rejected_atomically ... FAILED\ntest missing_zone_and_malformed_tool_names_do_not_mutate ... ok\ntest removing_a_zone_cascades_to_all_assigned_tools ... ok\ntest removing_tools_updates_only_their_zone_and_missing_removal_is_atomic ... ok\ntest tools_preserve_zone_insertion_order_and_trim_stored_names ... ok\ntest zones_are_trimmed_sorted_and_case_sensitive ... ok\n\nfailures:\n\n---- malformed_zone_names_and_lookups_are_rejected_atomically stdout ----\n\nthread 'malformed_zone_names_and_lookups_are_rejected_atomically' panicked at solution_test.rs:52:9:\nassertion `left == right` failed\n  left: NotFound\n right: Invalid\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    malformed_zone_names_and_lookups_are_rejected_atomically\n\ntest result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "e8a173845de26b0c8b33f90b680df8cd3f34942c23b89ecec88f0dca6499953f",
+    "timed_out": false
+  }
+}

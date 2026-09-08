@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "294bc65541b99a628308951501bd23fc0f6f42661ac3e874a354d7b1766215a5",
+  "code": "package solution\n\nimport \"errors\"\n\ntype Condition struct {\n\tType   string\n\tActive bool\n}\n\ntype Blueprint struct {\n\tName   string\n\tLabels map[string]string\n}\n\ntype Workload struct {\n\tName       string\n\tLabels     map[string]string\n\tConditions []Condition\n}\n\ntype Result struct {\n\tAction     string\n\tWorkload   *Workload\n\tConditions []Condition\n}\n\nfunc labelsCopy(labels map[string]string) map[string]string {\n\tif labels == nil {\n\t\treturn nil\n\t}\n\tcopied := make(map[string]string, len(labels))\n\tfor key, value := range labels {\n\t\tcopied[key] = value\n\t}\n\treturn copied\n}\n\nfunc labelsEqual(a, b map[string]string) bool {\n\tif len(a) != len(b) {\n\t\treturn false\n\t}\n\tfor key, value := range a {\n\t\tother, exists := b[key]\n\t\tif !exists || other != value {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\nfunc workloadCopy(workload *Workload) *Workload {\n\tif workload == nil {\n\t\treturn nil\n\t}\n\treturn &Workload{\n\t\tName:       workload.Name,\n\t\tLabels:     labelsCopy(workload.Labels),\n\t\tConditions: append([]Condition(nil), workload.Conditions...),\n\t}\n}\n\nfunc Reconcile(blueprint Blueprint, current *Workload) (Result, error) {\n\tif blueprint.Name == \"\" {\n\t\tconditions := []Condition{{Type: \"Invalid\", Active: true}}\n\t\treturn Result{Action: \"error\", Conditions: conditions}, errors.New(\"empty name\")\n\t}\n\tfor key := range blueprint.Labels {\n\t\tif key == \"\" {\n\t\t\tconditions := []Condition{{Type: \"Invalid\", Active: true}}\n\t\t\treturn Result{Action: \"error\", Conditions: conditions}, errors.New(\"empty label key\")\n\t\t}\n\t}\n\tif current == nil {\n\t\tconditions := []Condition{{Type: \"Provisioning\", Active: true}}\n\t\tworkload := &Workload{\n\t\t\tName:       blueprint.Name,\n\t\t\tLabels:     labelsCopy(blueprint.Labels),\n\t\t\tConditions: append([]Condition(nil), conditions...),\n\t\t}\n\t\treturn Result{Action: \"create\", Workload: workload, Conditions: conditions}, nil\n\t}\n\tif current.Labels[\"lifecycle\"] == \"remove\" {\n\t\tconditions := []Condition{{Type: \"Removing\", Active: true}}\n\t\treturn Result{Action: \"delete\", Conditions: conditions}, nil\n\t}\n\tif current.Name != blueprint.Name || !labelsEqual(current.Labels, blueprint.Labels) {\n\t\tconditions := []Condition{{Type: \"Synchronizing\", Active: true}}\n\t\tworkload := &Workload{\n\t\t\tName:       blueprint.Name,\n\t\t\tLabels:     labelsCopy(blueprint.Labels),\n\t\t\tConditions: append([]Condition(nil), conditions...),\n\t\t}\n\t\treturn Result{Action: \"update\", Workload: workload, Conditions: conditions}, nil\n\t}\n\tworkload := workloadCopy(current)\n\tconditions := append([]Condition(nil), current.Conditions...)\n\treturn Result{Action: \"none\", Workload: workload, Conditions: conditions}, nil\n}\n",
+  "code_sha256": "17232a4e4e5a15111852df075183e363449b313f55752a69203ea81b9a39daa4",
+  "evidence_sha256": "c1bd68551deee168edf8275801b0e14ca9e26f0aba28eb6768377dc53ea917fc",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "e5db26603288b8f8b3233f61100859d76916748a2a3b42df7b35918c69239e06",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26042,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.017s\n",
+    "stdout_sha256": "63e87a0743b0301dd9286599ebfd982cd0e6fa2ab0f0e606ff376b1581a6da0c",
+    "timed_out": false
+  }
+}

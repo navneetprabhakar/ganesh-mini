@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "3a20d4e335c8894279b410d081cb92bbe6b639330fc05b5f8f93ead04567960c",
+  "code": "package solution\n\nimport (\n\t\"encoding/json\"\n\t\"errors\"\n\t\"sort\"\n\t\"sync\"\n)\n\ntype Registry struct {\n\tmu   sync.RWMutex\n\tdata map[string][]byte\n}\n\nfunc NewRegistry() *Registry {\n\treturn &Registry{data: make(map[string][]byte)}\n}\n\nfunc (r *Registry) Put(key string, value any) error {\n\tif key == \"\" {\n\t\treturn errors.New(\"empty key\")\n\t}\n\tencoded, err := json.Marshal(value)\n\tif err != nil {\n\t\treturn err\n\t}\n\tstored := append([]byte(nil), encoded...)\n\tr.mu.Lock()\n\tif r.data == nil {\n\t\tr.data = make(map[string][]byte)\n\t}\n\tr.data[key] = stored\n\tr.mu.Unlock()\n\treturn nil\n}\n\nfunc (r *Registry) Get(key string, dst any) (bool, error) {\n\tif key == \"\" {\n\t\treturn false, errors.New(\"empty key\")\n\t}\n\tif dst == nil {\n\t\treturn false, errors.New(\"nil destination\")\n\t}\n\tr.mu.RLock()\n\tencoded, ok := r.data[key]\n\tcopyOfValue := append([]byte(nil), encoded...)\n\tr.mu.RUnlock()\n\tif !ok {\n\t\treturn false, nil\n\t}\n\tif err := json.Unmarshal(copyOfValue, dst); err != nil {\n\t\treturn true, err\n\t}\n\treturn true, nil\n}\n\nfunc (r *Registry) Delete(key string) bool {\n\tif key == \"\" {\n\t\treturn false\n\t}\n\tr.mu.Lock()\n\t_, ok := r.data[key]\n\tif ok {\n\t\tdelete(r.data, key)\n\t}\n\tr.mu.Unlock()\n\treturn ok\n}\n\nfunc (r *Registry) Has(key string) bool {\n\tif key == \"\" {\n\t\treturn false\n\t}\n\tr.mu.RLock()\n\t_, ok := r.data[key]\n\tr.mu.RUnlock()\n\treturn ok\n}\n\nfunc (r *Registry) Keys() []string {\n\tr.mu.RLock()\n\tkeys := make([]string, 0, len(r.data))\n\tfor key := range r.data {\n\t\tkeys = append(keys, key)\n\t}\n\tr.mu.RUnlock()\n\tsort.Strings(keys)\n\treturn keys\n}\n",
+  "code_sha256": "0c8dfcc645434f2246468969b09b8dd9e8212403e95972c74e6b0c26e167ad25",
+  "evidence_sha256": "8cc9e35fba76fc13d7627c12fc3f676e77728c631df8a03bacd15cbf300c6fba",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "ce7690df2df169a97c0b73bce989ce42a742bb3ed8912b8bb6bc63f1fae90645",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "-race",
+        "./..."
+      ]
+    ],
+    "duration_ms": 32896,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestRegistryInvalidOperationsAndAtomicEncodingFailure (0.00s)\n    solution_test.go:52: invalid absent destination accepted: 1\n    solution_test.go:52: invalid absent destination accepted: map[string]int(nil)\n    solution_test.go:52: invalid absent destination accepted: (*int)(nil)\nFAIL\nFAIL\tganesh.invalid/expansion\t0.044s\nFAIL\n",
+    "stdout_sha256": "9d4852da19c597c92b0852c720dacf5f9d90ffb82d4cd4d5f1b7421f36f04e56",
+    "timed_out": false
+  }
+}

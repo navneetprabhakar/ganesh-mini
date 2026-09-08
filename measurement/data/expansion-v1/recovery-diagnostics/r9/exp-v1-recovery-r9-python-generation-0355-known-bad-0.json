@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "a4e4104f828090a35c783a9980a884fc0b08ace064fa9cf8825f0f9409e6a659",
+  "code": "from collections.abc import Mapping\n\n\ndef _descriptor(data, scheme):\n    if scheme == \"sample2\":\n        return tuple(data[::2])\n    if scheme == \"pair_sum\":\n        result = []\n        for index in range(0, len(data), 2):\n            if index + 1 < len(data):\n                result.append((data[index] + data[index + 1]) % 256)\n            else:\n                result.append(data[index])\n        return tuple(result)\n    if scheme == \"run_length\":\n        if not data:\n            return ()\n        result = []\n        length = 1\n        for index in range(1, len(data)):\n            if data[index] == data[index - 1]:\n                length += 1\n            else:\n                result.append(length)\n                length = 1\n        result.append(length)\n        return tuple(result)\n    result = []\n    for start in range(0, len(data), 4):\n        value = 0\n        for byte in data[start:start + 4]:\n            value ^= byte\n        result.append(value)\n    return tuple(result)\n\n\ndef compile_catalog(batches, schemes):\n    if not isinstance(batches, Mapping):\n        raise TypeError(\"batches must be a mapping\")\n\n    allowed = {\"sample2\", \"pair_sum\", \"run_length\", \"xor4\"}\n    ordered_schemes = []\n    seen = set()\n    for scheme in schemes:\n        if not isinstance(scheme, str):\n            raise TypeError(\"scheme names must be strings\")\n        if scheme not in allowed:\n            raise ValueError(\"unknown scheme: \" + scheme)\n        if scheme not in seen:\n            seen.add(scheme)\n            ordered_schemes.append(scheme)\n\n    materialized = {}\n    for batch_name, records in batches.items():\n        if not isinstance(batch_name, str):\n            raise TypeError(\"batch names must be strings\")\n        copied_records = []\n        for record in records:\n            if not isinstance(record, (tuple, list)) or len(record) != 2:\n                raise TypeError(\"records must be name-payload pairs\")\n            name, payload = record\n            if not isinstance(name, str) or not name:\n                raise ValueError(\"record names must be non-empty strings\")\n            try:\n                view = memoryview(payload)\n            except TypeError as exc:\n                raise TypeError(\"payload must support the buffer protocol\") from exc\n            if view.itemsize != 1:\n                raise ValueError(\"payload elements must be one byte wide\")\n            copied_records.append((name, bytes(view)))\n        materialized[batch_name] = copied_records\n\n    output = {}\n    for batch_name, records in materialized.items():\n        by_scheme = {}\n        for scheme in ordered_schemes:\n            descriptors = {}\n            for name, data in records:\n                descriptors[name] = _descriptor(data, scheme)\n            by_scheme[scheme] = descriptors\n        output[batch_name] = by_scheme\n    return output\n",
+  "code_sha256": "9a9559c49aeb981b655c25834e2cefeafbad8cfce1c5c3b28afa14f6958a5500",
+  "evidence_sha256": "223ee4359efdb526d1a2f48c162f11ccc53c34f16802dc108f3e18c5c8771eee",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "ed9c9388c83fae7fb3b171fa6c584a67e1adfb82b4285b55d0aedf62ff3c3ba5",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 588,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "..E...\n======================================================================\nERROR: test_general_mapping_and_non_string_batch_keys (__main__.CompileCatalogTests.test_general_mapping_and_non_string_batch_keys)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 37, in test_general_mapping_and_non_string_batch_keys\n    result = compile_catalog(batches, [\"sample2\", \"xor4\"])\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 56, in compile_catalog\n    raise TypeError(\"batch names must be strings\")\nTypeError: batch names must be strings\n\n----------------------------------------------------------------------\nRan 6 tests in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "b747b6976b66e7c32c2a0532486252c853da9fac6c17b40a1026381cc9ad5a4c",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "294bc65541b99a628308951501bd23fc0f6f42661ac3e874a354d7b1766215a5",
+  "code": "package solution\n\nimport \"errors\"\n\ntype Condition struct { Type string; Active bool }\ntype Blueprint struct { Name string; Labels map[string]string }\ntype Workload struct { Name string; Labels map[string]string; Conditions []Condition }\ntype Result struct { Action string; Workload *Workload; Conditions []Condition }\nfunc labelsCopy(x map[string]string) map[string]string { if x==nil{return nil}; y:=make(map[string]string,len(x));for k,v:=range x{y[k]=v};return y }\nfunc labelsEqual(a,b map[string]string) bool { if len(a)!=len(b){return false};for k,v:=range a{if b[k]!=v{return false}};return true }\nfunc workloadCopy(w *Workload) *Workload { if w==nil{return nil}; return &Workload{Name:w.Name,Labels:labelsCopy(w.Labels),Conditions:append([]Condition(nil),w.Conditions...)} }\nfunc Reconcile(b Blueprint, current *Workload) (Result,error) {\n\tif b.Name==\"\" { c:=[]Condition{{\"Invalid\",true}};return Result{\"error\",nil,c},errors.New(\"empty name\") }\n\tfor k:=range b.Labels { if k==\"\" { c:=[]Condition{{\"Invalid\",true}};return Result{\"error\",nil,c},errors.New(\"empty label key\") } }\n\tif current==nil { c:=[]Condition{{\"Provisioning\",true}}; w:=&Workload{Name:b.Name,Labels:labelsCopy(b.Labels),Conditions:append([]Condition(nil),c...)};return Result{\"create\",w,c},nil }\n\tif current.Labels[\"lifecycle\"]==\"remove\" { c:=[]Condition{{\"Removing\",true}};return Result{\"delete\",nil,c},nil }\n\tif current.Name!=b.Name || !labelsEqual(current.Labels,b.Labels) { c:=[]Condition{{\"Synchronizing\",true}};w:=&Workload{Name:b.Name,Labels:labelsCopy(b.Labels),Conditions:append([]Condition(nil),c...)};return Result{\"update\",w,c},nil }\n\tw:=workloadCopy(current); c:=append([]Condition(nil),current.Conditions...);return Result{\"none\",w,c},nil\n}\n",
+  "code_sha256": "d0e53e46ce2c4744545ef4f5449689cd5232f1a68669c0db8b438b8b6bd93fdf",
+  "evidence_sha256": "da7d087205b9cc78c23d2437f2c56469a31546e406ff6f07e5f134e4040522ca",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "e5db26603288b8f8b3233f61100859d76916748a2a3b42df7b35918c69239e06",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 25948,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestReconcileUpdateForNameOrLabels (0.00s)\n    solution_test.go:53: result={Action:none Workload:0xc000064960 Conditions:[]}\n--- FAIL: TestReconcileEmptyValueKeysComparedExactly (0.00s)\n    solution_test.go:63: different empty-valued keys: result={Action:none Workload:0xc000064ab0 Conditions:[]} err=<nil>\nFAIL\nFAIL\tganesh.invalid/expansion\t0.019s\nFAIL\n",
+    "stdout_sha256": "fef5a6e2a4da4ccf2dfdd5451eb3f3e77e6787fc7473c8896856d631ba339b9a",
+    "timed_out": false
+  }
+}

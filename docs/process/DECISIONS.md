@@ -1,5 +1,25 @@
 # Decisions
 
+## 2026-09-08 — Bounded recovery test correction and first admission selection
+
+Preserve all12 r1 outputs and36 diagnostic executions. The original defects are
+not cured by shared reference/mutant failures or compile failures. One new r2
+test-only version corrects seven reviewed oracle/coverage defects with unchanged
+specifications/references/mutants and exact intermediate hashes. No repeated
+automatic critic loop; r2 Python0517 remains excluded because main feedback
+introduced a concrete nested-cache dict requirement absent from its frozen spec.
+Rust0359 remains a scope hold despite passing arithmetic, and Rust0396 needs an
+explicit record-return contract plus compile-safe tests in any future version.
+
+Main accepts quality-positive r1 Java0781/0788 and TS0087 plus r2 Python0220,
+Go0740/0761, JS0014/0270 and TS0064 for remaining candidate admission checks.
+All nine have fresh pinned reference-pass/mutant-fail/original-fail diagnostics;
+Go0761 additionally passes the unchanged image/resource contract with go test
+-race. The exact selection is recovery-admission-selection-9-v1.json. No parent
+hold is removed; no final corpus or training seal follows from this selection.
+Separate reviewers may recommend the next60 parents (20 per disjoint two-lane
+assignment); main must validate full bindings before generating or counting them.
+
 ## 2026-09-08 — Original review closure and recovery r1
 
 Main accepts the cumulative original-quality closure audit: no remaining required

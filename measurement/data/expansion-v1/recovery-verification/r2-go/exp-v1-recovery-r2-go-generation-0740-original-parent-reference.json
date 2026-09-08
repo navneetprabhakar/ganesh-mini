@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "e13edcc1dface332a0a3a6f8a3b08c23b147c492f73109122807ba1f99076b4b",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n\t\"strings\"\n)\n\ntype Reservation struct {\n\tID    int\n\tGuest string\n\tSeats int\n}\n\ntype Book struct {\n\tcapacity int\n\tused     int\n\tnextID   int\n\tentries  map[int]Reservation\n}\n\nvar ErrInvalidCapacity = errors.New(\"invalid capacity\")\nvar ErrInvalidReservation = errors.New(\"invalid reservation\")\nvar ErrCapacityExceeded = errors.New(\"capacity exceeded\")\nvar ErrReservationNotFound = errors.New(\"reservation not found\")\nvar ErrInvalidLimit = errors.New(\"invalid limit\")\n\nfunc NewBook(capacity int) (*Book, error) {\n\tif capacity < 1 {\n\t\treturn nil, ErrInvalidCapacity\n\t}\n\treturn &Book{capacity: capacity, nextID: 1, entries: make(map[int]Reservation)}, nil\n}\n\nfunc (b *Book) Add(guest string, seats int) (int, error) {\n\tif strings.TrimSpace(guest) == \"\" || seats < 1 {\n\t\treturn 0, ErrInvalidReservation\n\t}\n\tif b.used+seats > b.capacity {\n\t\treturn 0, ErrCapacityExceeded\n\t}\n\tid := b.nextID\n\tb.nextID++\n\tb.used += seats\n\tb.entries[id] = Reservation{ID: id, Guest: guest, Seats: seats}\n\treturn id, nil\n}\n\nfunc (b *Book) Get(id int) (Reservation, error) {\n\treservation, ok := b.entries[id]\n\tif !ok {\n\t\treturn Reservation{}, ErrReservationNotFound\n\t}\n\treturn reservation, nil\n}\n\nfunc (b *Book) List(limit int) ([]Reservation, error) {\n\tif limit < 0 {\n\t\treturn nil, ErrInvalidLimit\n\t}\n\tresult := make([]Reservation, 0)\n\tif limit == 0 {\n\t\treturn result, nil\n\t}\n\tids := make([]int, 0, len(b.entries))\n\tfor id := range b.entries {\n\t\tids = append(ids, id)\n\t}\n\tsort.Ints(ids)\n\tfor _, id := range ids {\n\t\tif len(result) == limit {\n\t\t\tbreak\n\t\t}\n\t\tresult = append(result, b.entries[id])\n\t}\n\treturn result, nil\n}\n\nfunc (b *Book) Cancel(id int) error {\n\treservation, ok := b.entries[id]\n\tif !ok {\n\t\treturn ErrReservationNotFound\n\t}\n\tdelete(b.entries, id)\n\tb.used -= reservation.Seats\n\treturn nil\n}\n",
+  "code_sha256": "4f77d159544fedfd02a49f7cda6e7ccd7f2632accf37c43e0df1f242436c785b",
+  "evidence_sha256": "af30efecd7667b3d3b128609076086ed364051f88a126a9b47e71507438cac6c",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "5f9493bb7fd2618a8143a76f133d05671201dc83e37a572f0e637882661dd417",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26298,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestMaximumIntCapacityAndOverflowBoundary (0.00s)\n    solution_test.go:220: Add beyond max-int capacity error = <nil>, want capacity exceeded\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "003c5293be34b8359576f6cd7dd392d937eb338b4158ff5e665912229ec55edc",
+    "timed_out": false
+  }
+}

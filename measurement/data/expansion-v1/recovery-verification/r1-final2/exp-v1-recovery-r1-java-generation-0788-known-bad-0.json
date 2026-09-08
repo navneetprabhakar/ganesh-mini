@@ -1,0 +1,37 @@
+{
+  "candidate_sha256": "ff9015c6c48753f5da97017d53b91e6417ebb3ba1c9047800cfb5cb13c17950d",
+  "code": "import java.io.StringReader;\nimport java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\nimport javax.xml.parsers.DocumentBuilderFactory;\nimport org.w3c.dom.Document;\nimport org.w3c.dom.Element;\nimport org.w3c.dom.Node;\nimport org.w3c.dom.NodeList;\nimport org.xml.sax.InputSource;\n\npublic final class Solution {\n    private Solution() {}\n\n    public static final class Notice {\n        private final int number;\n        private final String category;\n        private final List<String> messages;\n\n        private Notice(int number, String category, List<String> messages) {\n            this.number = number;\n            this.category = category;\n            this.messages = Collections.unmodifiableList(new ArrayList<>(messages));\n        }\n\n        public int getNumber() { return number; }\n        public String getCategory() { return category; }\n        public List<String> getMessages() { return messages; }\n    }\n\n    public static Notice parseNotice(String xml) {\n        if (xml == null || xml.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"XML must be nonblank\");\n        }\n        try {\n            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();\n            factory.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\n            factory.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\n            factory.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\n            factory.setExpandEntityReferences(false);\n            factory.setXIncludeAware(false);\n            Document document = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));\n            Element root = document.getDocumentElement();\n            if (root == null || !\"Notice\".equals(root.getTagName())) {\n                throw new IllegalArgumentException(\"Root must be Notice\");\n            }\n            Element numberElement = null;\n            Element categoryElement = null;\n            Element messagesElement = null;\n            NodeList nodes = root.getChildNodes();\n            for (int i = 0; i < nodes.getLength(); i++) {\n                Node node = nodes.item(i);\n                if (node.getNodeType() != Node.ELEMENT_NODE) continue;\n                Element element = (Element) node;\n                if (\"Number\".equals(element.getTagName()) && numberElement == null) numberElement = element;\n                else if (\"Category\".equals(element.getTagName()) && categoryElement == null) categoryElement = element;\n                else if (\"Messages\".equals(element.getTagName()) && messagesElement == null) messagesElement = element;\n                else throw new IllegalArgumentException(\"Unexpected or duplicate element: \" + element.getTagName());\n            }\n            if (numberElement == null || categoryElement == null || messagesElement == null) {\n                throw new IllegalArgumentException(\"Required element missing\");\n            }\n            int number = Integer.parseInt(leafText(numberElement, \"Number\"));\n            if (number < 0) throw new IllegalArgumentException(\"Number must be nonnegative\");\n            String category = leafText(categoryElement, \"Category\");\n            List<String> messages = new ArrayList<>();\n            NodeList messageNodes = messagesElement.getChildNodes();\n            for (int i = 0; i < messageNodes.getLength(); i++) {\n                Node node = messageNodes.item(i);\n                if (node.getNodeType() != Node.ELEMENT_NODE) continue;\n                Element element = (Element) node;\n                if (!\"Message\".equals(element.getTagName())) {\n                    throw new IllegalArgumentException(\"Unexpected Messages child: \" + element.getTagName());\n                }\n                messages.add(leafText(element, \"Message\"));\n            }\n            if (messages.isEmpty()) throw new IllegalArgumentException(\"At least one message is required\");\n            return new Notice(number, category, messages);\n        } catch (IllegalArgumentException ex) {\n            throw ex;\n        } catch (Exception ex) {\n            throw new IllegalArgumentException(\"Invalid XML: \" + ex.getMessage(), ex);\n        }\n    }\n\n    private static String leafText(Element element, String name) {\n        NodeList children = element.getChildNodes();\n        for (int i = 0; i < children.getLength(); i++) {\n            if (children.item(i).getNodeType() == Node.ELEMENT_NODE) {\n                throw new IllegalArgumentException(name + \" must not contain elements\");\n            }\n        }\n        String value = element.getTextContent().trim();\n        if (value.isEmpty()) throw new IllegalArgumentException(name + \" must be nonblank\");\n        return value;\n    }\n}\n",
+  "code_sha256": "b52419b83cfac390cbdbc6965b0740876b083f22229003b8ccebb9447349ac6e",
+  "evidence_sha256": "702b809d489e160aba93118c06eb41c6d9ccd97be4606a35663d5b19967bfeb8",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "4959a3daecf43d2ed70ec7221329d70c3ab760974b210815ab4d3c2d74ffa30e",
+  "result": {
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "duration_ms": 3310,
+    "exit_codes": [
+      0,
+      1
+    ],
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "runtime_id": "java-21.0.11",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "Exception in thread \"main\" java.lang.AssertionError: Unicode-blank category: expected IllegalArgumentException\n\tat SolutionTest.expectIllegalArgument(SolutionTest.java:209)\n\tat SolutionTest.testInvalidValues(SolutionTest.java:126)\n\tat SolutionTest.main(SolutionTest.java:10)\n",
+    "stderr_sha256": "724f6bd6a72405151f7d202fc871adecacbe62733a6583655e9856cbbce32ab2",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

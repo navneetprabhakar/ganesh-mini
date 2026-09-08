@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "12d8492bfa5f5b5e678cbf63a51e92a511abdf2f181abf87acb68a742d36f183",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sync\"\n)\n\nvar (\n\tErrInvalidConfig = errors.New(\"invalid mailbox config\")\n\tErrInvalidPacket = errors.New(\"invalid packet\")\n\tErrMailboxFull   = errors.New(\"mailbox full\")\n)\n\ntype MailboxConfig struct {\n\tCapacity        int\n\tMaxPayloadBytes int\n}\n\ntype Packet struct {\n\tTopic   string\n\tPayload []byte\n}\n\ntype Mailbox struct {\n\tmu      sync.Mutex\n\tconfig  MailboxConfig\n\tpackets []Packet\n}\n\nfunc NewMailbox(config MailboxConfig) (*Mailbox, error) {\n\tif config.Capacity <= 0 || config.MaxPayloadBytes <= 0 {\n\t\treturn nil, ErrInvalidConfig\n\t}\n\treturn &Mailbox{config: config}, nil\n}\n\nfunc copyPayload(payload []byte) []byte {\n\tcopied := make([]byte, len(payload))\n\tcopy(copied, payload)\n\treturn copied\n}\n\nfunc (m *Mailbox) Enqueue(packet Packet) error {\n\tif packet.Topic == \"\" || len(packet.Payload) > m.config.MaxPayloadBytes {\n\t\treturn ErrInvalidPacket\n\t}\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\tif len(m.packets) == m.config.Capacity {\n\t\treturn ErrMailboxFull\n\t}\n\tm.packets = append(m.packets, Packet{\n\t\tTopic:   packet.Topic,\n\t\tPayload: copyPayload(packet.Payload),\n\t})\n\treturn nil\n}\n\nfunc (m *Mailbox) Drain(topic string, limit int) ([]Packet, error) {\n\tif topic == \"\" || limit < 0 {\n\t\treturn nil, ErrInvalidPacket\n\t}\n\tresult := make([]Packet, 0)\n\tif limit == 0 {\n\t\treturn result, nil\n\t}\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\tkept := make([]Packet, 0, len(m.packets))\n\tfor _, packet := range m.packets {\n\t\tif packet.Topic == topic && len(result) < limit {\n\t\t\tresult = append(result, Packet{\n\t\t\t\tTopic:   packet.Topic,\n\t\t\t\tPayload: copyPayload(packet.Payload),\n\t\t\t})\n\t\t} else {\n\t\t\tkept = append(kept, packet)\n\t\t}\n\t}\n\tm.packets = kept\n\treturn result, nil\n}\n\nfunc (m *Mailbox) Count(topic string) int {\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\tif topic == \"\" {\n\t\treturn len(m.packets)\n\t}\n\tcount := 0\n\tfor _, packet := range m.packets {\n\t\tif packet.Topic == topic {\n\t\t\tcount++\n\t\t}\n\t}\n\treturn count\n}\n",
+  "code_sha256": "ea2c90390516f68803ca88ba21850a4390a569da08ca9a379613c8f14bf3ae09",
+  "evidence_sha256": "43a6b5f55c3e5b1ffc9c62f4e0821f14481889830462ac3b000d72e82b0dab05",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "b0a6022abea6f524ed7f48a4f8a39b676bb6946e34a95f54a07e9b4603218360",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26157,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.018s\n",
+    "stdout_sha256": "67747343f6ef78a7ff591b2fbeb88f0cba0007e879b5f9d174ad7787e69e35d9",
+    "timed_out": false
+  }
+}

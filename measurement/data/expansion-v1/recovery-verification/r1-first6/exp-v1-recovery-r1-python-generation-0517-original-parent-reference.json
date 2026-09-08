@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "400f72dbfd98c60324af0fc21add0e7c41fe1a94836218beb2bd87810a17e3e4",
+  "code": "from copy import deepcopy\nfrom html.parser import HTMLParser\nfrom posixpath import basename\nfrom urllib.parse import urljoin, urlparse\n\n\nclass _EntryFinder(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.src = None\n\n    def handle_starttag(self, tag, attrs):\n        if self.src is not None or tag.lower() != \"script\":\n            return\n        attributes = dict(attrs)\n        src = attributes.get(\"src\")\n        if attributes.get(\"data-kind\") == \"entry\" and src:\n            if urlparse(src).path.endswith(\".mjs\"):\n                self.src = src\n\n\ndef stage_module(markup, page_url, cache, available):\n    if not isinstance(markup, str) or not isinstance(page_url, str):\n        raise TypeError(\"markup and page_url must be strings\")\n\n    finder = _EntryFinder()\n    finder.feed(markup)\n    finder.close()\n    result_cache = deepcopy(cache)\n\n    if finder.src is None:\n        return {\n            \"url\": None,\n            \"filename\": None,\n            \"source\": None,\n            \"downloaded\": False,\n            \"cache\": result_cache,\n        }\n\n    url = urljoin(page_url, finder.src)\n    filename = basename(urlparse(url).path)\n    if filename in result_cache:\n        source = result_cache[filename]\n        downloaded = False\n    else:\n        source = deepcopy(available[url])\n        result_cache[filename] = source\n        downloaded = True\n\n    return {\n        \"url\": url,\n        \"filename\": filename,\n        \"source\": deepcopy(source),\n        \"downloaded\": downloaded,\n        \"cache\": result_cache,\n    }\n",
+  "code_sha256": "b9db74fbe3891f4bbb07cc7e341cf0547b570c85dd87045fcbbc9e5e62caa948",
+  "evidence_sha256": "cfc6669a340b4efbf28550760d2c740129b9a3ce2d6256119b5532c5c93d3a8a",
+  "label": "original-parent-reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "05afcd1e6831356400649b9e287629fdc3016e152134d58ab70a83652eb58c93",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 435,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 0.003s\n\nOK\n",
+    "stderr_sha256": "38eeff1237d74275801617a271eced659e08b1cad8069897d18e659ae40641d8",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

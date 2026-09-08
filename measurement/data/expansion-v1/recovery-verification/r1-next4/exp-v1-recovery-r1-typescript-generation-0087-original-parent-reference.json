@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "490cb249c61c6c6aacde2b75ec6a53aeaf0fbbb90902ef140c04821c95a2c001",
+  "code": "export interface Account {\n  id: string;\n  displayName: string;\n  active: boolean;\n}\n\nexport type AccountListener = (account: Readonly<Account> | undefined) => void;\n\ntype Entry = { listener: AccountListener; active: boolean };\n\nfunction cleanId(id: string): string {\n  const value = id.trim();\n  if (!value) throw new TypeError(\"id must not be empty\");\n  return value;\n}\n\nfunction cleanName(name: string): string {\n  const value = name.trim();\n  if (!value) throw new TypeError(\"displayName must not be empty\");\n  return value;\n}\n\nexport class AccountDirectory {\n  private readonly accounts = new Map<string, Account>();\n  private readonly watchers = new Map<string, Entry[]>();\n\n  register(account: Account): Account {\n    const id = cleanId(account.id);\n    const displayName = cleanName(account.displayName);\n    if (this.accounts.has(id)) throw new Error(\"account already exists\");\n    const stored = { id, displayName, active: account.active };\n    this.accounts.set(id, stored);\n    this.emit(id, stored);\n    return { ...stored };\n  }\n\n  authenticate(id: string): Account {\n    const account = this.accounts.get(cleanId(id));\n    if (!account || !account.active) throw new Error(\"authentication failed\");\n    return { ...account };\n  }\n\n  update(id: string, patch: Partial<Pick<Account, \"displayName\" | \"active\">>): Account {\n    const key = cleanId(id);\n    const old = this.accounts.get(key);\n    if (!old) throw new Error(\"account not found\");\n    const displayName = patch.displayName === undefined\n      ? old.displayName\n      : cleanName(patch.displayName);\n    const next = { ...old, ...patch, displayName };\n    this.accounts.set(key, next);\n    this.emit(key, next);\n    return { ...next };\n  }\n\n  remove(id: string): boolean {\n    const key = cleanId(id);\n    if (!this.accounts.delete(key)) return false;\n    this.emit(key, undefined);\n    return true;\n  }\n\n  find(id: string): Account | undefined {\n    const value = this.accounts.get(cleanId(id));\n    return value ? { ...value } : undefined;\n  }\n\n  watch(id: string, listener: AccountListener): () => void {\n    const key = cleanId(id);\n    const entry = { listener, active: true };\n    const entries = this.watchers.get(key) ?? [];\n    entries.push(entry);\n    this.watchers.set(key, entries);\n    return () => { entry.active = false; };\n  }\n\n  private emit(id: string, value: Account | undefined): void {\n    const current = (this.watchers.get(id) ?? []).filter((entry) => entry.active);\n    for (const entry of current) {\n      entry.listener(value ? { ...value } : undefined);\n    }\n  }\n}\n",
+  "code_sha256": "d6b9d47a5c2c9e559abc475cc8a0af19fea7a9cf30dd030e9e3116e4e59c7384",
+  "evidence_sha256": "2e42e63ca6da6cd6c230a48eed984ee9f7547b245043ed0e837f45eacc744172",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "ddaa661359f01faf3d8e72ad106469dbdeddc378af9923560d2cbe1a39bc4f27",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 2150,
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "/work/solution.test.js:17\n        throw new Error(message + \": expected \" + e + \", got \" + a);\n        ^\n\nError: non-enumerable supported update fields are honored: expected {\"id\":\"user-1\",\"displayName\":\"Ally\",\"active\":false}, got {\"id\":\"user-1\",\"displayName\":\"Ally\",\"active\":true}\n    at jsonEqual (/work/solution.test.js:17:15)\n    at Object.<anonymous> (/work/solution.test.js:67:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "d23e7b569feea64e0e95212c241330dd95b6007a773d3a6f2a5ec05eb5993073",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "0c2d00250d42325aadb861bd659d51d0931fcb99d8db6a145e6cf56430be97da",
+  "code": "from copy import deepcopy\n\n\nclass Outcome:\n    def __init__(self, ok=False, value=None, error=None):\n        self.ok = ok\n        self.value = value\n        self.error = error\n\n\nclass DocumentActivator:\n    def __init__(self, documents=None):\n        self._documents = deepcopy({} if documents is None else documents)\n        self.recent = []\n\n    def exists(self, name):\n        return isinstance(name, str) and name in self._documents\n\n    def load(self, outcome, name):\n        if not self.exists(name):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document not found\"\n        elif self._documents[name].get(\"broken\"):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document cannot be loaded\"\n        else:\n            outcome.ok = True\n            outcome.value = deepcopy(self._documents[name])\n            outcome.error = None\n        return outcome\n\n    def initialize(self, outcome, document):\n        sections = document.get(\"sections\")\n        valid = (isinstance(sections, list) and bool(sections)\n                 and all(isinstance(section, str) for section in sections))\n        if not valid:\n            outcome.ok, outcome.value, outcome.error = False, None, \"invalid sections\"\n        else:\n            outcome.ok, outcome.value, outcome.error = True, deepcopy(document), None\n        return outcome\n\n    def activate(self, name, remember=True):\n        outcome = self.load(Outcome(), name)\n        if not outcome.ok:\n            return outcome\n        outcome = self.initialize(outcome, outcome.value)\n        if outcome.ok and remember and name not in self.recent:\n            self.recent.append(name)\n        return outcome\n",
+  "code_sha256": "a30330fedbd0794e0a45553fc9d9492383cfd7e3de0045a16337dcda97696d32",
+  "evidence_sha256": "6dd8e3b5ab20cde94cf7f9beb74977eed748fd630241dba72ee680f1ab0c268a",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "bca2cf2f83b29f86f9b5cd86f07a8256cccca0fabb12438d232066376f9212ce",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 406,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "...E......\n======================================================================\nERROR: test_constructor_deep_copies_mapping_and_exists_requires_string_key (__main__.DocumentActivatorTests.test_constructor_deep_copies_mapping_and_exists_requires_string_key)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 29, in test_constructor_deep_copies_mapping_and_exists_requires_string_key\n    activator = DocumentActivator(source)\n                ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 13, in __init__\n    self._documents = deepcopy({} if documents is None else documents)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n\n----------------------------------------------------------------------\nRan 10 tests in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "dd9a1cf54a0da0dd263787639c46acb1ee80bff99b4f3729ffd558b05c1be6a4",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

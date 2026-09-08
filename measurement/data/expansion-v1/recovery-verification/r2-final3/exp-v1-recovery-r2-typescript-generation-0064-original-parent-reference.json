@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "926b5ced7dfe0d44caad5f5ea666716dd2a9885f45d1ca88c000e30c68fca755",
+  "code": "export interface Performance {\n  readonly id: string;\n  readonly venueId: string;\n}\n\nexport interface ReservationDraft {\n  readonly id?: string;\n  readonly customerId: string;\n  readonly performanceId: string;\n  readonly seat: string;\n}\n\nexport interface Reservation {\n  readonly id: string;\n  readonly customerId: string;\n  readonly performanceId: string;\n  readonly seat: string;\n}\n\ntype ReservationPatch = Partial<Omit<ReservationDraft, \"id\">>;\n\nfunction nonempty(value: unknown): value is string {\n  return typeof value === \"string\" && value.length > 0;\n}\n\nexport class ReservationStore {\n  private readonly performances = new Map<string, Performance>();\n  private readonly reservations = new Map<string, Reservation>();\n  private nextId = 1;\n\n  constructor(performances: readonly Performance[]) {\n    for (const item of performances) {\n      if (!item || !nonempty(item.id) || !nonempty(item.venueId) || this.performances.has(item.id)) {\n        throw new TypeError(\"Invalid or duplicate performance\");\n      }\n      this.performances.set(item.id, { id: item.id, venueId: item.venueId });\n    }\n  }\n\n  add(draft: ReservationDraft): Reservation {\n    this.validate(draft);\n    let id = draft.id;\n    if (id !== undefined && this.reservations.has(id)) throw new RangeError(\"Duplicate reservation ID\");\n    if (id === undefined) {\n      do id = `reservation-${this.nextId++}`; while (this.reservations.has(id));\n    }\n    const value = { id, customerId: draft.customerId, performanceId: draft.performanceId, seat: draft.seat };\n    this.reservations.set(id, value);\n    return { ...value };\n  }\n\n  get(id: string): Reservation | null {\n    const value = this.reservations.get(id);\n    return value ? { ...value } : null;\n  }\n\n  byCustomer(customerId: string): Reservation[] {\n    return [...this.reservations.values()].filter(x => x.customerId === customerId).map(x => ({ ...x }));\n  }\n\n  byPerformance(performanceId: string): Reservation[] {\n    return [...this.reservations.values()].filter(x => x.performanceId === performanceId).map(x => ({ ...x }));\n  }\n\n  update(id: string, patch: ReservationPatch): Reservation | null {\n    const current = this.reservations.get(id);\n    if (!current) return null;\n    const candidate = { ...current, ...patch };\n    this.validate(candidate);\n    this.reservations.set(id, candidate);\n    return { ...candidate };\n  }\n\n  delete(id: string): boolean {\n    return this.reservations.delete(id);\n  }\n\n  private validate(value: ReservationDraft): void {\n    if (!value || !nonempty(value.customerId) || !nonempty(value.performanceId) || !nonempty(value.seat) ||\n        (value.id !== undefined && !nonempty(value.id))) throw new TypeError(\"Invalid reservation\");\n    if (!this.performances.has(value.performanceId)) throw new RangeError(\"Unknown performance\");\n  }\n}\n",
+  "code_sha256": "83e7eff45487902c5362d460030cf83a656f30cb9aed4c33031f4bdc1a4c2b4c",
+  "evidence_sha256": "4965be155a89718c32860e247b7d110838a13be0e67d48e9587b2177b826e8dc",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "b282271869c48b1390be6822cad7841c19d1ae211a3f378ea186e65c197d9f39",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 2179,
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "/work/solution.test.js:10\n        throw new Error(message + \": expected \" + String(expected) + \", got \" + String(actual));\n        ^\n\nError: update honors non-enumerable supported fields and retains the ID customerId: expected c3, got c1\n    at equal (/work/solution.test.js:10:15)\n    at reservationEqual (/work/solution.test.js:21:5)\n    at Object.<anonymous> (/work/solution.test.js:114:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "bc184b29d010204ba0598f6078d21b2f1db49a4841244672ca67be27ba8d235a",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

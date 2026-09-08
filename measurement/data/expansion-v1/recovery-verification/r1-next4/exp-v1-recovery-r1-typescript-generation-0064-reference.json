@@ -1,0 +1,50 @@
+{
+  "candidate_sha256": "caefc2ac2b6fcb2bfc3e64cbdd0c77b492261118070c0eac1071d426576435be",
+  "code": "export interface Performance {\n  readonly id: string;\n  readonly venueId: string;\n}\n\nexport interface ReservationDraft {\n  readonly id?: string;\n  readonly customerId: string;\n  readonly performanceId: string;\n  readonly seat: string;\n}\n\nexport interface Reservation {\n  readonly id: string;\n  readonly customerId: string;\n  readonly performanceId: string;\n  readonly seat: string;\n}\n\ntype ReservationPatch = Partial<Omit<ReservationDraft, \"id\">>;\n\nfunction nonempty(value: unknown): value is string {\n  return typeof value === \"string\" && value.length > 0;\n}\n\nexport class ReservationStore {\n  private readonly performances = new Map<string, Performance>();\n  private readonly reservations = new Map<string, Reservation>();\n  private nextId = 1;\n\n  constructor(performances: readonly Performance[]) {\n    for (const item of performances) {\n      if (!item || !nonempty(item.id) || !nonempty(item.venueId) || this.performances.has(item.id)) {\n        throw new TypeError(\"Invalid or duplicate performance\");\n      }\n      this.performances.set(item.id, { id: item.id, venueId: item.venueId });\n    }\n  }\n\n  add(draft: ReservationDraft): Reservation {\n    this.validate(draft);\n    let id = draft.id;\n    if (id !== undefined && this.reservations.has(id)) {\n      throw new RangeError(\"Duplicate reservation ID\");\n    }\n    if (id === undefined) {\n      do {\n        id = `reservation-${this.nextId++}`;\n      } while (this.reservations.has(id));\n    }\n    const value: Reservation = {\n      id,\n      customerId: draft.customerId,\n      performanceId: draft.performanceId,\n      seat: draft.seat\n    };\n    this.reservations.set(id, value);\n    return { ...value };\n  }\n\n  get(id: string): Reservation | null {\n    const value = this.reservations.get(id);\n    return value ? { ...value } : null;\n  }\n\n  byCustomer(customerId: string): Reservation[] {\n    return [...this.reservations.values()]\n      .filter((value) => value.customerId === customerId)\n      .map((value) => ({ ...value }));\n  }\n\n  byPerformance(performanceId: string): Reservation[] {\n    return [...this.reservations.values()]\n      .filter((value) => value.performanceId === performanceId)\n      .map((value) => ({ ...value }));\n  }\n\n  update(id: string, patch: ReservationPatch): Reservation | null {\n    const current = this.reservations.get(id);\n    if (!current) return null;\n\n    const candidate: Reservation = {\n      id: current.id,\n      customerId: patch.customerId === undefined ? current.customerId : patch.customerId,\n      performanceId: patch.performanceId === undefined ? current.performanceId : patch.performanceId,\n      seat: patch.seat === undefined ? current.seat : patch.seat\n    };\n    this.validate(candidate);\n    this.reservations.set(id, candidate);\n    return { ...candidate };\n  }\n\n  delete(id: string): boolean {\n    return this.reservations.delete(id);\n  }\n\n  private validate(value: ReservationDraft): void {\n    if (!value || !nonempty(value.customerId) || !nonempty(value.performanceId) || !nonempty(value.seat) ||\n        (value.id !== undefined && !nonempty(value.id))) {\n      throw new TypeError(\"Invalid reservation\");\n    }\n    if (!this.performances.has(value.performanceId)) {\n      throw new RangeError(\"Unknown performance\");\n    }\n  }\n}\n",
+  "code_sha256": "7097938eae44473878cd0ef2ad01544fcaf2da9f86620df80a48ad793b010f96",
+  "evidence_sha256": "bbc3c3e02cb34c8664eb769ae6715f1c7253f053b00ec818d2c088eea2fb0c80",
+  "label": "reference",
+  "outcome": "compile-or-load-failure-not-semantic-proof",
+  "parent_candidate_sha256": "b282271869c48b1390be6822cad7841c19d1ae211a3f378ea186e65c197d9f39",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 1814,
+    "exit_codes": [
+      0,
+      2
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "solution.test.ts(34,25): error TS2540: Cannot assign to 'id' because it is a read-only property.\nsolution.test.ts(35,25): error TS2540: Cannot assign to 'venueId' because it is a read-only property.\nsolution.test.ts(48,7): error TS2540: Cannot assign to 'customerId' because it is a read-only property.\nsolution.test.ts(53,10): error TS2540: Cannot assign to 'seat' because it is a read-only property.\nsolution.test.ts(70,11): error TS2540: Cannot assign to 'seat' because it is a read-only property.\nsolution.test.ts(78,9): error TS2540: Cannot assign to 'seat' because it is a read-only property.\n",
+    "stdout_sha256": "68c4299919dbde27d179f3222fa8d4980f5d68cfcf0a8449a3bfc800b6a47ef9",
+    "timed_out": false
+  }
+}

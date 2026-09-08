@@ -1,0 +1,37 @@
+{
+  "candidate_sha256": "145d8cb236469fbbc5ba263057cf6e709491e5ab451d7796f424f2f93d1d4ac3",
+  "code": "public final class Solution {\n    private Solution() {}\n\n    public enum ServiceLevel {\n        UNSATISFACTORY(500), OKAY(1000), SOLID(1500), IMPRESSIVE(2000), OUTSTANDING(2500);\n        private final int basisPoints;\n        ServiceLevel(int basisPoints) { this.basisPoints = basisPoints; }\n    }\n\n    public static final class PaymentSummary {\n        private final long discountCents;\n        private final long taxCents;\n        private final long gratuityCents;\n        private final long totalCents;\n        private final int participantCount;\n\n        private PaymentSummary(long discountCents, long taxCents, long gratuityCents,\n                               long totalCents, int participantCount) {\n            this.discountCents = discountCents;\n            this.taxCents = taxCents;\n            this.gratuityCents = gratuityCents;\n            this.totalCents = totalCents;\n            this.participantCount = participantCount;\n        }\n\n        public long getDiscountCents() { return discountCents; }\n        public long getTaxCents() { return taxCents; }\n        public long getGratuityCents() { return gratuityCents; }\n        public long getTotalCents() { return totalCents; }\n        public int getParticipantCount() { return participantCount; }\n\n        public long getShareCents(int participantIndex) {\n            if (participantIndex < 0 || participantIndex >= participantCount) {\n                throw new IndexOutOfBoundsException(\"Invalid participant index: \" + participantIndex);\n            }\n            long base = totalCents / participantCount;\n            long remainder = totalCents % participantCount;\n            return base + (participantIndex < remainder ? 1 : 0);\n        }\n    }\n\n    public static PaymentSummary calculatePayment(long subtotalCents, int taxBasisPoints,\n                                                   int discountBasisPoints, ServiceLevel serviceLevel,\n                                                   int participantCount) {\n        if (subtotalCents < 0 || taxBasisPoints < 0 || taxBasisPoints > 10000\n                || discountBasisPoints < 0 || discountBasisPoints > 10000\n                || serviceLevel == null || participantCount < 1) {\n            throw new IllegalArgumentException(\"Invalid payment input\");\n        }\n        long discount = percentage(subtotalCents, discountBasisPoints);\n        long discountedSubtotal = Math.subtractExact(subtotalCents, discount);\n        long tax = percentage(discountedSubtotal, taxBasisPoints);\n        long gratuity = percentage(discountedSubtotal, serviceLevel.basisPoints);\n        long total = Math.addExact(Math.addExact(discountedSubtotal, tax), gratuity);\n        return new PaymentSummary(discount, tax, gratuity, total, participantCount);\n    }\n\n    private static long percentage(long cents, int basisPoints) {\n        long product = Math.multiplyExact(cents, (long) basisPoints);\n        return Math.addExact(product, 5000L) / 10000L;\n    }\n}\n",
+  "code_sha256": "033427eca0b70e63f47e9776f417fe713f5010156a57f4caeb20a7d47bca0993",
+  "evidence_sha256": "484668ba9bff42d87abb5264a23d8db75bf0860b00c8c37d12167b9a33b95690",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "2fe9d28d7cc74ea034ab338a3c535100a5fe47cfd627268ca4544a8ad528ad27",
+  "result": {
+    "commands": [
+      [
+        "javac",
+        "Solution.java",
+        "SolutionTest.java"
+      ],
+      [
+        "java",
+        "-ea",
+        "SolutionTest"
+      ]
+    ],
+    "duration_ms": 3055,
+    "exit_codes": [
+      0,
+      1
+    ],
+    "image": "ganesh-mini-java-verify@sha256:fcfc6b2e2a658d43427d7f51adcdd3c557de2159d53b10da5afca41e05fa8440",
+    "image_id": "sha256:9a973c4b25b43a471a31680e6af7e81c7be4aae18ef41dd72f76d76f11c8194b",
+    "runtime_id": "java-21.0.11",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "Exception in thread \"main\" java.lang.ArithmeticException: long overflow\n\tat java.base/java.lang.Math.multiplyExact(Math.java:1032)\n\tat Solution.percentage(Solution.java:59)\n\tat Solution.calculatePayment(Solution.java:50)\n\tat SolutionTest.testBoundaryValues(SolutionTest.java:76)\n\tat SolutionTest.main(SolutionTest.java:6)\n",
+    "stderr_sha256": "898755b565598c8e716534cc69e43f2f063aa66fdf24bfb7237d0a2590197a87",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

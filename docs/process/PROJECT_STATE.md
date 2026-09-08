@@ -1,5 +1,66 @@
 # Project state
 
+## First nine recoveries admitted; next selection in progress — 2026-09-08
+
+**9 candidate admissions /0 rejected**, all generation: Go2,Java2,JS2,TS2,Python1,
+Rust0. Read RECOVERY_ADMISSION9_20260908.md for exact IDs, execution and hashes.
+All r1/r2 teacher and diagnostic/admission jobs have completed. r2 generated7;
+all pass directionality, but Python0517 remains a static oracle hold. Rust0359
+scope and0396 contract/test holds remain. No automatic repeated critic loops.
+Go0761 also passed the actual pinned resource/network-limited go test -race.
+
+Selection checked against3073 retained originals and546 evaluation tasks;
+zero overlaps/rejections. Final training balance/seal is NOT passed. Original
+2812 holds unchanged; maximum originals+admitted recoveries3082, at least918
+additional admissions to4000 before further exclusions/token balance.
+Artifact: measurement/data/expansion-v1/recovery-admission/selected9-v1/admitted.jsonl
+SHA0f82c006387283c45d88270a431988dae6becc6167c8e15ae2eb7d1979ead45a.
+139 data tests pass. Full r1 backup verified in GCS: QUALITY_CLOSURE_R1_BACKUP.md.
+Terminal r2+admission9 archive and receipt verified by exact-generation download
+and byte comparison; see RECOVERY_ADMISSION9_BACKUP.md. No teardown in progress.
+
+Completed reviewer selection drafts (not main-read/approved yet):
+rust421_450 Go/Java up to20 -> RECOVERY_TRANCHE_GO_JAVA_20_20260908.md;
+rust451_480 JS/TS up to20 -> RECOVERY_TRANCHE_JS_TS_20_20260908.md;
+rust391_420 Python/Rust up to20 -> RECOVERY_TRANCHE_PYTHON_RUST_20_20260908.md.
+Go/Java20 and JS/TS20 proposed; Python/Rust17 (8 Python/9 Rust), shortfall3
+explicitly deferred. All reviewers idle; do not dispatch duplicate selection work.
+These57 proposals are excluded from the terminal admission9 backup until main
+integration. Read the complete three notes and validate hashes before planning.
+Exclude all12 first-tranche parents. Do not count drafts or force quota with weak
+or ambiguous examples. Main reads final notes, validates hashes and minimal scope,
+then freezes new versioned requests. Current local work needs no new approval.
+No training job/VM. Training/release estimates50%/35%; next-selection/recovery
+ETA30–90 minutes low confidence; full-delivery ETA still ungrounded until scale
+recovery throughput and corpus sufficiency are established. Continue, not status-only.
+
+## Recovery r1 verified; bounded test correction active — 2026-09-08
+
+r1 generated12/12; serial sandbox diagnostics complete for all12 (36 program
+executions). Four pass reference/mutant/original directionality, but only
+TS0087 and Java0781/0788 also have main-accepted static quality positives.
+Rust0359's unrequested trait additions remain a scope hold. Eight other r1
+candidates have test/oracle/coverage failures; preserve them rather than patch
+correct reference code to satisfy faulty tests. See RECOVERY_R1_INTEGRATION_20260908.md.
+All six r1 review reports read/integrated; original review is closed and remains
+2812 holds / at most3073 originals / at least927 admissions still needed.
+
+r2 is one test-only correction for seven exact parents. Active session60992;
+registry datasets/cache/expansion-v1/versioned-recovery/r2. Do not duplicate or
+reuse versions. Python0220/0517 both pass sandbox directionality;0220 also
+quality-positive,0517 retains an unsupported nested-cache concrete-type oracle
+hold and must not enter an automatic further critic loop. Go r2 generated;
+rust421_450 reviewing it; JS/TS r2 generation follows. All other reviewers idle.
+Main next: integrate r2 reviews, serially verify remaining candidates, complete
+Go0761 race qualification, then separation/dedup against evaluations and retained
+originals. No recovered admission seal yet. New tooling tests total136 pass.
+Original generation session94073 finished; commit fd81284 successfully pushed.
+No training job/VM. Training/release estimated50%/35%; current work needs no new
+approval. Correction/review ETA10–30 minutes low confidence, excluding unresolved
+scope and whole-corpus sufficiency. Overall delivery ETA not yet supportable.
+A new verified GCS backup of2812 closure/full r1 is the immediate preservation
+step; r2 is still active and requires a later terminal backup. No teardown action.
+
 ## Original review closed; recovery r1 launched — 2026-09-08
 
 The final E/U reconciliation adds49 holds: **2812 total** (2809 additive plus

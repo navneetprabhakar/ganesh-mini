@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "fdf3d8d61377de04a4a33847450769525413883ed0b5ce3210f5caa340544067",
+  "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ActionConfig {\n    pub max_charge_ms: u32,\n    pub swing_ms: u32,\n    pub recovery_ms: u32,\n    pub energy_per_ms: u32,\n    pub base_damage: u32,\n    pub bonus_damage: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError { ZeroMaxCharge }\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Phase { Charging, Swing, Recovery, Finished }\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Strike {\n    pub charge_ms: u32,\n    pub damage: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Advance {\n    None,\n    Struck(Strike),\n    PhaseChanged(Phase),\n    Finished,\n}\n\n#[derive(Debug, Clone)]\npub struct ChargedAction {\n    config: ActionConfig,\n    phase: Phase,\n    elapsed: u32,\n}\n\nimpl ChargedAction {\n    pub fn new(config: ActionConfig) -> Result<ChargedAction, ConfigError> {\n        if config.max_charge_ms == 0 {\n            return Err(ConfigError::ZeroMaxCharge);\n        }\n        Ok(ChargedAction {\n            config,\n            phase: Phase::Charging,\n            elapsed: 0,\n        })\n    }\n\n    pub fn phase(&self) -> Phase {\n        self.phase\n    }\n\n    pub fn advance(&mut self, delta_ms: u32, held: bool, energy: &mut u32) -> Advance {\n        match self.phase {\n            Phase::Charging => {\n                if !held {\n                    return self.strike();\n                }\n\n                let capacity = self.config.max_charge_ms - self.elapsed;\n                let requested = delta_ms.min(capacity);\n                let charged_ms = if self.config.energy_per_ms == 0 {\n                    requested\n                } else {\n                    requested.min(*energy / self.config.energy_per_ms)\n                };\n                let cost = charged_ms * self.config.energy_per_ms;\n                *energy -= cost;\n                self.elapsed += charged_ms;\n\n                if self.elapsed == self.config.max_charge_ms || charged_ms < requested {\n                    self.strike()\n                } else {\n                    Advance::None\n                }\n            }\n            Phase::Swing => {\n                self.elapsed = self.elapsed.saturating_add(delta_ms);\n                if self.elapsed >= self.config.swing_ms {\n                    self.phase = Phase::Recovery;\n                    self.elapsed = 0;\n                    Advance::PhaseChanged(Phase::Recovery)\n                } else {\n                    Advance::None\n                }\n            }\n            Phase::Recovery => {\n                self.elapsed = self.elapsed.saturating_add(delta_ms);\n                if self.elapsed >= self.config.recovery_ms {\n                    self.phase = Phase::Finished;\n                    self.elapsed = 0;\n                    Advance::Finished\n                } else {\n                    Advance::None\n                }\n            }\n            Phase::Finished => Advance::Finished,\n        }\n    }\n\n    pub fn interrupt(&mut self) {\n        self.phase = Phase::Finished;\n        self.elapsed = 0;\n    }\n\n    fn strike(&mut self) -> Advance {\n        let bonus = self\n            .config\n            .bonus_damage\n            .saturating_mul(self.elapsed)\n            / self.config.max_charge_ms;\n        let strike = Strike {\n            charge_ms: self.elapsed,\n            damage: self.config.base_damage.saturating_add(bonus),\n        };\n        self.phase = Phase::Swing;\n        self.elapsed = 0;\n        Advance::Struck(strike)\n    }\n}\n",
+  "code_sha256": "78619130aebb935bdb579a33e77bdc9e28d3d6b0f6df614ab9b4960c9020eb00",
+  "evidence_sha256": "3c490d0b15c35834972e2b9642f0ceb5b1c2c42016bb587a04e636e0441ac825",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "cbd06d15f78b5b9e6a8b072ea30dcf7072ab0160259bda440c9b58bd704a93be",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1611,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 14 tests\ntest cloned_actions_progress_independently ... ok\ntest damage_uses_saturating_u32_multiplication_before_division ... ok\ntest elapsed_accumulation_saturates_at_u32_max ... ok\ntest final_damage_addition_saturates ... ok\ntest inability_to_afford_even_one_millisecond_executes_without_mutating_energy ... ok\ntest insufficient_energy_charges_only_affordable_milliseconds_then_executes ... ok\ntest interrupt_finishes_immediately_and_finished_calls_are_stable ... ok\ntest partial_charge_deducts_exact_energy_and_release_strikes ... ok\ntest reaching_maximum_charge_executes_and_discards_extra_time ... ok\ntest required_traits_are_available ... ok\ntest swing_and_recovery_advance_on_separate_calls_and_discard_excess ... ok\ntest zero_duration_phases_transition_only_on_later_calls_even_with_zero_delta ... ok\ntest zero_energy_rate_allows_free_charging ... ok\ntest zero_max_charge_is_rejected ... ok\n\ntest result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n\n",
+    "stdout_sha256": "c8fd5f063d2d1d6da16c2b0f3d5003d777b5617a42d054c0aea803b61be1e583",
+    "timed_out": false
+  }
+}

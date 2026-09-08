@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "fdf3d8d61377de04a4a33847450769525413883ed0b5ce3210f5caa340544067",
+  "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct ActionConfig {\n    pub max_charge_ms: u32,\n    pub swing_ms: u32,\n    pub recovery_ms: u32,\n    pub energy_per_ms: u32,\n    pub base_damage: u32,\n    pub bonus_damage: u32,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum ConfigError { ZeroMaxCharge }\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Phase { Charging, Swing, Recovery, Finished }\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Strike { pub charge_ms: u32, pub damage: u32 }\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Advance { None, Struck(Strike), PhaseChanged(Phase), Finished }\n\n#[derive(Debug, Clone)]\npub struct ChargedAction {\n    config: ActionConfig,\n    phase: Phase,\n    elapsed: u32,\n}\n\nimpl ChargedAction {\n    pub fn new(config: ActionConfig) -> Result<ChargedAction, ConfigError> {\n        if config.max_charge_ms == 0 {\n            return Err(ConfigError::ZeroMaxCharge);\n        }\n        Ok(ChargedAction { config, phase: Phase::Charging, elapsed: 0 })\n    }\n\n    pub fn phase(&self) -> Phase { self.phase }\n\n    pub fn advance(&mut self, delta_ms: u32, held: bool, energy: &mut u32) -> Advance {\n        match self.phase {\n            Phase::Charging => {\n                if !held {\n                    return self.strike();\n                }\n\n                let capacity = self.config.max_charge_ms - self.elapsed;\n                let requested = delta_ms.min(capacity);\n                let charged_ms = if self.config.energy_per_ms == 0 {\n                    requested\n                } else {\n                    requested.min(*energy / self.config.energy_per_ms)\n                };\n                let cost = charged_ms * self.config.energy_per_ms;\n                *energy -= cost;\n                self.elapsed += charged_ms;\n\n                if self.elapsed == self.config.max_charge_ms || charged_ms < requested {\n                    self.strike()\n                } else {\n                    Advance::None\n                }\n            }\n            Phase::Swing => {\n                self.elapsed = self.elapsed.saturating_add(delta_ms);\n                if self.elapsed >= self.config.swing_ms {\n                    self.phase = Phase::Recovery;\n                    self.elapsed = 0;\n                    Advance::PhaseChanged(Phase::Recovery)\n                } else {\n                    Advance::None\n                }\n            }\n            Phase::Recovery => {\n                self.elapsed = self.elapsed.saturating_add(delta_ms);\n                if self.elapsed >= self.config.recovery_ms {\n                    self.phase = Phase::Finished;\n                    self.elapsed = 0;\n                    Advance::Finished\n                } else {\n                    Advance::None\n                }\n            }\n            Phase::Finished => Advance::Finished,\n        }\n    }\n\n    pub fn interrupt(&mut self) {\n        self.phase = Phase::Finished;\n        self.elapsed = 0;\n    }\n\n    fn strike(&mut self) -> Advance {\n        let scaled_bonus = (self.config.bonus_damage as u64)\n            .saturating_mul(self.elapsed as u64)\n            / self.config.max_charge_ms as u64;\n        let bonus = scaled_bonus.min(u32::MAX as u64) as u32;\n        let strike = Strike {\n            charge_ms: self.elapsed,\n            damage: self.config.base_damage.saturating_add(bonus),\n        };\n        self.phase = Phase::Swing;\n        self.elapsed = 0;\n        Advance::Struck(strike)\n    }\n}\n",
+  "code_sha256": "32461bf2cbfe334fb1928feab06efdc04276122e266b183d8e1f56bddc53ad0e",
+  "evidence_sha256": "1afd9c30b8ce69fbdf67ae9419960bfc74207d63a547b7de11930d0449343f38",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "cbd06d15f78b5b9e6a8b072ea30dcf7072ab0160259bda440c9b58bd704a93be",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1543,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 14 tests\ntest cloned_actions_progress_independently ... ok\ntest damage_uses_saturating_u32_multiplication_before_division ... FAILED\ntest elapsed_accumulation_saturates_at_u32_max ... ok\ntest final_damage_addition_saturates ... ok\ntest inability_to_afford_even_one_millisecond_executes_without_mutating_energy ... ok\ntest insufficient_energy_charges_only_affordable_milliseconds_then_executes ... ok\ntest interrupt_finishes_immediately_and_finished_calls_are_stable ... ok\ntest partial_charge_deducts_exact_energy_and_release_strikes ... ok\ntest reaching_maximum_charge_executes_and_discards_extra_time ... ok\ntest required_traits_are_available ... ok\ntest swing_and_recovery_advance_on_separate_calls_and_discard_excess ... ok\ntest zero_duration_phases_transition_only_on_later_calls_even_with_zero_delta ... ok\ntest zero_energy_rate_allows_free_charging ... ok\ntest zero_max_charge_is_rejected ... ok\n\nfailures:\n\n---- damage_uses_saturating_u32_multiplication_before_division stdout ----\n\nthread 'damage_uses_saturating_u32_multiplication_before_division' panicked at solution_test.rs:134:5:\nassertion `left == right` failed\n  left: Struck(Strike { charge_ms: 2, damage: 2147483657 })\n right: Struck(Strike { charge_ms: 2, damage: 1073741833 })\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    damage_uses_saturating_u32_multiplication_before_division\n\ntest result: FAILED. 13 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "e9b45e80cf5677b01b82effbd23a21347010550aca83f35076e7f6e18e2b16a6",
+    "timed_out": false
+  }
+}

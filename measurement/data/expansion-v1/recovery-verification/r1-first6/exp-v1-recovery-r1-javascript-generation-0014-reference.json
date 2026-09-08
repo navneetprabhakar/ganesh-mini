@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "4007879a4ee2337932f6a4ea76a9087a26641df74c819391127f1e5065ab930f",
+  "code": "'use strict';\n\nconst FIELDS = ['key', 'code', 'owner', 'openedOn'];\n\nfunction copyValidEntry(entry) {\n  if (entry === null || typeof entry !== 'object' ||\n      FIELDS.some((field) => typeof entry[field] !== 'string')) {\n    throw new TypeError('invalid entry');\n  }\n  return {\n    ...entry,\n    key: entry.key,\n    code: entry.code,\n    owner: entry.owner,\n    openedOn: entry.openedOn\n  };\n}\n\nfunction createRegistry(entries = []) {\n  if (!Array.isArray(entries)) throw new TypeError('entries must be an array');\n  const copies = entries.map(copyValidEntry);\n  const keys = new Set();\n  for (const entry of copies) {\n    if (keys.has(entry.key)) throw new Error('duplicate key');\n    keys.add(entry.key);\n  }\n  return { entries: copies };\n}\n\nfunction validateRegistry(registry) {\n  if (registry === null || typeof registry !== 'object' || !Array.isArray(registry.entries)) {\n    throw new TypeError('invalid registry');\n  }\n}\n\nfunction executeCommand(registry, command) {\n  validateRegistry(registry);\n  if (command === null || typeof command !== 'object') throw new TypeError('invalid command');\n\n  if (command.type === 'add') {\n    const entry = copyValidEntry(command.entry);\n    if (registry.entries.some((item) => item.key === entry.key)) throw new Error('duplicate key');\n    return { entries: [...registry.entries, entry] };\n  }\n\n  if (command.type === 'remove') {\n    if (typeof command.key !== 'string') throw new TypeError('invalid key');\n    const index = registry.entries.findIndex((item) => item.key === command.key);\n    if (index < 0) return registry;\n    return { entries: registry.entries.filter((_, i) => i !== index) };\n  }\n\n  if (command.type === 'edit') {\n    if (typeof command.key !== 'string') throw new TypeError('invalid key');\n    const index = registry.entries.findIndex((item) => item.key === command.key);\n    if (index < 0) return registry;\n    if (command.changes === null || typeof command.changes !== 'object') {\n      throw new TypeError('invalid edit');\n    }\n\n    const current = registry.entries[index];\n    const replacement = {\n      ...current,\n      key: current.key,\n      code: current.code,\n      owner: current.owner,\n      openedOn: current.openedOn\n    };\n    for (const field of ['code', 'owner', 'openedOn']) {\n      if (Object.prototype.hasOwnProperty.call(command.changes, field)) {\n        if (typeof command.changes[field] !== 'string') throw new TypeError('invalid change');\n        replacement[field] = command.changes[field];\n      }\n    }\n    const entries = registry.entries.slice();\n    entries[index] = replacement;\n    return { entries };\n  }\n\n  throw new TypeError('unknown command');\n}\n\nfunction searchEntries(registry, term) {\n  validateRegistry(registry);\n  if (typeof term !== 'string') throw new TypeError('term must be a string');\n  const needle = term.toLowerCase();\n  return registry.entries.filter((entry) =>\n    entry.code.toLowerCase().includes(needle) || entry.owner.toLowerCase().includes(needle)\n  );\n}\n\nmodule.exports = { createRegistry, executeCommand, searchEntries };\n",
+  "code_sha256": "d179ac45d8be8f63af8e742704a2ad8704b4880312d35de41f2544db74ed3551",
+  "evidence_sha256": "8d5ea6dcf0e7fa531598579554fb893945ea0ec955cd13aedea58f8129e9782e",
+  "label": "reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "e545f4c21fb6f2b5cbbd468b700b96f652be2cc4c7cb3a1a7b0e36678e3931e8",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 424,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:138:10)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "5bd061de73cb893cc61660b3f75d04da901554acdf77d8ea9ea601de41cd1cba",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "candidate_sha256": "92bb09e209e3afa5b123e0fa8bc0e8dfeb92e370018d640ac93b0c9c0020f3c9",
+  "code": "use std::collections::HashMap;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct Charge {\n    pub open: u64,\n    pub append: u64,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Action { Open, Append }\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Withdrawal {\n    pub id: u64,\n    pub recipient: String,\n    pub amount: u64,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum LedgerError {\n    Unauthorized,\n    InvalidInput,\n    Paused,\n    Overflow,\n    InsufficientBalance,\n    WithdrawalPending,\n    NoMatchingWithdrawal,\n}\n\npub struct ServiceLedger {\n    owner: String,\n    metadata: Option<(String, String)>,\n    default_charge: Charge,\n    user_charges: HashMap<String, Charge>,\n    paused: bool,\n    balance: u64,\n    pending: Option<Withdrawal>,\n    next_id: u64,\n}\n\nimpl ServiceLedger {\n    pub fn new(owner: String, default_charge: Charge) -> Result<Self, LedgerError> {\n        if owner.is_empty() { return Err(LedgerError::InvalidInput); }\n        Ok(Self { owner, metadata: None, default_charge, user_charges: HashMap::new(), paused: false, balance: 0, pending: None, next_id: 1 })\n    }\n\n    fn owner(&self, caller: &str) -> Result<(), LedgerError> {\n        if caller == self.owner { Ok(()) } else { Err(LedgerError::Unauthorized) }\n    }\n\n    pub fn set_metadata(&mut self, caller: &str, specification: String, source: String) -> Result<(), LedgerError> {\n        self.owner(caller)?;\n        if specification.is_empty() || source.is_empty() { return Err(LedgerError::InvalidInput); }\n        self.metadata = Some((specification, source));\n        Ok(())\n    }\n\n    pub fn set_default_charge(&mut self, caller: &str, charge: Charge) -> Result<(), LedgerError> {\n        self.owner(caller)?;\n        self.default_charge = charge;\n        Ok(())\n    }\n\n    pub fn set_user_charge(&mut self, caller: &str, user: String, charge: Charge) -> Result<(), LedgerError> {\n        self.owner(caller)?;\n        if user.is_empty() { return Err(LedgerError::InvalidInput); }\n        self.user_charges.insert(user, charge);\n        Ok(())\n    }\n\n    pub fn pause(&mut self, caller: &str) -> Result<(), LedgerError> {\n        self.owner(caller)?;\n        self.paused = true;\n        Ok(())\n    }\n\n    pub fn resume(&mut self, caller: &str) -> Result<(), LedgerError> {\n        self.owner(caller)?;\n        self.paused = false;\n        Ok(())\n    }\n\n    pub fn record(&mut self, user: &str, action: Action) -> Result<u64, LedgerError> {\n        if user.is_empty() { return Err(LedgerError::InvalidInput); }\n        if self.paused { return Err(LedgerError::Paused); }\n        let charge = self.user_charges.get(user).copied().unwrap_or(self.default_charge);\n        let amount = match action { Action::Open => charge.open, Action::Append => charge.append };\n        let updated = self.balance.checked_add(amount).ok_or(LedgerError::Overflow)?;\n        self.balance = updated;\n        Ok(updated)\n    }\n\n    pub fn begin_withdrawal(&mut self, caller: &str, recipient: String, amount: u64) -> Result<Withdrawal, LedgerError> {\n        self.owner(caller)?;\n        if recipient.is_empty() || amount == 0 { return Err(LedgerError::InvalidInput); }\n        if self.pending.is_some() { return Err(LedgerError::WithdrawalPending); }\n        if amount > self.balance { return Err(LedgerError::InsufficientBalance); }\n        let next = self.next_id.checked_add(1).ok_or(LedgerError::Overflow)?;\n        let withdrawal = Withdrawal { id: self.next_id, recipient, amount };\n        self.balance -= amount;\n        self.next_id = next;\n        self.pending = Some(withdrawal.clone());\n        Ok(withdrawal)\n    }\n\n    pub fn finish_withdrawal(&mut self, caller: &str, id: u64, succeeded: bool) -> Result<(), LedgerError> {\n        self.owner(caller)?;\n        let pending = self.pending.as_ref().ok_or(LedgerError::NoMatchingWithdrawal)?;\n        if pending.id != id { return Err(LedgerError::NoMatchingWithdrawal); }\n        let amount = pending.amount;\n        if !succeeded {\n            self.balance = self.balance.checked_add(amount).ok_or(LedgerError::Overflow)?;\n        }\n        self.pending = None;\n        Ok(())\n    }\n\n    pub fn balance(&self) -> u64 { self.balance }\n    pub fn is_paused(&self) -> bool { self.paused }\n}\n",
+  "code_sha256": "f9063a9c0c37f7dbd49861f3cab795b8ca42fe9018d0c1d18212719f3d0ac67c",
+  "evidence_sha256": "dc2774d1200c886e93067a591cea438f10f4aa1a39839c62ea10d089a62503b2",
+  "label": "known-bad-0",
+  "outcome": "compile-or-load-failure-not-semantic-proof",
+  "parent_candidate_sha256": "e41829396ee52614f965b12d66de50255affc3c8b06af066d79d5d8f6e89404e",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 777,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "error[E0277]: `ServiceLedger` doesn't implement `Debug`\n  --> solution_test.rs:20:74\n   |\n20 |         ServiceLedger::new(String::new(), Charge { open: 1, append: 2 }).unwrap_err(),\n   |                                                                          ^^^^^^^^^^ `ServiceLedger` cannot be formatted using `{:?}`\n   |\n   = help: the trait `Debug` is not implemented for `ServiceLedger`\n   = note: add `#[derive(Debug)]` to `ServiceLedger` or manually `impl Debug for ServiceLedger`\nnote: required by a bound in `Result::<T, E>::unwrap_err`\n  --> /rustc/4d91de4e48198da2e33413efdcd9cd2cc0c46688/library/core/src/result.rs:1198:5\nhelp: consider annotating `ServiceLedger` with `#[derive(Debug)]`\n  --> solution.rs:30:1\n   |\n30 + #[derive(Debug)]\n31 | pub struct ServiceLedger {\n   |\n\nerror: aborting due to 1 previous error\n\nFor more information about this error, try `rustc --explain E0277`.\n",
+    "stderr_sha256": "0c73ccca1f213f14452cfa9e4a30c48b90f8a844a96d692da105dae3d2f493a4",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

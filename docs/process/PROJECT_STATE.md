@@ -4,8 +4,8 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Current checkpoint: **2287 holds (2284 additive plus historical three)**;
-4,968 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **2296 holds (2293 additive plus historical three)**;
+4,975 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 165 positive, 135 held. By lane: Go 39/17,
 Java 29/31, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v2.json.
@@ -26,18 +26,18 @@ scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through2273 holds including Rust positions1–330 and five probes.
-See QUALITY_RUST330_2273_BACKUP.md. JS elementary queue200:76 already held;
+GCS verified through2287 holds including Rust positions1–360 and seven probes.
+See QUALITY_RUST360_2287_BACKUP.md. JS elementary queue200:76 already held;
 unheld124/124 reconciled with60 new holds and64 criterion positives. JS outside
 scope complete and backed up. TypeScript queue262:107 initially held;
 unheld155/155 reconciled:57 new holds and98 criterion positives. TypeScript outside
 elementary scope complete; batches1–5 and four diagnostic probes are GCS verified.
 Rust elementary queue1006 is now frozen:64 prior-held exclusions and942 requiring
-criterion reconciliation. First360 reconciled:141 holds,219 scoped positives.
-169 first-time repair inspections add unique coverage. Continue unheld361.
-Rust through330 and all five diagnostic probes are GCS verified.
+criterion reconciliation. First375 reconciled:150 holds,225 scoped positives.
+176 first-time repair inspections add unique coverage. Continue unheld376.
+Rust through360 and all seven diagnostic probes are GCS verified.
 Archive and receipt passed exact-generation byte comparison; originals unchanged.
-Positions331–360 and two new finite-boundary probes await GCS backup.
+Positions361–375 await GCS backup; all earlier review/probes verified.
 Repair0181 returned origin0 outside half-open range; repair0186 returned zero
 density for finite MAX sigma. Both probes compiled then failed without timeout.
 Repair0171 has a static empty-envelope credential-collision contract hold;
@@ -55,7 +55,7 @@ see JAVA_RECOVERY_PROBES_20260907.md. Both compile, then fail assertions/runtime
 Earlier evidence has exact-generation roundtrip proof. Frozen inputs unchanged.
 Prior page arithmetic reconciled; generation0716 eager-allocation hold added.
 See JAVA_PAGE_RECONCILIATION_20260907.md. Cross-lane scopes remain open.
-At most3598 rows remain outside holds, below the planned4000 lower bound.
+At most3589 rows remain outside holds, below the planned4000 lower bound.
 The user approved versioned recovery to address this shortfall without lowering
 quality gates. See CORPUS_SUFFICIENCY_PAUSE_20260907.md for the resolved pause.
 No training seal or new VM. Complete review, then recover suitable held examples

@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "1b3d6efb189dbfd00d64b698374f2b340b10e32394c095915482b39b6843929d",
+  "code": "#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum Decision {\n    Permit,\n    Reject,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub enum RequestKind {\n    Code,\n    Media,\n    Style,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Rule {\n    pub host_suffix: String,\n    pub kind: Option<RequestKind>,\n    pub decision: Decision,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Policy {\n    rules: Vec<Rule>,\n}\n\nimpl Policy {\n    pub fn new(rules: Vec<Rule>) -> Result<Policy, String> {\n        if rules.iter().any(|rule| !valid_host(&rule.host_suffix)) {\n            return Err(\"invalid host suffix\".to_string());\n        }\n        Ok(Policy { rules })\n    }\n\n    pub fn evaluate(&self, host: &str, kind: RequestKind) -> Decision {\n        if !valid_host(host) {\n            return Decision::Permit;\n        }\n\n        for rule in &self.rules {\n            let host_matches = host == rule.host_suffix\n                || host\n                    .strip_suffix(&rule.host_suffix)\n                    .is_some_and(|prefix| prefix.ends_with('.'));\n            let kind_matches = rule.kind.is_none() || rule.kind == Some(kind);\n\n            if host_matches && kind_matches {\n                return rule.decision;\n            }\n        }\n\n        Decision::Permit\n    }\n}\n\nfn valid_host(value: &str) -> bool {\n    !value.is_empty()\n        && value\n            .bytes()\n            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'.' || b == b'-')\n        && value\n            .bytes()\n            .any(|b| b.is_ascii_lowercase() || b.is_ascii_digit())\n}\n",
+  "code_sha256": "da82cdeda2e180a340e9fd7da70cb31ee1b6498ffec56766638ba604a43e9c88",
+  "evidence_sha256": "b1997c504624517b31a1800c3dfecf0b21e2381bc360554c4563fdc7bf4be7e5",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "24c0d7e6054219d46ac007b92128c647e01732ece3176c4b5b7c9b4fa1f4a9c0",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1780,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 6 tests\ntest construction_rejects_every_invalid_suffix ... ok\ntest dot_and_hyphen_are_valid_names_without_extra_dns_rules ... FAILED\ntest empty_policy_and_invalid_evaluated_hosts_default_to_permit ... ok\ntest evaluation_does_not_mutate_supplied_host ... ok\ntest exact_and_subdomain_suffixes_match_but_partial_suffixes_do_not ... ok\ntest kind_filter_and_insertion_order_are_respected ... ok\n\nfailures:\n\n---- dot_and_hyphen_are_valid_names_without_extra_dns_rules stdout ----\n\nthread 'dot_and_hyphen_are_valid_names_without_extra_dns_rules' panicked at solution_test.rs:54:68:\ncalled `Result::unwrap()` on an `Err` value: \"invalid host suffix\"\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    dot_and_hyphen_are_valid_names_without_extra_dns_rules\n\ntest result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "077e94f926cf06884608bd3db7bcd93878c0d3f52acb6a010e1d70e194f1b6ed",
+    "timed_out": false
+  }
+}

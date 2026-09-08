@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "1cb5a209b3206eb8c6a1a8cc442518f24855446f6f614fbfe8f95ff88b35afec",
+  "code": "from typing import Set\n\n\n_RULES = {\n    \"quartz\": ({\"quartz.mod\"}, (\".qproj\",)),\n    \"ember\": ({\"ember.lock\"}, ()),\n    \"orbit\": ({\"orbit.map\"}, (\".orb\",)),\n}\n\n\ndef _parts(path: str):\n    if not isinstance(path, str):\n        raise TypeError(\"paths must be strings\")\n    if not path.startswith(\"/\") or path == \"/\":\n        raise ValueError(\"path must be an absolute non-root path\")\n    parts = path.split(\"/\")[1:]\n    if any(part in {\"\", \".\", \"..\"} for part in parts):\n        raise ValueError(\"path must be normalized\")\n    return parts\n\n\ndef nearest_bundle(document_path: str, profile: str, entries: Set[str]) -> str:\n    document_parts = _parts(document_path)\n    if not isinstance(profile, str):\n        raise TypeError(\"profile must be a string\")\n    if profile not in _RULES:\n        raise ValueError(\"unknown profile\")\n    if not isinstance(entries, set):\n        raise TypeError(\"entries must be a set\")\n\n    normalized_entries = set()\n    for entry in entries:\n        _parts(entry)\n        normalized_entries.add(entry)\n\n    directory_parts = document_parts[:-1]\n    directories = []\n    for length in range(len(directory_parts), -1, -1):\n        directories.append(\"/\" + \"/\".join(directory_parts[:length]) if length else \"/\")\n\n    exact, suffixes = _RULES[profile]\n    for directory in directories:\n        prefix = directory.rstrip(\"/\") + \"/\"\n        for entry in normalized_entries:\n            if not entry.startswith(prefix):\n                continue\n            remainder = entry[len(prefix):]\n            if \"/\" not in remainder and (remainder in exact or remainder.endswith(suffixes)):\n                return directory\n\n    for directory in directories:\n        marker = directory.rstrip(\"/\") + \"/.anchor\"\n        if marker in normalized_entries:\n            return directory\n\n    return directories[0]\n",
+  "code_sha256": "cf6b85867afd14a13ca09ddbdbf7722037de56b716f130c3f183593391815bae",
+  "evidence_sha256": "6fb7caa2dbba2068825ec115e51a4c9a1914b476a0159519055aecb20b3cc56f",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "a563fb4850e489aa1a783828e5a96885e06401b33761b8224fb8636a7208234f",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 479,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "....E....\n======================================================================\nERROR: test_root_entry_is_valid_and_not_itself_a_marker (__main__.NearestBundleTests.test_root_entry_is_valid_and_not_itself_a_marker)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 29, in test_root_entry_is_valid_and_not_itself_a_marker\n    self.assertEqual(nearest_bundle(\"/a/doc\", \"ember\", entries), \"/a\")\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 33, in nearest_bundle\n    _parts(entry)\n  File \"/work/solution.py\", line 15, in _parts\n    raise ValueError(\"path must be an absolute non-root path\")\nValueError: path must be an absolute non-root path\n\n----------------------------------------------------------------------\nRan 9 tests in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "cc4cf49c19b12e6dc418434c1686a7efe5cb0a1677784248c35e5a9bf0204c2b",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

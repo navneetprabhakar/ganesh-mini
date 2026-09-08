@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "a305cf205e8e2f45073ef1cf779a922e06531d29c2c58583b01ab5b9e32bcb91",
+  "code": "use std::collections::{BTreeMap, BTreeSet};\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum RegistryError {\n    InvalidName(String),\n    UnknownScope(String),\n    Duplicate(String),\n}\n\n#[derive(Debug, Clone, PartialEq, Eq, Default)]\npub struct TagRegistry {\n    scopes: BTreeMap<String, BTreeSet<String>>,\n}\n\nfn valid_name(name: &str) -> bool {\n    let mut bytes = name.bytes();\n    match bytes.next() {\n        Some(first) if first.is_ascii_alphabetic() || first == b'_' => {}\n        _ => return false,\n    }\n    bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')\n}\n\nimpl TagRegistry {\n    pub fn new() -> Self {\n        Self::default()\n    }\n\n    pub fn register_scope(&mut self, scope: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if self.scopes.contains_key(scope) {\n            return Err(RegistryError::Duplicate(scope.to_owned()));\n        }\n        self.scopes.insert(scope.to_owned(), BTreeSet::new());\n        Ok(())\n    }\n\n    pub fn register_tag(&mut self, scope: &str, tag: &str) -> Result<(), RegistryError> {\n        if !valid_name(scope) {\n            return Err(RegistryError::InvalidName(scope.to_owned()));\n        }\n        if !valid_name(tag) {\n            return Err(RegistryError::InvalidName(tag.to_owned()));\n        }\n        let tags = self\n            .scopes\n            .get_mut(scope)\n            .ok_or_else(|| RegistryError::UnknownScope(scope.to_owned()))?;\n        if !tags.insert(tag.to_owned()) {\n            return Err(RegistryError::Duplicate(format!(\"{}::{}\", scope, tag)));\n        }\n        Ok(())\n    }\n\n    pub fn register_batch(\n        &mut self,\n        enabled: bool,\n        entries: &[(&str, &str)],\n    ) -> Result<(), RegistryError> {\n        if !enabled {\n            return Ok(());\n        }\n        let mut candidate = self.clone();\n        for &(scope, tag) in entries {\n            candidate.register_tag(scope, tag)?;\n        }\n        *self = candidate;\n        Ok(())\n    }\n\n    pub fn tags(&self) -> Vec<String> {\n        self.scopes\n            .iter()\n            .flat_map(|(scope, tags)| {\n                tags.iter().map(move |tag| format!(\"{}::{}\", scope, tag))\n            })\n            .collect()\n    }\n}\n",
+  "code_sha256": "0e24a33412199403e6ef0e7d766ecf276c4213d509adf4cef73257735d3a8922",
+  "evidence_sha256": "5647f34bd28f4241e53743127cecb0b3b577750cb85bee2638b708fae92488d2",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "9f1028f4c63a875a71fbc516e38096b59319eb4fda05df1527125f04a6f467ab",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1875,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 7 tests\ntest cloning_and_returned_tag_vectors_are_detached ... ok\ntest disabled_batch_does_not_inspect_or_change_entries ... ok\ntest duplicates_within_one_batch_also_roll_back_and_empty_batch_succeeds ... ok\ntest enabled_batch_is_atomic_on_late_failure ... ok\ntest registers_scoped_tags_and_returns_global_lexicographic_order ... FAILED\ntest reports_unknown_scopes_and_duplicate_identity ... ok\ntest validates_ascii_name_grammar_for_scopes_and_tags ... ok\n\nfailures:\n\n---- registers_scoped_tags_and_returns_global_lexicographic_order stdout ----\n\nthread 'registers_scoped_tags_and_returns_global_lexicographic_order' panicked at solution_test.rs:18:5:\nassertion `left == right` failed\n  left: [\"A::tag2\", \"a::x\", \"a0::x\", \"z_scope::alpha\", \"z_scope::beta\"]\n right: [\"A::tag2\", \"a0::x\", \"a::x\", \"z_scope::alpha\", \"z_scope::beta\"]\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    registers_scoped_tags_and_returns_global_lexicographic_order\n\ntest result: FAILED. 6 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "29ba3e4542536d78ee75966afee8b9efb60c1be4faefa523ece74b651dc26d5b",
+    "timed_out": false
+  }
+}

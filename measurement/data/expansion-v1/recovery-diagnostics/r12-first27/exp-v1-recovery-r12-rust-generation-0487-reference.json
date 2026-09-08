@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "8bd4fdde9168e90a56a025f0d7b3117ebfc0e872a1e30905361efc2b40ee264c",
+  "code": "use std::collections::BTreeMap;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Observation {\n    pub outcome: i64,\n    pub features: Vec<i64>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ModelError {\n    EmptyName,\n    EmptyFeatures,\n    ArityMismatch,\n    UnknownModel,\n}\n\npub struct ObservationStore {\n    models: BTreeMap<String, Vec<Observation>>,\n}\n\nimpl ObservationStore {\n    pub fn new() -> ObservationStore {\n        ObservationStore {\n            models: BTreeMap::new(),\n        }\n    }\n\n    pub fn update(&mut self, name: &str, observations: Vec<Observation>) -> Result<(), ModelError> {\n        if name.is_empty() {\n            return Err(ModelError::EmptyName);\n        }\n        if observations.is_empty() {\n            return Ok(());\n        }\n        if observations.iter().any(|item| item.features.is_empty()) {\n            return Err(ModelError::EmptyFeatures);\n        }\n\n        let arity = self\n            .models\n            .get(name)\n            .and_then(|items| items.first())\n            .map(|item| item.features.len())\n            .unwrap_or(observations[0].features.len());\n        if observations\n            .iter()\n            .any(|item| item.features.len() != arity)\n        {\n            return Err(ModelError::ArityMismatch);\n        }\n\n        self.models\n            .entry(name.to_owned())\n            .or_default()\n            .extend(observations);\n        Ok(())\n    }\n\n    pub fn predict(&self, name: &str, queries: &[Vec<i64>]) -> Result<Vec<i64>, ModelError> {\n        if name.is_empty() {\n            return Err(ModelError::EmptyName);\n        }\n        let observations = self.models.get(name).ok_or(ModelError::UnknownModel)?;\n        if queries.iter().any(Vec::is_empty) {\n            return Err(ModelError::EmptyFeatures);\n        }\n\n        Ok(queries\n            .iter()\n            .map(|query| {\n                let mut matched_sum = 0i128;\n                let mut matched_count = 0i128;\n                for observation in observations {\n                    if observation.features == *query {\n                        matched_sum += observation.outcome as i128;\n                        matched_count += 1;\n                    }\n                }\n\n                if matched_count != 0 {\n                    (matched_sum / matched_count) as i64\n                } else {\n                    let sum: i128 = observations\n                        .iter()\n                        .map(|observation| observation.outcome as i128)\n                        .sum();\n                    (sum / observations.len() as i128) as i64\n                }\n            })\n            .collect())\n    }\n}\n\npub fn new() -> ObservationStore {\n    ObservationStore::new()\n}\n",
+  "code_sha256": "f82da9e0e607a31880dd1c533e4c9d92c87aa2b870cc10b3e7a41e69565eb550",
+  "evidence_sha256": "2bff001860787d6c665abb7dc408d3f0637d53767f6be4f06a0854ef4fc29dd2",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "9ee8d243d8728a71c43c64ab9122fceb8e0db37aabc8e8e1f055ff82fb726ad4",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1952,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 6 tests\ntest averages_with_i128_and_truncates_toward_zero ... ok\ntest empty_update_is_a_noop_and_does_not_create_a_model ... ok\ntest failed_update_is_atomic ... ok\ntest prediction_requires_a_model_even_for_no_queries_and_rejects_empty_queries ... ok\ntest predicts_exact_average_and_model_fallback_in_query_order ... ok\ntest validates_names_features_and_observation_arity ... ok\n\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "9cc722fb859ac2807b61d17490d308ba221dd6498d4336b786e024a45cad1204",
+    "timed_out": false
+  }
+}

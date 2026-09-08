@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "8549f265d6d91500244b8e23750b1f2394e2b0dba5ae06a73d1fef1639ea6621",
+  "code": "#[derive(Clone, Debug, PartialEq, Eq)]\npub enum FieldError {\n    EmptyName,\n    Malformed,\n    Duplicate,\n}\n\npub fn read_tagged_field(input: &str, name: &str) -> Result<Option<String>, FieldError> {\n    if name.is_empty() {\n        return Err(FieldError::EmptyName);\n    }\n\n    let bytes = input.as_bytes();\n    let mut pos = 0usize;\n    let mut result = None;\n    let mut duplicate = false;\n\n    while pos < bytes.len() {\n        if bytes[pos] != b'[' {\n            pos += 1;\n            continue;\n        }\n\n        let next = bytes.get(pos + 1).copied();\n        if next == Some(b'/') {\n            return Err(FieldError::Malformed);\n        }\n        if !next.map_or(false, |byte| byte.is_ascii_alphabetic()) {\n            pos += 1;\n            continue;\n        }\n\n        let open_end = input[pos + 1..]\n            .find(']')\n            .map(|offset| pos + 1 + offset)\n            .ok_or(FieldError::Malformed)?;\n        let open_name = &input[pos + 1..open_end];\n        let close = format!(\"[/{open_name}]\");\n        let content_start = open_end + 1;\n        let relative_end = input[content_start..]\n            .find(&close)\n            .ok_or(FieldError::Malformed)?;\n        let content_end = content_start + relative_end;\n        let content = &input[content_start..content_end];\n\n        if content.as_bytes().windows(2).any(|window| {\n            window[0] == b'['\n                && (window[1] == b'/' || window[1].is_ascii_alphabetic())\n        }) {\n            return Err(FieldError::Malformed);\n        }\n\n        if open_name == name {\n            if result.is_some() {\n                duplicate = true;\n            } else {\n                result = Some(content.to_owned());\n            }\n        }\n        pos = content_end + close.len();\n    }\n\n    if duplicate {\n        Err(FieldError::Duplicate)\n    } else {\n        Ok(result)\n    }\n}\n",
+  "code_sha256": "a1dc6460a8a09dc8d719348bebfdd9a4ec5ac3f6277371f88bcd8aaf067aa332",
+  "evidence_sha256": "9cecbb79a785e140d599f3aa9f191a264dade978be8d1367cee0d9eeb59d1b5d",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "fb599775c62d40ba3fba6a8ea9a454415ad1d7de70a66a78206526600f768935",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1858,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 6 tests\ntest delimiters_and_names_are_case_sensitive ... ok\ntest detects_unmatched_mismatched_and_nested_delimiters ... ok\ntest permits_consecutive_fields_and_ordinary_brackets ... ok\ntest reads_exact_content_and_supports_extended_names ... ok\ntest rejects_empty_requested_name_without_mutating_input ... ok\ntest validates_whole_document_and_malformed_beats_duplicate ... ok\n\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "2649b19b5cc28f3581f686b225bd7881bc9e559628fe98e4380448d87359f27f",
+    "timed_out": false
+  }
+}

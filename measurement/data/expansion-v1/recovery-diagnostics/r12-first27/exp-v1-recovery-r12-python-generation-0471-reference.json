@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "4dfb8be99c9b246b3989f126d970cad0590ad0150001a21fa5d23acab87ae8dc",
+  "code": "_RULES = {\n    \"quartz\": ({\"quartz.mod\"}, (\".qproj\",)),\n    \"ember\": ({\"ember.lock\"}, ()),\n    \"orbit\": ({\"orbit.map\"}, (\".orb\",)),\n}\n\n\ndef _path_parts(path, allow_root):\n    if not isinstance(path, str):\n        raise TypeError(\"paths must be strings\")\n    if not path.startswith(\"/\"):\n        raise ValueError(\"path must be absolute\")\n    if path == \"/\":\n        if allow_root:\n            return []\n        raise ValueError(\"document path must contain a filename\")\n    parts = path[1:].split(\"/\")\n    if any(part in {\"\", \".\", \"..\"} for part in parts):\n        raise ValueError(\"path must be normalized\")\n    return parts\n\n\ndef nearest_bundle(document_path, profile, entries):\n    document_parts = _path_parts(document_path, False)\n    if not isinstance(profile, str):\n        raise TypeError(\"profile must be a string\")\n    if profile not in _RULES:\n        raise ValueError(\"unknown profile\")\n    if not isinstance(entries, set):\n        raise TypeError(\"entries must be a set\")\n\n    normalized_entries = set()\n    for entry in entries:\n        _path_parts(entry, True)\n        normalized_entries.add(entry)\n\n    directory_parts = document_parts[:-1]\n    directories = [\n        \"/\" + \"/\".join(directory_parts[:length]) if length else \"/\"\n        for length in range(len(directory_parts), -1, -1)\n    ]\n\n    exact, suffixes = _RULES[profile]\n    for directory in directories:\n        prefix = directory.rstrip(\"/\") + \"/\"\n        for entry in normalized_entries:\n            if not entry.startswith(prefix):\n                continue\n            remainder = entry[len(prefix):]\n            if \"/\" not in remainder and (remainder in exact or remainder.endswith(suffixes)):\n                return directory\n\n    for directory in directories:\n        marker = directory.rstrip(\"/\") + \"/.anchor\"\n        if marker in normalized_entries:\n            return directory\n\n    return directories[0]\n",
+  "code_sha256": "67a22d1fc9e556936b90e527b5aaf03cd785e7b4160579abb67806968f37ddbe",
+  "evidence_sha256": "acb2a9530ed75a985ce30bebc93afee6db1349fb74f3ec74031f02bf66198020",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "a563fb4850e489aa1a783828e5a96885e06401b33761b8224fb8636a7208234f",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 589,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.001s\n\nOK\n",
+    "stderr_sha256": "698d16d7b93c4bd9707d3cfacda6fb1e0fea99ed0cda6e69bedc42772940540a",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

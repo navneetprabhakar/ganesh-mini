@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "e1d8d32c6c4306e1b590af66ff4e7302f9807b73262ffd8ca93c813b91f44717",
+  "code": "pub struct DeviceSpec {\n    pub id: String,\n    pub enabled: bool,\n    pub tags: Vec<String>,\n}\n\npub enum ParseDeviceError {\n    EmptyInput,\n    WrongFieldCount,\n    InvalidId,\n    InvalidEnabled,\n    InvalidTag,\n}\n\nfn valid_token(value: &str) -> bool {\n    !value.is_empty()\n        && value\n            .bytes()\n            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')\n}\n\npub fn parse_device_spec(input: &str) -> Result<DeviceSpec, ParseDeviceError> {\n    if input.trim().is_empty() {\n        return Err(ParseDeviceError::EmptyInput);\n    }\n\n    let fields: Vec<&str> = input.split(',').collect();\n    if fields.len() != 3 {\n        return Err(ParseDeviceError::WrongFieldCount);\n    }\n\n    let id = fields[0].trim();\n    if !valid_token(id) {\n        return Err(ParseDeviceError::InvalidId);\n    }\n\n    let enabled = match fields[1].trim() {\n        \"on\" => true,\n        \"off\" => false,\n        _ => return Err(ParseDeviceError::InvalidEnabled),\n    };\n\n    let tag_field = fields[2].trim();\n    let tags = if tag_field.is_empty() {\n        Vec::new()\n    } else {\n        tag_field\n            .split(':')\n            .map(|raw| {\n                let tag = raw.trim();\n                if valid_token(tag) {\n                    Ok(tag.to_owned())\n                } else {\n                    Err(ParseDeviceError::InvalidTag)\n                }\n            })\n            .collect::<Result<Vec<_>, _>>()?\n    };\n\n    Ok(DeviceSpec {\n        id: id.to_owned(),\n        enabled,\n        tags,\n    })\n}\n",
+  "code_sha256": "d25800634e8dee7f01f5575f56acc81e0c734a99a4c8a7911ec08530b5105c8b",
+  "evidence_sha256": "f3ab2327b40c45314af5a2f8885febc5e7d3156d3145c1851e75cdb29af9f651",
+  "label": "reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "04dca4f26c1e805166c1ff4269bd8f0eed217af59e5200cd703dfb3e5631bff5",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1782,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 6 tests\ntest distinguishes_empty_input_from_bad_identifier ... ok\ntest enabled_flag_is_exact_after_trimming ... ok\ntest field_count_is_determined_only_by_commas ... ok\ntest parses_off_and_an_empty_tag_field ... ok\ntest parses_trimmed_fields_and_preserves_tag_order_and_duplicates ... ok\ntest rejects_empty_or_invalid_tags_in_nonempty_lists ... FAILED\n\nfailures:\n\n---- rejects_empty_or_invalid_tags_in_nonempty_lists stdout ----\n\nthread 'rejects_empty_or_invalid_tags_in_nonempty_lists' panicked at solution_test.rs:56:9:\na,on::\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    rejects_empty_or_invalid_tags_in_nonempty_lists\n\ntest result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "857e3fdab95cdb784d215e45c6f9c3bd581c370cec14a3c5afe0a0ab0b3bbe58",
+    "timed_out": false
+  }
+}

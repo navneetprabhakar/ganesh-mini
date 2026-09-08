@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "72702982ebf2dfa15eceb4510387e914372aa0ae6677febc0c6f4d774b7c754a",
+  "code": "pub fn heaviest_route(\n    node_count: usize,\n    root: usize,\n    edges: &[(usize, usize, i64)],\n) -> Option<i64> {\n    if node_count == 0 || root >= node_count || edges.len() != node_count - 1 {\n        return None;\n    }\n\n    let mut children = vec![Vec::<(usize, i64)>::new(); node_count];\n    let mut parents = vec![0usize; node_count];\n    for &(parent, child, weight) in edges {\n        if parent >= node_count || child >= node_count || parent == child {\n            return None;\n        }\n        parents[child] = parents[child].checked_add(1)?;\n        if parents[child] > 1 {\n            return None;\n        }\n        children[parent].push((child, weight));\n    }\n    if parents[root] != 0\n        || parents\n            .iter()\n            .enumerate()\n            .any(|(node, &count)| node != root && count != 1)\n    {\n        return None;\n    }\n\n    fn visit(\n        node: usize,\n        children: &[Vec<(usize, i64)>],\n        seen: &mut [bool],\n    ) -> Option<i64> {\n        if seen[node] {\n            return None;\n        }\n        seen[node] = true;\n        if children[node].is_empty() {\n            return Some(0);\n        }\n\n        let mut best = None;\n        for &(child, weight) in &children[node] {\n            let candidate = weight.checked_add(visit(child, children, seen)?)?;\n            best = Some(best.map_or(candidate, |old: i64| old.max(candidate)));\n        }\n        best\n    }\n\n    let mut seen = vec![false; node_count];\n    let answer = visit(root, &children, &mut seen)?;\n    if seen.iter().all(|&value| value) {\n        Some(answer)\n    } else {\n        None\n    }\n}\n",
+  "code_sha256": "e6689b45014153e9705114f0de5fda6cc802e44e13904ccdb3866c09894b7aeb",
+  "evidence_sha256": "f436006b38f0d5dbbfcf94849e2a939e22c85e6147a9ae47b8afe1d607318366",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "a4018ca869dde6a604b3403171e77d5cc73cc2cfb74e4cb707004b04f2c46131",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1562,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 5 tests\ntest chooses_greatest_root_to_leaf_sum ... ok\ntest deep_tree_does_not_depend_on_recursive_stack_depth ... FAILED\ntest handles_single_node_and_negative_routes ... ok\ntest rejects_invalid_tree_shapes_and_endpoints ... ok\ntest rejects_overflow_or_underflow_on_any_route ... FAILED\n\nfailures:\n\n---- deep_tree_does_not_depend_on_recursive_stack_depth stdout ----\n\nthread 'deep_tree_does_not_depend_on_recursive_stack_depth' panicked at solution_test.rs:12:5:\nassertion `left == right` failed\n  left: Some(-1)\n right: None\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- rejects_overflow_or_underflow_on_any_route stdout ----\n\nthread 'rejects_overflow_or_underflow_on_any_route' panicked at solution_test.rs:12:5:\nassertion `left == right` failed\n  left: Some(-1)\n right: None\n\n\nfailures:\n    deep_tree_does_not_depend_on_recursive_stack_depth\n    rejects_overflow_or_underflow_on_any_route\n\ntest result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "ae8c724f148c366c9fb2cb96940d76d33712cdfdac9bf6272694171cd8c40314",
+    "timed_out": false
+  }
+}

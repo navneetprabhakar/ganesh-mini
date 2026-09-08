@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "2f4ddad80bf1944922827cb9fc06916eb08fbcf344f4b3653abef43d54dcdf12",
+  "code": "pub fn heaviest_route(\n    node_count: usize,\n    root: usize,\n    edges: &[(usize, usize, i64)],\n) -> Option<i64> {\n    if node_count == 0 || root >= node_count || edges.len() != node_count - 1 {\n        return None;\n    }\n\n    let mut children = vec![Vec::<(usize, i64)>::new(); node_count];\n    let mut parents = vec![0usize; node_count];\n    for &(parent, child, weight) in edges {\n        if parent >= node_count || child >= node_count || parent == child {\n            return None;\n        }\n        parents[child] = parents[child].checked_add(1)?;\n        if parents[child] > 1 {\n            return None;\n        }\n        children[parent].push((child, weight));\n    }\n    if parents[root] != 0\n        || parents\n            .iter()\n            .enumerate()\n            .any(|(node, &count)| node != root && count != 1)\n    {\n        return None;\n    }\n\n    fn visit(\n        node: usize,\n        children: &[Vec<(usize, i64)>],\n        seen: &mut [bool],\n    ) -> Option<i64> {\n        if seen[node] {\n            return None;\n        }\n        seen[node] = true;\n        if children[node].is_empty() {\n            return Some(0);\n        }\n\n        let mut best = None;\n        for &(child, weight) in &children[node] {\n            let candidate = weight.checked_add(visit(child, children, seen)?)?;\n            best = Some(best.map_or(candidate, |old: i64| old.max(candidate)));\n        }\n        best\n    }\n\n    let mut seen = vec![false; node_count];\n    let answer = visit(root, &children, &mut seen)?;\n    if seen.iter().all(|&value| value) {\n        Some(answer)\n    } else {\n        None\n    }\n}\n",
+  "code_sha256": "e6689b45014153e9705114f0de5fda6cc802e44e13904ccdb3866c09894b7aeb",
+  "evidence_sha256": "5a62987c2352a2157d6afa9189ad09cf2d736d3804aaab86a3606b8583260cd0",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "a4018ca869dde6a604b3403171e77d5cc73cc2cfb74e4cb707004b04f2c46131",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1691,
+    "exit_codes": [
+      0,
+      134
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "\nthread 'deep_tree_does_not_depend_on_recursive_stack_depth' has overflowed its stack\nfatal runtime error: stack overflow\n",
+    "stderr_sha256": "865f3fc3247fcafb455ca102fb5502723378b13b8f11437061ce0c113d5dcf9f",
+    "stdout": "\nrunning 5 tests\ntest chooses_greatest_root_to_leaf_sum ... ok\ntest deep_tree_does_not_depend_on_recursive_stack_depth ... ",
+    "stdout_sha256": "45557f71b073390b0869abd75f86ae31a604bbb34fb009cd2710f88efe4ef07d",
+    "timed_out": false
+  }
+}

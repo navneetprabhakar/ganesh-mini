@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "a7ef3302a392362628beb273701bcfc9b16f7ce206c4c1a145d9987670a885f0",
+  "code": "from copy import deepcopy\n\n\ndef clean_catalog(entries, blocked_directories, blocked_suffixes, scoped_suffixes, dry_run):\n    if not isinstance(entries, list):\n        raise TypeError(\"entries must be a list\")\n    if not isinstance(blocked_directories, (tuple, list, set, frozenset)):\n        raise TypeError(\"blocked_directories must be a collection\")\n    if not isinstance(blocked_suffixes, (tuple, list, set, frozenset)):\n        raise TypeError(\"blocked_suffixes must be a collection\")\n    if not isinstance(scoped_suffixes, dict):\n        raise TypeError(\"scoped_suffixes must be a dictionary\")\n    if type(dry_run) is not bool:\n        raise TypeError(\"dry_run must be a boolean\")\n\n    def validate_strings(values, name):\n        for value in values:\n            if not isinstance(value, str):\n                raise TypeError(f\"{name} must contain strings\")\n            if not value:\n                raise ValueError(f\"{name} must not contain empty strings\")\n\n    validate_strings(blocked_directories, \"blocked_directories\")\n    validate_strings(blocked_suffixes, \"blocked_suffixes\")\n    blocked_dirs = frozenset(blocked_directories)\n    endings = tuple(blocked_suffixes)\n\n    scopes = []\n    for prefix, suffix_values in scoped_suffixes.items():\n        if not isinstance(prefix, tuple):\n            raise TypeError(\"scope prefixes must be tuples\")\n        if not prefix:\n            raise ValueError(\"scope prefixes must not be empty\")\n        validate_strings(prefix, \"scope prefix\")\n        if not isinstance(suffix_values, tuple):\n            raise TypeError(\"scoped suffix collections must be tuples\")\n        validate_strings(suffix_values, \"scoped suffixes\")\n        scopes.append((prefix, suffix_values))\n\n    candidates = []\n    for entry in entries:\n        if not isinstance(entry, dict):\n            raise TypeError(\"each entry must be a dictionary\")\n        if set(entry) != {\"path\", \"kind\", \"metadata\"}:\n            raise ValueError(\"each entry must have exactly path, kind, and metadata\")\n        path = entry[\"path\"]\n        kind = entry[\"kind\"]\n        if not isinstance(path, tuple):\n            raise TypeError(\"path must be a tuple\")\n        if not path:\n            raise ValueError(\"path must not be empty\")\n        validate_strings(path, \"path\")\n        if not isinstance(kind, str):\n            raise TypeError(\"kind must be a string\")\n        if kind not in {\"file\", \"directory\"}:\n            raise ValueError(\"kind must be file or directory\")\n\n        candidate = any(component in blocked_dirs for component in path)\n        if kind == \"file\" and not candidate:\n            candidate = any(path[-1].endswith(suffix) for suffix in endings)\n        if kind == \"file\" and not candidate:\n            for prefix, suffix_values in scopes:\n                if path[:len(prefix)] == prefix and any(\n                    path[-1].endswith(suffix) for suffix in suffix_values\n                ):\n                    candidate = True\n                    break\n        candidates.append(candidate)\n\n    removed = [deepcopy(entry) for entry, candidate in zip(entries, candidates) if candidate]\n    if dry_run:\n        remaining = [deepcopy(entry) for entry in entries]\n    else:\n        remaining = [deepcopy(entry) for entry, candidate in zip(entries, candidates) if not candidate]\n    return {\"removed\": removed, \"remaining\": remaining}\n",
+  "code_sha256": "3b9048e541eff229e17381086a065ac61987dc82473fae9546b794ca2d2f8c30",
+  "evidence_sha256": "03a5360244cbca32aecd5b4f0a842136f65058350860ac36efa162827624aed6",
+  "label": "original-parent-reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "87284237d18ef56e4228b6dfaaf25aca4f61c58d448072ed5eec64fe8f2b4552",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 474,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.002s\n\nOK\n",
+    "stderr_sha256": "74c03fc16fde9a2dfeff03db0ec8f472a5a8dfed04e9e982a912b4b7f64faee3",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

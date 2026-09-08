@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "12adf7b5af0bf0b1a969adec0e485e10ee02f8f4ff988aa7699e8d1ec8bbc925",
+  "code": "import re\n\n\n_CAPTURE = re.compile(r\"\\{([A-Za-z_]\\w*)(\\*)?\\}\\Z\")\n\n\nclass CommandRouter:\n    def __init__(self):\n        self._routes = []\n\n    @staticmethod\n    def _segments(value):\n        if not isinstance(value, str) or not value.startswith(\"/\"):\n            raise ValueError(\"path must start with /\")\n        if value == \"/\":\n            return []\n        if value.endswith(\"/\") or \"//\" in value:\n            raise ValueError(\"path contains an empty segment\")\n        return value[1:].split(\"/\")\n\n    def register(self, pattern, target):\n        segments = self._segments(pattern)\n        if not isinstance(target, str) or not target:\n            raise ValueError(\"target must be a non-empty string\")\n        if any(existing[0] == pattern for existing in self._routes):\n            raise ValueError(\"duplicate pattern\")\n        names = set()\n        score = []\n        for index, segment in enumerate(segments):\n            match = _CAPTURE.fullmatch(segment)\n            if match:\n                name, star = match.groups()\n                if name in names or (star and index != len(segments) - 1):\n                    raise ValueError(\"invalid placeholder\")\n                names.add(name)\n                score.append(0 if star else 1)\n            else:\n                if \"{\" in segment or \"}\" in segment:\n                    raise ValueError(\"invalid pattern segment\")\n                score.append(2)\n        self._routes.append((pattern, target, segments, tuple(score), len(self._routes)))\n\n    def resolve(self, path):\n        parts = self._segments(path)\n        matches = []\n        for _, target, pattern, score, order in self._routes:\n            params = {}\n            cursor = 0\n            valid = True\n            for segment in pattern:\n                match = _CAPTURE.fullmatch(segment)\n                if match and match.group(2):\n                    if cursor >= len(parts):\n                        valid = False\n                        break\n                    params[match.group(1)] = \"/\".join(parts[cursor:])\n                    cursor = len(parts)\n                elif cursor >= len(parts):\n                    valid = False\n                    break\n                elif match:\n                    params[match.group(1)] = parts[cursor]\n                    cursor += 1\n                elif segment == parts[cursor]:\n                    cursor += 1\n                else:\n                    valid = False\n                    break\n            if valid and cursor == len(parts):\n                matches.append((score, -order, target, params))\n        if not matches:\n            raise KeyError(path)\n        _, _, target, params = max(matches, key=lambda item: (item[0], item[1]))\n        return target, dict(params)\n\n\ndef make_inventory_router():\n    router = CommandRouter()\n    router.register(\"/items\", \"item_list\")\n    router.register(\"/items/{code}\", \"item_detail\")\n    router.register(\"/items/new\", \"item_create\")\n    router.register(\"/makers/new\", \"maker_create\")\n    router.register(\"/rooms/new\", \"room_create\")\n    router.register(\"/regions/new\", \"region_create\")\n    router.register(\"/assets/{path*}\", \"asset\")\n    return router\n",
+  "code_sha256": "2e3c3aabc7f7cb488442e198e73f46883c50b6d76625f966c3b5c53e77689459",
+  "evidence_sha256": "4b539f5dcba46574d1b0ffc29d6e41736aa41ec936db85a7c85e86bd7471cb82",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "08fe6f4c5794d1490ff040fd14e8354e41f0a397d0e824175ac00b44843785f0",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 514,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".......E\n======================================================================\nERROR: test_unicode_identifier_and_fresh_parameters (__main__.CommandRouterTests.test_unicode_identifier_and_fresh_parameters)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 35, in test_unicode_identifier_and_fresh_parameters\n    router.register(\"/users/{名字}\", \"user\")\n  File \"/work/solution.py\", line 39, in register\n    raise ValueError(\"invalid pattern segment\")\nValueError: invalid pattern segment\n\n----------------------------------------------------------------------\nRan 8 tests in 0.004s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "fc25da4d9d0dc455c7c32e6959dca645820fd5bb65ff34a0104d8a0a5c11e0ee",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

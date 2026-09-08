@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "60f077de986b609c9b72ce1ea537d69c42ee374f51c019a8363be040b5818257",
+  "code": "pub struct Allocation {\n    pub recipient: String,\n    pub units: u64,\n}\n\npub struct Transfer {\n    pub recipient: String,\n    pub units: u64,\n}\n\npub enum DistributionError {\n    EmptyRecipient,\n    ZeroAllocation,\n    ArithmeticOverflow,\n    InsufficientCredits,\n    InsufficientFees,\n}\n\nfn validate_allocations(allocations: &[Allocation]) -> Result<(), DistributionError> {\n    for allocation in allocations {\n        if allocation.recipient.is_empty() {\n            return Err(DistributionError::EmptyRecipient);\n        }\n        if allocation.units == 0 {\n            return Err(DistributionError::ZeroAllocation);\n        }\n    }\n    Ok(())\n}\n\npub fn build_transfers(\n    allocations: &[Allocation],\n) -> Result<Vec<Transfer>, DistributionError> {\n    validate_allocations(allocations)?;\n    Ok(allocations\n        .iter()\n        .map(|allocation| Transfer {\n            recipient: allocation.recipient.clone(),\n            units: allocation.units,\n        })\n        .collect())\n}\n\npub fn check_capacity(\n    sender_credits: u64,\n    fee_credits: u64,\n    allocations: &[Allocation],\n    fixed_fee: u64,\n    new_recipient_count: u64,\n    creation_fee: u64,\n) -> Result<(), DistributionError> {\n    validate_allocations(allocations)?;\n\n    let total = allocations.iter().try_fold(0u64, |sum, allocation| {\n        sum.checked_add(allocation.units)\n            .ok_or(DistributionError::ArithmeticOverflow)\n    })?;\n    let creation_total = new_recipient_count\n        .checked_mul(creation_fee)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n    let required_fees = fixed_fee\n        .checked_add(creation_total)\n        .ok_or(DistributionError::ArithmeticOverflow)?;\n\n    if total > sender_credits {\n        return Err(DistributionError::InsufficientCredits);\n    }\n    if required_fees > fee_credits {\n        return Err(DistributionError::InsufficientFees);\n    }\n    Ok(())\n}\n",
+  "code_sha256": "ebf0b3831ebe025ee19583c5008adbcd7bf9550f3632f0e92a10b97962055b8d",
+  "evidence_sha256": "045d99c7f243c41746944e55d507ca0609d250f39108d877a2cfe89a88464475",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "def1e400f668b012b1a57a04089f1177895a6c4a38d228c4a126c70670d745f1",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1574,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 7 tests\ntest allocation_validation_is_ordered_and_shared_by_both_functions ... ok\ntest builds_ordered_transfers_and_preserves_duplicates_and_input ... ok\ntest checked_allocation_and_fee_arithmetic_detects_overflow ... ok\ntest empty_allocations_need_no_sender_credits_but_still_need_fees ... ok\ntest exact_sender_and_fee_boundaries_succeed ... ok\ntest validation_of_all_entries_precedes_total_arithmetic ... ok\ntest validation_precedes_arithmetic_and_arithmetic_precedes_capacity_errors ... ok\n\ntest result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "985ac66563f37183d805da65a49fd33c5b04e4500ca859bbe268aec3f0a29d36",
+    "timed_out": false
+  }
+}

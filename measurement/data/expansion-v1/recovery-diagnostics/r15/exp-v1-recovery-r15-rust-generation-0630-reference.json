@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "a6679a76671f1f11fc27b57b2d0c0915d56350651a8bc516282c08239c235417",
+  "code": "use std::collections::{BTreeSet, HashMap, HashSet};\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Passage {\n    pub from: String,\n    pub to: String,\n    pub minutes: u64,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Tour {\n    pub rooms: Vec<String>,\n    pub minutes: u64,\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum TourError {\n    EmptyRoom,\n    SelfPassage,\n    DuplicatePassage,\n    CostOverflow,\n}\n\npub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError> {\n    let mut names = BTreeSet::new();\n    let mut pairs = HashSet::new();\n    let mut costs = HashMap::new();\n\n    for passage in passages {\n        if passage.from.is_empty() || passage.to.is_empty() {\n            return Err(TourError::EmptyRoom);\n        }\n        if passage.from == passage.to {\n            return Err(TourError::SelfPassage);\n        }\n        let pair = if passage.from < passage.to {\n            (passage.from.clone(), passage.to.clone())\n        } else {\n            (passage.to.clone(), passage.from.clone())\n        };\n        if !pairs.insert(pair.clone()) {\n            return Err(TourError::DuplicatePassage);\n        }\n        names.insert(passage.from.clone());\n        names.insert(passage.to.clone());\n        costs.insert(pair, passage.minutes);\n    }\n\n    let names: Vec<String> = names.into_iter().collect();\n    if names.is_empty() {\n        return Ok(Vec::new());\n    }\n\n    fn build(\n        names: &[String],\n        costs: &HashMap<(String, String), u64>,\n        used: &mut [bool],\n        path: &mut Vec<String>,\n        total: Option<u64>,\n        out: &mut Vec<Tour>,\n        overflowed_tour: &mut bool,\n    ) {\n        if path.len() == names.len() {\n            match total {\n                Some(minutes) => out.push(Tour {\n                    rooms: path.clone(),\n                    minutes,\n                }),\n                None => *overflowed_tour = true,\n            }\n            return;\n        }\n\n        for index in 0..names.len() {\n            if used[index] {\n                continue;\n            }\n            let next_total = if let Some(previous) = path.last() {\n                let pair = if previous < &names[index] {\n                    (previous.clone(), names[index].clone())\n                } else {\n                    (names[index].clone(), previous.clone())\n                };\n                let Some(edge) = costs.get(&pair) else {\n                    continue;\n                };\n                total.and_then(|value| value.checked_add(*edge))\n            } else {\n                total\n            };\n\n            used[index] = true;\n            path.push(names[index].clone());\n            build(\n                names,\n                costs,\n                used,\n                path,\n                next_total,\n                out,\n                overflowed_tour,\n            );\n            path.pop();\n            used[index] = false;\n        }\n    }\n\n    let mut answer = Vec::new();\n    let mut overflowed_tour = false;\n    build(\n        &names,\n        &costs,\n        &mut vec![false; names.len()],\n        &mut Vec::new(),\n        Some(0),\n        &mut answer,\n        &mut overflowed_tour,\n    );\n\n    if overflowed_tour {\n        return Err(TourError::CostOverflow);\n    }\n    answer.sort_by(|a, b| a.rooms.cmp(&b.rooms));\n    Ok(answer)\n}\n",
+  "code_sha256": "3d5b9d95aeb1418eff1d2a50f5cbc62261ca8ce1b3f3ff98968eaa759c5b4da3",
+  "evidence_sha256": "df9598d764cf79b3c06d1e9da11cc70456fb5f75804a36dc4fbf6fe5403f491d",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "0f7f14bb3f47c11b8ab120ef115c5cf5a75a764a93a09437e25c5a05b1b8dba1",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 2021,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 7 tests\ntest any_otherwise_valid_overflowing_tour_causes_cost_overflow ... ok\ntest complete_three_room_graph_returns_every_oriented_tour_sorted ... ok\ntest disconnected_graphs_have_no_tours_even_if_an_incomplete_path_overflows ... ok\ntest duplicate_detection_is_undirected_and_names_are_case_sensitive ... ok\ntest exact_maximum_tour_cost_is_valid ... ok\ntest line_graph_returns_both_orientations_in_lexicographic_order ... ok\ntest validates_passages_in_input_order ... ok\n\ntest result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "e8cffc19ce5b26f408407467d8b333ba3b2a30b450747bdf1f8e6889e32233df",
+    "timed_out": false
+  }
+}

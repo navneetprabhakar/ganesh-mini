@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "9ded5f25d71d9f89d3dafc1109d69e94cb1b31920f3c7c40c920c6735c643fd5",
+  "code": "from copy import deepcopy\n\n\ndef clean_catalog(entries, blocked_directories, blocked_suffixes, scoped_suffixes, dry_run):\n    if not isinstance(entries, list):\n        raise TypeError(\"entries must be a list\")\n    if not isinstance(blocked_directories, (tuple, list, set, frozenset)):\n        raise TypeError(\"blocked_directories must be a collection\")\n    if not isinstance(blocked_suffixes, (tuple, list, set, frozenset)):\n        raise TypeError(\"blocked_suffixes must be a collection\")\n    if not isinstance(scoped_suffixes, dict):\n        raise TypeError(\"scoped_suffixes must be a dictionary\")\n    if type(dry_run) is not bool:\n        raise TypeError(\"dry_run must be a boolean\")\n\n    def validate_strings(values, name):\n        for value in values:\n            if not isinstance(value, str):\n                raise TypeError(f\"{name} must contain strings\")\n            if not value:\n                raise ValueError(f\"{name} must not contain empty strings\")\n\n    validate_strings(blocked_directories, \"blocked_directories\")\n    validate_strings(blocked_suffixes, \"blocked_suffixes\")\n    blocked_dirs = frozenset(blocked_directories)\n    endings = tuple(blocked_suffixes)\n\n    scopes = []\n    for prefix, suffix_values in scoped_suffixes.items():\n        if not isinstance(prefix, tuple):\n            raise TypeError(\"scope prefixes must be tuples\")\n        if not prefix:\n            raise ValueError(\"scope prefixes must not be empty\")\n        validate_strings(prefix, \"scope prefix\")\n        if not isinstance(suffix_values, tuple):\n            raise TypeError(\"scoped suffix collections must be tuples\")\n        validate_strings(suffix_values, \"scoped suffixes\")\n        scopes.append((prefix, suffix_values))\n\n    candidates = []\n    for entry in entries:\n        if not isinstance(entry, dict):\n            raise TypeError(\"each entry must be a dictionary\")\n        if set(entry) != {\"path\", \"kind\", \"metadata\"}:\n            raise ValueError(\"each entry must have exactly path, kind, and metadata\")\n        path = entry[\"path\"]\n        kind = entry[\"kind\"]\n        if not isinstance(path, tuple):\n            raise TypeError(\"path must be a tuple\")\n        if not path:\n            raise ValueError(\"path must not be empty\")\n        validate_strings(path, \"path\")\n        if not isinstance(kind, str):\n            raise TypeError(\"kind must be a string\")\n        if kind not in {\"file\", \"directory\"}:\n            raise ValueError(\"kind must be file or directory\")\n\n        candidate = any(component in blocked_dirs for component in path)\n        if kind == \"file\" and not candidate:\n            candidate = any(path[-1].endswith(suffix) for suffix in endings)\n        if kind == \"file\" and not candidate:\n            for prefix, suffix_values in scopes:\n                if path[:len(prefix)] == prefix and any(\n                    path[-1].endswith(suffix) for suffix in suffix_values\n                ):\n                    candidate = True\n                    break\n        candidates.append(candidate)\n\n    removed = [deepcopy(entry) for entry, candidate in zip(entries, candidates) if candidate]\n    if dry_run:\n        remaining = [deepcopy(entry) for entry in entries]\n    else:\n        remaining = [deepcopy(entry) for entry, candidate in zip(entries, candidates) if not candidate]\n    return {\"removed\": removed, \"remaining\": remaining}\n",
+  "code_sha256": "3b9048e541eff229e17381086a065ac61987dc82473fae9546b794ca2d2f8c30",
+  "evidence_sha256": "2163363973848b20cc7809909bce53233182bed04db5acd6f66532d45913e077",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "87284237d18ef56e4228b6dfaaf25aca4f61c58d448072ed5eec64fe8f2b4552",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 454,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".......EE\n======================================================================\nERROR: test_scoped_suffixes_accept_mapping_implementations (__main__.CleanCatalogTests.test_scoped_suffixes_accept_mapping_implementations) (mapping_type='UserDict')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 77, in test_scoped_suffixes_accept_mapping_implementations\n    result = clean_catalog(entries, (), (), scoped, False)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 12, in clean_catalog\n    raise TypeError(\"scoped_suffixes must be a dictionary\")\nTypeError: scoped_suffixes must be a dictionary\n\n======================================================================\nERROR: test_scoped_suffixes_accept_mapping_implementations (__main__.CleanCatalogTests.test_scoped_suffixes_accept_mapping_implementations) (mapping_type='mappingproxy')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 77, in test_scoped_suffixes_accept_mapping_implementations\n    result = clean_catalog(entries, (), (), scoped, False)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 12, in clean_catalog\n    raise TypeError(\"scoped_suffixes must be a dictionary\")\nTypeError: scoped_suffixes must be a dictionary\n\n----------------------------------------------------------------------\nRan 8 tests in 0.003s\n\nFAILED (errors=2)\n",
+    "stderr_sha256": "dbf7b2bfef5bfe0c68f7c4881b1d9bc08268793ded50210a854a3bab51ed1e51",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

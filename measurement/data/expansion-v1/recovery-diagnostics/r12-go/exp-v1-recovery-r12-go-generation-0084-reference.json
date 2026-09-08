@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "429f9aa02d85f993ab46394d3ae0ed5c29d3c0d271b87c916129aad569233743",
+  "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"go/ast\"\n\t\"go/format\"\n\t\"go/parser\"\n\t\"go/token\"\n)\n\ntype FieldMatch struct{ Destination, Source string }\ntype fieldInfo struct{ name, typ string }\n\nfunc findStruct(src, name string) (*ast.StructType, error) {\n\tfile, err := parser.ParseFile(token.NewFileSet(), \"input.go\", src, 0)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tfor _, declaration := range file.Decls {\n\t\tgroup, ok := declaration.(*ast.GenDecl)\n\t\tif !ok {\n\t\t\tcontinue\n\t\t}\n\t\tfor _, specification := range group.Specs {\n\t\t\ttypeSpec, ok := specification.(*ast.TypeSpec)\n\t\t\tif !ok || typeSpec.Name.Name != name {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tstructure, ok := typeSpec.Type.(*ast.StructType)\n\t\t\tif !ok {\n\t\t\t\treturn nil, fmt.Errorf(\"%s is not a struct\", name)\n\t\t\t}\n\t\t\treturn structure, nil\n\t\t}\n\t}\n\treturn nil, fmt.Errorf(\"struct %s not found\", name)\n}\n\nfunc rendered(expression ast.Expr) string {\n\tvar buffer bytes.Buffer\n\t_ = format.Node(&buffer, token.NewFileSet(), expression)\n\treturn buffer.String()\n}\n\nfunc eligible(name string) bool {\n\treturn len(name) > 0 && name[0] >= 'A' && name[0] <= 'Z'\n}\n\nfunc asciiLower(name string) string {\n\tlower := []byte(name)\n\tfor index, ch := range lower {\n\t\tif ch >= 'A' && ch <= 'Z' {\n\t\t\tlower[index] = ch + ('a' - 'A')\n\t\t}\n\t}\n\treturn string(lower)\n}\n\nfunc InspectFieldMatches(destinationSource, destinationType, sourceSource, sourceType string) ([]FieldMatch, error) {\n\tdestination, err := findStruct(destinationSource, destinationType)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tsource, err := findStruct(sourceSource, sourceType)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tindex := make(map[string][]fieldInfo)\n\tfor _, field := range source.Fields.List {\n\t\tfor _, name := range field.Names {\n\t\t\tif eligible(name.Name) {\n\t\t\t\tkey := asciiLower(name.Name)\n\t\t\t\tindex[key] = append(index[key], fieldInfo{name: name.Name, typ: rendered(field.Type)})\n\t\t\t}\n\t\t}\n\t}\n\n\tmatches := make([]FieldMatch, 0)\n\tfor _, field := range destination.Fields.List {\n\t\tfieldType := rendered(field.Type)\n\t\tfor _, name := range field.Names {\n\t\t\tif !eligible(name.Name) {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tcandidates := index[asciiLower(name.Name)]\n\t\t\tif len(candidates) == 1 && candidates[0].typ == fieldType {\n\t\t\t\tmatches = append(matches, FieldMatch{Destination: name.Name, Source: candidates[0].name})\n\t\t\t}\n\t\t}\n\t}\n\treturn matches, nil\n}\n",
+  "code_sha256": "9c60f8a7187bf16f6fa6c6ebc61360046bd47f69a7101c99177a05e8f0911de2",
+  "evidence_sha256": "e2da1acfb69513cc4cf479eb383c49bd7f24f672569b98559b1c250c1318abe3",
+  "label": "reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "4880da15d57b6cae3153e1410178ca61728e95848149fcf63cb1c0381b20bc29",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 27852,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestInspectFieldMatchesOrderTypesAndEligibility (0.01s)\n    solution_test.go:46: matches differ:\n         got []solution.FieldMatch{solution.FieldMatch{Destination:\"URL\", Source:\"Url\"}, solution.FieldMatch{Destination:\"Name\", Source:\"NAME\"}, solution.FieldMatch{Destination:\"Count\", Source:\"COUNT\"}, solution.FieldMatch{Destination:\"Meta\", Source:\"META\"}}\n        want []solution.FieldMatch{solution.FieldMatch{Destination:\"Name\", Source:\"NAME\"}, solution.FieldMatch{Destination:\"Count\", Source:\"COUNT\"}, solution.FieldMatch{Destination:\"Meta\", Source:\"META\"}}\nFAIL\nFAIL\tganesh.invalid/expansion\t0.026s\nFAIL\n",
+    "stdout_sha256": "a7ac5f2dec633efde1ab99ccce22d2d0dd8dc1fb16e26b058bb45e3c33978618",
+    "timed_out": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "692828d94f580bcb292b10f88a57f6d23549a3769f8e7deeb4d8856c354468b3",
+  "code": "import copy\nimport re\nfrom collections.abc import Mapping\n\n\n_SLUG = re.compile(r\"[a-z0-9]+(?:-[a-z0-9]+)*\\Z\")\n\n\nclass RecipeShelf:\n    def __init__(self, recipes=()):\n        self._recipes = {}\n        for recipe in recipes:\n            self.add(recipe)\n\n    @staticmethod\n    def _normalize(recipe):\n        if not isinstance(recipe, Mapping) or set(recipe) != {\"slug\", \"title\", \"tags\"}:\n            raise ValueError(\"recipe must contain exactly slug, title, and tags\")\n        slug = recipe[\"slug\"]\n        if not isinstance(slug, str) or not _SLUG.fullmatch(slug):\n            raise ValueError(\"invalid slug\")\n        title = recipe[\"title\"]\n        if not isinstance(title, str) or not title.strip():\n            raise ValueError(\"invalid title\")\n        try:\n            tags = list(recipe[\"tags\"])\n        except TypeError:\n            raise TypeError(\"tags must be iterable\") from None\n        if any(not isinstance(tag, str) or not tag.strip() for tag in tags):\n            raise ValueError(\"invalid tag\")\n        return {\"slug\": slug, \"title\": title.strip(), \"tags\": [tag.strip() for tag in tags]}\n\n    def add(self, recipe):\n        normalized = self._normalize(recipe)\n        if normalized[\"slug\"] in self._recipes:\n            raise ValueError(\"duplicate slug\")\n        self._recipes[normalized[\"slug\"]] = normalized\n\n    def edit(self, slug, *, title=None, tags=None):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        candidate = copy.deepcopy(self._recipes[slug])\n        if title is not None:\n            candidate[\"title\"] = title\n        if tags is not None:\n            candidate[\"tags\"] = list(tags)\n        normalized = self._normalize(candidate)\n        self._recipes[slug] = normalized\n        return copy.deepcopy(normalized)\n\n    def detail(self, slug):\n        if slug not in self._recipes:\n            raise KeyError(slug)\n        return copy.deepcopy(self._recipes[slug])\n\n    def list_all(self):\n        return [copy.deepcopy(self._recipes[slug]) for slug in sorted(self._recipes)]\n\n    def resolve(self, path):\n        if path == \"/\":\n            return \"page\", {\"message\": \"Recipe shelf\"}\n        if path == \"/start\":\n            return \"redirect\", \"/recipes\"\n        if path == \"/recipes\":\n            return \"page\", self.list_all()\n        prefix = \"/recipes/\"\n        if path.startswith(prefix) and path[len(prefix):] and \"/\" not in path[len(prefix):]:\n            return \"page\", self.detail(path[len(prefix):])\n        raise KeyError(path)\n",
+  "code_sha256": "36f1f6dd199a2c0a2b990b4064a023078292ab3e4bbdbc19aca6f901a6961a34",
+  "evidence_sha256": "d4d86eababaca79db6a419e9fcfcf6dd22e394b98523349b4beb9edfc591a8ce",
+  "label": "known-bad-0",
+  "outcome": "passed",
+  "parent_candidate_sha256": "24f839845ad5637c73cf7736dc648be9887d8b60c01dceac99733d9bde1b91dd",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 521,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.002s\n\nOK\n",
+    "stderr_sha256": "62cfbeb2911bb226088bfb0918eb4b05008ea70b20bce854ee2ca8a564bd37a5",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

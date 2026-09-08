@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "d9eafb391c34bd7b18210a615398dc7bc4910fbd295c4a04f3bccb250ad70640",
+  "code": "from collections.abc import Mapping, Sequence\nfrom copy import deepcopy\n\n\ndef catalog_snapshot(items, collections, page, page_size):\n    \"\"\"Validate and return a detached, consistently ordered catalog page.\"\"\"\n    if (isinstance(page, bool) or not isinstance(page, int) or page <= 0 or\n            isinstance(page_size, bool) or not isinstance(page_size, int) or page_size <= 0):\n        raise ValueError(\"page and page_size must be positive integers\")\n\n    item_list = []\n    by_id = {}\n    for item in items:\n        if not isinstance(item, Mapping) or set(item) != {\"id\", \"title\", \"votes\"}:\n            raise TypeError(\"invalid item record\")\n        snapshot = dict(item)\n        if not isinstance(snapshot[\"id\"], str) or not snapshot[\"id\"]:\n            raise ValueError(\"item id must be non-empty\")\n        if not isinstance(snapshot[\"title\"], str) or not snapshot[\"title\"]:\n            raise ValueError(\"item title must be non-empty\")\n        if isinstance(snapshot[\"votes\"], bool) or not isinstance(snapshot[\"votes\"], int):\n            raise TypeError(\"votes must be an integer\")\n        if snapshot[\"id\"] in by_id:\n            raise ValueError(\"duplicate item id\")\n        detached = deepcopy(snapshot)\n        item_list.append(detached)\n        by_id[detached[\"id\"]] = detached\n\n    collection_list = []\n    collection_ids = set()\n    for collection in collections:\n        if not isinstance(collection, Mapping) or set(collection) != {\"id\", \"name\", \"item_ids\"}:\n            raise TypeError(\"invalid collection record\")\n        snapshot = dict(collection)\n        if not isinstance(snapshot[\"id\"], str) or not snapshot[\"id\"]:\n            raise ValueError(\"collection id must be non-empty\")\n        if not isinstance(snapshot[\"name\"], str) or not snapshot[\"name\"]:\n            raise ValueError(\"collection name must be non-empty\")\n        if snapshot[\"id\"] in collection_ids:\n            raise ValueError(\"duplicate collection id\")\n        item_ids = snapshot[\"item_ids\"]\n        if isinstance(item_ids, (str, bytes)) or not isinstance(item_ids, Sequence):\n            raise TypeError(\"item_ids must be a sequence\")\n        for item_id in item_ids:\n            if not isinstance(item_id, str):\n                raise TypeError(\"item IDs must be strings\")\n            if item_id not in by_id:\n                raise ValueError(\"unknown item id\")\n        collection_ids.add(snapshot[\"id\"])\n        collection_list.append(deepcopy(snapshot))\n\n    ordered_items = sorted(item_list, key=lambda item: (-item[\"votes\"], item[\"title\"], item[\"id\"]))\n    ordered_collections = sorted(collection_list, key=lambda value: (value[\"name\"], value[\"id\"]))\n    start = (page - 1) * page_size\n    stop = start + page_size\n\n    output_collections = []\n    for collection in ordered_collections[start:stop]:\n        copied = deepcopy(collection)\n        copied[\"resolved_items\"] = [deepcopy(by_id[item_id]) for item_id in collection[\"item_ids\"]]\n        output_collections.append(copied)\n\n    return {\n        \"item_total\": len(item_list),\n        \"collection_total\": len(collection_list),\n        \"items\": [deepcopy(item) for item in ordered_items[start:stop]],\n        \"collections\": output_collections,\n    }\n",
+  "code_sha256": "19ae7b3adbf4e1b13eaf142f7931dfa2b08565efd764e23e97963363b43623ef",
+  "evidence_sha256": "46623eae1af0ae0ee272171b65b32c3524764f0148c98f2f1e4f3e614f246591",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "efc1b28c3fe07967b43185a885b838fdfe1cd090e1f4c8816a7774c5bb25b126",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 542,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".........\n----------------------------------------------------------------------\nRan 9 tests in 0.002s\n\nOK\n",
+    "stderr_sha256": "603db52fd0016ca5cdcf83b2588160ae92bde08c66ba4c61dfc8a2a74cdb95c9",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

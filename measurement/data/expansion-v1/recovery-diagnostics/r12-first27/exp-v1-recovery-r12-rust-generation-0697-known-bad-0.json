@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "e1d8d32c6c4306e1b590af66ff4e7302f9807b73262ffd8ca93c813b91f44717",
+  "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct DeviceSpec {\n    pub id: String,\n    pub enabled: bool,\n    pub tags: Vec<String>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum ParseDeviceError {\n    EmptyInput,\n    WrongFieldCount,\n    InvalidId,\n    InvalidEnabled,\n    InvalidTag,\n}\n\nfn valid_token(value: &str) -> bool {\n    !value.is_empty()\n        && value\n            .bytes()\n            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')\n}\n\npub fn parse_device_spec(input: &str) -> Result<DeviceSpec, ParseDeviceError> {\n    if input.trim().is_empty() {\n        return Err(ParseDeviceError::EmptyInput);\n    }\n\n    let fields: Vec<&str> = input.split(',').collect();\n    if fields.len() != 3 {\n        return Err(ParseDeviceError::WrongFieldCount);\n    }\n\n    let id = fields[0].trim();\n    if !valid_token(id) {\n        return Err(ParseDeviceError::InvalidId);\n    }\n\n    let enabled_field = fields[1].trim();\n    if enabled_field.contains(':') {\n        return Err(ParseDeviceError::WrongFieldCount);\n    }\n    let enabled = match enabled_field {\n        \"on\" => true,\n        \"off\" => false,\n        _ => return Err(ParseDeviceError::InvalidEnabled),\n    };\n\n    let tag_field = fields[2].trim();\n    let tags = if tag_field.is_empty() {\n        Vec::new()\n    } else {\n        let mut tags = Vec::new();\n        for raw in tag_field.split(':') {\n            let tag = raw.trim();\n            if !valid_token(tag) {\n                return Err(ParseDeviceError::InvalidTag);\n            }\n            tags.push(tag.to_owned());\n        }\n        tags\n    };\n\n    Ok(DeviceSpec {\n        id: id.to_owned(),\n        enabled,\n        tags,\n    })\n}\n",
+  "code_sha256": "d5e0dc4f32729ea3561cd4814f8e79c36264c4214cdcdcfb5d8e644c4482ab94",
+  "evidence_sha256": "62a2dd7c97cea69494ac76d6384a8df6a0bf5112e5e8d67f798e47250b87729b",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "04dca4f26c1e805166c1ff4269bd8f0eed217af59e5200cd703dfb3e5631bff5",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1838,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 6 tests\ntest distinguishes_empty_input_from_bad_identifier ... ok\ntest enabled_flag_is_exact_after_trimming ... FAILED\ntest field_count_is_determined_only_by_commas ... ok\ntest parses_off_and_an_empty_tag_field ... ok\ntest parses_trimmed_fields_and_preserves_tag_order_and_duplicates ... ok\ntest rejects_empty_or_invalid_tags_in_nonempty_lists ... FAILED\n\nfailures:\n\n---- enabled_flag_is_exact_after_trimming stdout ----\n\nthread 'enabled_flag_is_exact_after_trimming' panicked at solution_test.rs:49:5:\nassertion failed: matches!(parse_device_spec(\"a,on:off,\"),\n    Err(ParseDeviceError::InvalidEnabled))\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n---- rejects_empty_or_invalid_tags_in_nonempty_lists stdout ----\n\nthread 'rejects_empty_or_invalid_tags_in_nonempty_lists' panicked at solution_test.rs:56:9:\na,on::\n\n\nfailures:\n    enabled_flag_is_exact_after_trimming\n    rejects_empty_or_invalid_tags_in_nonempty_lists\n\ntest result: FAILED. 4 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "3639e0b32ffdf4996a3b85b2d7b6aa157363da2ae96330ab628d0b8f7ae17eea",
+    "timed_out": false
+  }
+}

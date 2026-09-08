@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "3288a8b44e34153fe140d9e00744dc3e6c667bcffd74ddf35241ba892a603afd",
+  "code": "use std::collections::{BTreeSet, HashMap, HashSet};\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Passage { pub from: String, pub to: String, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Tour { pub rooms: Vec<String>, pub minutes: u64 }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub enum TourError { EmptyRoom, SelfPassage, DuplicatePassage, CostOverflow }\n\npub fn analyze_tours(passages: &[Passage]) -> Result<Vec<Tour>, TourError> {\n    let mut names = BTreeSet::new();\n    let mut pairs = HashSet::new();\n    let mut costs = HashMap::new();\n    for passage in passages {\n        if passage.from.is_empty() || passage.to.is_empty() { return Err(TourError::EmptyRoom); }\n        if passage.from == passage.to { return Err(TourError::SelfPassage); }\n        let pair = if passage.from < passage.to {\n            (passage.from.clone(), passage.to.clone())\n        } else {\n            (passage.to.clone(), passage.from.clone())\n        };\n        if !pairs.insert(pair.clone()) { return Err(TourError::DuplicatePassage); }\n        names.insert(passage.from.clone());\n        names.insert(passage.to.clone());\n        costs.insert(pair, passage.minutes);\n    }\n    let names: Vec<String> = names.into_iter().collect();\n    if names.is_empty() { return Ok(Vec::new()); }\n    let mut answer = Vec::new();\n    fn build(names: &[String], costs: &HashMap<(String, String), u64>, used: &mut [bool], path: &mut Vec<String>, total: u64, out: &mut Vec<Tour>) -> Result<(), TourError> {\n        if path.len() == names.len() {\n            out.push(Tour { rooms: path.clone(), minutes: total });\n            return Ok(());\n        }\n        for i in 0..names.len() {\n            if used[i] { continue; }\n            let next_total = if let Some(previous) = path.last() {\n                let pair = if previous < &names[i] { (previous.clone(), names[i].clone()) } else { (names[i].clone(), previous.clone()) };\n                let Some(edge) = costs.get(&pair) else { continue; };\n                total.checked_add(*edge).ok_or(TourError::CostOverflow)?\n            } else { total };\n            used[i] = true;\n            path.push(names[i].clone());\n            build(names, costs, used, path, next_total, out)?;\n            path.pop();\n            used[i] = false;\n        }\n        Ok(())\n    }\n    build(&names, &costs, &mut vec![false; names.len()], &mut Vec::new(), 0, &mut answer)?;\n    answer.sort_by(|a, b| a.rooms.cmp(&b.rooms));\n    Ok(answer)\n}\n",
+  "code_sha256": "4754d79523abf7673544be78997e882f8056c41bcac3ab8cd1a0ae125ac65f30",
+  "evidence_sha256": "3c9d6a1b47b0ae5cc451d203c7262d0e238734e5ddd94617987a72510c7d1d4d",
+  "label": "known-bad-0",
+  "outcome": "passed",
+  "parent_candidate_sha256": "0f7f14bb3f47c11b8ab120ef115c5cf5a75a764a93a09437e25c5a05b1b8dba1",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1973,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 7 tests\ntest any_otherwise_valid_overflowing_tour_causes_cost_overflow ... ok\ntest complete_three_room_graph_returns_every_oriented_tour_sorted ... ok\ntest disconnected_graph_can_have_no_tours ... ok\ntest duplicate_detection_is_undirected_and_names_are_case_sensitive ... ok\ntest exact_maximum_tour_cost_is_valid ... ok\ntest line_graph_returns_both_orientations_in_lexicographic_order ... ok\ntest validates_passages_in_input_order ... ok\n\ntest result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "971172252632ddd65f6f84efc5f2ae7d68b48d814f29f4dbbe306109a34871fc",
+    "timed_out": false
+  }
+}

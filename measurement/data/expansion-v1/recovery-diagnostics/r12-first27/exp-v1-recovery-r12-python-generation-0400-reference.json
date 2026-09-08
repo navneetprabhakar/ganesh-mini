@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "12adf7b5af0bf0b1a969adec0e485e10ee02f8f4ff988aa7699e8d1ec8bbc925",
+  "code": "class CommandRouter:\n    def __init__(self):\n        self._routes = []\n\n    @staticmethod\n    def _segments(value):\n        if not isinstance(value, str) or not value.startswith(\"/\"):\n            raise ValueError(\"path must start with /\")\n        if value == \"/\":\n            return []\n        if value.endswith(\"/\") or \"//\" in value:\n            raise ValueError(\"path contains an empty segment\")\n        return value[1:].split(\"/\")\n\n    @staticmethod\n    def _placeholder(segment):\n        if not (segment.startswith(\"{\") and segment.endswith(\"}\")):\n            return None\n        body = segment[1:-1]\n        wildcard = body.endswith(\"*\")\n        name = body[:-1] if wildcard else body\n        if not name.isidentifier():\n            raise ValueError(\"invalid placeholder\")\n        return name, wildcard\n\n    def register(self, pattern, target):\n        segments = self._segments(pattern)\n        if not isinstance(target, str) or not target:\n            raise ValueError(\"target must be a non-empty string\")\n        if any(route[0] == pattern for route in self._routes):\n            raise ValueError(\"duplicate pattern\")\n\n        names = set()\n        parsed = []\n        score = []\n        for index, segment in enumerate(segments):\n            if \"{\" in segment or \"}\" in segment:\n                placeholder = self._placeholder(segment)\n                if placeholder is None:\n                    raise ValueError(\"invalid pattern segment\")\n                name, wildcard = placeholder\n                if name in names or (wildcard and index != len(segments) - 1):\n                    raise ValueError(\"invalid placeholder\")\n                names.add(name)\n                parsed.append((name, wildcard))\n                score.append(0 if wildcard else 1)\n            else:\n                parsed.append(None)\n                score.append(2)\n        self._routes.append((pattern, target, segments, parsed, tuple(score), len(self._routes)))\n\n    def resolve(self, path):\n        parts = self._segments(path)\n        matches = []\n        for _, target, pattern, parsed, score, order in self._routes:\n            params = {}\n            cursor = 0\n            valid = True\n            for segment, placeholder in zip(pattern, parsed):\n                if placeholder is not None and placeholder[1]:\n                    if cursor >= len(parts):\n                        valid = False\n                        break\n                    params[placeholder[0]] = \"/\".join(parts[cursor:])\n                    cursor = len(parts)\n                elif cursor >= len(parts):\n                    valid = False\n                    break\n                elif placeholder is not None:\n                    params[placeholder[0]] = parts[cursor]\n                    cursor += 1\n                elif segment == parts[cursor]:\n                    cursor += 1\n                else:\n                    valid = False\n                    break\n            if valid and cursor == len(parts):\n                matches.append((score, -order, target, params))\n        if not matches:\n            raise KeyError(path)\n        _, _, target, params = max(matches, key=lambda item: (item[0], item[1]))\n        return target, dict(params)\n\n\ndef make_inventory_router():\n    router = CommandRouter()\n    router.register(\"/items\", \"item_list\")\n    router.register(\"/items/{code}\", \"item_detail\")\n    router.register(\"/items/new\", \"item_create\")\n    router.register(\"/makers/new\", \"maker_create\")\n    router.register(\"/rooms/new\", \"room_create\")\n    router.register(\"/regions/new\", \"region_create\")\n    router.register(\"/assets/{path*}\", \"asset\")\n    return router\n",
+  "code_sha256": "c81cf24df0f58eca5f438b93456379089a045827d4fa650ca19cad4f91dd06ef",
+  "evidence_sha256": "a3057f4cbe17a56d4cab159cde7a6fd4deee4713f0233fd2e4f7e56447535c07",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "08fe6f4c5794d1490ff040fd14e8354e41f0a397d0e824175ac00b44843785f0",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 513,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "........\n----------------------------------------------------------------------\nRan 8 tests in 0.002s\n\nOK\n",
+    "stderr_sha256": "75ff54e727b57e4bd7b88956ed0c92c4b9a416e6f0976707e8fb54aa385ac0bd",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

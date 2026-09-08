@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "7f9119da73f9e927c1d50d50a4ea4757b8340793503d7928b45d0aff995e4cda",
+  "code": "\"use strict\";\n\nfunction normalizeActivity(activity) {\n  return normalize(activity, new Set());\n}\n\nfunction normalize(activity, ancestors) {\n  if (activity === null || typeof activity !== \"object\" || ancestors.has(activity)) {\n    throw new TypeError(\"invalid or cyclic activity\");\n  }\n  if (activity.author === null || typeof activity.author !== \"object\" ||\n      typeof activity.author.name !== \"string\" || activity.author.name.length === 0 ||\n      typeof activity.author.avatar !== \"string\" || activity.author.avatar.length === 0 ||\n      !Number.isInteger(activity.ageMinutes) || activity.ageMinutes < 0 ||\n      (activity.text !== undefined && typeof activity.text !== \"string\") ||\n      !Array.isArray(activity.media) ||\n      activity.counts === null || typeof activity.counts !== \"object\") {\n    throw new TypeError(\"malformed activity\");\n  }\n  for (const key of [\"likes\", \"replies\", \"shares\"]) {\n    if (!Number.isInteger(activity.counts[key]) || activity.counts[key] < 0) {\n      throw new TypeError(\"invalid count\");\n    }\n  }\n  const media = activity.media.map((item) => {\n    if (item === null || typeof item !== \"object\" ||\n        (item.type !== \"image\" && item.type !== \"clip\") ||\n        typeof item.source !== \"string\" || item.source.length === 0) {\n      throw new TypeError(\"invalid media\");\n    }\n    return { type: item.type, source: item.source };\n  });\n  let link = null;\n  if (activity.link !== undefined && activity.link !== null) {\n    const candidate = activity.link;\n    if (typeof candidate !== \"object\" ||\n        [candidate.title, candidate.thumbnail, candidate.address].some(\n          (value) => typeof value !== \"string\" || value.length === 0)) {\n      throw new TypeError(\"invalid link\");\n    }\n    link = { title: candidate.title, thumbnail: candidate.thumbnail, address: candidate.address };\n  }\n  ancestors.add(activity);\n  const shared = activity.shared === undefined || activity.shared === null\n    ? null\n    : normalize(activity.shared, ancestors);\n  ancestors.delete(activity);\n  return {\n    author: { name: activity.author.name, avatar: activity.author.avatar },\n    ageMinutes: activity.ageMinutes,\n    text: activity.text === undefined ? null : activity.text,\n    media,\n    link,\n    counts: {\n      likes: activity.counts.likes,\n      replies: activity.counts.replies,\n      shares: activity.counts.shares\n    },\n    shared\n  };\n}\n\nmodule.exports = { normalizeActivity };\n",
+  "code_sha256": "2319bd51ffca7a0733b9958cd14f8af79d78c1d466a0e216ca00233dcb5d3ed7",
+  "evidence_sha256": "8947ba441aac917ba380c96938fff3e1977db028ad9dc5d765918ec2170d537b",
+  "label": "known-bad-0",
+  "outcome": "passed",
+  "parent_candidate_sha256": "7fb4868925a359f15a939f71b88ca3648d79798540f7689c3d510c4bc939dcfd",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 747,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

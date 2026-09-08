@@ -1,5 +1,156 @@
 # Ganesh Mini 1.0 handoff
 
+## Exact accelerated resume — 2026-09-08, 12:45 UTC checkpoint
+
+Actual admissions remain68, max combined3141, minimum gap859 before exclusions
+and token balance. Training50%/release35% are milestone estimates, not metrics.
+Original quality review closed; all original holds immutable; Gate2, no seal.
+
+R15 teacher41307 DONE19; R16 teacher98811 DONE10; R18 teacher11969 DONE2.
+Main fully read/validated all R15 Java/Python/Rust and R16 Go quality reports:
+R15 static positives16, terminal oracle holds Java0334/Python0741/Rust0449;
+R16 static positives9, terminal oracle hold Go0084. These completed one-critic
+holds do NOT authorize another automatic critic. No original coverage credit.
+All R15 diagnostics DONE57 runs, all directionality pass; oracle holds still
+excluded. Main saved selection recovery-admission-r15-sixteen.json and started
+non-executing preparation81112 into recovery-admission/r15-sixteen-v1.
+Preparation81112 DONE16, zero overlap; compared3073 originals plus68 prior
+recoveries. Admission itself NOT launched, count remains68.
+
+ONE serial diagnostic queue75000 is now on R16 Go10 (after terminal R15).
+Do not start any other verifier/admission until it exits. Main integrated R16
+report and checked all10 file/canonical bindings. After completion combine
+eligible R16 nine with pending R15 sixteen if practical, or admit saved16 then9
+serially. Use report filename admission.json for compatibility with prior loader.
+The earlier two-row run used admission-report.json; added byte-identical
+admission.json alias, cmp PASS, preserving original report and logical seal.
+Initial R15 preparation failed before writing its output directory due to that
+filename mismatch; rerun81112 only after alias repair. No candidate re-execution
+or metric reconstruction was performed for this naming repair.
+
+R17 teacher12703 active13 (JS7/TS6), one lane at a time. R18 two main-read
+static positives and file hashes verified; still needs fresh serial diagnostics.
+R19 fresh architecture80444 active2 with two lane workers. Main fully read
+R19 provisional note/request, validated original corpus/holds/evidence bindings,
+approved exactly Python0717 invalid-kind/Mapping repair and Rust0487 required
+store traits plus query-arity fallback. Plan SHA
+ef6c38e0eadab9fa90f94dcfcec012c01160c8b9d1c5ff1adfc33b3b94b087e2.
+R17 plan SHA6317915062299e23afd07e2e709b0c310c60039681b2c917b336ead0363a0506;
+R18 plan SHA45fa983fd232df4cad2924d0335971eade69ac2b92d697374be3922971486d73.
+All versions reserved; never duplicate. Total teacher calls at most3.
+Reviewers completed assignments and are idle; dispatch disjoint R17/R19 reviews
+only when candidate files exist. R18 review already main-integrated, no duplicate.
+
+Latest verified GCS checkpoint now admission68. Archive and receipt exact-
+generation download/cmp PASS, see RECOVERY_ADMISSION68_BACKUP.md. Covers all68
+admissions, terminal r12-r16 teacher outputs and r11-r14 diagnostics. Excludes
+r15/r16 diagnostics/new quality reports, r17/r18/r19 outputs and later edits
+(including new admission.json alias). Preserve those for next terminal backup.
+144 data tests passed. No cleanup/VM use/billing certification claim.
+
+Next: finish75000, admit eligible positives, serial R18/R17 diagnostics with
+quality integration, inspect R19 output, then batch terminal evidence backup.
+Working, not permission-blocked; next10–30min low confidence. Overall release
+ETA still ungrounded. New GCloud compute requires scoped approval/cost ceiling.
+
+## Current authorization continuation — 2026-09-08
+
+User confirmed authorization. No new VM or uncapped GCloud compute inferred.
+Gate 2 remains active; original holds unchanged and no training/release seal.
+
+Diagnostic queue 7997 DONE: all r12 JS/TS14, r13 Rust0361 and r14 two.
+Only r12 TS0267 and r13 Rust0361 have both main-integrated static quality
+approval and passing behavioral directionality. r12 JS0391 and r14 Python0138
+remain oracle-held despite directionality passing. Never count those as admitted.
+
+Serial preparation/admission queue 89883 DONE: two accepted, zero rejected.
+Selection: recovery-admission-r12-r13-two.json; output: recovery-admission/
+r12-r13-two-v1, report admission-report.json. Terminal report confirms 68 total
+recoveries. This queue is now terminal; no verifier remains active.
+
+Teacher r15 session 41307 remains active (19 one-test corrections, one lane at
+a time). Main fully read and validated r16 Go10 provisional review/request/
+feedback, original parent and prior canonical hashes, and evidence bindings.
+Final r16 request/feedback preserve the provisional files and approve exactly
+one test-only correction, with unchanged specification/reference/mutant bytes.
+R16 launched session 98811; plan SHA
+14fa2d6c97639d3c36ff599309d367515fd7e7eb2ccf257dcd06c9c219a32801.
+Maximum two teacher calls currently; version r16 reserved, never duplicate it.
+
+R17 JS7/TS6 and r18 Python/Rust2 provisional drafts are complete but NOT yet
+main-read/approved/reserved. Read and validate before launching; total teacher
+calls must stay at most three. r13/r14 generation and all r12 diagnostics done.
+Latest verified GCS backup still admission50, excluding latest16 admissions
+and later terminal evidence. Preserve all data; next batch backup must cover it.
+
+Current actual recoveries68 (Go12/Java14/JS11/TS12/Python10/Rust9),
+generation60/repair8; maximum combined3141; minimum gap859 before
+further exclusions/token balance. Estimated milestones training50%/release35%,
+not measured completion percentages. Working, not approval-blocked. Next batch
+ETA10–30minutes low confidence; full release ETA still not defensible.
+
+## Exact live resume: admission66 and allr12 generated — 2026-09-08
+
+Queue36333 admitted6/0rejected, thenautomaticallyenteredr12Go10diagnostics.
+Currentactual66=Go12/Java14/JS11/TS11/Python10/Rust8,generation59/repair7;
+maxcombined3139,minremaining861. See RECOVERY_R12_ADMISSION66_20260908.md.
+ONEserialverifier36333 outputrecovery-diagnostics/r12-go; nootherexecution.
+R12first27 completed81executions; sixadmitted,19test-onlyholds+2referenceholds.
+LatestverifiedGCScheckpoint50 excludes latest16admissions andalllater evidence.
+
+R12generation57681 DONE51. R13onecritic84508 active; r14twoarchitecture76396
+activewith2laneworkers, totalteachermax3. Bothversionregistriesnowreserved,
+don'tduplicate/reuse. Inspectoutputsbeforedispatchingcandidate reviews.
+
+Reviewers: rust421_450r12Go10active; rust391_420r12JS7/TS7(14)active;
+rust451_480finishedPROVISIONALr15request/feedback19(Java6/Py6/Rust7), idle.
+Main hasNOTreadr15draft yet; validatebeforeplan/launch. No r15versionreserved.
+Main HASfullyread/integratedr12Java/Python/Rust reports,verifiedfile/prompt/ref
+bindings. R12Gopreliminaryoraclegapsnotfinal/mainread; don'tcountdrafts.
+
+Next: finishGoqueue, integrateremainingreviews, seriallyverifyJS/TS14;reviewr13/
+r14outputs, mainread/validateandlaunchr15whenboundedteachercapacityfree. Separate
+future reference correctionsPy0717/Rust0487 stillneeddisposition. Batchnextbackup
+mustinclude latest16admissions/r11diagnostics/r12terminal/r13-r15laterstates.
+Commit a1d4d5e pushedsuccessfully; subsequentnotes/artifactsuncommittedfornextbatch.
+Originalreviewclosed/holdsunchanged/nocorpusseal/training. Currentworkapproved,
+noVM. Estimatestraining50%/release35%; working, next10–30minlowconfidence,
+fulldeliveryETAunproven. Continueactualwork, notstatus-only.
+
+## Latest post-commit execution queue — 2026-09-08
+
+Commit a1d4d5e push SUCCESS. Actual cumulative60 remains until newadmission exits.
+R12first27 diagnostics30205 DONE all81 programruns. Main fullyread allthree
+Java/Python/Rust reports and validated every27 candidatefile/prompt/reference
+hash. Six static+directionalitypositives: Java0514/0794,Py0070/0400,Rust0092/0509.
+Nineteen test-only holds; Py0717 referenceerrorclass andRust0487 missingrequired
+publictraits are referenceholds, never admit from current passing tests alone.
+
+ONE newserialqueue36333: prepare/admit above6 ->r12Go10diagnostics, outputdirs
+recovery-admission/r12-six-v1 and recovery-diagnostics/r12-go. Do not launch a
+parallel verifier/admission. R12first27diagnostics andalllateradmissions are NOT
+covered by verifiedadmission50backup. Count only terminaladmissionreport.
+
+R12generation57681 stillactive:37 emitted(Java8/Py9/Rust10/Go10), JS7/TS7pending.
+Go lanecomplete leaves only2teacherlanes; main used free capacity for approved
+r13one-testcorrection session84508 (prior-run r11, exactfinalfeedback), nowreserved.
+Max3totalteacher calls respected. R14approved2architecture stillNOT launched;
+wait until at least2slotsavailable orr12complete, no duplicate/version reuse.
+
+Current reviewers: rust421_450 reviewingr12Go10 ->RECOVERY_R12_GO_REVIEW_20260908.md;
+rust451_480 draftingPROVISIONALr15testcorrection19(Java6/Py6/Rust7), excludesPy0717
+andRust0487. Main mustfullyread/validate beforeplan/launch. rust391_420idle after
+integratedRust10; canreviewJS/TSwhenemitted. No currentnew-parentselectiontask.
+R12Go/JS/TS reviews/diagnostics notyetcomplete. Main acceptedfirst27 staticreports
+only; dynamicqualifications retainall compile/timeout/oracle failures separately.
+
+Next: inspectqueue36333admissionresult, finishr12generation/reviews, preserve
+r13output andreview/verifyserially, launchr14whenboundedslotsfree; integrate
+r15draft thenonecritic, separatelydispositionPy0717/Rust0487. Batchnextcommit/
+GCSbackupafterterminalboundary. No corpusseal/training/release. Estimates50%/35%,
+actualgeneration/correction/verification/reviewworking; next10–30minlowconfidence,
+fulldeliveryETAungrounded. Currentworkapproved; newcloudcomputeneedsscope/budget.
+
 ## Admission60; serial r12-first27 now running — 2026-09-08
 
 Queue80706 exited0:10accepted/0rejected. Cumulative60=Go12/Java12/JS11/TS11/

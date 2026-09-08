@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "7168f5f04b9cbc6748e07eb6568d59d10a8c8143c7120b3248292ed4c768a0b9",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n\t\"strconv\"\n\t\"time\"\n)\n\ntype AssetRecord struct {\n\tID         string\n\tLabels     []string\n\tOwner      string\n\tCreated    string\n\tModified   string\n\tAttributes map[string][]string\n}\n\ntype AssetQuery struct {\n\tOwner            string\n\tLabel            string\n\tCreatedOnOrAfter time.Time\n\tPageSize         int\n\tCursor           string\n}\n\ntype AssetRow struct {\n\tID         string\n\tLabels     []string\n\tOwner      string\n\tCreated    time.Time\n\tModified   time.Time\n\tAttributes map[string][]string\n}\n\nfunc ListAssets(records []AssetRecord, query AssetQuery) ([]AssetRow, string, error) {\n\tif query.PageSize <= 0 {\n\t\treturn nil, \"\", errors.New(\"page size must be positive\")\n\t}\n\tseen := make(map[string]bool, len(records))\n\trows := make([]AssetRow, 0)\n\tfor _, record := range records {\n\t\tif record.ID == \"\" || seen[record.ID] {\n\t\t\treturn nil, \"\", errors.New(\"asset IDs must be non-empty and unique\")\n\t\t}\n\t\tseen[record.ID] = true\n\t\tcreated, err := time.Parse(time.RFC3339, record.Created)\n\t\tif err != nil {\n\t\t\treturn nil, \"\", err\n\t\t}\n\t\tmodified, err := time.Parse(time.RFC3339, record.Modified)\n\t\tif err != nil {\n\t\t\treturn nil, \"\", err\n\t\t}\n\t\tif query.Owner != \"\" && record.Owner != query.Owner {\n\t\t\tcontinue\n\t\t}\n\t\tif query.Label != \"\" && !containsLabel(record.Labels, query.Label) {\n\t\t\tcontinue\n\t\t}\n\t\tif !query.CreatedOnOrAfter.IsZero() && created.Before(query.CreatedOnOrAfter) {\n\t\t\tcontinue\n\t\t}\n\t\trows = append(rows, AssetRow{\n\t\t\tID:         record.ID,\n\t\t\tLabels:     append([]string(nil), record.Labels...),\n\t\t\tOwner:      record.Owner,\n\t\t\tCreated:    created,\n\t\t\tModified:   modified,\n\t\t\tAttributes: cloneAttributes(record.Attributes),\n\t\t})\n\t}\n\tsort.Slice(rows, func(i, j int) bool { return rows[i].ID < rows[j].ID })\n\toffset, err := parseCursor(query.Cursor)\n\tif err != nil || offset > len(rows) {\n\t\treturn nil, \"\", errors.New(\"invalid cursor\")\n\t}\n\tremaining := len(rows) - offset\n\tpageLength := query.PageSize\n\tif pageLength > remaining {\n\t\tpageLength = remaining\n\t}\n\tend := offset + pageLength\n\tpage := rows[offset:end]\n\tnext := \"\"\n\tif end < len(rows) {\n\t\tnext = strconv.Itoa(end)\n\t}\n\treturn page, next, nil\n}\n\nfunc containsLabel(labels []string, wanted string) bool {\n\tfor _, label := range labels {\n\t\tif label == wanted {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\nfunc parseCursor(cursor string) (int, error) {\n\tif cursor == \"\" {\n\t\treturn 0, nil\n\t}\n\tif cursor != \"0\" && cursor[0] == '0' {\n\t\treturn 0, errors.New(\"non-canonical cursor\")\n\t}\n\tfor _, character := range cursor {\n\t\tif character < '0' || character > '9' {\n\t\t\treturn 0, errors.New(\"invalid cursor\")\n\t\t}\n\t}\n\tvalue, err := strconv.Atoi(cursor)\n\tif err != nil {\n\t\treturn 0, err\n\t}\n\treturn value, nil\n}\n\nfunc cloneAttributes(source map[string][]string) map[string][]string {\n\tif source == nil {\n\t\treturn nil\n\t}\n\tcopy := make(map[string][]string, len(source))\n\tfor key, values := range source {\n\t\tcopy[key] = append([]string(nil), values...)\n\t}\n\treturn copy\n}\n",
+  "code_sha256": "97d3bff918944731aee4c936b757dfba8b8f54fe394c87326477956f68db8993",
+  "evidence_sha256": "62d737c56e2ff016be0372ba4263ebdf2e3cc7bb0f628e43b43a7bfa2b0cc4fd",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "16aab2d4078c16d399336e6fba8bccb6c41a7162f2f2093fe95fc30c7428a122",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 28710,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.020s\n",
+    "stdout_sha256": "43770b7914b3b791911ee9cd2657f08102b866aafd23532301db477829ec42a1",
+    "timed_out": false
+  }
+}

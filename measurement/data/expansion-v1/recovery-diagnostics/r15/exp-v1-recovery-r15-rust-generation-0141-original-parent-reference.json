@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "2619e1d201ae37152f858529dadb008e2c1c740a3d71e3e8929fab4292cfb228",
+  "code": "use std::collections::BTreeMap;\n\npub type AccountId = String;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Transfer {\n    pub from: AccountId,\n    pub to: AccountId,\n    pub amount: u64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LedgerError {\n    EmptyAccount,\n    DuplicateAccount,\n    UnknownAccount,\n    SameAccount,\n    ZeroAmount,\n    InsufficientFunds,\n    Overflow,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    balances: BTreeMap<AccountId, u64>,\n    supply: u64,\n}\n\nimpl Ledger {\n    pub fn new(origin: AccountId, supply: u64) -> Result<Self, LedgerError> {\n        if origin.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        let mut balances = BTreeMap::new();\n        balances.insert(origin, supply);\n        Ok(Self { balances, supply })\n    }\n\n    pub fn add_account(&mut self, id: AccountId) -> Result<(), LedgerError> {\n        if id.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        if self.balances.contains_key(&id) {\n            return Err(LedgerError::DuplicateAccount);\n        }\n        self.balances.insert(id, 0);\n        Ok(())\n    }\n\n    pub fn balance(&self, id: &str) -> Option<u64> {\n        self.balances.get(id).copied()\n    }\n\n    pub fn total(&self) -> u64 {\n        self.supply\n    }\n\n    pub fn apply(&mut self, transfer: &Transfer) -> Result<(), LedgerError> {\n        if transfer.amount == 0 {\n            return Err(LedgerError::ZeroAmount);\n        }\n        if transfer.from == transfer.to {\n            return Err(LedgerError::SameAccount);\n        }\n\n        let from = self.balance(&transfer.from).ok_or(LedgerError::UnknownAccount)?;\n        let to = self.balance(&transfer.to).ok_or(LedgerError::UnknownAccount)?;\n        if from < transfer.amount {\n            return Err(LedgerError::InsufficientFunds);\n        }\n\n        let new_from = from\n            .checked_sub(transfer.amount)\n            .ok_or(LedgerError::InsufficientFunds)?;\n        let new_to = to.checked_add(transfer.amount).ok_or(LedgerError::Overflow)?;\n        if new_to == u64::MAX && to != u64::MAX {\n            return Err(LedgerError::Overflow);\n        }\n\n        self.balances.insert(transfer.from.clone(), new_from);\n        self.balances.insert(transfer.to.clone(), new_to);\n        Ok(())\n    }\n\n    pub fn apply_batch(&mut self, transfers: &[Transfer]) -> Result<(), LedgerError> {\n        let snapshot = self.balances.clone();\n        for transfer in transfers {\n            if let Err(error) = self.apply(transfer) {\n                self.balances = snapshot;\n                return Err(error);\n            }\n        }\n        Ok(())\n    }\n}\n",
+  "code_sha256": "0e11b5f4972fe25c713e9a846c5f2130fb47c7c0d33448e3720ca0550784b66f",
+  "evidence_sha256": "9f806f79dc256e4680e1d020f7856695ad5ad48f3a3bed27c0a64b26c7480990",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "bee540edb94df83bbc7fdec816b910309e7e289d5e92618552b865aeaffadf0d",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1736,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 6 tests\ntest applies_transfer_without_changing_total_supply ... ok\ntest batch_is_ordered_and_rolls_back_all_prior_transfers ... ok\ntest creates_origin_and_adds_zero_balance_accounts ... ok\ntest destination_may_reach_u64_max_exactly ... FAILED\ntest failed_individual_transfers_do_not_mutate_balances ... ok\ntest successful_and_empty_batches_preserve_total ... ok\n\nfailures:\n\n---- destination_may_reach_u64_max_exactly stdout ----\n\nthread 'destination_may_reach_u64_max_exactly' panicked at solution_test.rs:94:5:\nassertion failed: ledger.apply(&transfer(\"source\", \"destination\", u64::MAX)).is_ok()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    destination_may_reach_u64_max_exactly\n\ntest result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "c95799d96ff3c62cfcfbf92cee54701e933cb26b1ff3e933a4855ef7ee3689fa",
+    "timed_out": false
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "7168f5f04b9cbc6748e07eb6568d59d10a8c8143c7120b3248292ed4c768a0b9",
+  "code": "package solution\n\nimport (\n    \"errors\"\n    \"sort\"\n    \"strconv\"\n    \"time\"\n)\n\ntype AssetRecord struct {\n    ID         string\n    Labels     []string\n    Owner      string\n    Created    string\n    Modified   string\n    Attributes map[string][]string\n}\n\ntype AssetQuery struct {\n    Owner            string\n    Label            string\n    CreatedOnOrAfter time.Time\n    PageSize         int\n    Cursor           string\n}\n\ntype AssetRow struct {\n    ID         string\n    Labels     []string\n    Owner      string\n    Created    time.Time\n    Modified   time.Time\n    Attributes map[string][]string\n}\n\nfunc ListAssets(records []AssetRecord, query AssetQuery) ([]AssetRow, string, error) {\n    if query.PageSize <= 0 {\n        return nil, \"\", errors.New(\"page size must be positive\")\n    }\n    seen := make(map[string]bool, len(records))\n    rows := make([]AssetRow, 0)\n    for _, record := range records {\n        if record.ID == \"\" || seen[record.ID] {\n            return nil, \"\", errors.New(\"asset IDs must be non-empty and unique\")\n        }\n        seen[record.ID] = true\n        created, err := time.Parse(time.RFC3339, record.Created)\n        if err != nil {\n            return nil, \"\", err\n        }\n        modified, err := time.Parse(time.RFC3339, record.Modified)\n        if err != nil {\n            return nil, \"\", err\n        }\n        if query.Owner != \"\" && record.Owner != query.Owner {\n            continue\n        }\n        if query.Label != \"\" && !containsLabel(record.Labels, query.Label) {\n            continue\n        }\n        if !query.CreatedOnOrAfter.IsZero() && created.Before(query.CreatedOnOrAfter) {\n            continue\n        }\n        rows = append(rows, AssetRow{ID: record.ID, Labels: append([]string(nil), record.Labels...), Owner: record.Owner, Created: created, Modified: modified, Attributes: cloneAttributes(record.Attributes)})\n    }\n    sort.Slice(rows, func(i, j int) bool { return rows[i].ID < rows[j].ID })\n    offset, err := parseCursor(query.Cursor)\n    if err != nil || offset > len(rows) {\n        return nil, \"\", errors.New(\"invalid cursor\")\n    }\n    end := offset + query.PageSize\n    if end > len(rows) {\n        end = len(rows)\n    }\n    page := rows[offset:end]\n    next := \"\"\n    if end < len(rows) {\n        next = strconv.Itoa(end)\n    }\n    return page, next, nil\n}\n\nfunc containsLabel(labels []string, wanted string) bool {\n    for _, label := range labels {\n        if label == wanted {\n            return true\n        }\n    }\n    return false\n}\n\nfunc parseCursor(cursor string) (int, error) {\n    if cursor == \"\" {\n        return 0, nil\n    }\n    if cursor != \"0\" && cursor[0] == '0' {\n        return 0, errors.New(\"non-canonical cursor\")\n    }\n    for _, r := range cursor {\n        if r < '0' || r > '9' {\n            return 0, errors.New(\"invalid cursor\")\n        }\n    }\n    value, err := strconv.Atoi(cursor)\n    if err != nil {\n        return 0, err\n    }\n    return value, nil\n}\n\nfunc cloneAttributes(src map[string][]string) map[string][]string {\n    if src == nil {\n        return nil\n    }\n    dst := make(map[string][]string, len(src))\n    for key, values := range src {\n        dst[key] = append([]string(nil), values...)\n    }\n    return dst\n}\n",
+  "code_sha256": "a1357433313a59a97eb96dd15c6a27a91bed22a4727cc400d06fdc95a9ce6f2c",
+  "evidence_sha256": "c71d143ec81623b9e45c08166695a8520796328c2820416556449c47e916ec66",
+  "label": "known-bad-0",
+  "outcome": "passed",
+  "parent_candidate_sha256": "16aab2d4078c16d399336e6fba8bccb6c41a7162f2f2093fe95fc30c7428a122",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 28863,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.020s\n",
+    "stdout_sha256": "43770b7914b3b791911ee9cd2657f08102b866aafd23532301db477829ec42a1",
+    "timed_out": false
+  }
+}

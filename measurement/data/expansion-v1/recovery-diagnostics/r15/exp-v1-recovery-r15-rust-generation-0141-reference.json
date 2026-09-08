@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "2619e1d201ae37152f858529dadb008e2c1c740a3d71e3e8929fab4292cfb228",
+  "code": "use std::collections::BTreeMap;\n\npub type AccountId = String;\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Transfer {\n    pub from: AccountId,\n    pub to: AccountId,\n    pub amount: u64,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum LedgerError {\n    EmptyAccount,\n    DuplicateAccount,\n    UnknownAccount,\n    SameAccount,\n    ZeroAmount,\n    InsufficientFunds,\n    Overflow,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Ledger {\n    balances: BTreeMap<AccountId, u64>,\n    supply: u64,\n}\n\nimpl Ledger {\n    pub fn new(origin: AccountId, supply: u64) -> Result<Self, LedgerError> {\n        if origin.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        let mut balances = BTreeMap::new();\n        balances.insert(origin, supply);\n        Ok(Self { balances, supply })\n    }\n\n    pub fn add_account(&mut self, id: AccountId) -> Result<(), LedgerError> {\n        if id.is_empty() {\n            return Err(LedgerError::EmptyAccount);\n        }\n        if self.balances.contains_key(&id) {\n            return Err(LedgerError::DuplicateAccount);\n        }\n        self.balances.insert(id, 0);\n        Ok(())\n    }\n\n    pub fn balance(&self, id: &str) -> Option<u64> {\n        self.balances.get(id).copied()\n    }\n\n    pub fn total(&self) -> u64 {\n        self.supply\n    }\n\n    pub fn apply(&mut self, transfer: &Transfer) -> Result<(), LedgerError> {\n        if transfer.amount == 0 {\n            return Err(LedgerError::ZeroAmount);\n        }\n        if transfer.from == transfer.to {\n            return Err(LedgerError::SameAccount);\n        }\n\n        let from = self\n            .balance(&transfer.from)\n            .ok_or(LedgerError::UnknownAccount)?;\n        let to = self\n            .balance(&transfer.to)\n            .ok_or(LedgerError::UnknownAccount)?;\n        if from < transfer.amount {\n            return Err(LedgerError::InsufficientFunds);\n        }\n\n        let new_from = from\n            .checked_sub(transfer.amount)\n            .ok_or(LedgerError::InsufficientFunds)?;\n        let new_to = to\n            .checked_add(transfer.amount)\n            .ok_or(LedgerError::Overflow)?;\n\n        self.balances.insert(transfer.from.clone(), new_from);\n        self.balances.insert(transfer.to.clone(), new_to);\n        Ok(())\n    }\n\n    pub fn apply_batch(&mut self, transfers: &[Transfer]) -> Result<(), LedgerError> {\n        let snapshot = self.balances.clone();\n        for transfer in transfers {\n            if let Err(error) = self.apply(transfer) {\n                self.balances = snapshot;\n                return Err(error);\n            }\n        }\n        Ok(())\n    }\n}\n",
+  "code_sha256": "2315a74ec80dc374d52c36886024b5b93f60416bcd4412a7752b6dce2c8be42d",
+  "evidence_sha256": "ae5d877decf7391e143c5a25d588c459b6cd074e1aec38a5f2a4b10743a1e9da",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "bee540edb94df83bbc7fdec816b910309e7e289d5e92618552b865aeaffadf0d",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 1691,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 6 tests\ntest applies_transfer_without_changing_total_supply ... ok\ntest batch_is_ordered_and_rolls_back_all_prior_transfers ... ok\ntest creates_origin_and_adds_zero_balance_accounts ... ok\ntest destination_may_reach_u64_max_exactly ... ok\ntest failed_individual_transfers_do_not_mutate_balances ... ok\ntest successful_and_empty_batches_preserve_total ... ok\n\ntest result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "02349147a81839c80168034f144470902e3226df9eef3ccf17c4348aa0e5ef36",
+    "timed_out": false
+  }
+}

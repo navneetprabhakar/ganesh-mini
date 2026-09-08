@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "727cce89478bf7a7e45876b1c0de145bdb5f47735d06fc7934ac9942f231e047",
+  "code": "from collections.abc import Mapping, Sequence\nfrom copy import deepcopy\n\n\ndef prepare_examples(records, holdout_stride):\n    \"\"\"Validate records and build independent deterministic data partitions.\"\"\"\n    if isinstance(holdout_stride, bool) or not isinstance(holdout_stride, int) or holdout_stride < 2:\n        raise ValueError(\"holdout_stride must be an integer of at least 2\")\n\n    result = {\n        \"sector\": {\"train\": [], \"validation\": []},\n        \"distance\": {\"train\": [], \"validation\": []},\n    }\n    for position, record in enumerate(records, 1):\n        if not isinstance(record, Mapping) or set(record) != {\"pixels\", \"sector\", \"distance\"}:\n            raise TypeError(\"each record must have exactly the required keys\")\n        if not isinstance(record[\"sector\"], str) or not record[\"sector\"]:\n            raise ValueError(\"sector must be a non-empty string\")\n        if not isinstance(record[\"distance\"], str) or not record[\"distance\"]:\n            raise ValueError(\"distance must be a non-empty string\")\n\n        pixels = record[\"pixels\"]\n        if isinstance(pixels, (str, bytes)) or not isinstance(pixels, Sequence) or not pixels:\n            raise ValueError(\"pixels must be a non-empty matrix\")\n        width = None\n        for row in pixels:\n            if isinstance(row, (str, bytes)) or not isinstance(row, Sequence) or not row:\n                raise ValueError(\"pixel rows must be non-empty\")\n            if width is None:\n                width = len(row)\n            elif len(row) != width:\n                raise ValueError(\"pixels must be rectangular\")\n            for value in row:\n                if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 255:\n                    raise ValueError(\"pixel values must be integers from 0 to 255\")\n\n        bucket = \"validation\" if position % holdout_stride == 0 else \"train\"\n        for target in (\"sector\", \"distance\"):\n            result[target][bucket].append({\n                \"pixels\": deepcopy(pixels),\n                \"label\": record[target],\n            })\n    return result\n",
+  "code_sha256": "6ed08b6d38339aa4c5d083168505d7a08b9e60b0a299b68994d7f5320ff14cd0",
+  "evidence_sha256": "1c7c8dbcd49d0c9de091012b45e3a9217f14ff58641199e115f7a033d64ee725",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "8be310442dba97d554be2561d473d8ca7934207a377c12d1db0c6d39e8440a82",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 524,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.002s\n\nOK\n",
+    "stderr_sha256": "d03ce458f2a6cd2b4f27522f3aacad03ce1872c028853507c3ad02ca621bdcad",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

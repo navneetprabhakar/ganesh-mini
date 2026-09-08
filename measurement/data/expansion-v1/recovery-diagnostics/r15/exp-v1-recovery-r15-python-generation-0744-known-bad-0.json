@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "d9eafb391c34bd7b18210a615398dc7bc4910fbd295c4a04f3bccb250ad70640",
+  "code": "from copy import deepcopy\n\n\ndef catalog_snapshot(items, collections, page, page_size):\n    \"\"\"Validate and return a detached, consistently ordered catalog page.\"\"\"\n    if (isinstance(page, bool) or not isinstance(page, int) or page <= 0 or\n            isinstance(page_size, bool) or not isinstance(page_size, int) or page_size <= 0):\n        raise ValueError(\"page and page_size must be positive integers\")\n\n    item_list = list(items)\n    by_id = {}\n    for item in item_list:\n        if not isinstance(item, dict) or set(item) != {\"id\", \"title\", \"votes\"}:\n            raise TypeError(\"invalid item record\")\n        if not isinstance(item[\"id\"], str) or not item[\"id\"]:\n            raise ValueError(\"item id must be non-empty\")\n        if not isinstance(item[\"title\"], str) or not item[\"title\"]:\n            raise ValueError(\"item title must be non-empty\")\n        if isinstance(item[\"votes\"], bool) or not isinstance(item[\"votes\"], int):\n            raise TypeError(\"votes must be an integer\")\n        if item[\"id\"] in by_id:\n            raise ValueError(\"duplicate item id\")\n        by_id[item[\"id\"]] = item\n\n    collection_list = list(collections)\n    collection_ids = set()\n    for collection in collection_list:\n        if not isinstance(collection, dict) or set(collection) != {\"id\", \"name\", \"item_ids\"}:\n            raise TypeError(\"invalid collection record\")\n        if not isinstance(collection[\"id\"], str) or not collection[\"id\"]:\n            raise ValueError(\"collection id must be non-empty\")\n        if not isinstance(collection[\"name\"], str) or not collection[\"name\"]:\n            raise ValueError(\"collection name must be non-empty\")\n        if collection[\"id\"] in collection_ids:\n            raise ValueError(\"duplicate collection id\")\n        collection_ids.add(collection[\"id\"])\n        if isinstance(collection[\"item_ids\"], (str, bytes)):\n            raise TypeError(\"item_ids must be a sequence\")\n        for item_id in collection[\"item_ids\"]:\n            if not isinstance(item_id, str):\n                raise TypeError(\"item IDs must be strings\")\n            if item_id not in by_id:\n                raise ValueError(\"unknown item id\")\n\n    ordered_items = sorted(item_list, key=lambda item: (-item[\"votes\"], item[\"title\"], item[\"id\"]))\n    ordered_collections = sorted(collection_list, key=lambda value: (value[\"name\"], value[\"id\"]))\n    start = (page - 1) * page_size\n    stop = start + page_size\n\n    output_collections = []\n    for collection in ordered_collections[start:stop]:\n        copy = deepcopy(collection)\n        copy[\"resolved_items\"] = [deepcopy(by_id[item_id]) for item_id in collection[\"item_ids\"]]\n        output_collections.append(copy)\n\n    return {\n        \"item_total\": len(item_list),\n        \"collection_total\": len(collection_list),\n        \"items\": deepcopy(ordered_items[start:stop]),\n        \"collections\": output_collections,\n    }\n",
+  "code_sha256": "48c5864cc2ac0b98047f402e8930f6ee55f6db510a7b5f968fc7470f860dcf27",
+  "evidence_sha256": "3f86d9d0f11eeec5412bad6580075e021c0a2eea02552c4116fbde250ef90385",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "efc1b28c3fe07967b43185a885b838fdfe1cd090e1f4c8816a7774c5bb25b126",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 470,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".....E...\n======================================================================\nERROR: test_mapping_implementations_and_detached_resolution (__main__.CatalogSnapshotTests.test_mapping_implementations_and_detached_resolution)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 48, in test_mapping_implementations_and_detached_resolution\n    result = catalog_snapshot(items, collections, 1, 10)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 14, in catalog_snapshot\n    raise TypeError(\"invalid item record\")\nTypeError: invalid item record\n\n----------------------------------------------------------------------\nRan 9 tests in 0.004s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "8c313f6ed7c8a93738fe024ea814adbc97e6c53ab69929a9aa40419bb864bca2",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

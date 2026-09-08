@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "c16a29e263fdd74eddff40899c7d4840a9087b2af32e53563c969c45433ecf19",
+  "code": "export interface AccountRecord { readonly id: string; readonly email: string }\nexport interface ValidationIssue { readonly field: string; readonly message: string }\n\nconst own = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);\nconst nonblank = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;\nconst emailPattern = /^[^@\\s]+@[^@\\s.]+(?:\\.[^@\\s.]+)+$/;\n\nexport function validateAccount(\n  method: 'CREATE' | 'UPDATE',\n  body: Readonly<Record<string, unknown>>,\n  accounts: readonly AccountRecord[],\n  currentId?: string,\n): ValidationIssue[] {\n  const issues: ValidationIssue[] = [];\n  const checkText = (field: string, required: boolean): boolean => {\n    if (!own(body, field)) {\n      if (required) issues.push({ field, message: `${field} is required` });\n      return false;\n    }\n    if (!nonblank(body[field])) {\n      issues.push({ field, message: `${field} must be a non-empty string` });\n      return false;\n    }\n    return true;\n  };\n\n  if (method === 'CREATE') {\n    checkText('displayName', true);\n    checkText('secret', true);\n  } else {\n    checkText('displayName', false);\n  }\n\n  const validEmailText = checkText('email', method === 'CREATE');\n  if (validEmailText) {\n    const email = (body.email as string).trim();\n    if (!emailPattern.test(email)) {\n      issues.push({ field: 'email', message: 'email is invalid' });\n    } else if (accounts.some(account =>\n      (method !== 'UPDATE' || account.id !== currentId) &&\n      account.email.trim().toLowerCase() === email.toLowerCase()\n    )) {\n      issues.push({ field: 'email', message: 'Email is already in use' });\n    }\n  }\n\n  if (method === 'UPDATE') checkText('accessLevel', false);\n  return issues;\n}\n",
+  "code_sha256": "97c48cbda4736d192e366eec734a838f94cf9bb20c4e728ea97ae1016c718133",
+  "evidence_sha256": "3254589fca5daf7e3aafb5ac075c1edf141fd40f466df2aef7e5b405f4ce00b2",
+  "label": "original-parent-reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "c98c452f81d3b7cf707118e7ae6fca5dc56bf18f91d2d3d817358d678dc53c4e",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 3113,
+    "exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

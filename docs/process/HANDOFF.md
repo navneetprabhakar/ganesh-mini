@@ -21,8 +21,8 @@ are unchanged planning estimates, not executed metrics or calendar commitments.
 
 ## Quality review continuation — 2026-09-06
 
-Current checkpoint: **2251 holds (2248 additive plus historical three)**;
-4,920 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **2257 holds (2254 additive plus historical three)**;
+4,929 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 165 positive, 135 held. By lane: Go 39/17,
 Java 29/31, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v2.json.
@@ -43,17 +43,17 @@ scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through2230 holds including Rust positions1–225 and five probes.
-See QUALITY_RUST225_2230_BACKUP.md. JS elementary queue200:76 already held;
+GCS verified through2251 holds including Rust positions1–270 and five probes.
+See QUALITY_RUST270_2251_BACKUP.md. JS elementary queue200:76 already held;
 unheld124/124 reconciled with60 new holds and64 criterion positives. JS outside
 scope complete and backed up. TypeScript queue262:107 initially held;
 unheld155/155 reconciled:57 new holds and98 criterion positives. TypeScript outside
 elementary scope complete; batches1–5 and four diagnostic probes are GCS verified.
 Rust elementary queue1006 is now frozen:64 prior-held exclusions and942 requiring
-criterion reconciliation. First270 reconciled:105 holds,165 scoped positives.
-121 first-time repair inspections add unique coverage. Continue unheld271.
-Rust through225 and repair0102/0110/0113 failures are GCS verified.
-Positions226–270 await the next GCS backup; frozen originals unchanged.
+criterion reconciliation. First285 reconciled:111 holds,174 scoped positives.
+130 first-time repair inspections add unique coverage. Continue unheld286.
+Rust through270 and all five diagnostic probes are GCS verified.
+Positions271–285 await the next GCS backup; frozen originals unchanged.
 Recovery tooling preflight read: existing rejection-repair script cannot directly
 process semantic holds or supply new candidate identities; see
 RECOVERY_TOOLING_PREFLIGHT_20260908.md. No recovery/training was launched.
@@ -67,7 +67,7 @@ see JAVA_RECOVERY_PROBES_20260907.md. Both compile, then fail assertions/runtime
 Earlier evidence has exact-generation roundtrip proof. Frozen inputs unchanged.
 Prior page arithmetic reconciled; generation0716 eager-allocation hold added.
 See JAVA_PAGE_RECONCILIATION_20260907.md. Cross-lane scopes remain open.
-At most3634 rows remain outside holds, below the planned4000 lower bound.
+At most3628 rows remain outside holds, below the planned4000 lower bound.
 The user approved versioned recovery to address this shortfall without lowering
 quality gates. See CORPUS_SUFFICIENCY_PAUSE_20260907.md for the resolved pause.
 No training seal or new VM. Complete review, then recover suitable held examples

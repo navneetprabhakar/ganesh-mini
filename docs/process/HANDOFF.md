@@ -1970,9 +1970,9 @@ are sealed; the latest prepared-manifest seal is
 Gate4 local preparation is complete through archive rehearsal. Use
 `configs/train/expansion_pilot_v1.json` and
 `scripts/train/expansion_pilot.py`; the local execution card seal is
-`3129c4930dd16fe0907e949b335deeadded6b6e248f20a3b2740aa0b99fc0efb`.
+`5d1307c342cf837d5b908ea2579fcad7dfe91b0708d485c08fd498118ded8b7e`.
 The reproducible 44-file workspace archive has SHA256
-`a2cb3fdf47cb3baa6a0dfe9c4f37c7e7c1f3f99e7b02b880a1c51ab149eeedf0`
+`72e366aa7274723f4c89bb819780a4972a014ac0a2b9b94db4f56955bfaebb3e`
 and re-preflights identically after extraction.
 
 After training, run `scripts/train/verify_expansion_pilot.py` before any

@@ -12,6 +12,7 @@ def test_repository_expansion_pilot_is_locally_prepared() -> None:
     assert card["provider_execution"] is None
     assert card["selected_recipe"]["learning_rate"] == 0.00001
     assert card["control"]["maximum_seen_tokens"] == 2438853
+    assert card["evaluation"]["promotion_rule"]["minimum_improved_product_families"] == 4
 
 
 def test_expansion_pilot_fails_closed_on_data_mutation(tmp_path: Path) -> None:

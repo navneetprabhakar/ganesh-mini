@@ -84,6 +84,17 @@ def build_card(config_path: Path, root: Path = ROOT, system: str | None = None) 
         and all(0 < value <= control["maximum_seen_tokens"] for value in quarter)
     )
     checks.append({"name": "runtime_and_checkpoint_bounds", "passed": bounds_ok})
+    promotion = config.get("evaluation", {}).get("promotion_rule")
+    promotion_ok = promotion == {
+        "rule_id": "expansion-pilot-canary-promotion-v1",
+        "minimum_improved_product_families": 4,
+        "minimum_net_pass_gain": 1,
+        "maximum_pass_regression_per_lane": 0,
+        "maximum_increase_in_non_code_outputs": 0,
+        "maximum_increase_in_truncated_outputs": 0,
+        "save_reload_required": True,
+    }
+    checks.append({"name": "frozen_canary_promotion_rule", "passed": promotion_ok})
     failed = [item["name"] for item in checks if not item["passed"]]
     card: dict[str, Any] = {
         "schema_version": "ganesh-mini-expansion-pilot-card/v1",

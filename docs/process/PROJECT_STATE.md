@@ -7,12 +7,15 @@ Its immutable card is `prepared-not-executable`, with zero failed local checks;
 it binds the 3,225-row prepared corpus, 2,438,853-token ceiling, BF16 LoRA at
 1e-5, quarter-epoch checkpoints, six-hour wall limit, and frozen 30/180-task
 evaluation sequence. Card SHA256 is
-3129c4930dd16fe0907e949b335deeadded6b6e248f20a3b2740aa0b99fc0efb.
+5d1307c342cf837d5b908ea2579fcad7dfe91b0708d485c08fd498118ded8b7e.
+The frozen canary rule requires a net pass gain, improvement in at least four
+of five product families, zero per-lane pass regression, no increase in
+non-code or truncated outputs, and a passing save/reload proof.
 
 The reproducible training workspace contains 44 allowlisted files and was
 successfully extracted and re-preflighted with the same card seal. Archive
-SHA256 is a2cb3fdf47cb3baa6a0dfe9c4f37c7e7c1f3f99e7b02b880a1c51ab149eeedf0;
-manifest seal is 931c4eac16875f96c7b945cd7718e5e5f66fae290a3a88ef7c0fa92c5d812e44.
+SHA256 is 72e366aa7274723f4c89bb819780a4972a014ac0a2b9b94db4f56955bfaebb3e;
+manifest seal is a00963ed3d4832793bc2bc98cda0155dc5ea35612a44960b3be368a9b04d72c1.
 The workspace now includes a fail-closed terminal verifier for the executable
 card, complete run, token/cost/VRAM bounds, save/reload proof, and exact adapter
 file hashes.

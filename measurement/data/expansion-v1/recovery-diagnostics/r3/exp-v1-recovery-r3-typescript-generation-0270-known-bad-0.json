@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "9853ac3b4f9336f6badf75bf4dc6127c4058b917259d9123039d5c4846e41097",
+  "code": "export type BalanceListener = (balance: bigint) => void;\n\nexport class FixedScaleVault {\n  private readonly balances = new Map<string, bigint>();\n  private readonly allowances = new Map<string, Map<string, bigint>>();\n  private readonly listeners = new Map<string, BalanceListener[]>();\n\n  constructor(\n    private readonly decimals: number,\n    private readonly symbol: string,\n  ) {\n    if (!Number.isSafeInteger(decimals) || decimals < 0 || decimals > 18) {\n      throw new RangeError(\"decimals must be a safe integer from 0 through 18\");\n    }\n    this.validateIdentifier(symbol, \"symbol\");\n  }\n\n  parseAmount(text: string): bigint {\n    if (typeof text !== \"string\") {\n      throw new TypeError(\"text must be a string\");\n    }\n    const pattern = this.decimals === 0\n      ? /^(0|[1-9]\\d*)$/\n      : new RegExp(`^(0|[1-9]\\\\d*)(?:\\\\.(\\\\d{1,${this.decimals}}))?$`);\n    const match = pattern.exec(text);\n    if (match === null) {\n      throw new RangeError(\"amount is malformed\");\n    }\n    const fraction = this.decimals === 0 ? \"\" : (match[2] ?? \"\").padEnd(this.decimals, \"0\");\n    return BigInt(match[1]) * 10n ** BigInt(this.decimals) + BigInt(fraction || \"0\");\n  }\n\n  formatAmount(units: bigint): string {\n    this.validateUnits(units);\n    if (this.decimals === 0) {\n      return units.toString();\n    }\n    const scale = 10n ** BigInt(this.decimals);\n    const whole = units / scale;\n    const fraction = (units % scale).toString().padStart(this.decimals, \"0\");\n    return `${whole}.${fraction}`;\n  }\n\n  getBalance(account: string): bigint {\n    this.validateIdentifier(account, \"account\");\n    return this.balances.get(account) ?? 0n;\n  }\n\n  setBalance(account: string, units: bigint): void {\n    this.validateIdentifier(account, \"account\");\n    this.validateUnits(units);\n    const previous = this.balances.get(account) ?? 0n;\n    if (previous === units) {\n      return;\n    }\n    this.balances.set(account, units);\n    for (const listener of [...(this.listeners.get(account) ?? [])]) {\n      listener(units);\n    }\n  }\n\n  subscribe(account: string, listener: BalanceListener): () => void {\n    this.validateIdentifier(account, \"account\");\n    if (typeof listener !== \"function\") {\n      throw new TypeError(\"listener must be a function\");\n    }\n    const accountListeners = this.listeners.get(account) ?? [];\n    accountListeners.push(listener);\n    this.listeners.set(account, accountListeners);\n    listener(this.getBalance(account));\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = accountListeners.indexOf(listener);\n      if (index >= 0) accountListeners.splice(index, 1);\n    };\n  }\n\n  allowance(owner: string, spender: string): bigint {\n    this.validateIdentifier(owner, \"owner\");\n    this.validateIdentifier(spender, \"spender\");\n    return this.allowances.get(owner)?.get(spender) ?? 0n;\n  }\n\n  approve(owner: string, spender: string, units: bigint): void {\n    this.validateIdentifier(owner, \"owner\");\n    this.validateIdentifier(spender, \"spender\");\n    this.validateUnits(units);\n    const ownerAllowances = this.allowances.get(owner) ?? new Map<string, bigint>();\n    ownerAllowances.set(spender, units);\n    this.allowances.set(owner, ownerAllowances);\n  }\n\n  getSymbol(): string {\n    return this.symbol;\n  }\n\n  getDecimals(): number {\n    return this.decimals;\n  }\n\n  private validateIdentifier(value: string, name: string): void {\n    if (typeof value !== \"string\" || value.trim().length === 0) {\n      throw new TypeError(`${name} must contain non-whitespace characters`);\n    }\n  }\n\n  private validateUnits(units: bigint): void {\n    if (typeof units !== \"bigint\") {\n      throw new TypeError(\"units must be a bigint\");\n    }\n    if (units < 0n) {\n      throw new RangeError(\"units must be non-negative\");\n    }\n  }\n}\n",
+  "code_sha256": "fd0745deeaff8191499002392bba848514b652f7fd61d9705b59a3428ce06bb4",
+  "evidence_sha256": "46436629ec5ba886ea7980e8db827114dabdd5745112c5151bbd990509d33920",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "375ba891b4396d1bc08093a0b847d9240b5a32fce99db00ae4f2165bfd3356cb",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 2259,
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "/work/solution.test.js:19\n        throw new Error(message + ': wrong error type');\n        ^\n\nError: whitespace symbol rejected: wrong error type\n    at throwsKind (/work/solution.test.js:19:15)\n    at Object.<anonymous> (/work/solution.test.js:27:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "72f6cd2ad67890b8133cd417fbf7629f5b53e885acfa5c2bbc8853b8ab0073cc",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

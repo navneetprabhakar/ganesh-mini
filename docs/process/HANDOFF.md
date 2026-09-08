@@ -1,5 +1,67 @@
 # Ganesh Mini 1.0 handoff
 
+## Latest exact resume checkpoint — 2026-09-08
+
+R3 terminal evidence + admission11 total now VERIFIED in GCS (archive and receipt
+exact-generation download+cmp). See RECOVERY_R3_BACKUP.md. Active/later runs are
+excluded, so preserve/backup them later; no VM/teardown/billing claim.
+
+R4 Go generated9; Java stopped at strict prompt guard:0687 changed only initial
+Create to Implement. All Java raw architecture preserved, no tests/candidates
+emitted for that lane. Do not weaken guard or overwrite r4. Go artifacts intact;
+overall partial-run failure deliberately has no complete candidates.jsonl.
+Main started serial Go diagnostics session95197 (output recovery-diagnostics/r4-go);
+rust421_450 reviewing all9 -> RECOVERY_R4_GO_REVIEW_20260908.md. Don't duplicate.
+Java needs a new versioned disposition; currently no retry is active.
+
+R5 JS5 generated, all15 diagnostic executions passed correct directionality
+(session50657 complete, recovery-diagnostics/r5-javascript). Main fully read and
+accepted RECOVERY_R5_JAVASCRIPT_REVIEW_20260908.md: all5 static-positive, with
+nonblocking coverage limits documented. NOT YET admitted; wait until Go verifier
+finishes before running admission to preserve serial host qualification.
+R5 TS6 correction continues in session69865; inspect files before dispatching
+review or diagnostics. No automatic second critic pass.
+
+R6 request main-read/validated/approved;11 generation parents7Python/4Rust.
+Generation active session28510 with ONE lane worker to bound total teacher calls.
+Plan0c7d76825c37e2291eb56549277aaa29b44812a6d6b842d2825faf7da69b3295.
+See RECOVERY_R6_SELECTION_20260908.md; provisional source files are preserved
+and hash-bound, not unreviewed drafts anymore. Thirteen of original57 remain
+unselected (repairs and explicit contract deferrals), plus failed-Java disposition.
+rust391_420 and rust451_480 idle. No current approval blocker.144 data tests pass.
+
+Counts unchanged:11 admissions, original holds2812, maximum combined3084,
+minimum additional916. No training/corpus seal. Training/release estimated50%/35%;
+generation/correction/Go verification running. Next decision15–45min lowconfidence;
+full delivery ETA ungrounded. Next: finish diagnostics/reviews and batched admission,
+then verified terminal backup. Do not restart original quality review.
+
+## R3 closed/admitted2; r4 generation + r5 correction active — 2026-09-08
+
+R3 session49105 completed14; all42 serial diagnostic executions completed in
+session87300. All three quality reports main-read/integrated. JS0025/0394 passed
+fresh admission (session11278, accepted2/rejected0), including3073 retained
+originals +9 prior recoveries +546 evaluation files. See RECOVERY_R3_ADMISSION_20260908.md.
+Now11 admitted recoveries; maximum combined3084, minimum gap916. No corpus seal.
+JS0296 remains reference+oracle held (required hidden id lost); not in test-only
+correction. Original holds2812 unchanged, original quality review remains closed.
+
+Active r4 generation session57980:19 (Go9/Java10), max3workers/twoactual lanes.
+Plan91360b15b1ca538a5bfc89b1bf60f55ba8417929cb68406268b677c6f7f46660.
+Active r5 one-time test-only correction session69865:11 (JS5/TS6), sequential
+lanes, no repeated critic. Plan1d4b2c5d735c02a1e0701546eae007383765129b2886a72aa0f3f66b029eae12.
+Both registries reserved; do not duplicate jobs or reuse versions. Generic
+spec-grounded adversarial test guidance added for r4;144 data tests pass.
+
+rust391_420 drafting PROVISIONAL r6 request for11 Python/Rust generation parents;
+main must read/validate before reserving/launching. Others idle after r3 reviews.
+Remaining24 of original57 proposals not yet selected; don't restart selection.
+Next: preserve terminal r3/admission2 GCS checkpoint, inspect active run outputs,
+review and serially verify, then candidate admission. Current remote verified
+checkpoint remains admission9 until new backup proof. No teardown/VM/training.
+Training/release estimated50%/35%; generation/correction running, not permission
+blocked. Next decision15–45min low confidence; overall delivery ETA ungrounded.
+
 ## Accelerated r3 generation active — 2026-09-08
 
 Session49105 is generating14 approved derived proposals (8JS/6TS) concurrently

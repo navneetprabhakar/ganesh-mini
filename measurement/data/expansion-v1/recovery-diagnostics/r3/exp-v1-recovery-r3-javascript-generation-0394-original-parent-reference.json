@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "c2d69c52c91f9a44cfa54b7ae71f6b6a1c24392c60474345b5d5034a0edaebc5",
+  "code": "'use strict';\n\nfunction normalizeSku(sku) {\n  if (typeof sku !== 'string' || sku.trim() === '') {\n    throw new TypeError('sku must be a non-empty string');\n  }\n  return sku.trim();\n}\n\nfunction copyRecord(record) {\n  return {\n    sku: record.sku,\n    description: record.description,\n    quantity: record.quantity\n  };\n}\n\nfunction validateRecord(record) {\n  if (record === null || typeof record !== 'object' || Array.isArray(record)) {\n    throw new TypeError('record must be an object');\n  }\n  const sku = normalizeSku(record.sku);\n  if (typeof record.description !== 'string' || record.description.trim() === '') {\n    throw new TypeError('description must be a non-empty string');\n  }\n  if (!Number.isInteger(record.quantity) || record.quantity < 0) {\n    throw new TypeError('quantity must be a non-negative integer');\n  }\n  return { sku, description: record.description.trim(), quantity: record.quantity };\n}\n\nclass PartsCatalog {\n  constructor(initialRecords = []) {\n    if (!Array.isArray(initialRecords)) {\n      throw new TypeError('initialRecords must be an array');\n    }\n    this._records = new Map();\n    for (const record of initialRecords) this.add(record);\n  }\n\n  add(record) {\n    const normalized = validateRecord(record);\n    if (this._records.has(normalized.sku)) throw new Error('duplicate sku');\n    this._records.set(normalized.sku, normalized);\n    return copyRecord(normalized);\n  }\n\n  get(sku) {\n    const key = normalizeSku(sku);\n    const record = this._records.get(key);\n    return record ? copyRecord(record) : null;\n  }\n\n  list() {\n    return Array.from(this._records.values(), copyRecord);\n  }\n\n  update(sku, patch) {\n    const key = normalizeSku(sku);\n    if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) {\n      throw new TypeError('patch must be an object');\n    }\n    const keys = Object.keys(patch);\n    if (keys.some((name) => name !== 'description' && name !== 'quantity')) {\n      throw new TypeError('patch has an unknown property');\n    }\n    if (Object.prototype.hasOwnProperty.call(patch, 'description') &&\n        (typeof patch.description !== 'string' || patch.description.trim() === '')) {\n      throw new TypeError('invalid description');\n    }\n    if (Object.prototype.hasOwnProperty.call(patch, 'quantity') &&\n        (!Number.isInteger(patch.quantity) || patch.quantity < 0)) {\n      throw new TypeError('invalid quantity');\n    }\n\n    const current = this._records.get(key);\n    if (!current) return null;\n    const updated = {\n      sku: current.sku,\n      description: Object.prototype.hasOwnProperty.call(patch, 'description')\n        ? patch.description.trim() : current.description,\n      quantity: Object.prototype.hasOwnProperty.call(patch, 'quantity')\n        ? patch.quantity : current.quantity\n    };\n    this._records.set(key, updated);\n    return copyRecord(updated);\n  }\n\n  remove(sku) {\n    return this._records.delete(normalizeSku(sku));\n  }\n}\n\nmodule.exports = { PartsCatalog };\n",
+  "code_sha256": "7a8d4fe1cedb6ee617941875dbedb0b069a835b040824b8882f76541cc95b7b3",
+  "evidence_sha256": "8cdb67a144b4191ffca9e86b752f5ad9d46ec50e7cd6aa309d13e7438d5b9729",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "79a01f3d92235f6fb81a627bc8b3d19d2010f653919dc55d05c814ef4ab44a91",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 406,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:67:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "f85beec176a551a6ca9c1f771218bf7d61f46045ca0ab302e737351bef549ca3",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "candidate_sha256": "932d7bb5b8bbc5619a7152173162cebd1c8fdfa8aef58c572d0fdc8dd68d31a4",
+  "code": "export interface RouteSpec {\n  readonly pattern: string;\n  readonly destination: string;\n}\n\nexport interface RouteMatch {\n  readonly destination: string;\n  readonly params: Readonly<Record<string, string>>;\n}\n\nfunction segments(value: string): string[] {\n  if (!value.startsWith(\"/\") || value.includes(\"?\") || value.includes(\"#\")) {\n    throw new TypeError(\"Invalid path syntax\");\n  }\n  if (value === \"/\") return [];\n  const result = value.slice(1).split(\"/\");\n  if (result.some((part) => part.length === 0)) {\n    throw new TypeError(\"Empty path segment\");\n  }\n  return result;\n}\n\nexport function matchPath(\n  routes: readonly RouteSpec[],\n  path: string,\n): RouteMatch | null {\n  const pathParts = segments(path);\n  let fallback: RouteSpec | undefined;\n  const candidates: Array<{ route: RouteSpec; params: Record<string, string>; score: number; index: number }> = [];\n\n  routes.forEach((route, index) => {\n    if (route.pattern === \"*\") {\n      fallback ??= route;\n      return;\n    }\n    const patternParts = segments(route.pattern);\n    const names = patternParts\n      .filter((part) => part.startsWith(\":\"))\n      .map((part) => part.slice(1));\n    if (names.some((name) => name.length === 0) || new Set(names).size !== names.length) {\n      throw new TypeError(\"Invalid route parameter\");\n    }\n    if (patternParts.length !== pathParts.length) return;\n\n    const params: Record<string, string> = {};\n    let score = 0;\n    for (let i = 0; i < patternParts.length; i += 1) {\n      const patternPart = patternParts[i]!;\n      const pathPart = pathParts[i]!;\n      if (patternPart.startsWith(\":\")) params[patternPart.slice(1)] = pathPart;\n      else if (patternPart === pathPart) score += 1;\n      else return;\n    }\n    candidates.push({ route, params, score, index });\n  });\n\n  candidates.sort((a, b) => b.score - a.score || a.index - b.index);\n  const best = candidates[0];\n  if (best) return { destination: best.route.destination, params: { ...best.params } };\n  return fallback ? { destination: fallback.destination, params: {} } : null;\n}\n",
+  "code_sha256": "da2c1e73a3bf56d4d20f3c6d57a6c2a54a30e173b1239120655df0b82590e46d",
+  "evidence_sha256": "dd1420ed4d5652952201c837050edac499b454a31e0626fd722f33ba99bcbb14",
+  "label": "known-bad-0",
+  "outcome": "compile-or-load-failure-not-semantic-proof",
+  "parent_candidate_sha256": "8190a2f2c9bc0d773f61c2b464eda9210521976ee0eab95b393259a6d2c0e29c",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 1966,
+    "exit_codes": [
+      0,
+      2
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "solution.test.ts(49,8): error TS18047: 'matchOne' is possibly 'null'.\nsolution.test.ts(49,28): error TS18047: 'matchTwo' is possibly 'null'.\nsolution.test.ts(50,2): error TS18047: 'matchOne' is possibly 'null'.\n",
+    "stdout_sha256": "e526908463105eb49dec87978412aa35ba6fdc3e6b0cce1e3df4eb2dc118a59e",
+    "timed_out": false
+  }
+}

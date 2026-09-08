@@ -1786,3 +1786,24 @@ Training/release estimated50%/35%, not measured task percentages. Nextgeneration
 checkpoint10–60min low confidence; full-delivery ETA not supportable yet.
 No VM or training. Current local work authorized. Latest verified remote backup
 is admission9; active r3 requires terminal evidence backup and byte verification.
+# R3 terminal update — 2026-09-08
+
+R3 admitted2 (JS0025/0394), bringing recovery admissions11; original holds2812,
+maximum combined3084, minimum remaining916. No training seal. All14 generation
+and42 diagnostic executions completed; main integrated allthree quality reports.
+R4 generation19 (session57980) and r5 one-time test correction11 (session69865)
+are active. See HANDOFF for exact assignments and immutable plan hashes.
+144 data tests pass. Next checkpoint15–45min lowconfidence; training/release
+estimated50%/35%, full-delivery ETA still ungrounded. No VM/training; local work
+authorized. Terminal r3 backup in progress, not yet claimed verified.
+# Latest running checkpoint — 2026-09-08
+
+Terminal r3+total11 admission evidence backup VERIFIED: RECOVERY_R3_BACKUP.md.
+R4 Go9 generated, serial diagnostics95197 and independent review active; Java
+lane preserved as prompt-byte guard failure, requiring a new version disposition.
+R5 corrected JS5 pass diagnostics and main-accepted quality, not yet admitted;
+TS6 correction active69865. R6 generation11 active28510, one lane worker.
+See HANDOFF for exact assignments. No overlapping sandbox verifier should start
+until current serial job completes.144 data tests pass. No new admissions beyond
+11, no training/VM; estimates50%training/35%release, next decision15–45min low
+confidence, full delivery ETA not supportable. Later/active runs need new backup.

@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "246ad8f8565bb60d591b51ba00984c92c98eb44c7f60c40131338557bc57575c",
+  "code": "export type ReleaseEntry = { id: number; label: string; note: string | null };\nexport type TimelineEvent =\n  | { kind: \"added\"; entry: ReleaseEntry }\n  | { kind: \"renamed\"; entry: ReleaseEntry }\n  | { kind: \"removed\"; entry: ReleaseEntry }\n  | { kind: \"promoted\"; entry: ReleaseEntry };\nexport type TimelineListener = (event: TimelineEvent) => void;\n\ntype Subscription = { listener: TimelineListener };\n\nconst copy = (entry: ReleaseEntry): ReleaseEntry => ({\n  id: entry.id,\n  label: entry.label,\n  note: entry.note\n});\n\nexport class ReleaseTimeline {\n  private readonly entries: ReleaseEntry[] = [];\n  private readonly subscriptions: Subscription[] = [];\n  private nextId = 1;\n\n  subscribe(listener: TimelineListener): () => void {\n    if (typeof listener !== \"function\") throw new TypeError(\"Invalid listener\");\n    const subscription: Subscription = { listener };\n    this.subscriptions.push(subscription);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.subscriptions.indexOf(subscription);\n      if (index >= 0) this.subscriptions.splice(index, 1);\n    };\n  }\n\n  private emit(kind: TimelineEvent[\"kind\"], entry: ReleaseEntry): void {\n    const event = { kind, entry: copy(entry) } as TimelineEvent;\n    for (const subscription of [...this.subscriptions]) subscription.listener(event);\n  }\n\n  private indexOf(id: number): number {\n    if (!Number.isInteger(id) || id <= 0) throw new RangeError(\"Invalid id\");\n    return this.entries.findIndex(entry => entry.id === id);\n  }\n\n  append(label: string, note?: string): ReleaseEntry {\n    if (typeof label !== \"string\" || label.trim() === \"\" ||\n        (note !== undefined && typeof note !== \"string\")) throw new TypeError(\"Invalid entry\");\n    const entry: ReleaseEntry = { id: this.nextId++, label: label.trim(), note: note ?? null };\n    this.entries.push(entry);\n    this.emit(\"added\", entry);\n    return copy(entry);\n  }\n\n  rename(id: number, label: string): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (typeof label !== \"string\" || label.trim() === \"\") throw new TypeError(\"Invalid label\");\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    this.entries[index].label = label.trim();\n    this.emit(\"renamed\", this.entries[index]);\n    return copy(this.entries[index]);\n  }\n\n  remove(id: number): boolean {\n    const index = this.indexOf(id);\n    if (index < 0) return false;\n    const [entry] = this.entries.splice(index, 1);\n    this.emit(\"removed\", entry);\n    return true;\n  }\n\n  promote(id: number): ReleaseEntry {\n    const index = this.indexOf(id);\n    if (index < 0) throw new RangeError(\"Entry not found\");\n    const [entry] = this.entries.splice(index, 1);\n    this.entries.unshift(entry);\n    this.emit(\"promoted\", entry);\n    return copy(entry);\n  }\n\n  snapshot(): ReleaseEntry[] {\n    return this.entries.map(copy);\n  }\n}\n",
+  "code_sha256": "61b09bd9494b92340be8f13698d97f97c0752dbb97721183f8821fe93e9d263d",
+  "evidence_sha256": "0a534e113f1f01f78be410b470cd86f0d17040644f2a019567e92c9e7e12755e",
+  "label": "reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "7b3ee535b71d9f20961285b81a1cfb10e17f74d166eddb51ce601f3fbbd46b07",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 2205,
+    "exit_codes": [
+      0,
+      0,
+      1
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "/work/solution.test.js:10\n        throw new Error(message + ': expected ' + JSON.stringify(expected) + ', got ' + JSON.stringify(actual));\n        ^\n\nError: listeners run in order and receive independent event copies: expected [\"first:added:1\",\"second:added:One\"], got [\"first:added:1\",\"second:added:listener mutation\"]\n    at equal (/work/solution.test.js:10:15)\n    at Object.<anonymous> (/work/solution.test.js:52:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "03a7fcf7c28f86bdc40652b1d8b8b0d0135ff50dbdd13ccc700fa187b489a294",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

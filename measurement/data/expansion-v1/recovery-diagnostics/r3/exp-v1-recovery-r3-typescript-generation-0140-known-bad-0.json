@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "38a983ad3ee9e84b8872824ca7a4affa879218f49cf8db385cb309a094213e5b",
+  "code": "export type InlinePart =\n  | { readonly type: \"text\"; readonly text: string }\n  | { readonly type: \"note\" | \"warning\" | \"key\"; readonly text: string }\n  | { readonly type: \"route\"; readonly text: string; readonly target: string };\n\nfunction unescapeText(value: string): string {\n  let output = \"\";\n  for (let i = 0; i < value.length; i += 1) {\n    if (value[i] === \"\\\\\" && i + 1 < value.length) {\n      output += value[++i];\n    } else {\n      output += value[i];\n    }\n  }\n  return output;\n}\n\nfunction separatorIndex(value: string): number {\n  for (let i = 0; i < value.length; i += 1) {\n    if (value[i] === \"\\\\\") {\n      i += 1;\n    } else if (value[i] === \"|\") {\n      return i;\n    }\n  }\n  return -1;\n}\n\nexport function decodeInlineNotes(input: string): InlinePart[] {\n  const result: InlinePart[] = [];\n  let plain = \"\";\n  const flush = (): void => {\n    if (plain.length > 0) {\n      result.push({ type: \"text\", text: plain });\n      plain = \"\";\n    }\n  };\n\n  for (let i = 0; i < input.length; ) {\n    if (input[i] === \"\\\\\") {\n      if (i + 1 < input.length) plain += input[++i];\n      else plain += \"\\\\\";\n      i += 1;\n      continue;\n    }\n    if (!input.startsWith(\"{{\", i)) {\n      plain += input[i++];\n      continue;\n    }\n\n    let end = i + 2;\n    while (end < input.length && !input.startsWith(\"}}\", end)) {\n      if (input[end] === \"\\\\\" && end + 1 < input.length) end += 2;\n      else end += 1;\n    }\n    if (end >= input.length) {\n      plain += input.slice(i);\n      break;\n    }\n\n    const raw = input.slice(i + 2, end);\n    const colon = raw.indexOf(\":\");\n    const tag = colon < 0 ? \"\" : raw.slice(0, colon);\n    const payload = colon < 0 ? \"\" : raw.slice(colon + 1);\n    if (tag === \"note\" || tag === \"warning\" || tag === \"key\") {\n      flush();\n      result.push({ type: tag, text: unescapeText(payload) });\n    } else if (tag === \"route\") {\n      const split = separatorIndex(payload);\n      if (split < 0) {\n        plain += input.slice(i, end + 2);\n      } else {\n        flush();\n        result.push({\n          type: \"route\",\n          text: unescapeText(payload.slice(0, split)),\n          target: unescapeText(payload.slice(split + 1)),\n        });\n      }\n    } else {\n      plain += input.slice(i, end + 2);\n    }\n    i = end + 2;\n  }\n  flush();\n  return result;\n}\n",
+  "code_sha256": "b574373092cc0a3d7fe2d2b20d56d24df02fd3ffa04a1cc1e21701f6e871b2f1",
+  "evidence_sha256": "20209bb7289887da710d651d41957e450719aa8c60476754f61c00a45222b506",
+  "label": "known-bad-0",
+  "outcome": "passed",
+  "parent_candidate_sha256": "5976749982cdc0eb63e76fd8a67cbf718937eb92553d255e658bbbe2a0e0c254",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 2471,
+    "exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

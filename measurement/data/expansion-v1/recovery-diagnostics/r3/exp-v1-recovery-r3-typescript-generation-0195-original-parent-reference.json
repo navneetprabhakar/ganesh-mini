@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "c5063f9da357f9fb2f3ea81dfb2444bd683f0c690fc7bdf87344af7b2432e057",
+  "code": "export interface Workshop { id: number; title: string; roomCode: string; }\nexport interface WorkshopRow { key: string; label: string; room: string; }\nexport interface WorkshopFilter { text: string; room: string | null; }\nexport type WorkshopLoader = () => Promise<readonly Workshop[]>;\nexport type WorkshopMapper = (workshop: Workshop) => WorkshopRow;\nexport type AddWorkshopDialog = () => Promise<boolean>;\nexport type ErrorReporter = (error: unknown) => void;\n\nexport class WorkshopToolbar {\n  private rows: WorkshopRow[] = [];\n  private readonly listeners: Array<(filter: WorkshopFilter) => void> = [];\n\n  constructor(\n    private readonly loader: WorkshopLoader,\n    private readonly mapper: WorkshopMapper,\n    private readonly dialog: AddWorkshopDialog,\n    private readonly reportError: ErrorReporter,\n  ) {}\n\n  subscribe(listener: (filter: WorkshopFilter) => void): () => void {\n    this.listeners.push(listener);\n    let active = true;\n    return () => {\n      if (!active) return;\n      active = false;\n      const index = this.listeners.indexOf(listener);\n      if (index >= 0) this.listeners.splice(index, 1);\n    };\n  }\n\n  emitFilter(filter: WorkshopFilter): void {\n    for (const listener of [...this.listeners]) listener({ ...filter });\n  }\n\n  getRows(): WorkshopRow[] {\n    return this.rows.map(row => ({ ...row }));\n  }\n\n  async initialize(): Promise<boolean> {\n    try {\n      const workshops = await this.loader();\n      const next = workshops.map(workshop => ({ ...this.mapper({ ...workshop }) }));\n      this.rows = next;\n      return true;\n    } catch (error) {\n      this.reportError(error);\n      return false;\n    }\n  }\n\n  async openAddDialog(): Promise<boolean> {\n    try {\n      if (!(await this.dialog())) return false;\n    } catch (error) {\n      this.reportError(error);\n      return false;\n    }\n    if (!(await this.initialize())) return false;\n    this.emitFilter({ text: \"\", room: null });\n    return true;\n  }\n}\n",
+  "code_sha256": "129530f486259e63e1650fec3f6d9e23244547f6b265083ca394107f6fdebc45",
+  "evidence_sha256": "52736297402476dcb72b3623af30855fcde1cc8e7bf46de43b698cc0cec415fa",
+  "label": "original-parent-reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "a444a2a07bc33b41345d07ad74e227cc356b14932cce66a05ca33ba767ad634e",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 2263,
+    "exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

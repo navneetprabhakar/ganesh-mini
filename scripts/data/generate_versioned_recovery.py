@@ -138,7 +138,18 @@ def generate(plan: dict, parents: dict, config: dict, binary: str, directory: Pa
                 raise ValueError("reference-only repair changed the frozen problem")
             if row["task_type"] == "repair" and item["known_bad_code"].strip() not in item["problem"]:
                 raise ValueError("repair problem does not embed its known-bad source")
-        payload = call(TEST_SCHEMA, test_prompt(lane, architecture), "recovery-independent-tests")
+        prompt = test_prompt(lane, architecture) + """
+Derive adversarial tests from the supplied specifications, not only happy paths.
+For each applicable explicit requirement, exercise boundary values and interacting
+state transitions: logical maximum integer limits using tiny physical inputs,
+empty versus blank strings, allowed collection implementations, key identity,
+duplicate subscriptions and removal order, required-field copy isolation,
+validation before early return, callback failures and transaction atomicity.
+Do not add domains, exception subtypes, private layouts, per-listener isolation,
+or normalization rules that the specification does not promise. Tests must compile
+under the stated runtime; tests are not permission to narrow valid inputs.
+"""
+        payload = call(TEST_SCHEMA, prompt, "recovery-independent-tests")
         tests = exact_items(payload, ids, {"id", "test_code"})
         for row, item, test in zip(rows, architecture, tests, strict=True):
             source = copy.deepcopy(row["parent_source"])

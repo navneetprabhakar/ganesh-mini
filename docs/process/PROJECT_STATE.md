@@ -26,8 +26,8 @@ scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through2251 holds including Rust positions1–270 and five probes.
-See QUALITY_RUST270_2251_BACKUP.md. JS elementary queue200:76 already held;
+GCS verified through2273 holds including Rust positions1–330 and five probes.
+See QUALITY_RUST330_2273_BACKUP.md. JS elementary queue200:76 already held;
 unheld124/124 reconciled with60 new holds and64 criterion positives. JS outside
 scope complete and backed up. TypeScript queue262:107 initially held;
 unheld155/155 reconciled:57 new holds and98 criterion positives. TypeScript outside
@@ -35,8 +35,8 @@ elementary scope complete; batches1–5 and four diagnostic probes are GCS verif
 Rust elementary queue1006 is now frozen:64 prior-held exclusions and942 requiring
 criterion reconciliation. First330 reconciled:127 holds,203 scoped positives.
 150 first-time repair inspections add unique coverage. Continue unheld331.
-Rust through270 and all five diagnostic probes are GCS verified.
-Positions271–330 await the next GCS backup; frozen originals unchanged.
+Rust through330 and all five diagnostic probes are GCS verified.
+Archive and receipt passed exact-generation byte comparison; originals unchanged.
 Repair0171 has a static empty-envelope credential-collision contract hold;
 no new executed failure claimed. See RUST_ELEMENTARY_REVIEW_11.md.
 Recovery tooling preflight read: existing rejection-repair script cannot directly

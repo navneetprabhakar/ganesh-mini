@@ -4,8 +4,8 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Current checkpoint: **2304 holds (2301 additive plus historical three)**;
-4,983 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **2505 holds (2502 additive plus historical three)**;
+5,222 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 165 positive, 135 held. By lane: Go 39/17,
 Java 29/31, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v2.json.
@@ -26,18 +26,18 @@ scopes: JS repair200, Python993, Rust1006, TS generation262 (overlap prior
 semantic inspections; these are not additive unique-record counts). Python
 numeric scope1110 must be reconciled with prior numeric evidence.
 
-GCS verified through2287 holds including Rust positions1–360 and seven probes.
-See QUALITY_RUST360_2287_BACKUP.md. JS elementary queue200:76 already held;
+GCS verified through2505 holds including Rust positions1–942 and ten probes.
+See QUALITY_RUST942_2505_BACKUP.md. JS elementary queue200:76 already held;
 unheld124/124 reconciled with60 new holds and64 criterion positives. JS outside
 scope complete and backed up. TypeScript queue262:107 initially held;
 unheld155/155 reconciled:57 new holds and98 criterion positives. TypeScript outside
 elementary scope complete; batches1–5 and four diagnostic probes are GCS verified.
 Rust elementary queue1006 is now frozen:64 prior-held exclusions and942 requiring
-criterion reconciliation. First390 reconciled:158 holds,232 scoped positives.
-184 first-time repair inspections add unique coverage. Continue unheld391.
-Rust through360 and all seven diagnostic probes are GCS verified.
+criterion reconciliation. All942 reconciled:359 holds,583 scoped positives.
+423 first-time repair inspections add unique coverage. Rust scope complete.
+Rust through942 and all ten diagnostic probes are GCS verified.
 Archive and receipt passed exact-generation byte comparison; originals unchanged.
-Positions361–390 and canvas0215 probe await GCS backup; earlier evidence verified.
+Rust scope and two new numeric probes are backed up; Python drafts remain pending.
 Canvas0215 public-width change panics on valid coordinate: compile0/test101.
 Generation0322 checksum overflow is static only; no large allocation executed.
 Repair0181 returned origin0 outside half-open range; repair0186 returned zero
@@ -58,7 +58,7 @@ see JAVA_RECOVERY_PROBES_20260907.md. Both compile, then fail assertions/runtime
 Earlier evidence has exact-generation roundtrip proof. Frozen inputs unchanged.
 Prior page arithmetic reconciled; generation0716 eager-allocation hold added.
 See JAVA_PAGE_RECONCILIATION_20260907.md. Cross-lane scopes remain open.
-At most3581 rows remain outside holds, below the planned4000 lower bound.
+At most3380 rows remain outside holds, below the planned4000 lower bound.
 The user approved versioned recovery to address this shortfall without lowering
 quality gates. See CORPUS_SUFFICIENCY_PAUSE_20260907.md for the resolved pause.
 No training seal or new VM. Complete review, then recover suitable held examples

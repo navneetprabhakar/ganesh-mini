@@ -4,8 +4,8 @@ Last updated: 2026-09-06
 
 ## Current gate
 
-Current checkpoint: **2245 holds (2242 additive plus historical three)**;
-4,916 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **2251 holds (2248 additive plus historical three)**;
+4,920 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 165 positive, 135 held. By lane: Go 39/17,
 Java 29/31, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v2.json.
@@ -33,10 +33,10 @@ scope complete and backed up. TypeScript queue262:107 initially held;
 unheld155/155 reconciled:57 new holds and98 criterion positives. TypeScript outside
 elementary scope complete; batches1–5 and four diagnostic probes are GCS verified.
 Rust elementary queue1006 is now frozen:64 prior-held exclusions and942 requiring
-criterion reconciliation. First255 reconciled:99 holds,156 scoped positives.
-117 first-time repair inspections add unique coverage. Continue unheld256.
+criterion reconciliation. First270 reconciled:105 holds,165 scoped positives.
+121 first-time repair inspections add unique coverage. Continue unheld271.
 Rust through225 and repair0102/0110/0113 failures are GCS verified.
-Positions226–255 await the next GCS backup; frozen originals unchanged.
+Positions226–270 await the next GCS backup; frozen originals unchanged.
 Recovery tooling preflight read: existing rejection-repair script cannot directly
 process semantic holds or supply new candidate identities; see
 RECOVERY_TOOLING_PREFLIGHT_20260908.md. No recovery/training was launched.
@@ -50,7 +50,7 @@ see JAVA_RECOVERY_PROBES_20260907.md. Both compile, then fail assertions/runtime
 Earlier evidence has exact-generation roundtrip proof. Frozen inputs unchanged.
 Prior page arithmetic reconciled; generation0716 eager-allocation hold added.
 See JAVA_PAGE_RECONCILIATION_20260907.md. Cross-lane scopes remain open.
-At most3640 rows remain outside holds, below the planned4000 lower bound.
+At most3634 rows remain outside holds, below the planned4000 lower bound.
 The user approved versioned recovery to address this shortfall without lowering
 quality gates. See CORPUS_SUFFICIENCY_PAUSE_20260907.md for the resolved pause.
 No training seal or new VM. Complete review, then recover suitable held examples

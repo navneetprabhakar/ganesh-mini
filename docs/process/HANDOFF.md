@@ -1,5 +1,29 @@
 # Ganesh Mini 1.0 handoff
 
+## Legacy criteria adjudicated — 2026-09-08
+
+Current checkpoint supersedes older counts: **2748 holds** (2745 additive plus
+three historical); maximum3137 original unheld rows. At least863 recoveries
+needed before further exclusions and family-token balancing. The57 targeted
+adjudications (52 scoped questions plus5 explicit out-of-membership caveats)
+resolve27 holds and30 scoped positives, zero pending among those57.
+Unique outside inspections5222 and sample165positive/135held unchanged.
+See legacy-final-adjudication-20260908.json and LEGACY_FINAL_INTEGRATION_20260908.md.
+Four Python Mapping witnesses executed: each exit1 without timeout; remaining
+new findings are static only. No admission seal or training/VM launch.
+Scope delta frozen in final-systematic-delta-queue-v1.json:357 affected IDs,
+176 already held,181 survivors/326 criterion obligations. No new unique scope.
+Active: rust391_420 TS36 C; rust421_450 JS positions1–73 C/J;
+rust451_480 JS positions74–145 C/J. Filter frozen prior_held false and lane,
+not changing current holds. Main integrates isolated FINAL_DELTA_* notes.
+Do not silently treat prior per-ID coverage as closure of a newly expanded
+criterion. Then versioned recovery implementation and fresh admission checks.
+Training/release estimates50%/35%; overall ETA not grounded until recovery yield
+and pilot throughput. No new authority needed for current in-scope work.
+2748 checkpoint archive and receipt exact-generation byte comparisons passed;
+see QUALITY_LEGACY57_2748_BACKUP.md. Scope delta/queue postdate that archive
+and are preserved in the repository pending next batched GCS checkpoint.
+
 ## Python reconciliation complete — 2026-09-08
 
 Current canonical checkpoint supersedes older counts below: **2721 holds**

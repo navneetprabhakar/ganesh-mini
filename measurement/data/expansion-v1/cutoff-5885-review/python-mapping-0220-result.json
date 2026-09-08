@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0220",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "bca2cf2f83b29f86f9b5cd86f07a8256cccca0fabb12438d232066376f9212ce",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from types import MappingProxyType\nfrom solution import DocumentActivator\nx = DocumentActivator(MappingProxyType({'doc': {'sections': ['x']}}))\nassert x.activate('doc').value == {'sections': ['x']}\n",
+        "sha256": "492613d5a4e51342bf6147c687d46cb9690c2531e419f72bc40c4b8db9b7aa44"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "748e621fffc1d90382d20631555e690bdcd7685666e988bc04c4ab8f1e82bc46",
+      "text": "Create `solution.py` implementing an in-memory document activation service.\n\nPublic classes:\n\n- `Outcome(ok=False, value=None, error=None)` exposes those attributes.\n- `DocumentActivator(documents=None)` accepts a mapping from names to document dictionaries. It must deep-copy that mapping on construction and expose `recent`, initially an empty list.\n- `exists(name)` returns whether `name` is a string key in the stored mapping.\n- `load(outcome, name)` updates and returns the same `outcome` object. Missing names produce `ok=False`, `value=None`, and `error=\"document not found\"`. A stored document with truthy `broken` produces error `\"document cannot be loaded\"`. Otherwise, `value` becomes a deep copy of the document, `ok=True`, and `error=None`.\n- `initialize(outcome, document)` updates and returns the same `outcome`. If `document.get(\"sections\")` is not a nonempty list of strings, set failure with error `\"invalid sections\"` and value `None`. Otherwise, set success with a deep copy of `document` as value.\n- `activate(name, remember=True)` creates an `Outcome`, loads then initializes the document, stopping on failure. On success, append `name` to `recent` only when `remember` is true and `name` is not already present. Return the outcome.\n\nCaller-owned inputs and returned document values must never alias internal document dictionaries or lists. `load` and `initialize` must preserve the identity of the supplied `Outcome`. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "748e621fffc1d90382d20631555e690bdcd7685666e988bc04c4ab8f1e82bc46",
+      "text": "Create `solution.py` implementing an in-memory document activation service.\n\nPublic classes:\n\n- `Outcome(ok=False, value=None, error=None)` exposes those attributes.\n- `DocumentActivator(documents=None)` accepts a mapping from names to document dictionaries. It must deep-copy that mapping on construction and expose `recent`, initially an empty list.\n- `exists(name)` returns whether `name` is a string key in the stored mapping.\n- `load(outcome, name)` updates and returns the same `outcome` object. Missing names produce `ok=False`, `value=None`, and `error=\"document not found\"`. A stored document with truthy `broken` produces error `\"document cannot be loaded\"`. Otherwise, `value` becomes a deep copy of the document, `ok=True`, and `error=None`.\n- `initialize(outcome, document)` updates and returns the same `outcome`. If `document.get(\"sections\")` is not a nonempty list of strings, set failure with error `\"invalid sections\"` and value `None`. Otherwise, set success with a deep copy of `document` as value.\n- `activate(name, remember=True)` creates an `Outcome`, loads then initializes the document, stopping on failure. On success, append `name` to `recent` only when `remember` is true and `name` is not already present. Return the outcome.\n\nCaller-owned inputs and returned document values must never alias internal document dictionaries or lists. `load` and `initialize` must preserve the identity of the supplied `Outcome`. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0220",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass Outcome:\n    def __init__(self, ok=False, value=None, error=None):\n        self.ok = ok\n        self.value = value\n        self.error = error\n\n\nclass DocumentActivator:\n    def __init__(self, documents=None):\n        self._documents = deepcopy({} if documents is None else documents)\n        self.recent = []\n\n    def exists(self, name):\n        return isinstance(name, str) and name in self._documents\n\n    def load(self, outcome, name):\n        if not self.exists(name):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document not found\"\n        elif self._documents[name].get(\"broken\"):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document cannot be loaded\"\n        else:\n            outcome.ok = True\n            outcome.value = deepcopy(self._documents[name])\n            outcome.error = None\n        return outcome\n\n    def initialize(self, outcome, document):\n        sections = document.get(\"sections\")\n        valid = (isinstance(sections, list) and bool(sections)\n                 and all(isinstance(section, str) for section in sections))\n        if not valid:\n            outcome.ok, outcome.value, outcome.error = False, None, \"invalid sections\"\n        else:\n            outcome.ok, outcome.value, outcome.error = True, deepcopy(document), None\n        return outcome\n\n    def activate(self, name, remember=True):\n        outcome = self.load(Outcome(), name)\n        if not outcome.ok:\n            return outcome\n        outcome = self.initialize(outcome, outcome.value)\n        if outcome.ok and not remember and name not in self.recent:\n            self.recent.append(name)\n        return outcome\n",
+          "label": "Reverses the meaning of `remember`, recording names only when remembering is disabled.",
+          "sha256": "1c0a0d6939741e6b01d89efb30d5fee8875c35e4c8b0c8947cb45b4856d487cf"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass Outcome:\n    def __init__(self, ok=False, value=None, error=None):\n        self.ok = ok\n        self.value = value\n        self.error = error\n\n\nclass DocumentActivator:\n    def __init__(self, documents=None):\n        self._documents = deepcopy({} if documents is None else documents)\n        self.recent = []\n\n    def exists(self, name):\n        return isinstance(name, str) and name in self._documents\n\n    def load(self, outcome, name):\n        if not self.exists(name):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document not found\"\n        elif self._documents[name].get(\"broken\"):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document cannot be loaded\"\n        else:\n            outcome.ok = True\n            outcome.value = deepcopy(self._documents[name])\n            outcome.error = None\n        return outcome\n\n    def initialize(self, outcome, document):\n        sections = document.get(\"sections\")\n        valid = (isinstance(sections, list) and bool(sections)\n                 and all(isinstance(section, str) for section in sections))\n        if not valid:\n            outcome.ok, outcome.value, outcome.error = False, None, \"invalid sections\"\n        else:\n            outcome.ok, outcome.value, outcome.error = True, deepcopy(document), None\n        return outcome\n\n    def activate(self, name, remember=True):\n        outcome = self.load(Outcome(), name)\n        if not outcome.ok:\n            return outcome\n        outcome = self.initialize(outcome, outcome.value)\n        if outcome.ok and remember and name not in self.recent:\n            self.recent.append(name)\n        return outcome\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a30330fedbd0794e0a45553fc9d9492383cfd7e3de0045a16337dcda97696d32"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\n\nfrom solution import DocumentActivator, Outcome\n\n\nclass DocumentActivatorTests(unittest.TestCase):\n    def test_outcome_defaults_and_attributes(self):\n        outcome = Outcome()\n        self.assertIs(outcome.ok, False)\n        self.assertIsNone(outcome.value)\n        self.assertIsNone(outcome.error)\n        custom = Outcome(True, {\"x\": 1}, \"error\")\n        self.assertTrue(custom.ok)\n        self.assertEqual(custom.value, {\"x\": 1})\n        self.assertEqual(custom.error, \"error\")\n\n    def test_exists_and_initial_recent(self):\n        activator = DocumentActivator({\"guide\": {\"sections\": [\"intro\"]}})\n        self.assertEqual(activator.recent, [])\n        self.assertTrue(activator.exists(\"guide\"))\n        self.assertFalse(activator.exists(\"missing\"))\n        self.assertFalse(activator.exists(None))\n        self.assertFalse(activator.exists(1))\n\n    def test_constructor_deep_copies_documents(self):\n        source = {\"guide\": {\"sections\": [\"intro\"], \"meta\": {\"version\": 1}}}\n        activator = DocumentActivator(source)\n        source[\"guide\"][\"sections\"].append(\"changed\")\n        source[\"guide\"][\"meta\"][\"version\"] = 9\n        source[\"new\"] = {\"sections\": [\"new\"]}\n        result = activator.activate(\"guide\")\n        self.assertTrue(result.ok)\n        self.assertEqual(result.value, {\"sections\": [\"intro\"], \"meta\": {\"version\": 1}})\n        self.assertFalse(activator.exists(\"new\"))\n\n    def test_load_missing_updates_same_outcome(self):\n        activator = DocumentActivator()\n        outcome = Outcome(True, \"stale\", \"stale error\")\n        returned = activator.load(outcome, \"missing\")\n        self.assertIs(returned, outcome)\n        self.assertIs(outcome.ok, False)\n        self.assertIsNone(outcome.value)\n        self.assertEqual(outcome.error, \"document not found\")\n\n    def test_load_broken_document(self):\n        activator = DocumentActivator({\"bad\": {\"broken\": 1, \"sections\": [\"x\"]}})\n        outcome = Outcome(True, \"stale\", None)\n        self.assertIs(activator.load(outcome, \"bad\"), outcome)\n        self.assertFalse(outcome.ok)\n        self.assertIsNone(outcome.value)\n        self.assertEqual(outcome.error, \"document cannot be loaded\")\n\n    def test_successful_load_is_deep_copy_and_preserves_outcome_identity(self):\n        activator = DocumentActivator({\"doc\": {\"sections\": [\"a\"], \"nested\": {\"x\": []}}})\n        outcome = Outcome()\n        self.assertIs(activator.load(outcome, \"doc\"), outcome)\n        self.assertTrue(outcome.ok)\n        self.assertIsNone(outcome.error)\n        outcome.value[\"sections\"].append(\"mutated\")\n        outcome.value[\"nested\"][\"x\"].append(1)\n        second = activator.load(Outcome(), \"doc\")\n        self.assertEqual(second.value, {\"sections\": [\"a\"], \"nested\": {\"x\": []}})\n\n    def test_initialize_validation_and_identity(self):\n        activator = DocumentActivator()\n        invalid_documents = ({}, {\"sections\": None}, {\"sections\": []}, {\"sections\": \"a\"}, {\"sections\": [\"a\", 2]})\n        for document in invalid_documents:\n            with self.subTest(document=document):\n                outcome = Outcome(True, \"stale\", None)\n                self.assertIs(activator.initialize(outcome, document), outcome)\n                self.assertFalse(outcome.ok)\n                self.assertIsNone(outcome.value)\n                self.assertEqual(outcome.error, \"invalid sections\")\n\n    def test_initialize_success_deep_copies_caller_document(self):\n        activator = DocumentActivator()\n        document = {\"sections\": [\"\"], \"meta\": {\"tags\": [\"x\"]}}\n        outcome = Outcome()\n        self.assertIs(activator.initialize(outcome, document), outcome)\n        self.assertTrue(outcome.ok)\n        self.assertIsNone(outcome.error)\n        self.assertEqual(outcome.value, document)\n        self.assertIsNot(outcome.value, document)\n        self.assertIsNot(outcome.value[\"sections\"], document[\"sections\"])\n        document[\"meta\"][\"tags\"].append(\"changed\")\n        self.assertEqual(outcome.value[\"meta\"][\"tags\"], [\"x\"])\n\n    def test_activate_stops_on_failure_and_manages_recent(self):\n        activator = DocumentActivator({\n            \"good\": {\"sections\": [\"one\"]},\n            \"invalid\": {\"sections\": []},\n            \"broken\": {\"broken\": True, \"sections\": [\"one\"]},\n        })\n        self.assertEqual(activator.activate(\"missing\").error, \"document not found\")\n        self.assertEqual(activator.activate(\"broken\").error, \"document cannot be loaded\")\n        self.assertEqual(activator.activate(\"invalid\").error, \"invalid sections\")\n        self.assertEqual(activator.recent, [])\n        self.assertTrue(activator.activate(\"good\", remember=False).ok)\n        self.assertEqual(activator.recent, [])\n        self.assertTrue(activator.activate(\"good\").ok)\n        self.assertTrue(activator.activate(\"good\").ok)\n        self.assertEqual(activator.recent, [\"good\"])\n\n    def test_activate_returns_values_independent_of_internal_documents(self):\n        activator = DocumentActivator({\"doc\": {\"sections\": [\"original\"]}})\n        first = activator.activate(\"doc\")\n        first.value[\"sections\"][0] = \"changed\"\n        second = activator.activate(\"doc\")\n        self.assertEqual(second.value, {\"sections\": [\"original\"]})\n        self.assertIsNot(first, second)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "cae47c8c8da170a958a6d3e7753238f907b92b6f4f26bafeaf37b1ae743fe3ea"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "748e621fffc1d90382d20631555e690bdcd7685666e988bc04c4ab8f1e82bc46",
+      "text": "Create `solution.py` implementing an in-memory document activation service.\n\nPublic classes:\n\n- `Outcome(ok=False, value=None, error=None)` exposes those attributes.\n- `DocumentActivator(documents=None)` accepts a mapping from names to document dictionaries. It must deep-copy that mapping on construction and expose `recent`, initially an empty list.\n- `exists(name)` returns whether `name` is a string key in the stored mapping.\n- `load(outcome, name)` updates and returns the same `outcome` object. Missing names produce `ok=False`, `value=None`, and `error=\"document not found\"`. A stored document with truthy `broken` produces error `\"document cannot be loaded\"`. Otherwise, `value` becomes a deep copy of the document, `ok=True`, and `error=None`.\n- `initialize(outcome, document)` updates and returns the same `outcome`. If `document.get(\"sections\")` is not a nonempty list of strings, set failure with error `\"invalid sections\"` and value `None`. Otherwise, set success with a deep copy of `document` as value.\n- `activate(name, remember=True)` creates an `Outcome`, loads then initializes the document, stopping on failure. On success, append `name` to `recent` only when `remember` is true and `name` is not already present. Return the outcome.\n\nCaller-owned inputs and returned document values must never alias internal document dictionaries or lists. `load` and `initialize` must preserve the identity of the supplied `Outcome`. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "748e621fffc1d90382d20631555e690bdcd7685666e988bc04c4ab8f1e82bc46",
+      "text": "Create `solution.py` implementing an in-memory document activation service.\n\nPublic classes:\n\n- `Outcome(ok=False, value=None, error=None)` exposes those attributes.\n- `DocumentActivator(documents=None)` accepts a mapping from names to document dictionaries. It must deep-copy that mapping on construction and expose `recent`, initially an empty list.\n- `exists(name)` returns whether `name` is a string key in the stored mapping.\n- `load(outcome, name)` updates and returns the same `outcome` object. Missing names produce `ok=False`, `value=None`, and `error=\"document not found\"`. A stored document with truthy `broken` produces error `\"document cannot be loaded\"`. Otherwise, `value` becomes a deep copy of the document, `ok=True`, and `error=None`.\n- `initialize(outcome, document)` updates and returns the same `outcome`. If `document.get(\"sections\")` is not a nonempty list of strings, set failure with error `\"invalid sections\"` and value `None`. Otherwise, set success with a deep copy of `document` as value.\n- `activate(name, remember=True)` creates an `Outcome`, loads then initializes the document, stopping on failure. On success, append `name` to `recent` only when `remember` is true and `name` is not already present. Return the outcome.\n\nCaller-owned inputs and returned document values must never alias internal document dictionaries or lists. `load` and `initialize` must preserve the identity of the supplied `Outcome`. Provide a new implementation as one complete source file.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0220",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\n\n\nclass Outcome:\n    def __init__(self, ok=False, value=None, error=None):\n        self.ok = ok\n        self.value = value\n        self.error = error\n\n\nclass DocumentActivator:\n    def __init__(self, documents=None):\n        self._documents = deepcopy({} if documents is None else documents)\n        self.recent = []\n\n    def exists(self, name):\n        return isinstance(name, str) and name in self._documents\n\n    def load(self, outcome, name):\n        if not self.exists(name):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document not found\"\n        elif self._documents[name].get(\"broken\"):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document cannot be loaded\"\n        else:\n            outcome.ok = True\n            outcome.value = deepcopy(self._documents[name])\n            outcome.error = None\n        return outcome\n\n    def initialize(self, outcome, document):\n        sections = document.get(\"sections\")\n        valid = (isinstance(sections, list) and bool(sections)\n                 and all(isinstance(section, str) for section in sections))\n        if not valid:\n            outcome.ok, outcome.value, outcome.error = False, None, \"invalid sections\"\n        else:\n            outcome.ok, outcome.value, outcome.error = True, deepcopy(document), None\n        return outcome\n\n    def activate(self, name, remember=True):\n        outcome = self.load(Outcome(), name)\n        if not outcome.ok:\n            return outcome\n        outcome = self.initialize(outcome, outcome.value)\n        if outcome.ok and not remember and name not in self.recent:\n            self.recent.append(name)\n        return outcome\n",
+          "label": "Reverses the meaning of `remember`, recording names only when remembering is disabled.",
+          "sha256": "1c0a0d6939741e6b01d89efb30d5fee8875c35e4c8b0c8947cb45b4856d487cf"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\n\n\nclass Outcome:\n    def __init__(self, ok=False, value=None, error=None):\n        self.ok = ok\n        self.value = value\n        self.error = error\n\n\nclass DocumentActivator:\n    def __init__(self, documents=None):\n        self._documents = deepcopy({} if documents is None else documents)\n        self.recent = []\n\n    def exists(self, name):\n        return isinstance(name, str) and name in self._documents\n\n    def load(self, outcome, name):\n        if not self.exists(name):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document not found\"\n        elif self._documents[name].get(\"broken\"):\n            outcome.ok, outcome.value, outcome.error = False, None, \"document cannot be loaded\"\n        else:\n            outcome.ok = True\n            outcome.value = deepcopy(self._documents[name])\n            outcome.error = None\n        return outcome\n\n    def initialize(self, outcome, document):\n        sections = document.get(\"sections\")\n        valid = (isinstance(sections, list) and bool(sections)\n                 and all(isinstance(section, str) for section in sections))\n        if not valid:\n            outcome.ok, outcome.value, outcome.error = False, None, \"invalid sections\"\n        else:\n            outcome.ok, outcome.value, outcome.error = True, deepcopy(document), None\n        return outcome\n\n    def activate(self, name, remember=True):\n        outcome = self.load(Outcome(), name)\n        if not outcome.ok:\n            return outcome\n        outcome = self.initialize(outcome, outcome.value)\n        if outcome.ok and remember and name not in self.recent:\n            self.recent.append(name)\n        return outcome\n",
+        "label": "codex-teacher-reference",
+        "sha256": "a30330fedbd0794e0a45553fc9d9492383cfd7e3de0045a16337dcda97696d32"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 3, in <module>\n    x = DocumentActivator(MappingProxyType({'doc': {'sections': ['x']}}))\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 13, in __init__\n    self._documents = deepcopy({} if documents is None else documents)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n",
+    "stderr_sha256": "b53da3c368c9432102f72f6add2ab5ddc6e75e8253cf685d0d426a59e478c82c",
+    "duration_ms": 494,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

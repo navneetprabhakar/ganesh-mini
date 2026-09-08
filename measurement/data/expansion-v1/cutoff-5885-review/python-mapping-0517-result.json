@@ -1,0 +1,127 @@
+{
+  "id": "exp-v1-python-generation-0517",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "05afcd1e6831356400649b9e287629fdc3016e152134d58ab70a83652eb58c93",
+  "task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "path": "test_solution.py",
+        "role": "test",
+        "content": "from types import MappingProxyType\nfrom solution import stage_module\nassert stage_module('', 'https://example.test/', MappingProxyType({}), {}) == dict(url=None, filename=None, source=None, downloaded=False, cache={})\n",
+        "sha256": "7c63e859ef12515da3e56d433c154e80c3d2a6cdf0e6cd3a11e2361d0fa78b67"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "391cb3ebd0c7ed8fc2506d9e52941d90bca7a0502ec8f833e92edcea70854d2f",
+      "text": "In `solution.py`, implement the top-level function `stage_module(markup, page_url, cache, available)`.\n\n`markup` and `page_url` are strings. Parse `markup` as HTML and locate the first `script` element in document order whose `data-kind` attribute is exactly `entry` and whose `src` URL path ends with `.mjs`. Resolve its `src` against `page_url` using standard URL resolution. The cache key is the final path component of the resolved URL.\n\n`cache` maps cache keys to source strings. `available` maps resolved URLs to source strings that represent downloadable content. Neither input mapping may be mutated.\n\nReturn a dictionary with keys `url`, `filename`, `source`, `downloaded`, and `cache`. If no qualifying element exists, the first four values must be `None`, `None`, `None`, and `False`; return a deep copy of `cache`. If the filename is already cached, use that source and set `downloaded` to `False`. Otherwise, obtain the source from `available`, add it to the returned cache, and set `downloaded` to `True`. A missing URL in `available` must raise `KeyError` without mutating either input. Returned mutable data must not alias either input. Malformed-but-parseable HTML should follow `html.parser` recovery behavior. Non-string `markup` or `page_url` must raise `TypeError`. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "391cb3ebd0c7ed8fc2506d9e52941d90bca7a0502ec8f833e92edcea70854d2f",
+      "text": "In `solution.py`, implement the top-level function `stage_module(markup, page_url, cache, available)`.\n\n`markup` and `page_url` are strings. Parse `markup` as HTML and locate the first `script` element in document order whose `data-kind` attribute is exactly `entry` and whose `src` URL path ends with `.mjs`. Resolve its `src` against `page_url` using standard URL resolution. The cache key is the final path component of the resolved URL.\n\n`cache` maps cache keys to source strings. `available` maps resolved URLs to source strings that represent downloadable content. Neither input mapping may be mutated.\n\nReturn a dictionary with keys `url`, `filename`, `source`, `downloaded`, and `cache`. If no qualifying element exists, the first four values must be `None`, `None`, `None`, and `False`; return a deep copy of `cache`. If the filename is already cached, use that source and set `downloaded` to `False`. Otherwise, obtain the source from `available`, add it to the returned cache, and set `downloaded` to `True`. A missing URL in `available` must raise `KeyError` without mutating either input. Returned mutable data must not alias either input. Malformed-but-parseable HTML should follow `html.parser` recovery behavior. Non-string `markup` or `page_url` must raise `TypeError`. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-python-generation-0517",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom html.parser import HTMLParser\nfrom posixpath import basename\nfrom urllib.parse import urljoin, urlparse\n\n\nclass _EntryFinder(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.src = None\n\n    def handle_starttag(self, tag, attrs):\n        if self.src is not None or tag.lower() != \"script\":\n            return\n        attributes = dict(attrs)\n        src = attributes.get(\"src\")\n        if attributes.get(\"data-kind\") == \"entry\" and src:\n            if urlparse(src).path.endswith(\".mjs\"):\n                self.src = src\n\n\ndef stage_module(markup, page_url, cache, available):\n    if not isinstance(markup, str) or not isinstance(page_url, str):\n        raise TypeError(\"markup and page_url must be strings\")\n\n    finder = _EntryFinder()\n    finder.feed(markup)\n    finder.close()\n    result_cache = deepcopy(cache)\n\n    if finder.src is None:\n        return {\n            \"url\": None,\n            \"filename\": None,\n            \"source\": None,\n            \"downloaded\": False,\n            \"cache\": result_cache,\n        }\n\n    url = urljoin(page_url, finder.src)\n    filename = basename(urlparse(url).path)\n    if filename not in result_cache:\n        source = result_cache[filename]\n        downloaded = False\n    else:\n        source = deepcopy(available[url])\n        result_cache[filename] = source\n        downloaded = True\n\n    return {\n        \"url\": url,\n        \"filename\": filename,\n        \"source\": deepcopy(source),\n        \"downloaded\": downloaded,\n        \"cache\": result_cache,\n    }\n",
+          "label": "The cache-membership condition is reversed, so cache misses are read as hits and existing entries are unnecessarily replaced.",
+          "sha256": "5c2ab2ac28b5f6ee97c58710c7f497a59c43b83cce5a70ea02c6f58e07c1589a"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom html.parser import HTMLParser\nfrom posixpath import basename\nfrom urllib.parse import urljoin, urlparse\n\n\nclass _EntryFinder(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.src = None\n\n    def handle_starttag(self, tag, attrs):\n        if self.src is not None or tag.lower() != \"script\":\n            return\n        attributes = dict(attrs)\n        src = attributes.get(\"src\")\n        if attributes.get(\"data-kind\") == \"entry\" and src:\n            if urlparse(src).path.endswith(\".mjs\"):\n                self.src = src\n\n\ndef stage_module(markup, page_url, cache, available):\n    if not isinstance(markup, str) or not isinstance(page_url, str):\n        raise TypeError(\"markup and page_url must be strings\")\n\n    finder = _EntryFinder()\n    finder.feed(markup)\n    finder.close()\n    result_cache = deepcopy(cache)\n\n    if finder.src is None:\n        return {\n            \"url\": None,\n            \"filename\": None,\n            \"source\": None,\n            \"downloaded\": False,\n            \"cache\": result_cache,\n        }\n\n    url = urljoin(page_url, finder.src)\n    filename = basename(urlparse(url).path)\n    if filename in result_cache:\n        source = result_cache[filename]\n        downloaded = False\n    else:\n        source = deepcopy(available[url])\n        result_cache[filename] = source\n        downloaded = True\n\n    return {\n        \"url\": url,\n        \"filename\": filename,\n        \"source\": deepcopy(source),\n        \"downloaded\": downloaded,\n        \"cache\": result_cache,\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b9db74fbe3891f4bbb07cc7e341cf0547b570c85dd87045fcbbc9e5e62caa948"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.py",
+    "family": "python",
+    "files": [
+      {
+        "content": "import unittest\nfrom copy import deepcopy\n\nfrom solution import stage_module\n\n\nclass StageModuleTests(unittest.TestCase):\n    def test_downloads_first_qualifying_script_and_resolves_url(self):\n        markup = '''\n        <script data-kind=\"other\" src=\"ignored.mjs\"></script>\n        <script data-kind=\"entry\" src=\"legacy.js\"></script>\n        <script data-kind=\"entry\" src=\"../assets/app.mjs?rev=7#part\"></script>\n        <script data-kind=\"entry\" src=\"later.mjs\"></script>\n        '''\n        cache = {\"old.mjs\": \"old source\"}\n        available = {\n            \"https://example.test/assets/app.mjs?rev=7#part\": \"new source\",\n            \"https://example.test/docs/later.mjs\": \"later source\",\n        }\n        cache_before = deepcopy(cache)\n        available_before = deepcopy(available)\n\n        result = stage_module(markup, \"https://example.test/docs/page.html\", cache, available)\n\n        self.assertEqual(result, {\n            \"url\": \"https://example.test/assets/app.mjs?rev=7#part\",\n            \"filename\": \"app.mjs\",\n            \"source\": \"new source\",\n            \"downloaded\": True,\n            \"cache\": {\"old.mjs\": \"old source\", \"app.mjs\": \"new source\"},\n        })\n        self.assertEqual(cache, cache_before)\n        self.assertEqual(available, available_before)\n        self.assertIsNot(result[\"cache\"], cache)\n\n    def test_cached_source_takes_precedence_over_available(self):\n        cache = {\"entry.mjs\": \"cached\"}\n        available = {\"https://host.test/entry.mjs\": \"downloaded\"}\n        result = stage_module(\n            '<SCRIPT data-kind=\"entry\" src=\"/entry.mjs\"></SCRIPT>',\n            \"https://host.test/path/page\",\n            cache,\n            available,\n        )\n        self.assertEqual(result[\"source\"], \"cached\")\n        self.assertFalse(result[\"downloaded\"])\n        self.assertEqual(result[\"filename\"], \"entry.mjs\")\n        self.assertEqual(result[\"cache\"], cache)\n        self.assertIsNot(result[\"cache\"], cache)\n\n    def test_no_match_returns_independent_cache_copy(self):\n        cache = {\"x.mjs\": \"x\"}\n        result = stage_module(\n            '<script data-kind=\"Entry\" src=\"a.mjs\"></script><script data-kind=\"entry\" src=\"b.js\"></script>',\n            \"https://example.test/index.html\",\n            cache,\n            {},\n        )\n        self.assertEqual(result, {\n            \"url\": None,\n            \"filename\": None,\n            \"source\": None,\n            \"downloaded\": False,\n            \"cache\": {\"x.mjs\": \"x\"},\n        })\n        self.assertIsNot(result[\"cache\"], cache)\n\n    def test_html_parser_recovery_and_unquoted_attributes(self):\n        result = stage_module(\n            '<div><p>broken<script data-kind=entry src=modules/main.mjs>',\n            \"https://example.test/app/page.html\",\n            {},\n            {\"https://example.test/app/modules/main.mjs\": \"source\"},\n        )\n        self.assertEqual(result[\"filename\"], \"main.mjs\")\n        self.assertEqual(result[\"source\"], \"source\")\n\n    def test_query_does_not_make_non_mjs_path_qualify(self):\n        result = stage_module(\n            '<script data-kind=\"entry\" src=\"loader.js?name=fake.mjs\"></script>',\n            \"https://example.test/\",\n            {},\n            {},\n        )\n        self.assertIsNone(result[\"url\"])\n\n    def test_missing_download_raises_without_mutation(self):\n        cache = {\"existing.mjs\": \"existing\"}\n        available = {\"https://example.test/other.mjs\": \"other\"}\n        before_cache = deepcopy(cache)\n        before_available = deepcopy(available)\n        with self.assertRaises(KeyError):\n            stage_module(\n                '<script data-kind=\"entry\" src=\"missing.mjs\"></script>',\n                \"https://example.test/\",\n                cache,\n                available,\n            )\n        self.assertEqual(cache, before_cache)\n        self.assertEqual(available, before_available)\n\n    def test_non_string_markup_or_url_raises_type_error(self):\n        for markup, url in [(None, \"https://x.test/\"), (b\"<script>\", \"https://x.test/\"), (\"\", None), (\"\", 3)]:\n            with self.subTest(markup=markup, url=url):\n                with self.assertRaises(TypeError):\n                    stage_module(markup, url, {}, {})\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n",
+        "path": "test_solution.py",
+        "role": "test",
+        "sha256": "25cd785337c15942ef2f3fd9ff87762d892ce8b0b83879f069ab3051fc78cbc7"
+      }
+    ],
+    "language": "python",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "391cb3ebd0c7ed8fc2506d9e52941d90bca7a0502ec8f833e92edcea70854d2f",
+      "text": "In `solution.py`, implement the top-level function `stage_module(markup, page_url, cache, available)`.\n\n`markup` and `page_url` are strings. Parse `markup` as HTML and locate the first `script` element in document order whose `data-kind` attribute is exactly `entry` and whose `src` URL path ends with `.mjs`. Resolve its `src` against `page_url` using standard URL resolution. The cache key is the final path component of the resolved URL.\n\n`cache` maps cache keys to source strings. `available` maps resolved URLs to source strings that represent downloadable content. Neither input mapping may be mutated.\n\nReturn a dictionary with keys `url`, `filename`, `source`, `downloaded`, and `cache`. If no qualifying element exists, the first four values must be `None`, `None`, `None`, and `False`; return a deep copy of `cache`. If the filename is already cached, use that source and set `downloaded` to `False`. Otherwise, obtain the source from `available`, add it to the returned cache, and set `downloaded` to `True`. A missing URL in `available` must raise `KeyError` without mutating either input. Returned mutable data must not alias either input. Malformed-but-parseable HTML should follow `html.parser` recovery behavior. Non-string `markup` or `page_url` must raise `TypeError`. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "391cb3ebd0c7ed8fc2506d9e52941d90bca7a0502ec8f833e92edcea70854d2f",
+      "text": "In `solution.py`, implement the top-level function `stage_module(markup, page_url, cache, available)`.\n\n`markup` and `page_url` are strings. Parse `markup` as HTML and locate the first `script` element in document order whose `data-kind` attribute is exactly `entry` and whose `src` URL path ends with `.mjs`. Resolve its `src` against `page_url` using standard URL resolution. The cache key is the final path component of the resolved URL.\n\n`cache` maps cache keys to source strings. `available` maps resolved URLs to source strings that represent downloadable content. Neither input mapping may be mutated.\n\nReturn a dictionary with keys `url`, `filename`, `source`, `downloaded`, and `cache`. If no qualifying element exists, the first four values must be `None`, `None`, `None`, and `False`; return a deep copy of `cache`. If the filename is already cached, use that source and set `downloaded` to `False`. Otherwise, obtain the source from `available`, add it to the returned cache, and set `downloaded` to `True`. A missing URL in `available` must raise `KeyError` without mutating either input. Returned mutable data must not alias either input. Malformed-but-parseable HTML should follow `html.parser` recovery behavior. Non-string `markup` or `page_url` must raise `TypeError`. Use only the standard library.\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "python-3.11.15",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-python-generation-0517",
+    "task_type": "generation",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "from copy import deepcopy\nfrom html.parser import HTMLParser\nfrom posixpath import basename\nfrom urllib.parse import urljoin, urlparse\n\n\nclass _EntryFinder(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.src = None\n\n    def handle_starttag(self, tag, attrs):\n        if self.src is not None or tag.lower() != \"script\":\n            return\n        attributes = dict(attrs)\n        src = attributes.get(\"src\")\n        if attributes.get(\"data-kind\") == \"entry\" and src:\n            if urlparse(src).path.endswith(\".mjs\"):\n                self.src = src\n\n\ndef stage_module(markup, page_url, cache, available):\n    if not isinstance(markup, str) or not isinstance(page_url, str):\n        raise TypeError(\"markup and page_url must be strings\")\n\n    finder = _EntryFinder()\n    finder.feed(markup)\n    finder.close()\n    result_cache = deepcopy(cache)\n\n    if finder.src is None:\n        return {\n            \"url\": None,\n            \"filename\": None,\n            \"source\": None,\n            \"downloaded\": False,\n            \"cache\": result_cache,\n        }\n\n    url = urljoin(page_url, finder.src)\n    filename = basename(urlparse(url).path)\n    if filename not in result_cache:\n        source = result_cache[filename]\n        downloaded = False\n    else:\n        source = deepcopy(available[url])\n        result_cache[filename] = source\n        downloaded = True\n\n    return {\n        \"url\": url,\n        \"filename\": filename,\n        \"source\": deepcopy(source),\n        \"downloaded\": downloaded,\n        \"cache\": result_cache,\n    }\n",
+          "label": "The cache-membership condition is reversed, so cache misses are read as hits and existing entries are unnecessarily replaced.",
+          "sha256": "5c2ab2ac28b5f6ee97c58710c7f497a59c43b83cce5a70ea02c6f58e07c1589a"
+        }
+      ],
+      "reference": {
+        "code": "from copy import deepcopy\nfrom html.parser import HTMLParser\nfrom posixpath import basename\nfrom urllib.parse import urljoin, urlparse\n\n\nclass _EntryFinder(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.src = None\n\n    def handle_starttag(self, tag, attrs):\n        if self.src is not None or tag.lower() != \"script\":\n            return\n        attributes = dict(attrs)\n        src = attributes.get(\"src\")\n        if attributes.get(\"data-kind\") == \"entry\" and src:\n            if urlparse(src).path.endswith(\".mjs\"):\n                self.src = src\n\n\ndef stage_module(markup, page_url, cache, available):\n    if not isinstance(markup, str) or not isinstance(page_url, str):\n        raise TypeError(\"markup and page_url must be strings\")\n\n    finder = _EntryFinder()\n    finder.feed(markup)\n    finder.close()\n    result_cache = deepcopy(cache)\n\n    if finder.src is None:\n        return {\n            \"url\": None,\n            \"filename\": None,\n            \"source\": None,\n            \"downloaded\": False,\n            \"cache\": result_cache,\n        }\n\n    url = urljoin(page_url, finder.src)\n    filename = basename(urlparse(url).path)\n    if filename in result_cache:\n        source = result_cache[filename]\n        downloaded = False\n    else:\n        source = deepcopy(available[url])\n        result_cache[filename] = source\n        downloaded = True\n\n    return {\n        \"url\": url,\n        \"filename\": filename,\n        \"source\": deepcopy(source),\n        \"downloaded\": downloaded,\n        \"cache\": result_cache,\n    }\n",
+        "label": "codex-teacher-reference",
+        "sha256": "b9db74fbe3891f4bbb07cc7e341cf0547b570c85dd87045fcbbc9e5e62caa948"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "python-3.11.15",
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "exit_codes": [
+      1
+    ],
+    "timed_out": false,
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"test_solution.py\", line 3, in <module>\n    assert stage_module('', 'https://example.test/', MappingProxyType({}), {}) == dict(url=None, filename=None, source=None, downloaded=False, cache={})\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 29, in stage_module\n    result_cache = deepcopy(cache)\n                   ^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n",
+    "stderr_sha256": "bb7417c5d617b502d844da3b259573e3bd3941cf777b02935904a4c0da95feb8",
+    "duration_ms": 575,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

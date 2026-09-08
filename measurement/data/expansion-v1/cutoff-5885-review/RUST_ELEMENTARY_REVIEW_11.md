@@ -28,3 +28,31 @@ Outside unique coverage4942; corpus holds2266; sample165/135 unchanged.
 Continue initially unheld316. GCS through270; positions271–315 await backup.
 Frozen originals unchanged. Contract hold0171 is static evidence, not a test result.
 
+Continuation2026-09-08: positions316–330, seven full fresh repair inspections
+and generation0272/0273/0275 prompt/reference rereads. Seven holds and eight
+scoped positives. No new execution or admission; pending API/oracle criteria
+are explicitly retained in each affected row.
+
+| Unheld position | Candidate ID | Criterion finding |
+| --- | --- | --- |
+| 316 | exp-v1-rust-repair-0173 | Fresh full repair inspection: inclusive reach affects ordered target selection, immediate defeat exclusion, bounty accounting and transactional rollback. Criterion positive; not classified by patch size alone. |
+| 317 | exp-v1-rust-repair-0174 | Non-triviality hold: replace literal shift8 with specified shift12 in a direct bitfield decoder; trait dispatch and flags unchanged. |
+| 318 | exp-v1-rust-repair-0175 | Non-triviality hold: replace repeated Boolean bytes with explicitly specified little-endian u32 conversion beside existing integer conversions; concatenation unchanged. |
+| 319 | exp-v1-rust-repair-0176 | Non-triviality hold: replace modulo index with the explicit range guard already demonstrated by disable; direct one-bit setter and other methods unchanged. |
+| 320 | exp-v1-rust-generation-0265 | RUST_STRATUM_REVIEW_16.md documents validation before normal-state edits and nonmutating sorted rendering. Criterion positive; arbitrary public-layout corruption remains unresolved, not declared impossible. |
+| 321 | exp-v1-rust-generation-0267 | RUST_STRATUM_REVIEW_16.md documents final-address validation, inclusive empty-range endpoint and disjoint atomic exchange. Criterion positive; malformed public bank spans remain unresolved. |
+| 322 | exp-v1-rust-generation-0269 | RUST_STRATUM_REVIEW_16.md documents section-local uniqueness, first-equals parsing and physical line errors. Criterion positive; bracketed text containing equals retains unresolved grammar ambiguity. |
+| 323 | exp-v1-rust-repair-0177 | Non-triviality hold: replace ends_with with explicitly named prefix operation, already present in secondary arm. Secondary Any with absent key remains a separate contract ambiguity. |
+| 324 | exp-v1-rust-repair-0179 | Fresh full repair inspection: validate both replacement fields and uniqueness excluding self before either field changes, retaining position and atomic errors. Criterion positive; no invented corruption recovery for publicly modified records. |
+| 325 | exp-v1-rust-repair-0180 | Fresh full repair inspection: counter increment must validate before replacing the slot, preserving sequence/ordering atomically. Criterion positive only; known-bad source also duplicates Default implementations, and supplied tests do not exercise private sequence exhaustion. Behavioral mutant/oracle sufficiency remains unresolved. |
+| 326 | exp-v1-rust-generation-0272 | Non-triviality hold: direct widened scalar clamp toward zero plus zero setter/accessor; signed-minimum support follows the prescribed widened arithmetic without interacting state. |
+| 327 | exp-v1-rust-generation-0273 | Non-triviality hold: prescribed nested-box move followed by one checked-subtraction wrapper; explicit ownership syntax alone does not make this substantive. |
+| 328 | exp-v1-rust-generation-0274 | RUST_STRATUM_REVIEW_16.md documents complete validation before replacement and length-prefixed injective keys. Criterion positive; implicit get return type remains unresolved. |
+| 329 | exp-v1-rust-generation-0275 | Non-triviality hold: direct two-character escape mapping with fixed prefix, empty literal and delimiter join; no parsing or interacting state. |
+| 330 | exp-v1-rust-generation-0276 | RUST_STRATUM_REVIEW_16.md documents snapshot turn queues, checked transforms and ordered routing. Criterion positive; station/item payload coverage of error oracles remains unresolved. |
+
+Batch11 total10 holds,20 scoped positives. Cumulative330/942:127 new holds,
+203 scoped positives;150 first-time Rust repairs. Outside unique coverage4949;
+corpus holds2273; frozen sample165/135 unchanged. Continue initially unheld331.
+GCS through270; positions271–330 await backup. Original5885 unchanged.
+

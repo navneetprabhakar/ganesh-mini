@@ -1,5 +1,32 @@
 # Project state
 
+## Copy/API delta complete; recovery planner tested — 2026-09-08
+
+Current checkpoint **2763 holds** (2760 additive plus historical three), maximum
+3122 original unheld; minimum878 recoveries before further exclusions/balancing.
+C/J delta181 complete:12 holds/169 scoped positives. Five retained quality
+questions adjudicated separately add3 holds (JS0004/0191 elementary;0047
+supplementary capitalization);0027/0103 scoped positive. No new execution.
+Unique outside5222 and frozen sample165positive/135held unchanged.
+See final-delta-reconciliation-v1.json. Parent reports remain historical.
+Recovery-plan builder scripts/data/plan_versioned_recovery.py and10 tests added;
+113 data tests pass. New IDs, parent/source/rights/hold hashes, create-only outputs;
+no candidate generation/admission or teacher calls. See docs/data/VERSIONED_RECOVERY.md.
+No recovery selection until original systematic-quality reconciliation completes.
+Active next queue js-elementary-capitalization-queue-v1.json:273 affected,
+143 held,130 survivors. Existing C/J closed; only E and narrowly defined U.
+rust391_420 positions1–44, rust421_45045–87, rust451_48088–130. Filter only
+frozen prior_held false, preserve order. Isolated JS_FINAL_EU_* notes; main integrates.
+All three drafts now complete but NOT integrated: proposed E holds17/11/21,
+U has one scoped positive and129 not-applicable. Main must read/validate before
+counting; reviewers currently idle. Next continuation integrates these drafts.
+No new unique inspection scope or blanket Unicode review. Original data unchanged.
+Training/release estimated50%/35%; no training job/VM. ETA overall remains
+unreliable until recovery/admission throughput. Current work needs no approval.
+2763 checkpoint archive/receipt exact-generation byte comparisons passed;
+see QUALITY_DELTA181_2763_BACKUP.md. Includes recovery planner and pending
+E/U queue, but excludes isolated JS_FINAL_EU reviewer drafts until integrated.
+
 ## Legacy criteria adjudicated — 2026-09-08
 
 Current checkpoint supersedes older counts: **2748 holds** (2745 additive plus

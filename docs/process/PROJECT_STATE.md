@@ -1,5 +1,22 @@
 # Project state
 
+## Gate4 local execution package rehearsed — 2026-09-09
+
+The one-recipe expansion pilot is now locally preflighted and archive-rehearsed.
+Its immutable card is `prepared-not-executable`, with zero failed local checks;
+it binds the 3,225-row prepared corpus, 2,438,853-token ceiling, BF16 LoRA at
+1e-5, quarter-epoch checkpoints, six-hour wall limit, and frozen 30/180-task
+evaluation sequence. Card SHA256 is
+3129c4930dd16fe0907e949b335deeadded6b6e248f20a3b2740aa0b99fc0efb.
+
+The reproducible training workspace contains 43 allowlisted files and was
+successfully extracted and re-preflighted with the same card seal. Archive
+SHA256 is cfdec0237063549e72c415d0057444ca6f1b9bc9a23b30c588e0de4cf44ca485;
+manifest seal is d399abac213734dc6894f9005458d14343e92927223d1eaf613120f9a3291733.
+Provider price, cost ceiling, zone, and a fresh explicit GCloud execution
+approval are intentionally absent, so the package cannot authorize cloud
+execution. GCS evidence upload remains blocked on interactive authentication.
+
 ## Gate4 training package prepared — 2026-09-09
 
 The terminal3225-row source corpus is prepared with exact Qwen response-only

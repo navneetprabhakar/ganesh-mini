@@ -17,6 +17,8 @@ ALLOWLIST = (
     "scripts/__init__.py",
     "scripts/train/__init__.py",
     "scripts/train/pilot.py",
+    "scripts/train/expansion_pilot.py",
+    "scripts/train/prepare_expansion.py",
     "scripts/train/qwen_runtime.py",
     "scripts/train/response_only.py",
     "scripts/train/run_sft.py",
@@ -27,8 +29,14 @@ ALLOWLIST = (
     "artifacts/train/seed-pilot-v2/prepared-train.jsonl",
     "artifacts/train/seed-pilot-v2/prepared-validation.jsonl",
     "artifacts/train/seed-pilot-v2/prepared-dataset-manifest.json",
+    "artifacts/train/expansion-pilot-v1/prepared-train.jsonl",
+    "artifacts/train/expansion-pilot-v1/prepared-validation.jsonl",
+    "artifacts/train/expansion-pilot-v1/prepared-dataset-manifest.json",
+    "artifacts/train/expansion-pilot-v1/local-execution-card.json",
+    "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
 )
 FORBIDDEN_PARTS = {"eval", "measurement", "outputs", ".git", ".gcloud-staging", "__pycache__"}
+SAFE_MEASUREMENT = Path("measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json")
 
 
 def sha256(path: Path) -> str:
@@ -47,7 +55,7 @@ def collect(root: Path) -> list[Path]:
     result=[]
     for path in sorted(files):
         relative=path.relative_to(root)
-        if FORBIDDEN_PARTS & set(relative.parts): continue
+        if FORBIDDEN_PARTS & set(relative.parts) and relative != SAFE_MEASUREMENT: continue
         result.append(path)
     if not result: raise ValueError("training workspace allowlist is empty")
     if any("eval" in path.relative_to(root).parts for path in result): raise ValueError("evaluation data escaped training workspace isolation")

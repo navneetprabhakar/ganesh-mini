@@ -2205,6 +2205,25 @@ validation loss does not override that result. More epochs, a larger LoRA
 rank, or immediate preference optimization would reuse an insufficient signal
 and are rejected.
 
+## 2026-09-09 — Gate 2 closes at 3,225 rows for one bounded Gate 4 pilot
+
+The former 4,000-row pilot-entry floor is retired. It was a planning target,
+not a measured quality threshold, and further forced recovery had sharply
+diminishing yield. The terminal corpus contains 3,225 independently admitted
+rows (3,073 retained originals plus 152 verified recoveries), 2,438,853 input
+tokens, all six lanes at the frozen 20/20/10/10/20/20 objective shares, and no
+sequence beyond the 2,944-token envelope. This closes corpus sufficiency only
+for one bounded pilot; it does not waive evaluation, correction-pass, laptop,
+or release gates.
+
+The pilot uses one conservative BF16 LoRA recipe at learning rate 1e-5. The
+earlier valid L4 mechanism run measured 295.541 input tokens/second, projecting
+2h25m50s expected training and 3h14m27s at 75% of measured throughput. A six-hour
+wall ceiling includes evaluation and a 30-minute finalization/backup reserve.
+Quarter-epoch checkpoints are sealed in the config. No second learning-rate
+candidate is run: this pass tests whether the larger verified corpus produces
+an executable improvement, rather than repeating the underpowered seed sweep.
+
 Expansion v1 is fixed at 6,000 execution-verified SFT rows with Go, Java,
 Python, and Rust at 1,200 each; JavaScript and TypeScript at 600 each; and a
 3,600/2,400 generation/repair split. Authenticated Codex CLI 0.144.4 with

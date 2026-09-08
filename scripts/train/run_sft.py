@@ -168,7 +168,9 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     card=load_sealed(args.card,"card_sha256")
     if card.get("status")!="ready" or card.get("failed_checks"): raise RuntimeError("training execution card is not ready")
     config=json.loads(args.config.read_text()); config_sha=file_sha256(args.config)
-    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5"}: raise RuntimeError("unsupported training config schema")
+    expansion=config.get("schema_version")=="ganesh-mini-expansion-pilot-config/v1"
+    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1"}: raise RuntimeError("unsupported training config schema")
+    if expansion and card.get("schema_version")!="ganesh-mini-expansion-pilot-card/v1": raise RuntimeError("expansion card/config contract mismatch")
     if card["inputs"]["config_sha256"]!=config_sha: raise RuntimeError("card/config identity mismatch")
     prepared_manifest=load_sealed(args.prepared_manifest,"manifest_sha256")
     if card["inputs"]["prepared_manifest_sha256"]!=prepared_manifest["manifest_sha256"]: raise RuntimeError("card/prepared manifest mismatch")
@@ -178,18 +180,27 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     from peft import LoraConfig,PeftModel,get_peft_model,prepare_model_for_kbit_training
     from transformers import AutoModelForImageTextToText,BitsAndBytesConfig,get_cosine_schedule_with_warmup
     if not torch.cuda.is_available() or torch.cuda.device_count()!=1: raise RuntimeError("SFT requires exactly one CUDA GPU")
-    if lr not in recipe["learning_rate_candidates"]: raise RuntimeError("learning rate escaped predeclared candidates")
+    permitted_lrs=[recipe["learning_rate"]] if expansion else recipe["learning_rate_candidates"]
+    if lr not in permitted_lrs: raise RuntimeError("learning rate escaped predeclared candidates")
+    if expansion and (args.phase!="expansion-pilot" or args.maximum_seen_tokens!=config["control"]["maximum_seen_tokens"]): raise RuntimeError("expansion pilot phase or token budget changed")
     if args.phase=="lr-candidate" and args.maximum_seen_tokens!=recipe["lr_selection_budget_seen_tokens_per_candidate"]: raise RuntimeError("LR candidate budget changed")
     if args.phase=="main":
         selection=load_sealed(args.lr_selection_evidence,"evidence_sha256") if args.lr_selection_evidence else None
         if not selection or selection.get("selected_learning_rate")!=lr or selection.get("rule")!=recipe["lr_selection_rule"]: raise RuntimeError("main SFT requires sealed LR selection evidence")
         if args.maximum_seen_tokens!=config["control"]["maximum_seen_tokens"]: raise RuntimeError("main SFT token budget changed")
     hourly=Decimal(str(args.hourly_cost_usd)); prior=Decimal(str(args.prior_cost_usd)); ceiling=Decimal(str(args.cost_ceiling_usd))
-    if hourly<=0 or prior<0 or ceiling<=prior or ceiling>Decimal(str(config["control"]["maximum_cost_usd"])): raise RuntimeError("invalid or escaped cost envelope")
+    if expansion:
+        provider=card.get("provider_execution") or {}
+        cost_ok=(hourly,prior,ceiling)==(Decimal(str(provider.get("hourly_cost_usd",0))),Decimal(str(provider.get("prior_cost_usd",-1))),Decimal(str(provider.get("cost_ceiling_usd",0))))
+    else:
+        cost_ok=ceiling<=Decimal(str(config["control"]["maximum_cost_usd"]))
+    if hourly<=0 or prior<0 or ceiling<=prior or not cost_ok: raise RuntimeError("invalid or escaped cost envelope")
     cost_wall_seconds=float((ceiling-prior)/hourly*Decimal(3600))
-    finalization_reserve_seconds=600
+    finalization_reserve_seconds=float(config["control"].get("finalization_reserve_seconds",600))
     wall_limit=bounded_training_wall(float(config["control"]["maximum_wall_seconds"]),cost_wall_seconds,finalization_reserve_seconds)
-    if file_sha256(args.prepared_data)!=prepared_manifest["prepared_train_sha256"] or file_sha256(args.validation_data)!=prepared_manifest["prepared_validation_sha256"]: raise RuntimeError("prepared data identity mismatch")
+    prepared_train_sha=prepared_manifest.get("prepared_train_sha256") or prepared_manifest.get("prepared_train",{}).get("sha256")
+    prepared_validation_sha=prepared_manifest.get("prepared_validation_sha256") or prepared_manifest.get("prepared_validation",{}).get("sha256")
+    if file_sha256(args.prepared_data)!=prepared_train_sha or file_sha256(args.validation_data)!=prepared_validation_sha: raise RuntimeError("prepared data identity mismatch")
     identities={"card_sha256":card["card_sha256"],"config_sha256":config_sha,"prepared_manifest_sha256":prepared_manifest["manifest_sha256"],"prepared_data_sha256":file_sha256(args.prepared_data),"validation_data_sha256":file_sha256(args.validation_data),"model_revision":card["model"]["revision"],"recipe_sha256":canonical_sha256(recipe),"learning_rate":str(lr),"phase":args.phase}
     seed_everything(recipe["random_seed"]); kwargs={"local_files_only":True,"dtype":torch.bfloat16,"device_map":{"":0}}
     if recipe["base_loading"]=="qlora": kwargs["quantization_config"]=BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_quant_type="nf4",bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.bfloat16)
@@ -235,9 +246,10 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
         optimizer.load_state_dict(saved["optimizer"]); scheduler.load_state_dict(saved["scheduler"]); torch.set_rng_state(saved["torch_rng"]); torch.cuda.set_rng_state_all(saved["cuda_rng"])
     maximum=int(recipe.get("maximum_peak_vram_gb",23)*1024**3)
     anomaly_contract=recipe.get("loss_anomaly_detector")
-    if config["schema_version"]=="ganesh-mini-train-config/v5" and not anomaly_contract: raise RuntimeError("v5 recipe requires optimizer-group anomaly detection")
+    if config["schema_version"] in {"ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1"} and not anomaly_contract: raise RuntimeError("current recipe requires optimizer-group anomaly detection")
     detector=RollingLossGuard(anomaly_contract,state.get("anomaly_detector",{}).get("history",[]),state.get("anomaly_detector",{}).get("streak",0)) if anomaly_contract else None
-    checkpoint_interval=min(config["control"]["checkpoint_every_tokens"],max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); group_raw_losses=[]; group_weighted_loss=0.0; group_weight=0.0
+    configured_checkpoint=config["control"].get("checkpoint_every_tokens") or min(config["control"]["checkpoint_tokens"])
+    checkpoint_interval=min(configured_checkpoint,max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); group_raw_losses=[]; group_weighted_loss=0.0; group_weight=0.0
     for index,row in enumerate(rows[state["next_row"]:end_row],state["next_row"]):
         if time.monotonic()-started>=wall_limit and state["last_optimizer_micro_step"]==state["micro_steps"]: break
         batch=collate(row,"cuda:0"); result=model(**batch,skip_logits=True)
@@ -276,11 +288,11 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     peak=max(torch.cuda.max_memory_allocated(0),torch.cuda.max_memory_reserved(0))
     if peak>maximum: raise RuntimeError(f"peak VRAM {peak} exceeds {maximum}")
     state["completed_at"]=datetime.now(timezone.utc).isoformat(); state["wall_seconds"]=time.monotonic()-started
-    evidence={"schema_version":"ganesh-mini-sft-run/v2" if config["schema_version"].endswith("v5") else "ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"lora_target_policy":recipe.get("target_policy",{"scope":"all-language-model-linears"}),"trainable_parameter_names":trainable_names,"base_validation_loss_diagnostic":base_validation,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
+    evidence={"schema_version":"ganesh-mini-sft-run/v2" if config["schema_version"].endswith("v5") or expansion else "ganesh-mini-sft-run/v1","status":"complete" if completed_training else "bounded-stop","identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"lora_target_policy":recipe.get("target_policy",{"scope":"all-language-model-linears"}),"trainable_parameter_names":trainable_names,"base_validation_loss_diagnostic":base_validation,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
 
 
 def main() -> int:
-    parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--phase",choices=("lr-candidate","main"),required=True); parser.add_argument("--card",type=Path,required=True); parser.add_argument("--config",type=Path,default=Path("configs/train/seed_pilot.json")); parser.add_argument("--prepared-manifest",type=Path,default=Path("artifacts/train/seed-pilot/prepared-dataset-manifest.json")); parser.add_argument("--prepared-data",type=Path,default=Path("artifacts/train/seed-pilot/prepared-train.jsonl")); parser.add_argument("--validation-data",type=Path,default=Path("artifacts/train/seed-pilot/prepared-validation.jsonl")); parser.add_argument("--model-dir",type=Path,required=True); parser.add_argument("--output",type=Path,required=True); parser.add_argument("--learning-rate",type=float,required=True); parser.add_argument("--maximum-seen-tokens",type=int,required=True); parser.add_argument("--hourly-cost-usd",type=float,required=True); parser.add_argument("--prior-cost-usd",type=float,required=True); parser.add_argument("--cost-ceiling-usd",type=float,required=True); parser.add_argument("--lr-selection-evidence",type=Path); parser.add_argument("--resume-checkpoint",type=Path); args=parser.parse_args(); evidence=run(args); print(json.dumps({"status":evidence["status"],"seen_tokens":evidence["state"]["seen_tokens"],"evidence_sha256":evidence["evidence_sha256"]},sort_keys=True)); return 0 if evidence["status"]=="complete" else 2
+    parser=argparse.ArgumentParser(description=__doc__); parser.add_argument("--phase",choices=("lr-candidate","main","expansion-pilot"),required=True); parser.add_argument("--card",type=Path,required=True); parser.add_argument("--config",type=Path,default=Path("configs/train/seed_pilot.json")); parser.add_argument("--prepared-manifest",type=Path,default=Path("artifacts/train/seed-pilot/prepared-dataset-manifest.json")); parser.add_argument("--prepared-data",type=Path,default=Path("artifacts/train/seed-pilot/prepared-train.jsonl")); parser.add_argument("--validation-data",type=Path,default=Path("artifacts/train/seed-pilot/prepared-validation.jsonl")); parser.add_argument("--model-dir",type=Path,required=True); parser.add_argument("--output",type=Path,required=True); parser.add_argument("--learning-rate",type=float,required=True); parser.add_argument("--maximum-seen-tokens",type=int,required=True); parser.add_argument("--hourly-cost-usd",type=float,required=True); parser.add_argument("--prior-cost-usd",type=float,required=True); parser.add_argument("--cost-ceiling-usd",type=float,required=True); parser.add_argument("--lr-selection-evidence",type=Path); parser.add_argument("--resume-checkpoint",type=Path); args=parser.parse_args(); evidence=run(args); print(json.dumps({"status":evidence["status"],"seen_tokens":evidence["state"]["seen_tokens"],"evidence_sha256":evidence["evidence_sha256"]},sort_keys=True)); return 0 if evidence["status"]=="complete" else 2
 
 
 if __name__=="__main__": raise SystemExit(main())

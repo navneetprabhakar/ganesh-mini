@@ -1958,3 +1958,27 @@ when progress is slow. A forced 6,000-row count, a successful training exit,
 or a generated GGUF is not the goal. The goal is a defensible, executable
 improvement over the exact Qwen base, with honest comparison to Ganesh v0.1
 and laptop artifacts whose claims were actually measured.
+
+## 14. Current continuation — 2026-09-09
+
+Sections 11–13 describe the older 6,000-row plan snapshot. The current terminal
+Gate2 decision is recorded in `DECISIONS.md`: one bounded pilot proceeds with
+3,225 admitted rows and 2,438,853 input tokens. The source and prepared dataset
+are sealed; the latest prepared-manifest seal is
+`fc7409c3e68e372e1b1c05b07e5c36db0e3923c84731fe70a0f7937cfd413c25`.
+
+Gate4 local preparation is complete through archive rehearsal. Use
+`configs/train/expansion_pilot_v1.json` and
+`scripts/train/expansion_pilot.py`; the local execution card seal is
+`3129c4930dd16fe0907e949b335deeadded6b6e248f20a3b2740aa0b99fc0efb`.
+The reproducible 43-file workspace archive has SHA256
+`cfdec0237063549e72c415d0057444ca6f1b9bc9a23b30c588e0de4cf44ca485`
+and re-preflights identically after extraction.
+
+Do not execute this card as-is. Its status is deliberately
+`prepared-not-executable` and `provider_execution` is null. Next, after GCloud
+authentication is restored, gather current read-only price/quota evidence only
+under explicit authorization, bind zone, machine, price, total cost ceiling,
+image and archive generation into a new executable card, obtain fresh explicit
+approval, then run training -> save/reload -> 30-task canary -> conditional
+180-task development evaluation -> evidence backup. No VM is active now.

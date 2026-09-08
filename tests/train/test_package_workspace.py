@@ -27,3 +27,18 @@ def test_training_workspace_uses_a_repository_relative_archive_path(tmp_path: Pa
     root=tmp_path/"repo"; (root/"scripts/train").mkdir(parents=True); (root/"scripts/train/run_sft.py").write_text("code")
     manifest=build(root,root/"artifacts/train/workspaces/workspace.tar.gz",tmp_path/"manifest.json")
     assert manifest["archive_path"]=="artifacts/train/workspaces/workspace.tar.gz"
+
+
+def test_repository_workspace_contains_expansion_pilot_inputs(tmp_path: Path) -> None:
+    archive = tmp_path / "workspace.tar.gz"
+    build(Path(__file__).resolve().parents[2], archive, tmp_path / "manifest.json")
+    with tarfile.open(archive) as value:
+        names = set(value.getnames())
+    assert {
+        "configs/train/expansion_pilot_v1.json",
+        "scripts/train/expansion_pilot.py",
+        "artifacts/train/expansion-pilot-v1/prepared-train.jsonl",
+        "artifacts/train/expansion-pilot-v1/prepared-validation.jsonl",
+        "artifacts/train/expansion-pilot-v1/prepared-dataset-manifest.json",
+        "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
+    } <= names

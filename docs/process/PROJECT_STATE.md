@@ -12,8 +12,10 @@ All17 R23 candidates passed terminal static review and fresh serial sandbox
 directionality. R22 unconditional positives are only Go0218/0180. R22 Java
 repairs remain excluded for exact approved prompt-scope discrepancies; passing
 semantics do not waive lineage/scope. R22 Go0095 race directionality passed but
-its test-quality hold remains. Latest verified GCS backup is still admission109;
-all later evidence must be backed up before cleanup.
+its test-quality hold remains. Verified GCS archive and receipt now cover
+admission129 plus terminal R21/R22/R23 evidence, each verified by exact-generation
+download and byte comparison. See RECOVERY_ADMISSION129_BACKUP.md. No cleanup or
+billing certification.
 
 ## Admission109 — 2026-09-08
 

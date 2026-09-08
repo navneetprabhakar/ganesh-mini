@@ -14,13 +14,17 @@ were Go0218/0180. R22 Java five repairs and Go0233 stay excluded for generated
 prompt edits beyond approved source-only scope. Go0095 race directionality PASS
 but test hold remains. No silent scope waiver or second critic.
 
-No verifier/teacher/admission is active. Next: batch commit/push, verified GCS
-backup covering all R21/R22/R23 raw evidence plus admission129, then continue
-new-parent recovery toward minimum4000. Latest verified backup remains109 until
-that completes. No cleanup, VM use or billing certification. No GCloud compute
+No verifier/teacher/admission is active. Commit3267123 pushed. Verified GCS
+archive now covers all R21/R22/R23 raw evidence plus admission129: generation
+1788886177368453, bytes10934109, SHA
+e79b3c46cda3afab00cada6fdc759fdcd145a99198c4b031ebf167b54d6244ed;
+exact-generation download/cmp PASS. Receipt generation1788886264954026,
+bytes1117, exact-generation download/cmp PASS. See
+RECOVERY_ADMISSION129_BACKUP.md. Next continue new-parent recovery toward
+minimum4000. No cleanup, VM use or billing certification. No GCloud compute
 authorization inferred. Training50%/release35% remain milestone estimates;
-working on terminal preservation, next10–30min low confidence, overall ETA
-unproven until corpus sufficiency and pilot throughput.
+idle until next bounded selection, next hourly check, overall ETA unproven until
+corpus sufficiency and pilot throughput.
 
 ## R23 bounded correction launched — 2026-09-08
 

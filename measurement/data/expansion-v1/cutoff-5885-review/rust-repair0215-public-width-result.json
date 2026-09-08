@@ -1,0 +1,133 @@
+{
+  "id": "exp-v1-rust-repair-0215",
+  "sample_sha256": "a458710fc7cbc62141d9ab52a5749a5f6cb13ecbb936b717674c3ce8bef5ac5a",
+  "population": "cutoff",
+  "candidate_set_path": "datasets/cache/expansion-v1/cutoff-5885/final.candidates.jsonl",
+  "candidate_set_sha256": "680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec",
+  "candidate_sha256": "e15677ebdd1a9a55715088c6db9f9f48655256907dcfbb693d6bdafab69008ab",
+  "task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "path": "solution_test.rs",
+        "role": "test",
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n#[test]\nfn public_dimension_change_does_not_panic_or_mutate_buffer() {\n    let mut canvas = solution::Canvas::new(1, 1, solution::PixelOrder::Rgba, vec![7;4]).unwrap();\n    canvas.width = 2;\n    let result = canvas.put_pixel(1, 0, [1,2,3,4]);\n    assert!(result.is_err());\n    assert_eq!(canvas.pixels(), &[7;4]);\n}\n",
+        "sha256": "c7478c41538c0a8c0c9df73229e599b2b422d1c0910504dbf61fcea384449d36"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6acdbc58b30a584e36dc09dd38c4313aaa6548be2ddb3ad77722158e212ff93f",
+      "text": "Repair the following complete `solution.rs` while preserving its API. `Canvas::new` requires exactly `width * height * 4` bytes, reporting overflow or a mismatched size as an error. `put_pixel` accepts only coordinates strictly inside the canvas, never panics, and leaves the buffer unchanged on error. RGBA stores bytes as red, green, blue, alpha; BGRA swaps red and blue. Zero-sized canvases are permitted but no pixel can be drawn.\n\nKnown-bad source:\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x > self.width || y > self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6acdbc58b30a584e36dc09dd38c4313aaa6548be2ddb3ad77722158e212ff93f",
+      "text": "Repair the following complete `solution.rs` while preserving its API. `Canvas::new` requires exactly `width * height * 4` bytes, reporting overflow or a mismatched size as an error. `put_pixel` accepts only coordinates strictly inside the canvas, never panics, and leaves the buffer unchanged on error. RGBA stores bytes as red, green, blue, alpha; BGRA swaps red and blue. Zero-sized canvases are permitted but no pixel can be drawn.\n\nKnown-bad source:\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x > self.width || y > self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "synthetic_harness",
+    "task_id": "exp-v1-rust-repair-0215",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x > self.width || y > self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n",
+          "label": "Coordinates equal to the width or height are accepted, which can cause an out-of-bounds slice panic.",
+          "sha256": "89fbdea25d311f43c5d31aed40823ba3714fd3d62491a060b0f10ef2e101a0b6"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x >= self.width || y >= self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "59dfd8a69ab431ef2ba96e8da12a5171053a844f340e1db5dfbb608c5d2f5f7c"
+      }
+    }
+  },
+  "original_task": {
+    "candidate_path": "solution.rs",
+    "family": "rust",
+    "files": [
+      {
+        "content": "#[path = \"solution.rs\"]\nmod solution;\n\nuse solution::{Canvas, PixelOrder};\n\n#[test]\nfn constructor_accepts_exact_buffer_and_rejects_mismatch() {\n    let canvas = Canvas::new(2, 1, PixelOrder::Rgba, vec![0; 8]).unwrap();\n    assert_eq!(canvas.width, 2);\n    assert_eq!(canvas.height, 1);\n    assert_eq!(canvas.pixels(), &[0; 8]);\n\n    assert!(Canvas::new(2, 1, PixelOrder::Rgba, vec![0; 7]).is_err());\n    assert!(Canvas::new(2, 1, PixelOrder::Rgba, vec![0; 9]).is_err());\n}\n\n#[test]\nfn constructor_reports_dimension_overflow() {\n    assert!(Canvas::new(usize::MAX, 2, PixelOrder::Rgba, vec![]).is_err());\n    assert!(Canvas::new(usize::MAX, 1, PixelOrder::Rgba, vec![]).is_err());\n}\n\n#[test]\nfn zero_sized_canvases_are_valid_but_not_drawable() {\n    let mut canvas = Canvas::new(0, 3, PixelOrder::Rgba, vec![]).unwrap();\n    assert!(canvas.put_pixel(0, 0, [1, 2, 3, 4]).is_err());\n    assert!(canvas.pixels().is_empty());\n\n    let mut canvas = Canvas::new(3, 0, PixelOrder::Rgba, vec![]).unwrap();\n    assert!(canvas.put_pixel(0, 0, [1, 2, 3, 4]).is_err());\n    assert!(canvas.pixels().is_empty());\n}\n\n#[test]\nfn rgba_and_bgra_store_channels_in_required_order() {\n    let mut rgba = Canvas::new(1, 1, PixelOrder::Rgba, vec![0; 4]).unwrap();\n    rgba.put_pixel(0, 0, [10, 20, 30, 40]).unwrap();\n    assert_eq!(rgba.pixels(), &[10, 20, 30, 40]);\n\n    let mut bgra = Canvas::new(1, 1, PixelOrder::Bgra, vec![0; 4]).unwrap();\n    bgra.put_pixel(0, 0, [10, 20, 30, 40]).unwrap();\n    assert_eq!(bgra.pixels(), &[30, 20, 10, 40]);\n}\n\n#[test]\nfn writes_only_the_selected_row_major_pixel() {\n    let mut canvas = Canvas::new(2, 2, PixelOrder::Rgba, vec![9; 16]).unwrap();\n    canvas.put_pixel(1, 1, [1, 2, 3, 4]).unwrap();\n    assert_eq!(canvas.pixels(), &[9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 1, 2, 3, 4]);\n}\n\n#[test]\nfn boundary_and_large_coordinates_error_without_mutation_or_panic() {\n    let mut canvas = Canvas::new(2, 2, PixelOrder::Rgba, vec![7; 16]).unwrap();\n    let before = canvas.pixels().to_vec();\n\n    assert!(canvas.put_pixel(2, 0, [1, 2, 3, 4]).is_err());\n    assert_eq!(canvas.pixels(), before.as_slice());\n    assert!(canvas.put_pixel(0, 2, [1, 2, 3, 4]).is_err());\n    assert_eq!(canvas.pixels(), before.as_slice());\n    assert!(canvas.put_pixel(usize::MAX, usize::MAX, [1, 2, 3, 4]).is_err());\n    assert_eq!(canvas.pixels(), before.as_slice());\n}\n",
+        "path": "solution_test.rs",
+        "role": "test",
+        "sha256": "490632c381666fa20c57b007b5545e262155f7160a1c1d4fc7f6e296c47ddbcf"
+      }
+    ],
+    "language": "rust",
+    "limits": {
+      "cpus": 1,
+      "memory_mb": 512,
+      "output_bytes": 65536,
+      "pids": 64,
+      "timeout_seconds": 60
+    },
+    "prompt": {
+      "sha256": "6acdbc58b30a584e36dc09dd38c4313aaa6548be2ddb3ad77722158e212ff93f",
+      "text": "Repair the following complete `solution.rs` while preserving its API. `Canvas::new` requires exactly `width * height * 4` bytes, reporting overflow or a mismatched size as an error. `put_pixel` accepts only coordinates strictly inside the canvas, never panics, and leaves the buffer unchanged on error. RGBA stores bytes as red, green, blue, alpha; BGRA swaps red and blue. Zero-sized canvases are permitted but no pixel can be drawn.\n\nKnown-bad source:\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x > self.width || y > self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "rendered_prompt": {
+      "sha256": "6acdbc58b30a584e36dc09dd38c4313aaa6548be2ddb3ad77722158e212ff93f",
+      "text": "Repair the following complete `solution.rs` while preserving its API. `Canvas::new` requires exactly `width * height * 4` bytes, reporting overflow or a mismatched size as an error. `put_pixel` accepts only coordinates strictly inside the canvas, never panics, and leaves the buffer unchanged on error. RGBA stores bytes as red, green, blue, alpha; BGRA swaps red and blue. Zero-sized canvases are permitted but no pixel can be drawn.\n\nKnown-bad source:\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x > self.width || y > self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n\nReturn only the complete source file; do not include Markdown fences or prose."
+    },
+    "runtime_id": "rust-1.85.0",
+    "schema_version": "1.0",
+    "surface": "training_admission",
+    "task_id": "exp-v1-rust-repair-0215",
+    "task_type": "repair",
+    "validation": {
+      "known_bad": [
+        {
+          "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x > self.width || y > self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n",
+          "label": "Coordinates equal to the width or height are accepted, which can cause an out-of-bounds slice panic.",
+          "sha256": "89fbdea25d311f43c5d31aed40823ba3714fd3d62491a060b0f10ef2e101a0b6"
+        }
+      ],
+      "reference": {
+        "code": "#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub enum PixelOrder { Rgba, Bgra }\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct Canvas {\n    pub width: usize,\n    pub height: usize,\n    pub order: PixelOrder,\n    pixels: Vec<u8>,\n}\n\nimpl Canvas {\n    pub fn new(width: usize, height: usize, order: PixelOrder, pixels: Vec<u8>) -> Result<Self, String> {\n        let expected = width.checked_mul(height).and_then(|n| n.checked_mul(4))\n            .ok_or_else(|| \"canvas size overflow\".to_string())?;\n        if pixels.len() != expected { return Err(\"pixel buffer has the wrong size\".to_string()); }\n        Ok(Self { width, height, order, pixels })\n    }\n\n    pub fn pixels(&self) -> &[u8] { &self.pixels }\n\n    pub fn put_pixel(&mut self, x: usize, y: usize, color: [u8; 4]) -> Result<(), String> {\n        if x >= self.width || y >= self.height { return Err(\"coordinate out of bounds\".to_string()); }\n        let index = (y * self.width + x) * 4;\n        let stored = match self.order {\n            PixelOrder::Rgba => color,\n            PixelOrder::Bgra => [color[2], color[1], color[0], color[3]],\n        };\n        self.pixels[index..index + 4].copy_from_slice(&stored);\n        Ok(())\n    }\n}\n",
+        "label": "codex-teacher-reference",
+        "sha256": "59dfd8a69ab431ef2ba96e8da12a5171053a844f340e1db5dfbb608c5d2f5f7c"
+      }
+    }
+  },
+  "probe_mode": "isolated-test",
+  "runtime_config_sha256": "3c639129f12323ed17127dc938ac6c0c9a5bea8af29332a6b38432c5c9de5d77",
+  "result": {
+    "runtime_id": "rust-1.85.0",
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "exit_codes": [
+      0,
+      101
+    ],
+    "timed_out": false,
+    "stdout": "\nrunning 1 test\ntest public_dimension_change_does_not_panic_or_mutate_buffer ... FAILED\n\nfailures:\n\n---- public_dimension_change_does_not_panic_or_mutate_buffer stdout ----\n\nthread 'public_dimension_change_does_not_panic_or_mutate_buffer' panicked at solution.rs:29:20:\nrange end index 8 out of range for slice of length 4\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    public_dimension_change_does_not_panic_or_mutate_buffer\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "60ee0fb7297bd2e23e61ab5e1fe139b6db0932e87162135537648fb42e09ceed",
+    "stderr": "warning: variant `Bgra` is never constructed\n --> solution.rs:2:29\n  |\n2 | pub enum PixelOrder { Rgba, Bgra }\n  |          ----------         ^^^^\n  |          |\n  |          variant in this enum\n  |\n  = note: `PixelOrder` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis\n  = note: `#[warn(dead_code)]` on by default\n\nwarning: 1 warning emitted\n\n",
+    "stderr_sha256": "51a07ccbcf3abfc8d4caf73529e0b8b8c06a3b3c58536614ba88e84d4eaaa346",
+    "duration_ms": 1577,
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e"
+  }
+}

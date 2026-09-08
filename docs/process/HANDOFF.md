@@ -1980,6 +1980,11 @@ evaluation. It rejects a non-executable card, incomplete/token-short run,
 identity mismatch, failed save/reload, cost or VRAM escape, and any adapter
 file mutation.
 
+Then use `scripts/eval/adjudicate_expansion_canary.py` on the frozen tranche-1
+candidate and canonical base task evidence. Only status
+`promote-to-full-development` authorizes the 180-task development run; a
+successful training process or lower validation loss does not.
+
 Do not execute this card as-is. Its status is deliberately
 `prepared-not-executable` and `provider_execution` is null. Next, after GCloud
 authentication is restored, gather current read-only price/quota evidence only

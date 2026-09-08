@@ -19,6 +19,10 @@ manifest seal is a00963ed3d4832793bc2bc98cda0155dc5ea35612a44960b3be368a9b04d72c
 The workspace now includes a fail-closed terminal verifier for the executable
 card, complete run, token/cost/VRAM bounds, save/reload proof, and exact adapter
 file hashes.
+The post-training canary boundary is also implemented: it compares the exact
+30 candidate task-evidence seals against their admitted base counterparts and
+permits the 180-task run only if the frozen four-of-five-family, net-gain,
+zero-lane-regression, non-code, and truncation checks all pass.
 Provider price, cost ceiling, zone, and a fresh explicit GCloud execution
 approval are intentionally absent, so the package cannot authorize cloud
 execution. GCS evidence upload remains blocked on interactive authentication.

@@ -1997,3 +1997,16 @@ under explicit authorization, bind zone, machine, price, total cost ceiling,
 image and archive generation into a new executable card, obtain fresh explicit
 approval, then run training -> save/reload -> 30-task canary -> conditional
 180-task development evaluation -> evidence backup. No VM is active now.
+
+## 15. Verified terminal input backup — 2026-09-09
+
+GCS authentication is restored and both launch-critical local archives now
+have exact-generation roundtrip proof. The Gate2 archive is generation
+`1788908479441360`; the Gate4 workspace is generation `1788908484381745`.
+Their downloaded bytes match local SHA256 values `b49fcf31...05845` and
+`72e366aa...ebb3e`, respectively. The sealed receipt at
+`measurement/data/expansion-v1/PILOT_SEALED_3225_GATE4_INPUT_BACKUP_20260909.json`
+is GCS generation `1788908613275676` and was also byte-compared after download.
+No compute inspection or mutation occurred. The next hard boundary is explicit
+authorization to inspect current L4 availability/quota and bind the priced
+execution card; VM creation requires a second explicit approval of that card.

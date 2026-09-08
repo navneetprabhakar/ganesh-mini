@@ -1,5 +1,18 @@
 # Project state
 
+## Gate2 and Gate4 input GCS backup verified — 2026-09-09
+
+Authentication is restored. The terminal Gate2 evidence archive and rehearsed
+Gate4 training workspace were uploaded create-only to the established evidence
+bucket, then downloaded by exact object generation and compared byte-for-byte.
+Gate2 generation `1788908479441360` has SHA256
+`b49fcf31fa20afa6fa7cc0a3d79db572001cdcc8e5b562c9841469064d505845`;
+Gate4 input generation `1788908484381745` has SHA256
+`72e366aa7274723f4c89bb819780a4972a014ac0a2b9b94db4f56955bfaebb3e`.
+The sealed receipt was itself uploaded and roundtrip-verified at generation
+`1788908613275676`. This proves evidence durability only. No VM or compute
+resource was inspected, created, or started.
+
 ## Gate4 local execution package rehearsed — 2026-09-09
 
 The one-recipe expansion pilot is now locally preflighted and archive-rehearsed.

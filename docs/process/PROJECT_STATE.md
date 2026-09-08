@@ -1772,3 +1772,17 @@ and admitted 10/10 with zero remaining rejection. Production is paused at
 A six-way, 30-execution local Docker mount smoke passed without failure, and
 the complete local test suite passes with one intentional skip. The next
 action is to resume exactly one five-worker local controller.
+# Active recovery r3 — 2026-09-08
+
+Gate2: actual local generation session49105, 14 approved generation parents,
+8JavaScript/6TypeScript, two concurrent lanes under maximum3. Immutable plan
+617a754bf9ae98a4e595077de132e15c5556db21554da5f7d98a9f88e236a712;
+see HANDOFF.md and RECOVERY_R3_SELECTION_20260908.md. Remaining43 proposed
+parents are queued, not approved/admitted. All recommendation notes main-read.
+144 data tests pass; prior9 admission hashes verified and automatic accumulated
+recovery dedup added. No r3 admissions or training progress counted. Original
+holds2812, admitted recoveries9, maximum combined3082, minimum remaining918.
+Training/release estimated50%/35%, not measured task percentages. Nextgeneration
+checkpoint10–60min low confidence; full-delivery ETA not supportable yet.
+No VM or training. Current local work authorized. Latest verified remote backup
+is admission9; active r3 requires terminal evidence backup and byte verification.

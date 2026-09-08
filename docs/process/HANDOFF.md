@@ -1,5 +1,34 @@
 # Ganesh Mini 1.0 handoff
 
+## Accelerated r3 generation active — 2026-09-08
+
+Session49105 is generating14 approved derived proposals (8JS/6TS) concurrently
+across two lanes, configured maximum3. Plan logical SHA
+617a754bf9ae98a4e595077de132e15c5556db21554da5f7d98a9f88e236a712.
+Registry datasets/cache/expansion-v1/versioned-recovery/r3 is reserved; never reuse
+or duplicate it. At launch checkpoint only plan/run-contract exist; no candidate
+completion or admission claimed. Check process/session and per-lane evidence.
+See RECOVERY_R3_SELECTION_20260908.md and recovery-requests-r3.json.
+All three recommendation notes have been main-read, but only these14 selections
+have main scope approval and hash validation. Other43 remain queued, including
+repair embedded-source contract decisions. Do not restart original quality review.
+
+Generator now supports bounded lane concurrency, per-lane failure isolation,
+deterministic output and immutable partial evidence. Partial failure does not
+emit a complete candidates manifest. Run contract binds worker count/source SHA.
+Admission preparation now automatically compares every saved hash-bound prior
+recovery admission in the registry as well as retained originals and current
+selection. Actual prior9 bindings validated. All144 data tests pass.
+
+Next: inspect r3 outputs, independent quality review, serial pinned sandbox
+directionality, then separation/admission. No training or VM; Gate2 remains open.
+Admitted9, original holds2812, maximum combined3082, minimum gap918 unchanged.
+Training/release estimates50%/35%; generation is running, not approval-blocked.
+Next generation checkpoint ETA10–60 minutes low confidence; verified admission
+requires further review/execution. Full delivery ETA remains ungrounded.
+Latest verified GCS checkpoint is admission9; r3 is NOT remotely backed up yet.
+Preserve terminal r3 evidence and verify GCS backup before any cleanup/teardown.
+
 ## First nine recoveries admitted; next selection in progress — 2026-09-08
 
 **9 candidate admissions /0 rejected**, all generation: Go2,Java2,JS2,TS2,Python1,

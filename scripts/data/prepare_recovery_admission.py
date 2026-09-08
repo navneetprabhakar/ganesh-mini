@@ -6,11 +6,39 @@ import re
 from pathlib import Path
 
 from scripts.data.admit_expansion import canonical_json, normalized_sha256, simhash, _tokens, read_jsonl
-from scripts.data.generate_versioned_recovery import ROOT, persist
+from scripts.data.generate_versioned_recovery import ROOT, persist, verify_seal
 from scripts.data.plan_versioned_recovery import digest
 from scripts.data.reconcile_sample_criteria import EXPECTED_SHA
 
 HISTORICAL_HOLDS = {"exp-v1-go-generation-0165", "exp-v1-rust-generation-0161", "exp-v1-rust-generation-0224"}
+
+
+def prior_recoveries(root: Path, registry: Path):
+    """Fail closed on unbound outputs; compare every saved admission, not drafts."""
+    rows, bindings, ids = [], [], set()
+    for output in sorted(registry.glob("*/admitted.jsonl")):
+        report_path = output.with_name("admission.json")
+        report = json.loads(report_path.read_text())
+        verify_seal(report, "report_sha256")
+        if report.get("schema_version") != "ganesh-mini-expansion-admission/v1":
+            raise ValueError("unknown prior admission schema")
+        binding = report["output"]
+        data = output.read_bytes()
+        if ((root / binding["path"]).resolve() != output.resolve()
+                or binding["sha256"] != digest(data) or binding["bytes"] != len(data)):
+            raise ValueError("prior admission output changed")
+        previous = read_jsonl(output)
+        if len(previous) != report["accepted"]:
+            raise ValueError("prior admission count changed")
+        for row in previous:
+            if row["id"] in ids:
+                raise ValueError("duplicate identity in prior admissions")
+            ids.add(row["id"])
+        rows.extend(previous)
+        bindings.append({"report": str(report_path.relative_to(root)),
+                         "report_file_sha256": digest(report_path.read_bytes()),
+                         "output": binding})
+    return rows, bindings
 
 
 def check_overlap(candidates, retained, limit=3, minimum_tokens=12):
@@ -68,17 +96,20 @@ def main():
             raise ValueError("reference diagnostic does not bind this candidate")
         candidates.append(candidate)
     retained = [row for row in originals if row["id"] not in held]
+    previous, prior_bindings = prior_recoveries(
+        ROOT, ROOT / "measurement/data/expansion-v1/recovery-admission")
     config = json.loads((ROOT / "configs/data/expansion_v1.json").read_text())
-    overlaps = check_overlap(candidates, retained,
+    overlaps = check_overlap(candidates, retained + previous,
         config["deduplication"]["prompt_simhash_max_hamming"], config["deduplication"]["minimum_fuzzy_tokens"])
     args.output_dir.mkdir(parents=True, exist_ok=False)
     report = {"status": "overlap-blocked" if overlaps else "prepared-not-admitted",
         "selection_sha256": digest(args.selection.read_bytes()), "original_sha256": EXPECTED_SHA,
         "holds_sha256": digest(holds.read_bytes()), "retained_originals_compared": len(retained),
+        "prior_recoveries_compared": len(previous), "prior_admissions": prior_bindings,
         "selected": selected, "overlaps": overlaps, "evaluation_separation": "required-by-admit-expansion-next"}
     persist(args.output_dir / "preparation.json", report)
     if overlaps:
-        raise ValueError("recovery overlaps retained originals or another selected recovery")
+        raise ValueError("recovery overlaps retained originals, prior admissions or another selected recovery")
     with (args.output_dir / "candidates.jsonl").open("xb") as handle:
         for row in candidates:
             handle.write(canonical_json(row) + b"\n")

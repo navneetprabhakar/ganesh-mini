@@ -106,3 +106,43 @@ def test_timeout_keeps_partial_streams_and_final_file(monkeypatch):
     assert evidence["stdout_jsonl"] == "partial events"
     assert evidence["stderr"] == "partial stderr"
     assert evidence["final_output"] == '{"partial":true}'
+
+
+def test_parallel_lanes_preserve_success_when_peer_fails(monkeypatch, tmp_path):
+    import copy
+    import threading
+    parent, _, _, plan = fixture()
+    other = copy.deepcopy(parent)
+    other["id"] = "exp-v1-go-generation-0001"
+    other["lane"] = "go"
+    row = copy.deepcopy(plan["records"][0])
+    row.update(id="exp-v1-recovery-r1-go-generation-0001", parent_id=other["id"], lane="go")
+    plan["records"].append(row)
+    directory = recovery.reserve_version(tmp_path, plan)
+    barrier = threading.Barrier(2)
+    def invoke(binary, config, schema, prompt, phase, lane):
+        if schema == ARCHITECT_SCHEMA:
+            barrier.wait(timeout=5)
+            if lane == "python":
+                raise CodexInvocationFailure("failed", {"raw": "python failure"})
+            item = {"id": row["id"], "problem": other["messages"][0]["content"],
+                    "reference_code": "reference", "known_bad_code": "bad", "known_bad_label": "bug"}
+        else:
+            item = {"id": row["id"], "test_code": "tests"}
+        return {"items": [item]}, {"raw": phase}
+    monkeypatch.setattr(recovery, "invoke_codex", invoke)
+    with pytest.raises(CodexInvocationFailure):
+        recovery.generate(plan, {parent["id"]: parent, other["id"]: other},
+                          {"execution": {}}, "unused", directory, lane_workers=2)
+    assert (directory / f"{row['id']}.candidate.json").exists()
+    assert (directory / "python-failure.json").exists()
+    results = json.loads((directory / "lane-results.json").read_text())
+    assert results["completed_lanes"] == ["go"]
+    assert results["failed_lanes"] == ["python"]
+    assert not (directory / "candidates.jsonl").exists()
+
+
+@pytest.mark.parametrize("workers", [0, 4])
+def test_worker_bound_enforced(tmp_path, workers):
+    with pytest.raises(ValueError, match="lane_workers"):
+        recovery.generate({}, {}, {}, "unused", tmp_path, workers)

@@ -70,3 +70,19 @@ Its prepared candidates still require `scripts/data/admit_expansion.py` for fres
 evaluation separation and executable candidate admission. Candidate admission
 is not the final corpus seal: sufficiency, composition and family-token balance
 remain mandatory before training.
+# Bounded lane concurrency
+
+`generate_versioned_recovery` supports `--lane-workers 1|2|3` (default1).
+Independent lanes own disjoint evidence paths; each lane's architect and test
+author remain sequential and separated. A failed lane does not cancel peers.
+Per-lane failure files and partial lane-results preserve completed work, but a
+partial run has no complete candidates manifest. Reserved versions are never
+reused. Run contracts bind the worker count and generator source hash. This does
+not authorize parallel sandbox verification or relax any admission gate.
+
+Admission preparation also discovers all `*/admitted.jsonl` files in the recovery
+admission registry and validates their report seals, output paths, hashes, sizes
+and accepted counts before comparing their prompts with new selections. Missing
+or changed admission evidence fails closed; prior admissions are not silently
+omitted. Preparation records all prior report/output bindings. This remains a
+deduplication preflight, not a final training or release seal.

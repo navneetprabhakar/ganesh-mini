@@ -6,6 +6,7 @@ import argparse
 import copy
 import json
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from scripts.data.generate_expansion_qualification import (
@@ -108,14 +109,18 @@ complete known_bad_code in the problem; generation tasks ask for new implementat
 Known-bad code must contain one plausible semantic bug. Return schema-only JSON."""
 
 
-def generate(plan: dict, parents: dict, config: dict, binary: str, directory: Path) -> list[dict]:
+def generate(plan: dict, parents: dict, config: dict, binary: str, directory: Path,
+             lane_workers: int = 1) -> list[dict]:
+    if not 1 <= lane_workers <= 3:
+        raise ValueError("lane_workers must be between one and three")
     grouped = defaultdict(list)
     for row in plan["records"]:
         grouped[row["lane"]].append(row)
-    candidates = []
     for lane, rows in grouped.items():
         if len(rows) > config["execution"].get("batch_size", 10):
             raise ValueError("lane tranche exceeds frozen teacher batch size")
+    def generate_lane(lane, rows):
+        candidates = []
         def call(schema, prompt, phase):
             path = directory / f"{lane}-{phase}-evidence.json"
             try:
@@ -147,6 +152,36 @@ def generate(plan: dict, parents: dict, config: dict, binary: str, directory: Pa
             candidate["rights"] = copy.deepcopy(row["parent_rights"])
             persist(directory / f"{row['id']}.candidate.json", candidate)
             candidates.append(candidate)
+        return candidates
+
+    # Lanes own disjoint evidence/candidate paths. Never retry a failed lane or
+    # cancel another lane: preserve completed work even when a peer fails.
+    completed = {}
+    failures = {}
+    with ThreadPoolExecutor(max_workers=lane_workers) as executor:
+        futures = {executor.submit(generate_lane, lane, rows): lane
+                   for lane, rows in grouped.items()}
+        for future in as_completed(futures):
+            lane = futures[future]
+            try:
+                completed[lane] = future.result()
+            except Exception as exc:
+                failures[lane] = exc
+                persist(directory / f"{lane}-failure.json", {
+                    "status": "generation-failed-not-admitted", "lane": lane,
+                    "type": type(exc).__name__, "reason": str(exc),
+                })
+    # Deterministic plan order, independent of thread completion order.
+    by_id = {row["id"]: row for rows in completed.values() for row in rows}
+    candidates = [by_id[row["id"]] for row in plan["records"] if row["id"] in by_id]
+    if failures:
+        persist(directory / "lane-results.json", {
+            "status": "partial-generation-not-verified-not-admitted",
+            "completed_lanes": sorted(completed), "failed_lanes": sorted(failures),
+            "completed_candidate_ids": [row["id"] for row in candidates],
+        })
+        # A partial run must never masquerade as a complete candidates manifest.
+        raise failures[next(lane for lane in grouped if lane in failures)]
     with (directory / "candidates.jsonl").open("xb") as handle:
         for candidate in candidates:
             handle.write(canonical_json(candidate) + b"\n")
@@ -159,6 +194,7 @@ def main() -> int:
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--config", type=Path, default=ROOT / "configs/data/expansion_teacher.json")
     parser.add_argument("--codex-bin", default="codex")
+    parser.add_argument("--lane-workers", type=int, choices=(1, 2, 3), default=1)
     args = parser.parse_args()
     plan = json.loads(args.plan.read_text())
     closure = json.loads(args.quality_closure.read_text())
@@ -166,9 +202,11 @@ def main() -> int:
     config = json.loads(args.config.read_text())
     cli = verify_codex_version(args.codex_bin, config["codex_cli_version"])
     directory = reserve_version(REGISTRY, plan)
-    persist(directory / "run-contract.json", {"quality_closure": closure, "teacher": config, "cli_identity": cli})
+    persist(directory / "run-contract.json", {"quality_closure": closure, "teacher": config, "cli_identity": cli,
+            "lane_workers": args.lane_workers,
+            "generator_sha256": digest(Path(__file__).read_bytes())})
     try:
-        candidates = generate(plan, parents, config, args.codex_bin, directory)
+        candidates = generate(plan, parents, config, args.codex_bin, directory, args.lane_workers)
     except Exception as exc:
         persist(directory / "failure.json", {"status": "generation-failed-not-admitted", "type": type(exc).__name__, "reason": str(exc)})
         raise

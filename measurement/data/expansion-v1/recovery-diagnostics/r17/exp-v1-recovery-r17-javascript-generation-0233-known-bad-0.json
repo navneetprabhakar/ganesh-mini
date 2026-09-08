@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "c3f6de6a7126068a8ce4e0777342c864c1616dfaa5796fad1604e73d02c7957e",
+  "code": "function createRecipeBook(notify) {\n  if (typeof notify !== 'function') throw new TypeError('notify must be a function');\n  const records = new Map();\n\n  const copy = (record) => ({\n    key: record.key,\n    title: record.title,\n    ingredients: record.ingredients.slice()\n  });\n\n  const validateKey = (key) => {\n    if (typeof key !== 'string' || key.length === 0) throw new TypeError('invalid key');\n  };\n\n  const validateRecord = (record) => {\n    if (!record || typeof record !== 'object' || Array.isArray(record)) throw new TypeError('invalid record');\n    validateKey(record.key);\n    if (typeof record.title !== 'string' || record.title.trim() === '') throw new TypeError('invalid title');\n    if (!Array.isArray(record.ingredients) ||\n        record.ingredients.some((value) => typeof value !== 'string' || value.length === 0)) {\n      throw new TypeError('invalid ingredients');\n    }\n  };\n\n  async function run(operation, action) {\n    notify({ operation, phase: 'start' });\n    let result;\n    try {\n      result = await action();\n    } catch (error) {\n      notify({ operation, phase: 'failure', error });\n      throw error;\n    }\n    notify({ operation, phase: 'success' });\n    return result;\n  }\n\n  return {\n    async add(record) {\n      return run('add', async () => {\n        validateRecord(record);\n        if (records.has(record.key)) throw new Error('duplicate key');\n        const stored = copy(record);\n        records.set(stored.key, stored);\n        return copy(stored);\n      });\n    },\n    async get(key) {\n      return run('get', async () => {\n        validateKey(key);\n        const record = records.get(key);\n        return record ? copy(record) : null;\n      });\n    },\n    async update(key, changes) {\n      return run('update', async () => {\n        validateKey(key);\n        if (!changes || typeof changes !== 'object' || Array.isArray(changes) ||\n            (!Object.prototype.hasOwnProperty.call(changes, 'title') &&\n             !Object.prototype.hasOwnProperty.call(changes, 'ingredients'))) {\n          throw new TypeError('invalid changes');\n        }\n        const current = records.get(key);\n        if (!current) throw new Error('missing key');\n        const next = {\n          key,\n          title: Object.prototype.hasOwnProperty.call(changes, 'title') ? changes.title : current.title,\n          ingredients: Object.prototype.hasOwnProperty.call(changes, 'ingredients') ? changes.ingredients : current.ingredients\n        };\n        validateRecord(next);\n        const stored = copy(next);\n        records.set(key, stored);\n        return copy(stored);\n      });\n    },\n    async remove(key) {\n      return run('remove', async () => {\n        validateKey(key);\n        return records.delete(key);\n      });\n    }\n  };\n}\n\nmodule.exports = { createRecipeBook };\n",
+  "code_sha256": "c487592f1fa9483638f9dc57c9b8b3a52c11df2bada4ef4730c8c567fe3a3c44",
+  "evidence_sha256": "b92590dfdae6b08b5b0a660f5e777d35f0b0e1a985ed694e4e98a20a6d099112",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "46c375e9acebc09156cc8e8a9359b71f02030059fb2e7d3cd200fe0a9795f030",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 466,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(sparseAddError instanceof TypeError)\n\n    at /work/solution.test.js:117:10 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n",
+    "stderr_sha256": "a70e73bd1efc238e649d1e17ea4c103eb361a83d899e0bf350c23a957204b54e",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

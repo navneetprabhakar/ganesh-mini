@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "c559b2a41e76891153ed6400acceb8d74ed5dff5baac5e8e1aa642b2dec21598",
+  "code": "'use strict';\n\nconst PHASES = new Set(['queued', 'active', 'resolved']);\n\nfunction validRecord(record) {\n  return record && Number.isInteger(record.key) && record.key > 0 &&\n    typeof record.summary === 'string' && record.summary.length > 0 &&\n    typeof record.details === 'string' && record.details.length > 0 &&\n    PHASES.has(record.phase);\n}\n\nfunction copyRecord(record) {\n  return {\n    key: record.key,\n    summary: record.summary,\n    details: record.details,\n    phase: record.phase\n  };\n}\n\nfunction copyState(state) {\n  return state.map(copyRecord);\n}\n\nfunction handleDefect(state, command) {\n  if (!Array.isArray(state) || !state.every(validRecord)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: [] };\n  }\n\n  const next = copyState(state);\n  if (!command || typeof command !== 'object' || Array.isArray(command)) {\n    return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n  }\n\n  if (command.type === 'list') {\n    const ordered = next.slice().sort((a, b) => a.key - b.key);\n    return { status: 200, body: copyState(ordered), state: copyState(next) };\n  }\n\n  if (command.type === 'get' && Number.isInteger(command.key) && command.key > 0) {\n    const found = next.find((record) => record.key === command.key);\n    return found\n      ? { status: 200, body: copyRecord(found), state: copyState(next) }\n      : { status: 404, body: { error: 'Defect not found' }, state: copyState(next) };\n  }\n\n  if (command.type === 'add' && validRecord(command.record)) {\n    if (next.some((record) => record.key === command.record.key)) {\n      return { status: 409, body: { error: 'Duplicate key' }, state: copyState(next) };\n    }\n    const added = copyRecord(command.record);\n    next.push(added);\n    return { status: 201, body: copyRecord(added), state: copyState(next) };\n  }\n\n  return { status: 400, body: { error: 'Invalid input' }, state: copyState(next) };\n}\n\nmodule.exports = { handleDefect };\n",
+  "code_sha256": "75686a31f31be7ac4228123a87524f61a92d87f9230df480e6f0fe35eedfb09d",
+  "evidence_sha256": "bf2d21a62e3948f36112af862ed8403507908038376773d4b1896f1c7cdfd297",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "5ef90228f5f124928ab2ea698baf3d7e52e35061eb8218d4afb950ece4943e45",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 452,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   body: [\n+     <1 empty item>\n+   ],\n+   state: [\n+     <1 empty item>\n+   ],\n+   status: 200\n-   body: {\n-     error: 'Invalid input'\n-   },\n-   state: [],\n-   status: 400\n  }\n\n    at Object.<anonymous> (/work/solution.test.js:102:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: { status: 200, body: [ <1 empty item> ], state: [ <1 empty item> ] },\n  expected: { status: 400, body: { error: 'Invalid input' }, state: [] },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "fcb15b6fa471b26d3a66e8055e9381af110593a07fda0e686a4edef4e3634124",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

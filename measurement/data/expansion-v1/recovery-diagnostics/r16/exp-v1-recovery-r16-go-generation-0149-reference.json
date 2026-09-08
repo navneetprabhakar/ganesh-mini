@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "784c2cc1d10d62d032c00b31a9d8c87817b0acd7d0bb97ed18986f2d591b0217",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"strings\"\n)\n\ntype Route struct {\n\tMethod  string\n\tPattern string\n\tName    string\n}\n\ntype Router struct {\n\troutes []Route\n}\n\ntype routeIdentity struct {\n\tmethod  string\n\tpattern string\n}\n\nfunc splitPath(path string, allowPlaceholders bool) ([]string, error) {\n\tif path == \"/\" {\n\t\treturn []string{}, nil\n\t}\n\tif !strings.HasPrefix(path, \"/\") || strings.HasSuffix(path, \"/\") || strings.Contains(path, \"//\") {\n\t\treturn nil, errors.New(\"invalid path\")\n\t}\n\tparts := strings.Split(path[1:], \"/\")\n\tfor _, part := range parts {\n\t\tif part == \"\" {\n\t\t\treturn nil, errors.New(\"invalid path\")\n\t\t}\n\t\tif !allowPlaceholders && strings.ContainsAny(part, \"{}\") {\n\t\t\treturn nil, errors.New(\"placeholders not allowed\")\n\t\t}\n\t}\n\treturn parts, nil\n}\n\nfunc placeholder(segment string) (string, bool) {\n\tif len(segment) >= 3 && segment[0] == '{' && segment[len(segment)-1] == '}' {\n\t\tname := segment[1 : len(segment)-1]\n\t\tif !strings.ContainsAny(name, \"{}\") {\n\t\t\treturn name, true\n\t\t}\n\t}\n\treturn \"\", false\n}\n\nfunc NewRouter(routes []Route) (*Router, error) {\n\tseenRoutes := make(map[routeIdentity]bool)\n\tcopiedRoutes := append([]Route(nil), routes...)\n\tfor _, route := range copiedRoutes {\n\t\tif route.Method == \"\" || route.Name == \"\" {\n\t\t\treturn nil, errors.New(\"method and name are required\")\n\t\t}\n\t\tparts, err := splitPath(route.Pattern, true)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tseenParams := make(map[string]bool)\n\t\tfor _, part := range parts {\n\t\t\tif strings.ContainsAny(part, \"{}\") {\n\t\t\t\tname, ok := placeholder(part)\n\t\t\t\tif !ok || seenParams[name] {\n\t\t\t\t\treturn nil, errors.New(\"invalid placeholder\")\n\t\t\t\t}\n\t\t\t\tseenParams[name] = true\n\t\t\t}\n\t\t}\n\t\tidentity := routeIdentity{method: route.Method, pattern: route.Pattern}\n\t\tif seenRoutes[identity] {\n\t\t\treturn nil, errors.New(\"duplicate route\")\n\t\t}\n\t\tseenRoutes[identity] = true\n\t}\n\treturn &Router{routes: copiedRoutes}, nil\n}\n\nfunc (r *Router) Resolve(method, path string) (string, map[string]string, bool) {\n\tparts, err := splitPath(path, false)\n\tif err != nil || method == \"\" {\n\t\treturn \"\", nil, false\n\t}\n\tfor _, route := range r.routes {\n\t\tif route.Method != method {\n\t\t\tcontinue\n\t\t}\n\t\tpattern, _ := splitPath(route.Pattern, true)\n\t\tif len(parts) != len(pattern) {\n\t\t\tcontinue\n\t\t}\n\t\tparams := make(map[string]string)\n\t\tmatched := true\n\t\tfor index, segment := range pattern {\n\t\t\tif name, ok := placeholder(segment); ok {\n\t\t\t\tparams[name] = parts[index]\n\t\t\t} else if segment != parts[index] {\n\t\t\t\tmatched = false\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tif matched {\n\t\t\treturn route.Name, params, true\n\t\t}\n\t}\n\treturn \"\", nil, false\n}\n",
+  "code_sha256": "c76863f07148ea788093c3378306cdf0e983fe9d3fbabb196cfe085792a63b77",
+  "evidence_sha256": "96e8daab7f4187bc2413acd357b23bd289eda4cb2be6a26f758f8f99359836d3",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "ced5e779da6d43dfa9e1cb49213bcbda6f2b6351f2e9063a742ac79537fb564c",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 25888,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.017s\n",
+    "stdout_sha256": "63e87a0743b0301dd9286599ebfd982cd0e6fa2ab0f0e606ff376b1581a6da0c",
+    "timed_out": false
+  }
+}

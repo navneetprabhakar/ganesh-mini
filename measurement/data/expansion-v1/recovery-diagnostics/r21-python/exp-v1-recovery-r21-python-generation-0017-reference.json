@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "70f55aefb2559ae95ee6b3e8b21a86599adcdc7861d48e5434c3b4531f128b31",
+  "code": "import copy\nfrom concurrent.futures import ThreadPoolExecutor as _Executor\n\n\nclass Ticket:\n    def __init__(self, future):\n        self._future = future\n\n    def result(self):\n        return self._future.result()\n\n\nclass BatchRunner:\n    def __init__(self, max_workers):\n        if isinstance(max_workers, bool) or not isinstance(max_workers, int):\n            raise TypeError(\"max_workers must be an integer\")\n        if max_workers <= 0:\n            raise ValueError(\"max_workers must be positive\")\n        self._executor = _Executor(max_workers=max_workers)\n        self._tickets = []\n        self._closed = False\n\n    def submit(self, function, *args, **kwargs):\n        if self._closed:\n            raise RuntimeError(\"runner is shut down\")\n        if not callable(function):\n            raise TypeError(\"function must be callable\")\n        saved_args = copy.deepcopy(args)\n        saved_kwargs = copy.deepcopy(kwargs)\n        ticket = Ticket(self._executor.submit(function, *saved_args, **saved_kwargs))\n        self._tickets.append(ticket)\n        return ticket\n\n    def gather(self):\n        results = []\n        first_error = None\n        for ticket in self._tickets:\n            try:\n                results.append(ticket.result())\n            except BaseException as error:\n                results.append(None)\n                if first_error is None:\n                    first_error = error\n        if first_error is not None:\n            raise first_error\n        return results\n\n    def shutdown(self):\n        if not self._closed:\n            self._closed = True\n            self._executor.shutdown(wait=True)\n\n    def __enter__(self):\n        return self\n\n    def __exit__(self, exc_type, exc, traceback):\n        self.shutdown()\n        return False\n",
+  "code_sha256": "2c8a2aaca90d17e9f047ccd3baeefa124b9a2560349290b6aec4f03cd9a859d2",
+  "evidence_sha256": "a4a129c85f37dac32b4c6604cd7398f4346178431407828ba5601c3e7aa07583",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "723dca54f596a0ba0fd3a1b0a8c6b18d3a32c03e18ed64336c26b73c5850043c",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 874,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "...........\n----------------------------------------------------------------------\nRan 11 tests in 0.277s\n\nOK\n",
+    "stderr_sha256": "f4fc470871c06284c4ec147d317da8ccfbc19e52868096cb30bb76dd0838ebcf",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

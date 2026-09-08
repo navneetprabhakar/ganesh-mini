@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "477a9a247b65bb1ea8dfcf88f17865d70988e1e3b93df36f3d39a74d9fc39996",
+  "code": "package solution\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"go/ast\"\n\t\"go/format\"\n\t\"go/parser\"\n\t\"go/token\"\n\t\"strings\"\n)\n\ntype FieldMatch struct{ Destination, Source string }\ntype fieldInfo struct{ name, typ string }\n\nfunc findStruct(src, name string) (*ast.StructType, error) {\n\tf, err := parser.ParseFile(token.NewFileSet(), \"input.go\", src, 0)\n\tif err != nil { return nil, err }\n\tfor _, d := range f.Decls {\n\t\tg, ok := d.(*ast.GenDecl); if !ok { continue }\n\t\tfor _, s := range g.Specs {\n\t\t\tt, ok := s.(*ast.TypeSpec); if !ok || t.Name.Name != name { continue }\n\t\t\tst, ok := t.Type.(*ast.StructType); if !ok { return nil, fmt.Errorf(\"%s is not a struct\", name) }\n\t\t\treturn st, nil\n\t\t}\n\t}\n\treturn nil, fmt.Errorf(\"struct %s not found\", name)\n}\n\nfunc rendered(e ast.Expr) string { var b bytes.Buffer; _ = format.Node(&b, token.NewFileSet(), e); return b.String() }\nfunc eligible(s string) bool { return len(s) > 0 && s[0] >= 'A' && s[0] <= 'Z' }\n\nfunc InspectFieldMatches(dstSrc, dstName, srcSrc, srcName string) ([]FieldMatch, error) {\n\tdst, err := findStruct(dstSrc, dstName); if err != nil { return nil, err }\n\tsrc, err := findStruct(srcSrc, srcName); if err != nil { return nil, err }\n\tindex := map[string][]fieldInfo{}\n\tfor _, f := range src.Fields.List {\n\t\tfor _, n := range f.Names { if eligible(n.Name) { k := strings.ToLower(n.Name); index[k] = append(index[k], fieldInfo{n.Name, rendered(f.Type)}) } }\n\t}\n\tout := make([]FieldMatch, 0)\n\tfor _, f := range dst.Fields.List {\n\t\tfor _, n := range f.Names {\n\t\t\tif !eligible(n.Name) { continue }\n\t\t\tc := index[strings.ToLower(n.Name)]\n\t\t\tif len(c) == 1 && c[0].typ == rendered(f.Type) { out = append(out, FieldMatch{n.Name, c[0].name}) }\n\t\t}\n\t}\n\treturn out, nil\n}\n",
+  "code_sha256": "c5f9a2c7f066d21033ebc8cdb20dfbfdce3c6d98be36a1dad6f2a55def4364d8",
+  "evidence_sha256": "a0ac798c88bb6a2c0b6eedc31d0e7fef0c6079c26ddf5181d8498c78cf6df1c5",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "4880da15d57b6cae3153e1410178ca61728e95848149fcf63cb1c0381b20bc29",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 27562,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestInspectFieldMatchesUsesASCIICaseFoldingOnly (0.00s)\n    solution_test.go:76: got []solution.FieldMatch{}, want []solution.FieldMatch{solution.FieldMatch{Destination:\"Aİ\", Source:\"Aİ\"}, solution.FieldMatch{Destination:\"Ai\", Source:\"Ai\"}}\nFAIL\nFAIL\tganesh.invalid/expansion\t0.023s\nFAIL\n",
+    "stdout_sha256": "b0fef139b87d4a3007ab0d67edaa6a7109a4fbcaadae83e6367ae8bee480e3e7",
+    "timed_out": false
+  }
+}

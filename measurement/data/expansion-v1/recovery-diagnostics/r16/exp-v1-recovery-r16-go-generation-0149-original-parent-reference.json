@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "784c2cc1d10d62d032c00b31a9d8c87817b0acd7d0bb97ed18986f2d591b0217",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"strings\"\n)\n\ntype Route struct {\n\tMethod  string\n\tPattern string\n\tName    string\n}\n\ntype Router struct {\n\troutes []Route\n}\n\nfunc splitPath(path string, allowPlaceholders bool) ([]string, error) {\n\tif path == \"/\" {\n\t\treturn []string{}, nil\n\t}\n\tif !strings.HasPrefix(path, \"/\") || strings.HasSuffix(path, \"/\") || strings.Contains(path, \"//\") {\n\t\treturn nil, errors.New(\"invalid path\")\n\t}\n\tparts := strings.Split(path[1:], \"/\")\n\tfor _, part := range parts {\n\t\tif part == \"\" {\n\t\t\treturn nil, errors.New(\"invalid path\")\n\t\t}\n\t\tif !allowPlaceholders && (strings.Contains(part, \"{\") || strings.Contains(part, \"}\")) {\n\t\t\treturn nil, errors.New(\"placeholders not allowed\")\n\t\t}\n\t}\n\treturn parts, nil\n}\n\nfunc placeholder(segment string) (string, bool) {\n\tif len(segment) >= 3 && segment[0] == '{' && segment[len(segment)-1] == '}' {\n\t\tname := segment[1 : len(segment)-1]\n\t\tif !strings.ContainsAny(name, \"{}\") {\n\t\t\treturn name, true\n\t\t}\n\t}\n\treturn \"\", false\n}\n\nfunc NewRouter(routes []Route) (*Router, error) {\n\tseenRoutes := make(map[string]bool)\n\tcopyRoutes := append([]Route(nil), routes...)\n\tfor _, route := range copyRoutes {\n\t\tif route.Method == \"\" || route.Name == \"\" {\n\t\t\treturn nil, errors.New(\"method and name are required\")\n\t\t}\n\t\tparts, err := splitPath(route.Pattern, true)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tseenParams := make(map[string]bool)\n\t\tfor _, part := range parts {\n\t\t\tif strings.ContainsAny(part, \"{}\") {\n\t\t\t\tname, ok := placeholder(part)\n\t\t\t\tif !ok || seenParams[name] {\n\t\t\t\t\treturn nil, errors.New(\"invalid placeholder\")\n\t\t\t\t}\n\t\t\t\tseenParams[name] = true\n\t\t\t}\n\t\t}\n\t\tkey := route.Method + \"\\x00\" + route.Pattern\n\t\tif seenRoutes[key] {\n\t\t\treturn nil, errors.New(\"duplicate route\")\n\t\t}\n\t\tseenRoutes[key] = true\n\t}\n\treturn &Router{routes: copyRoutes}, nil\n}\n\nfunc (r *Router) Resolve(method, path string) (string, map[string]string, bool) {\n\tparts, err := splitPath(path, false)\n\tif err != nil || method == \"\" {\n\t\treturn \"\", nil, false\n\t}\n\tfor _, route := range r.routes {\n\t\tif route.Method != method {\n\t\t\tcontinue\n\t\t}\n\t\tpattern, _ := splitPath(route.Pattern, true)\n\t\tif len(parts) != len(pattern) {\n\t\t\tcontinue\n\t\t}\n\t\tparams := make(map[string]string)\n\t\tmatched := true\n\t\tfor i, segment := range pattern {\n\t\t\tif name, ok := placeholder(segment); ok {\n\t\t\t\tparams[name] = parts[i]\n\t\t\t} else if segment != parts[i] {\n\t\t\t\tmatched = false\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tif matched {\n\t\t\treturn route.Name, params, true\n\t\t}\n\t}\n\treturn \"\", nil, false\n}\n",
+  "code_sha256": "ebc162a56670da62521ae600a8f448452137acb403166dd064723f6f9d286a6b",
+  "evidence_sha256": "eaacc78b1b1cd3f503688dee8a446242a7f11d1add88ade69639f62e1bae7a11",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "ced5e779da6d43dfa9e1cb49213bcbda6f2b6351f2e9063a742ac79537fb564c",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26393,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestRouterUsesExactMethodPatternPairIdentity (0.00s)\n    solution_test.go:47: duplicate route\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "767ebac26b101ba75dbce556aedaebb1acc1336479e88c695807b897555dff7b",
+    "timed_out": false
+  }
+}

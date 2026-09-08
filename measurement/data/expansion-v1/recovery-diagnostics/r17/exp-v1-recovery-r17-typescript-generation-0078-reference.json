@@ -1,0 +1,51 @@
+{
+  "candidate_sha256": "5e00c78bd376b9fcc064c848e2025c4fdb40f3723b1cbc777790a1d882e2749e",
+  "code": "export interface ShipmentDraft {\n  recipientCode: string;\n  crateCount: number;\n  priority: \"standard\" | \"urgent\";\n}\n\nexport interface ValidationIssue {\n  field: string;\n  message: string;\n}\n\nexport type ValidationResult =\n  | { error: null; value: ShipmentDraft }\n  | { error: ValidationIssue[]; value: undefined };\n\nconst KEYS = new Set([\"recipientCode\", \"crateCount\", \"priority\"]);\n\nexport function validateShipmentDraft(input: unknown): ValidationResult {\n  if (\n    typeof input !== \"object\" ||\n    input === null ||\n    Array.isArray(input) ||\n    Object.getPrototypeOf(input) !== Object.prototype\n  ) {\n    return { error: [{ field: \"$\", message: \"expected a plain object\" }], value: undefined };\n  }\n\n  const source = input as Record<string, unknown>;\n  const enumerableKeys = Object.keys(source);\n  const enumerableKeySet = new Set(enumerableKeys);\n  const issues: ValidationIssue[] = enumerableKeys\n    .filter((key) => !KEYS.has(key))\n    .sort()\n    .map((key) => ({ field: key, message: \"unknown field\" }));\n\n  const hasRecipientCode = enumerableKeySet.has(\"recipientCode\");\n  const code = hasRecipientCode && typeof source.recipientCode === \"string\"\n    ? source.recipientCode.trim()\n    : \"\";\n  if (!hasRecipientCode || !/^[A-Z]{2}-[0-9]{4}$/.test(code)) {\n    issues.push({ field: \"recipientCode\", message: \"invalid recipient code\" });\n  }\n\n  const hasCrateCount = enumerableKeySet.has(\"crateCount\");\n  const count = hasCrateCount ? source.crateCount : undefined;\n  if (!hasCrateCount || !Number.isSafeInteger(count) || (count as number) < 1 || (count as number) > 500) {\n    issues.push({ field: \"crateCount\", message: \"must be an integer from 1 to 500\" });\n  }\n\n  const hasPriority = enumerableKeySet.has(\"priority\");\n  const priority = hasPriority ? source.priority : undefined;\n  if (!hasPriority || (priority !== \"standard\" && priority !== \"urgent\")) {\n    issues.push({ field: \"priority\", message: \"invalid priority\" });\n  }\n\n  if (issues.length > 0) return { error: issues, value: undefined };\n  return {\n    error: null,\n    value: {\n      recipientCode: code,\n      crateCount: count as number,\n      priority: priority as \"standard\" | \"urgent\",\n    },\n  };\n}\n",
+  "code_sha256": "361f8a99debb2696133ccca0c7636dd3864a6c90b20b40ba04c75cdb570cd9cb",
+  "evidence_sha256": "f1a7c9c4267464b40c8009c37312b6ad31192a489fe6b9f1945861bd3fff0190",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "bc13b1006c2e4895e294d759248d64dedf1b02618c6aa5228fa1cda2efe34843",
+  "result": {
+    "commands": [
+      [
+        "tar",
+        "-xzf",
+        "/opt/typescript-5.5.4.tgz",
+        "-C",
+        "/work"
+      ],
+      [
+        "node",
+        "/work/package/bin/tsc",
+        "--strict",
+        "--skipLibCheck",
+        "--module",
+        "commonjs",
+        "--target",
+        "es2022",
+        "solution.ts",
+        "solution.test.ts"
+      ],
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 2596,
+    "exit_codes": [
+      0,
+      0,
+      0
+    ],
+    "image": "ganesh-mini-typescript-verify@sha256:b6ecc8655190c99ea3ff21ec5619a6b8e314a4ff57ed29cc6ef3d8978437533c",
+    "image_id": "sha256:baebc99c9d82fe459d999290a765ad58344ebce3a75613dcc3f93a2a6c134d42",
+    "runtime_id": "typescript-5.5.4-node-22",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

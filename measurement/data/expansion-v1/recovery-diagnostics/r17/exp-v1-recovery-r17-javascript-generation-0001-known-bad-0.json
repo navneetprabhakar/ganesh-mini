@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "7df4f75c8445f7b15040d9ff54ddb983b5236ab5004e8626901e59aeddd51533",
+  "code": "function applyLedgerCredit(command, accountKey, amount, accounts) {\n  const fields = {\n    'credit:reserve': 'reserve',\n    'credit:bonus': 'bonus',\n    'credit:tokens': 'tokens'\n  };\n\n  if (typeof command !== 'string' || !Object.prototype.hasOwnProperty.call(fields, command)) {\n    throw new TypeError('Unsupported command');\n  }\n  if (typeof accountKey !== 'string' || accountKey.length === 0) {\n    throw new TypeError('Invalid account key');\n  }\n  if (typeof amount !== 'number') throw new TypeError('Amount must be a number');\n  if (!Number.isSafeInteger(amount) || amount <= 0) {\n    throw new RangeError('Amount must be a positive safe integer');\n  }\n  if (!Array.isArray(accounts)) throw new TypeError('Accounts must be an array');\n\n  const seen = new Set();\n  const output = accounts.map((account) => {\n    if (!account || typeof account !== 'object' || Array.isArray(account) ||\n        typeof account.key !== 'string' || account.key.length === 0) {\n      throw new TypeError('Invalid account record');\n    }\n    if (seen.has(account.key)) throw new RangeError('Duplicate account key');\n    seen.add(account.key);\n\n    for (const field of ['reserve', 'bonus', 'tokens']) {\n      if (typeof account[field] !== 'number') throw new TypeError('Invalid balance type');\n      if (!Number.isSafeInteger(account[field]) || account[field] < 0) {\n        throw new RangeError('Invalid balance range');\n      }\n    }\n\n    return {\n      key: account.key,\n      reserve: account.reserve,\n      bonus: account.bonus,\n      tokens: account.tokens\n    };\n  });\n\n  const field = fields[command];\n  const index = output.findIndex((account) => account.key === accountKey);\n  if (index === -1) {\n    return {\n      ok: false,\n      accounts: output,\n      message: `Account ${accountKey} was not found.`\n    };\n  }\n\n  const total = output[index][field] + amount;\n  if (!Number.isSafeInteger(total)) throw new RangeError('Balance overflow');\n  output[index][field] = total;\n\n  return {\n    ok: true,\n    accounts: output,\n    message: `${field} credited by ${amount}; new balance: ${total}.`\n  };\n}\n\nmodule.exports = { applyLedgerCredit };\n",
+  "code_sha256": "c2ad039e7031edf592bb811f43af1941b051b583878414b514dc918a86d34bd2",
+  "evidence_sha256": "a5bf2dab4cf381c2f4503dd3dbd336c89d184b152ba4f6e3d273454df31dd178",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "e2cb4a2b43b8771f3913856f4bd0b83e4999e0bef3a35f3b87a131c253fce467",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 426,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "node:assert:150\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at Object.<anonymous> (/work/solution.test.js:101:8)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: [Function: TypeError],\n  operator: 'throws',\n  diff: 'simple'\n}\n\nNode.js v22.23.2\n",
+    "stderr_sha256": "ab2a25c7fd25f5e29360a1f08756d834d4b85c5a38f95215171272fa880b438f",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

@@ -1,5 +1,59 @@
 # Project state
 
+## Admission109 — 2026-09-08
+
+41 recoveries admitted since checkpoint68, now109 total: Go21/Java19/JS18/TS18/
+Python17/Rust16; generation99/repair10. Maximum combined3182, minimum gap818
+before exclusions/token balancing. No corpus/training/release seal. See
+RECOVERY_ADMISSION109_20260908.md for exact output and executed evidence.
+
+R20 Rust0487 remains excluded by original-parent compile-control failure, not
+misreported as semantic proof. R21 generation33 active; Java lane failed the
+exact embedded broken-source integrity guard, with raw output preserved. Other
+lanes continue independently. Terminal evidence backup through109 in progress;
+Both archive and receipt now verified by exact-generation download and byte
+comparison; see RECOVERY_ADMISSION109_BACKUP.md. No cleanup performed.
+
+## Admission93 — 2026-09-08
+
+Combined r15/r16 admission completed25 accepted/0 rejected. Cumulative93:
+Go21, Java19, JavaScript11, TypeScript12, Python15, Rust15; generation85/repair8.
+Maximum originals plus recoveries3166; minimum remaining834 before exclusions
+and token balancing. No training/corpus/release seal. Latest verified backup68
+does not yet cover the latest25; preserve for next terminal backup.
+
+R17/R18/R19 serial diagnostics active after admission; main has integrated their
+quality reviews. R20 two corrected candidates generated and main-reviewed; Rust
+original-control missing traits must remain compile evidence, not semantic proof.
+R21 main-approved33 new parents generating with at most3 lanes; selection note
+records exact hashes and three narrow contract clarifications. Unique reserved
+parents153. Exact current jobs and next steps remain in HANDOFF.md.
+
+## Admission68; next25 in execution — 2026-09-08
+
+68 recoveries are admitted: Go12, Java14, JavaScript11, TypeScript12, Python10,
+Rust9; generation60/repair8. Original holds2812 remain unchanged, leaving at
+most3073 original rows. Maximum combined3141; minimum gap859 before additional
+exclusions and family-token balancing. No final corpus/training/release seal.
+
+Admission68 archive and receipt are backed up to GCS and independently downloaded
+by exact generation with byte-for-byte comparison. See RECOVERY_ADMISSION68_BACKUP.md.
+Later quality reports/diagnostics and r17-r19 outputs need the next terminal backup.
+
+R15 sixteen plus R16 nine have passed main-integrated quality review, behavioral
+directionality and overlap preparation. Combined25 admission now running; do not
+count it before the terminal report. Earlier prepared r15-sixteen-v1 is superseded
+by combined r15-r16-twentyfive-v1 and must NOT be admitted separately.
+R17 all13 JS/TS corrections and R18 two repairs are main-reviewed static positives;
+fresh diagnostics are queued after admission25. R19 two reference repairs retain
+test-coverage/scope holds; one bounded correction proposal is being prepared.
+
+Gate2 remains active. Working, not permission-blocked; no new VM or training run.
+Training50% and release35% are estimated milestone progress, not measured scores.
+Exact jobs/assignments in HANDOFF.md; full-delivery ETA remains ungrounded until
+corpus sufficiency and a measured pilot. Existing GCS backups approved; new
+GCloud compute requires a scoped authorization and cost ceiling.
+
 ## Admission60 — 2026-09-08
 
 R11 adds10actualadmissions: cumulative60 (Go12,Java12,JS11,TS11,Python8,Rust6),

@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "8fb5d807591356c90fe834d8b9fe19b185f6f812ef7c98f714924f2753398d75",
+  "code": "package solution\n\nimport (\n    \"errors\"\n    \"sort\"\n    \"strconv\"\n    \"time\"\n)\n\ntype AssetRecord struct {\n    ID         string\n    Labels     []string\n    Owner      string\n    Created    string\n    Modified   string\n    Attributes map[string][]string\n}\n\ntype AssetQuery struct {\n    Owner            string\n    Label            string\n    CreatedOnOrAfter time.Time\n    PageSize         int\n    Cursor           string\n}\n\ntype AssetRow struct {\n    ID         string\n    Labels     []string\n    Owner      string\n    Created    time.Time\n    Modified   time.Time\n    Attributes map[string][]string\n}\n\nfunc ListAssets(records []AssetRecord, query AssetQuery) ([]AssetRow, string, error) {\n    if query.PageSize <= 0 {\n        return nil, \"\", errors.New(\"page size must be positive\")\n    }\n    seen := make(map[string]bool, len(records))\n    rows := make([]AssetRow, 0)\n    for _, record := range records {\n        if record.ID == \"\" || seen[record.ID] {\n            return nil, \"\", errors.New(\"asset IDs must be non-empty and unique\")\n        }\n        seen[record.ID] = true\n        created, err := time.Parse(time.RFC3339, record.Created)\n        if err != nil {\n            return nil, \"\", err\n        }\n        modified, err := time.Parse(time.RFC3339, record.Modified)\n        if err != nil {\n            return nil, \"\", err\n        }\n        if query.Owner != \"\" && record.Owner != query.Owner {\n            continue\n        }\n        if query.Label != \"\" && !containsLabel(record.Labels, query.Label) {\n            continue\n        }\n        if !query.CreatedOnOrAfter.IsZero() && created.Before(query.CreatedOnOrAfter) {\n            continue\n        }\n        rows = append(rows, AssetRow{ID: record.ID, Labels: append([]string(nil), record.Labels...), Owner: record.Owner, Created: created, Modified: modified, Attributes: cloneAttributes(record.Attributes)})\n    }\n    sort.Slice(rows, func(i, j int) bool { return rows[i].ID < rows[j].ID })\n    offset, err := parseCursor(query.Cursor)\n    if err != nil || offset > len(rows) {\n        return nil, \"\", errors.New(\"invalid cursor\")\n    }\n    end := offset + query.PageSize\n    if end > len(rows) {\n        end = len(rows)\n    }\n    page := rows[offset:end]\n    next := \"\"\n    if end < len(rows) {\n        next = strconv.Itoa(end)\n    }\n    return page, next, nil\n}\n\nfunc containsLabel(labels []string, wanted string) bool {\n    for _, label := range labels {\n        if label == wanted {\n            return true\n        }\n    }\n    return false\n}\n\nfunc parseCursor(cursor string) (int, error) {\n    if cursor == \"\" {\n        return 0, nil\n    }\n    if cursor != \"0\" && cursor[0] == '0' {\n        return 0, errors.New(\"non-canonical cursor\")\n    }\n    for _, r := range cursor {\n        if r < '0' || r > '9' {\n            return 0, errors.New(\"invalid cursor\")\n        }\n    }\n    value, err := strconv.Atoi(cursor)\n    if err != nil {\n        return 0, err\n    }\n    return value, nil\n}\n\nfunc cloneAttributes(src map[string][]string) map[string][]string {\n    if src == nil {\n        return nil\n    }\n    dst := make(map[string][]string, len(src))\n    for key, values := range src {\n        dst[key] = append([]string(nil), values...)\n    }\n    return dst\n}\n",
+  "code_sha256": "a1357433313a59a97eb96dd15c6a27a91bed22a4727cc400d06fdc95a9ce6f2c",
+  "evidence_sha256": "2e9176f90cca4c3f69b096e0bd2c08f6448d578fd31b008dd5ac6e05e3f29172",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "16aab2d4078c16d399336e6fba8bccb6c41a7162f2f2093fe95fc30c7428a122",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26086,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestListAssetsNativeMaxPageSizeWithCursor (0.00s)\npanic: runtime error: slice bounds out of range [:-9223372036854775808] [recovered]\n\tpanic: runtime error: slice bounds out of range [:-9223372036854775808]\n\ngoroutine 11 [running]:\ntesting.tRunner.func1.2({0x53b400, 0xc000018090})\n\t/usr/local/go/src/testing/testing.go:1631 +0x24a\ntesting.tRunner.func1()\n\t/usr/local/go/src/testing/testing.go:1634 +0x377\npanic({0x53b400?, 0xc000018090?})\n\t/usr/local/go/src/runtime/panic.go:770 +0x132\nganesh.invalid/expansion.ListAssets({0xc00006bed0, 0x1, 0x1?}, {{0x0, 0x0}, {0x0, 0x0}, {0x0, 0x0, 0x0}, ...})\n\t/work/solution.go:75 +0x8da\nganesh.invalid/expansion.TestListAssetsNativeMaxPageSizeWithCursor(0xc000086ea0)\n\t/work/solution_test.go:116 +0xf0\ntesting.tRunner(0xc000086ea0, 0x5557c8)\n\t/usr/local/go/src/testing/testing.go:1689 +0xfb\ncreated by testing.(*T).Run in goroutine 1\n\t/usr/local/go/src/testing/testing.go:1742 +0x390\nFAIL\tganesh.invalid/expansion\t0.024s\nFAIL\n",
+    "stdout_sha256": "6d3b4505062e8e49924b6a0b9038ee9a1837712a5ebb7747f6d58afed94a8c48",
+    "timed_out": false
+  }
+}

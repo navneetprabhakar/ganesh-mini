@@ -1,5 +1,96 @@
 # Ganesh Mini 1.0 handoff
 
+## Exact admission109 resume — 2026-09-08
+
+Admission37020 DONE16/0rejected; cumulative109=Go21/Java19/JS18/TS18/Python17/
+Rust16, generation99/repair10. Max combined3182/minremaining818. Main verified
+all prior admission report/output seals. No final corpus/training/release seal.
+See RECOVERY_ADMISSION109_20260908.md. Alloriginalholds2812 unchanged.
+
+R20 diagnostics72388 DONE: Python positive/admitted; Rust correctedreference
+PASS/suppliedmutant behavioralFAIL/originalparent COMPILE failure, excluded.
+Don't repair the original, conflate outcomes, or weaken admission control.
+
+R21 teacher7233 ACTIVE. Java6 andGo8 architecture lanes failed exact embedded
+broken-source guard; no candidate files for those lanes. Otherlanes continue.
+Root cause is main-approved request classification conflict: reference-fix freezes
+old repair prompt while rationale requires a new mutant embedded in that prompt.
+Preserve r21 raw andfailure JSON; don't blame only teacher or weakenexactguard.
+Reviewer rust421_450 is drafting combined fresh R22 Go8/Java6 retry request and
+RECOVERY_R21_JAVA_FAILURE_20260908.md. For eight repairrows only, oracle-rebuild
+permits exact broken-code replacement while allbehavioralprose stays unchanged;
+generationrows preserve reference-fix/approved clarification. Main has NOT read
+or approved this draft; no r22 reserved. Wait availableteacher slots beforelaunch.
+
+R21 Python4 emitted and serial diagnostics61671 DONE:0063/0156/0781 allthree
+programsPASS (missingwitnesses);0017directionalityPASS but preliminary timer-
+dependent test hold. Reviewer rust451_480 writing RECOVERY_R21_PYTHON_REVIEW;
+mainhasNOTreadfinal yet. Preliminary holdsall4:valuelessrel missing,falseylogger
+missing/privatefieldoracle,sharedbaserow missing,timer-dependentgather witness.
+Do not admit from preliminary review. rust391_420 idle after integratedR20.
+R21 Rust6/JS5/TS4 notyetemitted atlastcheck; dispatch disjointreviewswhenfilesexist.
+No verifier/admission nowactive. No additionalnew-parentselectionneeded.
+
+Admission109 archive AND receipt exact-generationdownload/cmpPASS; receipt
+generation1788873297960611. See RECOVERY_ADMISSION109_BACKUP.md.
+Archivegen1788873211725614 bytes10827870 SHA
+c95e152e14337f7d7ef66421f897754995a19f735f0d6c2f31ecf725051d2355.
+Includes all109 admissions, terminalr15-r20teacher/diagnostics/reviews andr21
+planonly. Excludes activer21outputs/diagnostics/reviews andr22drafts. Preserve
+these fornextbackup. No cleanup/VM/billingcertification.144datatestsPASS.
+
+R22 combined14 draft and R21 Python4 finalreview nowcomplete, bothmain-unread.
+Next: batchcommit/push; integrateR21remainingreviews,
+freshserialdiagnostics, validate/launchR22 afterslotcheck, boundedR21 test-only
+correction when justified. Working, notpermissionblocked. Training50%/release35%
+estimatedmilestones; next10–30minlowconfidence; overallETAunproven.
+
+## Admission93 and R21 generation — 2026-09-08
+
+Queue78047 DONE:25 admitted/0rejected -> R17 thirteen diagnostics PASS,
+R18 two PASS, R19 Python PASS but still prior test-scope hold; R19 Rust reference
+PASS/supplied mutant behavioral FAIL/original-parent COMPILE failure. Never
+count compile failure as semantic evidence or weaken that control.
+Main fully read/validated all R17/R19/R20 reviews. R20 two static positives;
+R20 Rust original-parent trait failure must remain excluded from current
+admission path. Fresh R20 two diagnostics now running (session recorded next).
+
+Actual93=Go21/Java19/JS11/TS12/Python15/Rust15; generation85/repair8;
+max combined3166/min remaining834. See RECOVERY_ADMISSION93_20260908.md.
+Standalone prepared r15-sixteen-v1 is superseded by admitted combined25;
+NEVER admit that old16 separately. LatestverifiedGCScheckpoint68 excludes25.
+
+R20 teacher59634 DONE2. R21 teacher7233 active33 with3laneworkers, allnew
+parents: Go8/Java6/Python4/Rust6/JS5/TS4, generation25/repair8. Main fully read
+allthree batch2reports, validated35proposals and selected33. Rust0133 compile-
+only andJavarepair0270 oracle-only deferred. Three narrowclarifications approved
+in RECOVERY_R21_SELECTION_20260908.md. PlanSHA
+a395242261d87d3bdf5189dcf02e06d7e501043dfac6d9c36cb9c5a2780fe9bc.
+Unique reserved parents153. Reviewers idle afterall completed selections;
+dispatch disjoint R21 reviews only aftercandidatefiles exist. No newparenttask.
+
+Next: finish R20 diagnostics, prepare/admit R17 thirteen+R18two+eligibleR20
+Python (expected16, onlycountactual), then verified terminalGCSbackup ofalllater
+evidence. R21active outputs excluded untilterminal. No otherverifier/admission
+concurrent withR20. Gate2/holdsunchanged/notrainingseal/newVM. Training50%/
+release35% estimates; working, next10–30minlowconfidence; overallETAunproven.
+
+## Post-commit live queue — 2026-09-08
+
+Commit1eb0655 pushed successfully; session87528 exited0.
+R17 generation13 and R19 generation2 now have terminal generation.json files.
+Sessions12703/80444 exited0; no teacher generation remains pending.
+Main dispatched three disjoint quality reviews: rust391_420 R17 JS7,
+rust451_480 R17 TS6, rust421_450 R19 Python/Rust2. Reports respectively
+RECOVERY_R17_JS_REVIEW_20260908.md, RECOVERY_R17_TS_REVIEW_20260908.md,
+RECOVERY_R19_REVIEW_20260908.md. Drafts not main-integrated; don't duplicate.
+ONE serial diagnostic queue75000 continues R16 Go; keep other execution idle.
+R15 sixteen preparation81112 DONE zero overlaps; admission not launched.
+R18 two review main-integrated/positive, diagnostics pending. Count68 unchanged.
+After75000, run pending admission and R17/R18/R19 diagnostics serially, integrate
+reviews, then batch next backup. New terminal teacher outputs17/18/19 NOT in
+verified admission68 archive. No cleanup or final corpus/training seal.
+
 ## Exact accelerated resume — 2026-09-08, 12:45 UTC checkpoint
 
 Actual admissions remain68, max combined3141, minimum gap859 before exclusions

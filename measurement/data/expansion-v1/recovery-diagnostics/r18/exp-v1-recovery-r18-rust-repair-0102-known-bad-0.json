@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "d62414c000b4ecd8d1660e29066a65404316398f62aebfd6dc9ad0f1960833d5",
+  "code": "use std::collections::BTreeSet;\n\npub fn qualified_ref(kind: &str, name: &str) -> Option<String> {\n    if name.is_empty() || name.starts_with('/') || name.chars().any(|c| c.is_ascii_whitespace() || c == ':') {\n        return None;\n    }\n    let section = match kind { \"branch\" => \"heads\", \"tag\" => \"tags\", _ => return None };\n    Some(format!(\"refs/{section}/{name}:refs/{section}/{name}\"))\n}\n\npub fn project_slug(remote: &str) -> Option<String> {\n    let clean = remote.trim().trim_end_matches('/');\n    let leaf = clean.rsplit(['/', ':']).next()?;\n    let slug = leaf.strip_suffix(\".git\").unwrap_or(leaf);\n    (!slug.is_empty()).then(|| slug.to_string())\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct RepoPlan {\n    pub primary: String,\n    pub supporting: Vec<String>,\n    pub tags: Vec<String>,\n}\n\nimpl RepoPlan {\n    pub fn tracked_refs(&self) -> Vec<String> {\n        let mut seen = BTreeSet::new();\n        let mut out = Vec::new();\n        for (kind, name) in std::iter::once((\"branch\", &self.primary))\n            .chain(self.supporting.iter().map(|n| (\"branch\", n)))\n            .chain(self.tags.iter().map(|n| (\"tag\", n)))\n        {\n            if let Some(reference) = qualified_ref(kind, name) {\n                if seen.insert(reference.clone()) { out.push(reference); }\n            }\n        }\n        out\n    }\n}\n",
+  "code_sha256": "6b2ec40b5b9a4653c04112c1490efe0704952f24c0bede3e1b95de727ea94637",
+  "evidence_sha256": "aa1f83b1ca2209569c0cc8f8b2592bbfe4215605097cf93d964683406958bb1e",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "8c2b016284660327c9d77e34b6ccf76585bcaf4e147c761ef4d9bfe7d4a923f0",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 2430,
+    "exit_codes": [
+      0,
+      101
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 15 tests\ntest project_slug_applies_operations_in_the_specified_order ... ok\ntest project_slug_does_not_mutate_the_remote ... ok\ntest project_slug_handles_common_remote_forms ... ok\ntest project_slug_rejects_empty_or_empty_final_components ... ok\ntest project_slug_removes_exactly_one_git_suffix ... ok\ntest project_slug_trims_only_surrounding_ascii_whitespace ... FAILED\ntest qualified_ref_accepts_permitted_punctuation_and_non_ascii_whitespace ... ok\ntest qualified_ref_does_not_mutate_the_name ... ok\ntest qualified_ref_maps_supported_kinds ... ok\ntest qualified_ref_rejects_unknown_kinds_and_malformed_names ... ok\ntest tracked_refs_handles_empty_collections_and_invalid_primary ... ok\ntest tracked_refs_is_stable_and_does_not_mutate_the_plan ... ok\ntest tracked_refs_keeps_identical_branch_and_tag_names_distinct ... ok\ntest tracked_refs_preserves_category_and_insertion_order ... ok\ntest tracked_refs_skips_invalid_entries_and_keeps_first_duplicate ... ok\n\nfailures:\n\n---- project_slug_trims_only_surrounding_ascii_whitespace stdout ----\n\nthread 'project_slug_trims_only_surrounding_ascii_whitespace' panicked at solution_test.rs:82:5:\nassertion `left == right` failed\n  left: Some(\"repo\")\n right: Some(\"\\u{2003}repo\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    project_slug_trims_only_surrounding_ascii_whitespace\n\ntest result: FAILED. 14 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s\n\n",
+    "stdout_sha256": "98cb0b6ba33e6ab70a2a44f47da0d601c09058c276ca47acd390a1ba52181019",
+    "timed_out": false
+  }
+}

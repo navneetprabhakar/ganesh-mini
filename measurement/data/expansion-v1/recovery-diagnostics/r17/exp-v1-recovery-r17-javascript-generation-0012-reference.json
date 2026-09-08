@@ -1,0 +1,30 @@
+{
+  "candidate_sha256": "5fcfe3a4b95e0b6c469004b5a5968b19ea4215e7f9eaecac6b8dec90426d7fb6",
+  "code": "'use strict';\n\nfunction valid(item) {\n  return item && Number.isInteger(item.id) && item.id > 0 &&\n    typeof item.name === 'string' && item.name.length > 0 &&\n    typeof item.maker === 'string' && item.maker.length > 0 &&\n    Number.isInteger(item.released) && item.released >= 0 && item.released <= 9999;\n}\n\nfunction validId(id) {\n  return Number.isInteger(id) && id > 0;\n}\n\nfunction copy(item) {\n  return { id: item.id, name: item.name, maker: item.maker, released: item.released };\n}\n\nfunction copies(catalog) {\n  const result = [];\n  for (let index = 0; index < catalog.length; index += 1) {\n    result.push(copy(catalog[index]));\n  }\n  return result;\n}\n\nfunction applyCatalogCommand(catalog, command) {\n  if (!Array.isArray(catalog)) {\n    return { status: 400, data: { error: 'Invalid input' }, catalog: [] };\n  }\n  for (let index = 0; index < catalog.length; index += 1) {\n    if (!valid(catalog[index])) {\n      return { status: 400, data: { error: 'Invalid input' }, catalog: [] };\n    }\n  }\n\n  const current = copies(catalog);\n  const invalid = () => ({ status: 400, data: { error: 'Invalid input' }, catalog: copies(current) });\n  const missing = () => ({ status: 404, data: { error: 'Item not found' }, catalog: copies(current) });\n  if (!command || typeof command !== 'object' || Array.isArray(command)) return invalid();\n\n  if (command.type === 'readAll') {\n    return { status: 200, data: copies(current), catalog: copies(current) };\n  }\n  if (command.type === 'read' && validId(command.id)) {\n    const item = current.find((entry) => entry.id === command.id);\n    return item ? { status: 200, data: copy(item), catalog: copies(current) } : missing();\n  }\n  if (command.type === 'create' && valid(command.item)) {\n    if (current.some((entry) => entry.id === command.item.id)) {\n      return { status: 409, data: { error: 'Duplicate id' }, catalog: copies(current) };\n    }\n    const item = copy(command.item);\n    current.push(item);\n    return { status: 201, data: copy(item), catalog: copies(current) };\n  }\n  if (command.type === 'replace' && validId(command.id) && valid(command.item) && command.item.id === command.id) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    current[index] = copy(command.item);\n    return { status: 200, data: copy(current[index]), catalog: copies(current) };\n  }\n  if (command.type === 'remove' && validId(command.id)) {\n    const index = current.findIndex((entry) => entry.id === command.id);\n    if (index < 0) return missing();\n    const removed = current[index];\n    current.splice(index, 1);\n    return { status: 200, data: copy(removed), catalog: copies(current) };\n  }\n  return invalid();\n}\n\nmodule.exports = { applyCatalogCommand };\n",
+  "code_sha256": "156faaea49704bce06188ecef5f9c59b1e439c16f74cfc88105bb8df12f4b593",
+  "evidence_sha256": "f5c696fab680d96c19bbdbbc766782e5fb80331fd6ac2ed00a289add7cd6a079",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "87af48b766e695e5938172d490a3fff70a679f58367d9682c07cc10fe932122e",
+  "result": {
+    "commands": [
+      [
+        "node",
+        "solution.test.js"
+      ]
+    ],
+    "duration_ms": 425,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-javascript-verify@sha256:5238e05b4bed61b5824505147f21c4c73f346dbf5f964192224dd00c6a911a26",
+    "image_id": "sha256:fc22cb5c62e3458d2f5d9e5df2495abc03fda6a52f284b396f71283782e63a90",
+    "runtime_id": "javascript-node-22.23.2",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

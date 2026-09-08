@@ -1,0 +1,38 @@
+{
+  "candidate_sha256": "d62414c000b4ecd8d1660e29066a65404316398f62aebfd6dc9ad0f1960833d5",
+  "code": "use std::collections::BTreeSet;\n\npub fn qualified_ref(kind: &str, name: &str) -> Option<String> {\n    if name.is_empty() || name.starts_with('/') || name.chars().any(|c| c.is_ascii_whitespace() || c == ':') {\n        return None;\n    }\n    let section = match kind { \"branch\" => \"heads\", \"tag\" => \"tags\", _ => return None };\n    Some(format!(\"refs/{section}/{name}:refs/{section}/{name}\"))\n}\n\npub fn project_slug(remote: &str) -> Option<String> {\n    let clean = remote\n        .trim_matches(|c: char| c.is_ascii_whitespace())\n        .trim_end_matches('/');\n    let leaf = clean.rsplit(['/', ':']).next()?;\n    let slug = leaf.strip_suffix(\".git\").unwrap_or(leaf);\n    (!slug.is_empty()).then(|| slug.to_string())\n}\n\n#[derive(Clone, Debug, PartialEq, Eq)]\npub struct RepoPlan {\n    pub primary: String,\n    pub supporting: Vec<String>,\n    pub tags: Vec<String>,\n}\n\nimpl RepoPlan {\n    pub fn tracked_refs(&self) -> Vec<String> {\n        let mut seen = BTreeSet::new();\n        let mut out = Vec::new();\n        for (kind, name) in std::iter::once((\"branch\", &self.primary))\n            .chain(self.supporting.iter().map(|n| (\"branch\", n)))\n            .chain(self.tags.iter().map(|n| (\"tag\", n)))\n        {\n            if let Some(reference) = qualified_ref(kind, name) {\n                if seen.insert(reference.clone()) { out.push(reference); }\n            }\n        }\n        out\n    }\n}\n",
+  "code_sha256": "29be4e94463fd7b8c1aa670cb7c750e6db3d93cd71aaaab0412d6ccd61bf54b2",
+  "evidence_sha256": "3753c2f684013afdc19d3eb522e8a1692a47f6c6daf4925010aa7afa5f90ba5e",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "8c2b016284660327c9d77e34b6ccf76585bcaf4e147c761ef4d9bfe7d4a923f0",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 2459,
+    "exit_codes": [
+      0,
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 15 tests\ntest project_slug_applies_operations_in_the_specified_order ... ok\ntest project_slug_does_not_mutate_the_remote ... ok\ntest project_slug_handles_common_remote_forms ... ok\ntest project_slug_rejects_empty_or_empty_final_components ... ok\ntest project_slug_removes_exactly_one_git_suffix ... ok\ntest project_slug_trims_only_surrounding_ascii_whitespace ... ok\ntest qualified_ref_accepts_permitted_punctuation_and_non_ascii_whitespace ... ok\ntest qualified_ref_does_not_mutate_the_name ... ok\ntest qualified_ref_maps_supported_kinds ... ok\ntest qualified_ref_rejects_unknown_kinds_and_malformed_names ... ok\ntest tracked_refs_handles_empty_collections_and_invalid_primary ... ok\ntest tracked_refs_is_stable_and_does_not_mutate_the_plan ... ok\ntest tracked_refs_keeps_identical_branch_and_tag_names_distinct ... ok\ntest tracked_refs_preserves_category_and_insertion_order ... ok\ntest tracked_refs_skips_invalid_entries_and_keeps_first_duplicate ... ok\n\ntest result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+    "stdout_sha256": "d77c26b217fa6c5244f25fec937ddee3e681b6c149f7f46f9bdecc62cd33d5fe",
+    "timed_out": false
+  }
+}

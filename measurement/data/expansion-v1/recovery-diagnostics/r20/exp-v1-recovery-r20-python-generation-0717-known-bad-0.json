@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "027f579f61952d4776a2d3d0af749b76a7aa8c94870f0dd9d243b9f2e3366d65",
+  "code": "from collections.abc import Mapping\nfrom copy import deepcopy\n\n\nclass WorkMessage:\n    def __init__(self, kind, fields):\n        self._validate(kind, fields)\n        self._kind = kind\n        self._fields = deepcopy(fields)\n\n    @property\n    def kind(self):\n        return self._kind\n\n    @property\n    def fields(self):\n        return deepcopy(self._fields)\n\n    def is_consistent(self):\n        try:\n            self._validate(self._kind, self._fields)\n        except (TypeError, ValueError):\n            return False\n        return True\n\n    @staticmethod\n    def _validate(kind, fields):\n        if kind != \"job\" and kind != \"reply\":\n            raise ValueError(\"unknown kind\")\n        if not isinstance(fields, Mapping):\n            raise TypeError(\"fields must be a mapping\")\n\n        required = (\n            {\"id\", \"priority\", \"tags\"}\n            if kind == \"job\"\n            else {\"id\", \"accepted\"}\n        )\n        if set(fields) != required:\n            raise ValueError(\"incorrect fields\")\n        if not isinstance(fields[\"id\"], str):\n            raise TypeError(\"id must be a string\")\n        if not fields[\"id\"]:\n            raise ValueError(\"id must not be empty\")\n\n        if kind == \"job\":\n            priority = fields[\"priority\"]\n            if isinstance(priority, bool) or not isinstance(priority, int):\n                raise TypeError(\"priority must be an integer\")\n            if not 0 <= priority <= 9:\n                raise ValueError(\"priority out of range\")\n            tags = fields[\"tags\"]\n            if not isinstance(tags, list):\n                raise TypeError(\"tags must be a list\")\n            if any(not isinstance(tag, str) for tag in tags):\n                raise TypeError(\"tags must contain strings\")\n            if any(not tag for tag in tags) or len(set(tags)) != len(tags):\n                raise ValueError(\"tags must be non-empty and unique\")\n        elif type(fields[\"accepted\"]) is not bool:\n            raise TypeError(\"accepted must be a boolean\")\n",
+  "code_sha256": "4d7a5924ea9389791e9eae3edf56150c753281cd4df093b610daa4ca5eace301",
+  "evidence_sha256": "aa488dcca97f954175c595c3c45a3d2098f2d14827d1b5f08deaa37892bb12eb",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "4432a25372e0cd1ef3da2401dbab9b82886ecdeb5d0a791dbf22d3fb4768e3e4",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 420,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".E...E...E..........\n======================================================================\nERROR: test_constructor_isolates_from_mapping_proxy_backing_data (__main__.WorkMessageTests.test_constructor_isolates_from_mapping_proxy_backing_data)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 195, in test_constructor_isolates_from_mapping_proxy_backing_data\n    message = WorkMessage(\"job\", MappingProxyType(backing))\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 9, in __init__\n    self._fields = deepcopy(fields)\n                   ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n\n======================================================================\nERROR: test_general_mapping_implementations_are_accepted (__main__.WorkMessageTests.test_general_mapping_implementations_are_accepted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 72, in test_general_mapping_implementations_are_accepted\n    WorkMessage(\"job\", proxy_fields).fields,\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 9, in __init__\n    self._fields = deepcopy(fields)\n                   ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n\n======================================================================\nERROR: test_mapping_proxy_reply_is_valid_and_isolated (__main__.WorkMessageTests.test_mapping_proxy_reply_is_valid_and_isolated)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 208, in test_mapping_proxy_reply_is_valid_and_isolated\n    message = WorkMessage(\"reply\", MappingProxyType(backing))\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 9, in __init__\n    self._fields = deepcopy(fields)\n                   ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.11/copy.py\", line 161, in deepcopy\n    rv = reductor(4)\n         ^^^^^^^^^^^\nTypeError: cannot pickle 'mappingproxy' object\n\n----------------------------------------------------------------------\nRan 20 tests in 0.005s\n\nFAILED (errors=3)\n",
+    "stderr_sha256": "e82fe4f7d8a32e11088fa834145a999e8d0c7e4663661acd609dce04afb0fadf",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

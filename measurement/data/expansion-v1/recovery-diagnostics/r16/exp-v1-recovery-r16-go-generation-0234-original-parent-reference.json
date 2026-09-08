@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "cf305e7e5bc61fe1d6dad18c1d96eaebd8c8934e0f0aa721b0f4484b16e364e5",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n\t\"strconv\"\n)\n\nvar (\n\tErrInvalidAsset  = errors.New(\"invalid asset\")\n\tErrAssetExists   = errors.New(\"asset already exists\")\n\tErrAssetNotFound = errors.New(\"asset not found\")\n)\n\ntype Asset struct {\n\tID, Name, Zone string\n\tTags           []string\n}\n\ntype Inventory struct {\n\titems map[string]Asset\n}\n\nfunc NewInventory() *Inventory {\n\treturn &Inventory{items: make(map[string]Asset)}\n}\n\nfunc validAsset(a Asset) bool {\n\tn, err := strconv.Atoi(a.ID)\n\tif err != nil || n <= 0 || strconv.Itoa(n) != a.ID || a.Name == \"\" || a.Zone == \"\" {\n\t\treturn false\n\t}\n\tfor _, tag := range a.Tags {\n\t\tif tag == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\nfunc copyAsset(a Asset) Asset {\n\ta.Tags = append([]string(nil), a.Tags...)\n\treturn a\n}\n\nfunc (i *Inventory) Add(a Asset) error {\n\tif !validAsset(a) {\n\t\treturn ErrInvalidAsset\n\t}\n\tif _, ok := i.items[a.ID]; ok {\n\t\treturn ErrAssetExists\n\t}\n\ti.items[a.ID] = copyAsset(a)\n\treturn nil\n}\n\nfunc (i *Inventory) Update(a Asset) error {\n\tif !validAsset(a) {\n\t\treturn ErrInvalidAsset\n\t}\n\tif _, ok := i.items[a.ID]; !ok {\n\t\treturn ErrAssetNotFound\n\t}\n\ti.items[a.ID] = copyAsset(a)\n\treturn nil\n}\n\nfunc (i *Inventory) Delete(id string) error {\n\tif _, ok := i.items[id]; !ok {\n\t\treturn ErrAssetNotFound\n\t}\n\tdelete(i.items, id)\n\treturn nil\n}\n\nfunc (i *Inventory) Get(id string) (Asset, error) {\n\ta, ok := i.items[id]\n\tif !ok {\n\t\treturn Asset{}, ErrAssetNotFound\n\t}\n\treturn copyAsset(a), nil\n}\n\nfunc (i *Inventory) IDs() []string {\n\tout := make([]string, 0, len(i.items))\n\tfor id := range i.items {\n\t\tout = append(out, id)\n\t}\n\tsort.Strings(out)\n\treturn out\n}\n\nfunc (i *Inventory) Snapshot() map[string]Asset {\n\tout := make(map[string]Asset, len(i.items))\n\tfor id, a := range i.items {\n\t\tout[id] = copyAsset(a)\n\t}\n\treturn out\n}\n\nfunc (i *Inventory) Clear() { i.items = make(map[string]Asset) }\n",
+  "code_sha256": "a6c39329331ac0019e4af76d6cc154016b1ab7854603052f6b96ab8ace15c6bc",
+  "evidence_sha256": "a95ae8b00e0220ad549aefa745c601232be76a926c2f5ce9a12c7582dbfe3ca8",
+  "label": "original-parent-reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "f743b378be9f7bcb536e86973669c1cbead45f0b1556d79cc8077f14c19682cb",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26067,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestInventoryAcceptsArbitrarilyLargeCanonicalDecimalID (0.00s)\n    solution_test.go:53: Add rejected canonical decimal ID: invalid asset\nFAIL\nFAIL\tganesh.invalid/expansion\t0.020s\nFAIL\n",
+    "stdout_sha256": "6339fd537762e50a388056784ceea246906edfc8e5346ea8850d6baca7ba7015",
+    "timed_out": false
+  }
+}

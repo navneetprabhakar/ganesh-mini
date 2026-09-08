@@ -30,3 +30,31 @@ Cumulative345/942:135 new holds,210 scoped positives;160 first-time Rust repairs
 Outside unique coverage4959; corpus holds2281; frozen sample165/135 unchanged.
 Continue initially unheld346. GCS through330; this batch and two probes await backup.
 
+Continuation2026-09-08: initially unheld346–360. Nine fresh complete repair
+inspections and generation0304 prompt/reference reread; other generation rows
+reconcile cited full prior notes. Six holds and nine scoped positives; no new
+execution. API/oracle issues explicitly remain open where noted.
+
+| Unheld position | Candidate ID | Criterion finding |
+| --- | --- | --- |
+| 346 | exp-v1-rust-repair-0189 | Fresh full repair inspection: sliding rays stop at either side's occupied square, allow only opposing capture and preserve sorted legal moves and atomic application. Criterion positive. |
+| 347 | exp-v1-rust-repair-0193 | Fresh full repair inspection: defer ticket consumption until every job and cumulative cost validates, committing dispatcher and signal together. Criterion positive; private ticket exhaustion and cost-overflow oracle coverage remain unresolved. |
+| 348 | exp-v1-rust-repair-0194 | Non-triviality hold: swap explicitly named actual/expected fields in the mismatch constructor; hashing, owned snapshot and iterator cursor unchanged. |
+| 349 | exp-v1-rust-repair-0195 | Non-triviality hold: directly prescribed fully qualified trait-call substitution. Known-bad generic body also lacks Display bound required by its free call, so behavioral-only mutant qualification remains unresolved. |
+| 350 | exp-v1-rust-repair-0196 | Non-triviality hold: replace lowercase conversion with directly prescribed clone; case-insensitive key matching, duplicate ambiguity and debug logging unchanged. |
+| 351 | exp-v1-rust-generation-0295 | RUST_STRATUM_REVIEW_17.md documents maximum historical counts, saturating limits, bounded stop and consumed finish. Criterion positive. |
+| 352 | exp-v1-rust-generation-0296 | RUST_STRATUM_REVIEW_17.md documents validation before per-record predicate, stable path deduplication and borrowed optional output. Criterion positive. |
+| 353 | exp-v1-rust-generation-0299 | RUST_STRATUM_REVIEW_17.md documents cancellation precedence, owned unchanged identifiers and ordered duplicate chunks. Criterion positive. |
+| 354 | exp-v1-rust-generation-0300 | RUST_STRATUM_REVIEW_17.md documents checked field slices, tag-offset policy errors, field-start truncation and exact trailing position. Criterion positive. |
+| 355 | exp-v1-rust-repair-0197 | Non-triviality hold: change unconditional false to true after successful insertion; maximum-count guard and consuming wrapper remain unchanged. |
+| 356 | exp-v1-rust-repair-0198 | Non-triviality hold: replace one index literal in the fully prescribed four-case edge-color table; validation and cloning unchanged. |
+| 357 | exp-v1-rust-repair-0199 | Fresh full repair inspection: reject duplicate namespace before replacing the owned trait object, preserving original registration and subsequent shutdown behavior. Criterion positive; arbitrary stateful namespace accessors are not newly adjudicated. |
+| 358 | exp-v1-rust-repair-0200 | Fresh full repair inspection: distinguish absent argument from present empty argument for flags, while typed options retain their separate missing/malformed paths. Criterion positive; whitespace-only name validation is stronger in source/tests than prose nonempty wording and remains unresolved. |
+| 359 | exp-v1-rust-generation-0302 | RUST_STRATUM_REVIEW_18.md documents specified fingerprint, zero-secret precedence, ordered alias replacement and no mutation on errors. Criterion positive; public duplicate slots remain unresolved. |
+| 360 | exp-v1-rust-generation-0304 | Non-triviality hold: fixed HTML scaffold and direct prescribed five-character escape mapping with one optional attribute; no parser or interacting state. No URL-safety claim inferred. |
+
+Batch12 total14 holds,16 scoped positives. Cumulative360/942:141 new holds,
+219 scoped positives;169 first-time Rust repairs, outside unique coverage4968.
+Corpus holds2287; sample165/135 unchanged. Continue initially unheld361.
+GCS through330; positions331–360 and two probes await backup. Originals unchanged.
+

@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "b2de06f12a3c5827645ab49bb92213651def8be6408ac3a54968c8ccce118cb3",
+  "code": "import math\nfrom collections.abc import Mapping\nfrom numbers import Real\n\n\ndef _finite(value):\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n\n\ndef bucket_metrics(entries, thresholds):\n    if not isinstance(thresholds, Mapping) or not thresholds:\n        raise ValueError(\"thresholds must be a nonempty mapping\")\n    metric_names = list(thresholds)\n    for name, value in thresholds.items():\n        if not isinstance(name, str) or not name or not _finite(value):\n            raise ValueError(\"invalid threshold\")\n\n    try:\n        source_entries = list(entries)\n    except TypeError as exc:\n        raise ValueError(\"entries must be iterable\") from exc\n\n    result = {\n        name: {\"below\": [], \"at_or_above\": []}\n        for name in metric_names\n    }\n    seen_ids = set()\n    for entry in source_entries:\n        if not isinstance(entry, Mapping) or set(entry) != {\"id\", \"metrics\"}:\n            raise ValueError(\"invalid entry\")\n        identifier = entry[\"id\"]\n        try:\n            if identifier in seen_ids:\n                raise ValueError(\"duplicate id\")\n            seen_ids.add(identifier)\n        except TypeError as exc:\n            raise ValueError(\"ids must be hashable\") from exc\n        metrics = entry[\"metrics\"]\n        if not isinstance(metrics, Mapping) or set(metrics) != set(metric_names):\n            raise ValueError(\"metric names do not match thresholds\")\n        for name in metric_names:\n            value = metrics[name]\n            if not _finite(value):\n                raise ValueError(\"metric values must be finite numbers\")\n            bucket = \"at_or_above\" if value >= thresholds[name] else \"below\"\n            result[name][bucket].append(identifier)\n    return result\n",
+  "code_sha256": "bd69826d153ba212c170105bdf0f357b71d1efa1ec7aabb1048a158806b6429a",
+  "evidence_sha256": "6953e891c3268343df51f95d5204363e2bc08668ada8332f7a7214d57500d3e8",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "331bed53d9cc5f83528fc6c80aa1e9a9bbd6cef6c69debee947eff470a659291",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 450,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "E......\n======================================================================\nERROR: test_arbitrary_precision_integers_are_compared_exactly (__main__.BucketMetricsTests.test_arbitrary_precision_integers_are_compared_exactly)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 34, in test_arbitrary_precision_integers_are_compared_exactly\n    result = bucket_metrics(\n             ^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 15, in bucket_metrics\n    if not isinstance(name, str) or not name or not _finite(value):\n                                                    ^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 7, in _finite\n    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)\n                                                                       ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 7 tests in 0.003s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "95b07be52b143065b2e44af4552380afef5b3040c7c215728c2cda735c53af5f",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

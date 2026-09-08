@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "d52beea470abba8412da83129aaa00f7254222d26f2936292e00ae2f7db9aa6e",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n\t\"strings\"\n)\n\nvar ErrInvalidNote = errors.New(\"invalid note\")\nvar ErrNoteNotFound = errors.New(\"note not found\")\nvar ErrInvalidPage = errors.New(\"invalid page\")\n\ntype Note struct {\n\tID    int\n\tTopic string\n\tText  string\n}\n\ntype NoteStore struct {\n\tnextID int\n\tnotes  map[int]Note\n}\n\nfunc NewNoteStore() *NoteStore {\n\treturn &NoteStore{nextID: 1, notes: make(map[int]Note)}\n}\n\nfunc (s *NoteStore) Create(topic, text string) (Note, error) {\n\tif !validNoteFields(topic, text) {\n\t\treturn Note{}, ErrInvalidNote\n\t}\n\tnote := Note{ID: s.nextID, Topic: topic, Text: text}\n\ts.notes[note.ID] = note\n\ts.nextID++\n\treturn note, nil\n}\n\nfunc (s *NoteStore) Update(id int, topic, text string) (Note, error) {\n\tif id <= 0 || !validNoteFields(topic, text) {\n\t\treturn Note{}, ErrInvalidNote\n\t}\n\tif _, exists := s.notes[id]; !exists {\n\t\treturn Note{}, ErrNoteNotFound\n\t}\n\tnote := Note{ID: id, Topic: topic, Text: text}\n\ts.notes[id] = note\n\treturn note, nil\n}\n\nfunc (s *NoteStore) Delete(id int) error {\n\tif id <= 0 {\n\t\treturn ErrInvalidNote\n\t}\n\tif _, exists := s.notes[id]; !exists {\n\t\treturn ErrNoteNotFound\n\t}\n\tdelete(s.notes, id)\n\treturn nil\n}\n\nfunc (s *NoteStore) DeleteMany(ids []int) error {\n\tfor _, id := range ids {\n\t\tif id <= 0 {\n\t\t\treturn ErrInvalidNote\n\t\t}\n\t}\n\tfor _, id := range ids {\n\t\tif _, exists := s.notes[id]; !exists {\n\t\t\treturn ErrNoteNotFound\n\t\t}\n\t}\n\tfor _, id := range ids {\n\t\tdelete(s.notes, id)\n\t}\n\treturn nil\n}\n\nfunc (s *NoteStore) Get(id int) (Note, error) {\n\tif id <= 0 {\n\t\treturn Note{}, ErrInvalidNote\n\t}\n\tnote, exists := s.notes[id]\n\tif !exists {\n\t\treturn Note{}, ErrNoteNotFound\n\t}\n\treturn note, nil\n}\n\nfunc (s *NoteStore) List(topic string, offset, limit int) ([]Note, error) {\n\tif offset < 0 || limit < 1 || limit > 100 {\n\t\treturn nil, ErrInvalidPage\n\t}\n\tmatches := make([]Note, 0)\n\tfor _, note := range s.notes {\n\t\tif topic == \"\" || note.Topic == topic {\n\t\t\tmatches = append(matches, note)\n\t\t}\n\t}\n\tsort.Slice(matches, func(a, b int) bool {\n\t\treturn matches[a].ID < matches[b].ID\n\t})\n\tif offset >= len(matches) {\n\t\treturn []Note{}, nil\n\t}\n\tend := offset + limit\n\tif end > len(matches) {\n\t\tend = len(matches)\n\t}\n\treturn matches[offset:end], nil\n}\n\nfunc validNoteFields(topic, text string) bool {\n\treturn topic != \"\" && len(topic) <= 40 && strings.TrimSpace(topic) == topic &&\n\t\ttext != \"\" && len(text) <= 500 && strings.TrimSpace(text) == text\n}\n",
+  "code_sha256": "95061e13ae7689908a4864870e45e1cadb403d3826576f4a8ec5d26c3b80737a",
+  "evidence_sha256": "2657303c86b7a4c69b4cd282e28ac9040a0cccafe509e42e19c7292c90e17594",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "9e389d7133dd006fb3ed971fb237c5ff0e31b5db870aa9732b3bbbe7a09d50b0",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 25956,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.017s\n",
+    "stdout_sha256": "63e87a0743b0301dd9286599ebfd982cd0e6fa2ab0f0e606ff376b1581a6da0c",
+    "timed_out": false
+  }
+}

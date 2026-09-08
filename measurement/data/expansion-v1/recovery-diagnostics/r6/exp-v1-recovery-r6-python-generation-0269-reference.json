@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "b2de06f12a3c5827645ab49bb92213651def8be6408ac3a54968c8ccce118cb3",
+  "code": "import math\nfrom collections.abc import Mapping\nfrom numbers import Real\n\n\ndef _finite(value):\n    return (isinstance(value, Real)\n            and not isinstance(value, bool)\n            and (not isinstance(value, float) or math.isfinite(value)))\n\n\ndef bucket_metrics(entries, thresholds):\n    if not isinstance(thresholds, Mapping) or not thresholds:\n        raise ValueError(\"thresholds must be a nonempty mapping\")\n    metric_names = list(thresholds)\n    for name, value in thresholds.items():\n        if not isinstance(name, str) or not name or not _finite(value):\n            raise ValueError(\"invalid threshold\")\n\n    try:\n        source_entries = list(entries)\n    except TypeError as exc:\n        raise ValueError(\"entries must be iterable\") from exc\n\n    result = {\n        name: {\"below\": [], \"at_or_above\": []}\n        for name in metric_names\n    }\n    seen_ids = set()\n    for entry in source_entries:\n        if not isinstance(entry, Mapping) or set(entry) != {\"id\", \"metrics\"}:\n            raise ValueError(\"invalid entry\")\n        identifier = entry[\"id\"]\n        try:\n            if identifier in seen_ids:\n                raise ValueError(\"duplicate id\")\n            seen_ids.add(identifier)\n        except TypeError as exc:\n            raise ValueError(\"ids must be hashable\") from exc\n        metrics = entry[\"metrics\"]\n        if not isinstance(metrics, Mapping) or set(metrics) != set(metric_names):\n            raise ValueError(\"metric names do not match thresholds\")\n        for name in metric_names:\n            value = metrics[name]\n            if not _finite(value):\n                raise ValueError(\"metric values must be finite numbers\")\n            bucket = \"at_or_above\" if value >= thresholds[name] else \"below\"\n            result[name][bucket].append(identifier)\n    return result\n",
+  "code_sha256": "34dbddaa79191dd0db3c9a4224b81edb17e0ac57e9c8f42a7a893843b64bbe5c",
+  "evidence_sha256": "ffeee6b8c874ad2d664389d74070f66d179c13075e2921363b5fb077168a60f0",
+  "label": "reference",
+  "outcome": "passed",
+  "parent_candidate_sha256": "331bed53d9cc5f83528fc6c80aa1e9a9bbd6cef6c69debee947eff470a659291",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 545,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": ".......\n----------------------------------------------------------------------\nRan 7 tests in 0.003s\n\nOK\n",
+    "stderr_sha256": "670a39115e7523a8984e4842e16547cb2094b03fad392b037b4b9dc8b2656e62",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

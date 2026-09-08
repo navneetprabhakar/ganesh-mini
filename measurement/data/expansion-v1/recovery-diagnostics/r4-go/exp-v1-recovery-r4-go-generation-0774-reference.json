@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "8c6c7c211b5d1948013d75ad11b5ffc3c0460ce3b00cf93b5103592b9bef1ab0",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n\t\"strings\"\n)\n\nvar ErrInvalidRequest = errors.New(\"invalid request\")\nvar ErrCursorNotFound = errors.New(\"cursor not found\")\nvar ErrBudgetExceeded = errors.New(\"scan budget exceeded\")\n\ntype Article struct {\n\tKey      string\n\tWriter   string\n\tHeadline string\n\tLink     string\n\tPriority int\n}\n\ntype PageRequest struct {\n\tAccount    string\n\tCursor     string\n\tLimit      int\n\tScanBudget int\n}\n\ntype TraceRecord struct {\n\tName     string\n\tScanned  int\n\tReturned int\n}\n\ntype PageResult struct {\n\tItems      []Article\n\tNextCursor string\n\tTrace      TraceRecord\n}\n\ntype Queue struct {\n\tarticles []Article\n\tmaxPage  int\n\tindexes  map[string]int\n}\n\nfunc NewQueue(articles []Article, maxPage int) (*Queue, error) {\n\tif maxPage <= 0 {\n\t\treturn nil, ErrInvalidRequest\n\t}\n\n\tcopied := append([]Article(nil), articles...)\n\tseen := make(map[string]struct{}, len(copied))\n\tfor _, article := range copied {\n\t\tif strings.TrimSpace(article.Key) == \"\" {\n\t\t\treturn nil, ErrInvalidRequest\n\t\t}\n\t\tif _, exists := seen[article.Key]; exists {\n\t\t\treturn nil, ErrInvalidRequest\n\t\t}\n\t\tseen[article.Key] = struct{}{}\n\t}\n\n\tsort.Slice(copied, func(i, j int) bool {\n\t\tif copied[i].Priority != copied[j].Priority {\n\t\t\treturn copied[i].Priority > copied[j].Priority\n\t\t}\n\t\treturn copied[i].Key < copied[j].Key\n\t})\n\n\tindexes := make(map[string]int, len(copied))\n\tfor i, article := range copied {\n\t\tindexes[article.Key] = i\n\t}\n\n\treturn &Queue{articles: copied, maxPage: maxPage, indexes: indexes}, nil\n}\n\nfunc (q *Queue) NextPage(request PageRequest) (PageResult, error) {\n\tif q == nil || strings.TrimSpace(request.Account) == \"\" || request.Limit < 1 || request.Limit > q.maxPage {\n\t\treturn PageResult{}, ErrInvalidRequest\n\t}\n\tif request.ScanBudget < request.Limit {\n\t\treturn PageResult{}, ErrBudgetExceeded\n\t}\n\n\tstart := 0\n\tif request.Cursor != \"\" {\n\t\tindex, exists := q.indexes[request.Cursor]\n\t\tif !exists {\n\t\t\treturn PageResult{}, ErrCursorNotFound\n\t\t}\n\t\tstart = index + 1\n\t}\n\n\tcount := request.Limit\n\tremaining := len(q.articles) - start\n\tif count > remaining {\n\t\tcount = remaining\n\t}\n\tend := start + count\n\titems := append([]Article(nil), q.articles[start:end]...)\n\tresult := PageResult{\n\t\tItems: items,\n\t\tTrace: TraceRecord{\n\t\t\tName:     \"queue.next\",\n\t\t\tScanned:  len(items),\n\t\t\tReturned: len(items),\n\t\t},\n\t}\n\tif len(items) > 0 && end < len(q.articles) {\n\t\tresult.NextCursor = items[len(items)-1].Key\n\t}\n\treturn result, nil\n}\n",
+  "code_sha256": "7c8f317ab49286bfbb12468d0fbef3b5011ce01fa490b3c8cb0eb6c3f6883797",
+  "evidence_sha256": "c5a03e4b71ac8a0ab1f5c92c4bc6e652f06702043149c2ffff1e709ef64264db",
+  "label": "reference",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "58aa8b8386f2d7ba10e86d4d479df6518ca44d733b957b5dcb44d54adee26813",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26141,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "--- FAIL: TestQueueOrderingPaginationAndIsolation (0.00s)\n    solution_test.go:37: end page = {Items:[] NextCursor: Trace:{Name:queue.next Scanned:0 Returned:0}}, <nil>\n--- FAIL: TestEmptyQueue (0.00s)\n    solution_test.go:102: Items must be non-nil empty: []solution.Article(nil)\nFAIL\nFAIL\tganesh.invalid/expansion\t0.018s\nFAIL\n",
+    "stdout_sha256": "a42868605debd577e6e0aeec92f834b11c2793498ee90d78d042c4afbe8d9bab",
+    "timed_out": false
+  }
+}

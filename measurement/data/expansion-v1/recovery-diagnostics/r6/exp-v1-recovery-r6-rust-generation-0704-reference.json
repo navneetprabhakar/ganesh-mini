@@ -1,0 +1,37 @@
+{
+  "candidate_sha256": "390558a00a5e46942d0b95529cfc1a121ebe44c4de79eec78b65689cad845501",
+  "code": "#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Tile {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub struct Atlas {\n    pub width: usize,\n    pub height: usize,\n    pub pixels: Vec<u8>,\n}\n\n#[derive(Debug, Clone, PartialEq, Eq)]\npub enum AtlasError {\n    EmptyInput,\n    ZeroColumns,\n    InvalidPixels { index: usize },\n    DimensionMismatch { index: usize },\n    Overflow,\n}\n\npub fn build_atlas(tiles: &[Tile], columns: usize) -> Result<Atlas, AtlasError> {\n    if columns == 0 {\n        return Err(AtlasError::ZeroColumns);\n    }\n    let first = tiles.first().ok_or(AtlasError::EmptyInput)?;\n\n    for (index, tile) in tiles.iter().enumerate() {\n        let expected = tile\n            .width\n            .checked_mul(tile.height)\n            .ok_or(AtlasError::Overflow)?;\n        if tile.pixels.len() != expected {\n            return Err(AtlasError::InvalidPixels { index });\n        }\n        if tile.width != first.width || tile.height != first.height {\n            return Err(AtlasError::DimensionMismatch { index });\n        }\n    }\n\n    let quotient = tiles.len() / columns;\n    let remainder = tiles.len() % columns;\n    let rows = quotient\n        .checked_add(usize::from(remainder != 0))\n        .ok_or(AtlasError::Overflow)?;\n    let width = first\n        .width\n        .checked_mul(columns)\n        .ok_or(AtlasError::Overflow)?;\n    let height = first\n        .height\n        .checked_mul(rows)\n        .ok_or(AtlasError::Overflow)?;\n    let len = width.checked_mul(height).ok_or(AtlasError::Overflow)?;\n\n    if len > isize::MAX as usize {\n        return Err(AtlasError::Overflow);\n    }\n    let mut pixels = Vec::new();\n    pixels\n        .try_reserve_exact(len)\n        .map_err(|_| AtlasError::Overflow)?;\n    pixels.resize(len, 0);\n\n    for (index, tile) in tiles.iter().enumerate() {\n        let cell_x = index % columns;\n        let cell_y = index / columns;\n        for y in 0..tile.height {\n            let src = y * tile.width;\n            let dst = (cell_y * tile.height + y) * width + cell_x * tile.width;\n            pixels[dst..dst + tile.width]\n                .copy_from_slice(&tile.pixels[src..src + tile.width]);\n        }\n    }\n\n    Ok(Atlas {\n        width,\n        height,\n        pixels,\n    })\n}\n",
+  "code_sha256": "1202b96882f5aa9ee3ba5cd0c77589e9e4e0677e54114c00dcb2477e281d57be",
+  "evidence_sha256": "012c4a58a4b3f228b6e2829a8f29b146b308602085af0110d15102e140471b9e",
+  "label": "reference",
+  "outcome": "timeout-not-semantic-proof",
+  "parent_candidate_sha256": "a31e3ea788faae40f14f0db4a78c0354ac049f306ae5ef7757d4084b51f3761d",
+  "result": {
+    "commands": [
+      [
+        "rustc",
+        "--edition=2021",
+        "--test",
+        "solution_test.rs",
+        "-o",
+        "ganesh-tests"
+      ],
+      [
+        "./ganesh-tests"
+      ]
+    ],
+    "duration_ms": 60065,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-rust-verify@sha256:f7a845c048ec8b96df961b9b1b754dcfcf5e2f824401e59cca0a1c42d64c2192",
+    "image_id": "sha256:c01570d5dcd64604bb38376e6fddc3d295d12af4d970b8d61efc1e002a798af0",
+    "runtime_id": "rust-1.85.0",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "\nrunning 12 tests\ntest dimension_mismatch_reports_the_lowest_mismatching_index ... ok\ntest empty_input_with_positive_columns_has_its_dedicated_error ... ok\ntest grid_height_overflow_uses_valid_zero_width_tiles ... ok\ntest grid_width_overflow_uses_valid_zero_height_tiles ... ok\ntest input_tiles_are_not_mutated_or_aliased ... ok\ntest invalid_pixel_length_reports_the_lowest_invalid_index ... ok\ntest more_columns_than_tiles_still_allocates_unused_zero_cells ... ok\ntest one_tile_is_copied_exactly ... ok\ntest overflowing_tile_area_is_reported_without_allocation ... ok\ntest representable_zero_area_atlases_are_valid_at_dimension_boundaries ... ",
+    "stdout_sha256": "3870c8de92933d60c1a5827a5558515b11c3f6843535c3281d7584acea34447d",
+    "timed_out": true
+  }
+}

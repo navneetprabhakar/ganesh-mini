@@ -1,0 +1,32 @@
+{
+  "candidate_sha256": "81bfc4b5124266cd4c0d322ec4557220eb0a89b5b5262dcc4dff30d55d065b19",
+  "code": "import math\n\n\ndef _key(row):\n    if not hasattr(row, \"__getitem__\"):\n        raise TypeError(\"rows must be mappings\")\n    try:\n        device = row[\"device\"]\n        sequence = row[\"sequence\"]\n    except (KeyError, TypeError) as exc:\n        raise ValueError(\"row is missing a key field\") from exc\n    if not isinstance(device, str):\n        raise TypeError(\"device must be a string\")\n    if not device:\n        raise ValueError(\"device must not be empty\")\n    if not isinstance(sequence, int) or isinstance(sequence, bool):\n        raise TypeError(\"sequence must be an integer\")\n    if sequence < 0:\n        raise ValueError(\"sequence must be non-negative\")\n    return device, sequence\n\n\ndef _number(value, label):\n    if not isinstance(value, (int, float)) or isinstance(value, bool):\n        raise TypeError(f\"{label} must be numeric\")\n    if not math.isfinite(value):\n        raise ValueError(f\"{label} must be finite\")\n    return value\n\n\ndef combine_measurements(primary, corrections):\n    base = {}\n    for row in primary:\n        key = _key(row)\n        if key in base:\n            raise ValueError(\"duplicate primary key\")\n        try:\n            value = _number(row[\"value\"], \"value\")\n            tags = row[\"tags\"]\n        except KeyError as exc:\n            raise ValueError(\"primary row is missing a field\") from exc\n        if not isinstance(tags, list):\n            raise TypeError(\"tags must be a list\")\n        if any(not isinstance(tag, str) for tag in tags):\n            raise TypeError(\"tags must contain strings\")\n        base[key] = (value, list(tags))\n\n    offsets = {}\n    for row in corrections:\n        key = _key(row)\n        if key in offsets:\n            raise ValueError(\"duplicate correction key\")\n        try:\n            offsets[key] = _number(row[\"offset\"], \"offset\")\n        except KeyError as exc:\n            raise ValueError(\"correction row is missing offset\") from exc\n\n    result = []\n    for device, sequence in sorted(base, key=lambda item: (item[1], item[0])):\n        value, tags = base[(device, sequence)]\n        result.append({\n            \"device\": device,\n            \"sequence\": sequence,\n            \"adjusted\": value + offsets.get((device, sequence), 0),\n            \"tags\": list(tags),\n        })\n    return result\n",
+  "code_sha256": "d668259f31e4848941292f83bb1fcfadd20ef26589d05a304c2fca8c1f436d2b",
+  "evidence_sha256": "bb6a46dfa26c7fd437cc2f0f96e45e8ccfa5582efb2e154fe44e02705211b5e6",
+  "label": "known-bad-0",
+  "outcome": "behavioral-failure-requires-review",
+  "parent_candidate_sha256": "1a205c41c4b415a66b071e934a4589185fb2acce421368551a607bb54386444b",
+  "result": {
+    "commands": [
+      [
+        "python3",
+        "-I",
+        "-c",
+        "import runpy,sys;sys.path.insert(0,'/work');runpy.run_path('test_solution.py',run_name='__main__')"
+      ]
+    ],
+    "duration_ms": 421,
+    "exit_codes": [
+      1
+    ],
+    "image": "ganesh-mini-python-verify@sha256:5c474dfc69d2d6693538a9d7b0893360855290387d24ee411cc3449e6e848e57",
+    "image_id": "sha256:9933c119b0af54a541eafa627a105f3cd3ab82de39734d6649afe9c6d84e553c",
+    "runtime_id": "python-3.11.15",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "E.......\n======================================================================\nERROR: test_arbitrary_precision_integer_arithmetic (__main__.CombineMeasurementsTests.test_arbitrary_precision_integer_arithmetic)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"test_solution.py\", line 39, in test_arbitrary_precision_integer_arithmetic\n    result = combine_measurements(\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 38, in combine_measurements\n    value = _number(row[\"value\"], \"value\")\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/solution.py\", line 26, in _number\n    if not math.isfinite(value):\n           ^^^^^^^^^^^^^^^^^^^^\nOverflowError: int too large to convert to float\n\n----------------------------------------------------------------------\nRan 8 tests in 0.004s\n\nFAILED (errors=1)\n",
+    "stderr_sha256": "671795e22a5b626cb9207d45effb047fc71a55f8fbec238bf18efbc30b2c1416",
+    "stdout": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "timed_out": false
+  }
+}

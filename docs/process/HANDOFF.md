@@ -1,6 +1,83 @@
 # Ganesh Mini 1.0 handoff
 
+## Exact resume: admission25 and serial queue41369 — 2026-09-08
+
+Post-checkpoint main FULLY READ final r8Java report: sixstaticpositives0710/0642/
+0647/0677/0785/0763, fourholds0641/0617/0687/0762 as described below. Reviewer
+rust391_420 now drafting r10 PROVISIONAL request/feedback for one test-only
+correction of thosefour. Do not reserve/launch until main reads and validates.
+Other reviewersidle. All r7/r8/r9 staticreports are main-integrated; actual
+serialqueue41369 still controls execution. No additional admissions beyond25.
+
+R6 all33 diagnostic executions andfour actual admissions completed. Total25
+(Go2,Java2,JS9,TS7,Python4,Rust1), allgeneration. Max combined3098,min remaining902;
+holds2812 unchanged; no training seal. See RECOVERY_R6_ADMISSION_20260908.md.
+Rust0704 allthree timedout on huge zero-area loop; retain reference defect hold,
+never count timeouts as semantic control failures. R5 TS0195 no-repeat oracle hold
+and earlier unresolved r1/r2 holds remain. Do not restart original quality review.
+
+All r7/r8/r9 teacher runs completed. Main fullyread r7Go all9staticpositive and
+r9Python/Rust all6staticpositive; actual admission notyet. R8Java reviewer
+rust391_420 finalreport pending mainread; preliminary6positive/4holds on0641/0617
+missingwitness,0687constructorstage oracle,0762standalone-newline oracle. Do not
+count its draft as reconciled. Other reviewersidle.
+
+ONE ACTIVE SERIAL VERIFIER QUEUE session41369 runs r9six ->r8ten ->r7nine,
+output directories recovery-diagnostics/r9,r8,r7. It advances automatically;
+do not start any parallel verifier/admission/race job. Once complete, read actual
+summaries, integrate Java review, then Go0439/0522 actual-race qualification and
+batched candidate admission. r9six currently first in queue. No teacher jobrunning.
+
+GCS terminal r4/r5+r6generation/admission21 checkpoint now VERIFIED by exact
+generation download+cmp for archive andreceipt. See RECOVERY_R5_BACKUP.md.
+Later r6diagnostics/admission4 andr7/r8/r9 artifacts NOT covered; nextterminalbackup
+must include them before anycleanup. No VM/teardown/billingclaim.
+144data tests pass. Training/release estimated50%/35%; verification/review active,
+notpermissionblocked. Next20–45minlowconfidence; fulldeliveryETAstillungrounded.
+
+## Admission21 checkpoint; r7/r8/r9 and r6 diagnostics active — 2026-09-08
+
+R5 terminal33 diagnostic executions,10 actual admissions (JS5/TS5), zero rejected.
+TS0195 remains unsupported mapper identity/extra-absence oracle hold; no repeat
+critic. See RECOVERY_R5_ADMISSION_20260908.md. Total21: Go2,Java2,JS9,TS7,Python1,
+Rust0, allgeneration. Original holds2812; maximum combined3094,min gap906. No seal.
+R4 initial Go27 executions finished; no directionality positives. All9 static
+reference corrections positive but tests lack witnesses/contain stated oracles.
+Both r4Go and r5TS reports fully main-read/integrated. e4ec08c push succeeded.
+
+R6 generated11; both Python/Rust reports fully main-read. Static positivesPy0269,
+0314,0319 andRust0757. Serial actual diagnostics active19463, output r6; don't
+start another verifier concurrently. Rust0704 held for huge zero-area copy loop;
+preserve actual timeout if observed, never report it as semantic mutant failure.
+
+Active teacher jobs: r7Go9 one-time correction session53332,
+pland9a276bd7abdd4537ef3a8ee1dbafa12dc9ce9f6b12447d4948aa3c459d3fabb;
+r8Java10 fresh retry session49992,
+planf31c7ad69bd41772cd6615be4d3a7afced449ffbd07feb086d5936b9d9365c4c;
+r9Py4/Rust2 one-time correction session22325,
+plan4b9e973fae402fab5d6bf1db89ea2430e60807d343cb453ab22b2e97924fd63f.
+All versions reserved, no duplicates/reuse; up to3 independent calls total.
+All reviewers idle after integrated reports/provisional requests. Dispatch new
+disjoint reviews only once candidate files exist. Original review stays closed.
+
+Main approved r7/r9 final JSON after complete reads and actualhash validation;
+provisional source files preserved. r8 preserves original exact problem guard,
+does not rewrite failed r4Java.144 data tests pass. Next: finish r6 diagnostics,
+review/verify completed new lanes, candidate admissions and terminal backup.
+Latest verified GCS checkpoint remains admission11 until new proof; terminal
+r4/r5/admission21 +r6generation snapshot backup in progress, excludes active
+r6diagnostics andr7/r8/r9generation. No teardown/VM/training. Estimates50%/35%,
+working notapprovalblocked; next10–30minlowconfidence, full-deliveryETAungrounded.
+
 ## Latest exact resume checkpoint — 2026-09-08
+
+Post-commit checkpoint: r5 generation/correction completed11; rust451_480 now
+reviewing TS6 -> RECOVERY_R5_TYPESCRIPT_REVIEW_20260908.md. Queue TS diagnostics
+after Go session95197, not concurrently. Go reviewer preliminary all9 lack exact
+defect witnesses, with unsupported0522/0774 nil-empty/found oracles; final report
+not yet main-read/integrated. Await final report and actual diagnostics before
+freezing one bounded correction. Commit e4ec08c created; push session57186 was
+still pending at last check. No extra admissions. R6 generation remains active.
 
 R3 terminal evidence + admission11 total now VERIFIED in GCS (archive and receipt
 exact-generation download+cmp). See RECOVERY_R3_BACKUP.md. Active/later runs are

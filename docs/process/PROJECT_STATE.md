@@ -1807,3 +1807,23 @@ See HANDOFF for exact assignments. No overlapping sandbox verifier should start
 until current serial job completes.144 data tests pass. No new admissions beyond
 11, no training/VM; estimates50%training/35%release, next decision15–45min low
 confidence, full delivery ETA not supportable. Later/active runs need new backup.
+# Admission21 — 2026-09-08
+
+R5 admitted10 after quality and actual execution/separation, bringing21 new
+recoveries (Go2,Java2,JS9,TS7,Python1,Rust0). Max combined3094,min remaining906;
+original holds2812 unchanged, no final corpus/training seal. See R5 admission
+report and HANDOFF. R6 actual diagnostics19463 active; r7 correction53332,
+r8Java retry49992,r9 correction22325 active. All prior review reports integrated.
+144 data tests pass. Terminal evidence backup in progress, latest verified
+remote checkpoint still11 until proof. No VM/training or permission blocker;
+training/release estimated50%/35%, next10–30minlowconfidence, overallETAungrounded.
+# Admission25 and verification queue — 2026-09-08
+
+R6 adds4 admitted(3Python,1Rust), total25 recoveries; maximum combined3098,
+minimum gap902,original holds2812 unchanged. No corpus/training seal.
+R7/r8/r9 generation complete. ONEserial verifier41369 runs r9six->r8ten->r7nine;
+no parallel verifier/admission until it finishes. Main accepted r7/r9 staticreviews;
+r8 finalreport pending main integration. See HANDOFF.144data tests pass.
+GCS checkpoint through21 verified; newer r6admission4 andr7/r8/r9 await backup.
+NoVM/training; estimated50%training/35%release, next20–45minlowconfidence,
+overallETAungrounded. Current localwork authorized.

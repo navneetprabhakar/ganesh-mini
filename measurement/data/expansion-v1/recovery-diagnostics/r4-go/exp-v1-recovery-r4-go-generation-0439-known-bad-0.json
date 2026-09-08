@@ -1,0 +1,31 @@
+{
+  "candidate_sha256": "2545b02494023dd2f2c58404a33d972b9a3664ee61564612ff872104f5b01612",
+  "code": "package solution\n\nimport (\n\t\"errors\"\n\t\"sort\"\n\t\"strings\"\n\t\"sync\"\n)\n\ntype ClusterRecord struct {\n\tNamespace string\n\tName      string\n\tReplicas  int\n}\n\ntype Reconciler struct {\n\tmu       sync.RWMutex\n\tall      bool\n\tleader   bool\n\twatched  map[string]struct{}\n\trecords  map[string]ClusterRecord\n}\n\nfunc NewReconciler(watch string, leader bool) (*Reconciler, error) {\n\tr := &Reconciler{leader: leader, watched: make(map[string]struct{}), records: make(map[string]ClusterRecord)}\n\tif watch == \"\" {\n\t\tr.all = true\n\t\treturn r, nil\n\t}\n\tfor _, part := range strings.Split(watch, \",\") {\n\t\tname := strings.TrimSpace(part)\n\t\tif name == \"\" {\n\t\t\treturn nil, errors.New(\"watch contains an empty namespace\")\n\t\t}\n\t\tr.watched[name] = struct{}{}\n\t}\n\treturn r, nil\n}\n\nfunc (r *Reconciler) Apply(record ClusterRecord, deleted bool) (bool, error) {\n\tif record.Namespace == \"\" || record.Name == \"\" {\n\t\treturn false, errors.New(\"namespace and name are required\")\n\t}\n\tif record.Replicas < 0 {\n\t\treturn false, errors.New(\"replicas cannot be negative\")\n\t}\n\n\tr.mu.Lock()\n\tdefer r.mu.Unlock()\n\tif !r.leader {\n\t\treturn false, errors.New(\"reconciler is not the leader\")\n\t}\n\tif !r.all {\n\t\tif _, ok := r.watched[record.Namespace]; !ok {\n\t\t\treturn false, nil\n\t\t}\n\t}\n\tkey := record.Namespace + \"\\x00\" + record.Name\n\tif deleted {\n\t\tdelete(r.records, key)\n\t} else {\n\t\tr.records[key] = record\n\t}\n\treturn true, nil\n}\n\nfunc (r *Reconciler) Snapshot() []ClusterRecord {\n\tr.mu.RLock()\n\tout := make([]ClusterRecord, 0, len(r.records))\n\tfor _, record := range r.records {\n\t\tout = append(out, record)\n\t}\n\tr.mu.RUnlock()\n\tsort.Slice(out, func(i, j int) bool {\n\t\tif out[i].Namespace != out[j].Namespace {\n\t\t\treturn out[i].Namespace < out[j].Namespace\n\t\t}\n\t\treturn out[i].Name < out[j].Name\n\t})\n\treturn out\n}\n",
+  "code_sha256": "c7455ab5c61988bcb6468156abddf48cfb4db600ea7282466447e15f2647ced0",
+  "evidence_sha256": "547fd4677e653a1f283463d71facf643707ef9dbed1552b951abe4dfa5fe0e0b",
+  "label": "known-bad-0",
+  "outcome": "passed",
+  "parent_candidate_sha256": "c98f733a049b368652aff85a793bed83bf2796a5f98f4dd6fccabf333fb23ab6",
+  "result": {
+    "commands": [
+      [
+        "go",
+        "test",
+        "./..."
+      ]
+    ],
+    "duration_ms": 26038,
+    "exit_codes": [
+      0
+    ],
+    "image": "ganesh-mini-go-verify@sha256:692cab81c6ef79428f1c99d74abbf9178d5adcd1d9e8a23ab990d69ca179817b",
+    "image_id": "sha256:e397741685ef060f01ebcf1d935a2cee705c564a5aa71ffba623bcb1b86fc6c5",
+    "runtime_id": "go-1.22.12",
+    "sandbox_contract_sha256": "b64089f9f047e0b6b0a475e6c2f19ea9451d2480109ad08abb1b2561f7070e6e",
+    "stderr": "",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "ok  \tganesh.invalid/expansion\t0.019s\n",
+    "stdout_sha256": "48d8595ddfdcb51be3d064c3c2bed9592bf06026810610b8456e5e0d6341de4f",
+    "timed_out": false
+  }
+}

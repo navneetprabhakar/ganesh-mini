@@ -22,6 +22,7 @@ ALLOWLIST = (
     "scripts/train/qwen_runtime.py",
     "scripts/train/response_only.py",
     "scripts/train/run_sft.py",
+    "scripts/train/verify_expansion_pilot.py",
     "data/seed", "manifests/datasets", "schemas/train",
     "artifacts/train/seed-pilot/prepared-train.jsonl",
     "artifacts/train/seed-pilot/prepared-validation.jsonl",

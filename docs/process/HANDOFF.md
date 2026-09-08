@@ -1971,9 +1971,14 @@ Gate4 local preparation is complete through archive rehearsal. Use
 `configs/train/expansion_pilot_v1.json` and
 `scripts/train/expansion_pilot.py`; the local execution card seal is
 `3129c4930dd16fe0907e949b335deeadded6b6e248f20a3b2740aa0b99fc0efb`.
-The reproducible 43-file workspace archive has SHA256
-`cfdec0237063549e72c415d0057444ca6f1b9bc9a23b30c588e0de4cf44ca485`
+The reproducible 44-file workspace archive has SHA256
+`a2cb3fdf47cb3baa6a0dfe9c4f37c7e7c1f3f99e7b02b880a1c51ab149eeedf0`
 and re-preflights identically after extraction.
+
+After training, run `scripts/train/verify_expansion_pilot.py` before any
+evaluation. It rejects a non-executable card, incomplete/token-short run,
+identity mismatch, failed save/reload, cost or VRAM escape, and any adapter
+file mutation.
 
 Do not execute this card as-is. Its status is deliberately
 `prepared-not-executable` and `provider_execution` is null. Next, after GCloud

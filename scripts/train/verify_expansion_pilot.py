@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Verify a completed Gate 4 expansion pilot without reconstructing evidence."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+from decimal import Decimal
+from pathlib import Path
+from typing import Any
+
+
+def canonical_digest(value: dict[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(8 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_sealed(path: Path, field: str) -> dict[str, Any]:
+    value = json.loads(path.read_text())
+    claimed = value.pop(field, None)
+    if claimed != canonical_digest(value):
+        raise ValueError(f"invalid {field}: {path}")
+    value[field] = claimed
+    return value
+
+
+def verify(card_path: Path, config_path: Path, run_path: Path, adapter_dir: Path) -> dict[str, Any]:
+    card = load_sealed(card_path, "card_sha256")
+    run = load_sealed(run_path, "evidence_sha256")
+    config = json.loads(config_path.read_text())
+    recipe = card.get("selected_recipe", {})
+    identities = run.get("identities", {})
+    state = run.get("state", {})
+    provider = card.get("provider_execution") or {}
+    checks = [
+        {"name": "executable_card", "passed": card.get("schema_version") == "ganesh-mini-expansion-pilot-card/v1" and card.get("status") == "ready" and not card.get("failed_checks") and provider.get("provider") == "gcloud"},
+        {"name": "config_identity", "passed": file_digest(config_path) == card.get("inputs", {}).get("config_sha256") and config.get("schema_version") == "ganesh-mini-expansion-pilot-config/v1"},
+        {"name": "completed_training", "passed": run.get("schema_version") == "ganesh-mini-sft-run/v2" and run.get("status") == "complete" and state.get("seen_tokens", 0) >= card.get("control", {}).get("maximum_seen_tokens", 1) and run.get("planned_end_row") == card.get("data", {}).get("records")},
+        {"name": "execution_identity", "passed": identities.get("card_sha256") == card.get("card_sha256") and identities.get("config_sha256") == card.get("inputs", {}).get("config_sha256") and identities.get("prepared_manifest_sha256") == card.get("inputs", {}).get("prepared_manifest_sha256") and identities.get("prepared_data_sha256") == card.get("inputs", {}).get("prepared_data_sha256") and identities.get("validation_data_sha256") == card.get("inputs", {}).get("validation_data_sha256") and identities.get("model_revision") == card.get("model", {}).get("revision") and identities.get("recipe_sha256") == canonical_digest(recipe) and identities.get("learning_rate") == str(recipe.get("learning_rate")) and identities.get("phase") == "expansion-pilot"},
+        {"name": "save_reload", "passed": run.get("save_reload", {}).get("passed") is True},
+        {"name": "vram_bound", "passed": isinstance(run.get("cuda", {}).get("peak_vram_bytes"), int) and run["cuda"]["peak_vram_bytes"] <= int(recipe.get("maximum_peak_vram_gb", 0) * 1024**3)},
+        {"name": "cost_bound", "passed": Decimal(str(run.get("cost", {}).get("projected_final_usd", "Infinity"))) <= Decimal(str(provider.get("cost_ceiling_usd", -1))) and run.get("cost", {}).get("hourly_usd") == str(provider.get("hourly_cost_usd")) and run.get("cost", {}).get("ceiling_usd") == str(provider.get("cost_ceiling_usd"))},
+    ]
+    expected = run.get("adapter_files", {})
+    observed = {str(path.relative_to(adapter_dir)): file_digest(path) for path in sorted(adapter_dir.rglob("*")) if path.is_file()}
+    checks.append({"name": "adapter_identity", "passed": bool(expected) and observed == expected})
+    failed = [item["name"] for item in checks if not item["passed"]]
+    report: dict[str, Any] = {
+        "schema_version": "ganesh-mini-expansion-pilot-terminal/v1",
+        "status": "passed" if not failed else "failed",
+        "card_sha256": card.get("card_sha256"),
+        "run_evidence_sha256": run.get("evidence_sha256"),
+        "adapter_files": observed,
+        "checks": checks,
+        "failed_checks": failed,
+    }
+    report["report_sha256"] = canonical_digest(report)
+    return report
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--card", type=Path, required=True)
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--run", type=Path, required=True)
+    parser.add_argument("--adapter-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    report = verify(args.card, args.config, args.run, args.adapter_dir)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    print(json.dumps({"status": report["status"], "failed_checks": report["failed_checks"], "report_sha256": report["report_sha256"]}, sort_keys=True))
+    return 0 if report["status"] == "passed" else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

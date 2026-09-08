@@ -9,10 +9,13 @@ it binds the 3,225-row prepared corpus, 2,438,853-token ceiling, BF16 LoRA at
 evaluation sequence. Card SHA256 is
 3129c4930dd16fe0907e949b335deeadded6b6e248f20a3b2740aa0b99fc0efb.
 
-The reproducible training workspace contains 43 allowlisted files and was
+The reproducible training workspace contains 44 allowlisted files and was
 successfully extracted and re-preflighted with the same card seal. Archive
-SHA256 is cfdec0237063549e72c415d0057444ca6f1b9bc9a23b30c588e0de4cf44ca485;
-manifest seal is d399abac213734dc6894f9005458d14343e92927223d1eaf613120f9a3291733.
+SHA256 is a2cb3fdf47cb3baa6a0dfe9c4f37c7e7c1f3f99e7b02b880a1c51ab149eeedf0;
+manifest seal is 931c4eac16875f96c7b945cd7718e5e5f66fae290a3a88ef7c0fa92c5d812e44.
+The workspace now includes a fail-closed terminal verifier for the executable
+card, complete run, token/cost/VRAM bounds, save/reload proof, and exact adapter
+file hashes.
 Provider price, cost ceiling, zone, and a fresh explicit GCloud execution
 approval are intentionally absent, so the package cannot authorize cloud
 execution. GCS evidence upload remains blocked on interactive authentication.

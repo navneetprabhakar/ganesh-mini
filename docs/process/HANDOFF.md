@@ -1,9 +1,27 @@
 # Ganesh Mini 1.0 handoff
 
+## Required status-update format — user instruction, 2026-09-07
+
+Every status update must include two progress bars: inception-to-training
+closure and inception-to-release delivery. Label milestone-weighted percentages
+as estimates, distinct from measured row counts or training-step completion.
+Include ETA ranges and assumptions, confidence, current activity (running,
+idle, or blocked), the immediate next action, and any approval needed.
+Never imply background work continues when no job or scheduled continuation
+is running. Release ETA is conditional on frozen gates passing; distinguish
+release-decision readiness from guaranteed public release.
+
+Planning estimate at this checkpoint: training closure about50%, overall
+release delivery about35%. These are judgment estimates, not executed metrics.
+Tentative remaining effort:3–5 active working days to training closure and
+5–10 active working days to a release decision, assuming sustained execution,
+successful data recovery, approved available compute and no further regression.
+Confidence low until recovered-data admission and pilot throughput are known.
+
 ## Quality review continuation — 2026-09-06
 
-Current checkpoint: **2214 holds (2211 additive plus historical three)**;
-4,888 unique outside-sample inspections. All 300 frozen sample records now have
+Current checkpoint: **2223 holds (2220 additive plus historical three)**;
+4,896 unique outside-sample inspections. All 300 frozen sample records now have
 seven-criterion dispositions: 165 positive, 135 held. By lane: Go 39/17,
 Java 29/31, JavaScript 10/20, Python 32/29, Rust 41/21, TypeScript 14/17
 (positive/held). See SEVEN_CRITERIA_*.md and sample-criteria-reconciliation-v2.json.
@@ -31,9 +49,11 @@ scope complete and backed up. TypeScript queue262:107 initially held;
 unheld155/155 reconciled:57 new holds and98 criterion positives. TypeScript outside
 elementary scope complete; batches1–5 and four diagnostic probes are GCS verified.
 Rust elementary queue1006 is now frozen:64 prior-held exclusions and942 requiring
-criterion reconciliation. First195 reconciled:68 holds,127 scoped positives.
-Eighty-nine first-time repair inspections add unique coverage. Continue unheld196.
-Rust batch7 and executed repair0102 ASCII-trimming failure await GCS backup.
+criterion reconciliation. First210 reconciled:77 holds,133 scoped positives.
+Ninety-seven first-time repair inspections add unique coverage. Continue unheld211.
+Rust batch7 and executed repair0102/0110/0113 failures await GCS backup.
+Active30-minute continuation: continue-ganesh-mini-to-release-gates, created
+2026-09-08. Resume work from saved position; preserve all approval boundaries.
 Repair0093 finite arithmetic and repair0095 Default IDs both compile then fail.
 Two large-array probes failed, one exact-progress probe failed, and a date-suffix
 probe passed. See TYPESCRIPT_ELEMENTARY_REVIEW_1.md through _5.md.
@@ -42,7 +62,7 @@ see JAVA_RECOVERY_PROBES_20260907.md. Both compile, then fail assertions/runtime
 Earlier evidence has exact-generation roundtrip proof. Frozen inputs unchanged.
 Prior page arithmetic reconciled; generation0716 eager-allocation hold added.
 See JAVA_PAGE_RECONCILIATION_20260907.md. Cross-lane scopes remain open.
-At most3671 rows remain outside holds, below the planned4000 lower bound.
+At most3662 rows remain outside holds, below the planned4000 lower bound.
 The user approved versioned recovery to address this shortfall without lowering
 quality gates. See CORPUS_SUFFICIENCY_PAUSE_20260907.md for the resolved pause.
 No training seal or new VM. Complete review, then recover suitable held examples

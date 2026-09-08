@@ -1,4 +1,4 @@
-# Rust elementary-target reconciliation — batch 7 (partial)
+# Rust elementary-target reconciliation — batch 7
 
 2026-09-07. Initially unheld positions181–195: six new holds and nine scoped
 criterion positives. Seven repair prompts/known-bad/reference/tests fully read;
@@ -25,7 +25,31 @@ No new admission or training claim.
 | 194 | exp-v1-rust-repair-0103 | Fresh full repair inspection: clone under mutex instead of draining preserves observational snapshot and sorted concurrent entries. Criterion positive; wrap versus global uniqueness wording needs explicit envelope reconciliation, and original tests do not reach atomic wrap or poison locks. |
 | 195 | exp-v1-rust-repair-0104 | Fresh full repair inspection: borrowed fault inspection preserves sticky protocol error across shared clones and repeated flushes. Criterion positive; private queue/flush boundary and final-owner observability not newly executed. |
 
-Cumulative195/942:68 new holds,127 scoped criterion positives.
-Eighty-nine first-time Rust repair inspections bring outside unique coverage4888.
-Corpus holds2214; sample165/135 unchanged. Continue initially unheld196.
-Original5885 unchanged. Batch7 and latest probe postdate the2208 GCS archive.
+Continuation2026-09-08: positions196–210. Eight fresh full repair inspections
+and two generation prompt/reference rereads; remaining generation rows reconcile
+prior full notes. Nine additional holds and six scoped positives. Two additional
+pinned, network-disabled diagnostic executions failed after successful compile.
+
+| Unheld position | Candidate ID | Criterion finding |
+| --- | --- | --- |
+| 196 | exp-v1-rust-generation-0162 | RUST_STRATUM_REVIEW_10.md documents sequential trimmed token parsing and checked squaring. Criterion positive. |
+| 197 | exp-v1-rust-repair-0105 | Non-triviality hold: substitute prescribed block index zero for literal one; callback count and formatting are unchanged. |
+| 198 | exp-v1-rust-repair-0106 | Clarity hold: rendered width is not defined for unrestricted Unicode text; reference measures UTF-8 bytes but Rust formatting pads Unicode scalar counts. Clarify byte/scalar/display-cell domain before recovery; no execution claim. |
+| 199 | exp-v1-rust-repair-0107 | Non-triviality hold: append missing prescribed diagonal to a fixed winning-line table; game-state machinery is otherwise unchanged. |
+| 200 | exp-v1-rust-generation-0164 | RUST_STRATUM_REVIEW_10.md documents writer-aware condition loops and poison recovery. Criterion positive; implicit signatures and bounded-yield scheduling-test risk remain unresolved. |
+| 201 | exp-v1-rust-generation-0165 | RUST_STRATUM_REVIEW_10.md documents checked four-byte pixel size and detached output with explicit complete-pixel precondition. Criterion positive. |
+| 202 | exp-v1-rust-generation-0167 | Non-triviality hold: direct event matching to prescribed strings plus standard Unicode hex and byte-count formatting. |
+| 203 | exp-v1-rust-repair-0109 | Fresh full repair inspection: inclusive lengths interact with merged adjacent/overlapping intervals and distinct-marker exclusion under explicitly saturating arithmetic. Criterion positive; no newly executed saturation-order oracle. |
+| 204 | exp-v1-rust-repair-0110 | Correctness hold: finite large circle containing origin is missed because squared-distance intermediates overflow. Executed rust-repair0110-finite-circle-result.json: compile0/test101,1947ms,no timeout; None instead of distance-zero actor hit. |
+| 205 | exp-v1-rust-repair-0111 | Non-triviality hold: swap two misassigned named fields at construction; the strict parser itself is unchanged. |
+| 206 | exp-v1-rust-generation-0172 | Non-triviality hold: elementary parity counting, checking even total length and even even-element count. |
+| 207 | exp-v1-rust-generation-0173 | RUST_STRATUM_REVIEW_10.md documents scalar atoms with optionality and polynomial reachability dynamic programming for full-input matching. Criterion positive. |
+| 208 | exp-v1-rust-generation-0174 | RUST_STRATUM_REVIEW_10.md documents generic borrowed first-match payloads and exclusive targeted mutation leaving other cells untouched. Criterion positive. |
+| 209 | exp-v1-rust-repair-0113 | Correctness hold: previous() overflows after one next() on a usize::MAX logical ring requiring no allocation. Executed rust-repair0113-large-logical-ring-result.json: compile0/test101,1486ms,no timeout. |
+| 210 | exp-v1-rust-repair-0114 | Non-triviality hold: direct from_le_bytes to prescribed from_be_bytes substitution; framing and nibble validation unchanged. |
+
+Batch7 total:15 holds,15 scoped positives across181–210.
+Cumulative210/942:77 new holds,133 scoped criterion positives.
+Ninety-seven first-time Rust repair inspections bring outside unique coverage4896.
+Corpus holds2223; sample165/135 unchanged. Continue initially unheld211.
+Original5885 unchanged. Batch7 and latest probes postdate the2208 GCS archive.

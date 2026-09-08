@@ -156,7 +156,21 @@ Navneet approved completing review and repairing recoverable held examples in a
 separately versioned derived dataset. Preserve the original5885 unchanged and
 retain parent IDs/hashes plus repair and execution lineage. Recheck affected
 execution, quality and evaluation separation before admission; this does not
-waive the4000-record diagnostic minimum, token balance or training seal.
+waive token balance, correctness, evaluation separation or the training seal.
+
+On 2026-09-09, after complete original review and 152 admitted recoveries,
+Navneet directed resolution of corpus sufficiency and pilot throughput. The
+measured 3,225-row combined corpus contains 2,438,853 input tokens, 5.288 times
+the completed seed pilot's token volume, and every record fits the qualified
+2,944-token envelope. The former 4,000-row diagnostic floor is therefore
+retired for bounded-pilot entry: the executable pilot, not an arbitrary row
+count, decides whether further expansion is useful. The terminal 3,225-row
+source corpus is sealed at SHA256
+4254b6f82323421edbbece17fe1a0eb43a622c697059921afbf34aca600b949d.
+This is not a main-training or release seal. Response-only preparation, token
+weighting and the bounded executable pilot remain required.
+The bound assessment is
+`measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json`.
 
 Composition rules:
 

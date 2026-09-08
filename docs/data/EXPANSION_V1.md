@@ -19,15 +19,26 @@ objective and all other quality requirements remain in force.
 
 The 1,399-row seed established that LoRA training works, but the completed
 `1e-4` pilot regressed from 20/180 to 13/180 development passes. More epochs
-over the same corpus would amplify the demonstrated failure mode. Gate 3 now
-requires a new 6,000-row execution-verified corpus before another pilot.
+over the same corpus would amplify the demonstrated failure mode. The 5,885-row
+construction cutoff was subsequently reviewed in full; quality holds leave
+3,073 retained originals, supplemented by separately admitted recoveries.
+
+On 2026-09-09 the fully reviewed 3,225-row terminal corpus was measured at
+2,438,853 input tokens, 5.288x the completed seed pilot volume, with zero rows
+outside the qualified 2,944-token envelope. This is sufficient for one bounded
+executable pilot. Its immutable source corpus is sealed at SHA256
+`4254b6f82323421edbbece17fe1a0eb43a622c697059921afbf34aca600b949d`.
+The former 4,000-row floor
+is retired for pilot entry. Further expansion now depends on executable learning
+directionality, not quota completion. Quality, separation, family-token balance,
+lineage and release gates are unchanged.
 
 This is an SFT data correction, not a switch to RL or a larger adapter. The
 next training recipe remains one bounded epoch and may change only after the
 new data passes its own admission and a small pilot demonstrates positive
 directionality.
 
-## Frozen composition
+## Historical construction targets
 
 | Lane | Rows | Share |
 |---|---:|---:|
@@ -93,7 +104,8 @@ remains candidate material until executable admission passes.
 5. Reject exact code overlap, exact normalized prompt overlap, and near-prompt
    SimHash overlap with every synthetic, diagnostic, development, and decision
    evaluation task. Reject duplicates within the expansion corpus.
-6. Seal only when all 6,000 rows meet the frozen lane and task-type quotas.
+6. Seal the exact fully reviewed retained-plus-recovery corpus only after its
+   terminal count, hashes, separation and five-family token objective pass.
 
 `scripts/data/admit_expansion.py` implements this boundary. Candidate mode can
 measure yield during construction; `--seal` fails until the exact final corpus
@@ -177,9 +189,8 @@ malformed candidate test file, which is a behavioral failure eligible for the
 single correction pass. The earlier parallel reports remain preserved and are
 not teacher-quality evidence.
 
-`scripts/data/build_expansion_quality_sample.py` implements the final manual
-review selection. It requires the complete 6,000-row state, exact quotas, and a
-matching corpus hash, then deterministically selects 300 full records across
-lane, source, task type, and correction history. The generated report remains
-pending until every criterion is manually adjudicated and any systematic
-defect has been resolved.
+`scripts/data/build_expansion_quality_sample.py` implements the historical
+6,000-row construction sample. The cutoff has since received complete original
+review plus per-recovery review, which supersedes sample-only coverage. The
+final combined-corpus seal must bind those review dispositions and rerun exact
+sampling/separation checks against its own terminal hash.

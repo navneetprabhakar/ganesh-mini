@@ -1,5 +1,26 @@
 # Decisions
 
+## 2026-09-09 — Pilot sufficiency and executed throughput resolved
+
+Navneet directed resolution of Gate2 corpus sufficiency and pilot throughput.
+The terminal retained-plus-admitted corpus has3225 rows and2,438,853 Qwen
+input tokens, 5.288x the completed seed pilot's token volume. Zero rows exceed
+the qualified2944-token envelope; the maximum is2659. This is sufficient for
+one bounded executable pilot. The source corpus is sealed at SHA256
+4254b6f82323421edbbece17fe1a0eb43a622c697059921afbf34aca600b949d.
+The former4000-row floor is retired for pilot entry; further expansion
+is conditional on the pilot's executable learning result. Correctness, full
+review, separation, lineage, five-family token weighting and all release gates
+remain mandatory.
+
+The executed repaired L4 run measured295.541 input tokens/second. Including its
+measured training-phase overhead, the corpus projects to2h26m expected
+or3h14m at75% of observed throughput. Canary and full development evaluation
+project to about5m and29m. Use a six-hour hard runtime ceiling with the last30m
+reserved for backup. This timing evidence authorizes planning only: no GCloud
+inspection, upload or resource action is authorized without fresh scoped user
+approval. Exact evidence is in PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json.
+
 ## 2026-09-08 — Admission129 and fail-closed R22 prompt scope
 
 Main accepts R21 JavaScript0090, R22 Go0218/0180 and all17 R23 bounded test

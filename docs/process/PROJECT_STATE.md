@@ -1,5 +1,26 @@
 # Project state
 
+## Gate2 corpus sealed; pilot throughput resolved — 2026-09-09
+
+Gate2 pilot-entry sufficiency and throughput are now measured. The terminal
+3073 retained originals plus152 admitted recoveries total3225 rows and2,438,853
+input tokens, 5.288x seed-pilot volume. Every row fits the2944-token envelope;
+maximum2659. The immutable source corpus is sealed at SHA256
+4254b6f82323421edbbece17fe1a0eb43a622c697059921afbf34aca600b949d and
+is sufficient for one bounded pilot. The former4000-row pilot-entry floor is
+retired; this does not waive correctness, separation, token weighting, corpus
+sealing, executable promotion or release gates.
+
+Executed repaired-L4 throughput is295.541 input tokens/second. Corpus training
+projects to2h26m expected or3h14m at75% rate; canary approximately5m,
+full development evaluation approximately29m. Six hours is the recommended
+runtime ceiling including the final30m backup reserve. No new GCloud action is
+authorized. R26 review and diagnostics are terminal:21 corrections passed both,
+four are held across static/executed review. Together with two R24 positives,
+the latest admission accepted23/rejected0, raising actual admission to152.
+Gate2 source-corpus closure is complete. Next is local Gate4 response-only
+training-package construction and objective-weight verification.
+
 ## Admission129 — 2026-09-08
 
 20 additional recoveries admitted with zero rejected: R21/R22 adds3 and R23

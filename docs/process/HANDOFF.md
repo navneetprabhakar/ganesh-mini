@@ -1,5 +1,163 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate2 corpus sealed; pilot throughput resolved — 2026-09-09
+
+Navneet directed resolution of Gate2 corpus sufficiency and pilot throughput.
+The terminal retained-plus-admitted corpus is3225 rows/2,438,853 Qwen input
+tokens, 5.288x the completed seed pilot, with zero records above2944 tokens and
+a2659-token maximum. Immutable source corpus
+datasets/cache/expansion-v1/pilot-sealed-3225/train.jsonl is sealed at SHA256
+4254b6f82323421edbbece17fe1a0eb43a622c697059921afbf34aca600b949d and
+is sufficient for one bounded executable pilot. The former4000-row pilot-entry floor is
+retired; quality, lineage, separation, five-family weighting, executable
+promotion and release gates remain unchanged. The bound JSON and interpretation
+are PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json/.md.
+
+The executed repaired L4 rate is295.541 input tokens/s. Including measured
+phase overhead, corpus training projects2h26m expected/3h14m at75%; a
+30-task canary projects5m and full180 evaluation29m. Recommend a six-hour hard
+runtime ceiling with the final30m reserved for backup. This is planning evidence,
+not GCloud authorization.
+
+All R26 reviews and diagnostics are terminal. Static review held Java0123 and
+Rust0635. Fresh execution additionally held Go0542 (test/reference name
+collision) and TypeScript0366 (compile/load failure). The other21 R26 records
+plus R24 Java0512/Python0159 passed final serial admission23/23, zero rejected,
+raising actual admission to152. The bounded critic is consumed. Gate2 source-
+corpus closure is complete. Next construct and locally verify the response-only,
+five-family-weighted Gate4 training package. No teacher, verifier, admission or
+cloud process is active.
+
+## R26 correction terminal; three-way static review active — 2026-09-09
+
+R26 completed all 25 planned bounded test corrections with no rerun and no
+second critic: Go6, Java4, JavaScript2, Python6, Rust4 and TypeScript3.
+`generation.json` is terminal and `candidates.jsonl` SHA256 is
+51eaef24706eb6031cd6205ef81b20f4509e2c624b9ccbbaa8f94240611b457c.
+Request SHA256 remains
+1dc3ec0d046bc5beca47b72d2a5c3d37cd1e2cf86f39c275947b445622000677,
+feedback SHA256 remains
+dc8ecab5c4911bc85b92f90d1392af7db49750e1dc080fdeb9f8345367bb4dc7
+and logical plan SHA256 remains
+11dce4e35cb0afa717cc966b9540f541caf5f6258b967f260ade7131df0f0293.
+
+Three explicitly authorized disjoint static reviews are ACTIVE: Go+Java (10),
+JavaScript+TypeScript (5), and Python+Rust (10). Reviewers must verify immutable
+bindings, corrected-test quality, source-only prompt scope, reference
+plausibility and evaluation separation; they must not execute or admit
+candidates. Main must integrate the reports before fresh pinned serial,
+resource-limited, network-disabled diagnostics on unconditional positives.
+The two prior R24 static positives, Java generation0512 and Python
+generation0159, already have directionality PASS but remain unadmitted pending
+quality/separation disposition. Actual admission remains129. No generator,
+verifier or admission process is active; no GCloud compute or new VM is in use.
+Preserve all evidence for the next batched commit and verified GCS backup.
+
+## R26 bounded test correction launched — 2026-09-09
+
+Main fully read and integrated all six R24 lane reviews plus the R25 Java
+review. R24 has exactly two unconditional static positives: Java generation0512
+and Python generation0159. Both completed fresh pinned serial diagnostics with
+reference PASS, supplied known-bad behavioral FAIL and original-parent
+behavioral FAIL. Directionality PASS does not itself admit them.
+
+Of the remaining R24 artifacts, 25 have scoped-positive references and are
+eligible for one bounded specification-only test correction: Go6, Java4,
+JavaScript2, Python6, Rust4 and TypeScript3. Excluded from R26 are every
+prompt-scope hold and every reference-defective artifact. Main generated and
+validated recovery-requests-r26.json and recovery-feedback-r26.json. Request
+SHA is 1dc3ec0d046bc5beca47b72d2a5c3d37cd1e2cf86f39c275947b445622000677;
+feedback SHA is dc8ecab5c4911bc85b92f90d1392af7db49750e1dc080fdeb9f8345367bb4dc7;
+logical plan SHA is 11dce4e35cb0afa717cc966b9540f541caf5f6258b967f260ade7131df0f0293.
+The correction helper now supports deterministic plan-order output with up to
+three disjoint lane calls; 29 focused tests pass and diff-check passes. R26
+session68650 is ACTIVE with lane-workers3. It is the sole bounded test critic
+for these R24 artifacts; never rerun or apply a second critic. No verifier or
+admission may overlap its serial execution phase. Actual admission remains129,
+Gate2/no corpus, training or release seal. No GCloud compute. Preserve all raw
+R24/R25/R26 evidence for the next batched commit and verified GCS backup.
+
+## R24/R25 generation terminal; review wave 2 active — 2026-09-09
+
+R24 generation completed48 with candidate JSONL SHA
+b4663ef50c102174ddf8cdd041f34c3e3f58e9e8dd8038420501f69913e32ae1;
+generation status is generated-not-verified-not-admitted. R25 then completed
+its one Java repair with candidate JSONL SHA
+c700ab2211f45cb48e22eb331ab446a8ca6871e2e2260844d948619d73a2e2fd.
+Neither version may be rerun or counted as admission.
+
+Main fully read and integrated the completed R24 Go, Java and JavaScript static
+reviews. Current unconditional positives: Java generation0512 only. Go0/7
+positive (six test holds plus generation0327 reference+test hold); Java1/10
+positive (nine holds); JavaScript0/9 positive (two generation test/reference
+holds and seven repair prompt-scope holds). R25 Java repair0409 is a substantive
+reference/test positive conditional on scope but is held because its generated
+behavioral prose exceeds the approved source-only/neutral-diagnosis operation;
+see RECOVERY_R25_JAVA_REVIEW_20260909.md. No failure is misreported as a
+pipeline failure, and no held artifact is silently waived.
+
+Three disjoint static reviews are ACTIVE: Python7, Rust6 and TypeScript9,
+targeting RECOVERY_R24_PYTHON_REVIEW_20260909.md,
+RECOVERY_R24_RUST_REVIEW_20260909.md and
+RECOVERY_R24_TYPESCRIPT_REVIEW_20260909.md. Main must fully read and validate
+their final reports before any disposition. No teacher or verifier/admission is
+active. After integration, run pinned serial network-disabled diagnostics only
+for unconditional static positives, then prepare one bounded correction version
+for eligible test-only/reference holds if justified. Actual admission129,
+Gate2/no training or release seal. No new GCloud compute. Preserve all raw R24/
+R25 evidence for batched commit and verified GCS backup before cleanup.
+
+## R24 accelerated recovery generation active — 2026-09-08
+
+Hourly continuation checkpoint: first three R24 lanes emitted26 candidate
+artifacts (Go7, Java10, JavaScript9). The generator remains ACTIVE under parent
+PID70924 with exactly three teacher calls now working the remaining TypeScript9,
+Python7 and Rust6 lanes; no terminal generation/failure marker yet. Three
+explicitly authorized, disjoint static reviewers are ACTIVE on the completed
+Go, Java and JavaScript lanes, targeting RECOVERY_R24_GO_REVIEW_20260908.md,
+RECOVERY_R24_JAVA_REVIEW_20260908.md and
+RECOVERY_R24_JAVASCRIPT_REVIEW_20260908.md. Drafts require main integration;
+reviewers must not execute candidates. No verifier/admission is active.
+
+Main completed the full read and binding validation of the three batch-3
+selection reports. All 49 selected parents remain held, have intact recorded
+rights, and are disjoint from the 153 unique parents reserved by r1-r23.
+Frozen corpus SHA256 remains 680b4b52a567da668bbc235095bf723acf9ba6b01401de813d203ac196df66ec;
+hold-ledger SHA256 remains 9dce318a6736c8dddd9f21722a13a59094ec98219354cc697feb5807439c5eee.
+
+The per-lane hard cap required an immutable split. R24 contains 48 records:
+Go7, Java10, JavaScript9, TypeScript9, Python7 and Rust6. Request SHA256 is
+2e881ce718f8509655f0a894daddc305c869bc787deb6672a9b68d6e0d416451;
+plan logical SHA256 is d2816d2eaf52f5c8427808ec807f04439218bb6a502eb95f4bcee5df970d71bc.
+Teacher generation is ACTIVE in exec session48088 with lane-workers=3; the
+version is reserved and must never be relaunched or reused. R25 contains only
+Java repair0409, request SHA256
+3dbb94a523d0cbf8cc4ac98cb7af6f015bd5b8360a651046f1f21c8d4c180eab,
+plan logical SHA256 93c8e5340b15878b8f5f7bbc48713577527fd0a540f05571d0588ef0be0d805c.
+R25 is planned but NOT generated; launch it only after R24 reaches a terminal
+state so total active teacher calls never exceeds three.
+
+The three selection reviewers are DONE; their reports are the immutable review
+evidence bound in r24/r25. No verifier or admission may overlap candidate
+execution; after generation, perform static quality review and then fresh
+serial, resource-limited, network-disabled directionality checks. Failures are
+review dispositions, not a run-level failure. Actual admission remains129;
+Gate2/no training or release seal. No new VM and no GCloud compute. Preserve all
+r24/r25 raw evidence for the next GCS backup before any teardown or cleanup.
+
+## Post-backup next-selection dispatch — 2026-09-08
+
+Admission129 archive and receipt verified as recorded below. Follow-up proof
+commit eadd24d pushedSUCCESS. No teacher/verifier/admission active. Three
+explicitly authorized disjoint reviewer assignments now ACTIVE for fresh held
+original parents excluding every r1-r23 reserved parent: rust391_420 Go/Java up
+to30 total, rust421_450 JS/TS up to30, rust451_480 Python/Rust up to30. Reports:
+RECOVERY_NEXT_GO_JAVA_BATCH3_20260908.md,
+RECOVERY_NEXT_JS_TS_BATCH3_20260908.md,
+RECOVERY_NEXT_PYTHON_RUST_BATCH3_20260908.md. Drafts are not approved/countable;
+main must full-read and validate exact bindings before requests/plans. Do not
+duplicate selection. Actual129, minimum gap798, Gate2/no seal. No GCloud compute.
+
 ## Admission129 terminal local checkpoint — 2026-09-08
 
 R23 generation17, three disjoint terminal reviews and serial diagnostics all

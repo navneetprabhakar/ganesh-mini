@@ -6,6 +6,7 @@ import argparse
 import copy
 import json
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from scripts.data.admit_expansion import canonical_json, validate_candidate
@@ -17,15 +18,16 @@ from scripts.data.generate_versioned_recovery import ROOT, REGISTRY, persist, re
 from scripts.data.plan_versioned_recovery import digest
 
 
-def correct(plan, previous, feedback, config, binary, directory):
+def correct(plan, previous, feedback, config, binary, directory, lane_workers=1):
+    if not 1 <= lane_workers <= 3:
+        raise ValueError("lane_workers must be between one and three")
     grouped = defaultdict(list)
     for row in plan["records"]:
         grouped[row["lane"]].append(row)
-    candidates = []
-    for lane, rows in grouped.items():
+    def correct_lane(lane, rows):
         if len(rows) > config["execution"].get("batch_size", 10):
             raise ValueError("lane exceeds frozen teacher batch size")
-        architecture, tests, notes = [], [], []
+        architecture, tests, notes, candidates = [], [], [], []
         for row in rows:
             source = previous[row["id"]]
             architecture.append({"id": row["id"], "problem": source["messages"][0]["content"]})
@@ -56,6 +58,31 @@ def correct(plan, previous, feedback, config, binary, directory):
                     item.update(content=content, sha256=digest(content.encode()))
             persist(directory / f"{row['id']}.candidate.json", candidate)
             candidates.append(candidate)
+        return candidates
+
+    completed = {}
+    failures = {}
+    with ThreadPoolExecutor(max_workers=lane_workers) as executor:
+        futures = {executor.submit(correct_lane, lane, rows): lane
+                   for lane, rows in grouped.items()}
+        for future in as_completed(futures):
+            lane = futures[future]
+            try:
+                completed[lane] = future.result()
+            except Exception as exc:
+                failures[lane] = exc
+                persist(directory / f"{lane}-failure.json", {
+                    "status": "correction-failed-not-admitted", "lane": lane,
+                    "type": type(exc).__name__, "reason": str(exc),
+                })
+    if failures:
+        persist(directory / "lane-results.json", {
+            "status": "partial-correction-not-verified-not-admitted",
+            "completed_lanes": sorted(completed), "failed_lanes": sorted(failures),
+        })
+        raise failures[next(lane for lane in grouped if lane in failures)]
+    by_id = {row["id"]: row for rows in completed.values() for row in rows}
+    candidates = [by_id[row["id"]] for row in plan["records"]]
     with (directory / "candidates.jsonl").open("xb") as handle:
         for row in candidates:
             handle.write(canonical_json(row) + b"\n")
@@ -71,6 +98,7 @@ def main():
     parser.add_argument("--holds", type=Path, default=ROOT / "measurement/data/expansion-v1/cutoff-5885-review/additional-holds.json")
     parser.add_argument("--config", type=Path, default=ROOT / "configs/data/expansion_teacher.json")
     parser.add_argument("--codex-bin", default="codex")
+    parser.add_argument("--lane-workers", type=int, choices=(1, 2, 3), default=1)
     args = parser.parse_args()
     plan = json.loads(args.plan.read_text())
     prior_plan = json.loads((args.prior_run / "plan.json").read_text())
@@ -109,12 +137,13 @@ def main():
     directory = reserve_version(REGISTRY, plan)
     persist(directory / "run-contract.json", {"quality_closure": closure, "teacher": config,
         "cli_identity": cli, "correction_attempt": 1, "prior_plan_sha256": prior_plan["plan_sha256"],
+        "lane_workers": args.lane_workers,
         "prior_candidate_files": source_hashes, "feedback": feedback,
         "feedback_file_sha256": digest(args.feedback.read_bytes()),
         "unchanged": ["specification", "reference", "known-bad"],
         "status": "test-correction-not-admitted"})
     try:
-        rows = correct(plan, previous, feedback, config, args.codex_bin, directory)
+        rows = correct(plan, previous, feedback, config, args.codex_bin, directory, args.lane_workers)
     except Exception as exc:
         persist(directory / "failure.json", {"status": "correction-failed-not-admitted", "type": type(exc).__name__, "reason": str(exc)})
         raise

@@ -42,3 +42,34 @@ def test_failed_correction_preserves_raw_evidence(monkeypatch, tmp_path):
         correction.correct(plan, {"new": source}, feedback, {"execution": {}}, "unused", tmp_path)
     assert json.loads((tmp_path / "python-recovery-test-correction-evidence.json").read_text()) == {"raw": "partial"}
     assert not (tmp_path / "candidates.jsonl").exists()
+
+
+def test_parallel_correction_keeps_plan_order(monkeypatch, tmp_path):
+    source, _, _ = fixture()
+    second = copy.deepcopy(source)
+    second["lane"] = "go"
+    plan = {"records": [
+        {"id": "python-new", "lane": "python", "parent_id": "parent-python",
+         "parent_source": source["source"], "parent_candidate_sha256": "0" * 64},
+        {"id": "go-new", "lane": "go", "parent_id": "parent-go",
+         "parent_source": second["source"], "parent_candidate_sha256": "1" * 64},
+    ]}
+    feedback = {
+        "python-new": {"specification_review": "python boundary"},
+        "go-new": {"specification_review": "go boundary"},
+    }
+    previous = {"python-new": source, "go-new": second}
+
+    def invoke(binary, config, schema, prompt, phase, lane):
+        identifier = f"{lane}-new"
+        return {"items": [{"id": identifier, "test_code": f"{lane.upper()}_TEST"}]}, {"lane": lane}
+
+    monkeypatch.setattr(correction, "invoke_codex", invoke)
+    rows = correction.correct(
+        plan, previous, feedback, {"execution": {}}, "unused", tmp_path,
+        lane_workers=2,
+    )
+    assert [row["id"] for row in rows] == ["python-new", "go-new"]
+    assert [json.loads(line)["id"] for line in (tmp_path / "candidates.jsonl").read_text().splitlines()] == [
+        "python-new", "go-new"
+    ]

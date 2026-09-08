@@ -1,5 +1,30 @@
 # Ganesh Mini 1.0 handoff
 
+## Python reconciliation complete — 2026-09-08
+
+Current canonical checkpoint supersedes older counts below: **2721 holds**
+(2718 additive plus historical three), maximum3164 original unheld rows.
+Python numeric/elementary668/668 complete:216 new holds since queue start,
+452 scoped resolved without hold, zero numeric pending. This integration adds
+124 holds. All other criteria and prior caveats remain unresolved unless
+separately adjudicated; this is not admission. Unique outside coverage5222;
+frozen sample165 positive/135 held unchanged; all103 data tests pass.
+See PYTHON_CRITERIA_COMPLETION_20260908.md and
+python-criteria-reconciliation-v1.json. Original5885 candidates unchanged.
+Repair0059 tiny-result probe: controls pass; target raises OverflowError,
+exit1 in422ms without timeout. Evidence preserves pinned sandbox and hashes.
+Remaining-scope audit completed. Exact-ID closure accounting now assigned:
+rust391_420 Python Mapping/enum two groups; rust421_450 eight JS/TS/array
+groups; rust451_480 four Java/Rust groups. Isolated notes only; main integrates.
+Next: adjudicate concrete remaining quality gaps, then versioned recovery;
+at least836 recoveries needed before further exclusions/family balancing.
+Training/release estimates remain50%/35%; no training job or new VM launched.
+Overall ETA remains ungrounded until recovery/admission and pilot throughput.
+GCS archive and receipt verified by exact-generation byte comparison; see
+QUALITY_PYTHON668_2721_BACKUP.md. Remaining-scope audit completed read-only:
+14 older overlapping groups need evidence closure accounting, not automatic
+bulk re-review. See REMAINING_QUALITY_SCOPE_AUDIT_20260908.md (post-archive).
+
 ## Accelerated review authorized — 2026-09-08
 
 User explicitly authorized parallel reviewers, larger work batches and shorter

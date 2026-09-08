@@ -1,5 +1,20 @@
 # Project state
 
+## Admission129 — 2026-09-08
+
+20 additional recoveries admitted with zero rejected: R21/R22 adds3 and R23
+test-only correction adds17. Cumulative129: Go23, Java19, JavaScript22,
+TypeScript22, Python21, Rust22; generation118/repair11. Maximum combined3202,
+minimum gap798 before exclusions and token balancing. Gate2 remains open; no
+corpus/training/release seal. See RECOVERY_ADMISSION129_20260908.md.
+
+All17 R23 candidates passed terminal static review and fresh serial sandbox
+directionality. R22 unconditional positives are only Go0218/0180. R22 Java
+repairs remain excluded for exact approved prompt-scope discrepancies; passing
+semantics do not waive lineage/scope. R22 Go0095 race directionality passed but
+its test-quality hold remains. Latest verified GCS backup is still admission109;
+all later evidence must be backed up before cleanup.
+
 ## Admission109 — 2026-09-08
 
 41 recoveries admitted since checkpoint68, now109 total: Go21/Java19/JS18/TS18/

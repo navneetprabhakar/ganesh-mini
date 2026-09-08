@@ -1,5 +1,124 @@
 # Ganesh Mini 1.0 handoff
 
+## Admission129 terminal local checkpoint — 2026-09-08
+
+R23 generation17, three disjoint terminal reviews and serial diagnostics all
+DONE: all17 static positives and all17 directionality PASS. One bounded critic
+consumed; no repeat. R21/R22 prepared3 and admitted3; R23 prepared/admitted17,
+zero rejected. Actual cumulative129=Go23/Java19/JS22/TS22/Python21/Rust22,
+generation118/repair11. Maximum combined3202/minimum gap798. See
+RECOVERY_ADMISSION129_20260908.md. Gate2, no corpus/training/release seal.
+
+Main fully read/integrated R22 Go/Java reports. Only unconditional R22 positives
+were Go0218/0180. R22 Java five repairs and Go0233 stay excluded for generated
+prompt edits beyond approved source-only scope. Go0095 race directionality PASS
+but test hold remains. No silent scope waiver or second critic.
+
+No verifier/teacher/admission is active. Next: batch commit/push, verified GCS
+backup covering all R21/R22/R23 raw evidence plus admission129, then continue
+new-parent recovery toward minimum4000. Latest verified backup remains109 until
+that completes. No cleanup, VM use or billing certification. No GCloud compute
+authorization inferred. Training50%/release35% remain milestone estimates;
+working on terminal preservation, next10–30min low confidence, overall ETA
+unproven until corpus sufficiency and pilot throughput.
+
+## R23 bounded correction launched — 2026-09-08
+
+Main integrated complete R21 JS/Rust reports and verified all11 candidate raw
+and canonical hashes. JS0090 sole quality positive; JS0097 source-domain hold
+(new array rejection), excluded from test-only correction. Remaining17 test
+holds comprise Python4/TS4/JS3/Rust6. Main read provisional requests/feedback,
+validated corpus/ledger/parent/review/prior-candidate bindings, and finalized
+recovery-requests-r23.json plus recovery-feedback-r23.json. Main added explicit
+removal of JS0119 unknown-extra rejection and explicit Rust0064 malformed-Named
+category caveat. Plan SHA
+01c72e624891ad3d0e304c9bc2bb8a31eca614d430f6b7ecb43053e5868f3aeb.
+R23 teacher73087 ACTIVE, one test-only critic per lane, prior R21 code immutable.
+No second automatic correction allowed. R23 is reserved; never duplicate.
+
+R22 Go8 diagnostics7005 DONE: positive0095/0218/0280/0180/0233;0027 all pass,
+0121 all compile failures,0048 all behavioral failures. No admission inferred.
+Additional Go0095 serial race qualification48951 now active, output r22-go0095-race.
+No concurrent verifier/admission allowed. Reviewer rust391_420 R22 Java6 and
+rust421_450 R22 Go8 full quality reports ACTIVE; drafts not main-integrated.
+rust451_480 completed R23 draft and idle. Main must integrate reports before
+combining eligible R22 with R21 JS0090 for admission.
+
+Data pytest suite completed successfully (144 tests); git diff --check passed.
+Admission109 unchanged; no training seal. All R21/R22/R23 later evidence remains
+outside verified GCS109 backup. Next terminal batch must preserve it before any
+cleanup. No VM usage or billing certification. Gate2; training50%/release35%
+estimated milestones; active, next10–30min low confidence, overall ETA unproven.
+
+## Post-interruption resume — 2026-09-08
+
+R22 teacher4217 completed14 successfully, generation.json present. Do not rerun.
+R21 TS/Rust/JS diagnostics46588 completed15: directionality positive only
+JS0090 and Rust0111/0342; no admission without integrated quality review.
+R22 Java diagnostics18566 completed6:0075/0401/0460/0464 directionality positive;
+0026 all behavioral failures,0065 all pass. Main fully read0026 and0065 current
+spec/ref/tests/mutant:0026 test wrongly labels valid 1,2,*,*,3,*,* invalid;
+0065 misses the100/100/29/29 exact rational witness. These are test holds,
+not evidence to alter references. Full Java review still pending.
+
+One serial verifier7005 now active on R22 Go8, output directory
+artifacts/verification/cutoff-5885-vm/recovery-diagnostics/r22-go. No other
+verifier/admission may run concurrently. Go0095 race qualification still pending.
+
+All three reviewer attempts hit usage limit before completed reports/drafts.
+On explicit user continue, resumed same disjoint assignments: rust391_420 R21
+JS5 final report, rust421_450 R21 Rust6 final report, rust451_480 provisional
+R23 Python4/TS4 request+feedback. No R23 reserved or generated. Check completion
+before redispatch. JS preliminary finding0097 derived array rejection may be a
+reference-domain regression; not main-integrated and not eligible test-only yet.
+Main verified all8 Python/TS final report raw/canonical candidate bindings.
+
+Actual admission109 unchanged; Gate2/no seal. No VM or cleanup. Evidence since
+R21 remains outside the verified admission109 GCS backup. Next integrate final
+reviews, batch bounded correction, review R22 and preserve terminal evidence.
+
+## Authorized acceleration resumed — 2026-09-08
+
+User reaffirmed authorization. R21 is terminal partial: 19 completed candidates
+(Python4/Rust6/JS5/TS4), Go8/Java6 architecture guard failures preserved.
+Main completed reading R22 failure analysis/request and approved the exact14
+incomplete Go/Java parents, validating original corpus, ledger, parent and review
+hashes. Eight repairs use oracle-rebuild solely to replace embedded broken source
+and neutralize stale nonbehavioral diagnosis; five generation rows remain
+reference-fix, Go0218 retains the approved idempotence clarification. No new
+parents, guard relaxation, candidate renaming, VM use or admission claimed.
+
+Approved request recovery-requests-r22.json; plan logical SHA
+d3d5da006458fdaf86086c1297bcf2fc146887d9951f09e17eed8d3306faae35.
+R22 teacher session4217 ACTIVE with two lane workers; version reserved and
+run-contract persisted. Check process/output before any relaunch; never reuse.
+One serial diagnostic session46588 ACTIVE for R21 TS4/Rust6/JS5 in
+artifacts/verification/cutoff-5885-vm/recovery-diagnostics/r21-ts-rust-js.
+Do not run another verifier/admission concurrently.
+
+Main fully read final R21 Python4 and TS4 reviews: all eight remain test-quality
+holds, references scoped-positive. No critic reserved or invoked this checkpoint.
+Rust6/JS5 full reviews still pending; no new reviewer assignment made this turn.
+Next integrate those reviews, prepare one bounded test-only critic for eligible
+R21 holds, and review fresh R22 outputs before diagnostics/admission.
+
+Actual admission109 unchanged; maximum combined3182/minimum gap818, Gate2,
+no final corpus or training seal. Latest verified GCS checkpoint remains109;
+all R21 generation/diagnostics/reviews and R22 are NOT covered by that backup.
+Preserve for the next terminal evidence backup. No cleanup or billing claim.
+
+## Post-backup dispatch checkpoint — 2026-09-08
+
+Commitdb60b59 pushedSUCCESS (session78616 exit0). Admission109 GCS archive AND
+receipt exact-generationcomparisonsPASS. Count109 unchanged, Gate2/no seal.
+R21 TypeScript4 nowemitted; reviewer rust391_420 assigned fullqualityreview
+->RECOVERY_R21_TS_REVIEW_20260908.md. Don'tduplicate. Otherreviewersidle after
+completed R21Python4 report and combined R22Go8/Java6 failure/retrydraft;
+both stillmain-unread/unapproved. R21Rust6/JS5 notyetemitted atlastcheck.
+Teacher7233 remainsactive; no verifier/admissionactive. Next mainintegrate
+reports/drafts, checkslots beforeR22launch, serialR21TSdiagnostics, thenremaining
+lanes. AllR21current/lateroutputs excluded fromverifiedadmission109backup.
+
 ## Exact admission109 resume — 2026-09-08
 
 Admission37020 DONE16/0rejected; cumulative109=Go21/Java19/JS18/TS18/Python17/

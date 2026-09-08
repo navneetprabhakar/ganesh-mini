@@ -1,5 +1,19 @@
 # Decisions
 
+## 2026-09-08 — Admission129 and fail-closed R22 prompt scope
+
+Main accepts R21 JavaScript0090, R22 Go0218/0180 and all17 R23 bounded test
+corrections after exact review bindings, fresh serial directionality, retained
+and prior-recovery deduplication, and546-file evaluation separation. Cumulative
+admission is129; this remains below the4000 diagnostic floor and is not a
+training seal.
+
+Do not admit R22 Java repair artifacts or Go repair0233 despite substantively
+correct references/tests: their emitted prompts exceed the explicitly approved
+source-replacement/neutral-diagnosis edit scope. Do not retroactively waive this
+binding boundary. Go0095's separate race pass does not clear its test-oracle
+hold. R23 consumed the single bounded critic; no automatic second correction.
+
 ## 2026-09-08 — Admission50 and larger versioned recovery batch
 
 Main accepts25 additional candidate admissions from r7/r8/r9/r10 after exact

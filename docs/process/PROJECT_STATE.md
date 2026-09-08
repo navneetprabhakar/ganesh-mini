@@ -23,6 +23,10 @@ The post-training canary boundary is also implemented: it compares the exact
 30 candidate task-evidence seals against their admitted base counterparts and
 permits the 180-task run only if the frozen four-of-five-family, net-gain,
 zero-lane-regression, non-code, and truncation checks all pass.
+The evaluation-config builder now emits separately hashed 30-task and 180-task
+candidate configs only from a passed terminal training report and byte-identical
+adapter. Its manifest marks the canary ready and the full evaluation blocked
+until the sealed canary adjudication promotes it.
 Provider price, cost ceiling, zone, and a fresh explicit GCloud execution
 approval are intentionally absent, so the package cannot authorize cloud
 execution. GCS evidence upload remains blocked on interactive authentication.

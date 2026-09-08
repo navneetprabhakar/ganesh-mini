@@ -1985,6 +1985,11 @@ candidate and canonical base task evidence. Only status
 `promote-to-full-development` authorizes the 180-task development run; a
 successful training process or lower validation loss does not.
 
+`scripts/eval/build_expansion_evaluation.py` creates the candidate canary and
+full-development inference configs after terminal verification. The generated
+manifest deliberately records `canary-ready-full-blocked`; do not run its full
+config until the canary adjudicator produces the matching promotion seal.
+
 Do not execute this card as-is. Its status is deliberately
 `prepared-not-executable` and `provider_execution` is null. Next, after GCloud
 authentication is restored, gather current read-only price/quota evidence only

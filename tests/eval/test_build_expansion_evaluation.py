@@ -1,0 +1,48 @@
+import hashlib
+import json
+from pathlib import Path
+
+from scripts.eval.build_expansion_evaluation import build, canonical_digest
+from scripts.inference.run_evaluation import validate_config
+
+
+def seal(path: Path, value: dict, field: str) -> dict:
+    value[field] = canonical_digest(value)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value))
+    return value
+
+
+def inputs(tmp_path: Path) -> tuple[Path, Path, Path, Path, Path]:
+    adapter = tmp_path / "training/adapter-final"; adapter.mkdir(parents=True)
+    weights = adapter / "adapter.safetensors"; weights.write_bytes(b"weights")
+    files = {"adapter.safetensors": hashlib.sha256(weights.read_bytes()).hexdigest()}
+    card_path = tmp_path / "card.json"
+    card = seal(card_path, {"status": "ready", "schema_version": "ganesh-mini-expansion-pilot-card/v1"}, "card_sha256")
+    run_path = tmp_path / "training/run-evidence.json"
+    run = seal(run_path, {"status": "complete", "adapter_files": files}, "evidence_sha256")
+    terminal_path = tmp_path / "terminal.json"
+    seal(terminal_path, {"status": "passed", "card_sha256": card["card_sha256"], "run_evidence_sha256": run["evidence_sha256"], "adapter_files": files}, "report_sha256")
+    return tmp_path, card_path, terminal_path, run_path, adapter
+
+
+def test_builds_frozen_canary_and_blocked_full_configs(tmp_path: Path) -> None:
+    canary, full, manifest = build(*inputs(tmp_path))
+    assert canary["expected_task_count"] == 30
+    assert canary["task_globs"] == ["eval/private/development/tranche1/*.task.json"]
+    assert full["expected_task_count"] == 180
+    assert manifest["status"] == "canary-ready-full-blocked"
+    assert manifest["canary_config_sha256"] == canonical_digest(canary)
+    validate_config(canary)
+    validate_config(full)
+
+
+def test_rejects_adapter_mutation(tmp_path: Path) -> None:
+    args = inputs(tmp_path)
+    (args[-1] / "adapter.safetensors").write_bytes(b"changed")
+    try:
+        build(*args)
+    except ValueError as error:
+        assert "adapter files" in str(error)
+    else:
+        raise AssertionError("mutated adapter was accepted")

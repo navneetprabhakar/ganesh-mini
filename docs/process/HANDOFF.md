@@ -1,5 +1,16 @@
 # Ganesh Mini 1.0 handoff
 
+## Accelerated review authorized — 2026-09-08
+
+User explicitly authorized parallel reviewers, larger work batches and shorter
+continuation intervals. Three disjoint reviewer assignments are in progress:
+rust391_420 -> RUST_ELEMENTARY_REVIEW_14.md; rust421_450 -> _15.md;
+rust451_480 -> _16.md. These are draft assignments, NOT integrated coverage.
+Canonical integrated Rust checkpoint remains390 until main-agent validation.
+Reviewers write only their own notes; main owns holds/state, validation and
+batched commits/backups. Check live agents and draft files before redispatching.
+No quality gates, GCloud compute boundaries or frozen data changed.
+
 ## Required status-update format — user instruction, 2026-09-07
 
 Every status update must include two progress bars: inception-to-training
@@ -64,8 +75,9 @@ no new executed failure claimed. See RUST_ELEMENTARY_REVIEW_11.md.
 Recovery tooling preflight read: existing rejection-repair script cannot directly
 process semantic holds or supply new candidate identities; see
 RECOVERY_TOOLING_PREFLIGHT_20260908.md. No recovery/training was launched.
-Active30-minute continuation: continue-ganesh-mini-to-release-gates, created
-2026-09-08. Resume work from saved position; preserve all approval boundaries.
+Active5-minute continuation: continue-ganesh-mini-to-release-gates, created
+2026-09-08, accelerated with explicit parallel-review authorization.
+Resume work from saved position; preserve all approval boundaries.
 Repair0093 finite arithmetic and repair0095 Default IDs both compile then fail.
 Two large-array probes failed, one exact-progress probe failed, and a date-suffix
 probe passed. See TYPESCRIPT_ELEMENTARY_REVIEW_1.md through _5.md.

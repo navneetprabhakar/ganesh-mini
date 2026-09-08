@@ -1,5 +1,14 @@
 # Decisions
 
+## 2026-09-08 — Authorized review acceleration
+
+Navneet explicitly authorized the proposal to use parallel reviewers, larger
+per-run batches, shorter idle intervals and batched validation/commits/backups.
+Existing heartbeat updated from30 to5 minutes. Reviewer drafts are disjoint;
+main-agent validation must bind ordered IDs, frozen hashes and additive holds
+before counting integrated progress. No release or quality gate waived; no new
+GCloud compute authorized. Measure throughput before revising delivery ETA.
+
 ## 2026-09-07 — Approved review completion and versioned recovery
 
 Navneet approved the proposal to finish remaining quality review and then repair

@@ -47,8 +47,9 @@ no new executed failure claimed. See RUST_ELEMENTARY_REVIEW_11.md.
 Recovery tooling preflight read: existing rejection-repair script cannot directly
 process semantic holds or supply new candidate identities; see
 RECOVERY_TOOLING_PREFLIGHT_20260908.md. No recovery/training was launched.
-Active30-minute continuation: continue-ganesh-mini-to-release-gates, created
-2026-09-08. Resume work from saved position; preserve all approval boundaries.
+Active5-minute continuation: continue-ganesh-mini-to-release-gates, created
+2026-09-08, accelerated with explicit parallel-review authorization.
+Resume work from saved position; preserve all approval boundaries.
 Repair0093 finite arithmetic and repair0095 Default IDs both compile then fail.
 Two large-array probes failed, one exact-progress probe failed, and a date-suffix
 probe passed. See TYPESCRIPT_ELEMENTARY_REVIEW_1.md through _5.md.

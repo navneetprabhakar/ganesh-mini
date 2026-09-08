@@ -28,3 +28,31 @@ outside unique inspections4929. Corpus holds2257; sample165/135 unchanged.
 Continue initially unheld286. Original5885 unchanged. GCS verified through270;
 positions271–285 await the next backup.
 
+Continuation2026-09-08: positions286–300, four fresh complete repair inspections
+and generation0236/0240/0241/0243 prompt/reference rereads. Six holds and nine
+scoped positives; other generation rows reconcile the cited full prior notes.
+No new executions or admission.
+
+| Unheld position | Candidate ID | Criterion finding |
+| --- | --- | --- |
+| 286 | exp-v1-rust-repair-0154 | Non-triviality hold: replace greater-than with greater-than-or-equal at a direct indexing guard; tree traversal and depth-specific error handling remain unchanged. |
+| 287 | exp-v1-rust-repair-0156 | Fresh full repair inspection: each job must advance from its entry state at most once per tick, separating queued activation from callback invocation and retaining running/done behavior. Criterion positive. |
+| 288 | exp-v1-rust-generation-0236 | Non-triviality hold: a single reachable pending bit with direct set/snapshot/clear operations. Other bits cannot be set through the API, leaving preservation independently unobservable by original tests. |
+| 289 | exp-v1-rust-generation-0237 | RUST_STRATUM_REVIEW_14.md documents route-before-sequence validation and exact bounded binary decoding. Criterion positive; infeasible private sequence exhaustion remains unexecuted. |
+| 290 | exp-v1-rust-generation-0238 | RUST_STRATUM_REVIEW_14.md documents checked decimal sum, trimmed comments and exact ASCII identifier parsing. Criterion positive; vertical-tab whitespace policy remains unresolved. |
+| 291 | exp-v1-rust-generation-0239 | RUST_STRATUM_REVIEW_14.md documents complete structure validation before support, direct-neighbor-only logic and strict tie rejection. Criterion positive. |
+| 292 | exp-v1-rust-generation-0240 | Non-triviality hold: direct per-index transcription of four prescribed byte transformations; const generic and zero-length support do not add interacting algorithmic state. |
+| 293 | exp-v1-rust-repair-0157 | Non-triviality hold: replace wrapping multiplication with the prescribed checked operation and indexed error; splitting, parsing and first-error collection remain unchanged. |
+| 294 | exp-v1-rust-repair-0159 | Non-triviality hold: replace clearing the selected table with directly prescribed keyed removal; nested CRUD and ordering are unchanged and no secondary index needs repair. |
+| 295 | exp-v1-rust-generation-0241 | Non-triviality hold: one active Boolean with direct start/stop guards, scalar host/port validation and prescribed string formatting; no interacting role changes or external effects. |
+| 296 | exp-v1-rust-generation-0242 | RUST_STRATUM_REVIEW_14.md documents normalized lookup/removal, pre-insert validation and owned removal. Criterion positive; empty-name creation rejection is not expanded to lookup. |
+| 297 | exp-v1-rust-generation-0243 | Fresh prompt/reference reread: physical line tracking, parsed crate dimensions, checked intermediate products and accumulated totals preserve failure boundaries. Criterion positive; simultaneous malformed/zero precedence and signed-positive grammar remain unresolved, not an all-criteria approval. |
+| 298 | exp-v1-rust-generation-0244 | RUST_STRATUM_REVIEW_15.md documents declared validation order, all win lines before draw and stable row-major moves. Criterion positive. |
+| 299 | exp-v1-rust-generation-0245 | RUST_STRATUM_REVIEW_15.md documents first complete matching record, nested-start reset and last recognized field wins. Criterion positive. |
+| 300 | exp-v1-rust-generation-0246 | RUST_STRATUM_REVIEW_15.md documents validation even at zero steps, row-major nine-bit index and infinite-background transition. Criterion positive; extreme grid/step resource envelope remains unexecuted. |
+
+Batch10 total12 holds,18 scoped positives. Cumulative300/942:117 new holds,
+183 scoped positives. First-time Rust repairs134; outside unique coverage4933.
+Corpus holds2263; sample165/135 unchanged. Continue initially unheld301.
+GCS through270; positions271–300 await next backup. Frozen originals unchanged.
+

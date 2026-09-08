@@ -1,5 +1,21 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate4 response-only training package ready — 2026-09-09
+
+The sealed3225-row Gate2 source corpus is now deterministically tokenized with
+the exact pinned Qwen tokenizer and non-thinking chat template. Prepared train
+has2,438,853 input tokens, all rows at or below2944, and exact weighted objective
+shares Go20%, Java20%, JavaScript10%, TypeScript10%, Python20%, Rust20% without
+row duplication. Prepared train SHA256 is
+0e7111f51c8ec6e7dcf23ee96ea4873b03ae944ce51aaab4aed6782493133224;
+the50-row preserved validation SHA256 is
+6a9d3aa37b30bc2672517f6d63113011de5f8156aa1049e588fdc70a36b77f46;
+manifest seal is fc7409c3e68e372e1b1c05b07e5c36db0e3923c84731fe70a0f7937cfd413c25.
+Focused training-preparation tests pass6/6. Artifacts are under
+artifacts/train/expansion-pilot-v1 and remain local pending authenticated GCS
+backup. Next build the exact one-recipe Gate4 execution controller/card and
+local archive rehearsal. No VM/cloud compute or billable resource is active.
+
 ## Gate2 corpus sealed; pilot throughput resolved — 2026-09-09
 
 Navneet directed resolution of Gate2 corpus sufficiency and pilot throughput.

@@ -1,5 +1,18 @@
 # Project state
 
+## Gate4 training package prepared — 2026-09-09
+
+The terminal3225-row source corpus is prepared with exact Qwen response-only
+rendering and unique-row five-family objective weighting. Prepared train has
+2,438,853 input tokens and SHA256
+0e7111f51c8ec6e7dcf23ee96ea4873b03ae944ce51aaab4aed6782493133224;
+the50-row validation set SHA256 is
+6a9d3aa37b30bc2672517f6d63113011de5f8156aa1049e588fdc70a36b77f46;
+manifest seal fc7409c3e68e372e1b1c05b07e5c36db0e3923c84731fe70a0f7937cfd413c25.
+All six objective shares match their exact20/20/10/10/20/20 targets. No cloud
+compute is active. GCS evidence upload remains authentication-blocked; local
+Gate4 execution-card/controller preparation can continue independently.
+
 ## Gate2 corpus sealed; pilot throughput resolved — 2026-09-09
 
 Gate2 pilot-entry sufficiency and throughput are now measured. The terminal

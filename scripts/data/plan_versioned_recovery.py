@@ -58,6 +58,9 @@ def make_plan(candidate_bytes: bytes, hold_bytes: bytes, request_bytes: bytes) -
         for field in ("rationale", "review_evidence"):
             if not isinstance(selection[field], str) or not selection[field].strip():
                 raise ValueError("nonempty rationale and review evidence required")
+        evidence_sha = selection.get("review_evidence_sha256", "")
+        if not isinstance(evidence_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", evidence_sha):
+            raise ValueError("review evidence content hash required")
         if not re.fullmatch(r"exp-v1-(go|java|javascript|typescript|python|rust)-(generation|repair)-[0-9]+", parent_id):
             raise ValueError("unexpected parent identity format")
         derived_id = parent_id.replace("exp-v1-", f"exp-v1-recovery-{version}-", 1)
@@ -76,6 +79,7 @@ def make_plan(candidate_bytes: bytes, hold_bytes: bytes, request_bytes: bytes) -
             "change_class": selection["change_class"],
             "rationale": selection["rationale"],
             "review_evidence": selection["review_evidence"],
+            "review_evidence_sha256": evidence_sha,
             "status": "planned-not-generated-not-admitted",
         })
     plan = {
@@ -99,6 +103,15 @@ def make_plan(candidate_bytes: bytes, hold_bytes: bytes, request_bytes: bytes) -
     return plan
 
 
+def validate_review_evidence(plan: dict, root: Path) -> None:
+    for record in plan["records"]:
+        path = (root / record["review_evidence"]).resolve()
+        if not path.is_relative_to(root.resolve()) or not path.is_file():
+            raise ValueError("review evidence must be an existing repository file")
+        if digest(path.read_bytes()) != record["review_evidence_sha256"]:
+            raise ValueError("review evidence content changed")
+
+
 def write_plan(output_dir: Path, plan: dict) -> None:
     """Reserve a fresh directory; never reuse an old or partially written run."""
     output_dir.mkdir(parents=True, exist_ok=False)
@@ -118,6 +131,7 @@ def main() -> int:
     if digest(candidates) != EXPECTED_SHA:
         raise ValueError("only the frozen cutoff5885 corpus is supported")
     plan = make_plan(candidates, args.holds.read_bytes(), args.requests.read_bytes())
+    validate_review_evidence(plan, Path(__file__).resolve().parents[2])
     write_plan(args.output_dir, plan)
     print(json.dumps({"planned": len(plan["records"]), "plan_sha256": plan["plan_sha256"]}))
     return 0

@@ -4,7 +4,7 @@ import json
 import pytest
 
 from scripts.data.admit_expansion import canonical_json
-from scripts.data.plan_versioned_recovery import digest, make_plan, write_plan
+from scripts.data.plan_versioned_recovery import digest, make_plan, validate_review_evidence, write_plan
 
 
 def inputs():
@@ -20,7 +20,7 @@ def inputs():
         "hold_ledger_sha256": digest(holds),
         "selections": [{"parent_id": row["id"], "parent_candidate_sha256": digest(canonical_json(row)),
                         "change_class": "contract-clarification", "rationale": "Specify required field",
-                        "review_evidence": "review.md"}],
+                        "review_evidence": "review.md", "review_evidence_sha256": digest(b"review") }],
     }
     return candidates, holds, request
 
@@ -77,3 +77,46 @@ def test_output_is_create_only(tmp_path):
     with pytest.raises(FileExistsError):
         write_plan(target, {"overwritten": True})
     assert (target / "plan.json").read_bytes() == original
+
+
+def test_evidence_requires_existing_unchanged_file(tmp_path):
+    candidates, holds, request = inputs()
+    plan = make_plan(candidates, holds, canonical_json(request))
+    with pytest.raises(ValueError, match="existing repository file"):
+        validate_review_evidence(plan, tmp_path)
+    (tmp_path / "review.md").write_bytes(b"review")
+    validate_review_evidence(plan, tmp_path)
+    (tmp_path / "review.md").write_bytes(b"changed")
+    with pytest.raises(ValueError, match="content changed"):
+        validate_review_evidence(plan, tmp_path)
+
+
+@pytest.mark.parametrize("failure", ["denied-rights", "unheld", "duplicate-parent", "duplicate-hold", "empty-selections"])
+def test_rejects_additional_invalid_plans(failure):
+    candidates, holds, request = inputs()
+    if failure == "denied-rights":
+        row = json.loads(candidates)
+        row["rights"]["model_training"] = False
+        candidates = canonical_json(row) + b"\n"
+        request["selections"][0]["parent_candidate_sha256"] = digest(canonical_json(row))
+    elif failure == "unheld":
+        holds = canonical_json({"holds": []})
+    elif failure == "duplicate-parent":
+        candidates *= 2
+    elif failure == "duplicate-hold":
+        ledger = json.loads(holds)
+        ledger["holds"] *= 2
+        holds = canonical_json(ledger)
+    else:
+        request["selections"] = []
+    request["parent_corpus_sha256"] = digest(candidates)
+    request["hold_ledger_sha256"] = digest(holds)
+    with pytest.raises(ValueError):
+        make_plan(candidates, holds, canonical_json(request))
+
+
+def test_partial_output_directory_is_not_reused(tmp_path):
+    target = tmp_path / "partial"
+    target.mkdir()
+    with pytest.raises(FileExistsError):
+        write_plan(target, {})

@@ -1,5 +1,21 @@
 # Decisions
 
+## 2026-09-08 — Original review closure and recovery r1
+
+Main accepts the cumulative original-quality closure audit: no remaining required
+exact-ID review obligation. Final E/U integration yields2812 total original holds,
+at most3073 unheld and at least927 additional admissions before other exclusions.
+The hash-bound closure is review completion only, not admission or training seal.
+Select12 substantive held generation parents under recovery-requests-r1.json.
+New immutable derived IDs preserve original corpus, hold evidence, rights and
+lineage. TS0064/0087 clarify absent/undefined optional patches as unchanged;
+Java0788 clarifies Unicode blank validation and ignored comments; Rust0396 reserves
+pending-withdrawal headroom. Rust0359 rebuilds the conflicting original oracle
+under the unchanged u32 operation order. Other selections are reference-only fixes.
+Generation uses the existing frozen teacher runtime and specification-only test
+authoring. Fresh sandbox execution, regression controls, quality and separation
+checks still precede admission. No new GCloud usage or release waiver follows.
+
 ## 2026-09-08 — Authorized review acceleration
 
 Navneet explicitly authorized the proposal to use parallel reviewers, larger

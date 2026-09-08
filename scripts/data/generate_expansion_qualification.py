@@ -10,6 +10,7 @@ import math
 import re
 import subprocess
 import tempfile
+from types import SimpleNamespace
 from pathlib import Path
 from typing import Any
 
@@ -220,10 +221,17 @@ def invoke_codex(
         workdir = Path(temp_name)
         output = workdir / "final.json"
         command = codex_command(codex_bin, config, schema, output, workdir, prompt)
-        result = subprocess.run(
-            command, cwd=workdir, stdin=subprocess.DEVNULL, capture_output=True, text=True,
-            timeout=config["execution"].get("timeout_seconds", 1800), check=False,
-        )
+        timed_out = False
+        try:
+            result = subprocess.run(
+                command, cwd=workdir, stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                timeout=config["execution"].get("timeout_seconds", 1800), check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            timed_out = True
+            def decoded(value):
+                return value.decode("utf-8", errors="replace") if isinstance(value, bytes) else (value or "")
+            result = SimpleNamespace(returncode=None, stdout=decoded(exc.stdout), stderr=decoded(exc.stderr))
         event_parse_error: str | None = None
         try:
             events, usage, disallowed = parse_events(result.stdout)
@@ -239,7 +247,10 @@ def invoke_codex(
             "final_output": final_text, "final_output_sha256": sha256_text(final_text),
             "events": events, "usage": usage, "disallowed_tool_item_types": disallowed,
             "event_parse_error": event_parse_error,
+            "timed_out": timed_out,
         }
+        if timed_out:
+            raise CodexInvocationFailure(f"Codex {run_kind}/{lane} timed out", run_evidence)
         if result.returncode != 0:
             raise CodexInvocationFailure(
                 f"Codex {run_kind}/{lane} failed with exit {result.returncode}", run_evidence,

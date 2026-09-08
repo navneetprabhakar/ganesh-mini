@@ -1,5 +1,37 @@
 # Ganesh Mini 1.0 handoff
 
+## Original review closed; recovery r1 launched — 2026-09-08
+
+The final E/U reconciliation adds49 holds: **2812 total** (2809 additive plus
+three historical), at most3073 original unheld rows; at least927 additional
+admissions needed before further exclusions and token balancing. Frozen sample
+remains165 positive/135 held; exact outside coverage5222. Original5885 unchanged.
+Main accepted ORIGINAL_REVIEW_CLOSURE_AUDIT_20260908.md and saved the hash-bound
+original-quality-closure-v1.json. No required original review obligation remains;
+this is review closure, NOT admission, corpus sufficiency, or training readiness.
+
+Main selected12 held parents (two each Go/Java/JS/TS/Python/Rust), preserving
+source/rights and exact canonical parent hashes. Requests: recovery-requests-r1.json;
+plan: measurement/data/expansion-v1/recovery-plans/r1/plan.json,
+SHA ff64db89a09b39d0ca9b19f2b7231ded79cbff17823b21be51d36ea4c0647fdb.
+TS0064/0087 are explicit contract clarifications for optional undefined values;
+Java0788 and Rust0396 also have explicit derived semantic rules. Rust0359 is
+oracle-rebuild plus reference correction, not a silent original-test rewrite.
+
+Generator launched locally in session94073 with frozen Codex teacher configuration;
+check process and datasets/cache/expansion-v1/versioned-recovery/r1 before starting
+anything else. One sequential architect/test pair per lane; tests see only derived
+specifications. A reserved version is never reused, including interrupted attempts.
+Each phase preserves raw evidence, including timeouts.126 data tests passed.
+No recovered candidate is yet verified/admitted, and no training job or VM launched.
+Next: inspect generation outcomes, preserve all failures, verify fresh controls and
+references in pinned network-disabled sandboxes, then quality/separation checks.
+No GCloud action occurred in this update. Current local work needs no approval.
+Current2812 closure and r1 artifacts are not yet included in a new verified GCS
+backup; latest verified remote checkpoint remains2763. Back up at next safe boundary.
+Training/release estimates remain50%/35%, not measured completion metrics.
+Overall ETA remains ungrounded until recovery yield and pilot throughput are measured.
+
 ## Copy/API delta complete; recovery planner tested — 2026-09-08
 
 Current checkpoint **2763 holds** (2760 additive plus historical three), maximum

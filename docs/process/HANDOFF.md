@@ -2249,7 +2249,7 @@ The deterministic local workspace contains 596 files. Its manifest seal is
 the 1,019,144-byte archive SHA-256 is
 `8a3619ee9bbb9816359eecad4c7b46c92f202644e29090880b3d44e7b485d3d6`.
 It was extracted and independently re-verified against every manifest file.
-The 25 focused tests pass. The broader campaign/eval/inference suite has 164
+The 26 focused tests pass. The broader campaign/eval/inference suite has 164
 passes, one skip, and the same three historical Gate 1 stale-workspace/source-
 identity failures; none is on the new sweep path.
 
@@ -2260,3 +2260,28 @@ and exact-generation byte roundtrips. It forbids compute and all infrastructure
 creation, deletion, training, evaluation, promotion, and publication. Its seal
 is `22357cac8b6da43aa56bd11eaede2f199995a90035aa76caf5c235ccb485cc4b`.
 Do not execute it without fresh explicit approval of that exact seal.
+
+## 23. Checkpoint-sweep inputs uploaded; exact VM proposal pending — 2026-09-09
+
+Navneet explicitly approved upload-only plan
+`22357cac8b6da43aa56bd11eaede2f199995a90035aa76caf5c235ccb485cc4b`.
+Exactly four named objects totaling 1,163,234 bytes were uploaded. Their GCS
+generations are workspace archive `1788943258027996`, workspace manifest
+`1788943277835940`, startup controller `1788943280088544`, and metadata wrapper
+`1788943280777084`. Every exact generation was downloaded and compared
+byte-for-byte with its approved source. Upload receipt seal:
+`36711a078822cca4ffa60da6f8c2f368ad1c1454d199c9051355f22052088e81`.
+No compute or infrastructure action occurred.
+
+All ten runtime inputs are now generation-bound under bindings seal
+`2ba45d22404120afe6b081aa67455d3604a717a349a4cfe1c20225055b036763`.
+The exact non-executable checkpoint-sweep proposal is one Standard
+`g2-standard-8` with one L4 in `us-east1-c`, 200 GiB auto-delete balanced disk,
+no external IP, automatic restart disabled, and 7,200-second maximum lifetime.
+It permits five serial 30-task development-canary evaluations only: no
+training, decision-surface opening, promotion, or publication. Provider upper
+bound is `$1.762043024`; absolute incremental ceiling is `$2.25`. Proposal
+seal: `b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`.
+
+Current state is waiting for fresh explicit approval of that exact proposal.
+Do not create, inspect, or mutate GCloud compute/infrastructure until approved.

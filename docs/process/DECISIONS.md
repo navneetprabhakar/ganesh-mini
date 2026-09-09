@@ -2387,3 +2387,19 @@ No evidence repair or mutation is required or permitted. The adjudicator and
 checkpoint-sweep tooling now share the project serializer, with Unicode and
 all-180 regression coverage. The audit report seal is
 `307bff0cafd28b02278b5fdcbbd7117677269cd9707d6beaba133f22dba96c98`.
+
+## 2026-09-09 — Diagnose the saved checkpoint trajectory before another training run
+
+The final Gate 4 adapter failed the frozen promotion rule, but six complete
+quarter-epoch adapter checkpoints exist. The final checkpoint is already
+measured. Evaluate the five earlier checkpoints serially on the same frozen
+30-task development canary before changing training data or mechanism. This is
+diagnostic-only and grants no checkpoint selection, promotion, full-development
+evaluation, decision-task access, or publication authority.
+
+The exact proposal uses one Standard `g2-standard-8`/L4 in `us-east1-c`, no
+external IP, restart disabled, a 200 GiB auto-delete balanced disk, and a
+7,200-second lifetime. Provider upper bound is `$1.762043024` and the absolute
+incremental ceiling is `$2.25`. Proposal seal:
+`b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`.
+Execution requires separate explicit approval of that exact seal.

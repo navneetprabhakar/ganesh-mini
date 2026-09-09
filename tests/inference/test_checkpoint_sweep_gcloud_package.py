@@ -7,11 +7,15 @@ import pytest
 
 from scripts.inference.build_checkpoint_sweep_gcloud_proposal import (
     INPUT_KEYS, RECOVERY_GENERATION, RECOVERY_SHA256, RECOVERY_SIZE, build, canonical_sha256,
+    load_bindings,
 )
 from scripts.inference.build_checkpoint_sweep_workspace import ADDITIONS, build as build_workspace
 
 ROOT = Path(__file__).resolve().parents[2]
 UPLOAD_PLAN = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan.json"
+BINDINGS = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-input-bindings.json"
+PROPOSAL = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-execution-proposal.json"
+UPLOAD_RECEIPT = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-receipt.json"
 
 
 def bindings() -> dict:
@@ -89,3 +93,24 @@ def test_upload_only_plan_binds_exact_local_inputs_and_forbids_compute() -> None
         source = ROOT / row["source"]
         assert source.stat().st_size == row["size_bytes"]
         assert hashlib.sha256(source.read_bytes()).hexdigest() == row["sha256"]
+
+
+def test_committed_proposal_matches_generation_bindings_and_verified_upload() -> None:
+    bound = load_bindings(BINDINGS)
+    proposal = json.loads(PROPOSAL.read_text(encoding="utf-8"))
+    receipt = json.loads(UPLOAD_RECEIPT.read_text(encoding="utf-8"))
+    receipt_claimed = receipt.pop("receipt_sha256")
+
+    assert proposal == build(bound)
+    assert receipt_claimed == canonical_sha256(receipt)
+    assert receipt["status"] == "verified-complete"
+    assert receipt["compute_or_infrastructure_action_performed"] is False
+    assert receipt["bindings_sha256"] == bound["bindings_sha256"]
+    uploaded = {
+        (row["name"], row["generation"]): (row["sha256"], row["size_bytes"], row["roundtrip"])
+        for row in receipt["objects"]
+    }
+    for key in ("workspace_archive", "workspace_manifest", "controller", "metadata_wrapper"):
+        row = bound["inputs"][key]
+        name, generation = row["uri"].removeprefix("gs://ganesh-gate0-model-transfer-1061994342941/").rsplit("#", 1)
+        assert uploaded[(name, generation)] == (row["sha256"], row["size_bytes"], "passed")

@@ -2177,12 +2177,23 @@ GCloud compute until that approval is received.
   `0b5baf8ded482fefa8b827169fc425c6881365e1a08ed814bcda226e4ffa94ae`,
   and archive SHA-256
   `8a3619ee9bbb9816359eecad4c7b46c92f202644e29090880b3d44e7b485d3d6`.
-  Exact extraction verification and 25 focused tests pass.
+  Exact extraction verification and 26 focused tests pass.
 - Pending upload-only plan seal
   `22357cac8b6da43aa56bd11eaede2f199995a90035aa76caf5c235ccb485cc4b`
   permits four named GCS objects totaling 1,163,234 bytes plus immutable-
   generation roundtrip checks. It authorizes no compute or infrastructure and
   still requires fresh explicit GCloud approval.
+- The upload-only plan was explicitly approved and completed: four objects,
+  1,163,234 bytes, exact-generation byte roundtrips passed, and no compute or
+  infrastructure action occurred. Receipt seal:
+  `36711a078822cca4ffa60da6f8c2f368ad1c1454d199c9051355f22052088e81`.
+- All ten inputs are bound under seal
+  `2ba45d22404120afe6b081aa67455d3604a717a349a4cfe1c20225055b036763`.
+  Exact evaluation-only VM proposal seal
+  `b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`
+  has a 7,200-second maximum, provider bound `$1.762043024`, and `$2.25`
+  absolute ceiling. State is `waiting-for-exact-execution-approval`; no cloud
+  compute is active.
 - Project-wide GCS-only billing is not certified because unrelated unattached
   disk `laxmi-wmv2-training-01` remains; its ownership/deletion is a separate
   user decision.

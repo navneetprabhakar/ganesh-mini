@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sys
 import tarfile
@@ -18,6 +19,7 @@ from scripts.inference.build_checkpoint_sweep_gcloud_execution import (
 
 ROOT = Path(__file__).resolve().parents[2]
 UPLOAD_PLAN = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan.json"
+UPLOAD_PLAN_V2 = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan-v2.json"
 BINDINGS = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-input-bindings.json"
 PROPOSAL = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-execution-proposal.json"
 UPLOAD_RECEIPT = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-receipt.json"
@@ -102,6 +104,19 @@ def test_upload_only_plan_binds_exact_local_inputs_and_forbids_compute() -> None
     assert plan["maximum_new_bytes"] == sum(row["size_bytes"] for row in plan["objects"])
     assert "create or start compute" in plan["forbidden_operations"]
     assert all(len(row["sha256"]) == 64 and row["size_bytes"] > 0 for row in plan["objects"])
+
+
+def test_corrected_upload_plan_binds_three_current_inputs_and_no_compute() -> None:
+    plan = load_execution_input(UPLOAD_PLAN_V2, "upload_plan_sha256")
+    assert plan["source_commit"] == "1a5a2e0b201bf689b8374e6d2275aa0a47c60f4a"
+    assert plan["object_count"] == 3
+    assert plan["maximum_new_bytes"] == sum(row["size_bytes"] for row in plan["objects"])
+    assert "create or start compute" in plan["forbidden_operations"]
+    for row in plan["objects"]:
+        source = ROOT / row["source"]
+        assert source.stat().st_size == row["size_bytes"]
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == row["sha256"]
+        assert "/input/1a5a2e0/" in row["destination"]
 
 
 def test_committed_proposal_matches_generation_bindings_and_verified_upload() -> None:

@@ -2342,13 +2342,20 @@ all 596 manifest size/hash rows. Current inputs:
 - startup controller: 7,198 bytes, SHA-256
   `202730fe842e272c302d1624a9dd1b1195e8c470e6557ad48de5129ac355ad97`.
 
-Focused checkpoint-sweep tests, Python compilation, shell syntax, and diff
-checks pass. Commit and push this failure evidence and corrected package next.
-Then create a new three-object upload-only plan under a fresh commit-bound GCS
-prefix. That upload is the next hard stop and requires explicit approval of its
-exact seal. Only after exact-generation roundtrips may a replacement VM proposal
-be sealed; VM creation requires another separate approval. Do not reuse the
-consumed `b31d95...` approval.
+Twenty-two checkpoint-sweep tests, Python compilation, shell syntax, and diff
+checks pass. Failure evidence and the corrected package are committed and
+pushed at `1a5a2e0b201bf689b8374e6d2275aa0a47c60f4a`.
+
+The new upload-only plan permits exactly three named corrected objects totaling
+1,161,309 bytes under the commit-bound `input/1a5a2e0/` prefix, generation
+capture, and exact-generation byte roundtrips. It forbids compute,
+infrastructure, overwrite/delete, training, evaluation, promotion, decision
+opening, and publication. Its seal is
+`356dc0403d6ccc82683774bb3d381280bbc87b432e1f1116cb9b0a12a7b7f769`.
+That upload is the next hard stop and requires fresh explicit approval of this
+exact seal. Only after exact-generation roundtrips may a replacement VM
+proposal be sealed; VM creation requires another separate approval. Do not
+reuse the consumed `b31d95...` approval.
 
 Milestone estimate: training program 70%, release readiness 52%, inception-to-
 delivery 60%. Current state is ACTIVE on local sealing, not technically stuck.

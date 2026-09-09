@@ -28,8 +28,11 @@ manifest file SHA-256
 `6c11b79d4dfb099c5f97cebd10eee3b114c06369199eac613f7612dd235b7264`,
 and internal manifest seal
 `bf8f11a413425d0c2f530db8db0a0de3f88a4bb2cf335fffac6b155aa342f816`.
-It has no GCS generation or provider authority. Next is a fresh sealed
-upload-only plan; no new GCloud action is authorized yet.
+It has no GCS generation or provider authority. The fresh three-object,
+1,161,309-byte upload-only plan is sealed at
+`356dc0403d6ccc82683774bb3d381280bbc87b432e1f1116cb9b0a12a7b7f769`.
+No new GCloud action is authorized until that exact seal is explicitly
+approved.
 
 ## Checkpoint diagnostic locally prepared — 2026-09-09
 

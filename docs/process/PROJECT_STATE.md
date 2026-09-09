@@ -2154,3 +2154,30 @@ GCloud compute until that approval is received.
 - Current phase is model initialization/training. No permission blocker. After
   terminal backup: exact inventory verification, full teardown, then two
   resource-absence and billing checks.
+
+### Gate 4 terminal and checkpoint diagnostic — 2026-09-09
+
+- Training completed at 2,438,853 tokens. The final adapter scored 6/30 versus
+  base 5/30 on the frozen canary, improving only Rust; the terminal decision is
+  valid `do-not-promote`. Full 180-task candidate evaluation did not run.
+- All Ganesh VM, disk, subnet, and network resources were deleted after a
+  verified 128-object terminal backup and exact-generation archive roundtrip.
+  Two absence checks passed. No Ganesh compute is active.
+- The earlier claim of one stale base evidence seal was wrong. The reader
+  ASCII-escaped U+00E9 while the evidence contract hashes UTF-8 JSON. A sealed
+  audit validates all 180 task seals, the run seal, and all 360 generated and
+  verifier bindings; no evidence was repaired. Audit seal:
+  `307bff0cafd28b02278b5fdcbbd7117677269cd9707d6beaba133f22dba96c98`.
+- A local evaluation-only sweep package covers the five earlier saved
+  checkpoints. It has no training or promotion authority. The next hard stop
+  is explicit GCloud approval to upload and generation-bind its new inputs;
+  after that, VM execution requires approval of the resulting exact proposal.
+  Planned VM bound is one Standard L4 for at most two hours and $2.25.
+- The sealed local sweep workspace has 596 files, manifest seal
+  `0b5baf8ded482fefa8b827169fc425c6881365e1a08ed814bcda226e4ffa94ae`,
+  and archive SHA-256
+  `8a3619ee9bbb9816359eecad4c7b46c92f202644e29090880b3d44e7b485d3d6`.
+  Exact extraction verification and 24 focused tests pass.
+- Project-wide GCS-only billing is not certified because unrelated unattached
+  disk `laxmi-wmv2-training-01` remains; its ownership/deletion is a separate
+  user decision.

@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from scripts.eval.build_checkpoint_sweep import build, canonical_digest
+from scripts.eval.contracts import sha256_object
 
 
 def sealed(value: dict, field: str) -> dict:
@@ -54,3 +55,9 @@ def test_rejects_checkpoint_from_other_training_run(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="does not bind"):
         build(run, checkpoints, Path("/training"))
+
+
+def test_checkpoint_sweep_uses_project_utf8_canonicalization() -> None:
+    value = {"diagnostic": "entrée"}
+
+    assert canonical_digest(value) == sha256_object(value)

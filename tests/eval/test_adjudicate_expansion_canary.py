@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 
-from scripts.eval.adjudicate_expansion_canary import adjudicate, canonical_digest
+from scripts.eval.adjudicate_expansion_canary import adjudicate, canonical_digest, load_sealed
+from scripts.eval.contracts import sha256_object
 
 
 def write_sealed(path: Path, value: dict, field: str) -> None:
@@ -60,3 +61,37 @@ def test_canary_ignores_unselected_baseline_task_evidence(tmp_path: Path) -> Non
 
     assert report["status"] == "do-not-promote"
     assert report["task_count"] == 30
+
+
+def test_load_sealed_uses_project_utf8_canonicalization(tmp_path: Path) -> None:
+    path = tmp_path / "unicode-evidence.json"
+    value = {"stderr": "compiler: entrée rejected"}
+    value["evidence_sha256"] = sha256_object(value)
+    path.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+
+    loaded = load_sealed(path, "evidence_sha256")
+
+    assert loaded["evidence_sha256"] == value["evidence_sha256"]
+    unhashed = dict(loaded)
+    unhashed.pop("evidence_sha256")
+    assert canonical_digest(unhashed) == sha256_object(unhashed)
+
+
+def test_all_frozen_base_task_and_run_seals_use_same_canonicalization() -> None:
+    root = Path("measurement/inference/development/qwen3.5-2b-base-v1")
+    task_paths = sorted((root / "tasks").glob("*.json"))
+
+    assert len(task_paths) == 180
+    assert all(load_sealed(path, "evidence_sha256") for path in task_paths)
+    run = load_sealed(root / "run.json", "run_sha256")
+    assert len(run["tasks"]) == 180
+
+
+def test_base_evidence_audit_report_is_sealed() -> None:
+    report = load_sealed(
+        Path("measurement/gate4/base-evidence-seal-audit-20260909.json"),
+        "report_sha256",
+    )
+
+    assert report["status"] == "valid-no-repair-required"
+    assert report["conclusion"]["evidence_repair_performed"] is False

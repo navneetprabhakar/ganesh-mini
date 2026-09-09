@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from scripts.eval.adjudicate_expansion_canary import canonical_digest
+from scripts.eval.contracts import sha256_object
 from scripts.eval.summarize_checkpoint_sweep import build
 
 
@@ -46,3 +47,9 @@ def test_summarizes_all_checkpoints_without_promotion_authority(tmp_path: Path) 
     assert report["promotion_authority"] == "none"
     assert len(report["checkpoints"]) == 6
     assert report["maximum_improved_product_families"] == 2
+
+
+def test_summary_uses_project_utf8_canonicalization() -> None:
+    value = {"diagnostic": "entrée"}
+
+    assert canonical_digest(value) == sha256_object(value)

@@ -22,6 +22,7 @@ ALLOWLIST = (
     "scripts/cuda/__init__.py", "scripts/cuda/qualify.py",
     "scripts/eval/__init__.py", "scripts/eval/contracts.py", "scripts/eval/run_task.py", "scripts/eval/score.py",
     "scripts/eval/adjudicate_expansion_canary.py", "scripts/eval/build_expansion_evaluation.py",
+    "scripts/eval/build_checkpoint_sweep.py", "scripts/eval/summarize_checkpoint_sweep.py",
     "scripts/eval/verify_runtime_images.py", "scripts/eval/build_gate1_readiness.py",
     "scripts/campaign",
     "scripts/inference/__init__.py",

@@ -11,7 +11,15 @@ from typing import Any
 
 
 def canonical_digest(value: dict[str, Any]) -> str:
-    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    return hashlib.sha256(
+        json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
 
 
 def load_sealed(path: Path, field: str) -> dict[str, Any]:

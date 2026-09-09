@@ -2185,12 +2185,16 @@ Adjudication is terminal `do-not-promote`, seal
 `3d53bc8b484f295823344984ca37e4dc87c842452aaa3c20ceb5d02d661d249d`.
 Do not run the full 180 candidate evaluation or scale this recipe.
 
-The original adjudicator unnecessarily validated all 180 base files and hit
-one stale seal in unselected `dev-t2-javascript-decode-hex`. Exactly one of 180
-base task seals is invalid; all 30 selected base and 30 candidate seals pass.
-The adjudicator now loads only exact candidate-selected base task IDs, with a
-regression test. The frozen invalid file was not modified and remains a full-
-baseline/release evidence defect requiring a versioned repair.
+The original adjudicator rejected unselected
+`dev-t2-javascript-decode-hex`, but the frozen evidence was not stale. Its
+captured stderr contains U+00E9 (`é`); the adjudicator incorrectly used
+ASCII-escaped JSON while the project evidence contract hashes canonical UTF-8
+JSON. An independent audit recomputed every seal and binding: all 180 base task
+seals, the run seal, all 180 generated-output bindings, and all 180 verifier
+result bindings pass. No frozen evidence was changed or repaired. The
+adjudicator and checkpoint-sweep builder now use the project canonical
+serializer (`ensure_ascii=False`, `allow_nan=False`, UTF-8). Audit report seal:
+`307bff0cafd28b02278b5fdcbbd7117677269cd9707d6beaba133f22dba96c98`.
 
 Before teardown, the 128-object/56,925,573-byte terminal prefix was verified
 against its 127-file runtime hash manifest. A separate 51,674,173-byte archive
@@ -2206,8 +2210,9 @@ instances, addresses, forwarding rules, routers, reservations, snapshots,
 images, or machine images. An unrelated unattached 200 GiB balanced disk named
 `laxmi-wmv2-training-01` remains in `us-central1-a`; do not delete it without
 Navneet's explicit ownership decision. Temporary OAuth material was zeroed and
-removed. Next: preserve/commit the decision evidence, version-repair the single
-stale full-baseline seal, and design a new bounded data/mechanism hypothesis.
+removed. Next: preserve/commit the decision evidence and reader canonicalization
+fix, then run the bounded checkpoint diagnostic before
+designing a new data/mechanism hypothesis.
 No compute is active and no further GCloud action is authorized by this result.
 
 ## 22. Checkpoint diagnostic prepared locally — 2026-09-09
@@ -2224,11 +2229,26 @@ checkpoint is already measured. Sweep manifest seal is
 `6af2ad473e2d119bcf1149540705a3d7faaf7f4584b1b7626bf568cabfec4b5c`.
 Evaluator support verifies each adapter against its checkpoint manifest and
 the original training identities. The summarizer is diagnostic-only and cannot
-select or promote a checkpoint. Sixteen focused tests pass.
+select or promote a checkpoint. Twenty-four focused tests pass.
 
-Next local work is the fail-closed evaluation-only host/startup package and an
-exact provider proposal. Any VM creation requires fresh explicit GCloud
-approval. Planning bound: same Standard `g2-standard-8`/L4 in `us-east1-c`,
-two-hour maximum, no external IP, restart disabled, auto-delete 200 GiB disk,
-estimated 25–40 minutes of evaluation plus restore/backup, proposed $2.25
-absolute incremental ceiling. No cloud resource is active.
+The fail-closed evaluation-only host/startup package is implemented locally.
+It serializes the five checkpoint canaries on one GPU, executes generated code
+only through the existing network-disabled verifier containers, seals each
+task/run/summary, and has no training or promotion authority. The workspace
+can now be sealed locally. GCS upload of the new workspace/controller/wrapper
+is the next hard boundary because exact object generations are required before
+the provider proposal can be materialized. VM creation then requires separate
+explicit approval of that exact sealed proposal. Planning bound: Standard
+`g2-standard-8`/L4 in `us-east1-c`, two-hour maximum, no external IP, restart
+disabled, auto-delete 200 GiB disk, estimated 25–40 minutes of evaluation plus
+restore/backup, and a $2.25 absolute incremental ceiling. No cloud resource is
+active.
+
+The deterministic local workspace contains 596 files. Its manifest seal is
+`0b5baf8ded482fefa8b827169fc425c6881365e1a08ed814bcda226e4ffa94ae`;
+the 1,019,144-byte archive SHA-256 is
+`8a3619ee9bbb9816359eecad4c7b46c92f202644e29090880b3d44e7b485d3d6`.
+It was extracted and independently re-verified against every manifest file.
+The 24 focused tests pass. The broader campaign/eval/inference suite has 164
+passes, one skip, and the same three historical Gate 1 stale-workspace/source-
+identity failures; none is on the new sweep path.

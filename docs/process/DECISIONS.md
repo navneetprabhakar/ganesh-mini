@@ -2372,3 +2372,18 @@ terminal evidence must reach GCS before teardown. The VM, boot disk, temporary
 subnet, temporary network, and any address are then removed, and resource
 absence is verified twice; GCS is the only intentionally retained billable
 service.
+
+## 2026-09-09 — Frozen Gate 1 evidence is valid; canonical readers must hash UTF-8 JSON
+
+The post-pilot adjudicator initially rejected the unselected
+`dev-t2-javascript-decode-hex` evidence file. That rejection was caused by the
+reader's default `ensure_ascii=True`, which escaped U+00E9 (`é`) in captured
+verifier stderr before hashing. The project evidence contract uses canonical
+UTF-8 JSON with `ensure_ascii=False` and `allow_nan=False`.
+
+An independent replay validates all 180 frozen task seals, the enclosing run
+seal, all 180 generated-output bindings, and all 180 verifier result bindings.
+No evidence repair or mutation is required or permitted. The adjudicator and
+checkpoint-sweep tooling now share the project serializer, with Unicode and
+all-180 regression coverage. The audit report seal is
+`307bff0cafd28b02278b5fdcbbd7117677269cd9707d6beaba133f22dba96c98`.

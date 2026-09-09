@@ -62,12 +62,17 @@ through the same weak update. If an earlier checkpoint does improve four
 families, evaluate that one checkpoint on the complete 180-task development
 surface before any further training decision.
 
-## Separate evidence defects and billing boundary
+## Evidence audit and billing boundary
 
-One unselected tranche-2 base task file has an invalid outer evidence seal.
-It does not affect the 30 selected canary tasks, but it must be repaired through
-a versioned evidence action before full-baseline or release use. The original
-file remains unchanged.
+The apparent invalid seal in one unselected tranche-2 base task was a reader
+bug, not an evidence defect. The task captures U+00E9 (`é`) in verifier stderr.
+The reader ASCII-escaped that character before hashing, while the project seal
+contract uses canonical UTF-8 JSON. The corrected independent audit validates
+all 180 task seals, the run seal, all 180 generated-output bindings, and all
+180 verifier result bindings. No frozen evidence was changed or repaired. The
+sealed audit is
+`measurement/gate4/base-evidence-seal-audit-20260909.json`, report seal
+`307bff0cafd28b02278b5fdcbbd7117677269cd9707d6beaba133f22dba96c98`.
 
 All Ganesh compute and network resources are absent. Project-wide GCS-only
 billing cannot be certified because unrelated unattached 200 GiB balanced disk

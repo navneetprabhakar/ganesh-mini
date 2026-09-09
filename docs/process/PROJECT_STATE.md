@@ -1,5 +1,23 @@
 # Project state
 
+## Checkpoint diagnostic locally prepared — 2026-09-09
+
+The lowest-cost recovery diagnostic is locally prepared. Five unmeasured
+quarter-epoch adapters are bound to their sealed checkpoint manifests and the
+completed training run; the sixth/final checkpoint already has executed canary
+evidence. The five diagnostic configs are sealed under manifest
+`6af2ad473e2d119bcf1149540705a3d7faaf7f4584b1b7626bf568cabfec4b5c`.
+Evaluator checkpoint binding and the diagnostic-only summarizer pass 16 focused
+tests. The sweep has no promotion authority and cannot alter the terminal
+`do-not-promote` result.
+
+No cloud resource is active. A new evaluation-only GCloud execution would need
+a fresh exact approval. The planning envelope is one Standard L4 for at most
+two hours, no external IP, restart disabled, auto-delete disk, and a proposed
+$2.25 incremental ceiling. The controller/startup package and provider proposal
+are not yet executable. The unrelated `laxmi-wmv2-training-01` disk remains a
+separate project-wide billing decision.
+
 ## Gate 4 expansion pilot completed; candidate not promoted — 2026-09-09
 
 The 3,225-row BF16 LoRA expansion pilot completed 2,438,853 training tokens in

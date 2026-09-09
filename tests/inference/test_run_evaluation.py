@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from scripts.eval.contracts import load_json
-from scripts.inference.run_evaluation import implementation_identity, rooted, trim_at_eos, validate_batch_outputs, validate_config, validate_resumed_generation
+from scripts.inference.run_evaluation import checkpoint_adapter_files, implementation_identity, rooted, trim_at_eos, validate_batch_outputs, validate_config, validate_resumed_generation
 
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -52,3 +52,47 @@ def test_batched_generation_drops_padding_after_first_eos() -> None:
 def test_absolute_runtime_mounts_do_not_resolve_beneath_workspace() -> None:
     assert rooted("models/base") == ROOT / "models/base"
     assert rooted("/input/model") == Path("/input/model")
+
+
+def test_checkpoint_adapter_is_bound_to_manifest_and_training_run(tmp_path: Path) -> None:
+    import json
+
+    from scripts.eval.contracts import sha256_object
+
+    adapter = tmp_path / "checkpoint" / "adapter"
+    adapter.mkdir(parents=True)
+    (adapter / "adapter_model.safetensors").write_bytes(b"checkpoint")
+    from scripts.inference.run_evaluation import file_sha256
+    identities = {"card_sha256": "a" * 64, "recipe_sha256": "b" * 64}
+    manifest = {
+        "status": "complete",
+        "identities": identities,
+        "files": [{
+            "path": "adapter/adapter_model.safetensors",
+            "sha256": file_sha256(adapter / "adapter_model.safetensors"),
+        }],
+    }
+    manifest["manifest_sha256"] = sha256_object(manifest)
+    manifest_path = adapter.parent / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest))
+
+    observed, seal = checkpoint_adapter_files(adapter, manifest_path, {"identities": identities})
+
+    assert observed == {"adapter_model.safetensors": manifest["files"][0]["sha256"]}
+    assert seal == manifest["manifest_sha256"]
+
+
+def test_checkpoint_adapter_rejects_wrong_training_identity(tmp_path: Path) -> None:
+    import json
+
+    from scripts.eval.contracts import sha256_object
+
+    adapter = tmp_path / "checkpoint" / "adapter"
+    adapter.mkdir(parents=True)
+    manifest = {"status": "complete", "identities": {"recipe": "a"}, "files": []}
+    manifest["manifest_sha256"] = sha256_object(manifest)
+    manifest_path = adapter.parent / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest))
+
+    with pytest.raises(ValueError, match="training run identities"):
+        checkpoint_adapter_files(adapter, manifest_path, {"identities": {"recipe": "b"}})

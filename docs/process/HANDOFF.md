@@ -2209,3 +2209,26 @@ Navneet's explicit ownership decision. Temporary OAuth material was zeroed and
 removed. Next: preserve/commit the decision evidence, version-repair the single
 stale full-baseline seal, and design a new bounded data/mechanism hypothesis.
 No compute is active and no further GCloud action is authorized by this result.
+
+## 22. Checkpoint diagnostic prepared locally — 2026-09-09
+
+Failure analysis is in
+`docs/process/GATE4_EXPANSION_PILOT_FAILURE_ANALYSIS_20260909.md`. Of 30 final
+candidate programs, 10 are byte-identical to base; 20 changed, but only the
+Rust `collapse-runs` change altered failure to pass. Validation loss improved
+without broad executable transfer.
+
+The five unmeasured checkpoint configs bind adapters at 406,491; 814,098;
+1,224,637; 1,629,235; and 2,036,559 seen tokens. The final 2,438,853-token
+checkpoint is already measured. Sweep manifest seal is
+`6af2ad473e2d119bcf1149540705a3d7faaf7f4584b1b7626bf568cabfec4b5c`.
+Evaluator support verifies each adapter against its checkpoint manifest and
+the original training identities. The summarizer is diagnostic-only and cannot
+select or promote a checkpoint. Sixteen focused tests pass.
+
+Next local work is the fail-closed evaluation-only host/startup package and an
+exact provider proposal. Any VM creation requires fresh explicit GCloud
+approval. Planning bound: same Standard `g2-standard-8`/L4 in `us-east1-c`,
+two-hour maximum, no external IP, restart disabled, auto-delete 200 GiB disk,
+estimated 25–40 minutes of evaluation plus restore/backup, proposed $2.25
+absolute incremental ceiling. No cloud resource is active.

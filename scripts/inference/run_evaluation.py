@@ -162,6 +162,32 @@ def rooted(path: str | Path) -> Path:
     return value if value.is_absolute() else ROOT / value
 
 
+def checkpoint_adapter_files(
+    adapter_dir: Path, checkpoint_manifest_path: Path, run: dict[str, Any]
+) -> tuple[dict[str, str], str]:
+    checkpoint = load_sealed(checkpoint_manifest_path, "manifest_sha256")
+    if checkpoint is None or checkpoint.get("status") != "complete":
+        raise ValueError("candidate checkpoint manifest is incomplete")
+    if checkpoint.get("identities") != run.get("identities"):
+        raise ValueError("candidate checkpoint does not bind the training run identities")
+    expected = {
+        item["path"].removeprefix("adapter/"): item["sha256"]
+        for item in checkpoint.get("files", [])
+        if isinstance(item, dict)
+        and isinstance(item.get("path"), str)
+        and item["path"].startswith("adapter/")
+        and isinstance(item.get("sha256"), str)
+    }
+    observed = {
+        str(path.relative_to(adapter_dir)): file_sha256(path)
+        for path in sorted(adapter_dir.rglob("*"))
+        if path.is_file()
+    }
+    if not expected or observed != expected:
+        raise ValueError("candidate adapter files mismatch sealed checkpoint")
+    return observed, checkpoint["manifest_sha256"]
+
+
 def model_identity(
     config: dict[str, Any], *, model_dir: Path | None = None,
     adapter_dir: Path | None = None,
@@ -174,12 +200,21 @@ def model_identity(
     adapter=config.get("adapter")
     if adapter is not None:
         resolved_adapter = adapter_dir or rooted(adapter["dir"])
-        run_path = resolved_adapter.parent / "run-evidence.json" if adapter_dir else rooted(adapter["run_evidence"])
+        checkpoint_path = adapter.get("checkpoint_manifest")
+        run_path = rooted(adapter["run_evidence"]) if checkpoint_path else (resolved_adapter.parent / "run-evidence.json" if adapter_dir else rooted(adapter["run_evidence"]))
         run=load_sealed(run_path,"evidence_sha256")
         if run is None or run.get("status")!="complete": raise ValueError("candidate adapter run is incomplete")
-        observed={str(path.relative_to(resolved_adapter)):file_sha256(path) for path in sorted(resolved_adapter.rglob("*")) if path.is_file()}
-        if observed!=run.get("adapter_files"): raise ValueError("candidate adapter files mismatch sealed run")
-        identity={"model_id":adapter["served_model_id"],"revision":contract["revision"],"artifact_sha256":sha256_object({"base":artifact,"adapter":observed,"run_evidence_sha256":run["evidence_sha256"]}),"serving_contract_sha256":sha256_object(contract["serving_contract"]),"base_artifact_sha256":artifact,"training_run_evidence_sha256":run["evidence_sha256"]}; size+=sum(path.stat().st_size for path in resolved_adapter.rglob("*") if path.is_file())
+        if checkpoint_path:
+            observed, checkpoint_sha256 = checkpoint_adapter_files(resolved_adapter, rooted(checkpoint_path), run)
+        else:
+            observed={str(path.relative_to(resolved_adapter)):file_sha256(path) for path in sorted(resolved_adapter.rglob("*")) if path.is_file()}
+            if observed!=run.get("adapter_files"): raise ValueError("candidate adapter files mismatch sealed run")
+            checkpoint_sha256 = None
+        artifact_binding={"base":artifact,"adapter":observed,"run_evidence_sha256":run["evidence_sha256"]}
+        if checkpoint_sha256 is not None: artifact_binding["checkpoint_manifest_sha256"] = checkpoint_sha256
+        identity={"model_id":adapter["served_model_id"],"revision":contract["revision"],"artifact_sha256":sha256_object(artifact_binding),"serving_contract_sha256":sha256_object(contract["serving_contract"]),"base_artifact_sha256":artifact,"training_run_evidence_sha256":run["evidence_sha256"]}
+        if checkpoint_sha256 is not None: identity["checkpoint_manifest_sha256"] = checkpoint_sha256
+        size+=sum(path.stat().st_size for path in resolved_adapter.rglob("*") if path.is_file())
     return identity,size
 
 

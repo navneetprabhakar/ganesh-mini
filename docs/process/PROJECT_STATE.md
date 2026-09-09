@@ -48,7 +48,9 @@ assigned generations downloaded and byte-verified. Receipt seal is
 Current state is
 `waiting-for-capacity-probe-pricing-and-resource-inspection-approval`.
 No compute or infrastructure action occurred. Provider price/resource checks,
-executable-card binding and VM execution remain separately unauthorized.
+executable-card binding and VM execution remain separately unauthorized. The
+exact read-only inspection plan seal is
+`50b3783cb1287bfa3a44e00772db6f24bfd2b70b8d102b1b9f537276042fd521`.
 
 ## Corrected checkpoint-sweep VM proposal awaiting approval — 2026-09-09
 

@@ -2527,3 +2527,10 @@ No compute, network, disk or provider inspection occurred. The next hard
 boundary is a fresh approval to inspect current Standard L4 price, quota,
 resource absence, IAM and immutable-input availability, then seal an exact VM
 proposal. That inspection does not itself authorize VM creation or training.
+
+The read-only inspection plan is now sealed at
+`50b3783cb1287bfa3a44e00772db6f24bfd2b70b8d102b1b9f537276042fd521`.
+It binds attempt ID `20260909T173721Z` and exact prospective resource names.
+It permits only zone/machine/L4/quota, resource-absence, IAM,
+generation-availability and price reads. It requires explicit approval and
+does not authorize resource creation, object mutation, card upload or compute.

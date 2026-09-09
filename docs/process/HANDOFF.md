@@ -2511,3 +2511,19 @@ forbids GCloud resource inspection, provider pricing/card binding, compute,
 network changes, training, evaluation and publication. Authentication alone
 does not approve it. After explicit approval and successful upload, build a
 separate exact compute proposal with current price and an absolute ceiling.
+
+## 29. Capacity-probe workspace upload complete — 2026-09-09
+
+Navneet approved exact upload-only plan
+`a218b5f6ded99c9277d2e26e4a3c10737568906290894152cf4df5e94e7add5d`.
+All four objects were created without overwrite, assigned immutable
+generations, downloaded by those exact generations and matched against their
+sealed sizes and SHA-256 values. Total bytes are 6,729,319. Receipt seal:
+`ad5c9ae541bc0ef53a0c0fdbdb9a49512e002a01920ee95e3d927fb6c4464e01`;
+receipt file SHA:
+`ffe17da6f4b6924484927e6a347cf15e4a6c52d3a3a69f0e6ed25f4793be9a33`.
+
+No compute, network, disk or provider inspection occurred. The next hard
+boundary is a fresh approval to inspect current Standard L4 price, quota,
+resource absence, IAM and immutable-input availability, then seal an exact VM
+proposal. That inspection does not itself authorize VM creation or training.

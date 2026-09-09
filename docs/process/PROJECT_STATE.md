@@ -42,11 +42,13 @@ Gate 4 remains `do-not-promote`. Task-level trajectory analysis is complete:
 one family, so early stopping is rejected. A rank-16, all-attention plus
 last-eight-layer MLP capacity probe is locally prepared and passes preflight.
 It is bounded to 624 rows/468,601 tokens and has continuation-screen authority
-only. An exact four-object/6,729,319-byte upload-only plan is pending explicit
-approval under seal
-`a218b5f6ded99c9277d2e26e4a3c10737568906290894152cf4df5e94e7add5d`.
-Current state is `waiting-for-capacity-probe-upload-approval`. This plan permits
-no GCloud inspection, compute, provider binding, training or evaluation.
+only. The exact four-object/6,729,319-byte upload-only plan completed with all
+assigned generations downloaded and byte-verified. Receipt seal is
+`ad5c9ae541bc0ef53a0c0fdbdb9a49512e002a01920ee95e3d927fb6c4464e01`.
+Current state is
+`waiting-for-capacity-probe-pricing-and-resource-inspection-approval`.
+No compute or infrastructure action occurred. Provider price/resource checks,
+executable-card binding and VM execution remain separately unauthorized.
 
 ## Corrected checkpoint-sweep VM proposal awaiting approval — 2026-09-09
 

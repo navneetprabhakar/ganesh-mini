@@ -1,5 +1,18 @@
 # Decisions
 
+## 2026-09-09 — Capacity-probe upload-only plan completed exactly
+
+Navneet explicitly approved upload-only plan
+`a218b5f6ded99c9277d2e26e4a3c10737568906290894152cf4df5e94e7add5d`.
+All four named objects, totaling 6,729,319 bytes, were uploaded create-only.
+Each assigned generation was downloaded directly and matched its sealed size
+and SHA-256. Receipt seal is
+`ad5c9ae541bc0ef53a0c0fdbdb9a49512e002a01920ee95e3d927fb6c4464e01`;
+receipt file SHA-256 is
+`ffe17da6f4b6924484927e6a347cf15e4a6c52d3a3a69f0e6ed25f4793be9a33`.
+No compute or infrastructure action occurred. Pricing/resource inspection,
+provider-card binding and VM execution remain separately unauthorized.
+
 ## 2026-09-09 — Use one early-stopped capacity probe, not another full weak-adapter run
 
 Task-level trajectory analysis validates the exact base, four intermediate

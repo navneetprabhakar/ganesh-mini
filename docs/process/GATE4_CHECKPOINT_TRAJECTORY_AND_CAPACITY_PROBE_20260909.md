@@ -50,6 +50,11 @@ has SHA-256
 `0550d2f39bda880077b03b5f0cc57e2eff0e08db0ba130339abb17f715797945`;
 the manifest seal is
 `fbb4b4cf30e6664fe583c9a8ff5a2042b7ab282663174fd21f534b7e51350bcd`.
+The 587-file development-only evaluation workspace is also sealed locally.
+Its 1,012,468-byte archive SHA-256 is
+`6bca993d7ba0a744724aef324b303e1caf95a7be7943ba18a874e02fe0758db3`;
+manifest seal is
+`752eb6a124dd2949226164fbe237e1f31c7a264c9fe5a0b69534c517c8f39b02`.
 
 The intervention keeps the learning rate, data order, optimizer, batch size,
 sequence length, seed, precision and loss controls fixed, but changes the
@@ -93,6 +98,6 @@ No GCloud inspection, upload, resource creation or execution is authorized by
 this document. Provider pricing, exact inputs, a cost ceiling, teardown, GCS
 backup and explicit approval must be sealed separately.
 
-Thirty-seven focused tests pass. The Python 3.12 full suite retains only the
+Thirty-eight focused tests pass. The Python 3.12 full suite retains only the
 three already documented stale Gate 1 workspace/readiness failures; the probe
 introduces no new full-suite failure.

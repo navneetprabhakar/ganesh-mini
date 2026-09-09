@@ -36,6 +36,15 @@ from scripts.campaign.run_host import (  # noqa: E402
 BASE_TASKS = Path("measurement/inference/development/qwen3.5-2b-base-v1/tasks")
 
 
+def default_config_relative(card: dict[str, object]) -> Path:
+    schema = card.get("schema_version")
+    if schema == "ganesh-mini-expansion-pilot-card/v1":
+        return Path("configs/train/expansion_pilot_v1.json")
+    if schema == "ganesh-mini-expansion-pilot-card/v2":
+        return Path("configs/train/expansion_capacity_probe_v2.json")
+    raise RuntimeError("unsupported expansion card schema")
+
+
 class ExpansionCampaign(Campaign):
     def docker_base(self, name: str, workspace: Path) -> list[str]:
         return [
@@ -190,9 +199,11 @@ class ExpansionCampaign(Campaign):
             raise RuntimeError("campaign escaped the qualified CUDA image")
         verify_workspace(self.args.eval_workspace, self.args.eval_manifest, self.args.eval_archive, "ganesh-mini-development-evaluation-workspace/v1")
         verify_workspace(self.args.train_workspace, self.args.train_manifest, self.args.train_archive, "ganesh-mini-training-workspace/v1")
-        config = json.loads((self.args.train_workspace / self.args.config_relative).read_text())
         card_path = self.args.card
         card = load_sealed(card_path, "card_sha256")
+        if self.args.config_relative is None:
+            self.args.config_relative = default_config_relative(card)
+        config = json.loads((self.args.train_workspace / self.args.config_relative).read_text())
         provider = card.get("provider_execution") or {}
         schema = config.get("schema_version")
         expected_card_schema = {"ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1", "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2"}.get(schema)
@@ -247,7 +258,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--verifier-manifest", type=Path, required=True)
     parser.add_argument("--verifier-archive", type=Path, required=True)
-    parser.add_argument("--config-relative", type=Path, default=Path("configs/train/expansion_pilot_v1.json"))
+    parser.add_argument("--config-relative", type=Path)
     parser.add_argument("--card", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--shared-tmp", type=Path, required=True)

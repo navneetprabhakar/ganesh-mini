@@ -2487,7 +2487,11 @@ The 46-file/5,575,271-byte training archive SHA is
 `0550d2f39bda880077b03b5f0cc57e2eff0e08db0ba130339abb17f715797945`;
 manifest seal is
 `fbb4b4cf30e6664fe583c9a8ff5a2042b7ab282663174fd21f534b7e51350bcd`.
-Thirty-seven focused tests pass. The full Python 3.12 suite retains only the
+The development-only evaluation archive is 1,012,468 bytes with SHA
+`6bca993d7ba0a744724aef324b303e1caf95a7be7943ba18a874e02fe0758db3`;
+its manifest seal is
+`752eb6a124dd2949226164fbe237e1f31c7a264c9fe5a0b69534c517c8f39b02`.
+Thirty-eight focused tests pass. The full Python 3.12 suite retains only the
 three documented stale Gate 1 failures. State is local-prepared,
 cloud-unbound. Do not
 inspect or mutate GCloud until a new exact proposal is explicitly approved.

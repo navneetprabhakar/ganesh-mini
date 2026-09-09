@@ -6,10 +6,15 @@ import subprocess
 from decimal import Decimal
 from pathlib import Path
 
-from scripts.campaign.run_expansion_host import ExpansionCampaign
+from scripts.campaign.run_expansion_host import ExpansionCampaign, default_config_relative
 from scripts.campaign.run_host import canonical_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_default_config_is_selected_from_sealed_card_generation() -> None:
+    assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v1"}).name == "expansion_pilot_v1.json"
+    assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v2"}).name == "expansion_capacity_probe_v2.json"
 
 
 def campaign(tmp_path: Path) -> ExpansionCampaign:

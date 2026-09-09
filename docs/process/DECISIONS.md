@@ -22,6 +22,13 @@ Config SHA-256 is
 No GCloud action is authorized; exact cloud inputs, price, ceiling and approval
 remain a separate hard boundary.
 
+The next upload-only boundary contains exactly the four sealed training and
+development workspace objects, 6,729,319 bytes total. Plan seal is
+`a218b5f6ded99c9277d2e26e4a3c10737568906290894152cf4df5e94e7add5d`.
+It permits only create-only upload, generation capture and exact-generation
+roundtrip comparison. It does not authorize GCloud inspection, compute,
+provider binding, training or evaluation.
+
 ## 2026-09-09 — Corrected sweep upload is complete; compute remains separate
 
 Navneet's direct `approved` response authorizes only upload plan

@@ -2495,3 +2495,19 @@ Thirty-eight focused tests pass. The full Python 3.12 suite retains only the
 three documented stale Gate 1 failures. State is local-prepared,
 cloud-unbound. Do not
 inspect or mutate GCloud until a new exact proposal is explicitly approved.
+
+## 28. Capacity-probe upload boundary awaiting approval — 2026-09-09
+
+The upload-only plan at
+`measurement/gate4/capacity-probe-20260909/gcloud-upload-plan.json` binds four
+new immutable objects totaling 6,729,319 bytes: the sealed training archive and
+manifest plus the sealed development-only evaluation archive and manifest.
+Plan seal is
+`a218b5f6ded99c9277d2e26e4a3c10737568906290894152cf4df5e94e7add5d`.
+
+This boundary allows create-only upload, assigned-generation capture,
+exact-generation download/byte comparison, and a sealed local receipt. It
+forbids GCloud resource inspection, provider pricing/card binding, compute,
+network changes, training, evaluation and publication. Authentication alone
+does not approve it. After explicit approval and successful upload, build a
+separate exact compute proposal with current price and an absolute ceiling.

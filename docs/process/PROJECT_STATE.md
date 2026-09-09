@@ -1,5 +1,27 @@
 # Project state
 
+## Capacity probe completed; mechanism rejected and cloud torn down — 2026-09-10
+
+Navneet approved exact capacity-probe proposal
+`461e968ae2fa79d3401e522d52bf91cbcc359cdded68d8fff62dff51631934f0`
+with a `$2.25` ceiling. Attempt `20260909T173721Z` trained all 468,601 tokens,
+sealed six checkpoints, passed save/reload and every terminal training check,
+then completed the frozen 30-task screen. Candidate passes were 6/30 versus
+base 5/30: Go +1, Java +1, Rust +1, JavaScript/Python unchanged, and
+TypeScript -2. Three product families improved, but net gain was only +1 and
+the zero-lane-regression rule failed. The terminal decision is
+`do-not-promote`; this capacity mechanism is closed and must not scale.
+
+All 129 terminal manifest entries independently passed SHA-256 verification.
+The control archive passed exact-generation GCS roundtrip at generation
+`1788981472815348`; the teardown receipt is generation `1788981697224407`.
+Projected compute cost was `$0.2664489284483141747466666667`. The named VM,
+disk, subnet, and network are absent in two checks 94 seconds apart. The
+unrelated `laxmi-wmv2-training-01` disk remains and may bill, so project-wide
+GCS-only billing is still false. Gate 4 remains `do-not-promote`; next work is
+a local task-level error and mixture audit before proposing a different
+mechanism. See `CAPACITY_PROBE_RESULT_20260910.md`.
+
 ## Checkpoint sweep closed with four valid checkpoints; no broad transfer — 2026-09-09
 
 Navneet approved exact proposal

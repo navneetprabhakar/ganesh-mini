@@ -1,5 +1,25 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 4 capacity probe terminal; do not promote — 2026-09-10
+
+Attempt `20260909T173721Z`, authorized by proposal
+`461e968ae2fa79d3401e522d52bf91cbcc359cdded68d8fff62dff51631934f0`,
+completed the bounded 624-row/468,601-token rank-16 probe and all six
+checkpoints. Training and save/reload passed. The frozen 30-task canary finished
+6/30 versus base 5/30: Go +1, Java +1, Rust +1, TypeScript -2, other lanes
+unchanged. Continuation fails on net +1 (< +2) and two lane regressions, so the
+exact mechanism is terminal `do-not-promote`. Never run its 180-task surface,
+main training, merge, quantization, or publication.
+
+All 129 terminal files passed independent SHA-256 recovery. Control evidence
+roundtrip generation is `1788981472815348`; teardown receipt generation is
+`1788981697224407`. The named VM/disk/subnet/network were deleted and returned
+absent twice. Project inventory has no instances or other Compute surfaces,
+but unrelated disk `laxmi-wmv2-training-01` remains and may bill; do not touch
+it. Project-wide GCS-only remains false. Next: local task-level audit of the
+three gains and two lost TypeScript passes, then seal a genuinely different
+mechanism if justified. Full result: `CAPACITY_PROBE_RESULT_20260910.md`.
+
 ## Gate4 response-only training package ready — 2026-09-09
 
 The sealed3225-row Gate2 source corpus is now deterministically tokenized with

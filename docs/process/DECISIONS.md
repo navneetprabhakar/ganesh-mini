@@ -1,5 +1,28 @@
 # Decisions
 
+## 2026-09-10 — Rank-16 capacity alone is rejected as the next mechanism
+
+The exact capacity probe approved under proposal
+`461e968ae2fa79d3401e522d52bf91cbcc359cdded68d8fff62dff51631934f0`
+completed training, save/reload, and all 30 frozen canary tasks. It scored 6/30
+against the base checkpoint's 5/30. Go, Java, and Rust each gained one pass,
+but TypeScript lost both base passes. The frozen continuation rule fails on
+net gain (+1 versus required +2) and lane regression (2 versus allowed 0).
+Record `do-not-promote` and terminate this exact mechanism. Do not run its
+180-task development surface or scale it into main training.
+
+This evidence does not show that adapter capacity is irrelevant; it shows that
+capacity without better task balance or interference control is insufficient.
+Before another training proposal, perform a local task-level audit of the two
+TypeScript regressions, the three gains, prompt/output differences, and their
+training-mixture neighbors. A new experiment must state how it prevents the
+observed cross-lane tradeoff and must receive a fresh GCloud approval.
+
+The complete terminal inventory and provider evidence are preserved and
+verified in GCS. The named VM, disk, subnet, and network were deleted and twice
+confirmed absent. Project-wide GCS-only billing remains false solely because
+the unrelated `laxmi-wmv2-training-01` disk remains outside scope.
+
 ## 2026-09-09 — Capacity-probe inspection passed; execution remains separately gated
 
 Navneet explicitly approved read-only inspection plan

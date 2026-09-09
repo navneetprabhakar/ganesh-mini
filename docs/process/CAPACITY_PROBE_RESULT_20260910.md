@@ -65,7 +65,11 @@ the entire project is GCS-only.
 Do not scale this recipe or try to rescue it with a longer run: the earlier
 checkpoint sweep already rejected premature stopping, while this probe shows
 that roughly 10x adapter capacity still trades TypeScript competence for gains
-elsewhere. The next local step is a task-level error and training-mixture audit,
-focused on the two lost TypeScript passes and whether the three gained passes
-represent a coherent learnable mechanism. Any new cloud experiment requires a
-new sealed hypothesis, bounded recipe, price envelope, and explicit approval.
+elsewhere. The completed task-level audit found four gained tasks and three
+losses. Three gains are the same `collapse-runs` pattern across languages,
+while Python swaps one pass and TypeScript loses both base passes. It also found
+that the probe prefix gave TypeScript only 7.17% objective share because
+training balanced five product families while promotion enforced six
+independent lanes. See `CAPACITY_PROBE_TRANSITION_AUDIT_20260910.md`. Any new
+cloud experiment requires a new sealed hypothesis, bounded recipe, price
+envelope, and explicit approval.

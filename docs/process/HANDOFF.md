@@ -16,9 +16,13 @@ roundtrip generation is `1788981472815348`; teardown receipt generation is
 `1788981697224407`. The named VM/disk/subnet/network were deleted and returned
 absent twice. Project inventory has no instances or other Compute surfaces,
 but unrelated disk `laxmi-wmv2-training-01` remains and may bill; do not touch
-it. Project-wide GCS-only remains false. Next: local task-level audit of the
-three gains and two lost TypeScript passes, then seal a genuinely different
-mechanism if justified. Full result: `CAPACITY_PROBE_RESULT_20260910.md`.
+it. Project-wide GCS-only remains false. The local transition audit is
+complete: four gains, three losses, with three gains concentrated on
+`collapse-runs`; TypeScript had only 7.17% of the prefix objective despite
+lane-level no-regression. Next seal a six-lane-stratified mechanism with a
+non-evaluation retention check. Full result:
+`CAPACITY_PROBE_RESULT_20260910.md`; audit:
+`CAPACITY_PROBE_TRANSITION_AUDIT_20260910.md`.
 
 ## Gate4 response-only training package ready — 2026-09-09
 

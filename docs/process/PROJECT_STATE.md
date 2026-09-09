@@ -18,9 +18,14 @@ The control archive passed exact-generation GCS roundtrip at generation
 Projected compute cost was `$0.2664489284483141747466666667`. The named VM,
 disk, subnet, and network are absent in two checks 94 seconds apart. The
 unrelated `laxmi-wmv2-training-01` disk remains and may bill, so project-wide
-GCS-only billing is still false. Gate 4 remains `do-not-promote`; next work is
-a local task-level error and mixture audit before proposing a different
-mechanism. See `CAPACITY_PROBE_RESULT_20260910.md`.
+GCS-only billing is still false. Gate 4 remains `do-not-promote`. The local
+transition audit found four gains and three losses, with three gains
+concentrated on `collapse-runs`, plus a training/promotion mismatch:
+TypeScript received only 7.17% of the prefix objective even though the gate
+protects all six lanes independently. Next work is a sealed
+six-lane-stratified recipe with a non-evaluation retention check. See
+`CAPACITY_PROBE_RESULT_20260910.md` and
+`CAPACITY_PROBE_TRANSITION_AUDIT_20260910.md`.
 
 ## Checkpoint sweep closed with four valid checkpoints; no broad transfer — 2026-09-09
 

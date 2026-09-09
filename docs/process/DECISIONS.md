@@ -13,10 +13,15 @@ Record `do-not-promote` and terminate this exact mechanism. Do not run its
 
 This evidence does not show that adapter capacity is irrelevant; it shows that
 capacity without better task balance or interference control is insufficient.
-Before another training proposal, perform a local task-level audit of the two
-TypeScript regressions, the three gains, prompt/output differences, and their
-training-mixture neighbors. A new experiment must state how it prevents the
-observed cross-lane tradeoff and must receive a fresh GCloud approval.
+The local transition audit found four gains and three losses. Three gains are
+the same `collapse-runs` pattern; Python swaps one pass for another and
+TypeScript loses both base passes. The 624-record prefix assigned TypeScript
+only 7.17% objective share because the optimizer balanced five combined
+families while promotion protected six separate lanes. Before another proposal,
+make training and promotion units agree through explicit six-lane stratified
+optimizer groups plus a non-evaluation retention check. A new experiment must
+state how it prevents the observed cross-lane tradeoff and must receive a fresh
+GCloud approval.
 
 The complete terminal inventory and provider evidence are preserved and
 verified in GCS. The named VM, disk, subnet, and network were deleted and twice

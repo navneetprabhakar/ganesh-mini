@@ -57,6 +57,11 @@ class ExpansionCampaign(Campaign):
     def train_expansion(self, card: Path, config: dict[str, object]) -> Path:
         destination = self.output / "training" / "expansion-pilot"
         destination.mkdir(parents=True, exist_ok=False)
+        execution_card = load_sealed(card, "card_sha256")
+        provider = execution_card.get("provider_execution") or {}
+        provider_prior_cost = Decimal(str(provider.get("prior_cost_usd", -1)))
+        if provider_prior_cost < 0:
+            raise RuntimeError("training card has no valid provider prior cost")
         data = config["data"]
         recipe = config["recipe"]
         control = config["control"]
@@ -77,7 +82,7 @@ class ExpansionCampaign(Campaign):
             "--learning-rate", str(recipe["learning_rate"]),
             "--maximum-seen-tokens", str(control["maximum_seen_tokens"]),
             "--hourly-cost-usd", str(self.args.hourly_cost_usd),
-            "--prior-cost-usd", str(self.prior_cost()),
+            "--prior-cost-usd", str(provider_prior_cost),
             "--cost-ceiling-usd", str(self.args.absolute_cost_ceiling_usd),
         ]
         timeout = min(self.remaining(self.args.finalization_reserve_seconds), int(control["maximum_wall_seconds"]))

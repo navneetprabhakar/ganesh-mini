@@ -12,6 +12,14 @@ work_dir=/opt/ganesh-mini-gate4
 evidence_dir=/var/lib/ganesh-mini-gate4
 output_dir="$evidence_dir/output"
 shared_tmp="$evidence_dir/shared-tmp"
+if [[ -d "$work_dir" ]]; then
+  prior_work_dir="/opt/ganesh-mini-gate4-prior-$(date -u +%Y%m%dT%H%M%SZ)"
+  mv "$work_dir" "$prior_work_dir"
+fi
+if [[ -d "$evidence_dir" ]]; then
+  prior_evidence_dir="/var/lib/ganesh-mini-gate4-prior-$(date -u +%Y%m%dT%H%M%SZ)"
+  mv "$evidence_dir" "$prior_evidence_dir"
+fi
 mkdir -p "$work_dir" "$output_dir" "$shared_tmp"
 env_file="$work_dir/execution.env"
 

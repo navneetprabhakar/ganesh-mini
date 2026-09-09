@@ -61,8 +61,16 @@ def test_training_receives_provider_absolute_ceiling(tmp_path: Path, monkeypatch
         "recipe": {"learning_rate": 0.00001},
         "control": {"maximum_seen_tokens": 100, "maximum_wall_seconds": 21600},
     }
-    value.train_expansion(tmp_path / "card.json", config)
+    card = {
+        "status": "ready",
+        "provider_execution": {"prior_cost_usd": 0.0},
+    }
+    card["card_sha256"] = canonical_sha256(card)
+    card_path = tmp_path / "card.json"
+    card_path.write_text(json.dumps(card))
+    value.train_expansion(card_path, config)
     assert captured[captured.index("--cost-ceiling-usd") + 1] == "7.5"
+    assert captured[captured.index("--prior-cost-usd") + 1] == "0.0"
 
 
 def test_non_promoting_canary_is_a_completed_adjudication(tmp_path: Path, monkeypatch) -> None:

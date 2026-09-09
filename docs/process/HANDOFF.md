@@ -2090,3 +2090,33 @@ prefix. After terminal backup, independently download exact generations and
 verify completeness, then delete the retained VM/disk/subnet/network and
 perform two absence checks. Preserve the failed first-boot evidence as part of
 the final audit trail.
+
+## 18. Gate 4 cost-binding failure and same-VM retry preparation — 2026-09-09
+
+The v2 campaign passed workspace/provider admission and verifier-runtime
+readiness, then failed closed before model initialization or any trained token.
+`run_sft.py` correctly rejected the controller's live elapsed-cost value because
+the provider-bound training card requires `prior_cost_usd=0.0`. Terminal exit
+codes are both `1`; exact terminal evidence was downloaded and its
+`runtime-files.sha256` inventory passed. A separate GCS failure archive is
+generation `1788920765614336`, SHA-256
+`e8b53c43e9d579091f5ce8ca6f99e07898b410895680b41c3566afad4d0e5bdf`.
+The VM is `TERMINATED`; no compute cost is accruing, but its retained disk
+remains billable pending the same-VM retry or teardown.
+
+The controller now passes the exact provider-bound prior cost rather than its
+own elapsed estimate. A regression test asserts `--prior-cost-usd 0.0`; focused
+tests pass. Startup v3 preserves old work/evidence directories before a restart
+so retained disk state cannot violate fresh-output guards. Evaluation workspace
+v5 (containing the corrected controller) is GCS generation
+`1788920896367400`, SHA-256
+`717119c690765e9516c43e0c82a1ed5adc193f023ebe6667c10f9359a5fcf1b6`;
+manifest generation `1788920902310400`, SHA-256
+`6aa5a4e83ae6a4cde12b9b112d477805f8efb3a0247d074274c85237fb8a68ca`.
+Startup v3 is generation `1788920906112661`, SHA-256
+`84d211347059192d061c50988e86f9ad38d9675e07b2d4faa35923d6b3192b41`.
+
+Next: commit the fix/evidence, seal and roundtrip a new outer card for a new
+attempt prefix, update metadata on the same provider instance ID, and restart
+that instance. Do not create a new instance. If the same-VM restart cannot
+proceed within the approved ceiling, tear down and request a new exact card.

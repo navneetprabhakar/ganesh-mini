@@ -2055,3 +2055,19 @@ GCloud compute until that approval is received.
 - Do not create another VM. Continue checkpoint monitoring, then terminal
   roundtrip verification, teardown, two absence checks and the
   no-billing-except-GCS audit.
+
+### Gate 4 same-VM retry prepared — 2026-09-09
+
+- The v2 campaign passed workspace/provider admission and verifier-image
+  readiness, then exited before model initialization because the host passed a
+  dynamic elapsed prior cost where the sealed training card requires `0.0`.
+  Zero training tokens were consumed.
+- Terminal evidence was exact-generation downloaded and inventory-verified.
+  The distinct GCS failure archive has generation `1788920765614336` and
+  SHA-256
+  `e8b53c43e9d579091f5ce8ca6f99e07898b410895680b41c3566afad4d0e5bdf`.
+- The VM is `TERMINATED`; disk/network/subnet remain for a same-VM retry. No
+  second VM is authorized or needed.
+- Controller fix and regression test pass. Workspace v5 and startup v3 are
+  uploaded and exact-roundtrip verified. Next bind a fresh attempt prefix,
+  update the retained VM metadata, and restart the same provider instance.

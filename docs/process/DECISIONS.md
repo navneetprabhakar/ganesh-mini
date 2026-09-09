@@ -19,6 +19,15 @@ second VM or alter zone, machine type, provisioning model or ceiling. Outer
 card v2 generation `1788919774477052` has started successfully and passed
 workspace/provider admission.
 
+The v2 run subsequently failed closed before model initialization because the
+controller supplied live elapsed cost as `prior_cost_usd`, while the provider-
+bound training card requires the exact value `0.0`. This is a controller
+handoff defect, not a training result. Preserve and separately back up its
+terminal evidence. Correct the controller, preserve retained work/evidence on
+restart, and reuse the same approved provider instance under a new attempt
+prefix. Do not create a second VM; zero trained tokens means there is no model
+candidate from the failed starts.
+
 ## 2026-09-09 — Pilot sufficiency and executed throughput resolved
 
 Navneet directed resolution of Gate2 corpus sufficiency and pilot throughput.

@@ -1,5 +1,20 @@
 # Decisions
 
+## 2026-09-09 — Corrected sweep upload is complete; compute remains separate
+
+Navneet's direct `approved` response authorizes only upload plan
+`356dc0403d6ccc82683774bb3d381280bbc87b432e1f1116cb9b0a12a7b7f769`.
+Exactly the three named corrected objects were uploaded create-only and
+exact-generation roundtrip verified; the operation created no compute or
+infrastructure. Upload receipt seal is
+`45a61f7866b0966dba7ec00cd7d49304be6cb13b3acaa764ea272c69f3fc224e`.
+
+The resulting replacement VM proposal is sealed at
+`ab86a71a0178d6f7a9232f9ee9dee72650d2fd7dd5568844c10a7ffd68dd1de4`
+with the unchanged `$2.25` absolute incremental ceiling. This proposal is not
+executable without a fresh explicit approval. Do not infer compute permission
+from the completed upload approval.
+
 ## 2026-09-09 — Checkpoint-sweep attempt is infrastructure evidence only
 
 Navneet explicitly approved checkpoint-sweep proposal

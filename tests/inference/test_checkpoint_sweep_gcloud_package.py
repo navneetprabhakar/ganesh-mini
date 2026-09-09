@@ -21,8 +21,11 @@ ROOT = Path(__file__).resolve().parents[2]
 UPLOAD_PLAN = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan.json"
 UPLOAD_PLAN_V2 = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan-v2.json"
 BINDINGS = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-input-bindings.json"
+BINDINGS_V2 = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-input-bindings-v2.json"
 PROPOSAL = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-execution-proposal.json"
+PROPOSAL_V2 = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-execution-proposal-v2.json"
 UPLOAD_RECEIPT = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-receipt.json"
+UPLOAD_RECEIPT_V2 = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-receipt-v2.json"
 ATTEMPT = ROOT / "measurement/gate4/checkpoint-sweep-20260909/attempts/20260909T105950Z"
 APPROVAL = ATTEMPT / "approval.json"
 EXECUTION_CARD = ATTEMPT / "execution-card.json"
@@ -117,6 +120,31 @@ def test_corrected_upload_plan_binds_three_current_inputs_and_no_compute() -> No
         assert source.stat().st_size == row["size_bytes"]
         assert hashlib.sha256(source.read_bytes()).hexdigest() == row["sha256"]
         assert "/input/1a5a2e0/" in row["destination"]
+
+
+def test_corrected_upload_receipt_and_replacement_proposal_bind_exact_generations() -> None:
+    plan = load_execution_input(UPLOAD_PLAN_V2, "upload_plan_sha256")
+    receipt = load_execution_input(UPLOAD_RECEIPT_V2, "receipt_sha256")
+    bound = load_bindings(BINDINGS_V2)
+    proposal = load_execution_input(PROPOSAL_V2, "proposal_sha256")
+    uploaded = {
+        (row["name"], row["generation"]): (row["sha256"], row["size_bytes"], row["roundtrip"])
+        for row in receipt["objects"]
+    }
+
+    assert receipt["approval"]["approved_upload_plan_sha256"] == plan["upload_plan_sha256"]
+    assert receipt["bytes_uploaded"] == plan["maximum_new_bytes"]
+    assert receipt["compute_or_infrastructure_action_performed"] is False
+    assert proposal == build(bound)
+    assert proposal["bindings_sha256"] == bound["bindings_sha256"]
+    assert proposal["cost"]["absolute_cost_ceiling_usd"] == "2.25"
+    assert proposal["training_allowed"] is False
+    for key in ("workspace_archive", "workspace_manifest", "controller"):
+        row = bound["inputs"][key]
+        name, generation = row["uri"].removeprefix(
+            "gs://ganesh-gate0-model-transfer-1061994342941/"
+        ).rsplit("#", 1)
+        assert uploaded[(name, generation)] == (row["sha256"], row["size_bytes"], "passed")
 
 
 def test_committed_proposal_matches_generation_bindings_and_verified_upload() -> None:

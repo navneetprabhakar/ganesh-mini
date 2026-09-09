@@ -2362,3 +2362,43 @@ delivery 60%. Current state is ACTIVE on local sealing, not technically stuck.
 After the two new GCloud approvals, checkpoint evaluation plus backup/teardown
 is estimated at 1.5–3 hours. End-to-end release ETA remains 2–5 days at low
 confidence because the sweep may still require a new data/mechanism experiment.
+
+## 25. Corrected sweep inputs uploaded; replacement VM proposal pending — 2026-09-09
+
+Navneet approved upload-only plan
+`356dc0403d6ccc82683774bb3d381280bbc87b432e1f1116cb9b0a12a7b7f769`
+by replying `approved` directly to the exact-plan request. Approval seal is
+`ae06276ec433c59a4b6ae288890091880efbf5b42005536ad46e09996b5d3a0f`.
+Exactly three corrected objects totaling 1,161,309 bytes were uploaded
+create-only. No compute or infrastructure action occurred.
+
+Exact immutable generations are workspace archive `1788958259527767`,
+workspace manifest `1788958261099778`, and startup controller
+`1788958261821760`. Every exact generation was downloaded and compared
+byte-for-byte with its approved source. Upload receipt seal is
+`45a61f7866b0966dba7ec00cd7d49304be6cb13b3acaa764ea272c69f3fc224e`.
+
+All ten runtime inputs are now rebound under bindings seal
+`58df54d10772db3655cd25d42f8068779d9a226853e3b7c8df35da87499be0fa`.
+The unchanged recovery/model/CUDA/Docker/verifier/metadata-wrapper generations
+remain exactly as previously verified; only workspace archive, manifest, and
+startup controller point to the corrected commit-bound objects.
+
+The replacement non-executable VM proposal preserves the original resource and
+cost envelope: one Standard `g2-standard-8`/L4 in `us-east1-c`, 200 GiB
+auto-delete balanced disk, no external IP, restart disabled, 7,200-second
+maximum, provider upper bound `$1.762043024`, and `$2.25` absolute incremental
+ceiling. It permits exactly five serial 30-task checkpoint evaluations and
+forbids training, full-development evaluation, decision opening, promotion,
+and publication. Proposal seal:
+`ab86a71a0178d6f7a9232f9ee9dee72650d2fd7dd5568844c10a7ffd68dd1de4`.
+
+Current state is WAITING at the required GCloud compute boundary. Do not
+inspect, create, start, stop, mutate, or delete GCloud compute/infrastructure
+until Navneet explicitly approves that exact proposal and `$2.25` ceiling.
+After approval, record a new one-use approval and attempt ID, perform provider
+preflight, create one temporary resource set, run the sweep, preserve and
+roundtrip all terminal evidence, then delete resources and verify absence
+twice. Training 70%, release readiness 52%, overall 60%. Sweep-to-teardown ETA
+after approval is 1.5–3 hours; end-to-end release ETA remains 2–5 days at low
+confidence.

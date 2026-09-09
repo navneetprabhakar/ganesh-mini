@@ -1,5 +1,24 @@
 # Project state
 
+## Corrected checkpoint-sweep VM proposal awaiting approval — 2026-09-09
+
+Upload-only plan
+`356dc0403d6ccc82683774bb3d381280bbc87b432e1f1116cb9b0a12a7b7f769`
+is complete. Exactly three corrected objects totaling 1,161,309 bytes were
+uploaded create-only and exact-generation roundtrip verified; no compute or
+infrastructure action occurred. Generations are archive `1788958259527767`,
+manifest `1788958261099778`, and startup `1788958261821760`. Receipt seal is
+`45a61f7866b0966dba7ec00cd7d49304be6cb13b3acaa764ea272c69f3fc224e`.
+
+The ten-input binding seal is
+`58df54d10772db3655cd25d42f8068779d9a226853e3b7c8df35da87499be0fa`.
+The replacement diagnostic-only VM proposal preserves one Standard L4,
+7,200-second maximum, no external IP, auto-delete disk, `$1.762043024`
+provider upper bound, and `$2.25` absolute ceiling. Its seal is
+`ab86a71a0178d6f7a9232f9ee9dee72650d2fd7dd5568844c10a7ffd68dd1de4`.
+No compute action is authorized until that exact proposal and ceiling receive
+fresh explicit approval.
+
 ## Checkpoint-sweep first attempt closed; corrected v2 local — 2026-09-09
 
 The one execution authorized by proposal

@@ -2099,7 +2099,7 @@ readiness, then failed closed before model initialization or any trained token.
 the provider-bound training card requires `prior_cost_usd=0.0`. Terminal exit
 codes are both `1`; exact terminal evidence was downloaded and its
 `runtime-files.sha256` inventory passed. A separate GCS failure archive is
-generation `1788920765614336`, SHA-256
+generation `1788920860248908`, SHA-256
 `e8b53c43e9d579091f5ce8ca6f99e07898b410895680b41c3566afad4d0e5bdf`.
 The VM is `TERMINATED`; no compute cost is accruing, but its retained disk
 remains billable pending the same-VM retry or teardown.
@@ -2120,3 +2120,27 @@ Next: commit the fix/evidence, seal and roundtrip a new outer card for a new
 attempt prefix, update metadata on the same provider instance ID, and restart
 that instance. Do not create a new instance. If the same-VM restart cannot
 proceed within the approved ceiling, tear down and request a new exact card.
+
+## 19. Gate 4 retained-disk retry bootstrap correction — 2026-09-09
+
+Attempt `20260909T022847Z` reused the same provider instance and passed all ten
+immutable input downloads. It then failed closed before the campaign
+controller, model initialization, or training because reinstalling the pinned
+Docker packages on the retained boot disk opened an interactive debconf
+question without a terminal. Startup exit is `1`; the VM returned to
+`TERMINATED`, so GPU compute is not accruing.
+
+The exact terminal inventory was downloaded and verified. Its distinct GCS
+archive is generation `1788922020962270`, SHA-256
+`af0dd839bbe717ac9aea59f9ca78b54e45adc4fcddd2e3dd9ece9797e16249db`,
+and an exact-generation download compares byte-for-byte. The startup controller
+now exports noninteractive debconf/needrestart settings, preserves installed
+configuration, and bounds each `dpkg` attempt to 300 seconds. The focused
+campaign tests and shell syntax check pass.
+
+Next: publish and roundtrip startup v4, commit the correction and evidence,
+seal a new attempt card with a reduced remaining runtime envelope, update only
+the retained instance metadata/scheduling, and restart the same provider ID.
+No second VM is permitted. After any terminal result, verify all evidence in
+GCS before deleting the VM/disk/subnet/network and completing two absence and
+billing checks.

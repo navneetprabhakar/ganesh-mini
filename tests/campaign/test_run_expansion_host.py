@@ -9,6 +9,8 @@ from pathlib import Path
 from scripts.campaign.run_expansion_host import ExpansionCampaign
 from scripts.campaign.run_host import canonical_sha256
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 def campaign(tmp_path: Path) -> ExpansionCampaign:
     args = argparse.Namespace(
@@ -71,6 +73,14 @@ def test_training_receives_provider_absolute_ceiling(tmp_path: Path, monkeypatch
     value.train_expansion(card_path, config)
     assert captured[captured.index("--cost-ceiling-usd") + 1] == "7.5"
     assert captured[captured.index("--prior-cost-usd") + 1] == "0.0"
+
+
+def test_gate4_startup_installs_docker_noninteractively() -> None:
+    startup = (ROOT / "scripts/inference/gcloud_startup_expansion_pilot.sh").read_text()
+    install = startup.index('dpkg --force-confold -i "$work_dir"/docker-bundle/debs/*.deb')
+    assert startup.index("export DEBIAN_FRONTEND=noninteractive") < install
+    assert startup.index("export DEBCONF_NONINTERACTIVE_SEEN=true") < install
+    assert startup.index("export NEEDRESTART_MODE=a") < install
 
 
 def test_non_promoting_canary_is_a_completed_adjudication(tmp_path: Path, monkeypatch) -> None:

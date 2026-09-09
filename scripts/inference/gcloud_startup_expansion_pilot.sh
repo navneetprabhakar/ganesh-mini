@@ -134,7 +134,11 @@ tar -xzf "$work_dir/train.tar.gz" -C "$work_dir/train"
 tar -xzf "$work_dir/model.tar.gz" -C "$work_dir/model"
 tar -xzf "$work_dir/docker-bundle.tar.gz" -C "$work_dir/docker-bundle" --strip-components=1
 ( cd "$work_dir/docker-bundle" && sha256sum -c bundle-files.sha256 )
-dpkg -i "$work_dir"/docker-bundle/debs/*.deb > "$evidence_dir/docker-offline-install.log" 2>&1 || dpkg -i "$work_dir"/docker-bundle/debs/*.deb >> "$evidence_dir/docker-offline-install.log" 2>&1
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
+export NEEDRESTART_MODE=a
+timeout 300 dpkg --force-confold -i "$work_dir"/docker-bundle/debs/*.deb > "$evidence_dir/docker-offline-install.log" 2>&1 || \
+  timeout 300 dpkg --force-confold -i "$work_dir"/docker-bundle/debs/*.deb >> "$evidence_dir/docker-offline-install.log" 2>&1
 dpkg --audit > "$evidence_dir/dpkg-audit.txt"; [[ ! -s "$evidence_dir/dpkg-audit.txt" ]]
 nvidia-ctk runtime configure --runtime=docker > "$evidence_dir/nvidia-ctk-configure.log" 2>&1
 systemctl restart docker

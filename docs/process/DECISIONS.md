@@ -1,5 +1,16 @@
 # Decisions
 
+## 2026-09-09 — Gate 4 retained-disk package installs are noninteractive
+
+The approved Gate 4 execution may reuse its single retained VM after a
+fail-closed bootstrap, but a repeated package install must never wait for
+interactive input. The startup controller reinstalls pinned Docker packages
+with noninteractive debconf and needrestart settings, preserves existing
+configuration, and bounds each attempt to 300 seconds. The failed bootstrap is
+evidence, not a training result: it ended before the campaign controller and
+consumed zero training tokens. Each retry uses a new attempt ID, immutable
+outer card, distinct GCS prefix, and separate terminal archive.
+
 ## 2026-09-09 — Exact Gate 4 execution approved and active
 
 Navneet explicitly approved proposal

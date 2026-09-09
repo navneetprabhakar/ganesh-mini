@@ -1,0 +1,170 @@
+{
+  "kind": "compute#instance",
+  "id": "8737372232357839343",
+  "creationTimestamp": "2026-09-08T19:05:53.553-07:00",
+  "name": "ganesh-mini-g4-l4-20260909t015118z",
+  "description": "Approved Ganesh Mini Gate 4 bounded expansion pilot 20260909T015118Z",
+  "tags": {
+    "fingerprint": "42WmSpB8rSM="
+  },
+  "machineType": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-c/machineTypes/g2-standard-8",
+  "status": "TERMINATED",
+  "zone": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-c",
+  "networkInterfaces": [
+    {
+      "kind": "compute#networkInterface",
+      "network": "https://www.googleapis.com/compute/v1/projects/executespecv1/global/networks/ganesh-mini-g4-net-20260909t015118z",
+      "subnetwork": "https://www.googleapis.com/compute/v1/projects/executespecv1/regions/us-east1/subnetworks/ganesh-mini-g4-subnet-20260909t015118z",
+      "networkIP": "10.194.0.2",
+      "name": "nic0",
+      "fingerprint": "ZOLlK_BLYx4=",
+      "stackType": "IPV4_ONLY"
+    }
+  ],
+  "disks": [
+    {
+      "kind": "compute#attachedDisk",
+      "type": "PERSISTENT",
+      "mode": "READ_WRITE",
+      "source": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-c/disks/ganesh-mini-g4-l4-20260909t015118z",
+      "deviceName": "ganesh-mini-g4-l4-20260909t015118z",
+      "index": 0,
+      "boot": true,
+      "autoDelete": true,
+      "licenses": [
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-dlvm",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gvnic",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-py310",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-gpu-common-cu129",
+        "https://www.googleapis.com/compute/v1/projects/click-to-deploy-images/global/licenses/c2d-dl-platform-ubuntu-2204"
+      ],
+      "interface": "NVME",
+      "guestOsFeatures": [
+        {
+          "type": "VIRTIO_SCSI_MULTIQUEUE"
+        },
+        {
+          "type": "UEFI_COMPATIBLE"
+        },
+        {
+          "type": "GVNIC"
+        }
+      ],
+      "diskSizeGb": "200"
+    }
+  ],
+  "metadata": {
+    "kind": "compute#metadata",
+    "fingerprint": "ufFTmadixvA=",
+    "items": [
+      {
+        "key": "startup-script",
+        "value": "#!/usr/bin/env bash\nset -Eeuo pipefail\n\nmetadata_root=http://metadata.google.internal/computeMetadata/v1/instance/attributes\nread_metadata() { curl -fsS --retry 3 --retry-delay 1 -H 'Metadata-Flavor: Google' \"$metadata_root/$1\"; }\n\nGANESH_GCP_PROJECT=$(read_metadata ganesh-gcp-project)\nGANESH_GCS_BUCKET=$(read_metadata ganesh-gcs-bucket)\nGANESH_GCS_PREFIX=$(read_metadata ganesh-gcs-prefix)\nGANESH_ATTEMPT_ID=$(read_metadata ganesh-attempt-id)\nGANESH_EXECUTION_CARD_URI=$(read_metadata ganesh-execution-card-uri)\nGANESH_EXECUTION_CARD_SHA256=$(read_metadata ganesh-execution-card-sha256)\nGANESH_EXECUTION_CARD_SIZE=$(read_metadata ganesh-execution-card-size)\nGANESH_CONTROLLER_URI=$(read_metadata ganesh-controller-uri)\nGANESH_CONTROLLER_SHA256=$(read_metadata ganesh-controller-sha256)\nGANESH_CONTROLLER_SIZE=$(read_metadata ganesh-controller-size)\nGANESH_WRAPPER_SHA256=$(read_metadata ganesh-wrapper-sha256)\nGANESH_WRAPPER_SIZE=$(read_metadata ganesh-wrapper-size)\n\nfor uri in \"$GANESH_EXECUTION_CARD_URI\" \"$GANESH_CONTROLLER_URI\"; do\n  case \"$uri\" in *'#'[0-9]*) ;; *) echo \"launch URI must include a GCS generation\" \u003e&2; exit 40;; esac\ndone\n[[ \"$(stat -c %s \"$0\")\" == \"$GANESH_WRAPPER_SIZE\" ]]\necho \"$GANESH_WRAPPER_SHA256  $0\" | sha256sum -c -\n\nwrapper_dir=/var/lib/ganesh-mini-gate4-wrapper\nmkdir -p \"$wrapper_dir\"\nexec \u003e \u003e(tee -a \"$wrapper_dir/wrapper.stdout.log\") 2\u003e \u003e(tee -a \"$wrapper_dir/wrapper.stderr.log\" \u003e&2)\ncontroller=/opt/ganesh-gcloud-expansion-pilot.sh\nexecution_card=/opt/ganesh-gate4-execution-card.json\n\ndownload_verified() {\n  local uri=$1 expected_sha=$2 expected_size=$3 destination=$4\n  timeout 300 gcloud storage cp \"$uri\" \"$destination\" --project=\"$GANESH_GCP_PROJECT\"\n  [[ \"$(stat -c %s \"$destination\")\" == \"$expected_size\" ]]\n  echo \"$expected_sha  $destination\" | sha256sum -c -\n}\ndownload_verified \"$GANESH_EXECUTION_CARD_URI\" \"$GANESH_EXECUTION_CARD_SHA256\" \"$GANESH_EXECUTION_CARD_SIZE\" \"$execution_card\"\ndownload_verified \"$GANESH_CONTROLLER_URI\" \"$GANESH_CONTROLLER_SHA256\" \"$GANESH_CONTROLLER_SIZE\" \"$controller\"\nchmod 700 \"$controller\"\nsha256sum \"$0\" \"$controller\" \"$execution_card\" \u003e \"$wrapper_dir/bootstrap-files.sha256\"\n\nset +e\n\"$controller\" \"$execution_card\"\ncontroller_status=$?\nset -e\necho \"$controller_status\" \u003e \"$wrapper_dir/controller-exit-code.txt\"\nif (( controller_status != 0 )); then\n  wrapper_prefix=\"gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/wrapper-failure-$GANESH_ATTEMPT_ID\"\n  for attempt in 1 2 3; do\n    gcloud storage rsync \"$wrapper_dir\" \"$wrapper_prefix\" --recursive --project=\"$GANESH_GCP_PROJECT\" && break\n    (( attempt == 3 )) || sleep 10\n  done\nfi\n( sleep 2; shutdown -h now ) \u003e/dev/null 2\u003e&1 &\nexit \"$controller_status\"\n"
+      },
+      {
+        "key": "ganesh-gcp-project",
+        "value": "executespecv1"
+      },
+      {
+        "key": "ganesh-gcs-bucket",
+        "value": "ganesh-gate0-model-transfer-1061994342941"
+      },
+      {
+        "key": "ganesh-gcs-prefix",
+        "value": "ganesh-mini-1.0/training/expansion-pilot-v1/attempts/20260909T015118Z"
+      },
+      {
+        "key": "ganesh-attempt-id",
+        "value": "20260909T015118Z"
+      },
+      {
+        "key": "ganesh-execution-card-uri",
+        "value": "gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/expansion-pilot-v1/attempts/20260909T015118Z/input/execution-card-v2.json#1788919774477052"
+      },
+      {
+        "key": "ganesh-execution-card-sha256",
+        "value": "ef5e3727e58a6873d6256e8bfed2ae92e53d9f0ebf2aeb5dc4c41920c29e6aa9"
+      },
+      {
+        "key": "ganesh-execution-card-size",
+        "value": "4405"
+      },
+      {
+        "key": "ganesh-controller-uri",
+        "value": "gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/expansion-pilot-v1/input/gcloud-startup-expansion-pilot-v2.sh#1788916809873874"
+      },
+      {
+        "key": "ganesh-controller-sha256",
+        "value": "b96ba4e0ca987c70087ec1f5ce6da2d926eb2c9003d07653ca54e3726a08685a"
+      },
+      {
+        "key": "ganesh-controller-size",
+        "value": "11128"
+      },
+      {
+        "key": "ganesh-wrapper-sha256",
+        "value": "587ebff6c5dc4156375eeaffafcd8b5ac432a1989255222553db3ee0cf7bbd20"
+      },
+      {
+        "key": "ganesh-wrapper-size",
+        "value": "2691"
+      }
+    ]
+  },
+  "serviceAccounts": [
+    {
+      "email": "1061994342941-compute@developer.gserviceaccount.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/cloud-platform"
+      ]
+    }
+  ],
+  "selfLink": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-c/instances/ganesh-mini-g4-l4-20260909t015118z",
+  "scheduling": {
+    "maxRunDuration": {
+      "seconds": "28800",
+      "nanos": 0
+    },
+    "onHostMaintenance": "TERMINATE",
+    "automaticRestart": false,
+    "preemptible": false,
+    "provisioningModel": "STANDARD",
+    "instanceTerminationAction": "DELETE"
+  },
+  "cpuPlatform": "Unknown CPU Platform",
+  "labels": {
+    "ganesh_gate": "gate4",
+    "ganesh_attempt": "20260909t015118z",
+    "ganesh_ephemeral": "true"
+  },
+  "labelFingerprint": "Do3FKh1k8rg=",
+  "guestAccelerators": [
+    {
+      "acceleratorType": "https://www.googleapis.com/compute/v1/projects/executespecv1/zones/us-east1-c/acceleratorTypes/nvidia-l4",
+      "acceleratorCount": 1
+    }
+  ],
+  "startRestricted": false,
+  "deletionProtection": false,
+  "shieldedInstanceConfig": {
+    "enableSecureBoot": false,
+    "enableVtpm": true,
+    "enableIntegrityMonitoring": true
+  },
+  "shieldedInstanceIntegrityPolicy": {
+    "updateAutoLearnPolicy": true
+  },
+  "fingerprint": "UbjUkNSGxeA=",
+  "lastStartTimestamp": "2026-09-08T19:10:53.328-07:00",
+  "lastStopTimestamp": "2026-09-08T19:20:39.266-07:00",
+  "satisfiesPzi": true,
+  "resourceStatus": {
+    "effectiveInstanceMetadata": {
+      "vmDnsSettingMetadataValue": "ZonalOnly",
+      "enableOsloginMetadataValue": true
+    },
+    "scheduling": {
+      "terminationTimestamp": "2026-09-09T10:10:46.798977Z"
+    }
+  }
+}

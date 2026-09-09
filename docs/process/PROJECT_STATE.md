@@ -2063,7 +2063,7 @@ GCloud compute until that approval is received.
   dynamic elapsed prior cost where the sealed training card requires `0.0`.
   Zero training tokens were consumed.
 - Terminal evidence was exact-generation downloaded and inventory-verified.
-  The distinct GCS failure archive has generation `1788920765614336` and
+  The distinct GCS failure archive has generation `1788920860248908` and
   SHA-256
   `e8b53c43e9d579091f5ce8ca6f99e07898b410895680b41c3566afad4d0e5bdf`.
 - The VM is `TERMINATED`; disk/network/subnet remain for a same-VM retry. No
@@ -2071,3 +2071,18 @@ GCloud compute until that approval is received.
 - Controller fix and regression test pass. Workspace v5 and startup v3 are
   uploaded and exact-roundtrip verified. Next bind a fresh attempt prefix,
   update the retained VM metadata, and restart the same provider instance.
+
+### Gate 4 retained-disk bootstrap retry correction — 2026-09-09
+
+- Attempt `20260909T022847Z` reused the same VM and verified all ten input
+  downloads, then failed before controller/model/training on an interactive
+  Docker-package debconf question during retained-disk reinstall.
+- The VM is again `TERMINATED`; zero training tokens were consumed. The exact
+  failure archive is GCS generation `1788922020962270`, SHA-256
+  `af0dd839bbe717ac9aea59f9ca78b54e45adc4fcddd2e3dd9ece9797e16249db`,
+  with byte-identical generation-pinned roundtrip proof.
+- Startup now forces noninteractive debconf and needrestart behavior, preserves
+  installed configuration, and bounds `dpkg` calls. Focused tests and shell
+  syntax pass.
+- Next is startup v4 upload/roundtrip and another same-provider-ID attempt under
+  a reduced remaining runtime envelope. No additional VM is authorized.

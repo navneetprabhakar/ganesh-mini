@@ -2534,3 +2534,31 @@ It binds attempt ID `20260909T173721Z` and exact prospective resource names.
 It permits only zone/machine/L4/quota, resource-absence, IAM,
 generation-availability and price reads. It requires explicit approval and
 does not authorize resource creation, object mutation, card upload or compute.
+# Capacity-probe inspection complete; exact VM proposal pending — 2026-09-09
+
+Current gate: Gate 4. Navneet approved only GCloud read-only inspection plan
+`50b3783cb1287bfa3a44e00772db6f24bfd2b70b8d102b1b9f537276042fd521`.
+That inspection is complete with sealed report
+`74b3757f92d614a4f65d02bd4f8a60b15aac5134a9e1d0acd98c05a466bb4a0f`:
+the exact VM/disk/network/subnet names are absent; `us-east1-c` is UP;
+`g2-standard-8`, `nvidia-l4`, unused L4 quota 16, VM bucket objectAdmin and all
+ten generation-pinned inputs passed. This does not claim point-in-time GPU
+capacity. No upload, compute, infrastructure mutation or billing action was
+performed.
+
+The next exact execution proposal is local and non-executable, seal
+`461e968ae2fa79d3401e522d52bf91cbcc359cdded68d8fff62dff51631934f0`.
+It is one Standard `g2-standard-8`/L4 attempt, 200 GiB auto-delete balanced PD,
+no external IP, restart disabled, maximum 7,200 seconds, provider upper
+`$1.762043024`, absolute incremental ceiling `$2.25`. After exact approval it
+authorizes only two create-only execution-card uploads, the 624-row capacity
+probe, save/reload and the frozen 30-task continuation screen. It explicitly
+forbids full 180-task evaluation, decision opening, main training, merge,
+quantization, publication and release claims. Preserve and independently
+verify all GCS evidence before teardown; then delete only named Ganesh
+resources and verify absence twice. Never touch unrelated disk
+`laxmi-wmv2-training-01`.
+
+Current status: waiting for exact proposal approval, not technically stuck.
+Training 74%, release 52%, overall 63%. Capacity verdict ETA after approval:
+2–3 hours. Delivery ETA remains 2–5 days only if this mechanism passes.

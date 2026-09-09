@@ -2302,3 +2302,21 @@ GCloud compute until that approval is received.
 - Project-wide GCS-only billing is not certified because unrelated unattached
   disk `laxmi-wmv2-training-01` remains; its ownership/deletion is a separate
   user decision.
+# Gate 4 capacity probe awaits exact execution approval — 2026-09-09
+
+The read-only GCloud prerequisite inspection is complete under approved plan
+`50b3783cb1287bfa3a44e00772db6f24bfd2b70b8d102b1b9f537276042fd521`.
+All four planned resource names are absent; zone/type/quota, VM bucket IAM and
+all ten exact-generation inputs passed. Inspection report seal:
+`74b3757f92d614a4f65d02bd4f8a60b15aac5134a9e1d0acd98c05a466bb4a0f`.
+
+One bounded Standard L4 proposal is now pending explicit approval: seal
+`461e968ae2fa79d3401e522d52bf91cbcc359cdded68d8fff62dff51631934f0`,
+maximum 7,200 seconds, provider upper `$1.762043024`, absolute ceiling `$2.25`.
+It includes two post-approval create-only card uploads, the 624-row/468,601-token
+capacity probe, save/reload, and only the frozen 30-task continuation screen.
+No GCloud mutation or billing action has occurred under the read-only plan.
+Current state is WAITING FOR EXACT EXECUTION APPROVAL, not technically stuck.
+Training estimate 74%; release estimate 52%; inception-to-delivery estimate
+63%. After approval, capacity verdict ETA is approximately 2–3 hours; final
+delivery remains 2–5 days only if the continuation screen passes.

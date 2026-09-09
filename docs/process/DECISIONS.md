@@ -1,5 +1,28 @@
 # Decisions
 
+## 2026-09-09 — Capacity-probe inspection passed; execution remains separately gated
+
+Navneet explicitly approved read-only inspection plan
+`50b3783cb1287bfa3a44e00772db6f24bfd2b70b8d102b1b9f537276042fd521`.
+The inspection made no GCloud mutation. It confirmed that all four exact
+planned resource names are absent, `us-east1-c` is `UP`, `g2-standard-8` and
+`nvidia-l4` are exposed, regional L4 quota is 16 with usage 0, the intended VM
+service account has bucket-level `roles/storage.objectAdmin`, and all ten
+generation-pinned inputs remain readable with matching names, generations and
+sizes. The sealed report is
+`74b3757f92d614a4f65d02bd4f8a60b15aac5134a9e1d0acd98c05a466bb4a0f`.
+Quota and resource-type visibility do not guarantee point-in-time L4 capacity.
+
+The resulting non-executable capacity-probe proposal is sealed at
+`461e968ae2fa79d3401e522d52bf91cbcc359cdded68d8fff62dff51631934f0`.
+It permits, only after exact approval, two create-only execution-card uploads
+followed by one Standard `g2-standard-8` VM for at most 7,200 seconds. The
+provider upper bound is `$1.762043024`; the absolute incremental ceiling is
+`$2.25`. The campaign stops after the 624-row probe and frozen 30-task
+continuation screen. It grants no full-development, decision-set, main
+training, release or publication authority. No upload, resource creation or
+billing action is currently authorized by the read-only approval.
+
 ## 2026-09-09 — Capacity-probe upload-only plan completed exactly
 
 Navneet explicitly approved upload-only plan

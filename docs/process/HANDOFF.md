@@ -2010,3 +2010,42 @@ is GCS generation `1788908613275676` and was also byte-compared after download.
 No compute inspection or mutation occurred. The next hard boundary is explicit
 authorization to inspect current L4 availability/quota and bind the priced
 execution card; VM creation requires a second explicit approval of that card.
+
+## 16. Exact Gate 4 prelaunch proposal — 2026-09-09
+
+Read-only inspection is complete. `us-east1-c` is UP, `g2-standard-8` resolves
+to 8 vCPU and 32 GiB, regional L4 quota is 16 with usage 0, and replacement
+image `common-cu129-ubuntu-2204-nvidia-580-v20260831` is READY. These checks do
+not guarantee capacity.
+
+All rehydrated launch inputs have exact-generation roundtrip proof. Important
+generations are model `1788910413265608`, CUDA image `1788913987238416`,
+verifier archive `1788912580629555`, training workspace `1788908484381745`,
+evaluation workspace v4 `1788916797595767`, startup controller v2
+`1788916809873874`, and metadata wrapper `1788916091334917`. See
+`measurement/gate4/gcloud/20260909T001300Z/` for the canonical receipts.
+
+The exact pending proposal is Standard on-demand `g2-standard-8` in
+`us-east1-c`, one L4, 200 GiB `pd-balanced`, no external IP, automatic restart
+disabled, eight-hour VM maximum, six-hour training wall, and `$7.50` absolute
+incremental ceiling. Its seal is
+`5bb6b25b448a509f570dd924b6d508ab057fd2f2455d06db8353054cda06aba3`.
+Official pricing used is `$0.853624312/hour` for compute and
+`$0.000136986/GiB-hour` for balanced disk. The 200 GiB disk replaces the unsafe
+50 GiB minimum while remaining within the same ceiling.
+
+The final corrected prelaunch evidence archive is GCS generation
+`1788917258351261`, SHA-256
+`80952626cd3cfd785cde8aa0217e32646acb5a98b31d34ff92a3662727615781`;
+its receipt is generation `1788917344648616` and was byte-compared. Earlier
+preflight archive generations are superseded because their internal seals used
+`jq` numeric canonicalization; do not use them for authorization.
+
+No VM exists. The hard stop is fresh explicit approval of the exact proposal.
+After approval: write sealed approval evidence, bind a provider-executable
+training card, upload and roundtrip-verify that card and the outer execution
+card, then create the named temporary network/subnet/disk/VM. Run training ->
+save/reload verification -> canary -> conditional full development evaluation
+-> terminal backup -> independent verification -> full teardown -> two absence
+checks. A canary `do-not-promote` is a completed result and must not be labeled
+an infrastructure failure.

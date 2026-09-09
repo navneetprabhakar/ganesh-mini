@@ -2280,3 +2280,31 @@ construction must oversample from the pinned multilingual generation and
 repair drafting queues, retain all rejection evidence, and use Codex for
 source transformation, independent test generation, and at most one targeted
 correction pass before replacement.
+
+## 2026-09-09 — Gate 4 uses one exact Standard L4 proposal and treats non-promotion as evidence
+
+The executable proposal is one Standard on-demand `g2-standard-8` in
+`us-east1-c`, one NVIDIA L4, 8 vCPU, 32 GiB memory, a 200 GiB balanced
+persistent boot disk, no external IP, automatic restart disabled, and an
+eight-hour maximum VM lifetime. The 50 GiB source-image minimum is not enough
+working space for the compressed CUDA archive, its loaded Docker image, model,
+verifier images, checkpoints, and terminal evidence. At the observed public
+rates, the eight-hour compute upper bound is `$6.828994496`, the disk upper
+bound is `$0.2191776`, and the absolute incremental ceiling is `$7.50`.
+
+Quota, zone status, machine-type support, and image readiness are preflight
+facts, not a claim that L4 capacity will exist at instance creation. A capacity
+failure ends this attempt without silently changing zone, machine, provisioning
+model, or price. The priced proposal seal is
+`5bb6b25b448a509f570dd924b6d508ab057fd2f2455d06db8353054cda06aba3`;
+VM creation remains blocked until Navneet Prabhakar explicitly approves that
+exact proposal.
+
+The runtime executes training, save/reload verification, the frozen 30-task
+canary, and the 180-task development run only after a sealed canary promotion.
+A `do-not-promote` canary is a completed bounded experimental result, not a
+training or infrastructure failure. In all terminal states, checkpoint and
+terminal evidence must reach GCS before teardown. The VM, boot disk, temporary
+subnet, temporary network, and any address are then removed, and resource
+absence is verified twice; GCS is the only intentionally retained billable
+service.

@@ -2004,3 +2004,32 @@ r8 finalreport pending main integration. See HANDOFF.144data tests pass.
 GCS checkpoint through21 verified; newer r6admission4 andr7/r8/r9 await backup.
 NoVM/training; estimated50%training/35%release, next20–45minlowconfidence,
 overallETAungrounded. Current localwork authorized.
+
+# Gate 4 prelaunch boundary — 2026-09-09
+
+Gate 2 is terminal at 3,225 rows and 2,438,853 input tokens. All Gate 4 launch
+inputs were rehydrated to GCS because the historical August generations had
+expired. Model, CUDA image, Docker runtime bundle, verifier archive/manifest,
+training workspace, evaluation workspace, and launch scripts now have exact
+generation bindings and downloaded byte-for-byte SHA-256 proof. The canonical
+input-restoration receipt seal is
+`9648e00f7ab3c16aac6d4052d4be3345a663bd3fc74497168695c8f1bbf7302b`.
+
+Read-only GCloud evidence shows `us-east1` and `us-east1-c` UP,
+`g2-standard-8` at 8 vCPU/32 GiB, L4 quota 16 with usage 0, and boot image
+`common-cu129-ubuntu-2204-nvidia-580-v20260831` READY. This does not prove
+point-in-time capacity. The exact Standard proposal uses a 200 GiB balanced
+disk, an eight-hour maximum lifetime, and a `$7.50` absolute incremental
+ceiling. Proposal seal:
+`5bb6b25b448a509f570dd924b6d508ab057fd2f2455d06db8353054cda06aba3`.
+
+The launch controller enforces network-disabled Docker execution, immutable
+input checks, 8 CPU/30 GiB container bounds, periodic GCS checkpoints, a hard
+shutdown watchdog, terminal backup, and conditional full evaluation. A failed
+promotion gate is recorded as `completed-canary-not-promoted`, not as an
+infrastructure failure. Fifteen focused tests pass. The full suite has the same
+three pre-existing stale Gate 1 evidence failures and no new failure.
+
+No VM or other compute resource exists. Current state is
+`waiting-for-exact-execution-approval`; do not bind the provider card or create
+GCloud compute until that approval is received.

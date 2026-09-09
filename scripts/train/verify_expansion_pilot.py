@@ -37,12 +37,17 @@ def verify(card_path: Path, config_path: Path, run_path: Path, adapter_dir: Path
     run = load_sealed(run_path, "evidence_sha256")
     config = json.loads(config_path.read_text())
     recipe = card.get("selected_recipe", {})
+    config_schema = config.get("schema_version")
+    expected_card_schema = {
+        "ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1",
+        "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2",
+    }.get(config_schema)
     identities = run.get("identities", {})
     state = run.get("state", {})
     provider = card.get("provider_execution") or {}
     checks = [
-        {"name": "executable_card", "passed": card.get("schema_version") == "ganesh-mini-expansion-pilot-card/v1" and card.get("status") == "ready" and not card.get("failed_checks") and provider.get("provider") == "gcloud"},
-        {"name": "config_identity", "passed": file_digest(config_path) == card.get("inputs", {}).get("config_sha256") and config.get("schema_version") == "ganesh-mini-expansion-pilot-config/v1"},
+        {"name": "executable_card", "passed": expected_card_schema is not None and card.get("schema_version") == expected_card_schema and card.get("status") == "ready" and not card.get("failed_checks") and provider.get("provider") == "gcloud"},
+        {"name": "config_identity", "passed": file_digest(config_path) == card.get("inputs", {}).get("config_sha256") and expected_card_schema is not None},
         {"name": "completed_training", "passed": run.get("schema_version") == "ganesh-mini-sft-run/v2" and run.get("status") == "complete" and state.get("seen_tokens", 0) >= card.get("control", {}).get("maximum_seen_tokens", 1) and run.get("planned_end_row") == card.get("data", {}).get("records")},
         {"name": "execution_identity", "passed": identities.get("card_sha256") == card.get("card_sha256") and identities.get("config_sha256") == card.get("inputs", {}).get("config_sha256") and identities.get("prepared_manifest_sha256") == card.get("inputs", {}).get("prepared_manifest_sha256") and identities.get("prepared_data_sha256") == card.get("inputs", {}).get("prepared_data_sha256") and identities.get("validation_data_sha256") == card.get("inputs", {}).get("validation_data_sha256") and identities.get("model_revision") == card.get("model", {}).get("revision") and identities.get("recipe_sha256") == canonical_digest(recipe) and identities.get("learning_rate") == str(recipe.get("learning_rate")) and identities.get("phase") == "expansion-pilot"},
         {"name": "save_reload", "passed": run.get("save_reload", {}).get("passed") is True},

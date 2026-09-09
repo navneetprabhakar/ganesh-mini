@@ -15,6 +15,19 @@ def test_repository_expansion_pilot_is_locally_prepared() -> None:
     assert card["evaluation"]["promotion_rule"]["minimum_improved_product_families"] == 4
 
 
+def test_capacity_probe_is_prefix_bounded_and_has_no_promotion_authority() -> None:
+    card = build_card(ROOT / "configs/train/expansion_capacity_probe_v2.json", ROOT, system="Linux")
+    assert card["status"] == "prepared-not-executable"
+    assert card["failed_checks"] == []
+    assert card["schema_version"] == "ganesh-mini-expansion-pilot-card/v2"
+    assert card["data"]["records"] == 624
+    assert card["control"]["maximum_seen_tokens"] == 468601
+    assert card["selected_recipe"]["lora_rank"] == 16
+    assert card["selected_recipe"]["target_policy"]["scope"] == "all-attention-plus-last-n-mlp"
+    assert card["evaluation"]["full_development_tasks"] == 0
+    assert card["evaluation"]["promotion_rule"]["minimum_improved_product_families"] == 2
+
+
 def test_expansion_pilot_fails_closed_on_data_mutation(tmp_path: Path) -> None:
     for relative in (
         "configs/train/expansion_pilot_v1.json",

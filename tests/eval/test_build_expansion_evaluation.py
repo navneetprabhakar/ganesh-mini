@@ -46,3 +46,19 @@ def test_rejects_adapter_mutation(tmp_path: Path) -> None:
         assert "adapter files" in str(error)
     else:
         raise AssertionError("mutated adapter was accepted")
+
+
+def test_capacity_probe_never_authorizes_full_evaluation(tmp_path: Path) -> None:
+    root, card_path, terminal_path, run_path, adapter = inputs(tmp_path)
+    card = json.loads(card_path.read_text())
+    card.pop("card_sha256")
+    card["schema_version"] = "ganesh-mini-expansion-pilot-card/v2"
+    card["selected_recipe"] = {"recipe_id": "bf16-lora-capacity-probe-v2"}
+    seal(card_path, card, "card_sha256")
+    terminal = json.loads(terminal_path.read_text())
+    terminal.pop("report_sha256")
+    terminal["card_sha256"] = json.loads(card_path.read_text())["card_sha256"]
+    seal(terminal_path, terminal, "report_sha256")
+    canary, _, manifest = build(root, card_path, terminal_path, run_path, adapter)
+    assert canary["adapter"]["served_model_id"] == "bf16-lora-capacity-probe-v2"
+    assert manifest["full_release_condition"] == "prohibited-for-capacity-probe"

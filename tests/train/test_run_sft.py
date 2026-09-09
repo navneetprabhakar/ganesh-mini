@@ -91,6 +91,23 @@ def test_conservative_target_policy_covers_only_attention_in_last_eight_layers()
     assert not any("mlp" in name or "in_proj_z" in name or "k_proj" in name or "o_proj" in name for name in selected)
 
 
+def test_capacity_policy_covers_all_attention_and_last_eight_mlps() -> None:
+    class Linear: pass
+    modules=[]
+    for layer in range(24):
+        attention="self_attn" if layer%4==3 else "linear_attn"
+        names=("q_proj","k_proj","v_proj","o_proj") if attention=="self_attn" else ("in_proj_qkv","in_proj_z","in_proj_a","in_proj_b","out_proj")
+        modules.extend((f"model.language_model.layers.{layer}.{attention}.{name}",Linear()) for name in names)
+        modules.extend((f"model.language_model.layers.{layer}.mlp.{name}",Linear()) for name in ("gate_proj","up_proj","down_proj"))
+    policy={"scope":"all-attention-plus-last-n-mlp","model_layer_count":24,"layer_count":8,"full_attention_projections":["q_proj","v_proj"],"linear_attention_projections":["in_proj_qkv","out_proj"],"mlp_projections":["gate_proj","up_proj","down_proj"]}
+    selected=select_lora_targets(modules,Linear,{"target_policy":policy})
+    assert len(selected)==72
+    assert sum(".mlp." in name for name in selected)==24
+    assert all(int(name.split(".")[3])>=16 for name in selected if ".mlp." in name)
+    assert {int(name.split(".")[3]) for name in selected if ".self_attn." in name or ".linear_attn." in name}==set(range(24))
+    assert not any("in_proj_z" in name or "k_proj" in name or "o_proj" in name for name in selected)
+
+
 def test_robust_guard_uses_optimizer_groups_and_persists_trigger_evidence() -> None:
     contract={"warmup_optimizer_steps":4,"rolling_window_optimizer_steps":4,"minimum_history_optimizer_steps":4,"robust_z_threshold":8.0,"minimum_median_ratio":3.0,"mad_floor":1e-6,"consecutive_optimizer_groups":3}
     guard=RollingLossGuard(contract)

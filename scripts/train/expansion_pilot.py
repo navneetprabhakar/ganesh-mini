@@ -56,48 +56,79 @@ def build_card(config_path: Path, root: Path = ROOT, system: str | None = None) 
     manifest_seal_ok = claimed == canonical_digest(manifest) == data["prepared_manifest_sha256"]
     checks.append({"name": "prepared_manifest_seal", "passed": manifest_seal_ok})
     prepared = manifest.get("prepared_train", {})
-    identity_ok = (
-        config.get("schema_version") == "ganesh-mini-expansion-pilot-config/v1"
-        and prepared.get("records") == data["records"] == 3225
-        and prepared.get("input_tokens") == data["input_tokens"] == control["maximum_seen_tokens"] == 2438853
-        and manifest.get("revision") == model["revision"]
-        and manifest.get("status") == "ready"
-    )
+    schema = config.get("schema_version")
+    prefix_balance_ok = True
+    if schema == "ganesh-mini-expansion-pilot-config/v1":
+        identity_ok = prepared.get("records") == data["records"] == 3225 and prepared.get("input_tokens") == data["input_tokens"] == control["maximum_seen_tokens"] == 2438853
+    elif schema == "ganesh-mini-expansion-pilot-config/v2":
+        rows = [json.loads(line) for line in resolve(root, data["prepared_train_path"]).read_text().splitlines() if line]
+        prefix = rows[:data["records"]]
+        prefix_tokens = sum(sum(row["attention_mask"]) for row in prefix)
+        identity_ok = (
+            prepared.get("records") == data["source_records"] == len(rows) == 3225
+            and prepared.get("input_tokens") == data["source_input_tokens"] == 2438853
+            and len(prefix) == data["records"] == 624
+            and prefix_tokens == data["input_tokens"] == control["maximum_seen_tokens"] == 468601
+        )
+        family_mass = {family: 0.0 for family in ("go", "java", "javascript_typescript", "python", "rust")}
+        for row in prefix:
+            family = "javascript_typescript" if row["lane"] in {"javascript", "typescript"} else row["lane"]
+            family_mass[family] += float(row["objective_weight"])
+        total_mass = sum(family_mass.values())
+        observed_shares = {family: round(mass / total_mass, 4) for family, mass in family_mass.items()}
+        prefix_balance_ok = max(abs(share - 0.2) for share in observed_shares.values()) <= 0.02 and observed_shares == config.get("hypothesis", {}).get("prefix_objective_shares")
+    else:
+        identity_ok = False
+    identity_ok = identity_ok and manifest.get("revision") == model["revision"] and manifest.get("status") == "ready"
     checks.append({"name": "corpus_and_model_identity", "passed": identity_ok})
+    checks.append({"name": "prefix_objective_balance", "passed": prefix_balance_ok})
+    is_v1 = schema == "ganesh-mini-expansion-pilot-config/v1"
+    expected_recipe = "bf16-lora-expansion-pilot-v1" if is_v1 else "bf16-lora-capacity-probe-v2"
     recipe_ok = (
-        recipe.get("recipe_id") == "bf16-lora-expansion-pilot-v1"
+        recipe.get("recipe_id") == expected_recipe
         and recipe.get("learning_rate") == 0.00001
         and recipe.get("base_loading") == "bfloat16"
         and recipe.get("sequence_length") == 2944
         and recipe.get("micro_batch_size") == 1
         and recipe.get("gradient_accumulation_steps") == 8
-        and recipe.get("maximum_effective_epochs") == 1.0
+        and recipe.get("maximum_effective_epochs") == (1.0 if is_v1 else 0.193488)
         and recipe.get("maximum_peak_vram_gb") == 23
     )
+    if schema == "ganesh-mini-expansion-pilot-config/v2":
+        recipe_ok = recipe_ok and recipe.get("lora_rank") == 16 and recipe.get("lora_alpha") == 32 and recipe.get("target_policy") == {
+            "scope": "all-attention-plus-last-n-mlp",
+            "model_layer_count": 24,
+            "layer_count": 8,
+            "full_attention_projections": ["q_proj", "v_proj"],
+            "linear_attention_projections": ["in_proj_qkv", "out_proj"],
+            "mlp_projections": ["gate_proj", "up_proj", "down_proj"],
+        }
     checks.append({"name": "single_bounded_recipe", "passed": recipe_ok})
     quarter = control.get("checkpoint_tokens")
+    expected_checkpoints = 4 if is_v1 else 6
     bounds_ok = (
-        control.get("maximum_wall_seconds") == 21600
+        control.get("maximum_wall_seconds") == (21600 if is_v1 else 7200)
         and control.get("finalization_reserve_seconds") == 1800
-        and isinstance(quarter, list) and len(quarter) == 4
+        and isinstance(quarter, list) and len(quarter) == expected_checkpoints
         and quarter[-1] == control["maximum_seen_tokens"]
         and all(0 < value <= control["maximum_seen_tokens"] for value in quarter)
     )
     checks.append({"name": "runtime_and_checkpoint_bounds", "passed": bounds_ok})
     promotion = config.get("evaluation", {}).get("promotion_rule")
-    promotion_ok = promotion == {
-        "rule_id": "expansion-pilot-canary-promotion-v1",
-        "minimum_improved_product_families": 4,
-        "minimum_net_pass_gain": 1,
+    expected_rule = {
+        "rule_id": "expansion-pilot-canary-promotion-v1" if is_v1 else "capacity-probe-continuation-v2",
+        "minimum_improved_product_families": 4 if is_v1 else 2,
+        "minimum_net_pass_gain": 1 if is_v1 else 2,
         "maximum_pass_regression_per_lane": 0,
         "maximum_increase_in_non_code_outputs": 0,
         "maximum_increase_in_truncated_outputs": 0,
         "save_reload_required": True,
     }
+    promotion_ok = promotion == expected_rule
     checks.append({"name": "frozen_canary_promotion_rule", "passed": promotion_ok})
     failed = [item["name"] for item in checks if not item["passed"]]
     card: dict[str, Any] = {
-        "schema_version": "ganesh-mini-expansion-pilot-card/v1",
+        "schema_version": "ganesh-mini-expansion-pilot-card/v1" if is_v1 else "ganesh-mini-expansion-pilot-card/v2",
         "status": "prepared-not-executable" if not failed else "not-ready",
         "reason": "provider_price_and_explicit_gcloud_execution_approval_not_bound" if not failed else "local_preflight_failed",
         "run_id": config["run_id"],

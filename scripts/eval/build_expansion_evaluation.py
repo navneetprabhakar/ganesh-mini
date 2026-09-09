@@ -30,7 +30,7 @@ def relative(root: Path, path: Path) -> str:
     return str(resolved.relative_to(root.resolve()))
 
 
-def config(*, run_id: str, task_glob: str, count: int, output_dir: str, adapter_dir: str, run_evidence: str) -> dict[str, Any]:
+def config(*, run_id: str, task_glob: str, count: int, output_dir: str, adapter_dir: str, run_evidence: str, served_model_id: str = "ganesh-mini-1.0-expansion-pilot-v1") -> dict[str, Any]:
     return {
         "schema_version": "ganesh-mini-production-inference/v1",
         "run_id": run_id,
@@ -48,7 +48,7 @@ def config(*, run_id: str, task_glob: str, count: int, output_dir: str, adapter_
         "generation": {"do_sample": False, "max_new_tokens": 4096, "use_cache": True},
         "execution": {"batch_size": 4, "verifier_workers": 12, "length_bucket_width": 256, "required_device": "cuda"},
         "extractor_id": "ganesh-code-fence-v1",
-        "adapter": {"dir": adapter_dir, "run_evidence": run_evidence, "served_model_id": "ganesh-mini-1.0-expansion-pilot-v1"},
+        "adapter": {"dir": adapter_dir, "run_evidence": run_evidence, "served_model_id": served_model_id},
     }
 
 
@@ -64,8 +64,10 @@ def build(root: Path, card_path: Path, terminal_path: Path, run_path: Path, adap
     if not observed or observed != terminal.get("adapter_files") or observed != run.get("adapter_files"):
         raise ValueError("adapter files do not match training and terminal evidence")
     adapter_relative, run_relative = relative(root, adapter_dir), relative(root, run_path)
-    canary = config(run_id="ganesh-mini-1.0-expansion-pilot-v1-canary", task_glob="eval/private/development/tranche1/*.task.json", count=30, output_dir="measurement/inference/development/ganesh-mini-expansion-pilot-v1-canary", adapter_dir=adapter_relative, run_evidence=run_relative)
-    full = config(run_id="ganesh-mini-1.0-expansion-pilot-v1-full", task_glob="eval/private/development/**/*.task.json", count=180, output_dir="measurement/inference/development/ganesh-mini-expansion-pilot-v1-full", adapter_dir=adapter_relative, run_evidence=run_relative)
+    recipe_id = card.get("selected_recipe", {}).get("recipe_id", "ganesh-mini-1.0-expansion-pilot-v1")
+    canary = config(run_id=f"{recipe_id}-canary", task_glob="eval/private/development/tranche1/*.task.json", count=30, output_dir=f"measurement/inference/development/{recipe_id}-canary", adapter_dir=adapter_relative, run_evidence=run_relative, served_model_id=recipe_id)
+    full = config(run_id=f"{recipe_id}-full", task_glob="eval/private/development/**/*.task.json", count=180, output_dir=f"measurement/inference/development/{recipe_id}-full", adapter_dir=adapter_relative, run_evidence=run_relative, served_model_id=recipe_id)
+    capacity_probe = card.get("schema_version") == "ganesh-mini-expansion-pilot-card/v2"
     manifest: dict[str, Any] = {
         "schema_version": "ganesh-mini-expansion-evaluation-configs/v1",
         "status": "canary-ready-full-blocked",
@@ -75,7 +77,7 @@ def build(root: Path, card_path: Path, terminal_path: Path, run_path: Path, adap
         "adapter_files": observed,
         "canary_config_sha256": canonical_digest(canary),
         "full_config_sha256": canonical_digest(full),
-        "full_release_condition": "sealed_canary_adjudication_status_promote-to-full-development",
+        "full_release_condition": "prohibited-for-capacity-probe" if capacity_probe else "sealed_canary-adjudication-status-promote-to-full-development",
     }
     manifest["manifest_sha256"] = canonical_digest(manifest)
     return canary, full, manifest

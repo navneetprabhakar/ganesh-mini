@@ -2461,3 +2461,33 @@ checkpoint shows broad multilingual transfer. Gate 4 remains `do-not-promote`.
 Continue locally with task-level trajectory analysis, a bounded process-group
 timeout repair, and a materially different data/mechanism pilot design. Any
 new GCloud execution needs a new sealed proposal and explicit approval.
+
+## 27. Capacity probe locally prepared — 2026-09-09
+
+The sealed trajectory report covers the exact base, four valid intermediate
+checkpoints and the final adapter. Across the six points, 23/30 canary tasks
+are stable failures, four are stable passes and three change status. Earlier
+stopping cannot satisfy Gate 4. The missing 2,036,559-token run stays excluded
+as controller/runtime evidence, not a model result.
+
+`configs/train/expansion_capacity_probe_v2.json` defines one rank-16 combined
+capacity/scope probe: all 24 language-model attention layers plus MLP
+gate/up/down in layers 16–23. Shape-derived trainable parameters are 7,520,256,
+10.3x the prior 729,088. The probe is bounded to the first 624 existing rows
+and 468,601 tokens; weighted family objective shares span 18.32%–21.95%.
+Continuation requires two improved families, net +2, zero lane regression,
+zero non-code/truncation increase and save/reload reproduction. It has no
+promotion or release authority.
+
+Config file SHA-256 is
+`3e201e80560052a503ab4b56b71684a4c50430750bb6de9cc8419dbd30bb5aa5`;
+local preflight card seal is
+`15ec9533a547c0cc45a1fa0dcfb5267440d4118e2c8f4c0a255f502c391afafd`.
+The 46-file/5,575,271-byte training archive SHA is
+`0550d2f39bda880077b03b5f0cc57e2eff0e08db0ba130339abb17f715797945`;
+manifest seal is
+`fbb4b4cf30e6664fe583c9a8ff5a2042b7ab282663174fd21f534b7e51350bcd`.
+Thirty-seven focused tests pass. The full Python 3.12 suite retains only the
+three documented stale Gate 1 failures. State is local-prepared,
+cloud-unbound. Do not
+inspect or mutate GCloud until a new exact proposal is explicitly approved.

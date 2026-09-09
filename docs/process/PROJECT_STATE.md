@@ -37,10 +37,14 @@ images, or machine images. The unrelated unattached 200 GiB disk
 `laxmi-wmv2-training-01` remains and may bill; therefore “GCS only” is false at
 project scope even though all Ganesh sweep compute billing is closed.
 
-Gate 4 remains `do-not-promote`. Current work is local: close the timeout gap,
-finish task-level trajectory analysis, and design a materially different
-data/mechanism pilot. Any new GCloud execution requires a new sealed proposal
-and explicit approval.
+Gate 4 remains `do-not-promote`. Task-level trajectory analysis is complete:
+23/30 tasks fail at every measured point and no checkpoint improves more than
+one family, so early stopping is rejected. A rank-16, all-attention plus
+last-eight-layer MLP capacity probe is locally prepared and passes preflight.
+It is bounded to 624 rows/468,601 tokens and has continuation-screen authority
+only. Current state is `local-capacity-probe-prepared-cloud-unbound`. Any
+GCloud inspection, upload or execution requires a new sealed proposal and
+explicit approval.
 
 ## Corrected checkpoint-sweep VM proposal awaiting approval — 2026-09-09
 

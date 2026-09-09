@@ -113,7 +113,8 @@ def select_lora_targets(named_modules: Any, linear_type: type, recipe: dict[str,
     policy=recipe.get("target_policy",{"scope":"all-language-model-linears"})
     if policy["scope"]=="all-language-model-linears":
         return [name for name,module in named_modules if isinstance(module,linear_type) and name.startswith("model.language_model.") and not name.endswith("lm_head")]
-    if policy["scope"]!="last-n-attention-projections":
+    supported={"last-n-attention-projections","all-attention-plus-last-n-mlp"}
+    if policy["scope"] not in supported:
         raise RuntimeError("unsupported LoRA target policy")
     layer_count=policy.get("layer_count")
     layer_total=policy.get("model_layer_count")
@@ -121,16 +122,32 @@ def select_lora_targets(named_modules: Any, linear_type: type, recipe: dict[str,
     if not isinstance(layer_count,int) or not isinstance(layer_total,int) or not 0<layer_count<=layer_total or not full or not linear:
         raise RuntimeError("invalid layer-bounded LoRA target policy")
     first_layer=layer_total-layer_count; selected=[]
-    pattern=re.compile(r"^model\.language_model\.layers\.(\d+)\.(self_attn|linear_attn)\.([^.]+)$")
+    mlp=set(policy.get("mlp_projections",[]))
+    if policy["scope"]=="last-n-attention-projections" and mlp:
+        raise RuntimeError("attention-only LoRA target policy cannot declare MLP projections")
+    if policy["scope"]=="all-attention-plus-last-n-mlp" and not mlp:
+        raise RuntimeError("capacity-expanded LoRA target policy requires MLP projections")
+    pattern=re.compile(r"^model\.language_model\.layers\.(\d+)\.(self_attn|linear_attn|mlp)\.([^.]+)$")
     for name,module in named_modules:
         match=pattern.fullmatch(name)
-        if not match or not isinstance(module,linear_type) or int(match.group(1))<first_layer:
+        if not match or not isinstance(module,linear_type):
             continue
-        allowed=full if match.group(2)=="self_attn" else linear
-        if match.group(3) in allowed: selected.append(name)
-    layers={int(pattern.fullmatch(name).group(1)) for name in selected}
-    if layers != set(range(first_layer,layer_total)):
-        raise RuntimeError("LoRA target policy did not cover every declared final layer")
+        layer=int(match.group(1)); block=match.group(2); projection=match.group(3)
+        if block=="mlp":
+            if policy["scope"]=="all-attention-plus-last-n-mlp" and layer>=first_layer and projection in mlp: selected.append(name)
+            continue
+        if policy["scope"]=="last-n-attention-projections" and layer<first_layer:
+            continue
+        allowed=full if block=="self_attn" else linear
+        if projection in allowed: selected.append(name)
+    attention_layers={int(pattern.fullmatch(name).group(1)) for name in selected if ".self_attn." in name or ".linear_attn." in name}
+    expected_attention_layers=set(range(first_layer,layer_total)) if policy["scope"]=="last-n-attention-projections" else set(range(layer_total))
+    if attention_layers != expected_attention_layers:
+        raise RuntimeError("LoRA target policy did not cover every declared attention layer")
+    if policy["scope"]=="all-attention-plus-last-n-mlp":
+        mlp_layers={int(pattern.fullmatch(name).group(1)) for name in selected if ".mlp." in name}
+        if mlp_layers != set(range(first_layer,layer_total)):
+            raise RuntimeError("LoRA target policy did not cover every declared final-layer MLP")
     return selected
 
 
@@ -168,9 +185,10 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     card=load_sealed(args.card,"card_sha256")
     if card.get("status")!="ready" or card.get("failed_checks"): raise RuntimeError("training execution card is not ready")
     config=json.loads(args.config.read_text()); config_sha=file_sha256(args.config)
-    expansion=config.get("schema_version")=="ganesh-mini-expansion-pilot-config/v1"
-    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1"}: raise RuntimeError("unsupported training config schema")
-    if expansion and card.get("schema_version")!="ganesh-mini-expansion-pilot-card/v1": raise RuntimeError("expansion card/config contract mismatch")
+    expansion=config.get("schema_version") in {"ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2"}
+    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2"}: raise RuntimeError("unsupported training config schema")
+    expected_expansion_card={"ganesh-mini-expansion-pilot-config/v1":"ganesh-mini-expansion-pilot-card/v1","ganesh-mini-expansion-pilot-config/v2":"ganesh-mini-expansion-pilot-card/v2"}.get(config.get("schema_version"))
+    if expansion and card.get("schema_version")!=expected_expansion_card: raise RuntimeError("expansion card/config contract mismatch")
     if card["inputs"]["config_sha256"]!=config_sha: raise RuntimeError("card/config identity mismatch")
     prepared_manifest=load_sealed(args.prepared_manifest,"manifest_sha256")
     if card["inputs"]["prepared_manifest_sha256"]!=prepared_manifest["manifest_sha256"]: raise RuntimeError("card/prepared manifest mismatch")
@@ -246,7 +264,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
         optimizer.load_state_dict(saved["optimizer"]); scheduler.load_state_dict(saved["scheduler"]); torch.set_rng_state(saved["torch_rng"]); torch.cuda.set_rng_state_all(saved["cuda_rng"])
     maximum=int(recipe.get("maximum_peak_vram_gb",23)*1024**3)
     anomaly_contract=recipe.get("loss_anomaly_detector")
-    if config["schema_version"] in {"ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1"} and not anomaly_contract: raise RuntimeError("current recipe requires optimizer-group anomaly detection")
+    if config["schema_version"] in {"ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2"} and not anomaly_contract: raise RuntimeError("current recipe requires optimizer-group anomaly detection")
     detector=RollingLossGuard(anomaly_contract,state.get("anomaly_detector",{}).get("history",[]),state.get("anomaly_detector",{}).get("streak",0)) if anomaly_contract else None
     configured_checkpoint=config["control"].get("checkpoint_every_tokens") or min(config["control"]["checkpoint_tokens"])
     checkpoint_interval=min(configured_checkpoint,max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); group_raw_losses=[]; group_weighted_loss=0.0; group_weight=0.0

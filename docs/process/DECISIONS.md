@@ -1,5 +1,27 @@
 # Decisions
 
+## 2026-09-09 — Use one early-stopped capacity probe, not another full weak-adapter run
+
+Task-level trajectory analysis validates the exact base, four intermediate
+checkpoints and the final Gate 4 adapter. Twenty-three of 30 frozen canary
+tasks fail at every measured point, four pass everywhere, and only three
+change status. No measured checkpoint improves more than one product family.
+The absent 2,036,559-token result remains excluded as a controller/runtime
+timeout with no task evidence. Earlier stopping is therefore rejected as the
+next mechanism.
+
+The locally prepared v2 probe increases LoRA capacity from 729,088 estimated
+parameters to an exact shape-derived 7,520,256: rank 16 over all language-model
+attention targets plus gate/up/down MLP targets in layers 16–23. It stops at
+624 rows and 468,601 tokens, whose weighted five-family objective shares remain
+18.32%–21.95%. It can continue only on at least two improved families, net +2,
+zero lane regression, no format regression and reproducible save/reload.
+Passing grants continuation planning only; failing terminates the mechanism.
+Config SHA-256 is
+`3e201e80560052a503ab4b56b71684a4c50430750bb6de9cc8419dbd30bb5aa5`.
+No GCloud action is authorized; exact cloud inputs, price, ceiling and approval
+remain a separate hard boundary.
+
 ## 2026-09-09 — Corrected sweep upload is complete; compute remains separate
 
 Navneet's direct `approved` response authorizes only upload plan

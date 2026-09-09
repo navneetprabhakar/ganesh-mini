@@ -35,10 +35,12 @@ def test_repository_workspace_contains_expansion_pilot_inputs(tmp_path: Path) ->
     with tarfile.open(archive) as value:
         names = set(value.getnames())
     assert {
+        "configs/train/expansion_capacity_probe_v2.json",
         "configs/train/expansion_pilot_v1.json",
         "scripts/train/expansion_pilot.py",
         "artifacts/train/expansion-pilot-v1/prepared-train.jsonl",
         "artifacts/train/expansion-pilot-v1/prepared-validation.jsonl",
         "artifacts/train/expansion-pilot-v1/prepared-dataset-manifest.json",
+        "artifacts/train/expansion-capacity-probe-v2/local-execution-card.json",
         "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
     } <= names

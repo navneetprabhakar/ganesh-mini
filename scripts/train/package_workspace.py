@@ -34,6 +34,7 @@ ALLOWLIST = (
     "artifacts/train/expansion-pilot-v1/prepared-validation.jsonl",
     "artifacts/train/expansion-pilot-v1/prepared-dataset-manifest.json",
     "artifacts/train/expansion-pilot-v1/local-execution-card.json",
+    "artifacts/train/expansion-capacity-probe-v2/local-execution-card.json",
     "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
 )
 FORBIDDEN_PARTS = {"eval", "measurement", "outputs", ".git", ".gcloud-staging", "__pycache__"}

@@ -194,8 +194,11 @@ class ExpansionCampaign(Campaign):
         card_path = self.args.card
         card = load_sealed(card_path, "card_sha256")
         provider = card.get("provider_execution") or {}
+        schema = config.get("schema_version")
+        expected_card_schema = {"ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1", "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2"}.get(schema)
         if (
-            config.get("schema_version") != "ganesh-mini-expansion-pilot-config/v1"
+            expected_card_schema is None
+            or card.get("schema_version") != expected_card_schema
             or card.get("status") != "ready"
             or provider.get("provider") != "gcloud"
             or provider.get("machine_type") != "g2-standard-8"
@@ -210,9 +213,14 @@ class ExpansionCampaign(Campaign):
         configs = self.build_evaluation(card_path, terminal, training)
         canary = self.evaluate("canary", configs / "canary.json", training, 30)
         adjudication = self.adjudicate_canary(card_path, terminal, canary)
-        if adjudication["status"] == "promote-to-full-development":
+        if adjudication["status"] == "promote-to-full-development" and schema == "ganesh-mini-expansion-pilot-config/v1":
             self.evaluate("full-development", configs / "full.json", training, 180)
             status = "completed-full-development"
+        elif adjudication["status"] == "promote-to-full-development":
+            status = "completed-capacity-probe-continuation-screen-passed"
+            self.record("full-development", "blocked-by-probe-authority")
+        elif schema == "ganesh-mini-expansion-pilot-config/v2":
+            status = "completed-capacity-probe-continuation-screen-failed"
         else:
             status = "completed-canary-not-promoted"
         final = {

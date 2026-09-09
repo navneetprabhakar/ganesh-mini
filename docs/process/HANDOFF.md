@@ -2166,3 +2166,46 @@ campaign ledger is `running` with
 current phase. Monitor the attempt prefix only. On terminal state, download
 and verify the complete inventory before teardown and the two absence/billing
 checks.
+
+## 21. Gate 4 expansion pilot terminal; do not promote — 2026-09-09
+
+Attempt `20260909T025013Z` completed all 2,438,853 training tokens. Training
+evidence seal is
+`3f589131eee6b214013e41cf6e81d6b7bab41b216586c93f3ddc4d29db704158`;
+the eight-check terminal training report passed under seal
+`6a09478412aad9200097b8142b498c112b60fa0e6c35ba82328f1a61b06fee13`.
+Final adapter safetensors SHA-256 is
+`552d85a0687d41986c1b8608db907ba0b8ae7192c96b082de18ab235e28f42a8`.
+
+The candidate canary completed 30/30 and passed 6 versus base 5. Candidate
+lane passes are Go0/Java1/JavaScript1/TypeScript2/Python1/Rust1. Only Rust
+improved, so the frozen four-of-five-family rule failed even though net gain,
+zero lane regression, non-code, truncation, and save/reload checks passed.
+Adjudication is terminal `do-not-promote`, seal
+`3d53bc8b484f295823344984ca37e4dc87c842452aaa3c20ceb5d02d661d249d`.
+Do not run the full 180 candidate evaluation or scale this recipe.
+
+The original adjudicator unnecessarily validated all 180 base files and hit
+one stale seal in unselected `dev-t2-javascript-decode-hex`. Exactly one of 180
+base task seals is invalid; all 30 selected base and 30 candidate seals pass.
+The adjudicator now loads only exact candidate-selected base task IDs, with a
+regression test. The frozen invalid file was not modified and remains a full-
+baseline/release evidence defect requiring a versioned repair.
+
+Before teardown, the 128-object/56,925,573-byte terminal prefix was verified
+against its 127-file runtime hash manifest. A separate 51,674,173-byte archive
+was uploaded at generation `1788935240864459`, SHA-256
+`24abdb78753ad59a25adbc3ca1ddab31da0176c3de935b02b874e5638dab8e31`,
+and exact-generation roundtrip passed. Finalization receipt generation is
+`1788935386817248`; teardown receipt generation is `1788935763309387`, both
+byte-identical on roundtrip.
+
+The instance, auto-delete disk, subnet, and network are deleted. Two checks 12
+seconds apart returned 404 for each, and project inventories show zero
+instances, addresses, forwarding rules, routers, reservations, snapshots,
+images, or machine images. An unrelated unattached 200 GiB balanced disk named
+`laxmi-wmv2-training-01` remains in `us-central1-a`; do not delete it without
+Navneet's explicit ownership decision. Temporary OAuth material was zeroed and
+removed. Next: preserve/commit the decision evidence, version-repair the single
+stale full-baseline seal, and design a new bounded data/mechanism hypothesis.
+No compute is active and no further GCloud action is authorized by this result.

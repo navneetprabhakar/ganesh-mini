@@ -1,5 +1,30 @@
 # Decisions
 
+## 2026-09-09 — Expansion pilot is terminal and must not scale
+
+The Gate 4 expansion pilot completed training and save/reload successfully,
+but the frozen canary decision is `do-not-promote`. Candidate performance is
+6/30 versus the exact base at 5/30, with the only new pass in Rust. This meets
+the net-gain and no-regression constraints but improves only one of five product
+families, below the required four. Do not run the 180-task candidate evaluation,
+full Pass A scale-up, Gate 5 correction, merge, quantization, or publication
+from this checkpoint. The next experiment must first change the data or
+training mechanism and receive a new sealed hypothesis and execution boundary.
+
+Canary adjudication is scoped to the exact selected task IDs. Loading and
+validating unrelated base files made one stale, unselected tranche-2 seal block
+the 30-task decision. All selected base and candidate evidence seals are valid;
+the unselected frozen file remains unchanged and requires a separately versioned
+repair before full-baseline/release use. This scoped loading changes no score or
+promotion rule.
+
+The Ganesh VM, boot disk, subnet, and network were deleted only after two exact-
+generation GCS recovery artifacts passed byte comparison. Two absence checks
+passed. Project-wide inventory also found unrelated unattached disk
+`laxmi-wmv2-training-01`; do not delete it without an explicit owner decision.
+Accordingly, certify no active Ganesh compute surface, not project-wide
+GCS-only billing.
+
 ## 2026-09-09 — Gate 4 retained-disk package installs are noninteractive
 
 The approved Gate 4 execution may reuse its single retained VM after a

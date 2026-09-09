@@ -1,5 +1,42 @@
 # Project state
 
+## Gate 4 expansion pilot completed; candidate not promoted — 2026-09-09
+
+The 3,225-row BF16 LoRA expansion pilot completed 2,438,853 training tokens in
+3,501.756 seconds. Its terminal training verifier passed all eight checks,
+including immutable card/config identity, completed training, save/reload,
+VRAM and cost bounds, and adapter identity. Training evidence seal is
+`3f589131eee6b214013e41cf6e81d6b7bab41b216586c93f3ddc4d29db704158`;
+terminal report seal is
+`6a09478412aad9200097b8142b498c112b60fa0e6c35ba82328f1a61b06fee13`.
+
+The frozen 30-task canary completed 30/30. The exact base passes 5/30 and the
+candidate passes 6/30: Go 0, Java 1, JavaScript 1, TypeScript 2, Python 1,
+Rust 1. Net gain, zero lane regression, non-code, truncation, and save/reload
+checks pass. Only one of five product families improves, below the frozen
+minimum of four. The terminal decision is `do-not-promote`, report seal
+`3d53bc8b484f295823344984ca37e4dc87c842452aaa3c20ceb5d02d661d249d`.
+The complete 180-task development run was correctly not started.
+
+The first adjudication attempt exposed one pre-existing invalid seal among the
+180 frozen base task files: `dev-t2-javascript-decode-hex`. It is outside the
+30 selected canary tasks. The adjudicator now validates exactly the candidate-
+selected base evidence and has a regression test; all 30 selected base seals
+and all 30 candidate seals are valid. The frozen base file itself remains
+unchanged and must be repaired through a separately versioned evidence action
+before any release claim that depends on the full 180-task baseline.
+
+The complete 128-object/56,925,573-byte terminal backup, a 51,674,173-byte
+recovery archive, finalization receipt, and teardown receipt all passed exact-
+generation GCS roundtrips. The VM, auto-delete boot disk, subnet, and network
+were deleted and twice returned 404. There are no project instances, addresses,
+forwarding rules, routers, reservations, snapshots, images, or machine images.
+One unrelated unattached 200 GiB balanced disk, `laxmi-wmv2-training-01`,
+remains in `us-central1-a`; therefore Ganesh compute billing is closed, but a
+project-wide GCS-only billing claim is false pending an explicit owner decision
+on that disk. No further training or release promotion is authorized by this
+pilot result; change data or mechanism before scaling.
+
 ## Gate2 and Gate4 input GCS backup verified — 2026-09-09
 
 Authentication is restored. The terminal Gate2 evidence archive and rehearsed

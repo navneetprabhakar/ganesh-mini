@@ -47,3 +47,16 @@ def test_canary_rejects_no_gain(tmp_path: Path) -> None:
     report = adjudicate(*setup(tmp_path, False))
     assert report["status"] == "do-not-promote"
     assert "net_pass_gain" in report["failed_checks"]
+
+
+def test_canary_ignores_unselected_baseline_task_evidence(tmp_path: Path) -> None:
+    card_path, terminal_path, base, candidate = setup(tmp_path, False)
+    (base / "unselected-task.json").write_text(json.dumps({
+        "task": {"task_id": "unselected-task", "language": "go"},
+        "evidence_sha256": "invalid",
+    }))
+
+    report = adjudicate(card_path, terminal_path, base, candidate)
+
+    assert report["status"] == "do-not-promote"
+    assert report["task_count"] == 30

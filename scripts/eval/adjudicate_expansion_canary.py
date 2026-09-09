@@ -28,9 +28,16 @@ def load_sealed(path: Path, field: str) -> dict[str, Any]:
     return value
 
 
-def task_rows(directory: Path) -> dict[str, dict[str, Any]]:
+def task_rows(directory: Path, task_ids: set[str] | None = None) -> dict[str, dict[str, Any]]:
     rows: dict[str, dict[str, Any]] = {}
-    for path in sorted(directory.glob("*.json")):
+    paths = (
+        [directory / f"{task_id}.json" for task_id in sorted(task_ids)]
+        if task_ids is not None
+        else sorted(directory.glob("*.json"))
+    )
+    for path in paths:
+        if not path.is_file():
+            raise ValueError(f"missing task evidence: {path}")
         evidence = load_sealed(path, "evidence_sha256")
         task = evidence.get("task", {})
         task_id, lane = task.get("task_id"), task.get("language")
@@ -56,10 +63,10 @@ def adjudicate(card_path: Path, terminal_path: Path, base_dir: Path, candidate_d
     terminal = load_sealed(terminal_path, "report_sha256")
     if card.get("status") != "ready" or terminal.get("status") != "passed" or terminal.get("card_sha256") != card.get("card_sha256"):
         raise ValueError("canary adjudication requires the matching passed terminal training report")
-    base, candidate = task_rows(base_dir), task_rows(candidate_dir)
-    if len(candidate) != card.get("evaluation", {}).get("canary_tasks") or set(candidate) - set(base):
+    candidate = task_rows(candidate_dir)
+    base = task_rows(base_dir, set(candidate))
+    if len(candidate) != card.get("evaluation", {}).get("canary_tasks") or set(candidate) != set(base):
         raise ValueError("candidate canary does not exactly map to baseline evidence")
-    base = {task_id: base[task_id] for task_id in candidate}
     lane_base = Counter({lane: 0 for lane in LANES}); lane_candidate = Counter({lane: 0 for lane in LANES})
     family_base: Counter[str] = Counter(); family_candidate: Counter[str] = Counter()
     for task_id, row in candidate.items():

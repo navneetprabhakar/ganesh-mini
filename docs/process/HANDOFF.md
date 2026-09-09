@@ -2049,3 +2049,44 @@ save/reload verification -> canary -> conditional full development evaluation
 -> terminal backup -> independent verification -> full teardown -> two absence
 checks. A canary `do-not-promote` is a completed result and must not be labeled
 an infrastructure failure.
+
+## 17. Gate 4 approved execution active — 2026-09-09
+
+Navneet explicitly approved proposal
+`5bb6b25b448a509f570dd924b6d508ab057fd2f2455d06db8353054cda06aba3`
+and its `$7.50` ceiling. Attempt `20260909T015118Z` uses the one approved
+Standard `g2-standard-8` instance `ganesh-mini-g4-l4-20260909t015118z` in
+`us-east1-c`, provider ID `8737372232357839343`, with one L4, a 200 GiB
+auto-delete `pd-balanced` boot disk, no external IP, automatic restart
+disabled, and provider maximum duration eight hours with termination action
+`DELETE`. Temporary network `ganesh-mini-g4-net-20260909t015118z` has provider
+ID `5984537846207021268`; its subnet has Private Google Access. No address or
+NAT was created.
+
+The first boot failed closed before training because the approved proposal and
+prelaunch receipt contained a 65-character evaluation-manifest hash with one
+duplicated `f`. The exact-generation object itself and local roundtrip copy are
+unchanged and hash to
+`cf88badcc33c78c824c24dc67c9accf9f5c3527fe3b140e4218f33f59c42a360`.
+The wrapper preserved this failure under the attempt's
+`wrapper-failure-20260909T015118Z/` GCS prefix and shut down. See
+`measurement/gate4/gcloud/20260909T015118Z/bootstrap-correction.json`.
+
+The same approved VM, disk, network and subnet were retained. Only the bad
+control binding was corrected. Outer card v2 is GCS generation
+`1788919774477052`, file SHA-256
+`ef5e3727e58a6873d6256e8bfed2ae92e53d9f0ebf2aeb5dc4c41920c29e6aa9`,
+internal execution seal
+`f1b1ff38c7c393f2cdd7ca724d679d4dbb178703731b0a8725303b9bd285c0c8`.
+The same instance restarted successfully. All ten immutable runtime inputs
+passed guest-side download hashes, the Docker/CUDA runtime loaded, and the
+campaign ledger reached `workspace-and-provider-admission=passed`. Runtime
+checkpoints are active at
+`ganesh-mini-1.0/training/expansion-pilot-v1/attempts/20260909T015118Z/runtime-checkpoints/20260909T015118Z/`.
+
+Current state is ACTIVE Gate 4 campaign execution. Do not create a second VM
+or duplicate the attempt. Monitor the checkpoint phase ledger and terminal
+prefix. After terminal backup, independently download exact generations and
+verify completeness, then delete the retained VM/disk/subnet/network and
+perform two absence checks. Preserve the failed first-boot evidence as part of
+the final audit trail.

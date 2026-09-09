@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-09-09 — Exact Gate 4 execution approved and active
+
+Navneet explicitly approved proposal
+`5bb6b25b448a509f570dd924b6d508ab057fd2f2455d06db8353054cda06aba3`
+with the `$7.50` ceiling. Use one Standard `g2-standard-8` in `us-east1-c`, one
+L4, 200 GiB balanced boot disk, no external IP, restart disabled and an
+eight-hour maximum. Preserve terminal evidence before deleting all compute and
+network resources; verify absence twice and retain only GCS.
+
+The first boot exposed a prelaunch evidence defect before training: the
+evaluation-workspace manifest hash had one duplicated `f` and was 65
+characters. Preserve the failed bootstrap as evidence. The underlying exact-
+generation object is unchanged and has SHA-256
+`cf88badcc33c78c824c24dc67c9accf9f5c3527fe3b140e4218f33f59c42a360`.
+Correct only this binding and reuse the same approved VM; do not create a
+second VM or alter zone, machine type, provisioning model or ceiling. Outer
+card v2 generation `1788919774477052` has started successfully and passed
+workspace/provider admission.
+
 ## 2026-09-09 — Pilot sufficiency and executed throughput resolved
 
 Navneet directed resolution of Gate2 corpus sufficiency and pilot throughput.

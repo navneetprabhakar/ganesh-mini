@@ -2033,3 +2033,25 @@ three pre-existing stale Gate 1 evidence failures and no new failure.
 No VM or other compute resource exists. Current state is
 `waiting-for-exact-execution-approval`; do not bind the provider card or create
 GCloud compute until that approval is received.
+
+### Gate 4 approved attempt active — 2026-09-09
+
+- Navneet approved exact proposal
+  `5bb6b25b448a509f570dd924b6d508ab057fd2f2455d06db8353054cda06aba3`
+  with an absolute incremental ceiling of `$7.50`.
+- Attempt `20260909T015118Z` is running on the single approved Standard
+  `g2-standard-8` L4 instance in `us-east1-c`; instance ID is
+  `8737372232357839343`. It has no external IP, a 200 GiB auto-delete balanced
+  disk, restart disabled, and provider-enforced eight-hour deletion.
+- The initial bootstrap failed closed before training on a 65-character
+  evaluation-manifest hash copied into the proposal. The unchanged object and
+  local roundtrip file have the correct 64-character SHA-256
+  `cf88badcc33c78c824c24dc67c9accf9f5c3527fe3b140e4218f33f59c42a360`.
+  Failure evidence is preserved in GCS.
+- Only that binding was corrected. Outer card v2 generation is
+  `1788919774477052`; the same VM was restarted. Guest checks passed all ten
+  immutable inputs, and the campaign phase ledger reports
+  `workspace-and-provider-admission=passed` with status `running`.
+- Do not create another VM. Continue checkpoint monitoring, then terminal
+  roundtrip verification, teardown, two absence checks and the
+  no-billing-except-GCS audit.

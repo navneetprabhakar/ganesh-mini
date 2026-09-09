@@ -1,8 +1,10 @@
 from decimal import Decimal
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -83,6 +85,33 @@ def test_phase_ledger_is_hash_sealed(tmp_path: Path) -> None:
     value = json.loads((tmp_path / "phase-ledger.json").read_text())
     claimed = value.pop("evidence_sha256")
     assert canonical_sha256(value) == claimed
+
+
+def test_campaign_timeout_terminates_the_entire_process_group(tmp_path: Path) -> None:
+    campaign = Campaign(SimpleNamespace(
+        output=tmp_path / "output", max_seconds=3600, attempt_id="timeout-test",
+        hourly_cost_usd=Decimal("1"),
+    ))
+    campaign.docker = ""
+    child_pid = tmp_path / "child.pid"
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        campaign.run(
+            ["bash", "-c", f"sleep 60 & echo $! > {child_pid}; wait"],
+            log_name="timeout",
+            timeout=1,
+        )
+
+    pid = int(child_pid.read_text())
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.05)
+    else:
+        pytest.fail("timed-out descendant process remained alive")
 
 
 def test_campaign_mounts_external_state_outside_read_only_workspace(tmp_path: Path) -> None:

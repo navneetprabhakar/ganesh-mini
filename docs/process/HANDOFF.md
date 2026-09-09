@@ -2402,3 +2402,62 @@ roundtrip all terminal evidence, then delete resources and verify absence
 twice. Training 70%, release readiness 52%, overall 60%. Sweep-to-teardown ETA
 after approval is 1.5–3 hours; end-to-end release ETA remains 2–5 days at low
 confidence.
+
+## 26. Replacement checkpoint sweep closed; proceed to mechanism redesign — 2026-09-09
+
+Navneet explicitly approved proposal
+`ab86a71a0178d6f7a9232f9ee9dee72650d2fd7dd5568844c10a7ffd68dd1de4`
+and its `$2.25` ceiling. Attempt `20260909T130347Z` used the exact authorized
+Standard `g2-standard-8`/L4 resource contract. The first creation request hit
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS`; one bounded identical retry
+succeeded. No alternate zone, machine, or price was used.
+
+Sealed input admission and verifier preparation passed. Four checkpoints
+completed 30/30 tasks with valid run and task bindings:
+
+- 406,491 tokens: 6/30; Go0, Java1, JavaScript2, TypeScript2, Python1, Rust0;
+  run seal `c588d4679ce3ccd88d1168ac300a0690769699d6d09802e4a16cb80620bdd853`.
+- 814,098 tokens: 4/30; Go0, Java1, JavaScript1, TypeScript1, Python1, Rust0;
+  run seal `64fd1edc2d30f56a4e2fa8e0aeea8771f33b47f2e17364d5182fd0bf43cd35c3`.
+- 1,224,637 tokens: 5/30; Go0, Java1, JavaScript1, TypeScript1, Python1, Rust1;
+  run seal `4db2aefdf1ee39d9c38c2cedd88c29cb184feb77fe86674bfaa2a0c29867d54f`.
+- 1,629,235 tokens: 5/30; the same lane counts as 1,224,637; run seal
+  `a065d563a4f4193d5237382e18ad4d570dc2cd4ebfcd12b66692e7191cc46397`.
+
+The fifth 2,036,559-token checkpoint produced only empty stdout and a 230-byte
+weight-loading stderr. It created no generated/task/run evidence and remained
+unchanged from 13:45:07Z through 14:21:33Z despite the 1,200-second checkpoint
+limit. Do not call this a model failure and do not reconstruct a score. The
+host/controller terminal path did not complete; root cause is not yet proven.
+
+Before deletion, all 260 GCS objects totaling 3,071,483 bytes were downloaded
+at their exact generations and verified against size and MD5 metadata. Listing
+file SHA-256 is
+`04b6cc7ef4283d69a091950be5177b9e204d127694171cc9624b450dba338466`.
+Interruption receipt seal is
+`e7f96448ddf96ffb4ac309d9e892c9ff8c125cdeba465258edfff2483db8549c`
+(file SHA-256
+`41ae1ab624448b568d5d3e229d0bee55eba23b8aa0864235e11570ee98ac0db7`);
+teardown receipt seal is
+`8fb800123772f4578103577e8492cb7b5b776499aea33355b645fe5599b7c02c`
+(file SHA-256
+`9505a31cc955aaf4a5754eff2d23bcc9fcff42c3c206676f9c93cc0c7839948d`).
+The 447,771-byte full evidence archive is generation `1788964553220467`,
+SHA-256 `f9314b0e959bc9522ef35e099d15eb865a931d470fa0f9c29789afd9d95047f7`.
+Every finalization object passed exact-generation roundtrip. Finalization
+receipt seal is
+`a7f803fc2d50edba18d42dfcd95fb74de83ff5731dfbedf1d8f04691610f42c5`;
+its object generation is `1788964556536552`.
+
+The VM, auto-delete disk, subnet, and network were deleted and returned 404 in
+two checks 32 seconds apart. No project instance, address, forwarding rule,
+router, reservation, snapshot, image, or machine image exists. The unrelated
+`laxmi-wmv2-training-01` disk remains; do not delete it without a separate
+ownership decision. Ganesh sweep compute billing is closed, but project-wide
+GCS-only billing is not true while that disk exists.
+
+The sweep evidence rejects early stopping as the repair: no completed
+checkpoint shows broad multilingual transfer. Gate 4 remains `do-not-promote`.
+Continue locally with task-level trajectory analysis, a bounded process-group
+timeout repair, and a materially different data/mechanism pilot design. Any
+new GCloud execution needs a new sealed proposal and explicit approval.

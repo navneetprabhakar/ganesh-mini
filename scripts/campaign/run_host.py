@@ -15,6 +15,7 @@ import json
 import os
 import platform
 import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -232,15 +233,34 @@ class Campaign:
         stderr = self.output / f"{log_name}.stderr.log"
         try:
             with stdout.open("ab") as out, stderr.open("ab") as err:
-                result = subprocess.run(command, stdout=out, stderr=err, timeout=timeout, env=env, check=False)
+                process = subprocess.Popen(
+                    command,
+                    stdout=out,
+                    stderr=err,
+                    env=env,
+                    start_new_session=True,
+                )
+                returncode = process.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait(timeout=10)
             if self.docker:
                 listed=subprocess.run([self.docker,"ps","-aq","--filter",f"label=ganesh.campaign={self.args.attempt_id}"],capture_output=True,text=True,check=False,timeout=30)
                 ids=[row for row in listed.stdout.splitlines() if row]
                 if ids: subprocess.run([self.docker,"rm","-f",*ids],capture_output=True,check=False,timeout=60)
             raise
-        if result.returncode != 0:
-            raise RuntimeError(f"{log_name} exited {result.returncode}")
+        if returncode != 0:
+            raise RuntimeError(f"{log_name} exited {returncode}")
 
     def docker_base(self, name: str, workspace: Path) -> list[str]:
         container_name = docker_container_name(name)

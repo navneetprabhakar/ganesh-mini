@@ -2450,3 +2450,26 @@ external IP, restart disabled, a 200 GiB auto-delete balanced disk, and a
 incremental ceiling is `$2.25`. Proposal seal:
 `b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`.
 Execution requires separate explicit approval of that exact seal.
+
+## 2026-09-09 — Earlier stopping does not repair the Gate 4 mechanism
+
+The approved checkpoint sweep completed four of five unmeasured development
+canaries before its final evaluation wedged without task evidence. The four
+valid pass totals are 6, 4, 5, and 5 at 406,491 through 1,629,235 seen tokens;
+the already measured final checkpoint passes 6 at 2,438,853 tokens. The
+earliest checkpoint changes only JavaScript relative to base, while the later
+checkpoints and final adapter shift the isolated gain to Rust. No observed
+checkpoint improves the frozen four-of-five product-family threshold.
+
+This partial sweep cannot select or promote a checkpoint, and the missing
+2,036,559-token result must not be reconstructed. It is nevertheless enough to
+reject “stop training earlier” as the next mechanism: every completed point on
+the observed trajectory lacks broad multilingual executable transfer. The next
+pilot must change data or optimization mechanism and must earn promotion from
+the frozen canary again.
+
+Attempt `20260909T130347Z` is closed. Its fifth checkpoint is classified as a
+controller timeout with no terminal result, not a model failure. All available
+evidence was generation-mirrored and archived to GCS before teardown. The exact
+VM, disk, subnet, and network are absent twice. One unrelated disk remains, so
+the project cannot honestly claim GCS-only billing.

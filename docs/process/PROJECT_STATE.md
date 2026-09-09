@@ -1,5 +1,47 @@
 # Project state
 
+## Checkpoint sweep closed with four valid checkpoints; no broad transfer — 2026-09-09
+
+Navneet approved exact proposal
+`ab86a71a0178d6f7a9232f9ee9dee72650d2fd7dd5568844c10a7ffd68dd1de4`
+with the `$2.25` ceiling. Attempt `20260909T130347Z` admitted all sealed inputs
+and verifier images, then completed four 30-task checkpoint canaries. Pass
+counts at 406,491; 814,098; 1,224,637; and 1,629,235 tokens were respectively
+6, 4, 5, and 5. All four run seals and all 120 task bindings independently
+validate. The 406,491-token checkpoint gained one JavaScript pass over base;
+the later two 5-pass checkpoints gained one Rust pass while losing the base
+TypeScript advantage. No completed checkpoint improved broadly across
+families, so the evidence rejects premature stopping as the remedy.
+
+The fifth 2,036,559-token evaluation created only its stdout/stderr files and
+no task evidence. It remained unchanged for more than 36 minutes despite the
+20-minute per-checkpoint timeout, so it is classified as a controller timeout
+without a terminal result—not as a model-quality failure. The partial attempt
+has no promotion authority. Interruption receipt seal is
+`e7f96448ddf96ffb4ac309d9e892c9ff8c125cdeba465258edfff2483db8549c`;
+its file SHA-256 is
+`41ae1ab624448b568d5d3e229d0bee55eba23b8aa0864235e11570ee98ac0db7`.
+
+All 260 available GCS objects (3,071,483 bytes) were downloaded by immutable
+generation and matched their size and MD5 metadata. The full evidence archive,
+interruption receipt, and teardown receipt were uploaded create-only and
+exact-generation roundtrip verified. GCS finalization receipt seal is
+`a7f803fc2d50edba18d42dfcd95fb74de83ff5731dfbedf1d8f04691610f42c5`;
+its own generation is `1788964556536552` and its roundtrip file SHA-256 is
+`73cb883514f486f82a7414cfaab75bb9a87d2d4d6156e84f809b042a1e88ddd4`.
+
+The exact VM, auto-delete disk, subnet, and network were deleted and returned
+404 in two checks 32 seconds apart. Project-wide Compute inventory contains no
+instances, addresses, forwarding rules, routers, reservations, snapshots,
+images, or machine images. The unrelated unattached 200 GiB disk
+`laxmi-wmv2-training-01` remains and may bill; therefore “GCS only” is false at
+project scope even though all Ganesh sweep compute billing is closed.
+
+Gate 4 remains `do-not-promote`. Current work is local: close the timeout gap,
+finish task-level trajectory analysis, and design a materially different
+data/mechanism pilot. Any new GCloud execution requires a new sealed proposal
+and explicit approval.
+
 ## Corrected checkpoint-sweep VM proposal awaiting approval — 2026-09-09
 
 Upload-only plan

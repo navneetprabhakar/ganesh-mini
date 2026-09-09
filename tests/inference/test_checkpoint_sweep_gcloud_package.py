@@ -1,3 +1,5 @@
+import hashlib
+import json
 import tarfile
 from pathlib import Path
 
@@ -9,6 +11,7 @@ from scripts.inference.build_checkpoint_sweep_gcloud_proposal import (
 from scripts.inference.build_checkpoint_sweep_workspace import ADDITIONS, build as build_workspace
 
 ROOT = Path(__file__).resolve().parents[2]
+UPLOAD_PLAN = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan.json"
 
 
 def bindings() -> dict:
@@ -71,3 +74,18 @@ def test_workspace_package_is_deterministic_and_contains_sweep_runtime(tmp_path:
     with tarfile.open(first, "r:gz") as archive:
         names = set(archive.getnames())
     assert set(ADDITIONS) <= names
+
+
+def test_upload_only_plan_binds_exact_local_inputs_and_forbids_compute() -> None:
+    plan = json.loads(UPLOAD_PLAN.read_text(encoding="utf-8"))
+    claimed = plan.pop("upload_plan_sha256")
+
+    assert claimed == canonical_sha256(plan)
+    assert plan["status"] == "pending-explicit-gcloud-upload-approval"
+    assert plan["object_count"] == 4
+    assert plan["maximum_new_bytes"] == sum(row["size_bytes"] for row in plan["objects"])
+    assert "create or start compute" in plan["forbidden_operations"]
+    for row in plan["objects"]:
+        source = ROOT / row["source"]
+        assert source.stat().st_size == row["size_bytes"]
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == row["sha256"]

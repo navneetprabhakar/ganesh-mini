@@ -2229,7 +2229,7 @@ checkpoint is already measured. Sweep manifest seal is
 `6af2ad473e2d119bcf1149540705a3d7faaf7f4584b1b7626bf568cabfec4b5c`.
 Evaluator support verifies each adapter against its checkpoint manifest and
 the original training identities. The summarizer is diagnostic-only and cannot
-select or promote a checkpoint. Twenty-four focused tests pass.
+select or promote a checkpoint. Twenty-five focused tests pass.
 
 The fail-closed evaluation-only host/startup package is implemented locally.
 It serializes the five checkpoint canaries on one GPU, executes generated code
@@ -2249,6 +2249,14 @@ The deterministic local workspace contains 596 files. Its manifest seal is
 the 1,019,144-byte archive SHA-256 is
 `8a3619ee9bbb9816359eecad4c7b46c92f202644e29090880b3d44e7b485d3d6`.
 It was extracted and independently re-verified against every manifest file.
-The 24 focused tests pass. The broader campaign/eval/inference suite has 164
+The 25 focused tests pass. The broader campaign/eval/inference suite has 164
 passes, one skip, and the same three historical Gate 1 stale-workspace/source-
 identity failures; none is on the new sweep path.
+
+The next authorization boundary is deliberately upload-only. Plan
+`measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan.json` permits
+exactly four named uploads totaling at most 1,163,234 bytes, generation capture,
+and exact-generation byte roundtrips. It forbids compute and all infrastructure
+creation, deletion, training, evaluation, promotion, and publication. Its seal
+is `22357cac8b6da43aa56bd11eaede2f199995a90035aa76caf5c235ccb485cc4b`.
+Do not execute it without fresh explicit approval of that exact seal.

@@ -2177,7 +2177,12 @@ GCloud compute until that approval is received.
   `0b5baf8ded482fefa8b827169fc425c6881365e1a08ed814bcda226e4ffa94ae`,
   and archive SHA-256
   `8a3619ee9bbb9816359eecad4c7b46c92f202644e29090880b3d44e7b485d3d6`.
-  Exact extraction verification and 24 focused tests pass.
+  Exact extraction verification and 25 focused tests pass.
+- Pending upload-only plan seal
+  `22357cac8b6da43aa56bd11eaede2f199995a90035aa76caf5c235ccb485cc4b`
+  permits four named GCS objects totaling 1,163,234 bytes plus immutable-
+  generation roundtrip checks. It authorizes no compute or infrastructure and
+  still requires fresh explicit GCloud approval.
 - Project-wide GCS-only billing is not certified because unrelated unattached
   disk `laxmi-wmv2-training-01` remains; its ownership/deletion is a separate
   user decision.

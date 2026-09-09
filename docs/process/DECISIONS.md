@@ -1,5 +1,37 @@
 # Decisions
 
+## 2026-09-09 — Checkpoint-sweep attempt is infrastructure evidence only
+
+Navneet explicitly approved checkpoint-sweep proposal
+`b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`
+with a `$2.25` absolute incremental ceiling. The one approved VM execution
+failed closed before verifier preparation, model loading, or any evaluation
+task because the host runner expected the development-workspace schema while
+the supplied manifest correctly declared the checkpoint-sweep workspace
+schema. Record zero executed tasks and no model result; do not classify this as
+a checkpoint failure or use it in model selection.
+
+The raw terminal files are retained, but their terminal inventory is invalid
+for `startup.stderr.log`: the backup command appended to that log after the
+inventory was written. The failure receipt discloses both defects. The VM,
+auto-delete disk, subnet, and network were deleted, and the sealed teardown
+receipt records two 404 absence passes. Its exact-generation GCS roundtrip is
+generation `1788953722389669`, file SHA-256
+`31331677c10eb0b4ab653bfe25d7544d1c32f518350dfa8a23d568214e85a448`.
+Raw provider deletion/404 responses were not persisted locally, so the receipt
+is the durable teardown record rather than independently replayable provider
+evidence.
+
+The local replacement accepts only the checkpoint-sweep schema and restores
+the original output descriptors, drains both captured `tee` processes, and
+only then writes the terminal inventory. The rebuilt 596-file v2 workspace has
+archive SHA-256
+`fd1cee18029e53644ba3c694558b52cbca9e91c5a5e47a9150d6f8b73240e441`
+and manifest seal
+`bf8f11a413425d0c2f530db8db0a0de3f88a4bb2cf335fffac6b155aa342f816`.
+It is local-only. Uploading it requires a fresh exact upload-only approval;
+another VM requires a separate generation-bound execution approval.
+
 ## 2026-09-09 — Expansion pilot is terminal and must not scale
 
 The Gate 4 expansion pilot completed training and save/reload successfully,

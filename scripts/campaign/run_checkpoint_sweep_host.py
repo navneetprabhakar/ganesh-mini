@@ -38,6 +38,7 @@ from scripts.campaign.run_host import (  # noqa: E402
 
 EXPECTED_CONFIG_COUNT = 5
 BASE_TASKS = Path("measurement/inference/development/qwen3.5-2b-base-v1/tasks")
+WORKSPACE_SCHEMA = "ganesh-mini-checkpoint-sweep-workspace/v1"
 
 
 def verify_files(root: Path, rows: list[dict[str, Any]], *, label: str) -> None:
@@ -251,7 +252,7 @@ class CheckpointSweepCampaign(Campaign):
             raise RuntimeError("checkpoint sweep escaped the qualified CUDA image")
         verify_workspace(
             self.args.eval_workspace, self.args.eval_manifest, self.args.eval_archive,
-            "ganesh-mini-development-evaluation-workspace/v1",
+            WORKSPACE_SCHEMA,
         )
         self.sweep_manifest, configs, final_run = verify_training_and_sweep(
             self.args.training, self.args.training_terminal, self.args.config_dir, self.args.final_canary,

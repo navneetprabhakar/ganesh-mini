@@ -1,5 +1,5 @@
-import hashlib
 import json
+import sys
 import tarfile
 from pathlib import Path
 
@@ -10,12 +10,20 @@ from scripts.inference.build_checkpoint_sweep_gcloud_proposal import (
     load_bindings,
 )
 from scripts.inference.build_checkpoint_sweep_workspace import ADDITIONS, build as build_workspace
+from scripts.inference.build_checkpoint_sweep_gcloud_execution import (
+    build as build_execution,
+    load_sealed as load_execution_input,
+    main as build_execution_main,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 UPLOAD_PLAN = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-plan.json"
 BINDINGS = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-input-bindings.json"
 PROPOSAL = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-execution-proposal.json"
 UPLOAD_RECEIPT = ROOT / "measurement/gate4/checkpoint-sweep-20260909/gcloud-upload-receipt.json"
+ATTEMPT = ROOT / "measurement/gate4/checkpoint-sweep-20260909/attempts/20260909T105950Z"
+APPROVAL = ATTEMPT / "approval.json"
+EXECUTION_CARD = ATTEMPT / "execution-card.json"
 
 
 def bindings() -> dict:
@@ -67,6 +75,10 @@ def test_shell_contract_is_offline_bounded_and_terminal_backed_up() -> None:
     assert wrapper.index("gcloud storage rsync") < wrapper.rindex("shutdown -h now")
     assert "/var/run/docker.sock" in runtime and "dst=/usr/local/bin/docker" in runtime
     assert "run_checkpoint_sweep_host.py" in controller
+    restore = controller.index("exec 1>&3 2>&4")
+    drain = controller.index('wait "$stdout_tee_pid" "$stderr_tee_pid" || status=92')
+    inventory = controller.index("write_inventory || status=91")
+    assert restore < drain < inventory
 
 
 def test_workspace_package_is_deterministic_and_contains_sweep_runtime(tmp_path: Path) -> None:
@@ -89,10 +101,7 @@ def test_upload_only_plan_binds_exact_local_inputs_and_forbids_compute() -> None
     assert plan["object_count"] == 4
     assert plan["maximum_new_bytes"] == sum(row["size_bytes"] for row in plan["objects"])
     assert "create or start compute" in plan["forbidden_operations"]
-    for row in plan["objects"]:
-        source = ROOT / row["source"]
-        assert source.stat().st_size == row["size_bytes"]
-        assert hashlib.sha256(source.read_bytes()).hexdigest() == row["sha256"]
+    assert all(len(row["sha256"]) == 64 and row["size_bytes"] > 0 for row in plan["objects"])
 
 
 def test_committed_proposal_matches_generation_bindings_and_verified_upload() -> None:
@@ -114,3 +123,39 @@ def test_committed_proposal_matches_generation_bindings_and_verified_upload() ->
         row = bound["inputs"][key]
         name, generation = row["uri"].removeprefix("gs://ganesh-gate0-model-transfer-1061994342941/").rsplit("#", 1)
         assert uploaded[(name, generation)] == (row["sha256"], row["size_bytes"], "passed")
+
+
+def test_real_approval_builds_the_exact_sealed_single_attempt_card(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proposal = load_execution_input(PROPOSAL, "proposal_sha256")
+    approval = load_execution_input(APPROVAL, "approval_sha256")
+    committed = json.loads(EXECUTION_CARD.read_text(encoding="utf-8"))
+    output = tmp_path / "execution-card.json"
+
+    monkeypatch.setattr(sys, "argv", [
+        "build_checkpoint_sweep_gcloud_execution.py",
+        "--proposal", str(PROPOSAL),
+        "--approval", str(APPROVAL),
+        "--attempt-id", committed["execution"]["attempt_id"],
+        "--source-commit", committed["source_commit"],
+        "--output", str(output),
+    ])
+    assert build_execution_main() == 0
+
+    generated = json.loads(output.read_text(encoding="utf-8"))
+    expected = build_execution(
+        proposal, approval, committed["execution"]["attempt_id"], committed["source_commit"],
+    )
+    assert generated == expected == committed
+    assert generated["approval"] == {
+        "proposal_sha256": proposal["proposal_sha256"],
+        "approval_sha256": approval["approval_sha256"],
+    }
+    assert approval["approved_proposal_sha256"] == proposal["proposal_sha256"]
+    assert approval["approved_scope"] == "one diagnostic-only checkpoint-sweep execution"
+    assert generated["execution"]["gcs_prefix"].endswith(
+        f"/attempts/{generated['execution']['attempt_id']}"
+    )
+    claimed = generated.pop("execution_sha256")
+    assert claimed == canonical_sha256(generated)

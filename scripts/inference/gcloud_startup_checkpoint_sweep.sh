@@ -34,7 +34,11 @@ observed_machine=$(basename "$(curl -fsS -H 'Metadata-Flavor: Google' http://met
 terminal_prefix="runtime-terminal-$attempt_id"
 checkpoint_prefix="runtime-checkpoints/$attempt_id"
 [[ -z "$(find "$output" -mindepth 1 -print -quit)" ]] || exit 44
-exec > >(tee -a "$evidence/startup.stdout.log") 2> >(tee -a "$evidence/startup.stderr.log" >&2)
+exec 3>&1 4>&2
+exec > >(tee -a "$evidence/startup.stdout.log" >&3)
+stdout_tee_pid=$!
+exec 2> >(tee -a "$evidence/startup.stderr.log" >&4)
+stderr_tee_pid=$!
 started=$(date +%s); hard_deadline=$((started+MAX_SECONDS)); controller_deadline=$((started+CONTROLLER_SECONDS))
 ( sleep $((MAX_SECONDS-10)); shutdown -h now ) & watchdog=$!
 remaining() { local n=$((controller_deadline-$(date +%s))); ((n>0)) || return 1; printf '%s\n' "$n"; }
@@ -48,6 +52,8 @@ finish() {
   printf '%s\n' "$status" > "$evidence/startup-exit-code.txt"
   kill "$watchdog" "${checkpoint_pid:-}" 2>/dev/null || true
   wait "${checkpoint_pid:-}" 2>/dev/null || true
+  exec 1>&3 2>&4
+  wait "$stdout_tee_pid" "$stderr_tee_pid" || status=92
   write_inventory || status=91
   timeout "$(backup_remaining)" gcloud storage rsync "$evidence" "gs://$bucket/$prefix/$terminal_prefix" --recursive --project="$project" || status=90
   ( sleep 2; shutdown -h now ) >/dev/null 2>&1 &

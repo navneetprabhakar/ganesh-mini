@@ -1,5 +1,36 @@
 # Project state
 
+## Checkpoint-sweep first attempt closed; corrected v2 local — 2026-09-09
+
+The one execution authorized by proposal
+`b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`
+is consumed and closed. Its temporary Standard L4 VM reached the packaged
+workspace check, then failed before verifier preparation, model loading, and
+evaluation because the runner expected the wrong workspace schema. Exactly
+zero evaluation tasks ran, so this attempt contributes infrastructure evidence
+only and does not change the final-checkpoint `do-not-promote` decision.
+
+Raw terminal files and a sealed failure receipt were preserved. The terminal
+inventory cannot authenticate the final `startup.stderr.log`, because backup
+logging appended after inventory creation; this limitation is explicit in the
+receipt. The VM, auto-delete disk, subnet, and network were deleted. The sealed
+teardown receipt records two 404 absence checks and passed an exact-generation
+GCS roundtrip at generation `1788953722389669`, SHA-256
+`31331677c10eb0b4ab653bfe25d7544d1c32f518350dfa8a23d568214e85a448`.
+No Ganesh compute resource from this attempt is active.
+
+Both defects are fixed locally. The host runner now binds the dedicated
+checkpoint-sweep schema. Startup restores its original output descriptors and
+waits for both log `tee` processes before hashing terminal files. The rebuilt
+workspace contains 596 files: archive SHA-256
+`fd1cee18029e53644ba3c694558b52cbca9e91c5a5e47a9150d6f8b73240e441`,
+manifest file SHA-256
+`6c11b79d4dfb099c5f97cebd10eee3b114c06369199eac613f7612dd235b7264`,
+and internal manifest seal
+`bf8f11a413425d0c2f530db8db0a0de3f88a4bb2cf335fffac6b155aa342f816`.
+It has no GCS generation or provider authority. Next is a fresh sealed
+upload-only plan; no new GCloud action is authorized yet.
+
 ## Checkpoint diagnostic locally prepared — 2026-09-09
 
 The lowest-cost recovery diagnostic is locally prepared. Five unmeasured

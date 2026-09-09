@@ -4,6 +4,7 @@ import argparse
 import json
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -66,6 +67,22 @@ def test_real_sweep_inputs_bind_exactly_five_checkpoints() -> None:
         "tokens-000001629235",
         "tokens-000002036559",
     ]
+
+
+def test_real_packaged_workspace_matches_runner_schema(tmp_path: Path) -> None:
+    archive = ROOT / "artifacts/eval/workspaces/checkpoint-sweep-v2.tar.gz"
+    manifest = ROOT / "artifacts/eval/workspaces/checkpoint-sweep-v2.manifest.json"
+    with tarfile.open(archive, "r:gz") as bundle:
+        bundle.extractall(tmp_path)
+
+    verified = sweep_host.verify_workspace(
+        tmp_path,
+        manifest,
+        archive,
+        sweep_host.WORKSPACE_SCHEMA,
+    )
+
+    assert verified["schema_version"] == sweep_host.WORKSPACE_SCHEMA
 
 
 def test_sweep_rejects_an_extra_unsealed_config(tmp_path: Path) -> None:

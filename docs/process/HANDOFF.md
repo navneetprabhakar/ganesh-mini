@@ -2285,3 +2285,73 @@ seal: `b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`.
 
 Current state is waiting for fresh explicit approval of that exact proposal.
 Do not create, inspect, or mutate GCloud compute/infrastructure until approved.
+
+## 24. Checkpoint-sweep first execution closed; corrected v2 local — 2026-09-09
+
+Navneet explicitly approved proposal
+`b31d95b6e9097fa1056a522628773240d0c2d80ebd925becf457163b28900db5`
+and its `$2.25` ceiling. Approval seal is
+`52da6ca8eeca3c9b2ddac6a138ce4d547f7631092a65f128356e21c6092c63f3`;
+execution-card seal is
+`60bec199932815236ae11477fd3a5884daeb1ee59ade201390bd8b1a38a57fd3`.
+The attempt used exactly one Standard `g2-standard-8`/L4 in `us-east1-c`, no
+external IP, an auto-delete 200 GiB boot disk, restart disabled, and the
+7,200-second provider maximum.
+
+The guest downloaded and verified all generation-bound inputs and loaded the
+CUDA image. It then failed at the first host workspace check because
+`run_checkpoint_sweep_host.py` hardcoded
+`ganesh-mini-development-evaluation-workspace/v1`; the supplied manifest
+correctly declared `ganesh-mini-checkpoint-sweep-workspace/v1`. The failure was
+before verifier preparation, model loading, or evaluation. Exactly zero tasks
+executed and no checkpoint result exists. Failure receipt seal:
+`abf1b6b5133684681714621b5e0baf143f5b62a3fcae852ec1f054c57c75c4c3`;
+GCS generation `1788952964615784`; exact roundtrip file SHA-256
+`5bad200cfcec84bbfa1f8c2c4b186cefd66c79ed780399d76a97f43a03d7960a`.
+
+All five raw terminal files are retained at their exact generations. The
+terminal `runtime-files.sha256` is deliberately not treated as valid evidence:
+the terminal backup command continued appending to `startup.stderr.log` after
+the inventory was created. The other four inventory rows match. Full serial
+output was unavailable after guest shutdown; the preserved stderr contains the
+exact workspace-contract failure line.
+
+The VM, auto-delete disk, subnet, and network were deleted. The sealed teardown
+receipt records two 404 absence sequences, 12 seconds apart. Receipt seal:
+`2a99287bb679ac16a7499dd45342cf4ad246498be2ba81f0e804fd764d06afef`.
+Its create-only GCS object is generation `1788953722389669`, 1,084 bytes,
+SHA-256
+`31331677c10eb0b4ab653bfe25d7544d1c32f518350dfa8a23d568214e85a448`;
+the exact-generation roundtrip is byte-identical. Raw provider deletion/404
+responses were not persisted locally, so do not overstate the receipt as
+independent provider-level corroboration. No Ganesh resource from this attempt
+is active. The unrelated `laxmi-wmv2-training-01` disk remains out of scope.
+
+Local corrections are complete: the runner expects the dedicated sweep schema;
+startup captures both log-tee PIDs, restores fd 1/2, waits for both tees to
+drain, and only then inventories terminal files. The rebuilt deterministic v2
+workspace contains exactly 596 unique regular files and independently matches
+all 596 manifest size/hash rows. Current inputs:
+
+- workspace archive: 1,019,245 bytes, SHA-256
+  `fd1cee18029e53644ba3c694558b52cbca9e91c5a5e47a9150d6f8b73240e441`;
+- manifest file: 134,866 bytes, SHA-256
+  `6c11b79d4dfb099c5f97cebd10eee3b114c06369199eac613f7612dd235b7264`,
+  internal seal
+  `bf8f11a413425d0c2f530db8db0a0de3f88a4bb2cf335fffac6b155aa342f816`;
+- startup controller: 7,198 bytes, SHA-256
+  `202730fe842e272c302d1624a9dd1b1195e8c470e6557ad48de5129ac355ad97`.
+
+Focused checkpoint-sweep tests, Python compilation, shell syntax, and diff
+checks pass. Commit and push this failure evidence and corrected package next.
+Then create a new three-object upload-only plan under a fresh commit-bound GCS
+prefix. That upload is the next hard stop and requires explicit approval of its
+exact seal. Only after exact-generation roundtrips may a replacement VM proposal
+be sealed; VM creation requires another separate approval. Do not reuse the
+consumed `b31d95...` approval.
+
+Milestone estimate: training program 70%, release readiness 52%, inception-to-
+delivery 60%. Current state is ACTIVE on local sealing, not technically stuck.
+After the two new GCloud approvals, checkpoint evaluation plus backup/teardown
+is estimated at 1.5–3 hours. End-to-end release ETA remains 2–5 days at low
+confidence because the sweep may still require a new data/mechanism experiment.

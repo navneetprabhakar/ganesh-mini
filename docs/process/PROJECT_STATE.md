@@ -2086,3 +2086,16 @@ GCloud compute until that approval is received.
   syntax pass.
 - Next is startup v4 upload/roundtrip and another same-provider-ID attempt under
   a reduced remaining runtime envelope. No additional VM is authorized.
+
+### Gate 4 training active — 2026-09-09
+
+- Attempt `20260909T025013Z` is running on the original instance ID
+  `8737372232357839343`; no second VM exists.
+- Startup v4 and the fresh outer card are generation-pinned and byte-roundtrip
+  verified in GCS. Provider lifetime is reduced to 27,000 seconds with restart
+  disabled and termination action `DELETE`.
+- The retained-disk package fix passed. Runtime checkpoints exist and the
+  campaign ledger is `running` with workspace/provider admission passed.
+- Current phase is model initialization/training. No permission blocker. After
+  terminal backup: exact inventory verification, full teardown, then two
+  resource-absence and billing checks.

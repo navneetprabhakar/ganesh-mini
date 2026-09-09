@@ -2144,3 +2144,25 @@ the retained instance metadata/scheduling, and restart the same provider ID.
 No second VM is permitted. After any terminal result, verify all evidence in
 GCS before deleting the VM/disk/subnet/network and completing two absence and
 billing checks.
+
+## 20. Gate 4 training attempt active — 2026-09-09
+
+Google authentication was restored. Attempt `20260909T025013Z` is active on
+the same instance ID `8737372232357839343`; no second VM was created. Startup
+v4 is GCS generation `1788922338878446`, SHA-256
+`a0006bdb1ef68b3f4fe063fcfafae2b3631c26ddcd51d4611224e9e8b189327c`.
+The outer execution card is generation `1788922391795570`, file SHA-256
+`8e3aa8d90fb3abae13f5320ba1b2d46ea0f8b5f6821a232fd705931c3d7b22db`,
+and internal seal
+`bc9376f67a44b5a9fe2fd94462bf53eb83ae5a7e2938d34a1a01a4dd0e09add8`.
+Both uploads have exact-generation byte-identical roundtrips.
+
+The provider maximum duration was reduced from eight hours to 27,000 seconds
+(7.5 hours), with automatic restart still disabled and termination action
+`DELETE`. The v4 boot passed the retained-disk package-install point, loaded
+Docker successfully, and created runtime checkpoints. The latest verified
+campaign ledger is `running` with
+`workspace-and-provider-admission=passed`; model initialization/training is the
+current phase. Monitor the attempt prefix only. On terminal state, download
+and verify the complete inventory before teardown and the two absence/billing
+checks.

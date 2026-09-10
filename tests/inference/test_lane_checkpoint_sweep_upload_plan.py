@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from scripts.inference.build_lane_checkpoint_sweep_upload_plan import OBJECTS, build, canonical_sha256, file_sha256
+from scripts.inference.build_lane_checkpoint_sweep_upload_receipt import build as build_receipt
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,3 +32,15 @@ def test_sealed_repository_plan_matches_builder() -> None:
     plan = json.loads(path.read_text())
 
     assert plan == build(ROOT, plan["source_commit"])
+
+
+def test_completed_upload_receipt_replays_from_exact_generations() -> None:
+    base = ROOT / "measurement/gate4/lane-stratified-probe-checkpoint-sweep-20260910"
+    receipt = json.loads((base / "upload/upload-receipt.json").read_text())
+
+    assert receipt == build_receipt(base, receipt["completed_at"])
+    assert receipt["status"] == "complete"
+    assert receipt["object_count"] == 6
+    assert receipt["uploaded_bytes"] == 529256224
+    assert receipt["compute_or_infrastructure_actions"] == []
+    assert all(all(row["checks"].values()) for row in receipt["objects"])

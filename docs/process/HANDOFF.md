@@ -61,9 +61,14 @@ The exact six-object, 529,256,224-byte upload-only plan is sealed at
 `8f5eede2e94cddafda84636ab10d81bb2d4d8373289ee1b8bbc3fdde833cbda8`.
 It permits only create-only GCS uploads, generation capture, exact-generation
 downloads, and byte comparison. It prohibits all Compute/network inspection
-or mutation and all training/evaluation/promotion actions. Do not upload until
-Navneet explicitly approves this exact plan. After a verified upload, seal a
-separate read-only inspection plan; compute will still remain unauthorized.
+or mutation and all training/evaluation/promotion actions. Navneet approved
+the exact plan. All six objects were uploaded create-only, assigned immutable
+generations, downloaded by exact generation, and matched local size, SHA-256,
+and bytes. Receipt seal is
+`6da07f1fcfa4296828e2a8cf406873d1f347d9436fa852f389c09fad087170b1`;
+uploaded bytes are exactly 529,256,224. No Compute or infrastructure action
+occurred. Next seal a separate read-only inspection plan; compute remains
+unauthorized.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

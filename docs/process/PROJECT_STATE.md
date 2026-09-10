@@ -63,8 +63,13 @@ The extraction/admission rehearsal passed, and focused tests pass 29/29.
 The next hard stop is explicit approval of upload-only plan
 `8f5eede2e94cddafda84636ab10d81bb2d4d8373289ee1b8bbc3fdde833cbda8`.
 It binds six objects totaling 529,256,224 bytes and grants only create-only GCS
-upload plus exact-generation roundtrip verification. No cloud inspection,
-Compute/network action, training, or evaluation is authorized by this plan.
+upload plus exact-generation roundtrip verification. Navneet approved it and
+the upload completed exactly: six immutable generations, 529,256,224 bytes,
+and six exact-generation downloads matching local size, SHA-256, and bytes.
+Receipt seal is
+`6da07f1fcfa4296828e2a8cf406873d1f347d9436fa852f389c09fad087170b1`.
+No Compute/network action occurred. Cloud inspection, training, and evaluation
+remain unauthorized pending the next exact boundary.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

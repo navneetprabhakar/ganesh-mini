@@ -37,6 +37,13 @@ Any future startup controller must also replace the observed
 unbounded process-substitution log drain. See
 `LANE_STRATIFIED_CHECKPOINT_SWEEP_RESULT_20260911.md`.
 
+Local implementation has started without cloud access. The gradient-conflict
+primitive now supports fixed eight-group selection, all 15 pairwise lane
+cosines, the predeclared two-part conflict threshold, deterministic PCGrad
+projection order, sparse trainable-parameter layouts, and frozen weighted
+aggregation. Eight focused tests pass. It is not yet integrated into the CUDA
+training engine and creates no execution authority.
+
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 
 Navneet approved exact proposal

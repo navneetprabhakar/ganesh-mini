@@ -39,6 +39,14 @@ authorized. Any future controller must also replace the observed unbounded
 process-substitution log drain without changing the historical uploaded source.
 Detailed record: `LANE_STRATIFIED_CHECKPOINT_SWEEP_RESULT_20260911.md`.
 
+The first implementation slice is complete locally: deterministic selection
+of groups 0/9/18/27/36/45/54/63, all-pairs gradient cosine measurement,
+fail-closed conflict adjudication, deterministic lane-order rotation, and
+weighted PCGrad projection are implemented in `scripts/train/gradient_conflict.py`.
+Eight unit tests cover projection, sparse parameter layouts, selection,
+rotation, and the two-part conflict threshold. Runtime integration, CUDA shape
+qualification, workspace packaging, and any GCloud proposal remain pending.
+
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 
 Proposal `8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`

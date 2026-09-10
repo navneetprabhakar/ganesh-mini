@@ -39,6 +39,17 @@ scale or rebalance this recipe again. See
 `LANE_STRATIFIED_PROBE_RESULT_20260910.md` and
 `LANE_STRATIFIED_PROBE_TRANSITION_AUDIT_20260910.md`.
 
+The next diagnostic has begun locally without cloud access. Five earlier v3
+checkpoint configs are sealed under manifest
+`4c5c8b31d7dbeea1de913c3869fc901d8095036d2251700bf606aa9e5b495f37`,
+bound to training evidence
+`1393f0fab569e46d71d64273afeac69a91841f9f3c26f39d6248644b73dc4087`
+and explicitly marked with no promotion authority. The config builder now
+binds an explicit candidate identity rather than reusing the earlier v1 label;
+focused build, summary, and host-runner tests pass 14/14. No GCloud action is
+authorized or active. Packaging and local rehearsal remain before an exact
+upload-only approval request can be sealed.
+
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 
 The next bounded mechanism is locally complete and has no cloud authority.

@@ -38,6 +38,31 @@ def test_builds_five_unmeasured_checkpoint_configs(tmp_path: Path) -> None:
     assert all(config["adapter"]["checkpoint_manifest"].startswith("/training/checkpoints/") for _, config in configs)
 
 
+def test_binds_explicit_served_model_prefix(tmp_path: Path) -> None:
+    run, checkpoints = fixture(tmp_path)
+
+    configs, _ = build(
+        run,
+        checkpoints,
+        Path("/training"),
+        "ganesh-mini-1.0-lane-stratified-v3",
+    )
+
+    assert all(
+        config["adapter"]["served_model_id"].startswith(
+            "ganesh-mini-1.0-lane-stratified-v3-tokens-"
+        )
+        for _, config in configs
+    )
+
+
+def test_rejects_invalid_served_model_prefix(tmp_path: Path) -> None:
+    run, checkpoints = fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="lowercase identifier"):
+        build(run, checkpoints, Path("/training"), "Ganesh Mini v3")
+
+
 def test_rejects_missing_checkpoint(tmp_path: Path) -> None:
     run, checkpoints = fixture(tmp_path, count=5)
 

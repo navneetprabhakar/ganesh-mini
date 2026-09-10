@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -31,8 +32,11 @@ def load_sealed(path: Path, field: str) -> dict[str, Any]:
     return value
 
 
-def checkpoint_config(name: str, runtime_training_dir: Path) -> dict[str, Any]:
-    served_id = f"ganesh-mini-1.0-expansion-pilot-v1-{name}"
+SERVED_MODEL_PREFIX_RE = re.compile(r"^[a-z0-9][a-z0-9.-]*[a-z0-9]$")
+
+
+def checkpoint_config(name: str, runtime_training_dir: Path, served_model_prefix: str) -> dict[str, Any]:
+    served_id = f"{served_model_prefix}-{name}"
     return {
         "schema_version": "ganesh-mini-production-inference/v1",
         "run_id": f"{served_id}-canary-diagnostic",
@@ -59,7 +63,14 @@ def checkpoint_config(name: str, runtime_training_dir: Path) -> dict[str, Any]:
     }
 
 
-def build(run_path: Path, checkpoints_dir: Path, runtime_training_dir: Path) -> tuple[list[tuple[str, dict[str, Any]]], dict[str, Any]]:
+def build(
+    run_path: Path,
+    checkpoints_dir: Path,
+    runtime_training_dir: Path,
+    served_model_prefix: str = "ganesh-mini-1.0-expansion-pilot-v1",
+) -> tuple[list[tuple[str, dict[str, Any]]], dict[str, Any]]:
+    if not SERVED_MODEL_PREFIX_RE.fullmatch(served_model_prefix):
+        raise ValueError("served model prefix must be a lowercase identifier")
     run = load_sealed(run_path, "evidence_sha256")
     if run.get("status") != "complete":
         raise ValueError("checkpoint sweep requires a complete training run")
@@ -68,7 +79,13 @@ def build(run_path: Path, checkpoints_dir: Path, runtime_training_dir: Path) -> 
         checkpoint = load_sealed(path, "manifest_sha256")
         if checkpoint.get("status") != "complete" or checkpoint.get("identities") != run.get("identities"):
             raise ValueError(f"checkpoint does not bind the complete training run: {path}")
-        checkpoints.append((path.parent.name, checkpoint_config(path.parent.name, runtime_training_dir), checkpoint))
+        checkpoints.append(
+            (
+                path.parent.name,
+                checkpoint_config(path.parent.name, runtime_training_dir, served_model_prefix),
+                checkpoint,
+            )
+        )
     if len(checkpoints) != 6:
         raise ValueError(f"expected six saved checkpoints, found {len(checkpoints)}")
     configs = [(name, config) for name, config, _ in checkpoints[:-1]]
@@ -93,9 +110,19 @@ def main() -> int:
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--checkpoints", type=Path, required=True)
     parser.add_argument("--runtime-training-dir", type=Path, default=Path("/training"))
+    parser.add_argument(
+        "--served-model-prefix",
+        default="ganesh-mini-1.0-expansion-pilot-v1",
+        help="identity prefix used by each diagnostic checkpoint config",
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
-    configs, manifest = build(args.run, args.checkpoints, args.runtime_training_dir)
+    configs, manifest = build(
+        args.run,
+        args.checkpoints,
+        args.runtime_training_dir,
+        args.served_model_prefix,
+    )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for name, config in configs:
         (args.output_dir / f"{name}.json").write_text(json.dumps(config, indent=2, sort_keys=True) + "\n")

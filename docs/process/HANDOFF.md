@@ -34,6 +34,18 @@ Do not scale or rebalance this recipe again. Full result:
 `LANE_STRATIFIED_PROBE_RESULT_20260910.md`; audit:
 `LANE_STRATIFIED_PROBE_TRANSITION_AUDIT_20260910.md`.
 
+Local continuation planning has sealed a diagnostic-only sweep of the five
+earlier v3 checkpoints on the same frozen 30-task development screen. The
+config manifest seal is
+`4c5c8b31d7dbeea1de913c3869fc901d8095036d2251700bf606aa9e5b495f37`;
+it binds training evidence
+`1393f0fab569e46d71d64273afeac69a91841f9f3c26f39d6248644b73dc4087`
+and has no promotion authority. Focused tests pass 14/14. This is local
+scaffolding only: no workspace/recovery upload, GCloud inspection, or compute
+is authorized yet. Next make the checkpoint-sweep workspace and recovery
+package candidate-specific, rehearse them locally, and seal an exact
+upload-only plan before requesting GCloud approval.
+
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 
 The next mechanism is sealed locally but is not cloud-executable. It uses 640

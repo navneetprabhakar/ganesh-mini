@@ -42,8 +42,14 @@ it binds training evidence
 `1393f0fab569e46d71d64273afeac69a91841f9f3c26f39d6248644b73dc4087`
 and has no promotion authority. Focused tests pass 14/14. This is local
 scaffolding only: no workspace/recovery upload, GCloud inspection, or compute
-is authorized yet. Next make the checkpoint-sweep workspace and recovery
-package candidate-specific, rehearse them locally, and seal an exact
+is authorized yet. The verified v3 terminal has now also been packaged into a
+deterministic 528,065,805-byte recovery archive. Archive SHA-256 is
+`260857a3057d1b5943eb540921478345d3c2b2aba6571bb6c51dc5d706d26172`;
+package-manifest seal is
+`37b9752dadb15d15dcdd6e290c624d4441d9e3467b42b5112b2b8fdfe7b5a865`.
+All 130 source files were reverified against the terminal inventory before
+packaging, and a second build reproduced byte-identically. Next make and
+rehearse the checkpoint-sweep workspace candidate-specific, then seal an exact
 upload-only plan before requesting GCloud approval.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10

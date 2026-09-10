@@ -47,8 +47,14 @@ bound to training evidence
 and explicitly marked with no promotion authority. The config builder now
 binds an explicit candidate identity rather than reusing the earlier v1 label;
 focused build, summary, and host-runner tests pass 14/14. No GCloud action is
-authorized or active. Packaging and local rehearsal remain before an exact
-upload-only approval request can be sealed.
+authorized or active. The terminal recovery input is now packaged and
+reproduced byte-identically at 528,065,805 bytes with archive SHA-256
+`260857a3057d1b5943eb540921478345d3c2b2aba6571bb6c51dc5d706d26172`
+and manifest seal
+`37b9752dadb15d15dcdd6e290c624d4441d9e3467b42b5112b2b8fdfe7b5a865`.
+All 130 source files were checked against the terminal inventory before each
+build. Candidate-specific workspace construction and local rehearsal remain
+before an exact upload-only approval request can be sealed.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

@@ -69,7 +69,10 @@ and six exact-generation downloads matching local size, SHA-256, and bytes.
 Receipt seal is
 `6da07f1fcfa4296828e2a8cf406873d1f347d9436fa852f389c09fad087170b1`.
 No Compute/network action occurred. Cloud inspection, training, and evaluation
-remain unauthorized pending the next exact boundary.
+remain unauthorized. The next exact boundary is read-only inspection plan
+`a0d283e3b82ac591937905160058f5512e2a8f5766c2b56cd2c508ac13de77bd`.
+It binds twelve immutable inputs and four exact planned resource names and
+permits only prerequisite reads. It grants no cloud mutation or compute.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

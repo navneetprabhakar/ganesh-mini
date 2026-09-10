@@ -67,8 +67,13 @@ generations, downloaded by exact generation, and matched local size, SHA-256,
 and bytes. Receipt seal is
 `6da07f1fcfa4296828e2a8cf406873d1f347d9436fa852f389c09fad087170b1`;
 uploaded bytes are exactly 529,256,224. No Compute or infrastructure action
-occurred. Next seal a separate read-only inspection plan; compute remains
-unauthorized.
+occurred. The separate read-only inspection plan is sealed at
+`a0d283e3b82ac591937905160058f5512e2a8f5766c2b56cd2c508ac13de77bd`.
+It binds the upload receipt, all six new immutable objects, six reused runtime
+objects, and four exact planned resource names. It permits only provider,
+quota, IAM, price, resource-absence, and object-metadata reads. Compute and all
+cloud mutation remain unauthorized until Navneet explicitly approves this
+exact read-only plan.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

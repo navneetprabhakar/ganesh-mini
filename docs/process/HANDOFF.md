@@ -54,9 +54,15 @@ local card seal is
 `087e3c4b7000957e022dadb12efa5f2fe9879a11b14208b67c5811e4d8086423`.
 The runtime primitives validate the real dataset as 64 complete groups and can
 collect response-token-mean lane gradients while taking zero optimizer steps.
-Twenty-one focused config/card/runtime tests pass. The remaining local work is
-training-loop/campaign integration, CUDA shape qualification, packaging, and
-the corrected startup controller. No upload or GCloud execution is authorized.
+The production SFT engine now admits the v4 card, writes a sealed eight-group
+audit before any optimizer step, stops with `gradient-audit-stop` when the
+frozen threshold fails, and otherwise applies deterministic PCGrad at every
+complete optimizer-group boundary. Resume requires the exact audit identity
+and seal; PCGrad telemetry records lane losses, pre/post cosines, projection
+order/count, and aggregate norm. Thirty-five focused config/card/runtime tests
+pass. CUDA shape qualification, campaign integration, packaging, and the
+corrected startup controller remain. No upload or GCloud execution is
+authorized.
 
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 

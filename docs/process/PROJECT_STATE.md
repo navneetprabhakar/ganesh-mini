@@ -50,8 +50,11 @@ Its local card passes every preflight check and is sealed at
 `087e3c4b7000957e022dadb12efa5f2fe9879a11b14208b67c5811e4d8086423`.
 It reuses the exact v3 data/capacity/LR and permits PCGrad only after the
 zero-step eight-group audit passes both frozen conflict thresholds. Runtime
-group validation and gradient collection are implemented; training-loop and
-campaign integration remain incomplete. No provider is bound.
+group validation, gradient collection, sealed audit/stop adjudication,
+deterministic per-group PCGrad, exact-boundary resume, and conflict telemetry
+are now integrated in the production SFT engine. Thirty-five focused tests
+pass. CUDA shape qualification, campaign integration, workspace packaging,
+and the corrected startup controller remain incomplete. No provider is bound.
 
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 

@@ -1,7 +1,7 @@
 import pytest
 
 from scripts.train.qwen_runtime import configure_cuda_allocator
-from scripts.train.run_sft import RollingLossGuard, bounded_training_wall, five_family_validation, initialize_cuda_measurement, planned_end, select_lora_targets, summarize_validation
+from scripts.train.run_sft import EXPANSION_CARD_SCHEMAS, RollingLossGuard, bounded_training_wall, canonical_sha256, five_family_validation, initialize_cuda_measurement, planned_end, select_lora_targets, summarize_validation, validate_gradient_conflict_audit
 
 
 def row(tokens: int) -> dict:
@@ -123,3 +123,25 @@ def test_validation_diagnostic_reports_comparable_token_and_record_means() -> No
     result=summarize_validation(rows)
     assert result["record_mean"]["five_family_macro_mean"]==2.0
     assert result["supervised_token_mean"]["five_family_macro_mean"]==2.5
+
+
+def test_v4_gradient_conflict_card_schema_is_runtime_admitted() -> None:
+    assert EXPANSION_CARD_SCHEMAS["ganesh-mini-expansion-pilot-config/v4"]=="ganesh-mini-expansion-pilot-card/v4"
+
+
+def test_gradient_conflict_resume_audit_requires_exact_identity_and_seal() -> None:
+    identities={"config_sha256":"config","recipe_sha256":"recipe"}
+    audit={
+        "schema_version":"ganesh-mini-gradient-conflict-audit/v1",
+        "status":"complete",
+        "identities":identities,
+        "groups":[],
+        "decision":{"stage_2_allowed":True},
+    }
+    audit["audit_sha256"]=canonical_sha256(audit)
+    validate_gradient_conflict_audit(audit,identities)
+    with pytest.raises(RuntimeError,match="invalid or mismatched"):
+        validate_gradient_conflict_audit(audit,{"config_sha256":"different","recipe_sha256":"recipe"})
+    audit["decision"]["stage_2_allowed"]=False
+    with pytest.raises(RuntimeError,match="invalid or mismatched"):
+        validate_gradient_conflict_audit(audit,identities)

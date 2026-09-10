@@ -25,7 +25,12 @@ completed with exact-generation byte verification; receipt seal is
 No compute or infrastructure action occurred. Provider inspection remains a
 separate boundary under plan
 `32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`;
-bounded execution remains unproposed and unauthorized.
+it completed with all prerequisites passing and report seal
+`230e727c55c6323a1dbdeb8a0cacc7ce1ed0ae0ade65eb76d1c8d730b023e8b3`.
+The exact bounded execution proposal is
+`8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`
+with provider upper bound `$1.762043024` and absolute ceiling `$2.25`.
+Execution remains unauthorized until that exact seal and ceiling are approved.
 
 ## 2026-09-10 — Rank-16 capacity alone is rejected as the next mechanism
 

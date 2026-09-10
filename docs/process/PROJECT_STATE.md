@@ -33,10 +33,21 @@ generations, downloaded by exact generation, and matched approved SHA-256 and
 size. Receipt seal is
 `f3e127d0db29b4623fef251e76852ac1c3428fbb67d74ab79eaa1d4b00cf8e4f`.
 No compute or infrastructure action occurred. Current state is
-`waiting-for-explicit-lane-stratified-readonly-inspection-approval`; the exact
-inspection plan seal is
-`32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`.
-No further GCloud action is currently authorized. See
+`waiting-for-explicit-lane-stratified-execution-approval`. Read-only inspection
+plan
+`32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`
+completed successfully: all four planned resource names are absent, the zone
+is `UP`, `g2-standard-8` and `nvidia-l4` are exposed, L4 quota is 16 with usage
+0, service-account bucket access is present, and all ten generation-pinned
+inputs match. Report seal is
+`230e727c55c6323a1dbdeb8a0cacc7ce1ed0ae0ade65eb76d1c8d730b023e8b3`.
+
+The resulting Standard two-hour VM proposal is sealed at
+`8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`.
+Provider upper bound is `$1.762043024`; absolute incremental ceiling is
+`$2.25`. It permits only the 640-row probe, retention guard, and frozen 30-task
+screen, followed by complete GCS backup, independent recovery, teardown, and
+double absence verification. No execution is currently authorized. See
 `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
 
 ## Capacity probe completed; mechanism rejected and cloud torn down — 2026-09-10

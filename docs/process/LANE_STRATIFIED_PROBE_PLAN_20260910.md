@@ -86,4 +86,11 @@ roundtrip verification. Receipt seal is
 `f3e127d0db29b4623fef251e76852ac1c3428fbb67d74ab79eaa1d4b00cf8e4f`.
 Provider inspection remains separately gated by plan
 `32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`;
-VM execution is not yet proposed or authorized.
+it completed with report seal
+`230e727c55c6323a1dbdeb8a0cacc7ce1ed0ae0ade65eb76d1c8d730b023e8b3`.
+The resulting execution proposal is sealed at
+`8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`.
+It uses one Standard `g2-standard-8`/L4 for at most two hours, with provider
+upper bound `$1.762043024` and absolute incremental ceiling `$2.25`.
+Execution is not authorized until that exact proposal and ceiling are
+explicitly approved.

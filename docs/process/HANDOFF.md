@@ -32,7 +32,13 @@ completed. All four assigned generations match local bytes; receipt seal is
 No compute or infrastructure action occurred. Next is read-only provider and
 input inspection under exact plan
 `32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`.
-Do not execute it without fresh explicit approval. Detailed contract:
+It completed with all prerequisites passing; report seal is
+`230e727c55c6323a1dbdeb8a0cacc7ce1ed0ae0ade65eb76d1c8d730b023e8b3`.
+The exact Standard two-hour execution proposal is
+`8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`
+with provider upper bound `$1.762043024` and absolute ceiling `$2.25`.
+Do not bind cards, create resources, train, or evaluate until that exact seal
+and ceiling are approved. Detailed contract:
 `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
 
 ## Gate 4 capacity probe terminal; do not promote — 2026-09-10

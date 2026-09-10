@@ -73,7 +73,21 @@ It binds the upload receipt, all six new immutable objects, six reused runtime
 objects, and four exact planned resource names. It permits only provider,
 quota, IAM, price, resource-absence, and object-metadata reads. Compute and all
 cloud mutation remain unauthorized until Navneet explicitly approves this
-exact read-only plan.
+exact read-only plan. Navneet approved it, and every prerequisite passed: zone
+`UP`; `g2-standard-8` and `nvidia-l4` exposed; L4 quota 16 with usage 0; VM
+service account has bucket objectAdmin; all four exact planned resources are
+absent; and all twelve immutable inputs match exact-generation metadata. No
+mutation occurred. Inspection report seal is
+`fd7e557ac4bb7e17c4c46d3138eaf544087beea5e9be5fe36dd0896c5f23e69a`.
+
+The exact Standard two-hour diagnostic execution proposal is sealed at
+`7c54481ab57c5538c0d779f6dbb9a51aeb78183684e38185e26aee400bb9867d`.
+Provider upper bound is `$1.762043024`; absolute incremental ceiling is
+`$2.25`. It allows only serial evaluation of the five earlier v3 checkpoints
+on the frozen 30-task screen, complete GCS preservation, teardown, and double
+absence verification. It grants no training, checkpoint-selection, full-
+development, promotion, or publication authority. Do not create resources or
+execute until Navneet explicitly approves this exact proposal and ceiling.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

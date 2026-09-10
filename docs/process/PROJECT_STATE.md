@@ -72,7 +72,18 @@ No Compute/network action occurred. Cloud inspection, training, and evaluation
 remain unauthorized. The next exact boundary is read-only inspection plan
 `a0d283e3b82ac591937905160058f5512e2a8f5766c2b56cd2c508ac13de77bd`.
 It binds twelve immutable inputs and four exact planned resource names and
-permits only prerequisite reads. It grants no cloud mutation or compute.
+permits only prerequisite reads. Navneet approved it. All reads passed: zone
+`UP`, machine/L4 exposed, L4 quota 16 and usage 0, service-account bucket
+access present, four planned resources absent, and all twelve exact-generation
+inputs matching. No cloud mutation occurred. Report seal:
+`fd7e557ac4bb7e17c4c46d3138eaf544087beea5e9be5fe36dd0896c5f23e69a`.
+
+The resulting two-hour Standard L4 proposal is
+`7c54481ab57c5538c0d779f6dbb9a51aeb78183684e38185e26aee400bb9867d`,
+with provider upper bound `$1.762043024` and absolute ceiling `$2.25`. It is
+diagnostic-only, covering five serial checkpoint canaries plus preservation
+and teardown. It has no training, checkpoint-selection, promotion, or release
+authority and is not executable without exact explicit approval.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

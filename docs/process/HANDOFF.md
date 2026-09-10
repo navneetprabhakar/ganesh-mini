@@ -1,6 +1,40 @@
 # Ganesh Mini 1.0 handoff
 
-## Gate 4 six-lane-stratified probe locally ready — 2026-09-10
+## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
+
+Proposal `8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`
+was approved at a `$2.25` ceiling. Attempt `20260910T043000Z` completed the
+640-row/466,614-token probe, all 64 optimizer steps, save/reload, runtime
+identity checks, and the 60-row disjoint retention guard. Every lane's
+retention loss improved; five-family record-mean loss fell 13.36%.
+
+The frozen canary completed 30/30 and scored 6 passes versus upstream 5. Java
+gained one and Rust gained one; TypeScript lost one; Go, JavaScript, and Python
+were unchanged. Net +1 missed the required +2 and the TypeScript loss violated
+zero lane regression. Decision: `do-not-promote`. Do not run the 180-task
+surface, main training, merge, quantization, or publication for this adapter.
+
+All 129 terminal entries independently hash-verified. Terminal manifest
+SHA-256 is
+`b437b8aece9ae8afef8bc0703efd02e9ef6d3802bc426bc3815af1d61f231551`;
+final adapter SHA-256 is
+`8bf926578f0e6efe31152fba3f74756b4e93203cf69c57182a9accd5628d60c8`.
+Control/recovery generations are `1789016588012192` and
+`1789016586942988`; teardown receipt generation is `1789016873044612`.
+Projected compute cost was `$0.2733293`.
+
+The VM, disk, subnet, and network are absent twice. Only the unrelated
+`laxmi-wmv2-training-01` disk remains in project Compute inventory; do not
+touch it. Ganesh billing is GCS-only, project-wide GCS-only is false. The local
+three-way transition audit is complete: v3 traded one v2 Go pass for one
+TypeScript pass with no total gain, while three `collapse-runs` gains and two
+boundary-condition losses persisted. Audit seal:
+`074bd2853eb8ed9643fb3311976b5ac773a765766fa98963807b7d57969905b4`.
+Do not scale or rebalance this recipe again. Full result:
+`LANE_STRATIFIED_PROBE_RESULT_20260910.md`; audit:
+`LANE_STRATIFIED_PROBE_TRANSITION_AUDIT_20260910.md`.
+
+## Pre-execution lane-stratified record (superseded) — 2026-09-10
 
 The next mechanism is sealed locally but is not cloud-executable. It uses 640
 unique rows/466,614 tokens in 64 accumulation groups of 10. Every group has
@@ -2624,6 +2658,7 @@ verify all GCS evidence before teardown; then delete only named Ganesh
 resources and verify absence twice. Never touch unrelated disk
 `laxmi-wmv2-training-01`.
 
-Current status: waiting for exact proposal approval, not technically stuck.
-Training 74%, release 52%, overall 63%. Capacity verdict ETA after approval:
-2–3 hours. Delivery ETA remains 2–5 days only if this mechanism passes.
+Current status: the lane-stratified probe is terminal `do-not-promote`; no
+Ganesh Compute resource is active. Gate 4 remains blocked on model-quality
+transfer, not infrastructure or authorization. Local transition analysis is
+the next active step.

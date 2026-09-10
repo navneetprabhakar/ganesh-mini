@@ -2598,3 +2598,23 @@ controller timeout with no terminal result, not a model failure. All available
 evidence was generation-mirrored and archived to GCS before teardown. The exact
 VM, disk, subnet, and network are absent twice. One unrelated disk remains, so
 the project cannot honestly claim GCS-only billing.
+
+## 2026-09-10 — Balanced retention improvement is insufficient without executable transfer
+
+The six-lane-stratified rank-16 probe completed all 466,614 tokens and improved
+held-out authorized-corpus loss in every lane, with a 13.36% five-family macro
+reduction. This establishes that the recipe learned the supervised corpus and
+did not regress its disjoint retention slice. It does not establish executable
+coding improvement.
+
+On the unchanged 30-task screen the adapter scored 6 passes versus upstream 5:
+Java +1, Rust +1, TypeScript -1, all other lanes unchanged. The frozen rule
+correctly rejects it because net gain is only +1 and one lane regresses. Do not
+weaken the rule, run the 180-task surface, or scale training to convert a
+near-miss into a pass. Diagnose task transitions locally before authorizing
+another mechanism.
+
+Attempt `20260910T043000Z` is closed. All terminal evidence and the final
+adapter were independently recovered and hash-verified before deletion. The
+named VM, disk, subnet, and network are absent twice. Ganesh compute billing is
+closed; the unrelated `laxmi-wmv2-training-01` disk remains outside scope.

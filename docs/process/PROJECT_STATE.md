@@ -1,6 +1,45 @@
 # Project state
 
-## Six-lane-stratified Gate 4 probe locally sealed — 2026-09-10
+## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
+
+Navneet approved exact proposal
+`8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`
+with a `$2.25` ceiling. Attempt `20260910T043000Z` completed all 64 optimizer
+steps over 640 unique rows and exactly 466,614 tokens. Runtime identities,
+training, save/reload, terminal checks, and the 60-row disjoint retention guard
+passed. Every lane's retention loss improved; the five-family record-mean loss
+fell from `0.2444808341` to `0.2118224695` (13.36%).
+
+The frozen 30-task screen completed 6/30 versus upstream 5/30. Java improved
+1→2 and Rust 0→1; Go, JavaScript, and Python were unchanged; TypeScript
+regressed 2→1. The adapter passed the improved-family and output-form checks
+but failed minimum net +2 and zero lane regression. Decision: `do-not-promote`.
+Full development, main training, merge, quantization, and publication remain
+prohibited.
+
+Both startup and controller exited 0. Projected compute cost was `$0.2733293`.
+All 129 terminal manifest entries independently hash-verified. Terminal
+manifest SHA-256 is
+`b437b8aece9ae8afef8bc0703efd02e9ef6d3802bc426bc3815af1d61f231551`;
+final adapter SHA-256 is
+`8bf926578f0e6efe31152fba3f74756b4e93203cf69c57182a9accd5628d60c8`.
+Control/recovery generations are `1789016588012192` and
+`1789016586942988`; teardown receipt seal is
+`ccb72c357494d6b5fa6d897dd7f3c9b256444667a20644330f2530d478125df2`
+at generation `1789016873044612`.
+
+The exact VM, disk, subnet, and network are absent in two checks 43 seconds
+apart. This Ganesh attempt is GCS-only. The unrelated 200 GiB disk
+`laxmi-wmv2-training-01` remains and may bill, so the whole project is not
+GCS-only. The local three-way task-transition audit is complete under seal
+`074bd2853eb8ed9643fb3311976b5ac773a765766fa98963807b7d57969905b4`:
+v3 traded one v2 Go pass for one TypeScript pass while the same three
+`collapse-runs` gains and two boundary-condition losses persisted. Do not
+scale or rebalance this recipe again. See
+`LANE_STRATIFIED_PROBE_RESULT_20260910.md` and
+`LANE_STRATIFIED_PROBE_TRANSITION_AUDIT_20260910.md`.
+
+## Pre-execution lane-stratified record (superseded) — 2026-09-10
 
 The next bounded mechanism is locally complete and has no cloud authority.
 It retains the v2 rank-16 adapter capacity but replaces the five-family prefix

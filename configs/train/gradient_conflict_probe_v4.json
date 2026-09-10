@@ -1,0 +1,191 @@
+{
+  "control": {
+    "checkpoint_tokens": [
+      77769,
+      155538,
+      233307,
+      311076,
+      388845,
+      466614
+    ],
+    "finalization_reserve_seconds": 1800,
+    "maximum_seen_tokens": 466614,
+    "maximum_wall_seconds": 7200,
+    "stop_conditions": [
+      "non_finite_loss",
+      "robust_optimizer_group_loss_anomaly",
+      "token_budget_reached",
+      "wall_time_reached",
+      "cost_ceiling_reached",
+      "checkpoint_write_failure",
+      "evidence_write_failure"
+    ]
+  },
+  "data": {
+    "input_tokens": 466614,
+    "prepared_manifest_file_sha256": "5bbc0f04ccce64c59c7f81088a501350e25b0cbcd4e7f0dfe1a249e2632326ce",
+    "prepared_manifest_path": "artifacts/train/expansion-lane-stratified-probe-v3/prepared-dataset-manifest.json",
+    "prepared_manifest_sha256": "4258e58a4f1d6a46124e413512d7ba436d47eb780582410ecd96cd9a8d0b7404",
+    "prepared_train_path": "artifacts/train/expansion-lane-stratified-probe-v3/prepared-train.jsonl",
+    "prepared_train_sha256": "08f60dd76c1658a5ac91153b36b4e389cc5e69c2a915287009aaa1cb77881091",
+    "prepared_validation_path": "artifacts/train/expansion-lane-stratified-probe-v3/prepared-retention.jsonl",
+    "prepared_validation_sha256": "c88d8a888ee0ccef4311f221df4edc573d8fedcdd89f991d6613a21994132bdf",
+    "records": 640,
+    "retention_records": 60,
+    "source_prepared_train_path": "artifacts/train/expansion-pilot-v1/prepared-train.jsonl",
+    "source_prepared_train_sha256": "0e7111f51c8ec6e7dcf23ee96ea4873b03ae944ce51aaab4aed6782493133224",
+    "source_records": 3225
+  },
+  "evaluation": {
+    "authority": "conditional gradient audit plus continuation-screen-only; retention guard must pass; no checkpoint promotion, full-development evaluation, decision-set opening, merge, quantization, or publication",
+    "canary_expected_seconds": 300,
+    "canary_tasks": 30,
+    "full_development_tasks": 0,
+    "full_expected_seconds": 0,
+    "promotion_rule": {
+      "maximum_increase_in_non_code_outputs": 0,
+      "maximum_increase_in_truncated_outputs": 0,
+      "maximum_pass_regression_per_lane": 0,
+      "minimum_improved_product_families": 2,
+      "minimum_net_pass_gain": 2,
+      "rule_id": "gradient-conflict-probe-continuation-v4",
+      "save_reload_required": true
+    },
+    "retention_loss_guard": {
+      "maximum_relative_five_family_macro_loss_increase": 0.0,
+      "maximum_relative_loss_increase_per_lane": 0.05,
+      "metric": "supervised_token_mean_loss",
+      "surface": "60 disjoint authorized training-corpus holdout rows; 10 per lane"
+    }
+  },
+  "hypothesis": {
+    "early_stop": "stop without training if stage 1 fails; otherwise stop after the same 640-row probe unless retention and canary rules both pass",
+    "observation": "exact six-lane objective mass still produced late cross-lane pass oscillation and no promotable checkpoint",
+    "stage_1": "measure all 15 pairwise LoRA-gradient cosines on fixed optimizer groups 0,9,18,27,36,45,54,63 without optimizer steps",
+    "stage_2": "only if the frozen conflict threshold passes, project negative per-lane LoRA gradients with deterministic PCGrad before weighted aggregation",
+    "uncertainty": "the checkpoint trajectory does not by itself prove gradient conflict; insufficient task-pattern coverage remains plausible"
+  },
+  "model": {
+    "contract_path": "configs/model/qwen3_5_2b.contract.json",
+    "contract_sha256": "c16da63d66a921edb892eca07b786817140941bdb6f68711791e1de52257b074",
+    "model_id": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc"
+  },
+  "recipe": {
+    "accelerator": "CUDA",
+    "adapter": "lora",
+    "backend": "transformers-peft",
+    "base_loading": "bfloat16",
+    "checkpoint_every_effective_epochs": 0.033075,
+    "compute_dtype": "bfloat16",
+    "cuda_allocator_config": "expandable_segments:True",
+    "dataloader_pin_memory": true,
+    "dataloader_prefetch_factor": 4,
+    "dataloader_workers": 8,
+    "effective_batch_size": 10,
+    "fused_linear_cross_entropy": {
+      "materialize_training_logits": false,
+      "provider": "liger-kernel",
+      "version": "0.8.2"
+    },
+    "gradient_accumulation_steps": 10,
+    "gradient_checkpointing": true,
+    "gradient_conflict": {
+      "stage_1": {
+        "minimum_groups_with_negative_pair": 4,
+        "minimum_javascript_or_typescript_groups": 4,
+        "negative_cosine_threshold": -0.05,
+        "optimizer_steps": 0,
+        "selected_optimizer_groups": [
+          0,
+          9,
+          18,
+          27,
+          36,
+          45,
+          54,
+          63
+        ]
+      },
+      "stage_2": {
+        "algorithm": "pcgrad",
+        "conditional_on_stage_1": true,
+        "lane_gradient": "response-token-weighted-mean",
+        "lane_weights": {
+          "go": 0.2,
+          "java": 0.2,
+          "javascript": 0.1,
+          "python": 0.2,
+          "rust": 0.2,
+          "typescript": 0.1
+        },
+        "projection_order": "seeded-cyclic-rotation",
+        "projection_seed": 3502
+      }
+    },
+    "host_os": "Linux",
+    "learning_rate": 1e-05,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "lora_rank": 16,
+    "loss_anomaly_detector": {
+      "consecutive_optimizer_groups": 3,
+      "mad_floor": 1e-06,
+      "metric": "weighted_optimizer_group_loss",
+      "minimum_history_optimizer_steps": 12,
+      "minimum_median_ratio": 3.0,
+      "robust_z_threshold": 8.0,
+      "rolling_window_optimizer_steps": 20,
+      "warmup_optimizer_steps": 12
+    },
+    "max_gradient_norm": 1.0,
+    "maximum_effective_epochs": 0.19845,
+    "maximum_peak_vram_gb": 23,
+    "micro_batch_size": 1,
+    "minimum_gpu_vram_gb": 24,
+    "optimizer": "adamw_torch",
+    "optimizer_betas": [
+      0.9,
+      0.95
+    ],
+    "optimizer_epsilon": 1e-08,
+    "packing": false,
+    "precision": "bf16",
+    "random_seed": 3502,
+    "recipe_id": "bf16-lora-gradient-conflict-pcgrad-v4",
+    "scheduler": "cosine",
+    "sequence_length": 2944,
+    "target_policy": {
+      "full_attention_projections": [
+        "q_proj",
+        "v_proj"
+      ],
+      "layer_count": 8,
+      "linear_attention_projections": [
+        "in_proj_qkv",
+        "out_proj"
+      ],
+      "mlp_projections": [
+        "gate_proj",
+        "up_proj",
+        "down_proj"
+      ],
+      "model_layer_count": 24,
+      "scope": "all-attention-plus-last-n-mlp"
+    },
+    "vision_frozen": true,
+    "warmup_ratio": 0.03,
+    "weight_decay": 0.01
+  },
+  "run_id": "ganesh-mini-1.0-gradient-conflict-probe-v4",
+  "schema_version": "ganesh-mini-expansion-pilot-config/v4",
+  "throughput": {
+    "basis": "v3 measured throughput plus eight extra backward-only groups and deterministic LoRA-gradient projection overhead",
+    "conservative_training_seconds": 2700,
+    "evidence_path": "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
+    "evidence_sha256": "5f3dffeee30ffd6cead56b0d47a272bb14f7dcbc326d592b83e1c553c2f41a0b",
+    "expected_training_seconds": 1895,
+    "measured_input_tokens_per_second": 295.541,
+    "stage_1_audit_conservative_seconds": 360
+  }
+}

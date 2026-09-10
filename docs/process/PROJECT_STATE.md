@@ -44,6 +44,15 @@ projection order, sparse trainable-parameter layouts, and frozen weighted
 aggregation. Eight focused tests pass. It is not yet integrated into the CUDA
 training engine and creates no execution authority.
 
+The immutable v4 config is now generated at file SHA-256
+`4b7d335d31ea5b5a4b940b9b240f708a9680e17d81dfa8222d7115f8f62610be`.
+Its local card passes every preflight check and is sealed at
+`087e3c4b7000957e022dadb12efa5f2fe9879a11b14208b67c5811e4d8086423`.
+It reuses the exact v3 data/capacity/LR and permits PCGrad only after the
+zero-step eight-group audit passes both frozen conflict thresholds. Runtime
+group validation and gradient collection are implemented; training-loop and
+campaign integration remain incomplete. No provider is bound.
+
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 
 Navneet approved exact proposal

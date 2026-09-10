@@ -47,6 +47,17 @@ Eight unit tests cover projection, sparse parameter layouts, selection,
 rotation, and the two-part conflict threshold. Runtime integration, CUDA shape
 qualification, workspace packaging, and any GCloud proposal remain pending.
 
+The v4 configuration and local execution card are now frozen without provider
+authority. Config file SHA-256 is
+`4b7d335d31ea5b5a4b940b9b240f708a9680e17d81dfa8222d7115f8f62610be`;
+local card seal is
+`087e3c4b7000957e022dadb12efa5f2fe9879a11b14208b67c5811e4d8086423`.
+The runtime primitives validate the real dataset as 64 complete groups and can
+collect response-token-mean lane gradients while taking zero optimizer steps.
+Twenty-one focused config/card/runtime tests pass. The remaining local work is
+training-loop/campaign integration, CUDA shape qualification, packaging, and
+the corrected startup controller. No upload or GCloud execution is authorized.
+
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 
 Proposal `8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`

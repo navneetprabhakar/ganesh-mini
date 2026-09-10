@@ -10,6 +10,52 @@ from typing import Any, Sequence
 GradientList = Sequence[Any]
 
 
+def split_optimizer_groups(
+    rows: Sequence[dict[str, Any]],
+    accumulation_steps: int,
+    lane_weights: dict[str, float],
+) -> list[list[dict[str, Any]]]:
+    if not rows or accumulation_steps <= 0 or len(rows) % accumulation_steps:
+        raise ValueError("rows must form complete optimizer groups")
+    if not lane_weights or any(value <= 0 for value in lane_weights.values()):
+        raise ValueError("lane weights must be positive")
+    groups = []
+    for start in range(0, len(rows), accumulation_steps):
+        group = list(rows[start:start + accumulation_steps])
+        declared = {row.get("optimizer_group") for row in group}
+        if declared != {start // accumulation_steps} or set(row.get("lane") for row in group) != set(lane_weights):
+            raise ValueError("optimizer group identity or lane coverage mismatch")
+        realized = {
+            lane: sum(float(row.get("objective_weight", 0.0)) for row in group if row.get("lane") == lane)
+            for lane in lane_weights
+        }
+        if any(not math.isclose(realized[lane], lane_weights[lane], rel_tol=0.0, abs_tol=1e-12) for lane in lane_weights):
+            raise ValueError("optimizer group objective mass mismatch")
+        groups.append(group)
+    return groups
+
+
+def lane_backward_weights(
+    group: Sequence[dict[str, Any]],
+    lane_weights: dict[str, float],
+) -> dict[str, list[tuple[dict[str, Any], float]]]:
+    result = {lane: [] for lane in lane_weights}
+    for row in group:
+        lane = row.get("lane")
+        if lane not in result:
+            raise ValueError("row lane escaped the frozen lane weights")
+        weight = float(row.get("objective_weight", 0.0)) / lane_weights[lane]
+        if not math.isfinite(weight) or weight <= 0:
+            raise ValueError("row objective weight is invalid")
+        result[lane].append((row, weight))
+    if any(not values for values in result.values()) or any(
+        not math.isclose(sum(weight for _, weight in values), 1.0, rel_tol=0.0, abs_tol=1e-12)
+        for values in result.values()
+    ):
+        raise ValueError("within-lane backward weights must sum to one")
+    return result
+
+
 def evenly_spaced_group_indices(total_groups: int, selected_groups: int) -> list[int]:
     if total_groups < 2 or selected_groups < 2 or selected_groups > total_groups:
         raise ValueError("group selection bounds are invalid")
@@ -55,6 +101,125 @@ def conflict_decision(
         "minimum_javascript_or_typescript_groups": minimum_javascript_typescript_groups,
         "stage_2_allowed": passed,
     }
+
+
+def capture_gradients(parameters: Sequence[Any]) -> list[Any | None]:
+    if not parameters:
+        raise ValueError("trainable parameter list cannot be empty")
+    return [None if parameter.grad is None else parameter.grad.detach().clone() for parameter in parameters]
+
+
+def accumulate_gradients(
+    accumulated: Sequence[Any | None] | None,
+    current: GradientList,
+) -> list[Any | None]:
+    if accumulated is None:
+        return [None if tensor is None else tensor.detach().clone() for tensor in current]
+    if len(accumulated) != len(current):
+        raise ValueError("gradient layouts differ")
+    result = [None if tensor is None else tensor.detach().clone() for tensor in accumulated]
+    for index, tensor in enumerate(current):
+        if tensor is None:
+            continue
+        if result[index] is None:
+            result[index] = tensor.detach().clone()
+        elif result[index].shape != tensor.shape:
+            raise ValueError("gradient tensor shapes differ")
+        else:
+            result[index].add(tensor.detach())
+    return result
+
+
+def assign_gradients(parameters: Sequence[Any], gradients: GradientList) -> None:
+    if len(parameters) != len(gradients) or not parameters:
+        raise ValueError("gradient assignment layout differs")
+    for parameter, gradient in zip(parameters, gradients):
+        parameter.grad = None if gradient is None else gradient.detach().clone()
+
+
+def collect_lane_gradients(
+    model: Any,
+    group: Sequence[dict[str, Any]],
+    parameters: Sequence[Any],
+    lane_weights: dict[str, float],
+    collate_fn: Any,
+    torch_module: Any,
+    *,
+    device: str = "cuda:0",
+) -> tuple[dict[str, list[Any | None]], dict[str, Any]]:
+    """Compute one response-token mean gradient per lane without an optimizer step."""
+    if not parameters:
+        raise ValueError("trainable parameter list cannot be empty")
+    weighted_rows = lane_backward_weights(group, lane_weights)
+    gradients = {}
+    losses = {}
+    for lane in lane_weights:
+        model.zero_grad(set_to_none=True)
+        lane_losses = []
+        for row, within_lane_weight in weighted_rows[lane]:
+            result = model(**collate_fn(row, device), skip_logits=True)
+            if result.logits is not None:
+                raise RuntimeError("gradient measurement materialized logits")
+            weighted_loss = result.loss * within_lane_weight
+            if not bool(torch_module.isfinite(weighted_loss)):
+                raise RuntimeError("non-finite gradient measurement loss")
+            weighted_loss.backward()
+            lane_losses.append(float(result.loss.detach().cpu()))
+        gradients[lane] = capture_gradients(parameters)
+        if gradient_norm(gradients[lane]) <= 0:
+            raise RuntimeError(f"zero trainable gradient for lane {lane}")
+        losses[lane] = {
+            "records": len(lane_losses),
+            "raw_loss_min": min(lane_losses),
+            "raw_loss_mean": sum(lane_losses) / len(lane_losses),
+            "raw_loss_max": max(lane_losses),
+        }
+    model.zero_grad(set_to_none=True)
+    return gradients, losses
+
+
+def measure_gradient_conflicts(
+    model: Any,
+    groups: Sequence[Sequence[dict[str, Any]]],
+    selected_group_indices: Sequence[int],
+    parameters: Sequence[Any],
+    lane_weights: dict[str, float],
+    collate_fn: Any,
+    torch_module: Any,
+    *,
+    negative_cosine_threshold: float,
+    minimum_negative_groups: int,
+    minimum_javascript_typescript_groups: int,
+    device: str = "cuda:0",
+) -> dict[str, Any]:
+    if not selected_group_indices or len(set(selected_group_indices)) != len(selected_group_indices):
+        raise ValueError("selected gradient-audit groups must be unique and non-empty")
+    if min(selected_group_indices) < 0 or max(selected_group_indices) >= len(groups):
+        raise ValueError("selected gradient-audit group is out of range")
+    rows = []
+    for group_index in selected_group_indices:
+        gradients, losses = collect_lane_gradients(
+            model,
+            groups[group_index],
+            parameters,
+            lane_weights,
+            collate_fn,
+            torch_module,
+            device=device,
+        )
+        rows.append({
+            "optimizer_group": group_index,
+            "lane_losses": losses,
+            "lane_gradient_norms": {lane: gradient_norm(gradients[lane]) for lane in lane_weights},
+            "pairwise_cosines": pairwise_cosines(gradients),
+        })
+    decision = conflict_decision(
+        [row["pairwise_cosines"] for row in rows],
+        negative_cosine_threshold=negative_cosine_threshold,
+        minimum_negative_groups=minimum_negative_groups,
+        minimum_javascript_typescript_groups=minimum_javascript_typescript_groups,
+    )
+    return {"groups": rows, "decision": decision}
 
 
 def _validate(gradients: dict[str, GradientList]) -> tuple[list[str], int]:

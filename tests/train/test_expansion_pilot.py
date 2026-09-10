@@ -40,6 +40,18 @@ def test_lane_stratified_probe_is_exact_and_has_retention_guard() -> None:
     assert card["evaluation"]["full_development_tasks"] == 0
 
 
+def test_gradient_conflict_probe_is_conditional_and_non_executable() -> None:
+    card = build_card(ROOT / "configs/train/gradient_conflict_probe_v4.json", ROOT, system="Linux")
+    assert card["status"] == "prepared-not-executable"
+    assert card["failed_checks"] == []
+    assert card["schema_version"] == "ganesh-mini-expansion-pilot-card/v4"
+    conflict = card["selected_recipe"]["gradient_conflict"]
+    assert conflict["stage_1"]["optimizer_steps"] == 0
+    assert conflict["stage_1"]["selected_optimizer_groups"] == [0, 9, 18, 27, 36, 45, 54, 63]
+    assert conflict["stage_2"]["conditional_on_stage_1"] is True
+    assert card["evaluation"]["full_development_tasks"] == 0
+
+
 def test_expansion_pilot_fails_closed_on_data_mutation(tmp_path: Path) -> None:
     for relative in (
         "configs/train/expansion_pilot_v1.json",

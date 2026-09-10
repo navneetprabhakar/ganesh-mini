@@ -67,7 +67,7 @@ def build(root: Path, card_path: Path, terminal_path: Path, run_path: Path, adap
     recipe_id = card.get("selected_recipe", {}).get("recipe_id", "ganesh-mini-1.0-expansion-pilot-v1")
     canary = config(run_id=f"{recipe_id}-canary", task_glob="eval/private/development/tranche1/*.task.json", count=30, output_dir=f"measurement/inference/development/{recipe_id}-canary", adapter_dir=adapter_relative, run_evidence=run_relative, served_model_id=recipe_id)
     full = config(run_id=f"{recipe_id}-full", task_glob="eval/private/development/**/*.task.json", count=180, output_dir=f"measurement/inference/development/{recipe_id}-full", adapter_dir=adapter_relative, run_evidence=run_relative, served_model_id=recipe_id)
-    capacity_probe = card.get("schema_version") == "ganesh-mini-expansion-pilot-card/v2"
+    capacity_probe = card.get("schema_version") in {"ganesh-mini-expansion-pilot-card/v2", "ganesh-mini-expansion-pilot-card/v3"}
     manifest: dict[str, Any] = {
         "schema_version": "ganesh-mini-expansion-evaluation-configs/v1",
         "status": "canary-ready-full-blocked",

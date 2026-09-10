@@ -1,5 +1,32 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 4 six-lane-stratified probe locally ready — 2026-09-10
+
+The next mechanism is sealed locally but is not cloud-executable. It uses 640
+unique rows/466,614 tokens in 64 accumulation groups of 10. Every group has
+Go2, Java2, JavaScript1, TypeScript1, Python2, Rust2 and exact
+20/20/10/10/20/20 objective mass. This fixes the v2 mismatch where TypeScript
+received 7.17% while the gate protected it independently. Adapter capacity and
+learning rate remain v2-equivalent.
+
+A 60-row authorized training-corpus retention slice (10/lane) is disjoint from
+training. It blocks continuation if any lane loss rises over 5% or the
+five-family macro loss rises. The frozen executable canary still requires two
+improved families, net +2, and zero lane regression. Full development remains
+forbidden.
+
+Dataset manifest seal:
+`4258e58a4f1d6a46124e413512d7ba436d47eb780582410ecd96cd9a8d0b7404`.
+Local card seal:
+`2ff26cb52a1c630e324891717aae6e8d4ec61615a7d7cf681cbe6704ef0da82d`.
+Training/evaluation workspace archive SHA-256 values:
+`5bfb4616b467690e298fc41c15657ff55cc48631a498860ecd395717af477e15`
+and `9e74b86085033c2ab008242cf505c6837c5a9e9b6ac4260b2d93cea395c75346`.
+Both reproduced byte-identically and passed per-file verification. Focused
+tests pass 39/39. Next create a new exact GCloud upload-only plan; do not read,
+upload, inspect, create, or bill GCloud without its fresh explicit approval.
+Detailed contract: `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
+
 ## Gate 4 capacity probe terminal; do not promote — 2026-09-10
 
 Attempt `20260909T173721Z`, authorized by proposal

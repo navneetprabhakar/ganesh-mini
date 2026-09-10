@@ -1,5 +1,33 @@
 # Project state
 
+## Six-lane-stratified Gate 4 probe locally sealed — 2026-09-10
+
+The next bounded mechanism is locally complete and has no cloud authority.
+It retains the v2 rank-16 adapter capacity but replaces the five-family prefix
+with 64 exact optimizer groups. Each 10-record group contains Go 2, Java 2,
+JavaScript 1, TypeScript 1, Python 2, and Rust 2 records and realizes exact
+20/20/10/10/20/20 objective mass. The 640 unique training rows total 466,614
+input tokens, within 0.4240% of the rejected v2 probe. A separate seeded stream
+holds out 60 authorized training-corpus rows, 10 per lane, with zero overlap.
+
+The retention guard allows at most 5% relative supervised-token-mean loss
+increase in any lane and no five-family macro increase. The unchanged 30-task
+continuation screen still requires two improved families, net +2, and zero
+lane regression. Full development and all later gates remain prohibited.
+
+Dataset manifest seal is
+`4258e58a4f1d6a46124e413512d7ba436d47eb780582410ecd96cd9a8d0b7404`;
+local card seal is
+`2ff26cb52a1c630e324891717aae6e8d4ec61615a7d7cf681cbe6704ef0da82d`.
+Training/evaluation workspace archive hashes are respectively
+`5bfb4616b467690e298fc41c15657ff55cc48631a498860ecd395717af477e15`
+and `9e74b86085033c2ab008242cf505c6837c5a9e9b6ac4260b2d93cea395c75346`;
+both reproduced byte-for-byte and every archive member matches its manifest.
+Focused tests pass 39/39. The full repository suite passes except three known
+stale historical Gate 1 workspace/readiness assertions unrelated to this
+change. Next build a fresh exact upload-only proposal. No GCloud action is
+currently authorized. See `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
+
 ## Capacity probe completed; mechanism rejected and cloud torn down — 2026-09-10
 
 Navneet approved exact capacity-probe proposal

@@ -1,5 +1,26 @@
 # Decisions
 
+## 2026-09-10 — Test lane-safe transfer with exact per-step stratification
+
+Use one bounded 640-row/466,614-token probe that keeps the rejected v2
+capacity recipe but changes its scheduling unit. Every optimizer step must
+contain all six independently protected language lanes at exact
+20/20/10/10/20/20 objective mass. Do not combine JavaScript and TypeScript for
+training-batch admission when promotion evaluates them separately.
+
+Hold out 10 authorized training-corpus rows per lane using a separate
+deterministic selection stream. The holdout is disjoint from training and is a
+loss-retention diagnostic, not evaluation evidence. Require no macro loss
+increase and no greater than 5% relative loss increase in any lane before the
+executable canary can have continuation authority. Keep the v2 canary rule:
+two improved product families, net +2, zero lane regression, and no output
+quality regression. Even a passing result authorizes planning only, not full
+development or release work.
+
+Local data, card, and workspace validation is complete. No GCloud operation is
+authorized. Seal and approve upload, provider inspection, and bounded execution
+as separate steps.
+
 ## 2026-09-10 — Rank-16 capacity alone is rejected as the next mechanism
 
 The exact capacity probe approved under proposal

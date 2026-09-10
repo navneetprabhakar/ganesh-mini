@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from scripts.train.expansion_pilot import bind_provider, build_card, canonical_digest
-from scripts.train.verify_expansion_pilot import verify
+from scripts.train.verify_expansion_pilot import retention_loss_check, verify
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,3 +60,29 @@ def test_terminal_verifier_rejects_mutated_adapter(tmp_path: Path) -> None:
     report = verify(card, config, run, adapter)
     assert report["status"] == "failed"
     assert "adapter_identity" in report["failed_checks"]
+
+
+def test_retention_loss_guard_allows_small_lane_variation_but_no_macro_regression() -> None:
+    lanes = ("go", "java", "javascript", "typescript", "python", "rust")
+    baseline = {lane: 2.0 for lane in lanes} | {"five_family_macro_mean": 2.0}
+    candidate = {lane: 2.05 for lane in lanes} | {"typescript": 2.1, "five_family_macro_mean": 1.9}
+    check = retention_loss_check({
+        "base_validation_loss_diagnostic": {"supervised_token_mean": baseline},
+        "validation_loss_diagnostic": {"supervised_token_mean": candidate},
+    }, {
+        "maximum_relative_loss_increase_per_lane": 0.05,
+        "maximum_relative_five_family_macro_loss_increase": 0.0,
+    })
+    assert check["passed"] is True
+
+
+def test_retention_loss_guard_fails_closed_on_lane_regression_or_missing_data() -> None:
+    lanes = ("go", "java", "javascript", "typescript", "python", "rust")
+    baseline = {lane: 2.0 for lane in lanes} | {"five_family_macro_mean": 2.0}
+    candidate = {lane: 1.8 for lane in lanes} | {"typescript": 2.2, "five_family_macro_mean": 1.9}
+    guard = {"maximum_relative_loss_increase_per_lane": 0.05, "maximum_relative_five_family_macro_loss_increase": 0.0}
+    assert retention_loss_check({
+        "base_validation_loss_diagnostic": {"supervised_token_mean": baseline},
+        "validation_loss_diagnostic": {"supervised_token_mean": candidate},
+    }, guard)["passed"] is False
+    assert retention_loss_check({}, guard)["passed"] is False

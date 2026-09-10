@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_default_config_is_selected_from_sealed_card_generation() -> None:
     assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v1"}).name == "expansion_pilot_v1.json"
     assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v2"}).name == "expansion_capacity_probe_v2.json"
+    assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v3"}).name == "expansion_lane_stratified_probe_v3.json"
 
 
 def campaign(tmp_path: Path) -> ExpansionCampaign:

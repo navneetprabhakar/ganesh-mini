@@ -28,6 +28,18 @@ def test_capacity_probe_is_prefix_bounded_and_has_no_promotion_authority() -> No
     assert card["evaluation"]["promotion_rule"]["minimum_improved_product_families"] == 2
 
 
+def test_lane_stratified_probe_is_exact_and_has_retention_guard() -> None:
+    card = build_card(ROOT / "configs/train/expansion_lane_stratified_probe_v3.json", ROOT, system="Linux")
+    assert card["status"] == "prepared-not-executable"
+    assert card["failed_checks"] == []
+    assert card["schema_version"] == "ganesh-mini-expansion-pilot-card/v3"
+    assert card["data"]["records"] == 640
+    assert card["control"]["maximum_seen_tokens"] == 466614
+    assert card["selected_recipe"]["gradient_accumulation_steps"] == 10
+    assert card["evaluation"]["retention_loss_guard"]["maximum_relative_loss_increase_per_lane"] == 0.05
+    assert card["evaluation"]["full_development_tasks"] == 0
+
+
 def test_expansion_pilot_fails_closed_on_data_mutation(tmp_path: Path) -> None:
     for relative in (
         "configs/train/expansion_pilot_v1.json",

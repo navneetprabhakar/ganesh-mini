@@ -36,11 +36,17 @@ def test_repository_workspace_contains_expansion_pilot_inputs(tmp_path: Path) ->
         names = set(value.getnames())
     assert {
         "configs/train/expansion_capacity_probe_v2.json",
+        "configs/train/expansion_lane_stratified_probe_v3.json",
         "configs/train/expansion_pilot_v1.json",
+        "scripts/train/build_lane_stratified_probe.py",
         "scripts/train/expansion_pilot.py",
         "artifacts/train/expansion-pilot-v1/prepared-train.jsonl",
         "artifacts/train/expansion-pilot-v1/prepared-validation.jsonl",
         "artifacts/train/expansion-pilot-v1/prepared-dataset-manifest.json",
         "artifacts/train/expansion-capacity-probe-v2/local-execution-card.json",
+        "artifacts/train/expansion-lane-stratified-probe-v3/prepared-train.jsonl",
+        "artifacts/train/expansion-lane-stratified-probe-v3/prepared-retention.jsonl",
+        "artifacts/train/expansion-lane-stratified-probe-v3/prepared-dataset-manifest.json",
+        "artifacts/train/expansion-lane-stratified-probe-v3/local-execution-card.json",
         "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
     } <= names

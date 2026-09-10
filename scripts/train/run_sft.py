@@ -185,9 +185,9 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     card=load_sealed(args.card,"card_sha256")
     if card.get("status")!="ready" or card.get("failed_checks"): raise RuntimeError("training execution card is not ready")
     config=json.loads(args.config.read_text()); config_sha=file_sha256(args.config)
-    expansion=config.get("schema_version") in {"ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2"}
-    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2"}: raise RuntimeError("unsupported training config schema")
-    expected_expansion_card={"ganesh-mini-expansion-pilot-config/v1":"ganesh-mini-expansion-pilot-card/v1","ganesh-mini-expansion-pilot-config/v2":"ganesh-mini-expansion-pilot-card/v2"}.get(config.get("schema_version"))
+    expansion=config.get("schema_version") in {"ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2","ganesh-mini-expansion-pilot-config/v3"}
+    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2","ganesh-mini-expansion-pilot-config/v3"}: raise RuntimeError("unsupported training config schema")
+    expected_expansion_card={"ganesh-mini-expansion-pilot-config/v1":"ganesh-mini-expansion-pilot-card/v1","ganesh-mini-expansion-pilot-config/v2":"ganesh-mini-expansion-pilot-card/v2","ganesh-mini-expansion-pilot-config/v3":"ganesh-mini-expansion-pilot-card/v3"}.get(config.get("schema_version"))
     if expansion and card.get("schema_version")!=expected_expansion_card: raise RuntimeError("expansion card/config contract mismatch")
     if card["inputs"]["config_sha256"]!=config_sha: raise RuntimeError("card/config identity mismatch")
     prepared_manifest=load_sealed(args.prepared_manifest,"manifest_sha256")
@@ -264,7 +264,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
         optimizer.load_state_dict(saved["optimizer"]); scheduler.load_state_dict(saved["scheduler"]); torch.set_rng_state(saved["torch_rng"]); torch.cuda.set_rng_state_all(saved["cuda_rng"])
     maximum=int(recipe.get("maximum_peak_vram_gb",23)*1024**3)
     anomaly_contract=recipe.get("loss_anomaly_detector")
-    if config["schema_version"] in {"ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2"} and not anomaly_contract: raise RuntimeError("current recipe requires optimizer-group anomaly detection")
+    if config["schema_version"] in {"ganesh-mini-train-config/v5","ganesh-mini-expansion-pilot-config/v1","ganesh-mini-expansion-pilot-config/v2","ganesh-mini-expansion-pilot-config/v3"} and not anomaly_contract: raise RuntimeError("current recipe requires optimizer-group anomaly detection")
     detector=RollingLossGuard(anomaly_contract,state.get("anomaly_detector",{}).get("history",[]),state.get("anomaly_detector",{}).get("streak",0)) if anomaly_contract else None
     configured_checkpoint=config["control"].get("checkpoint_every_tokens") or min(config["control"]["checkpoint_tokens"])
     checkpoint_interval=min(configured_checkpoint,max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); group_raw_losses=[]; group_weighted_loss=0.0; group_weight=0.0

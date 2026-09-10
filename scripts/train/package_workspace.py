@@ -18,6 +18,7 @@ ALLOWLIST = (
     "scripts/train/__init__.py",
     "scripts/train/pilot.py",
     "scripts/train/expansion_pilot.py",
+    "scripts/train/build_lane_stratified_probe.py",
     "scripts/train/prepare_expansion.py",
     "scripts/train/qwen_runtime.py",
     "scripts/train/response_only.py",
@@ -35,6 +36,10 @@ ALLOWLIST = (
     "artifacts/train/expansion-pilot-v1/prepared-dataset-manifest.json",
     "artifacts/train/expansion-pilot-v1/local-execution-card.json",
     "artifacts/train/expansion-capacity-probe-v2/local-execution-card.json",
+    "artifacts/train/expansion-lane-stratified-probe-v3/prepared-train.jsonl",
+    "artifacts/train/expansion-lane-stratified-probe-v3/prepared-retention.jsonl",
+    "artifacts/train/expansion-lane-stratified-probe-v3/prepared-dataset-manifest.json",
+    "artifacts/train/expansion-lane-stratified-probe-v3/local-execution-card.json",
     "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
 )
 FORBIDDEN_PARTS = {"eval", "measurement", "outputs", ".git", ".gcloud-staging", "__pycache__"}

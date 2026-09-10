@@ -32,6 +32,28 @@ def load_sealed(path: Path, field: str) -> dict[str, Any]:
     return value
 
 
+def retention_loss_check(run: dict[str, Any], guard: dict[str, Any]) -> dict[str, Any]:
+    baseline = run.get("base_validation_loss_diagnostic", {}).get("supervised_token_mean", {})
+    candidate = run.get("validation_loss_diagnostic", {}).get("supervised_token_mean", {})
+    lanes = ("go", "java", "javascript", "typescript", "python", "rust")
+    macro_key = "five_family_macro_mean"
+    required = (*lanes, macro_key)
+    valid = all(isinstance(baseline.get(key), (int, float)) and baseline[key] > 0 and isinstance(candidate.get(key), (int, float)) and candidate[key] >= 0 for key in required)
+    lane_ratios = {lane: candidate[lane] / baseline[lane] for lane in lanes} if valid else {}
+    macro_ratio = candidate[macro_key] / baseline[macro_key] if valid else None
+    return {
+        "name": "non_evaluation_retention_loss_guard",
+        "passed": bool(
+            valid
+            and max(lane_ratios.values()) <= 1 + guard.get("maximum_relative_loss_increase_per_lane", -1)
+            and macro_ratio is not None
+            and macro_ratio <= 1 + guard.get("maximum_relative_five_family_macro_loss_increase", -1)
+        ),
+        "lane_candidate_to_base_ratios": lane_ratios,
+        "five_family_macro_candidate_to_base_ratio": macro_ratio,
+    }
+
+
 def verify(card_path: Path, config_path: Path, run_path: Path, adapter_dir: Path) -> dict[str, Any]:
     card = load_sealed(card_path, "card_sha256")
     run = load_sealed(run_path, "evidence_sha256")
@@ -41,6 +63,7 @@ def verify(card_path: Path, config_path: Path, run_path: Path, adapter_dir: Path
     expected_card_schema = {
         "ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1",
         "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2",
+        "ganesh-mini-expansion-pilot-config/v3": "ganesh-mini-expansion-pilot-card/v3",
     }.get(config_schema)
     identities = run.get("identities", {})
     state = run.get("state", {})
@@ -54,6 +77,9 @@ def verify(card_path: Path, config_path: Path, run_path: Path, adapter_dir: Path
         {"name": "vram_bound", "passed": isinstance(run.get("cuda", {}).get("peak_vram_bytes"), int) and run["cuda"]["peak_vram_bytes"] <= int(recipe.get("maximum_peak_vram_gb", 0) * 1024**3)},
         {"name": "cost_bound", "passed": Decimal(str(run.get("cost", {}).get("projected_final_usd", "Infinity"))) <= Decimal(str(provider.get("cost_ceiling_usd", -1))) and run.get("cost", {}).get("hourly_usd") == str(provider.get("hourly_cost_usd")) and run.get("cost", {}).get("ceiling_usd") == str(provider.get("cost_ceiling_usd"))},
     ]
+    if config_schema == "ganesh-mini-expansion-pilot-config/v3":
+        guard = card.get("evaluation", {}).get("retention_loss_guard", {})
+        checks.append(retention_loss_check(run, guard))
     expected = run.get("adapter_files", {})
     observed = {str(path.relative_to(adapter_dir)): file_digest(path) for path in sorted(adapter_dir.rglob("*")) if path.is_file()}
     checks.append({"name": "adapter_identity", "passed": bool(expected) and observed == expected})

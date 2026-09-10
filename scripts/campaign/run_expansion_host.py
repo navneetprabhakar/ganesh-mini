@@ -42,6 +42,8 @@ def default_config_relative(card: dict[str, object]) -> Path:
         return Path("configs/train/expansion_pilot_v1.json")
     if schema == "ganesh-mini-expansion-pilot-card/v2":
         return Path("configs/train/expansion_capacity_probe_v2.json")
+    if schema == "ganesh-mini-expansion-pilot-card/v3":
+        return Path("configs/train/expansion_lane_stratified_probe_v3.json")
     raise RuntimeError("unsupported expansion card schema")
 
 
@@ -206,7 +208,7 @@ class ExpansionCampaign(Campaign):
         config = json.loads((self.args.train_workspace / self.args.config_relative).read_text())
         provider = card.get("provider_execution") or {}
         schema = config.get("schema_version")
-        expected_card_schema = {"ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1", "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2"}.get(schema)
+        expected_card_schema = {"ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1", "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2", "ganesh-mini-expansion-pilot-config/v3": "ganesh-mini-expansion-pilot-card/v3"}.get(schema)
         if (
             expected_card_schema is None
             or card.get("schema_version") != expected_card_schema
@@ -230,7 +232,7 @@ class ExpansionCampaign(Campaign):
         elif adjudication["status"] == "promote-to-full-development":
             status = "completed-capacity-probe-continuation-screen-passed"
             self.record("full-development", "blocked-by-probe-authority")
-        elif schema == "ganesh-mini-expansion-pilot-config/v2":
+        elif schema in {"ganesh-mini-expansion-pilot-config/v2", "ganesh-mini-expansion-pilot-config/v3"}:
             status = "completed-capacity-probe-continuation-screen-failed"
         else:
             status = "completed-canary-not-promoted"

@@ -1,0 +1,137 @@
+{
+  "schema_version": "ganesh-mini-expansion-pilot-config/v3",
+  "run_id": "ganesh-mini-1.0-expansion-lane-stratified-probe-v3",
+  "model": {
+    "model_id": "Qwen/Qwen3.5-2B",
+    "revision": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "contract_path": "configs/model/qwen3_5_2b.contract.json",
+    "contract_sha256": "c16da63d66a921edb892eca07b786817140941bdb6f68711791e1de52257b074"
+  },
+  "data": {
+    "prepared_manifest_path": "artifacts/train/expansion-lane-stratified-probe-v3/prepared-dataset-manifest.json",
+    "prepared_manifest_sha256": "4258e58a4f1d6a46124e413512d7ba436d47eb780582410ecd96cd9a8d0b7404",
+    "prepared_manifest_file_sha256": "5bbc0f04ccce64c59c7f81088a501350e25b0cbcd4e7f0dfe1a249e2632326ce",
+    "prepared_train_path": "artifacts/train/expansion-lane-stratified-probe-v3/prepared-train.jsonl",
+    "prepared_train_sha256": "08f60dd76c1658a5ac91153b36b4e389cc5e69c2a915287009aaa1cb77881091",
+    "prepared_validation_path": "artifacts/train/expansion-lane-stratified-probe-v3/prepared-retention.jsonl",
+    "prepared_validation_sha256": "c88d8a888ee0ccef4311f221df4edc573d8fedcdd89f991d6613a21994132bdf",
+    "source_prepared_train_path": "artifacts/train/expansion-pilot-v1/prepared-train.jsonl",
+    "source_prepared_train_sha256": "0e7111f51c8ec6e7dcf23ee96ea4873b03ae944ce51aaab4aed6782493133224",
+    "source_records": 3225,
+    "records": 640,
+    "input_tokens": 466614,
+    "retention_records": 60
+  },
+  "recipe": {
+    "recipe_id": "bf16-lora-lane-stratified-probe-v3",
+    "host_os": "Linux",
+    "accelerator": "CUDA",
+    "minimum_gpu_vram_gb": 24,
+    "maximum_peak_vram_gb": 23,
+    "backend": "transformers-peft",
+    "base_loading": "bfloat16",
+    "adapter": "lora",
+    "compute_dtype": "bfloat16",
+    "gradient_checkpointing": true,
+    "cuda_allocator_config": "expandable_segments:True",
+    "fused_linear_cross_entropy": {
+      "provider": "liger-kernel",
+      "version": "0.8.2",
+      "materialize_training_logits": false
+    },
+    "micro_batch_size": 1,
+    "vision_frozen": true,
+    "sequence_length": 2944,
+    "packing": false,
+    "lora_rank": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "target_policy": {
+      "scope": "all-attention-plus-last-n-mlp",
+      "model_layer_count": 24,
+      "layer_count": 8,
+      "full_attention_projections": ["q_proj", "v_proj"],
+      "linear_attention_projections": ["in_proj_qkv", "out_proj"],
+      "mlp_projections": ["gate_proj", "up_proj", "down_proj"]
+    },
+    "learning_rate": 0.00001,
+    "random_seed": 3502,
+    "gradient_accumulation_steps": 10,
+    "effective_batch_size": 10,
+    "optimizer": "adamw_torch",
+    "optimizer_betas": [0.9, 0.95],
+    "optimizer_epsilon": 1e-8,
+    "weight_decay": 0.01,
+    "max_gradient_norm": 1.0,
+    "dataloader_workers": 8,
+    "dataloader_pin_memory": true,
+    "dataloader_prefetch_factor": 4,
+    "precision": "bf16",
+    "scheduler": "cosine",
+    "warmup_ratio": 0.03,
+    "maximum_effective_epochs": 0.19845,
+    "checkpoint_every_effective_epochs": 0.033075,
+    "loss_anomaly_detector": {
+      "metric": "weighted_optimizer_group_loss",
+      "warmup_optimizer_steps": 12,
+      "rolling_window_optimizer_steps": 20,
+      "minimum_history_optimizer_steps": 12,
+      "robust_z_threshold": 8.0,
+      "minimum_median_ratio": 3.0,
+      "mad_floor": 0.000001,
+      "consecutive_optimizer_groups": 3
+    }
+  },
+  "control": {
+    "maximum_seen_tokens": 466614,
+    "maximum_wall_seconds": 7200,
+    "checkpoint_tokens": [77769, 155538, 233307, 311076, 388845, 466614],
+    "finalization_reserve_seconds": 1800,
+    "stop_conditions": [
+      "non_finite_loss",
+      "robust_optimizer_group_loss_anomaly",
+      "token_budget_reached",
+      "wall_time_reached",
+      "cost_ceiling_reached",
+      "checkpoint_write_failure",
+      "evidence_write_failure"
+    ]
+  },
+  "evaluation": {
+    "canary_tasks": 30,
+    "full_development_tasks": 0,
+    "canary_expected_seconds": 300,
+    "full_expected_seconds": 0,
+    "retention_loss_guard": {
+      "surface": "60 disjoint authorized training-corpus holdout rows; 10 per lane",
+      "metric": "supervised_token_mean_loss",
+      "maximum_relative_loss_increase_per_lane": 0.05,
+      "maximum_relative_five_family_macro_loss_increase": 0.0
+    },
+    "promotion_rule": {
+      "rule_id": "lane-stratified-probe-continuation-v3",
+      "minimum_improved_product_families": 2,
+      "minimum_net_pass_gain": 2,
+      "maximum_pass_regression_per_lane": 0,
+      "maximum_increase_in_non_code_outputs": 0,
+      "maximum_increase_in_truncated_outputs": 0,
+      "save_reload_required": true
+    },
+    "authority": "continuation-screen-only; retention guard must pass; no checkpoint promotion, full-development evaluation, decision-set opening, merge, quantization, or publication"
+  },
+  "throughput": {
+    "evidence_path": "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
+    "evidence_sha256": "5f3dffeee30ffd6cead56b0d47a272bb14f7dcbc326d592b83e1c553c2f41a0b",
+    "measured_input_tokens_per_second": 295.541,
+    "expected_training_seconds": 1579,
+    "conservative_training_seconds": 2130
+  },
+  "hypothesis": {
+    "observation": "the v2 capacity probe improved three product families but regressed TypeScript because its executed prefix carried only 7.1739 percent of objective mass",
+    "intervention": "retain the v2 rank-16 target capacity while making every optimizer step contain all six lanes at exact 20/20/10/10/20/20 objective mass",
+    "training_records_by_lane": {"go": 128, "java": 128, "javascript": 64, "typescript": 64, "python": 128, "rust": 128},
+    "optimizer_groups": 64,
+    "retention_records_by_lane": {"go": 10, "java": 10, "javascript": 10, "typescript": 10, "python": 10, "rust": 10},
+    "early_stop": "stop after the sealed 640-record probe unless the retention guard and frozen continuation screen both pass"
+  }
+}

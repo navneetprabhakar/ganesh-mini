@@ -25,8 +25,12 @@ and `9e74b86085033c2ab008242cf505c6837c5a9e9b6ac4260b2d93cea395c75346`;
 both reproduced byte-for-byte and every archive member matches its manifest.
 Focused tests pass 39/39. The full repository suite passes except three known
 stale historical Gate 1 workspace/readiness assertions unrelated to this
-change. Next build a fresh exact upload-only proposal. No GCloud action is
-currently authorized. See `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
+change. Source commit is `7711fa636cb4b08043518ec1bc97d76aadca889b`.
+The fresh four-object/7,399,962-byte upload-only plan is sealed at
+`9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`.
+Current state is `waiting-for-explicit-lane-stratified-upload-approval`; no
+GCloud action is currently authorized. See
+`LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
 
 ## Capacity probe completed; mechanism rejected and cloud torn down — 2026-09-10
 

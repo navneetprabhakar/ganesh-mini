@@ -17,9 +17,12 @@ two improved product families, net +2, zero lane regression, and no output
 quality regression. Even a passing result authorizes planning only, not full
 development or release work.
 
-Local data, card, and workspace validation is complete. No GCloud operation is
-authorized. Seal and approve upload, provider inspection, and bounded execution
-as separate steps.
+Local data, card, and workspace validation is complete at source commit
+`7711fa636cb4b08043518ec1bc97d76aadca889b`. The exact four-object upload-only
+plan is sealed at
+`9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`.
+No GCloud operation is authorized. Approve upload, provider inspection, and
+bounded execution as separate steps.
 
 ## 2026-09-10 — Rank-16 capacity alone is rejected as the next mechanism
 

@@ -23,9 +23,12 @@ Training/evaluation workspace archive SHA-256 values:
 `5bfb4616b467690e298fc41c15657ff55cc48631a498860ecd395717af477e15`
 and `9e74b86085033c2ab008242cf505c6837c5a9e9b6ac4260b2d93cea395c75346`.
 Both reproduced byte-identically and passed per-file verification. Focused
-tests pass 39/39. Next create a new exact GCloud upload-only plan; do not read,
-upload, inspect, create, or bill GCloud without its fresh explicit approval.
-Detailed contract: `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
+tests pass 39/39. Source commit is
+`7711fa636cb4b08043518ec1bc97d76aadca889b`. The exact four-object,
+7,399,962-byte GCloud upload-only plan is sealed at
+`9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`.
+Do not upload, inspect, create, or bill GCloud without fresh explicit approval
+of that seal. Detailed contract: `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
 
 ## Gate 4 capacity probe terminal; do not promote — 2026-09-10
 

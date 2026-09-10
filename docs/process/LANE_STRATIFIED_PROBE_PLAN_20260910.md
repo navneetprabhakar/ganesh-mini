@@ -77,6 +77,9 @@ Both archives were rebuilt byte-identically and independently verified against
 every manifest entry.
 
 No GCloud read, upload, mutation, resource creation, or billing action is
-authorized by this local preparation. The next cloud action must be a new,
-exactly sealed upload-only plan. Provider inspection and VM execution remain
-separate later approval boundaries.
+authorized by this local preparation. Source commit
+`7711fa636cb4b08043518ec1bc97d76aadca889b` binds the four local workspace
+objects. Their upload-only plan totals 7,399,962 bytes and is sealed at
+`9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`.
+Provider inspection and VM execution remain separate later approval
+boundaries.

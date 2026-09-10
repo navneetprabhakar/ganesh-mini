@@ -10,7 +10,13 @@ from scripts.inference.build_checkpoint_sweep_gcloud_proposal import (
     INPUT_KEYS, RECOVERY_GENERATION, RECOVERY_SHA256, RECOVERY_SIZE, build, canonical_sha256,
     load_bindings,
 )
-from scripts.inference.build_checkpoint_sweep_workspace import ADDITIONS, build as build_workspace
+from scripts.inference.build_checkpoint_sweep_workspace import (
+    ADDITIONS,
+    RUNTIME_ADDITIONS,
+    build as build_workspace,
+    config_additions,
+)
+from scripts.inference.build_checkpoint_sweep_startup import build as build_startup
 from scripts.inference.build_checkpoint_sweep_gcloud_execution import (
     build as build_execution,
     load_sealed as load_execution_input,
@@ -95,6 +101,40 @@ def test_workspace_package_is_deterministic_and_contains_sweep_runtime(tmp_path:
     with tarfile.open(first, "r:gz") as archive:
         names = set(archive.getnames())
     assert set(ADDITIONS) <= names
+
+
+def test_workspace_package_accepts_candidate_specific_configs(tmp_path: Path) -> None:
+    config_dir = "measurement/gate4/lane-stratified-probe-checkpoint-sweep-20260910/configs"
+    archive = tmp_path / "candidate.tar.gz"
+    manifest = build_workspace(
+        archive,
+        tmp_path / "candidate.json",
+        base_manifest=ROOT / "artifacts/eval/workspaces/development-v7.manifest.json",
+        additions=(*RUNTIME_ADDITIONS, *config_additions(config_dir)),
+    )
+
+    assert manifest["source_development_workspace_manifest"].endswith("development-v7.manifest.json")
+    with tarfile.open(archive, "r:gz") as bundle:
+        names = set(bundle.getnames())
+    assert f"{config_dir}/manifest.json" in names
+    assert "measurement/gate4/checkpoint-sweep-20260909/configs/manifest.json" not in names
+
+
+def test_candidate_startup_uses_exact_config_dir_without_legacy_recovery_identity(tmp_path: Path) -> None:
+    config_dir = "measurement/gate4/lane-stratified-probe-checkpoint-sweep-20260910/configs"
+    output = tmp_path / "startup.sh"
+    manifest = build_startup(
+        ROOT / "scripts/inference/gcloud_startup_checkpoint_sweep.sh",
+        config_dir,
+        output,
+        tmp_path / "startup.json",
+    )
+    rendered = output.read_text()
+
+    assert f'configs="$work/workspace/{config_dir}"' in rendered
+    assert "1788935240864459" not in rendered
+    assert "RECOVERY_ARCHIVE_URI" in rendered
+    assert manifest["training_allowed"] is False
 
 
 def test_upload_only_plan_binds_exact_local_inputs_and_forbids_compute() -> None:

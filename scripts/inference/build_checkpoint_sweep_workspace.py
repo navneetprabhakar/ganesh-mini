@@ -15,13 +15,16 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE_MANIFEST = ROOT / "artifacts/eval/workspaces/development-v5.manifest.json"
-ADDITIONS = (
+RUNTIME_ADDITIONS = (
     "scripts/campaign/run_checkpoint_sweep_host.py",
     "scripts/eval/build_checkpoint_sweep.py",
     "scripts/eval/summarize_checkpoint_sweep.py",
     "scripts/inference/build_checkpoint_sweep_gcloud_proposal.py",
     "scripts/inference/gcloud_checkpoint_sweep_metadata_wrapper.sh",
     "scripts/inference/gcloud_startup_checkpoint_sweep.sh",
+)
+LEGACY_CONFIG_DIR = "measurement/gate4/checkpoint-sweep-20260909/configs"
+ADDITIONS = (*RUNTIME_ADDITIONS,
     "measurement/gate4/checkpoint-sweep-20260909/configs/manifest.json",
     "measurement/gate4/checkpoint-sweep-20260909/configs/tokens-000000406491.json",
     "measurement/gate4/checkpoint-sweep-20260909/configs/tokens-000000814098.json",
@@ -47,13 +50,40 @@ def canonical_sha256(value: Any) -> str:
     )
 
 
-def build(output: Path, manifest_output: Path) -> dict[str, Any]:
-    base = json.loads(BASE_MANIFEST.read_text(encoding="utf-8"))
+def config_additions(config_dir: str) -> tuple[str, ...]:
+    root = (ROOT / config_dir).resolve()
+    try:
+        root.relative_to(ROOT)
+    except ValueError as error:
+        raise ValueError("checkpoint config directory must be repository-relative") from error
+    files = tuple(
+        str(path.relative_to(ROOT))
+        for path in sorted(root.glob("*.json"))
+        if path.is_file()
+    )
+    if len(files) != 6 or not any(path.endswith("/manifest.json") for path in files):
+        raise ValueError("checkpoint config directory must contain five configs and one manifest")
+    return files
+
+
+def build(
+    output: Path,
+    manifest_output: Path,
+    *,
+    base_manifest: Path = BASE_MANIFEST,
+    additions: tuple[str, ...] = ADDITIONS,
+) -> dict[str, Any]:
+    base_manifest = base_manifest.resolve()
+    try:
+        base_manifest_relative = str(base_manifest.relative_to(ROOT))
+    except ValueError as error:
+        raise ValueError("base workspace manifest must be repository-relative") from error
+    base = json.loads(base_manifest.read_text(encoding="utf-8"))
     claimed = base.pop("manifest_sha256", None)
     if claimed != canonical_sha256(base):
         raise ValueError("development-v5 workspace manifest seal mismatch")
     paths = {row["path"] for row in base["files"]}
-    paths.update(ADDITIONS)
+    paths.update(additions)
     rows = []
     contents: dict[str, bytes] = {}
     for relative in sorted(paths):
@@ -79,6 +109,7 @@ def build(output: Path, manifest_output: Path) -> dict[str, Any]:
         "files": rows,
         "archive": {"size_bytes": output.stat().st_size, "sha256": digest_bytes(output.read_bytes())},
         "source_development_workspace_manifest_sha256": claimed,
+        "source_development_workspace_manifest": base_manifest_relative,
     }
     manifest["manifest_sha256"] = canonical_sha256(manifest)
     manifest_output.parent.mkdir(parents=True, exist_ok=True)
@@ -90,8 +121,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest-output", type=Path, required=True)
+    parser.add_argument("--base-manifest", type=Path, default=BASE_MANIFEST)
+    parser.add_argument("--config-dir", default=LEGACY_CONFIG_DIR)
     args = parser.parse_args()
-    build(args.output, args.manifest_output)
+    build(
+        args.output,
+        args.manifest_output,
+        base_manifest=args.base_manifest,
+        additions=(*RUNTIME_ADDITIONS, *config_additions(args.config_dir)),
+    )
     return 0
 
 

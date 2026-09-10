@@ -53,8 +53,18 @@ reproduced byte-identically at 528,065,805 bytes with archive SHA-256
 and manifest seal
 `37b9752dadb15d15dcdd6e290c624d4441d9e3467b42b5112b2b8fdfe7b5a865`.
 All 130 source files were checked against the terminal inventory before each
-build. Candidate-specific workspace construction and local rehearsal remain
-before an exact upload-only approval request can be sealed.
+build. Candidate-specific workspace and startup construction now reproduce
+byte-identically with archive SHA-256
+`56e2fda042b6c3fb0e9584151aa54cee1b7f9dad1bbe19037bf7e0a2f6872531`
+and controller SHA-256
+`32ea79030c0917a0506bb6fe7a3a46f1226cd032f73fd770be21a0cf0b03c87e`.
+The extraction/admission rehearsal passed, and focused tests pass 29/29.
+
+The next hard stop is explicit approval of upload-only plan
+`8f5eede2e94cddafda84636ab10d81bb2d4d8373289ee1b8bbc3fdde833cbda8`.
+It binds six objects totaling 529,256,224 bytes and grants only create-only GCS
+upload plus exact-generation roundtrip verification. No cloud inspection,
+Compute/network action, training, or evaluation is authorized by this plan.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

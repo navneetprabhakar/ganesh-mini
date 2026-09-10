@@ -48,9 +48,22 @@ deterministic 528,065,805-byte recovery archive. Archive SHA-256 is
 package-manifest seal is
 `37b9752dadb15d15dcdd6e290c624d4441d9e3467b42b5112b2b8fdfe7b5a865`.
 All 130 source files were reverified against the terminal inventory before
-packaging, and a second build reproduced byte-identically. Next make and
-rehearse the checkpoint-sweep workspace candidate-specific, then seal an exact
-upload-only plan before requesting GCloud approval.
+packaging, and a second build reproduced byte-identically. The candidate-
+specific workspace and startup controller also reproduce byte-identically;
+workspace archive SHA-256 is
+`56e2fda042b6c3fb0e9584151aa54cee1b7f9dad1bbe19037bf7e0a2f6872531`
+and controller SHA-256 is
+`32ea79030c0917a0506bb6fe7a3a46f1226cd032f73fd770be21a0cf0b03c87e`.
+An extraction rehearsal passed complete workspace, training, six-checkpoint,
+and final-canary identity admission. Focused tests pass 29/29.
+
+The exact six-object, 529,256,224-byte upload-only plan is sealed at
+`8f5eede2e94cddafda84636ab10d81bb2d4d8373289ee1b8bbc3fdde833cbda8`.
+It permits only create-only GCS uploads, generation capture, exact-generation
+downloads, and byte comparison. It prohibits all Compute/network inspection
+or mutation and all training/evaluation/promotion actions. Do not upload until
+Navneet explicitly approves this exact plan. After a verified upload, seal a
+separate read-only inspection plan; compute will still remain unauthorized.
 
 ## Pre-execution lane-stratified record (superseded) — 2026-09-10
 

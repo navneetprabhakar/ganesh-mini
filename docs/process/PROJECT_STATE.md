@@ -71,6 +71,12 @@ Ninety-five focused training/campaign tests pass with three CUDA-only skips.
 CUDA shape qualification and the separately approved cloud input chain remain;
 no provider is bound.
 
+The exact five-object, 7,424,438-byte upload-only boundary is sealed at
+`b24b0b0db1ec876782ec4031a9dd1426f0903e4b0d94f93c284b022bc0b8d58c`.
+It permits only create-only GCS upload, generation capture, exact-generation
+download, byte comparison, and a sealed local receipt. It is awaiting explicit
+approval and grants no Compute/network inspection or execution authority.
+
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 
 Navneet approved exact proposal

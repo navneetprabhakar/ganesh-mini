@@ -81,6 +81,15 @@ Ninety-five focused training/campaign tests pass and three CUDA-only tests
 skip locally. CUDA shape qualification and a sealed upload/inspection/execution
 chain remain. No upload or GCloud execution is authorized.
 
+The next hard boundary is now sealed as a five-object, create-only GCS upload
+plan totaling 7,424,438 bytes. It contains only the v4 training workspace and
+manifest, development-v8 workspace and manifest, and corrected startup
+controller; exact-generation download and byte comparison are mandatory. Plan
+seal is
+`b24b0b0db1ec876782ec4031a9dd1426f0903e4b0d94f93c284b022bc0b8d58c`.
+It grants no Compute/network inspection, provider binding, training, or
+evaluation authority and is awaiting explicit approval.
+
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 
 Proposal `8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`

@@ -1,5 +1,44 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 4 v3 checkpoint sweep terminal; do not promote — 2026-09-11
+
+Attempt `20260910T150000Z`, approved under proposal
+`7c54481ab57c5538c0d779f6dbb9a51aeb78183684e38185e26aee400bb9867d`,
+completed five earlier-checkpoint canaries. The pass curve is `5, 5, 3, 6, 5`
+for token checkpoints 78,487, 156,090, 239,231, 312,423, and 389,093. The
+previously measured final at 466,614 tokens is 6/30; upstream is 5/30. No point
+passes net +2 plus zero lane regression. Earlier stopping is rejected and all
+v3 checkpoints remain `do-not-promote`. Full development, further training,
+merge, quantization, publication, and public claims remain blocked.
+
+Sweep report SHA-256 is
+`55fb67ff6b1a438c0f14c617ede45f3ffdf0ac5a32694cac4afd5b73bc32742f`;
+campaign result is
+`15041b9000812305fab0573cd72b16385bf2aa67efbb67226125f2b84bc20ddc`.
+The campaign completed with exit code 0, but shell finalization hung. Approved
+rescue proposal
+`896b6115b51876a32abea65141b0a2872f05f5930f4b693684b85be938f501aa`
+used a temporary IAP-only SSH rule to recover the stable terminal directory.
+The rescue has 332 GCS objects/4,050,250 bytes; all 331 inventoried files
+hash-verified and local semantic replay matched exactly. Record, do not repair,
+the sealed phase-ledger `status: running` bookkeeping anomaly.
+
+The temporary firewall, VM, disk, subnet, and network are absent twice. Ganesh
+compute billing is closed. The unrelated detached disk
+`laxmi-wmv2-training-01` remains outside scope, so project-wide GCS-only is
+false. Result summary seal:
+`1b8968595287d979e62cd2e0d29008c12a5559c62ccdfb61d4d44c46c2297bf0`.
+The local trajectory audit is complete at seal
+`15629f7407727fb9477eb6da892d709f174589575225e807ca14ec88f64ce9cc`:
+21/30 tasks always fail, one always passes, and eight oscillate; five changing
+tasks are `collapse-runs`. Next prepare a bounded LoRA-gradient conflict audit
+and conditional gradient-surgery probe. Its local design is sealed at
+`4e04c8029e42605d7c5aba913e97644a952e2c28bfc1140d278c7c76a936d73d`;
+implementation and local validation are next. No GCloud action is currently
+authorized. Any future controller must also replace the observed unbounded
+process-substitution log drain without changing the historical uploaded source.
+Detailed record: `LANE_STRATIFIED_CHECKPOINT_SWEEP_RESULT_20260911.md`.
+
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 
 Proposal `8184f4694efdfab2da3b895393caec4c753d6b782f8c810067824f5d957926fa`

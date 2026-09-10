@@ -1,5 +1,41 @@
 # Decisions
 
+## 2026-09-11 — Earlier stopping cannot rescue the v3 lane-stratified recipe
+
+The approved diagnostic-only sweep evaluated all five earlier v3 checkpoints
+on the frozen 30-task screen. Scores across training were `5, 5, 3, 6, 5`,
+with the final checkpoint at 6 and upstream at 5. No checkpoint reaches the
+frozen net +2 threshold without lane regression. The 312,423-token checkpoint
+ties the final checkpoint with the same lane profile; the 389,093-token point
+improves four individual non-JavaScript lanes but loses all JavaScript and
+TypeScript passes, leaving total score at the base level.
+
+Therefore reject simple early stopping, post-hoc checkpoint selection, further
+scaling, and another balance-only revision of this recipe. The result is
+evidence of persistent cross-lane interference, not just end-of-epoch
+overtraining. Keep every checkpoint `do-not-promote` and do not open full
+development or later release gates. Next use local task-transition evidence to
+design a genuinely different interference-control mechanism with a new bounded
+gate; any GCloud execution still requires a separate exact approval.
+
+The sealed task-level audit
+`15629f7407727fb9477eb6da892d709f174589575225e807ca14ec88f64ce9cc`
+shows 21/30 stable failures, one stable pass, and eight changing tasks; five of
+the changing tasks are `collapse-runs`. Before spending on specialist adapters
+or another full probe, measure pairwise LoRA-gradient conflict on the existing
+six-lane groups. Gradient surgery is eligible only if that audit confirms
+negative cross-lane directions; otherwise return to corpus/task-diversity work.
+The non-executable two-stage plan is sealed at
+`4e04c8029e42605d7c5aba913e97644a952e2c28bfc1140d278c7c76a936d73d`;
+it grants no GCloud or promotion authority.
+
+The complete sweep and recovery are sealed under report
+`55fb67ff6b1a438c0f14c617ede45f3ffdf0ac5a32694cac4afd5b73bc32742f`
+and result summary
+`1b8968595287d979e62cd2e0d29008c12a5559c62ccdfb61d4d44c46c2297bf0`.
+All exact sweep resources are absent twice. The unrelated detached 200 GiB
+`laxmi-wmv2-training-01` disk remains outside scope and may bill.
+
 ## 2026-09-10 — Test lane-safe transfer with exact per-step stratification
 
 Use one bounded 640-row/466,614-token probe that keeps the rejected v2

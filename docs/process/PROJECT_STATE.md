@@ -1,5 +1,42 @@
 # Project state
 
+## V3 checkpoint sweep terminal; earlier stopping rejected — 2026-09-11
+
+Approved diagnostic attempt `20260910T150000Z` evaluated all five earlier v3
+checkpoints on the frozen 30-task screen. Passes were `5, 5, 3, 6, 5` at
+78,487 through 389,093 tokens; the already measured 466,614-token final remains
+6/30 versus upstream 5/30. No checkpoint meets net +2 with zero lane
+regression. Decision: `do-not-promote`; earlier stopping does not rescue v3,
+and this recipe must not be scaled, rebalanced, checkpoint-selected, or opened
+on full development.
+
+The guest completed with startup exit code 0, sweep report seal
+`55fb67ff6b1a438c0f14c617ede45f3ffdf0ac5a32694cac4afd5b73bc32742f`,
+and campaign seal
+`15041b9000812305fab0573cd72b16385bf2aa67efbb67226125f2b84bc20ddc`.
+Its shell finalizer hung after completion. Approved IAP-only rescue recovered
+332 objects/4,050,250 bytes; all 331 inventoried files hash-verified, including
+the one verifier record missed by the live rolling backup. Semantic replay was
+exact. The sealed phase ledger contains all eight phases but retains
+`status: running`; preserve this disclosed bookkeeping defect.
+
+The temporary firewall, exact VM, auto-delete disk, subnet, and network are
+absent in two checks. Ganesh compute billing is closed. The unrelated detached
+200 GiB disk `laxmi-wmv2-training-01` still exists, so project-wide GCS-only is
+false. Result summary seal:
+`1b8968595287d979e62cd2e0d29008c12a5559c62ccdfb61d4d44c46c2297bf0`.
+The local cross-checkpoint audit is now sealed at
+`15629f7407727fb9477eb6da892d709f174589575225e807ca14ec88f64ce9cc`.
+Twenty-one tasks fail throughout, only eight change status, and five changing
+tasks share the `collapse-runs` archetype. Next prepare a bounded per-lane LoRA
+gradient-conflict audit with conditional gradient surgery; do not run another
+balance-only or specialist-merge experiment first. No further GCloud use is
+authorized. The local non-executable mechanism plan is sealed at
+`4e04c8029e42605d7c5aba913e97644a952e2c28bfc1140d278c7c76a936d73d`.
+Any future startup controller must also replace the observed
+unbounded process-substitution log drain. See
+`LANE_STRATIFIED_CHECKPOINT_SWEEP_RESULT_20260911.md`.
+
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 
 Navneet approved exact proposal

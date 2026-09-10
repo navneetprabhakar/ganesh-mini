@@ -64,6 +64,7 @@ def verify(card_path: Path, config_path: Path, run_path: Path, adapter_dir: Path
         "ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1",
         "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2",
         "ganesh-mini-expansion-pilot-config/v3": "ganesh-mini-expansion-pilot-card/v3",
+        "ganesh-mini-expansion-pilot-config/v4": "ganesh-mini-expansion-pilot-card/v4",
     }.get(config_schema)
     identities = run.get("identities", {})
     state = run.get("state", {})
@@ -77,9 +78,22 @@ def verify(card_path: Path, config_path: Path, run_path: Path, adapter_dir: Path
         {"name": "vram_bound", "passed": isinstance(run.get("cuda", {}).get("peak_vram_bytes"), int) and run["cuda"]["peak_vram_bytes"] <= int(recipe.get("maximum_peak_vram_gb", 0) * 1024**3)},
         {"name": "cost_bound", "passed": Decimal(str(run.get("cost", {}).get("projected_final_usd", "Infinity"))) <= Decimal(str(provider.get("cost_ceiling_usd", -1))) and run.get("cost", {}).get("hourly_usd") == str(provider.get("hourly_cost_usd")) and run.get("cost", {}).get("ceiling_usd") == str(provider.get("cost_ceiling_usd"))},
     ]
-    if config_schema == "ganesh-mini-expansion-pilot-config/v3":
+    if config_schema in {"ganesh-mini-expansion-pilot-config/v3", "ganesh-mini-expansion-pilot-config/v4"}:
         guard = card.get("evaluation", {}).get("retention_loss_guard", {})
         checks.append(retention_loss_check(run, guard))
+    if config_schema == "ganesh-mini-expansion-pilot-config/v4":
+        audit = state.get("gradient_conflict_audit", {})
+        audit_payload = {key: value for key, value in audit.items() if key != "audit_sha256"}
+        checks.append({
+            "name": "gradient_conflict_audit",
+            "passed": bool(
+                audit.get("schema_version") == "ganesh-mini-gradient-conflict-audit/v1"
+                and audit.get("status") == "complete"
+                and audit.get("identities") == identities
+                and audit.get("audit_sha256") == canonical_digest(audit_payload)
+                and audit.get("decision", {}).get("stage_2_allowed") is True
+            ),
+        })
     expected = run.get("adapter_files", {})
     observed = {str(path.relative_to(adapter_dir)): file_digest(path) for path in sorted(adapter_dir.rglob("*")) if path.is_file()}
     checks.append({"name": "adapter_identity", "passed": bool(expected) and observed == expected})

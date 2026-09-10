@@ -60,9 +60,26 @@ frozen threshold fails, and otherwise applies deterministic PCGrad at every
 complete optimizer-group boundary. Resume requires the exact audit identity
 and seal; PCGrad telemetry records lane losses, pre/post cosines, projection
 order/count, and aggregate norm. Thirty-five focused config/card/runtime tests
-pass. CUDA shape qualification, campaign integration, packaging, and the
-corrected startup controller remain. No upload or GCloud execution is
-authorized.
+pass. The host campaign now treats a failed conflict threshold as a successful
+terminal diagnostic with zero optimizer steps and no candidate evaluation;
+when the threshold passes it requires the sealed audit again during terminal
+verification and keeps the v4 canary unable to authorize full development.
+The startup logger now closes and waits for both named FIFO tee processes
+before inventory and backup, removing the prior unbounded process-substitution
+drain. The 56-file training workspace reproduced byte-identically at
+6,255,789 bytes with archive SHA-256
+`c014652032e2bcc557891776f5abcab6c1265f238330fdbd8c8cd8e50dceb23d`
+and manifest seal
+`8c39aabd8b13b0282e1837581cd163cbb851c9bf3f6b3043f686f73be59c86bf`.
+The paired 587-file development workspace, containing the v4-aware host
+campaign and terminal verifier, reproduced byte-identically at 1,013,124 bytes
+with archive SHA-256
+`4d46b67a42e1868fea45123ad761492bc68426fbffb55b17c79f7731bd8bf8a2`
+and repository-path manifest seal
+`e39cce631f57762588ed98d7a6bfa68427b828ab83ea891e0a4188ac75d143a3`.
+Ninety-five focused training/campaign tests pass and three CUDA-only tests
+skip locally. CUDA shape qualification and a sealed upload/inspection/execution
+chain remain. No upload or GCloud execution is authorized.
 
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 

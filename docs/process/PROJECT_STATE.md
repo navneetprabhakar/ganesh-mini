@@ -53,8 +53,23 @@ zero-step eight-group audit passes both frozen conflict thresholds. Runtime
 group validation, gradient collection, sealed audit/stop adjudication,
 deterministic per-group PCGrad, exact-boundary resume, and conflict telemetry
 are now integrated in the production SFT engine. Thirty-five focused tests
-pass. CUDA shape qualification, campaign integration, workspace packaging,
-and the corrected startup controller remain incomplete. No provider is bound.
+pass. Campaign integration now terminates a failed conflict threshold without
+training or evaluation, re-verifies a passing audit before canary construction,
+and preserves the v4 full-development block. The corrected startup uses named
+FIFO loggers and waits for both before terminal inventory, eliminating the
+historical process-substitution drain. The deterministic 56-file training
+workspace is 6,255,789 bytes at SHA-256
+`c014652032e2bcc557891776f5abcab6c1265f238330fdbd8c8cd8e50dceb23d`;
+manifest seal is
+`8c39aabd8b13b0282e1837581cd163cbb851c9bf3f6b3043f686f73be59c86bf`.
+The paired 587-file development workspace is 1,013,124 bytes at archive
+SHA-256
+`4d46b67a42e1868fea45123ad761492bc68426fbffb55b17c79f7731bd8bf8a2`;
+its repository-path manifest seal is
+`e39cce631f57762588ed98d7a6bfa68427b828ab83ea891e0a4188ac75d143a3`.
+Ninety-five focused training/campaign tests pass with three CUDA-only skips.
+CUDA shape qualification and the separately approved cloud input chain remain;
+no provider is bound.
 
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 

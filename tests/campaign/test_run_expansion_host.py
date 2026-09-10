@@ -16,6 +16,7 @@ def test_default_config_is_selected_from_sealed_card_generation() -> None:
     assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v1"}).name == "expansion_pilot_v1.json"
     assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v2"}).name == "expansion_capacity_probe_v2.json"
     assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v3"}).name == "expansion_lane_stratified_probe_v3.json"
+    assert default_config_relative({"schema_version": "ganesh-mini-expansion-pilot-card/v4"}).name == "gradient_conflict_probe_v4.json"
 
 
 def campaign(tmp_path: Path) -> ExpansionCampaign:
@@ -87,6 +88,40 @@ def test_gate4_startup_installs_docker_noninteractively() -> None:
     assert startup.index("export DEBIAN_FRONTEND=noninteractive") < install
     assert startup.index("export DEBCONF_NONINTERACTIVE_SEEN=true") < install
     assert startup.index("export NEEDRESTART_MODE=a") < install
+
+
+def test_gate4_startup_closes_loggers_before_terminal_inventory() -> None:
+    startup = (ROOT / "scripts/inference/gcloud_startup_expansion_pilot.sh").read_text()
+    assert "exec > >(tee" not in startup
+    assert 'wait "$stdout_tee_pid" "$stderr_tee_pid"' in startup
+    finish = startup[startup.index("finish() {"):startup.index("trap finish EXIT")]
+    assert finish.index("stop_loggers") < finish.index("write_inventory") < finish.index("final_backup")
+
+
+def test_gradient_audit_stop_is_terminal_without_training_or_evaluation(tmp_path: Path, monkeypatch) -> None:
+    value = campaign(tmp_path)
+    value.docker = "/usr/bin/docker"
+
+    def run(command, **kwargs):
+        destination = value.output / "training" / "expansion-pilot"
+        audit = {"audit_sha256": "a" * 64, "decision": {"stage_2_allowed": False}}
+        report = {"status": "gradient-audit-stop", "state": {"seen_tokens": 0, "optimizer_steps": 0, "gradient_conflict_audit": audit}}
+        report["evidence_sha256"] = canonical_sha256(report)
+        (destination / "run-evidence.json").write_text(json.dumps(report))
+
+    monkeypatch.setattr(value, "run", run)
+    config = {
+        "data": {"prepared_manifest_path": "manifest.json", "prepared_train_path": "train.jsonl", "prepared_validation_path": "validation.jsonl"},
+        "recipe": {"learning_rate": 0.00001},
+        "control": {"maximum_seen_tokens": 100, "maximum_wall_seconds": 21600},
+    }
+    card = {"status": "ready", "provider_execution": {"prior_cost_usd": 0.0}}
+    card["card_sha256"] = canonical_sha256(card)
+    card_path = tmp_path / "card.json"
+    card_path.write_text(json.dumps(card))
+    destination = value.train_expansion(card_path, config)
+    assert destination == value.output / "training" / "expansion-pilot"
+    assert value.phases[-1]["evidence"]["decision"] == "gradient-audit-stop"
 
 
 def test_non_promoting_canary_is_a_completed_adjudication(tmp_path: Path, monkeypatch) -> None:

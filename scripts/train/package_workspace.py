@@ -18,6 +18,8 @@ ALLOWLIST = (
     "scripts/train/__init__.py",
     "scripts/train/pilot.py",
     "scripts/train/expansion_pilot.py",
+    "scripts/train/gradient_conflict.py",
+    "scripts/train/build_gradient_conflict_config.py",
     "scripts/train/build_lane_stratified_probe.py",
     "scripts/train/prepare_expansion.py",
     "scripts/train/qwen_runtime.py",
@@ -40,6 +42,7 @@ ALLOWLIST = (
     "artifacts/train/expansion-lane-stratified-probe-v3/prepared-retention.jsonl",
     "artifacts/train/expansion-lane-stratified-probe-v3/prepared-dataset-manifest.json",
     "artifacts/train/expansion-lane-stratified-probe-v3/local-execution-card.json",
+    "artifacts/train/gradient-conflict-probe-v4/local-execution-card.json",
     "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
 )
 FORBIDDEN_PARTS = {"eval", "measurement", "outputs", ".git", ".gcloud-staging", "__pycache__"}

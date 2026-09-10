@@ -84,7 +84,13 @@ observed_machine_type=$(basename "$(curl -fsS -H "$metadata_header" http://metad
 (( $(nproc) >= 8 )) || { echo "host exposes fewer than 8 CPUs" >&2; exit 43; }
 [[ -z "$(find "$output_dir" -mindepth 1 -print -quit)" ]] || { echo "attempt output is not fresh" >&2; exit 44; }
 
-exec > >(tee -a "$evidence_dir/startup.stdout.log") 2> >(tee -a "$evidence_dir/startup.stderr.log" >&2)
+stdout_fifo="$evidence_dir/startup.stdout.fifo"
+stderr_fifo="$evidence_dir/startup.stderr.fifo"
+mkfifo "$stdout_fifo" "$stderr_fifo"
+exec 3>&1 4>&2
+tee -a "$evidence_dir/startup.stdout.log" < "$stdout_fifo" >&3 & stdout_tee_pid=$!
+tee -a "$evidence_dir/startup.stderr.log" < "$stderr_fifo" >&4 & stderr_tee_pid=$!
+exec > "$stdout_fifo" 2> "$stderr_fifo"
 started_epoch=$(date +%s)
 hard_deadline_epoch=$((started_epoch + GANESH_MAX_VM_LIFETIME_SECONDS))
 controller_deadline_epoch=$((started_epoch + GANESH_CONTROLLER_BUDGET_SECONDS))
@@ -99,11 +105,18 @@ checkpoint() { timeout 300 gcloud storage rsync "$evidence_dir" "gs://$GANESH_GC
 checkpoint_loop() { while true; do checkpoint; sleep 120; done; }
 final_backup() { timeout "$(backup_remaining)" gcloud storage rsync "$evidence_dir" "gs://$GANESH_GCS_BUCKET/$GANESH_GCS_PREFIX/$terminal_prefix" --recursive --exclude='shared-tmp/.*' --project="$GANESH_GCP_PROJECT" > /var/log/ganesh-gate4-final-backup.log 2>&1; }
 stop_writers() { kill "$watchdog_pid" "${checkpoint_pid:-}" "${nvml_pid:-}" 2>/dev/null || true; wait "${checkpoint_pid:-}" "${nvml_pid:-}" 2>/dev/null || true; }
+stop_loggers() {
+  exec 1>&3 2>&4
+  exec 3>&- 4>&-
+  wait "$stdout_tee_pid" "$stderr_tee_pid" || true
+  rm -f "$stdout_fifo" "$stderr_fifo"
+}
 write_inventory() { (cd "$evidence_dir" && find . -type f ! -name runtime-files.sha256 -print0 | sort -z | xargs -0 sha256sum > runtime-files.sha256); }
 finish() {
   local status=$?; trap - EXIT
   echo "$status" > "$evidence_dir/startup-exit-code.txt"
   stop_writers
+  stop_loggers
   write_inventory || status=91
   final_backup || status=90
   ( sleep 2; shutdown -h now ) >/dev/null 2>&1 &

@@ -44,6 +44,8 @@ def default_config_relative(card: dict[str, object]) -> Path:
         return Path("configs/train/expansion_capacity_probe_v2.json")
     if schema == "ganesh-mini-expansion-pilot-card/v3":
         return Path("configs/train/expansion_lane_stratified_probe_v3.json")
+    if schema == "ganesh-mini-expansion-pilot-card/v4":
+        return Path("configs/train/gradient_conflict_probe_v4.json")
     raise RuntimeError("unsupported expansion card schema")
 
 
@@ -99,6 +101,17 @@ class ExpansionCampaign(Campaign):
         timeout = min(self.remaining(self.args.finalization_reserve_seconds), int(control["maximum_wall_seconds"]))
         self.run(command, log_name="train-expansion-pilot", timeout=timeout)
         run = load_sealed(destination / "run-evidence.json", "evidence_sha256")
+        if run.get("status") == "gradient-audit-stop":
+            audit = run.get("state", {}).get("gradient_conflict_audit", {})
+            if (
+                run.get("state", {}).get("optimizer_steps") != 0
+                or run.get("state", {}).get("seen_tokens") != 0
+                or audit.get("decision", {}).get("stage_2_allowed") is not False
+                or not isinstance(audit.get("audit_sha256"), str)
+            ):
+                raise RuntimeError("gradient audit stop evidence is invalid")
+            self.record("train-expansion-pilot", "passed", evidence_sha256=run["evidence_sha256"], decision="gradient-audit-stop", audit_sha256=audit["audit_sha256"])
+            return destination
         if run.get("status") != "complete" or run.get("state", {}).get("seen_tokens") < control["maximum_seen_tokens"]:
             raise RuntimeError("expansion pilot training is incomplete")
         self.record("train-expansion-pilot", "passed", evidence_sha256=run["evidence_sha256"], seen_tokens=run["state"]["seen_tokens"])
@@ -208,7 +221,7 @@ class ExpansionCampaign(Campaign):
         config = json.loads((self.args.train_workspace / self.args.config_relative).read_text())
         provider = card.get("provider_execution") or {}
         schema = config.get("schema_version")
-        expected_card_schema = {"ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1", "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2", "ganesh-mini-expansion-pilot-config/v3": "ganesh-mini-expansion-pilot-card/v3"}.get(schema)
+        expected_card_schema = {"ganesh-mini-expansion-pilot-config/v1": "ganesh-mini-expansion-pilot-card/v1", "ganesh-mini-expansion-pilot-config/v2": "ganesh-mini-expansion-pilot-card/v2", "ganesh-mini-expansion-pilot-config/v3": "ganesh-mini-expansion-pilot-card/v3", "ganesh-mini-expansion-pilot-config/v4": "ganesh-mini-expansion-pilot-card/v4"}.get(schema)
         if (
             expected_card_schema is None
             or card.get("schema_version") != expected_card_schema
@@ -222,6 +235,23 @@ class ExpansionCampaign(Campaign):
         self.record("workspace-and-provider-admission", "passed", card_sha256=card["card_sha256"])
         self.prepare_verifier_images()
         training = self.train_expansion(card_path, config)
+        run = load_sealed(training / "run-evidence.json", "evidence_sha256")
+        if run.get("status") == "gradient-audit-stop":
+            self.record("verify-expansion-pilot", "blocked-by-gradient-audit")
+            self.record("candidate-evaluation", "blocked-by-gradient-audit")
+            status = "completed-gradient-audit-no-conflict"
+            final = {
+                "schema_version": "ganesh-mini-expansion-campaign-result/v1",
+                "status": status,
+                "attempt_id": self.args.attempt_id,
+                "elapsed_seconds": round(time.monotonic() - self.started, 3),
+                "phases": self.phases,
+                "projected_compute_cost_usd": str(self.prior_cost()),
+            }
+            from scripts.campaign.run_host import canonical_sha256
+            final["evidence_sha256"] = canonical_sha256(final)
+            atomic_json(self.output / "campaign-result.json", final)
+            return
         terminal = self.verify_training(card_path, training)
         configs = self.build_evaluation(card_path, terminal, training)
         canary = self.evaluate("canary", configs / "canary.json", training, 30)
@@ -232,7 +262,7 @@ class ExpansionCampaign(Campaign):
         elif adjudication["status"] == "promote-to-full-development":
             status = "completed-capacity-probe-continuation-screen-passed"
             self.record("full-development", "blocked-by-probe-authority")
-        elif schema in {"ganesh-mini-expansion-pilot-config/v2", "ganesh-mini-expansion-pilot-config/v3"}:
+        elif schema in {"ganesh-mini-expansion-pilot-config/v2", "ganesh-mini-expansion-pilot-config/v3", "ganesh-mini-expansion-pilot-config/v4"}:
             status = "completed-capacity-probe-continuation-screen-failed"
         else:
             status = "completed-canary-not-promoted"

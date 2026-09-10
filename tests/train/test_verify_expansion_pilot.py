@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
 
@@ -13,8 +15,8 @@ def sealed(value: dict, field: str) -> dict:
     return value
 
 
-def fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
-    config_path = ROOT / "configs/train/expansion_pilot_v1.json"
+def fixture(tmp_path: Path, config_path: Path | None = None) -> tuple[Path, Path, Path, Path]:
+    config_path = config_path or ROOT / "configs/train/expansion_pilot_v1.json"
     local = build_card(config_path, ROOT, system="Linux")
     card = bind_provider(local, {
         "provider": "gcloud", "project": "p", "zone": "z", "machine_type": "g2-standard-8", "accelerator": "NVIDIA_L4",
@@ -30,15 +32,28 @@ def fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
     import hashlib
     adapter_hash = hashlib.sha256(weights.read_bytes()).hexdigest()
     recipe = card["selected_recipe"]
+    identities = {
+        "card_sha256": card["card_sha256"], "config_sha256": card["inputs"]["config_sha256"],
+        "prepared_manifest_sha256": card["inputs"]["prepared_manifest_sha256"], "prepared_data_sha256": card["inputs"]["prepared_data_sha256"],
+        "validation_data_sha256": card["inputs"]["validation_data_sha256"], "model_revision": card["model"]["revision"],
+        "recipe_sha256": canonical_digest(recipe), "learning_rate": str(recipe["learning_rate"]), "phase": "expansion-pilot",
+    }
+    state = {"seen_tokens": card["control"]["maximum_seen_tokens"]}
+    if card["schema_version"] == "ganesh-mini-expansion-pilot-card/v4":
+        audit = {
+            "schema_version": "ganesh-mini-gradient-conflict-audit/v1", "status": "complete",
+            "identities": identities, "groups": [], "decision": {"stage_2_allowed": True},
+        }
+        audit["audit_sha256"] = canonical_digest(audit)
+        state["gradient_conflict_audit"] = audit
+    lanes = ("go", "java", "javascript", "typescript", "python", "rust")
+    validation = {lane: 1.0 for lane in lanes} | {"five_family_macro_mean": 1.0}
     run = sealed({
         "schema_version": "ganesh-mini-sft-run/v2", "status": "complete",
-        "identities": {
-            "card_sha256": card["card_sha256"], "config_sha256": card["inputs"]["config_sha256"],
-            "prepared_manifest_sha256": card["inputs"]["prepared_manifest_sha256"], "prepared_data_sha256": card["inputs"]["prepared_data_sha256"],
-            "validation_data_sha256": card["inputs"]["validation_data_sha256"], "model_revision": card["model"]["revision"],
-            "recipe_sha256": canonical_digest(recipe), "learning_rate": str(recipe["learning_rate"]), "phase": "expansion-pilot",
-        },
-        "planned_end_row": 3225, "state": {"seen_tokens": 2438853}, "save_reload": {"passed": True},
+        "identities": identities,
+        "planned_end_row": card["data"]["records"], "state": state, "save_reload": {"passed": True},
+        "base_validation_loss_diagnostic": {"supervised_token_mean": validation},
+        "validation_loss_diagnostic": {"supervised_token_mean": validation},
         "cuda": {"peak_vram_bytes": 20 * 1024**3},
         "cost": {"hourly_usd": "1.0", "ceiling_usd": "8.0", "projected_final_usd": "3.5"},
         "adapter_files": {"adapter_model.safetensors": adapter_hash},
@@ -60,6 +75,13 @@ def test_terminal_verifier_rejects_mutated_adapter(tmp_path: Path) -> None:
     report = verify(card, config, run, adapter)
     assert report["status"] == "failed"
     assert "adapter_identity" in report["failed_checks"]
+
+
+def test_terminal_verifier_requires_passing_sealed_v4_gradient_audit(tmp_path: Path) -> None:
+    values = fixture(tmp_path, ROOT / "configs/train/gradient_conflict_probe_v4.json")
+    report = verify(*values)
+    assert report["status"] == "passed"
+    assert next(check for check in report["checks"] if check["name"] == "gradient_conflict_audit")["passed"] is True
 
 
 def test_retention_loss_guard_allows_small_lane_variation_but_no_macro_regression() -> None:

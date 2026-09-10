@@ -19,10 +19,13 @@ development or release work.
 
 Local data, card, and workspace validation is complete at source commit
 `7711fa636cb4b08043518ec1bc97d76aadca889b`. The exact four-object upload-only
-plan is sealed at
-`9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`.
-No GCloud operation is authorized. Approve upload, provider inspection, and
-bounded execution as separate steps.
+plan `9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`
+completed with exact-generation byte verification; receipt seal is
+`f3e127d0db29b4623fef251e76852ac1c3428fbb67d74ab79eaa1d4b00cf8e4f`.
+No compute or infrastructure action occurred. Provider inspection remains a
+separate boundary under plan
+`32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`;
+bounded execution remains unproposed and unauthorized.
 
 ## 2026-09-10 — Rank-16 capacity alone is rejected as the next mechanism
 

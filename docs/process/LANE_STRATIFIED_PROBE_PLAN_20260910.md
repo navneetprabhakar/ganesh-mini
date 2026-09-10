@@ -81,5 +81,9 @@ authorized by this local preparation. Source commit
 `7711fa636cb4b08043518ec1bc97d76aadca889b` binds the four local workspace
 objects. Their upload-only plan totals 7,399,962 bytes and is sealed at
 `9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`.
-Provider inspection and VM execution remain separate later approval
-boundaries.
+That plan completed with four create-only uploads and exact-generation
+roundtrip verification. Receipt seal is
+`f3e127d0db29b4623fef251e76852ac1c3428fbb67d74ab79eaa1d4b00cf8e4f`.
+Provider inspection remains separately gated by plan
+`32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`;
+VM execution is not yet proposed or authorized.

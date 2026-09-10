@@ -25,10 +25,15 @@ and `9e74b86085033c2ab008242cf505c6837c5a9e9b6ac4260b2d93cea395c75346`.
 Both reproduced byte-identically and passed per-file verification. Focused
 tests pass 39/39. Source commit is
 `7711fa636cb4b08043518ec1bc97d76aadca889b`. The exact four-object,
-7,399,962-byte GCloud upload-only plan is sealed at
-`9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`.
-Do not upload, inspect, create, or bill GCloud without fresh explicit approval
-of that seal. Detailed contract: `LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
+7,399,962-byte GCloud upload-only plan
+`9c92677248903be640ad6b4905cbba268126659540ac70ac2ee082e9da97fc61`
+completed. All four assigned generations match local bytes; receipt seal is
+`f3e127d0db29b4623fef251e76852ac1c3428fbb67d74ab79eaa1d4b00cf8e4f`.
+No compute or infrastructure action occurred. Next is read-only provider and
+input inspection under exact plan
+`32804a7e859b7567910f62bc4b403fa3781a6d26b826a033775c7174d9526be4`.
+Do not execute it without fresh explicit approval. Detailed contract:
+`LANE_STRATIFIED_PROBE_PLAN_20260910.md`.
 
 ## Gate 4 capacity probe terminal; do not promote — 2026-09-10
 

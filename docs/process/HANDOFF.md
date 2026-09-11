@@ -88,7 +88,19 @@ controller; exact-generation download and byte comparison are mandatory. Plan
 seal is
 `b24b0b0db1ec876782ec4031a9dd1426f0903e4b0d94f93c284b022bc0b8d58c`.
 It grants no Compute/network inspection, provider binding, training, or
-evaluation authority and is awaiting explicit approval.
+evaluation authority. Navneet approved the exact plan. All five objects were
+uploaded create-only, assigned immutable generations, downloaded by exact
+generation, and matched local size, SHA-256, and bytes. Receipt seal is
+`4ab0ab64e896efcb4000abc1125f59eced2534a93cce6d8eeca3fb5a6ecfa88b`;
+uploaded bytes are exactly 7,424,438. No Compute or infrastructure action
+occurred.
+
+The separate read-only prerequisite plan is sealed at
+`b35f9ff928066701a3aa94c2e54eb5e81c1050f984393a0819d9e56479fce4b4`.
+It binds the five new immutable generations and five previously verified
+runtime/model/verifier generations, permits only metadata, absence, IAM,
+quota/availability, and current-price inspection, and grants no mutation or
+execution authority. It awaits explicit approval.
 
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 

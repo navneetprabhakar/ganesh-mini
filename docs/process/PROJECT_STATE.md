@@ -74,8 +74,17 @@ no provider is bound.
 The exact five-object, 7,424,438-byte upload-only boundary is sealed at
 `b24b0b0db1ec876782ec4031a9dd1426f0903e4b0d94f93c284b022bc0b8d58c`.
 It permits only create-only GCS upload, generation capture, exact-generation
-download, byte comparison, and a sealed local receipt. It is awaiting explicit
-approval and grants no Compute/network inspection or execution authority.
+download, byte comparison, and a sealed local receipt. Navneet approved it;
+all five objects uploaded with create-only preconditions and round-tripped by
+exact generation. Receipt seal is
+`4ab0ab64e896efcb4000abc1125f59eced2534a93cce6d8eeca3fb5a6ecfa88b`.
+No Compute or infrastructure action occurred.
+
+The next read-only inspection boundary is sealed at
+`b35f9ff928066701a3aa94c2e54eb5e81c1050f984393a0819d9e56479fce4b4`.
+It binds ten generation-pinned inputs and allows only provider/input metadata,
+exact resource absence, relevant IAM, quota/availability, and price checks.
+It awaits explicit approval and grants no mutation or execution authority.
 
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 

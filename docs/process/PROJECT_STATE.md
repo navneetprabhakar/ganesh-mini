@@ -2571,3 +2571,22 @@ Current state is WAITING FOR EXACT EXECUTION APPROVAL, not technically stuck.
 Training estimate 74%; release estimate 52%; inception-to-delivery estimate
 63%. After approval, capacity verdict ETA is approximately 2–3 hours; final
 delivery remains 2–5 days only if the continuation screen passes.
+
+# Gate 4 gradient-conflict probe awaits exact execution approval — 2026-09-13
+
+The v4 local mechanism, cloud inputs, and approved read-only prerequisite
+inspection are complete. Inspection report seal is
+`d92854a13a237c44cf6a172dfa53794c4c2ce32d77cf8adf9d99ed7b85d08d14`.
+The planned names are absent; zone/type/quota, VM bucket IAM, and all ten exact-
+generation inputs passed. No GCloud mutation or billing action occurred.
+
+One bounded Standard L4 execution proposal is pending exact approval: seal
+`faf9ed1f062f49d6f48c0a3cfeec2beedc1dcd67aa5ab85a757ec384de4af7ff`,
+maximum 7,200 seconds, provider upper `$1.762043024`, absolute ceiling `$2.25`.
+It first runs a zero-step gradient-conflict audit. Training and the 30-task
+canary are conditional on the frozen audit threshold; failure is a valid
+mechanism verdict, not an infrastructure failure. Full development evaluation
+and every later release-stage action remain out of scope. Current state is
+WAITING FOR EXACT EXECUTION APPROVAL; no Ganesh compute resource is active.
+Training estimate 84%; release estimate 58%; inception-to-delivery estimate
+72%. Conditional probe-to-verified-teardown ETA after approval is 2–3 hours.

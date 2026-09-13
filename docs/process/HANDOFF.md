@@ -2823,3 +2823,40 @@ Current status: the lane-stratified probe is terminal `do-not-promote`; no
 Ganesh Compute resource is active. Gate 4 remains blocked on model-quality
 transfer, not infrastructure or authorization. Local transition analysis is
 the next active step.
+
+## 30. Gradient-conflict probe inspection complete; execution approval pending — 2026-09-13
+
+The v4 gradient-conflict mechanism package is locally sealed and its five new
+workspace/controller objects are generation-pinned in GCS under upload receipt
+`4ab0ab64e896efcb4000abc1125f59eced2534a93cce6d8eeca3fb5a6ecfa88b`.
+Navneet approved read-only inspection plan
+`b35f9ff928066701a3aa94c2e54eb5e81c1050f984393a0819d9e56479fce4b4`.
+After authentication was restored, the inspection completed without any cloud
+mutation. Report seal:
+`d92854a13a237c44cf6a172dfa53794c4c2ce32d77cf8adf9d99ed7b85d08d14`.
+
+The exact VM/disk/network/subnet names are absent; `us-east1-c` is UP;
+`g2-standard-8` is 8 vCPU/32 GiB; `nvidia-l4` is visible; regional L4 quota is
+16 with usage 0; VM bucket objectAdmin is present; and all ten immutable inputs
+match their generation URIs and sizes. These facts do not guarantee
+point-in-time L4 capacity.
+
+The resulting non-executable proposal seal is
+`faf9ed1f062f49d6f48c0a3cfeec2beedc1dcd67aa5ab85a757ec384de4af7ff`.
+It authorizes, only after exact approval, one Standard `g2-standard-8`/L4 VM,
+200 GiB auto-delete balanced disk, no external IP, restart disabled, and a
+7,200-second maximum. Provider upper bound is `$1.762043024`; absolute
+incremental ceiling is `$2.25`.
+
+Execution first performs an eight-group gradient-conflict audit with zero
+optimizer steps. If its frozen threshold fails, stop with no training or
+canary. If it passes, run the bounded 640-row PCGrad probe, the sealed 60-row
+retention guard, and only the frozen 30-task continuation screen. Back up and
+independently verify every terminal artifact in GCS before deleting the named
+resources, verify absence twice, preserve all GCS evidence, and never touch
+`laxmi-wmv2-training-01`. Full development evaluation, decision opening, main
+training, merge, quantization, publication, and release remain forbidden.
+
+Current state is WAITING FOR EXACT EXECUTION APPROVAL. No Ganesh compute is
+active. After approval, audit-only failure can close in roughly 30–60 minutes;
+the conditional PCGrad path through verified teardown is roughly 2–3 hours.

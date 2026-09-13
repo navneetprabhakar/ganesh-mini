@@ -2908,3 +2908,16 @@ which could keep `stop_loggers` waiting until provider deletion. Both defects
 are fixed locally with focused regression coverage; nine focused tests and
 shell syntax pass. Current state is Gate 4 / fresh rerun package required. No
 Ganesh compute is active, and no rerun is authorized by the rescue approval.
+
+## 33. Corrected rerun upload package awaiting approval — 2026-09-14
+
+The corrected evaluation workspace and startup controller are sealed from
+source commit `c01a99b81e9712e9be5d01d7a09595e8e2c65fee`. Eighteen packaging and
+controller tests pass. A new upload-only plan binds five create-only objects,
+7,424,694 bytes total, under unique prefix `input/c01a99b8`; plan seal:
+`b3cc9c24470a0efa851c986f6dfe9125fe7c627f80f2463d887871542267c0ce`.
+
+This plan authorizes no inspection, compute, infrastructure, training or
+evaluation. Exact approval is required before upload. After upload and exact-
+generation roundtrip, a fresh read-only inspection and then a separately
+sealed execution proposal remain required. No Ganesh compute is active.

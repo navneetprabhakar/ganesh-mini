@@ -2619,3 +2619,14 @@ estimate remains 84%, release estimate 58%, and inception-to-delivery estimate
 Next step is to seal and approve new immutable controller/evaluation inputs and
 a fresh bounded rerun. Conditional rerun-to-verdict ETA remains 2–3 hours after
 its exact GCloud approvals.
+
+# Corrected gradient-conflict rerun package awaits upload approval — 2026-09-14
+
+The finalization defects are fixed, the development-v8 workspace was rebuilt
+deterministically, and the corrected source/artifacts are pushed through commit
+`c01a99b81e9712e9be5d01d7a09595e8e2c65fee`. Eighteen focused tests pass.
+Upload-only plan
+`b3cc9c24470a0efa851c986f6dfe9125fe7c627f80f2463d887871542267c0ce`
+binds five new immutable objects totaling 7,424,694 bytes. State is
+WAITING FOR EXACT UPLOAD APPROVAL; no Ganesh compute is active. Upload approval
+does not authorize cloud inspection or a rerun.

@@ -2881,3 +2881,30 @@ path. The host has not yet uploaded terminal evidence, so do not claim an audit
 decision, training result, or failure. Preserve the VM until sealed terminal
 evidence is in GCS; then roundtrip it before deleting the exact resources and
 checking absence twice.
+
+## 32. Gradient-conflict attempt invalid; teardown complete — 2026-09-14
+
+The provider deleted instance `ganesh-mini-g4-grad-20260911t020000z` and its
+auto-delete boot disk at the sealed lifetime boundary before terminal-rescue
+approval arrived. GCS contains only the two immutable input cards; no terminal
+or checkpoint objects exist. Attempt `20260911T020000Z` is therefore
+`invalid-no-terminal-evidence`. Its gradient-audit decision, optimizer-step
+count, training status and model-quality outcome are unknown and must never be
+reconstructed or reported as an executed result. Loss-evidence seal:
+`a0e8097d972fbe14e1e004290b0d3acfd4e8d6f831ac1d79140185f5aa1644a6`.
+
+The remaining named subnet and network were deleted. Two absence checks and a
+wider inventory confirm zero Ganesh-named instances, disks, networks, subnets,
+addresses, forwarding rules, routers, snapshots, images or machine images.
+Teardown-audit seal:
+`8a4d970a4be5d2a930098b8960718627e8fbefe37aceeae11e01d8652be0cbfc`.
+The unrelated `laxmi-wmv2-training-01` disk remains untouched, so the account
+cannot be described as GCS-only.
+
+Local diagnosis found two finalization defects: the sealed audit-stop exit code
+`2` was rejected before its evidence could be validated, and background
+watchdog/checkpoint/NVML descendants inherited the FIFO logger descriptors,
+which could keep `stop_loggers` waiting until provider deletion. Both defects
+are fixed locally with focused regression coverage; nine focused tests and
+shell syntax pass. Current state is Gate 4 / fresh rerun package required. No
+Ganesh compute is active, and no rerun is authorized by the rescue approval.

@@ -96,7 +96,8 @@ hard_deadline_epoch=$((started_epoch + GANESH_MAX_VM_LIFETIME_SECONDS))
 controller_deadline_epoch=$((started_epoch + GANESH_CONTROLLER_BUDGET_SECONDS))
 backup_deadline_epoch=$((hard_deadline_epoch - GANESH_BACKUP_RESERVE_SECONDS))
 (( controller_deadline_epoch <= backup_deadline_epoch )) || controller_deadline_epoch=$backup_deadline_epoch
-( sleep "$((GANESH_MAX_VM_LIFETIME_SECONDS - 10))"; shutdown -h now ) & watchdog_pid=$!
+( sleep "$((GANESH_MAX_VM_LIFETIME_SECONDS - 10))"; shutdown -h now ) \
+  > /var/log/ganesh-gate4-watchdog.log 2>&1 & watchdog_pid=$!
 remaining() { local value=$((controller_deadline_epoch - $(date +%s))); (( value > 0 )) || return 1; echo "$value"; }
 backup_remaining() { local value=$((hard_deadline_epoch - 20 - $(date +%s))); (( value > 0 )) || return 1; echo "$value"; }
 checkpoint_prefix="runtime-checkpoints/$GANESH_ATTEMPT_ID"
@@ -162,8 +163,9 @@ observed_image_id=$(docker image inspect --format '{{.Id}}' "$GANESH_CUDA_IMAGE_
 uname -a > "$evidence_dir/uname.txt"
 docker version > "$evidence_dir/docker-version.txt" 2>&1
 nvidia-smi -q > "$evidence_dir/nvidia-smi-q.txt"
-( while true; do nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu --format=csv,noheader,nounits >> "$evidence_dir/nvml-samples.csv"; sleep 5; done ) & nvml_pid=$!
-checkpoint_loop & checkpoint_pid=$!
+( while true; do nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu --format=csv,noheader,nounits >> "$evidence_dir/nvml-samples.csv"; sleep 5; done ) \
+  2>> "$evidence_dir/nvml-samples.stderr.log" & nvml_pid=$!
+checkpoint_loop > /var/log/ganesh-gate4-checkpoint-loop.log 2>&1 & checkpoint_pid=$!
 
 set +e
 PYTHONPATH="$work_dir/eval" python3 -B "$work_dir/eval/scripts/campaign/run_expansion_host.py" \

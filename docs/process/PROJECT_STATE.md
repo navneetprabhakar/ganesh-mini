@@ -2600,3 +2600,22 @@ container has ended, but terminal evidence is not yet in GCS; its result is
 therefore unknown. Current state is ACTIVE / TERMINAL-EVIDENCE PENDING, not a
 model failure. No teardown until evidence is independently recovered and
 verified.
+
+# Gate 4 gradient-conflict attempt invalid and fully torn down — 2026-09-14
+
+Attempt `20260911T020000Z` reached the bounded provider deletion time without a
+terminal GCS backup. The VM and auto-delete disk are gone; GCS has only the two
+input cards. The attempt has no model-result authority and its audit/training
+outcome is unknown. The exact remaining subnet and network were deleted, two
+absence checks passed, and the wider Ganesh resource inventory is empty. The
+unrelated `laxmi-wmv2-training-01` disk remains untouched.
+
+Local root cause is fixed: audit-stop exit code `2` is now admitted only long
+enough to validate sealed audit evidence, and all background controller jobs
+redirect away from FIFO loggers so orphaned descendants cannot block terminal
+inventory and backup. Nine focused tests plus shell syntax pass. Training
+estimate remains 84%, release estimate 58%, and inception-to-delivery estimate
+72%; this was an invalid infrastructure-evidence attempt, not a model failure.
+Next step is to seal and approve new immutable controller/evaluation inputs and
+a fresh bounded rerun. Conditional rerun-to-verdict ETA remains 2–3 hours after
+its exact GCloud approvals.

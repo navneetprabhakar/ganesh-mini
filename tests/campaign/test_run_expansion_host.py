@@ -98,11 +98,21 @@ def test_gate4_startup_closes_loggers_before_terminal_inventory() -> None:
     assert finish.index("stop_loggers") < finish.index("write_inventory") < finish.index("final_backup")
 
 
+def test_gate4_background_jobs_do_not_hold_fifo_log_descriptors() -> None:
+    startup = (ROOT / "scripts/inference/gcloud_startup_expansion_pilot.sh").read_text()
+    assert '> /var/log/ganesh-gate4-watchdog.log 2>&1 & watchdog_pid=$!' in startup
+    assert '2>> "$evidence_dir/nvml-samples.stderr.log" & nvml_pid=$!' in startup
+    assert 'checkpoint_loop > /var/log/ganesh-gate4-checkpoint-loop.log 2>&1 & checkpoint_pid=$!' in startup
+
+
 def test_gradient_audit_stop_is_terminal_without_training_or_evaluation(tmp_path: Path, monkeypatch) -> None:
     value = campaign(tmp_path)
     value.docker = "/usr/bin/docker"
 
+    run_options: dict[str, object] = {}
+
     def run(command, **kwargs):
+        run_options.update(kwargs)
         destination = value.output / "training" / "expansion-pilot"
         audit = {"audit_sha256": "a" * 64, "decision": {"stage_2_allowed": False}}
         report = {"status": "gradient-audit-stop", "state": {"seen_tokens": 0, "optimizer_steps": 0, "gradient_conflict_audit": audit}}
@@ -122,6 +132,7 @@ def test_gradient_audit_stop_is_terminal_without_training_or_evaluation(tmp_path
     destination = value.train_expansion(card_path, config)
     assert destination == value.output / "training" / "expansion-pilot"
     assert value.phases[-1]["evidence"]["decision"] == "gradient-audit-stop"
+    assert run_options["allowed_returncodes"] == (0, 2)
 
 
 def test_non_promoting_canary_is_a_completed_adjudication(tmp_path: Path, monkeypatch) -> None:

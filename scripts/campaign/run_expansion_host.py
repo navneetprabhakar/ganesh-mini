@@ -99,7 +99,14 @@ class ExpansionCampaign(Campaign):
             "--cost-ceiling-usd", str(self.args.absolute_cost_ceiling_usd),
         ]
         timeout = min(self.remaining(self.args.finalization_reserve_seconds), int(control["maximum_wall_seconds"]))
-        self.run(command, log_name="train-expansion-pilot", timeout=timeout)
+        # run_sft uses exit 2 for a sealed gradient-audit stop. Validate the
+        # resulting evidence below before accepting that code as terminal.
+        self.run(
+            command,
+            log_name="train-expansion-pilot",
+            timeout=timeout,
+            allowed_returncodes=(0, 2),
+        )
         run = load_sealed(destination / "run-evidence.json", "evidence_sha256")
         if run.get("status") == "gradient-audit-stop":
             audit = run.get("state", {}).get("gradient_conflict_audit", {})

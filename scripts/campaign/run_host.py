@@ -228,7 +228,15 @@ class Campaign:
         ledger["evidence_sha256"] = canonical_sha256(ledger)
         atomic_json(self.ledger_path, ledger)
 
-    def run(self, command: list[str], *, log_name: str, timeout: int, env: dict[str, str] | None = None) -> None:
+    def run(
+        self,
+        command: list[str],
+        *,
+        log_name: str,
+        timeout: int,
+        env: dict[str, str] | None = None,
+        allowed_returncodes: tuple[int, ...] = (0,),
+    ) -> None:
         stdout = self.output / f"{log_name}.stdout.log"
         stderr = self.output / f"{log_name}.stderr.log"
         try:
@@ -259,7 +267,7 @@ class Campaign:
                 ids=[row for row in listed.stdout.splitlines() if row]
                 if ids: subprocess.run([self.docker,"rm","-f",*ids],capture_output=True,check=False,timeout=60)
             raise
-        if returncode != 0:
+        if returncode not in allowed_returncodes:
             raise RuntimeError(f"{log_name} exited {returncode}")
 
     def docker_base(self, name: str, workspace: Path) -> list[str]:

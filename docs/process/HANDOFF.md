@@ -100,7 +100,11 @@ The separate read-only prerequisite plan is sealed at
 It binds the five new immutable generations and five previously verified
 runtime/model/verifier generations, permits only metadata, absence, IAM,
 quota/availability, and current-price inspection, and grants no mutation or
-execution authority. It awaits explicit approval.
+execution authority. Navneet approved the exact plan. Execution stopped before
+the first provider read because the selected `admin@executespec.ai` account
+requires interactive `gcloud auth login`; token refresh cannot prompt in the
+non-interactive inspection process. No cloud mutation occurred. The same
+approved plan may resume after authentication without a new approval.
 
 ## Gate 4 six-lane-stratified probe terminal; do not promote — 2026-09-10
 

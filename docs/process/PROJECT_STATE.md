@@ -84,7 +84,10 @@ The next read-only inspection boundary is sealed at
 `b35f9ff928066701a3aa94c2e54eb5e81c1050f984393a0819d9e56479fce4b4`.
 It binds ten generation-pinned inputs and allows only provider/input metadata,
 exact resource absence, relevant IAM, quota/availability, and price checks.
-It awaits explicit approval and grants no mutation or execution authority.
+Navneet approved it, but the first provider read was blocked by required
+interactive reauthentication for `admin@executespec.ai`. No cloud mutation
+occurred. Resume the same approved plan after `gcloud auth login`; it grants no
+mutation or execution authority.
 
 ## Six-lane-stratified Gate 4 probe completed; do not promote — 2026-09-10
 

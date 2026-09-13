@@ -2590,3 +2590,13 @@ and every later release-stage action remain out of scope. Current state is
 WAITING FOR EXACT EXECUTION APPROVAL; no Ganesh compute resource is active.
 Training estimate 84%; release estimate 58%; inception-to-delivery estimate
 72%. Conditional probe-to-verified-teardown ETA after approval is 2–3 hours.
+
+# Gate 4 gradient-conflict execution active — 2026-09-13
+
+Exact proposal `faf9ed1f062f49d6f48c0a3cfeec2beedc1dcd67aa5ab85a757ec384de4af7ff`
+is approved under the `$2.25` ceiling. One Standard L4 VM is active with hard
+provider deletion at `2026-09-13T19:26:52Z`. Input admission passed. The audit
+container has ended, but terminal evidence is not yet in GCS; its result is
+therefore unknown. Current state is ACTIVE / TERMINAL-EVIDENCE PENDING, not a
+model failure. No teardown until evidence is independently recovered and
+verified.

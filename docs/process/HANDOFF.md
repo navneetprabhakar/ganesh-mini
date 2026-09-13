@@ -2860,3 +2860,24 @@ training, merge, quantization, publication, and release remain forbidden.
 Current state is WAITING FOR EXACT EXECUTION APPROVAL. No Ganesh compute is
 active. After approval, audit-only failure can close in roughly 30–60 minutes;
 the conditional PCGrad path through verified teardown is roughly 2–3 hours.
+
+## 31. Gradient-conflict probe execution active — 2026-09-13
+
+Navneet approved exact proposal
+`faf9ed1f062f49d6f48c0a3cfeec2beedc1dcd67aa5ab85a757ec384de4af7ff`
+with the `$2.25` absolute incremental ceiling. Approval seal is
+`8734cf0dea1e77a9ad59d89619b5444863d370c82fd7e01278eaebf28067ac2f`.
+The two execution cards were uploaded create-only and exact-generation
+roundtrips passed. Training card generation is `1789320243256446`; outer card
+generation is `1789320280154764`; outer execution seal is
+`319673d048a063af9f1b8b6b4d609783ad89c0fa26a45b6253b40a57cf1e063c`.
+
+The single named Standard L4 VM is active in `us-east1-c`, provider instance
+ID `2866150186379076149`, with no external IP, restart disabled, auto-delete
+200 GiB disk, and provider termination timestamp `2026-09-13T19:26:52Z`.
+All immutable guest downloads passed and the network-disabled audit container
+started. It exited after about 4m20s, which is too short to infer the PCGrad
+path. The host has not yet uploaded terminal evidence, so do not claim an audit
+decision, training result, or failure. Preserve the VM until sealed terminal
+evidence is in GCS; then roundtrip it before deleting the exact resources and
+checking absence twice.

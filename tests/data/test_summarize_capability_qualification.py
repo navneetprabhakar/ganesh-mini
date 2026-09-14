@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from scripts.data.summarize_capability_qualification import canonical_json, canonical_sha256, summarize
+from scripts.data.summarize_capability_qualification import (
+    _candidate_view,
+    canonical_json,
+    canonical_sha256,
+    summarize,
+)
 
 
 LANES = ("go", "java", "javascript", "typescript", "python", "rust")
@@ -361,3 +366,20 @@ def test_terminal_no_change_may_be_rejected_by_an_earlier_gate(tmp_path: Path) -
 
     assert report["totals"]["corrected"] == 1
     assert report["pass_requirements"]["all_corrections_dispositioned"] is True
+
+
+def test_candidate_view_preserves_bounded_replacement_declaration() -> None:
+    candidate, qualification = _candidate_view({
+        "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
+        "candidate": {"id": "replacement-1", "lane": "python", "task_type": "repair"},
+        "qualification": {
+            "queue_id": "replacement-1", "cell_id": "numeric/python/repair",
+            "replacement_attempt": 1,
+            "replacement_for_cell_id": "numeric/python/repair",
+        },
+    })
+
+    assert qualification is not None
+    assert candidate["cell_id"] == "numeric/python/repair"
+    assert candidate["replacement_attempt"] == 1
+    assert candidate["replacement_for_cell_id"] == "numeric/python/repair"

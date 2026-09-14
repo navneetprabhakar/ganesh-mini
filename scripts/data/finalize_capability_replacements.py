@@ -51,24 +51,39 @@ def build(
             raise ValueError("replacement candidate batch count mismatch")
         replacements.extend(rows)
     expected_ids = replacement_manifest.get("candidate_ids")
-    if [row.get("id") for row in replacements] != expected_ids or len(set(expected_ids)) != len(expected_ids):
+    if (
+        not isinstance(expected_ids, list)
+        or not all(isinstance(identifier, str) and identifier for identifier in expected_ids)
+        or len(set(expected_ids)) != len(expected_ids)
+    ):
         raise ValueError("replacement candidates differ from manifest")
+    replacements_by_id = {row.get("id"): row for row in replacements}
+    if len(replacements_by_id) != len(replacements) or set(replacements_by_id) != set(expected_ids):
+        raise ValueError("replacement candidates differ from manifest")
+    # Batches are grouped by lane, while the manifest's candidate order is the
+    # canonical empty-cell order.  Reassemble by the sealed manifest order.
+    replacements = [replacements_by_id[identifier] for identifier in expected_ids]
 
     reviews: dict[str, dict[str, Any]] = {}
     for path in review_paths:
         for row in read_jsonl(path):
             body = dict(row); claimed = body.pop("evidence_sha256", None)
-            identifier = row.get("id")
-            if claimed != canonical_sha256(body) or not isinstance(identifier, str) or identifier in reviews:
+            candidate_hash = row.get("candidate_sha256")
+            if (
+                claimed != canonical_sha256(body)
+                or not isinstance(candidate_hash, str)
+                or candidate_hash in reviews
+            ):
                 raise ValueError("replacement semantic evidence seal or identity is invalid")
-            reviews[identifier] = row
-    if set(reviews) != set(expected_ids):
+            reviews[candidate_hash] = row
+    expected_hashes = {candidate_sha256(candidate) for candidate in replacements}
+    if set(reviews) != expected_hashes or len(expected_hashes) != len(replacements):
         raise ValueError("replacement semantic review does not cover every replacement exactly once")
 
     records = list(original_semantic["records"])
     for candidate in replacements:
         identifier = candidate["id"]
-        review = reviews[identifier]
+        review = reviews[candidate_sha256(candidate)]
         assignment = candidate.get("qualification_assignment", {})
         visibility = review.get("visibility", {})
         substantive = review.get("primary_capability_is_substantive")

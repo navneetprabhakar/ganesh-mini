@@ -84,6 +84,13 @@ def _candidate_view(row: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]
         raise ValueError("qualification envelope lacks candidate or qualification metadata")
     if qualification.get("queue_id") != candidate.get("id"):
         raise ValueError(f"{candidate.get('id')}: qualification envelope queue binding mismatch")
+    if qualification.get("replacement_attempt") is not None:
+        candidate = dict(candidate)
+        candidate.update({
+            "cell_id": qualification.get("cell_id"),
+            "replacement_attempt": qualification.get("replacement_attempt"),
+            "replacement_for_cell_id": qualification.get("replacement_for_cell_id"),
+        })
     return candidate, qualification
 
 

@@ -712,6 +712,13 @@ def build_envelopes(
                 "semantic_review": semantic, "separation": separation, "lineage": lineage,
             },
         }
+        if queue_row.get("replacement_attempt") == 1:
+            qualification.update({
+                "replacement_attempt": 1,
+                "replacement_for_cell_id": queue_row["replacement_for_cell_id"],
+                "original_queue_ids": queue_row["original_queue_ids"],
+                "disposition_report_sha256": queue_row["disposition_report_sha256"],
+            })
         envelopes.append({"schema_version": SCHEMA_VERSION, "candidate": candidate, "qualification": qualification})
     return envelopes
 

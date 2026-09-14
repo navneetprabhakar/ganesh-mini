@@ -29,12 +29,21 @@ def test_combines_one_independently_reviewed_replacement_and_fails_on_review_tam
         "qualification_assignment": {"primary_capability": "parser", "assigned_cross_cutting_dimension": "malformed_input"},
         "teacher_evidence": {},
     }
+    replacement_two = {
+        **replacement,
+        "id": "replacement-2",
+        "messages": [{"role": "user", "content": "other spec"}],
+    }
     replacement_path = tmp_path / "replacement.jsonl"; write_jsonl(replacement_path, [replacement])
+    replacement_two_path = tmp_path / "replacement-two.jsonl"; write_jsonl(replacement_two_path, [replacement_two])
     manifest = {
         "schema_version": "ganesh-mini-capability-replacement-queue-manifest/v1",
         "semantic_report_sha256": original_report["report_sha256"], "replacement_attempt": 1,
-        "candidate_ids": ["replacement-1"],
-        "batches": [{"candidates": str(replacement_path), "records": 1}],
+        "candidate_ids": ["replacement-2", "replacement-1"],
+        "batches": [
+            {"candidates": str(replacement_path), "records": 1},
+            {"candidates": str(replacement_two_path), "records": 1},
+        ],
         "manifest_sha256": "b" * 64,
     }
     review = {
@@ -45,12 +54,20 @@ def test_combines_one_independently_reviewed_replacement_and_fails_on_review_tam
         "visibility": {"specification_and_assigned_labels_only": True, "verifier_outputs_visible": False, "evaluation_artifacts_read": 0},
     }
     review["evidence_sha256"] = canonical_sha256(review)
-    review_path = tmp_path / "review.jsonl"; write_jsonl(review_path, [review])
+    review_two = {
+        **review,
+        "id": "replacement-2",
+        "candidate_sha256": candidate_sha256(replacement_two),
+        "specification_sha256": sha256_text("other spec"),
+    }
+    review_two.pop("evidence_sha256")
+    review_two["evidence_sha256"] = canonical_sha256(review_two)
+    review_path = tmp_path / "review.jsonl"; write_jsonl(review_path, [review, review_two])
     combined, augmented = build(original_path, original_report, manifest, [review_path])
-    assert len(combined) == 241 and len(augmented["records"]) == 241
+    assert len(combined) == 242 and len(augmented["records"]) == 242
+    assert [row["id"] for row in combined[-2:]] == ["replacement-2", "replacement-1"]
     assert augmented["records"][-1]["id"] == "replacement-1"
 
     review["verdict"] = "reject"; review_path.write_text(json.dumps(review) + "\n")
     with pytest.raises(ValueError, match="seal"):
         build(original_path, original_report, manifest, [review_path])
-

@@ -1,5 +1,29 @@
 # Decisions
 
+## 2026-09-14 — Honor the sealed Gate 2 no-go; do not scale or train
+
+The capability-stratified qualification completed with 217/247 candidates
+admitted and 119/120 cells covered. It met the aggregate minimum but failed the
+mandatory every-cell requirement. The only empty cell is
+`numeric_reasoning/python/repair`. Its one permitted replacement was generated,
+independently reviewed, and rejected because the primary numeric-reasoning
+capability was not substantive. All replacement opportunities under the sealed
+contract are therefore exhausted.
+
+Treat this as a valid negative corpus-construction result, not as an
+infrastructure failure. Do not issue a second replacement, weaken the all-cell
+gate after observing the outcome, scale the 217 admitted records into the
+planned pilot corpus, or begin model training. The canonical final admission
+and qualification seals are
+`c576ef4f5b0f137edac829703eae6d7c4a63cae513544d36471f7ffcf81b7cb7`
+and
+`293ebd4d38e4200a9de6bd45ba1a9ba4d0f9c0707ce632ba0be8241f41195139`.
+
+Further execution requires a new decision: either close `ganesh-mini-1.0` as a
+documented no-go or revise the Gate 2 construction contract and perform a fresh
+qualification round. Any such revision must be explicit and preserve this
+failed result; it must not relabel or overwrite the sealed evidence.
+
 ## 2026-09-14 — Assign qualification sources deterministically and without reuse
 
 Build the 240 qualification drafting requests by seeded SHA-256 ordering over

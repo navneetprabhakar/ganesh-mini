@@ -1,5 +1,49 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 2 capability qualification terminal no-go — 2026-09-14
+
+The capability-stratified qualification campaign is complete under the sealed
+contract and failed its all-cell requirement. The canonical final run admitted
+217 of 247 generated candidates (87.85%) and covered 119 of 120 cells. The sole
+empty cell is `numeric_reasoning/python/repair`. All 240 original drafts and all
+seven permitted replacements were generated and dispositioned; the replacement
+for the remaining cell failed independent semantic review. There are no pending
+or eligible replacement cells, and the final executable run had no timeout-driven
+gap.
+
+Language-family admissions are Go 37/41, Java 35/41, JavaScript/TypeScript
+74/81, Python 34/42, and Rust 37/42. The 30 final rejections comprise 18
+semantic-ontology rejects, seven reference-solution verification failures, four
+terminal no-change correction attempts, and one known-bad-accepted failure.
+
+Canonical decision artifacts are:
+
+- `measurement/gate2/capability-stratified-v2/admission-campaign-final-v2/admission-report.json`
+  with report seal
+  `c576ef4f5b0f137edac829703eae6d7c4a63cae513544d36471f7ffcf81b7cb7`;
+- `measurement/gate2/capability-stratified-v2/admission-campaign-final-v2/qualification-summary.json`
+  with summary seal
+  `293ebd4d38e4200a9de6bd45ba1a9ba4d0f9c0707ce632ba0be8241f41195139`;
+- `measurement/gate2/capability-stratified-v2/replacements-v1/manifest.json`
+  with manifest seal
+  `435fba0091304f03cedb324fd35ad019a92559f7e76b13202f852fff93bb3209`;
+- augmented semantic and separation reports sealed at
+  `276e9c90129703393d5223221f6686198bf39e2a267268e22560998a0b3fe3b5`
+  and `d323de11ae4e16b1a09b3874534974ff7d022d1e0170af25e6a5408f74cecaf9`.
+
+Current state is STOPPED AT GATE 2 / NO-GO. Do not scale this corpus, start
+training, consume a second replacement, or claim `ganesh-mini-1.0` is ready for
+public release. No compute is running and no GCloud action was taken for this
+campaign. The previously reported workflow percentages remain training 84%,
+release 58%, and overall delivery 72%, but all are blocked and must not be read
+as quality or release-readiness scores. There is no valid delivery ETA under the
+current contract.
+
+Navneet's next decision is one of two materially different paths: close
+`ganesh-mini-1.0` as a documented no-go, or explicitly authorize a revised Gate
+2 construction contract and a fresh qualification round. A revised contract is
+new work; it cannot be represented as another retry under the sealed contract.
+
 ## Gate 2 qualification source queue sealed — 2026-09-14
 
 The deterministic qualification source-assignment queue is complete. It binds

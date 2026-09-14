@@ -1,5 +1,37 @@
 # Project state
 
+## Gate 2 capability qualification failed after bounded recovery — 2026-09-14
+
+Gate 2 is terminal under the current sealed construction contract. The final
+canonical campaign generated and dispositioned 247 candidates: 240 originals
+plus exactly seven replacements, one for each cell empty after the correction
+pass. It admitted 217 candidates (87.85%) and covered 119/120 cells. The sole
+uncovered and exhausted cell is `numeric_reasoning/python/repair`; its permitted
+replacement failed semantic review. The minimum-admission threshold was met,
+but the mandatory every-cell threshold was not.
+
+Admissions by language family are Go 37/41, Java 35/41,
+JavaScript/TypeScript 74/81, Python 34/42, and Rust 37/42. Final rejections are
+18 semantic, seven reference-solution failures, four terminal no-change
+corrections, and one known-bad-accepted failure. The canonical final executable
+run has no timeout-driven gap. Final admission report seal:
+`c576ef4f5b0f137edac829703eae6d7c4a63cae513544d36471f7ffcf81b7cb7`.
+Qualification summary seal:
+`293ebd4d38e4200a9de6bd45ba1a9ba4d0f9c0707ce632ba0be8241f41195139`.
+
+Current state is STOPPED AT GATE 2 / NO-GO. The sealed rules do not permit a
+second replacement for the empty cell, and a failed qualification does not
+authorize scaling or training. No compute is running and no GCloud resource was
+used by this campaign. `ganesh-mini-1.0` is not eligible for publication as a
+passed model release.
+
+The historical workflow estimates remain training 84%, release 58%, and
+overall delivery 72%. They record completed process work, not model quality;
+all three are now blocked. ETA is unavailable under the current contract. Work
+can resume only after an explicit decision either to close the project as a
+documented no-go or to adopt a revised Gate 2 construction contract and rerun
+qualification.
+
 ## Gate 2 qualification source queue ready — 2026-09-14
 
 The sealed 120-cell contract now has a deterministic 240-row source-assignment

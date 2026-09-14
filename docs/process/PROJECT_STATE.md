@@ -1,5 +1,30 @@
 # Project state
 
+## Gate 2 reopened after training-only diversity audit — 2026-09-14
+
+The sealed 3,225-row corpus was sufficient only for one bounded Gate 4 pilot;
+that allowance is exhausted. A new non-evaluation audit finds that the 640-row
+v3 selection proportionally represents the full corpus's thirteen observable
+contract tags: selection shares range from 17.69% to 23.87% around the 19.84%
+row sample. It therefore finds no gross selection-specific topic dropout.
+
+The full corpus has 2,812 unique source records and 3,225 unique normalized
+prompt scaffolds, but the teacher contract drives heavy lexical concentration
+in string/Unicode, malformed-input/error, ordering, and mutation/aliasing
+requirements. These are observable words, not proof of semantic capability
+coverage. Report seal:
+`714fe87491fb798c6248f53e40dd80c9d305125f39dd631db8d7c47114b8f793`.
+
+Current gate is Gate 2: define a training-only capability ontology and a new
+cross-lane corpus/admission contract. Do not use evaluation tasks as training
+templates, generate more rows through the unchanged teacher contract, or run
+another capacity/scheduling/optimizer probe. No GCloud resource is active or
+authorized. Training-process estimate remains 84%, release estimate 58%, and
+overall delivery estimate 72%; these percentages measure completed pipeline
+work, not candidate quality. Qualified release candidates remain zero, so ETA
+is still conditional rather than fixed. See
+`CORPUS_DIVERSITY_AUDIT_20260914.md`.
+
 ## Gradient-conflict audit terminal; PCGrad ineligible — 2026-09-14
 
 Attempt `20260914T003000Z` validly completed the frozen zero-step audit under

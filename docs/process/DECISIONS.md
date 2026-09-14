@@ -1,5 +1,29 @@
 # Decisions
 
+## 2026-09-14 — Reopen Gate 2; selection balance is not the missing mechanism
+
+The prior 3,225-row corpus-sufficiency decision authorized one bounded pilot,
+not repeated training. A training-only audit now shows the 640-row v3 selection
+tracks the full corpus across thirteen observable contract tags: every tag's
+selected share is within 17.69%–23.87% around the 19.84% row sample. The subset
+has all lanes and task types, 594 unique source records, and no duplicate
+normalized prompt scaffolds. There is no evidence that hash selection alone
+discarded a materially different capability mix.
+
+The full corpus also has high surface uniqueness, but its wording is heavily
+shaped by the unchanged teacher instruction to specify malformed, boundary,
+ordering, aliasing, and mutation behavior. Surface uniqueness and keyword
+counts do not establish semantic task diversity. The full-corpus Gate 4 run
+already failed broad transfer, while later capacity, lane scheduling,
+checkpoint, and gradient-direction interventions also failed to qualify.
+
+Therefore reopen Gate 2. Before another training run, freeze a training-only
+capability ontology and cross-lane corpus construction/admission contract. Do
+not derive training tasks from private development failures, do not generate
+more rows through the unchanged teacher contract, and do not spend on another
+optimizer-only probe. Audit seal:
+`714fe87491fb798c6248f53e40dd80c9d305125f39dd631db8d7c47114b8f793`.
+
 ## 2026-09-14 — Pairwise negative LoRA-gradient conflict does not explain v3 oscillation
 
 The frozen eight-group audit measured all 120 pairwise lane-gradient cosines

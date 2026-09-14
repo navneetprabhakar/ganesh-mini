@@ -1,5 +1,27 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 2 reopened for a new corpus contract — 2026-09-14
+
+A training-only diversity audit now compares the full authorized 3,225-row
+corpus with the 640-row v3 selection without reading any evaluation surface.
+The selection is 19.84% of the corpus; all thirteen observable contract tags
+are represented between 17.69% and 23.87%, so there is no gross selection-
+specific topic dropout. The full corpus has 2,812 unique source records and no
+duplicate normalized prompt scaffolds, but its observable wording is dominated
+by the teacher contract's repeated string/Unicode, error/malformed, ordering,
+and alias/mutation requirements. Lexical uniqueness does not prove capability
+diversity. Report seal:
+`714fe87491fb798c6248f53e40dd80c9d305125f39dd631db8d7c47114b8f793`.
+
+The prior Gate 2 sufficiency decision was explicitly for one bounded pilot and
+is exhausted. The full-corpus failure plus negative capacity, scheduling,
+checkpoint, and gradient-conflict experiments now rule out another optimizer-
+only probe. Reopen Gate 2 and freeze a new training-only capability-stratified
+corpus contract before constructing or training anything else. Private
+development and decision tasks remain excluded and must not become templates.
+No GCloud action is authorized or active. Detailed audit:
+`CORPUS_DIVERSITY_AUDIT_20260914.md`.
+
 ## Gate 4 gradient-conflict hypothesis rejected; probe torn down — 2026-09-14
 
 Approved attempt `20260914T003000Z` under proposal

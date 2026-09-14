@@ -1,5 +1,42 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 4 gradient-conflict hypothesis rejected; probe torn down — 2026-09-14
+
+Approved attempt `20260914T003000Z` under proposal
+`af67925bf32f28b2708862a517af58b00f161cbbd66c2c3d00db05987f98cd88`
+completed as a valid audit-only diagnostic. All eight frozen optimizer groups
+were measured before any optimizer step. Across 120 pairwise lane-gradient
+cosines, the minimum was `+0.035201297582185986`; no cosine was negative and
+none crossed the frozen `-0.05` conflict threshold. Qualifying conflict groups
+were `0/8` versus required `4/8`, including `0/8` with JavaScript or TypeScript
+participation versus required `4/8`. Stage 2 was correctly blocked with zero
+optimizer steps and zero seen training tokens. No PCGrad training, retention
+guard, or canary ran. This is a valid mechanism verdict, not infrastructure or
+model-training failure.
+
+The audit, run, ledger, and campaign seals verify at
+`411885c12f8db68ce22986244c6d67822abcae16aa9f9c23d7a755a740eea69e`,
+`af3ea3cf1545f3711f9ca4fdd5a9dca88941a34f820f7403c8245c0d6c9cbfad`,
+`a32b193e407719fbff07cbcab2fcb50f00c02850ba36e1a59ca77f2b45db3bc7`,
+and `d31915796be69a2f9f0c6e20f0ea387b435d98a9507221f881ced3d842d7785f`.
+All 25 terminal-manifest entries independently hash-verified. Control archive,
+recovery record, and receipts were exact-generation round-tripped in GCS;
+teardown receipt generation is `1789359329656748`, seal
+`d73e72e35542428ba5a96a6706e2e036cd26b6c79f789b26a135b54b889dafd9`.
+The complete post-teardown provider audit also passed exact-generation GCS
+roundtrip at generation `1789359494557821`; its preservation record is
+generation `1789359520965327`.
+Projected compute cost is `$0.08009125052911889715777777778`.
+
+The exact VM, disk, subnet, and network are absent in two checks 52 seconds
+apart. No Ganesh Compute surface remains. The unrelated
+`laxmi-wmv2-training-01` disk remains untouched and may bill, so project-wide
+GCS-only remains false. Do not run PCGrad, weaken the audit threshold, or open
+the canary. Gate 4 is still model-quality blocked. Next return locally to
+task/corpus diversity and the persistent `collapse-runs` cluster before
+freezing any new bounded mechanism. Full result:
+`GRADIENT_CONFLICT_PROBE_RESULT_20260914.md`.
+
 ## Gate 4 v3 checkpoint sweep terminal; do not promote — 2026-09-11
 
 Attempt `20260910T150000Z`, approved under proposal

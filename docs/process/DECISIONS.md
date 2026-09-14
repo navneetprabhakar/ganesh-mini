@@ -1,5 +1,31 @@
 # Decisions
 
+## 2026-09-14 — Pairwise negative LoRA-gradient conflict does not explain v3 oscillation
+
+The frozen eight-group audit measured all 120 pairwise lane-gradient cosines
+before any optimizer step. Every cosine was positive; the minimum was
+`+0.035201297582185986`, while the predeclared conflict threshold was `-0.05`.
+Zero of eight groups had a qualifying negative pair and zero had qualifying
+JavaScript or TypeScript participation, versus four required for each
+condition. The evidence is complete and sealed; this is a valid negative
+mechanism result.
+
+Therefore do not activate PCGrad, weaken the threshold after seeing the data,
+or run the conditional canary. The earlier checkpoint oscillation is not
+supported as pairwise negative-gradient interference under this adapter,
+objective, sample, and threshold. Return to task/corpus diversity and the
+persistent `collapse-runs` cluster before proposing another bounded mechanism.
+Gate 4 remains blocked and no candidate is eligible for full development or
+release gates.
+
+Attempt `20260914T003000Z` used zero optimizer steps and is fully preserved in
+GCS. Campaign seal is
+`d31915796be69a2f9f0c6e20f0ea387b435d98a9507221f881ced3d842d7785f`;
+teardown seal is
+`d73e72e35542428ba5a96a6706e2e036cd26b6c79f789b26a135b54b889dafd9`.
+All exact Ganesh resources are absent twice; the unrelated
+`laxmi-wmv2-training-01` disk remains out of scope.
+
 ## 2026-09-11 — Earlier stopping cannot rescue the v3 lane-stratified recipe
 
 The approved diagnostic-only sweep evaluated all five earlier v3 checkpoints

@@ -1,5 +1,40 @@
 # Project state
 
+## Gradient-conflict audit terminal; PCGrad ineligible — 2026-09-14
+
+Attempt `20260914T003000Z` validly completed the frozen zero-step audit under
+approved proposal
+`af67925bf32f28b2708862a517af58b00f161cbbd66c2c3d00db05987f98cd88`.
+It measured eight groups and 120 pairwise cosines. The minimum cosine was
+`+0.035201297582185986`; negative pairs were `0`, qualifying conflict groups
+were `0/8` versus required `4/8`, and JavaScript/TypeScript negative-
+participation groups were `0/8` versus required `4/8`. The frozen gate stopped
+before training: optimizer steps `0`, seen tokens `0`, canary tasks `0`.
+Campaign status is `completed-gradient-audit-no-conflict`. This rejects the
+declared gradient-conflict/PCGrad mechanism; it is not an infrastructure
+failure or a trained-model failure.
+
+All 25 terminal-manifest entries and all four canonical evidence seals passed.
+The terminal manifest is
+`5fef6e6135a9a4adafcb89d0fa69e66aac956e9fe8e217e372e7cecdf57e0a5f`;
+campaign seal is
+`d31915796be69a2f9f0c6e20f0ea387b435d98a9507221f881ced3d842d7785f`.
+GCS control/recovery generations are `1789358988755320` and
+`1789358992992417`; teardown receipt generation is `1789359329656748`.
+Post-teardown provider evidence is independently preserved at generation
+`1789359494557821`, with preservation record generation `1789359520965327`.
+Projected cost is `$0.08009125052911889715777777778`.
+
+The exact VM, disk, subnet, and network are absent twice. Ganesh compute
+billing is closed. The unrelated `laxmi-wmv2-training-01` disk remains and may
+bill, so the project is not GCS-only. Gate 4 remains blocked on defensible
+multilingual executable transfer. Current direction is local diagnosis and a
+task/corpus-diversity mechanism focused on persistent `collapse-runs`; no new
+GCloud execution is authorized. Training-process estimate remains 84%, release
+estimate 58%, and inception-to-delivery estimate 72%, but there is no qualified
+release candidate and therefore no defensible fixed delivery date. See
+`GRADIENT_CONFLICT_PROBE_RESULT_20260914.md`.
+
 ## V3 checkpoint sweep terminal; earlier stopping rejected — 2026-09-11
 
 Approved diagnostic attempt `20260910T150000Z` evaluated all five earlier v3

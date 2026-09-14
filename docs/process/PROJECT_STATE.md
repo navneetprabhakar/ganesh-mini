@@ -1,5 +1,23 @@
 # Project state
 
+## Capability-stratified qualification contract sealed — 2026-09-14
+
+Gate 2 now has a sealed replacement construction contract at
+`0181751bdd912b8d04ccf954c358cb22681d6fc4aa5b3896a986e7a1ce73af01`.
+Ten primary capabilities cross six lanes and generation/repair for 120 cells.
+Qualification is capped at 240 drafts and must admit at least one record per
+cell plus 120 overall after at most one replacement per empty cell. It uses
+only training sources and explicitly excludes evaluation data and private
+archetype labels.
+
+The conditional pilot target is 720 new records plus 180 broad replay records,
+but no pilot construction beyond qualification and no training is yet sealed.
+The immediate active work is implementing source assignment, isolated teacher
+and semantic-review contracts, executable admission, and qualification
+reporting. No GCloud resource is active or authorized. Progress remains
+training 84%, release 58%, overall 72%; qualified release candidates remain
+zero. See `docs/plans/GATE2_CAPABILITY_STRATIFIED_CORPUS_PLAN_20260914.md`.
+
 ## Gate 2 reopened after training-only diversity audit — 2026-09-14
 
 The sealed 3,225-row corpus was sufficient only for one bounded Gate 4 pilot;

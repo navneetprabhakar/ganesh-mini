@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-09-14 — Qualify a 120-cell capability matrix before rebuilding Gate 4 data
+
+Use ten training-only primary capabilities crossed with six languages and both
+generation/repair. Assign one cross-cutting edge dimension per cell instead of
+requiring every task to repeat malformed, boundary, ordering, aliasing, and
+mutation behavior. This creates 120 independently measurable cells without
+using any private evaluation task or archetype as a template.
+
+Draft two candidates per cell for a 240-candidate qualification. Require at
+least 120 admitted records and one admitted record in every cell after at most
+one bounded replacement for an empty cell. If qualification passes, plan for
+six new records per cell plus 180 broad replay records; cap new drafting at
+1,200. If any cell remains empty or executable/semantic yield misses the gate,
+revise the construction contract before scaling.
+
+The qualification is in-scope non-GCloud dataset work. The sealed contract
+does not authorize model training or any GCloud action. Plan seal:
+`0181751bdd912b8d04ccf954c358cb22681d6fc4aa5b3896a986e7a1ce73af01`.
+
 ## 2026-09-14 — Reopen Gate 2; selection balance is not the missing mechanism
 
 The prior 3,225-row corpus-sufficiency decision authorized one bounded pilot,

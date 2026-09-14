@@ -1,5 +1,24 @@
 # Ganesh Mini 1.0 handoff
 
+## Capability-stratified Gate 2 contract sealed — 2026-09-14
+
+The next training-only construction contract is sealed at
+`0181751bdd912b8d04ccf954c358cb22681d6fc4aa5b3896a986e7a1ce73af01`.
+It defines ten neutral primary capabilities across six languages and both
+generation/repair, producing 120 cells. Cross-cutting edge semantics are
+scheduled one per cell rather than repeated as generic boilerplate.
+
+Qualification drafts two distinct training-source candidates per cell: 240
+total. It must admit at least 120 and at least one per cell, with only one
+bounded replacement for an empty cell. Passing qualification can unlock
+construction planning for 720 new records plus 180 broad replay records;
+new drafting is capped at 1,200. Construction remains isolated from all
+evaluation surfaces and uses reference-pass, known-bad-fail, semantic-
+conformance, separation, and lineage gates. The 240-draft non-GCloud
+qualification is authorized by standing project scope; implementation is next.
+The contract grants no training or GCloud authority. Detailed plan:
+`docs/plans/GATE2_CAPABILITY_STRATIFIED_CORPUS_PLAN_20260914.md`.
+
 ## Gate 2 reopened for a new corpus contract — 2026-09-14
 
 A training-only diversity audit now compares the full authorized 3,225-row

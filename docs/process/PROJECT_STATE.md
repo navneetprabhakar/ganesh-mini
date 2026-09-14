@@ -2643,3 +2643,17 @@ No compute or infrastructure action occurred.
 State is WAITING FOR EXACT READ-ONLY INSPECTION APPROVAL on plan
 `e7b1602ca2c01b785cc5f93b9d3b8543e81affecf14c3787ce219cf2bf367c66`.
 It binds fresh attempt `20260914T003000Z`; no Ganesh compute is active.
+
+# Corrected gradient-conflict rerun awaits execution approval — 2026-09-14
+
+Read-only inspection under plan
+`e7b1602ca2c01b785cc5f93b9d3b8543e81affecf14c3787ce219cf2bf367c66`
+passed all resource-absence, provider, L4 quota, IAM, immutable-input and
+current-price checks without cloud mutation. Report seal:
+`be5a8cebb3b07b9c15a8fff271092bb041d8f3e2c7cef6ac4c969fc5f3ed2017`.
+
+Execution proposal
+`af67925bf32f28b2708862a517af58b00f161cbbd66c2c3d00db05987f98cd88`
+is pending exact approval under the USD 2.25 ceiling. No Ganesh compute is
+active. Training remains 84%, release 58%, overall delivery 72%; conditional
+probe verdict ETA is 2–3 hours after approval.

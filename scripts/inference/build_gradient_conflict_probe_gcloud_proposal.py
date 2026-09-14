@@ -35,7 +35,11 @@ def load_sealed(path: Path, field: str) -> dict[str, Any]:
     return value
 
 
-def build(report_path: Path = REPORT, card_path: Path = LOCAL_CARD) -> dict[str, Any]:
+def build(
+    report_path: Path = REPORT,
+    card_path: Path = LOCAL_CARD,
+    source_commit: str = SOURCE_COMMIT,
+) -> dict[str, Any]:
     report = load_sealed(report_path, "report_sha256")
     card = load_sealed(card_path, "card_sha256")
     if report.get("status") != "complete-ready-for-separate-proposal" or report["conclusion"].get("execution_authorized") is not False:
@@ -53,12 +57,11 @@ def build(report_path: Path = REPORT, card_path: Path = LOCAL_CARD) -> dict[str,
     if support_reserve <= 0:
         raise ValueError("provider upper bound exceeds absolute ceiling")
 
-    resource_names = {
-        "instance": "ganesh-mini-g4-grad-20260911t020000z",
-        "disk": "ganesh-mini-g4-grad-20260911t020000z",
-        "network": "ganesh-mini-g4-grad-20260911t020000z-net",
-        "subnet": "ganesh-mini-g4-grad-20260911t020000z-subnet",
-    }
+    if len(source_commit) != 40 or any(character not in "0123456789abcdef" for character in source_commit):
+        raise ValueError("source commit must be a full lowercase Git SHA")
+    attempt_id = report["planned_attempt_id"]
+    stem = f"ganesh-mini-g4-grad-{attempt_id.lower()}"
+    resource_names = {"instance": stem, "disk": stem, "network": f"{stem}-net", "subnet": f"{stem}-subnet"}
     if any(not report["resource_absence"][name]["absent"] for name in resource_names):
         raise ValueError("planned resource names are not all absent")
 
@@ -68,7 +71,7 @@ def build(report_path: Path = REPORT, card_path: Path = LOCAL_CARD) -> dict[str,
         "purpose": "one bounded Gate 4 gradient-conflict audit and, only if its frozen threshold passes, one PCGrad probe plus retention guard and frozen 30-task continuation screen",
         "inspection_report_sha256": report["report_sha256"],
         "local_training_card_sha256": card["card_sha256"],
-        "source_commit": SOURCE_COMMIT,
+        "source_commit": source_commit,
         "model": card["model"],
         "experiment": {
             "recipe_id": card["selected_recipe"]["recipe_id"],
@@ -116,16 +119,16 @@ def build(report_path: Path = REPORT, card_path: Path = LOCAL_CARD) -> dict[str,
         },
         "post_approval_create_only_uploads": {
             "training_execution_card": {
-                "destination": "gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/20260911T020000Z/input/training-execution-card.json",
+                "destination": f"gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/{attempt_id}/input/training-execution-card.json",
                 "derivation": "bind the local v4 card to exact approval, provider price, prior cost 0, and ceiling 2.25",
             },
             "outer_execution_card": {
-                "destination": "gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/20260911T020000Z/input/execution-card.json",
+                "destination": f"gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/{attempt_id}/input/execution-card.json",
                 "derivation": "bind proposal, approval, generation-pinned inputs, and assigned training-card generation",
             },
             "precondition": "both objects use create-only upload and exact-generation roundtrip verification before resource creation",
         },
-        "output_prefix": "gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/20260911T020000Z",
+        "output_prefix": f"gs://ganesh-gate0-model-transfer-1061994342941/ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/{attempt_id}",
         "allowed_sequence": [
             "record exact approval evidence for this proposal",
             "derive, create-only upload, and exact-generation verify the two declared execution cards",
@@ -157,9 +160,12 @@ def build(report_path: Path = REPORT, card_path: Path = LOCAL_CARD) -> dict[str,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--report", type=Path, default=REPORT)
+    parser.add_argument("--card", type=Path, default=LOCAL_CARD)
+    parser.add_argument("--source-commit", default=SOURCE_COMMIT)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    proposal = build()
+    proposal = build(args.report, args.card, args.source_commit)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(proposal, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"status": proposal["status"], "proposal_sha256": proposal["proposal_sha256"]}, sort_keys=True))

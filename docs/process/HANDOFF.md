@@ -2938,3 +2938,23 @@ names and all ten generation-pinned inputs. Its seal is
 It authorizes only provider, resource-absence, IAM, input-metadata and current
 price reads. Exact approval is required; it authorizes no resource mutation or
 execution. No Ganesh compute is active.
+
+## 35. Corrected rerun inspection passed; execution approval pending — 2026-09-14
+
+Navneet approved read-only inspection plan
+`e7b1602ca2c01b785cc5f93b9d3b8543e81affecf14c3787ce219cf2bf367c66`.
+The four exact fresh resource names are absent; `us-east1-c` is UP;
+`g2-standard-8` and `nvidia-l4` match; regional L4 quota is 16 with usage 0;
+the VM service account retains bucket objectAdmin; and all ten generation-
+pinned inputs match their metadata. Official prices remain USD 0.853624312 per
+g2-standard-8 hour and USD 0.000136986 per pd-balanced GiB-hour. Report seal:
+`be5a8cebb3b07b9c15a8fff271092bb041d8f3e2c7cef6ac4c969fc5f3ed2017`.
+No cloud mutation occurred and point-in-time L4 capacity is not claimed.
+
+Fresh non-executable proposal
+`af67925bf32f28b2708862a517af58b00f161cbbd66c2c3d00db05987f98cd88`
+binds attempt `20260914T003000Z`, one Standard g2-standard-8/L4 VM, 200 GiB
+auto-delete balanced disk, no external IP, restart disabled, 7,200 seconds
+maximum, provider upper USD 1.762043024 and absolute ceiling USD 2.25. It
+retains the audit-first stop and terminal-evidence-before-teardown contracts.
+Exact execution approval is required. No Ganesh compute is active.

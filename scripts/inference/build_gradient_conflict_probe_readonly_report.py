@@ -12,8 +12,6 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "measurement/gate4/gradient-conflict-probe-20260911"
-PLAN_SHA = "b35f9ff928066701a3aa94c2e54eb5e81c1050f984393a0819d9e56479fce4b4"
-RECEIPT_SHA = "4ab0ab64e896efcb4000abc1125f59eced2534a93cce6d8eeca3fb5a6ecfa88b"
 SERVICE_ACCOUNT = "1061994342941-compute@developer.gserviceaccount.com"
 
 
@@ -30,14 +28,22 @@ def load_sealed(path: Path, field: str) -> dict[str, Any]:
     return value
 
 
-def build(root: Path = ROOT, checked_at: str = "2026-09-13T15:54:47Z") -> dict[str, Any]:
-    base = root / "measurement/gate4/gradient-conflict-probe-20260911"
+def build(
+    root: Path = ROOT,
+    checked_at: str = "2026-09-13T15:54:47Z",
+    base_relative: Path = Path("measurement/gate4/gradient-conflict-probe-20260911"),
+) -> dict[str, Any]:
+    base = root / base_relative
     plan = load_sealed(base / "gcloud-readonly-inspection-plan.json", "inspection_plan_sha256")
     receipt = load_sealed(base / "upload/upload-receipt.json", "receipt_sha256")
+    approval = load_sealed(base / "gcloud-readonly-inspection-approval.json", "approval_sha256")
     summary = load_sealed(base / "inspection/command-summary.json", "summary_sha256")
-    if plan["inspection_plan_sha256"] != PLAN_SHA or receipt["receipt_sha256"] != RECEIPT_SHA or receipt["receipt_sha256"] != plan["approved_upload_receipt_sha256"]:
+    plan_sha = plan["inspection_plan_sha256"]
+    if receipt["receipt_sha256"] != plan["approved_upload_receipt_sha256"]:
         raise ValueError("inspection authorization chain mismatch")
-    if summary.get("status") != "commands-complete" or summary.get("inspection_plan_sha256") != PLAN_SHA or summary.get("cloud_mutations") != []:
+    if approval.get("status") != "approved" or approval.get("scope") != "read-only-inspection" or approval.get("approved_plan_sha256") != plan_sha:
+        raise ValueError("read-only approval does not bind the inspection plan")
+    if summary.get("status") != "commands-complete" or summary.get("inspection_plan_sha256") != plan_sha or summary.get("cloud_mutations") != []:
         raise ValueError("read-only command summary is incomplete")
 
     inputs = {name: dict(row) for name, row in plan["inputs"].items()}
@@ -72,7 +78,7 @@ def build(root: Path = ROOT, checked_at: str = "2026-09-13T15:54:47Z") -> dict[s
         "schema_version": "ganesh-mini-gradient-conflict-probe-gcloud-readonly-inspection/v1",
         "status": "complete-ready-for-separate-proposal",
         "checked_at": checked_at,
-        "authorization": {"inspection_plan_sha256": PLAN_SHA, "scope": "read-only-only"},
+        "authorization": {"inspection_plan_sha256": plan_sha, "scope": "read-only-only"},
         "command_summary_sha256": summary["summary_sha256"],
         "planned_attempt_id": plan["planned_attempt_id"],
         "resource_absence": absence,
@@ -102,7 +108,7 @@ def build(root: Path = ROOT, checked_at: str = "2026-09-13T15:54:47Z") -> dict[s
             "billing_mode": price["billing_mode"],
             "compute_hourly_usd": str(price["machine"]["hourly_cost_usd"]),
             "pd_balanced_gib_hourly_usd": str(price["boot_disk"]["rate_usd_per_gib_hour"]),
-            "same_day_price_evidence_path": "measurement/gate4/gradient-conflict-probe-20260911/inspection/provider/price-evidence.json",
+            "same_day_price_evidence_path": str(base_relative / "inspection/provider/price-evidence.json"),
             "same_day_price_evidence_sha256": price["evidence_sha256"],
             "sources": price["sources"],
         },
@@ -122,12 +128,14 @@ def build(root: Path = ROOT, checked_at: str = "2026-09-13T15:54:47Z") -> dict[s
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=BASE / "gcloud-readonly-inspection-report.json")
+    parser.add_argument("--base", type=Path, default=Path("measurement/gate4/gradient-conflict-probe-20260911"))
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--checked-at", default="2026-09-13T15:54:47Z")
     args = parser.parse_args()
-    report = build(checked_at=args.checked_at)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    report = build(checked_at=args.checked_at, base_relative=args.base)
+    output = args.output or ROOT / args.base / "gcloud-readonly-inspection-report.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"status": report["status"], "report_sha256": report["report_sha256"]}, sort_keys=True))
     return 0
 

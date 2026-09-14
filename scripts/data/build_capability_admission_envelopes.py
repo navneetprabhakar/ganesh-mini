@@ -81,6 +81,10 @@ def _load_corrections(
     original_payload = b"".join(canonical_json(row) + b"\n" for row in original_candidates)
     requested = report.get("requested_corrections")
     completed = report.get("completed_corrections")
+    ignored = report.get("ignored_unsupported")
+    ignored_count = report.get("ignored_unsupported_count")
+    selection_mode = report.get("selection_mode")
+    critic_workers = report.get("critic_workers")
     if (
         report.get("schema_version") != CORRECTION_REPORT_SCHEMA
         or report.get("status") != "corrected-not-reviewed-not-admitted"
@@ -94,6 +98,14 @@ def _load_corrections(
         or type(completed) is not int
         or requested < 1
         or requested != completed
+        or selection_mode not in {"all-must-be-supported", "explicit-supported-only"}
+        or not isinstance(ignored, list)
+        or type(ignored_count) is not int
+        or ignored_count != len(ignored)
+        or report.get("source_rejections") != requested + ignored_count
+        or (selection_mode == "all-must-be-supported" and ignored_count != 0)
+        or type(critic_workers) is not int
+        or not 1 <= critic_workers <= 6
     ):
         raise ValueError("correction report is incomplete or does not bind the original candidates")
     output = report.get("output")
@@ -128,7 +140,10 @@ def _load_corrections(
         run_hash = run["run_evidence_sha256"]
         if run_hash in runs:
             raise ValueError("correction report contains a duplicate critic run")
-        runs[run_hash] = (run, _items_by_id(payload_value, fields, str(report_path)))
+        items = _items_by_id(payload_value, fields, str(report_path))
+        if len(items) > 10:
+            raise ValueError("correction critic batch exceeds ten candidates")
+        runs[run_hash] = (run, items)
 
     evidence_by_id: dict[str, dict[str, Any]] = {}
     for evidence in report.get("corrections", []):
@@ -150,6 +165,21 @@ def _load_corrections(
         evidence_by_id[identifier] = evidence
     if len(evidence_by_id) != completed:
         raise ValueError("correction evidence count differs from the report")
+    ignored_ids = [item.get("id") for item in ignored if isinstance(item, dict)]
+    if (
+        len(ignored_ids) != ignored_count
+        or len(set(ignored_ids)) != ignored_count
+        or any(
+            not isinstance(item, dict)
+            or set(item) != {"id", "reason", "classification"}
+            or item.get("classification") not in {
+                "reference-verifier-timeout", "unsupported-rejection-class",
+            }
+            for item in ignored
+        )
+        or set(ignored_ids) & set(evidence_by_id)
+    ):
+        raise ValueError("ignored correction rejection records are malformed or overlap selected IDs")
 
     original_by_id = {row["id"]: row for row in original_candidates}
     corrected_by_id = {row["id"]: row for row in corrected}
@@ -230,6 +260,26 @@ def _load_corrections(
         raise ValueError("correction evidence references an unknown original candidate")
     if set(runs) != {row["critic_run_evidence_sha256"] for row in evidence_by_id.values()}:
         raise ValueError("correction report contains an unused critic run")
+    batches = report.get("critic_batches")
+    expected_batches = []
+    for ordinal, run in enumerate(report.get("runs", [])):
+        run_hash = run["run_evidence_sha256"]
+        identifiers = [
+            row["id"] for row in report["corrections"]
+            if row["critic_run_evidence_sha256"] == run_hash
+        ]
+        expected_batches.append({
+            "ordinal": ordinal, "lane": run["lane"],
+            "correction_class": (
+                "reference-verification"
+                if run["run_kind"] == "capability-reference-test-critic"
+                else "tests-accepted-known-bad"
+            ),
+            "candidate_ids": identifiers, "records": len(identifiers),
+            "run_evidence_sha256": run_hash,
+        })
+    if batches != expected_batches:
+        raise ValueError("correction critic batch ledger is absent or non-deterministic")
     return corrected, evidence_by_id, report
 
 

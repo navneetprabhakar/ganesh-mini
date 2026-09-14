@@ -16,6 +16,7 @@ import hashlib
 import json
 import sys
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -91,11 +92,15 @@ def classify_rejection(reason: str) -> str:
     raise ValueError(f"rejection is not safely correctable: {reason}")
 
 
-def _rejections(value: Any) -> list[dict[str, Any]]:
+def partition_rejections(
+    value: Any, select_supported: bool = False,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     rows = value.get("rejected") if isinstance(value, dict) else value
     if not isinstance(rows, list) or not rows:
         raise ValueError("executable admission rejection evidence must be a non-empty list")
     seen: set[str] = set()
+    supported: list[dict[str, Any]] = []
+    ignored: list[dict[str, Any]] = []
     for row in rows:
         if (
             not isinstance(row, dict)
@@ -105,9 +110,39 @@ def _rejections(value: Any) -> list[dict[str, Any]]:
             or not isinstance(row.get("reason"), str)
         ):
             raise ValueError("rejection evidence has malformed or duplicate IDs")
-        classify_rejection(row["reason"])
         seen.add(row["id"])
-    return rows
+        reference_timed_out = (
+            row["reason"] == "reference solution failed behavioral verification"
+            and isinstance(row.get("evidence"), dict)
+            and isinstance(row["evidence"].get("reference"), dict)
+            and row["evidence"]["reference"].get("timed_out") is True
+        )
+        if reference_timed_out:
+            if not select_supported:
+                raise ValueError("reference verifier timeout is not safely correctable")
+            ignored.append({
+                "id": row["id"], "reason": row["reason"],
+                "classification": "reference-verifier-timeout",
+            })
+            continue
+        try:
+            classify_rejection(row["reason"])
+        except ValueError:
+            if not select_supported:
+                raise
+            ignored.append({
+                "id": row["id"], "reason": row["reason"],
+                "classification": "unsupported-rejection-class",
+            })
+        else:
+            supported.append(row)
+    if not supported:
+        raise ValueError("executable admission evidence contains no supported correction class")
+    return supported, ignored
+
+
+def _rejections(value: Any) -> list[dict[str, Any]]:
+    return partition_rejections(value)[0]
 
 
 def _validate_candidate(candidate: dict[str, Any]) -> None:
@@ -230,8 +265,13 @@ def _mark_correction(
 
 def correct_candidates(
     candidates: list[dict[str, Any]], rejection_value: Any,
-    config: dict[str, Any], codex_bin: str,
+    config: dict[str, Any], codex_bin: str, critic_workers: int = 6,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    if not 1 <= critic_workers <= 6:
+        raise ValueError("critic_workers must be between one and six")
+    batch_size = config.get("execution", {}).get("batch_size", 10)
+    if type(batch_size) is not int or not 1 <= batch_size <= 10:
+        raise ValueError("critic batch size must be between one and ten")
     by_id: dict[str, dict[str, Any]] = {}
     for candidate in candidates:
         _validate_candidate(candidate)
@@ -248,10 +288,14 @@ def correct_candidates(
         candidate = by_id[rejection["id"]]
         grouped[(candidate["lane"], classify_rejection(rejection["reason"]))].append(candidate)
 
-    replacements: dict[str, dict[str, Any]] = {}
-    correction_evidence: list[dict[str, Any]] = []
-    runs: list[dict[str, Any]] = []
+    work: list[tuple[str, str, list[dict[str, Any]]]] = []
     for (lane, correction_class), rows in sorted(grouped.items()):
+        for offset in range(0, len(rows), batch_size):
+            work.append((lane, correction_class, rows[offset:offset + batch_size]))
+
+    def invoke_batch(
+        lane: str, correction_class: str, rows: list[dict[str, Any]],
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         expected_ids = [row["id"] for row in rows]
         if correction_class == "reference-verification":
             payload, run = invoke_codex(
@@ -274,6 +318,31 @@ def correct_candidates(
             proposed = [_replace_architecture(row, item) for row, item in zip(rows, items, strict=True)]
         else:  # pragma: no cover - classification is fail-closed before grouping
             raise ValueError(f"unsupported correction class: {correction_class}")
+        return proposed, run
+
+    results: list[tuple[list[dict[str, Any]], dict[str, Any]] | Exception | None] = [None] * len(work)
+    with ThreadPoolExecutor(max_workers=min(critic_workers, len(work))) as executor:
+        futures = {
+            executor.submit(invoke_batch, lane, correction_class, rows): index
+            for index, (lane, correction_class, rows) in enumerate(work)
+        }
+        for future in as_completed(futures):
+            index = futures[future]
+            try:
+                results[index] = future.result()
+            except Exception as exc:  # preserve deterministic failure selection after all calls settle
+                results[index] = exc
+    failures = [(index, result) for index, result in enumerate(results) if isinstance(result, Exception)]
+    if failures:
+        raise failures[0][1]
+
+    replacements: dict[str, dict[str, Any]] = {}
+    correction_evidence: list[dict[str, Any]] = []
+    runs: list[dict[str, Any]] = []
+    for (lane, correction_class, rows), result in zip(work, results, strict=True):
+        if result is None or isinstance(result, Exception):  # pragma: no cover - guarded above
+            raise RuntimeError("critic batch did not return")
+        proposed, run = result
         runs.append(run)
         for parent, replacement in zip(rows, proposed, strict=True):
             if (
@@ -302,21 +371,53 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--codex-bin", default="codex")
+    parser.add_argument("--critic-workers", type=int, default=6)
+    parser.add_argument(
+        "--select-supported", action="store_true",
+        help="explicitly select the two supported executable classes and seal ignored rejections",
+    )
     args = parser.parse_args()
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     cli_identity = verify_codex_version(args.codex_bin, config["codex_cli_version"])
     candidates = read_jsonl(args.input)
     rejection_value = json.loads(args.rejections.read_text(encoding="utf-8"))
+    selected_rejections, ignored_rejections = partition_rejections(
+        rejection_value, select_supported=args.select_supported,
+    )
     try:
-        corrected, records, runs = correct_candidates(candidates, rejection_value, config, args.codex_bin)
+        corrected, records, runs = correct_candidates(
+            candidates, selected_rejections, config, args.codex_bin, args.critic_workers,
+        )
         payload = b"".join(canonical_json(row) + b"\n" for row in corrected)
         status = "corrected-not-reviewed-not-admitted"
         failure = None
+        critic_batches = [
+            {
+                "ordinal": index,
+                "lane": run["lane"],
+                "correction_class": (
+                    "reference-verification"
+                    if run["run_kind"] == "capability-reference-test-critic"
+                    else "tests-accepted-known-bad"
+                ),
+                "candidate_ids": [
+                    record["id"] for record in records
+                    if record["critic_run_evidence_sha256"] == run["run_evidence_sha256"]
+                ],
+                "records": sum(
+                    record["critic_run_evidence_sha256"] == run["run_evidence_sha256"]
+                    for record in records
+                ),
+                "run_evidence_sha256": run["run_evidence_sha256"],
+            }
+            for index, run in enumerate(runs)
+        ]
     except CodexInvocationFailure as exc:
         corrected, records, runs, payload = [], [], [seal_run(exc.evidence)], b""
         status = "correction-failed-not-admitted"
         failure = {"type": type(exc).__name__, "reason": str(exc)}
+        critic_batches = []
     report: dict[str, Any] = {
         "schema_version": REPORT_SCHEMA,
         "status": status,
@@ -324,7 +425,13 @@ def main() -> int:
         "teacher": config,
         "input": {"sha256": hashlib.sha256(args.input.read_bytes()).hexdigest(), "records": len(candidates)},
         "rejections_sha256": hashlib.sha256(args.rejections.read_bytes()).hexdigest(),
-        "requested_corrections": len(_rejections(rejection_value)),
+        "source_rejections": len(selected_rejections) + len(ignored_rejections),
+        "selection_mode": "explicit-supported-only" if args.select_supported else "all-must-be-supported",
+        "requested_corrections": len(selected_rejections),
+        "ignored_unsupported_count": len(ignored_rejections),
+        "ignored_unsupported": ignored_rejections,
+        "critic_workers": args.critic_workers,
+        "critic_batches": critic_batches,
         "completed_corrections": len(records),
         "corrections": records,
         "runs": runs,

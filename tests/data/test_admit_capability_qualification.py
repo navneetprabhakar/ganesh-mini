@@ -209,6 +209,21 @@ def test_rejects_reference_that_fails_executable_admission() -> None:
     assert "reference solution failed" in rejected[0]["reason"]
 
 
+def test_preverifier_envelope_rejection_preserves_nested_candidate_id() -> None:
+    value = envelope()
+    semantic = value["qualification"]["evidence"]["semantic_review"]
+    semantic.pop("evidence_sha256")
+    semantic["verdict"] = "reject"
+    semantic["primary_capability_is_substantive"] = False
+    seal(semantic)
+    output, rejected = admit_qualification(
+        [value], plan(), {"queue-0": queue_row()}, config(), Path("runtime.json"), verifier,
+    )
+    assert output == []
+    assert rejected[0]["id"] == "queue-0"
+    assert not rejected[0]["id"].startswith("line-")
+
+
 def test_final_mode_alone_enforces_overall_and_every_cell(tmp_path: Path) -> None:
     admitted_path = tmp_path / "admitted.jsonl"
     rejected_path = tmp_path / "rejected.json"

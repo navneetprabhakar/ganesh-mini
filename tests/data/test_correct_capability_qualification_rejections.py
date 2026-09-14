@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import time
+
 import pytest
 
 from scripts.data import correct_capability_qualification_rejections as correction
@@ -160,4 +163,106 @@ def test_critic_must_make_a_real_change(monkeypatch) -> None:
     with pytest.raises(ValueError, match="produced no candidate change"):
         correction.correct_candidates(
             [original], [{"id": "q-1", "reason": "reference solution failed behavioral verification"}], {}, "codex",
+        )
+
+
+def _prompt_items(prompt: str) -> list[dict]:
+    visible = prompt.split("Items: ", 1)[1]
+    return json.JSONDecoder().raw_decode(visible)[0]
+
+
+def test_twenty_seven_rejections_are_chunked_10_10_7_and_restored_deterministically(monkeypatch) -> None:
+    candidates = [candidate(f"q-{index:02d}") for index in range(27)]
+    rejections = [
+        {"id": row["id"], "reason": "reference solution failed behavioral verification"}
+        for row in candidates
+    ]
+    calls: list[list[str]] = []
+
+    def invoke(_binary, _config, _schema, prompt, kind, _lane):
+        items = _prompt_items(prompt)
+        ids = [item["id"] for item in items]
+        calls.append(ids)
+        if ids[0] == "q-00":
+            time.sleep(0.02)
+        return ({"items": [
+            {"id": item["id"], "test_code": item["test_code"] + f"\n# corrected {item['id']}"}
+            for item in items
+        ]}, {"run_kind": kind, "prompt": prompt})
+
+    monkeypatch.setattr(correction, "invoke_codex", invoke)
+    output, evidence, runs = correction.correct_candidates(
+        candidates, rejections, {"execution": {"batch_size": 10}}, "codex", critic_workers=3,
+    )
+    assert sorted(map(len, calls), reverse=True) == [10, 10, 7]
+    assert [row["id"] for row in output] == [row["id"] for row in candidates]
+    assert [row["id"] for row in evidence] == [row["id"] for row in candidates]
+    assert [_prompt_items(run["prompt"])[0]["id"] for run in runs] == ["q-00", "q-10", "q-20"]
+    assert all(row["teacher_evidence"]["correction_passes"] == 1 for row in output)
+
+
+def test_parallel_batch_failure_is_fail_closed(monkeypatch) -> None:
+    candidates = [candidate(f"q-{index:02d}") for index in range(12)]
+    rejections = [
+        {"id": row["id"], "reason": "reference solution failed behavioral verification"}
+        for row in candidates
+    ]
+    completed: list[str] = []
+
+    def invoke(_binary, _config, _schema, prompt, kind, _lane):
+        items = _prompt_items(prompt)
+        first = items[0]["id"]
+        completed.append(first)
+        if first == "q-10":
+            raise ValueError("critic failed")
+        return ({"items": [
+            {"id": item["id"], "test_code": item["test_code"] + "\n# corrected"}
+            for item in items
+        ]}, {"run_kind": kind, "prompt": prompt})
+
+    monkeypatch.setattr(correction, "invoke_codex", invoke)
+    with pytest.raises(ValueError, match="critic failed"):
+        correction.correct_candidates(
+            candidates, rejections, {"execution": {"batch_size": 10}}, "codex", critic_workers=2,
+        )
+    assert sorted(completed) == ["q-00", "q-10"]
+
+
+def test_supported_selection_is_explicit_and_records_ignored_classes() -> None:
+    rows = [
+        {"id": "q-1", "reason": "reference solution failed behavioral verification"},
+        {"id": "q-2", "reason": "semantic review rejected candidate"},
+    ]
+    with pytest.raises(ValueError, match="not safely correctable"):
+        correction.partition_rejections(rows)
+    supported, ignored = correction.partition_rejections(rows, select_supported=True)
+    assert [row["id"] for row in supported] == ["q-1"]
+    assert ignored == [{
+        "id": "q-2", "reason": "semantic review rejected candidate",
+        "classification": "unsupported-rejection-class",
+    }]
+
+
+def test_reference_timeout_is_never_critic_corrected() -> None:
+    timeout = {
+        "id": "q-1", "reason": "reference solution failed behavioral verification",
+        "evidence": {"reference": {"timed_out": True, "exit_codes": []}},
+    }
+    with pytest.raises(ValueError, match="timeout is not safely correctable"):
+        correction.partition_rejections([timeout])
+    safe = {"id": "q-2", "reason": "reference solution failed behavioral verification"}
+    supported, ignored = correction.partition_rejections([timeout, safe], select_supported=True)
+    assert supported == [safe]
+    assert ignored == [{
+        "id": "q-1", "reason": "reference solution failed behavioral verification",
+        "classification": "reference-verifier-timeout",
+    }]
+
+
+@pytest.mark.parametrize("workers", [0, 7])
+def test_parallelism_is_bounded(workers: int) -> None:
+    with pytest.raises(ValueError, match="between one and six"):
+        correction.correct_candidates(
+            [candidate()], [{"id": "q-1", "reason": "reference solution failed behavioral verification"}],
+            {}, "codex", critic_workers=workers,
         )

@@ -203,6 +203,7 @@ def test_loads_one_sealed_replacement_per_empty_cell_and_rejects_second(tmp_path
         "id": "replacement-1", "cell_id": "cap/python/generation",
         "replacement_for_cell_id": "cap/python/generation", "replacement_attempt": 1,
         "original_queue_ids": ["q-0", "q-1"],
+        "disposition_report_sha256": "c" * 64,
         "source": {"dataset": "fixture", "revision": "r", "record_id": "fresh"},
     }
     queue_path = tmp_path / "replacement.jsonl"
@@ -214,6 +215,8 @@ def test_loads_one_sealed_replacement_per_empty_cell_and_rejects_second(tmp_path
         "schema_version": "ganesh-mini-capability-replacement-queue-manifest/v1",
         "status": "replacement-generation-complete-not-reviewed-not-admitted",
         "semantic_report_sha256": semantic["report_sha256"], "replacement_attempt": 1,
+        "corrected_admission_report_sha256": "c" * 64,
+        "correction_report_sha256": "d" * 64,
         "evaluation_artifacts_read": 0, "records": 1, "candidate_ids": ["replacement-1"],
         "empty_cells": ["cap/python/generation"],
         "queue_output": {"path": str(queue_path), "sha256": hashlib.sha256(queue_path.read_bytes()).hexdigest()},

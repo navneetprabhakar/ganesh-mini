@@ -107,6 +107,10 @@ def load_replacement_artifacts(
         or manifest.get("replacement_attempt") != 1
         or not isinstance(manifest.get("semantic_report_sha256"), str)
         or len(manifest["semantic_report_sha256"]) != 64
+        or not isinstance(manifest.get("corrected_admission_report_sha256"), str)
+        or len(manifest["corrected_admission_report_sha256"]) != 64
+        or not isinstance(manifest.get("correction_report_sha256"), str)
+        or len(manifest["correction_report_sha256"]) != 64
         or manifest.get("evaluation_artifacts_read") != 0
         or not isinstance(queue_binding, dict)
         or not isinstance(queue_binding.get("path"), str)
@@ -137,6 +141,7 @@ def load_replacement_artifacts(
             or row.get("replacement_for_cell_id") != row.get("cell_id")
             or row.get("id") in originals
             or identity in original_sources
+            or row.get("disposition_report_sha256") != manifest["corrected_admission_report_sha256"]
             or not isinstance(parent_ids, list) or len(parent_ids) != 2
             or any(parent not in originals or originals[parent]["cell_id"] != row["cell_id"] for parent in parent_ids)
         ):

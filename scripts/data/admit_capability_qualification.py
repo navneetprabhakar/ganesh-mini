@@ -318,7 +318,13 @@ def admit_qualification(
     rejected: list[dict[str, Any]] = []
     seen_queue_ids: set[str] = set()
     for line, envelope in enumerate(rows, 1):
-        record_id = envelope.get("id", f"line-{line}") if isinstance(envelope, dict) else f"line-{line}"
+        record_id = f"line-{line}"
+        if isinstance(envelope, dict):
+            nested = envelope.get("candidate", envelope.get("training_candidate"))
+            if isinstance(nested, dict) and isinstance(nested.get("id"), str) and nested["id"]:
+                record_id = nested["id"]
+            elif isinstance(envelope.get("id"), str) and envelope["id"]:
+                record_id = envelope["id"]
         try:
             candidate, item_metadata, _ = validate_envelope(envelope, plan, queue_by_id, config)
             record_id = candidate.get("id", record_id)

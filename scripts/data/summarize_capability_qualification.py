@@ -306,7 +306,6 @@ def summarize(
         candidate_inputs.append({"path": str(path), "sha256": digest, "records": len(rows)})
 
     disposition: dict[str, str] = {}
-    rejection_reason: dict[str, str] = {}
     admission_inputs: list[dict[str, Any]] = []
     for path in admission_report_paths:
         report = _sealed_report(path)
@@ -351,9 +350,6 @@ def summarize(
                 raise ValueError(f"{path}: legacy rejection evidence is malformed")
         accepted_ids = [_admitted_id(row, capability_report) for row in admitted_rows]
         rejected_ids = [row.get("id") for row in rejected_rows]
-        for row in rejected_rows:
-            if isinstance(row.get("id"), str) and isinstance(row.get("reason"), str):
-                rejection_reason[row["id"]] = row["reason"]
         if len(set(accepted_ids)) != len(accepted_ids):
             raise ValueError(f"{path}: admitted IDs are duplicated")
         if not all(isinstance(item, str) and item for item in rejected_ids) or len(set(rejected_ids)) != len(rejected_ids):
@@ -390,10 +386,6 @@ def summarize(
     for identifier in terminal_no_change_ids:
         if disposition.get(identifier) == "admitted":
             raise ValueError(f"{identifier}: terminal no-change correction was admitted")
-        if disposition.get(identifier) == "rejected" and rejection_reason.get(identifier) != (
-            "terminal no-change correction attempt is not admissible"
-        ):
-            raise ValueError(f"{identifier}: terminal no-change correction lacks terminal disposition")
 
     admitted_by_cell = Counter(identity_cell[item] for item, state in disposition.items() if state == "admitted")
     original_disposed_by_cell = Counter(

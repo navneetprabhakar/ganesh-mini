@@ -326,3 +326,38 @@ def test_terminal_no_change_envelope_cannot_be_reported_admitted(tmp_path: Path)
     )
     with pytest.raises(ValueError, match="terminal no-change correction was admitted"):
         summarize(queue, [candidate_path], [admission])
+
+
+def test_terminal_no_change_may_be_rejected_by_an_earlier_gate(tmp_path: Path) -> None:
+    queue, rows = fixture(tmp_path)
+    envelopes = []
+    for index, row in enumerate(rows):
+        candidate = {"id": row["id"], "lane": row["lane"], "task_type": row["task_type"]}
+        candidate_sha = hashlib.sha256(canonical_json(candidate)).hexdigest()
+        correction = None
+        passes = 1 if index == 0 else 0
+        if passes:
+            correction = {
+                "candidate_sha256": candidate_sha, "parent_candidate_sha256": candidate_sha,
+                "outcome": "terminal-no-change",
+            }
+            correction["evidence_sha256"] = hashlib.sha256(canonical_json(correction)).hexdigest()
+        envelopes.append({
+            "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
+            "candidate": candidate,
+            "qualification": {
+                "queue_id": row["id"], "cell_id": row["cell_id"],
+                "primary_capability": row["primary_capability"],
+                "correction_passes": passes, "correction": correction,
+            },
+        })
+    candidate_path = tmp_path / "terminal-no-change-rejected-envelopes.jsonl"
+    write_jsonl(candidate_path, envelopes)
+    admission = tmp_path / "terminal-no-change-rejected-admission.json"
+    rejected = [rows[0]["id"], *[row["id"] for row in rows if row["id"].endswith("-2")]]
+    make_capability_report(admission, candidate_path, rejected)
+
+    report = summarize(queue, [candidate_path], [admission])
+
+    assert report["totals"]["corrected"] == 1
+    assert report["pass_requirements"]["all_corrections_dispositioned"] is True

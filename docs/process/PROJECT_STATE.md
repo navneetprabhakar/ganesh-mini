@@ -2657,3 +2657,13 @@ Execution proposal
 is pending exact approval under the USD 2.25 ceiling. No Ganesh compute is
 active. Training remains 84%, release 58%, overall delivery 72%; conditional
 probe verdict ETA is 2–3 hours after approval.
+
+# Corrected gradient-conflict rerun active — 2026-09-14
+
+Execution proposal
+`af67925bf32f28b2708862a517af58b00f161cbbd66c2c3d00db05987f98cd88`
+is approved and one exact Standard L4 VM is RUNNING. Provider ID is
+`268054164708970511`; calculated hard deletion is `2026-09-14T05:50:01Z`.
+Execution cards and inputs are generation-pinned. Current state is ACTIVE,
+waiting for runtime evidence; no audit, training or quality result is yet
+claimed.

@@ -2958,3 +2958,18 @@ auto-delete balanced disk, no external IP, restart disabled, 7,200 seconds
 maximum, provider upper USD 1.762043024 and absolute ceiling USD 2.25. It
 retains the audit-first stop and terminal-evidence-before-teardown contracts.
 Exact execution approval is required. No Ganesh compute is active.
+
+## 36. Corrected gradient-conflict rerun active — 2026-09-14
+
+Navneet approved exact execution proposal
+`af67925bf32f28b2708862a517af58b00f161cbbd66c2c3d00db05987f98cd88`
+under the USD 2.25 ceiling. Both provider-bound execution cards were uploaded
+create-only and exact-generation verified. The training-card generation is
+`1789357621181016`; the outer-card generation is `1789357653715057`.
+
+The single Standard g2-standard-8/L4 VM is RUNNING with provider ID
+`268054164708970511`, no external IP, restart disabled, auto-delete 200 GiB
+balanced disk, and calculated provider deletion at `2026-09-14T05:50:01Z`.
+The metadata wrapper completed. Current state is ACTIVE / waiting for the first
+sealed runtime checkpoint. Do not claim an audit or model result until terminal
+evidence is recovered and verified. Do not teardown before that verification.

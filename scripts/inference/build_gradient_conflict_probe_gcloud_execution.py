@@ -11,11 +11,6 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PROPOSAL_SHA = "faf9ed1f062f49d6f48c0a3cfeec2beedc1dcd67aa5ab85a757ec384de4af7ff"
-ATTEMPT_ID = "20260911T020000Z"
-PREFIX = f"ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/{ATTEMPT_ID}"
-
-
 def canonical_sha256(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()).hexdigest()
 
@@ -34,9 +29,10 @@ def file_sha256(path: Path) -> str:
 
 
 def validate_boundary(proposal: dict[str, Any], approval: dict[str, Any]) -> None:
-    if proposal.get("proposal_sha256") != PROPOSAL_SHA or proposal.get("status") != "pending-explicit-execution-approval" or proposal["cost"]["absolute_cost_ceiling_usd"] != "2.25":
+    proposal_sha = proposal.get("proposal_sha256")
+    if not isinstance(proposal_sha, str) or proposal.get("status") != "pending-explicit-execution-approval" or proposal["cost"]["absolute_cost_ceiling_usd"] != "2.25":
         raise ValueError("proposal escaped the approved boundary")
-    if approval.get("status") != "approved" or approval.get("approved_proposal_sha256") != PROPOSAL_SHA or approval.get("absolute_incremental_ceiling_usd") != "2.25":
+    if approval.get("status") != "approved" or approval.get("approved_proposal_sha256") != proposal_sha or approval.get("absolute_incremental_ceiling_usd") != "2.25":
         raise ValueError("approval does not bind exact proposal and ceiling")
 
 
@@ -89,12 +85,14 @@ def build_execution(proposal: dict[str, Any], approval: dict[str, Any], training
     inputs = {target: proposal["inputs"][source] for target, source in input_map.items()}
     inputs["training_execution_card"] = {"uri": training_card_uri, "sha256": file_sha256(training_card_path), "size_bytes": training_card_path.stat().st_size}
     resource, cost, runtime = proposal["resource"], proposal["cost"], proposal["runtime"]
+    attempt_id = proposal["output_prefix"].rstrip("/").rsplit("/", 1)[-1]
+    prefix = f"ganesh-mini-1.0/training/gradient-conflict-probe-v4/attempts/{attempt_id}"
     card: dict[str, Any] = {
         "schema_version": "ganesh-mini-gate4-gcloud-execution/v1",
         "status": "authorized-executable",
         "source_commit": proposal["source_commit"],
         "approval": {
-            "proposal_sha256": PROPOSAL_SHA,
+            "proposal_sha256": proposal["proposal_sha256"],
             "approval_sha256": approval["approval_sha256"],
             "approval_evidence_sha256": provider["approval_evidence_sha256"],
         },
@@ -110,7 +108,7 @@ def build_execution(proposal: dict[str, Any], approval: dict[str, Any], training
             "project": resource["project"], "zone": resource["zone"],
             "machine_type": resource["machine_type"], "provisioning_model": resource["provisioning_model"],
             "gcs_bucket": "ganesh-gate0-model-transfer-1061994342941",
-            "gcs_prefix": PREFIX, "attempt_id": ATTEMPT_ID,
+            "gcs_prefix": prefix, "attempt_id": attempt_id,
             "maximum_vm_lifetime_seconds": resource["maximum_vm_lifetime_seconds"],
             "controller_budget_seconds": runtime["controller_budget_seconds"],
             "backup_reserve_seconds": runtime["terminal_backup_reserve_seconds"],

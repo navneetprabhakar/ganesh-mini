@@ -499,9 +499,15 @@ def validate_envelope(
         if (
             correction.get("candidate_sha256") != candidate_sha256
             or not isinstance(correction.get("parent_candidate_sha256"), str)
+            or correction.get("outcome") not in {"changed", "terminal-no-change"}
         ):
             raise AdmissionFailure("correction evidence does not bind candidate and parent")
         _sha(correction["parent_candidate_sha256"], "correction.parent_candidate_sha256")
+        same_content = correction["parent_candidate_sha256"] == candidate_sha256
+        if (correction["outcome"] == "terminal-no-change") != same_content:
+            raise AdmissionFailure("correction outcome does not match parent/current candidate hashes")
+        if correction["outcome"] == "terminal-no-change":
+            raise AdmissionFailure("terminal no-change correction attempt is not admissible")
     elif qualification.get("correction") is not None:
         raise AdmissionFailure("uncorrected candidate must not carry correction evidence")
 

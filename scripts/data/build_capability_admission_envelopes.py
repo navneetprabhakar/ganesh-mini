@@ -98,6 +98,9 @@ def _load_corrections(
         or type(completed) is not int
         or requested < 1
         or requested != completed
+        or report.get("attempted_corrections") != requested
+        or report.get("changed_corrections", 0)
+        + report.get("terminal_no_change_corrections", 0) != requested
         or selection_mode not in {"all-must-be-supported", "explicit-supported-only"}
         or not isinstance(ignored, list)
         or type(ignored_count) is not int
@@ -158,6 +161,7 @@ def _load_corrections(
             or not isinstance(identifier, str)
             or identifier in evidence_by_id
             or evidence.get("correction_passes") != 1
+            or evidence.get("outcome") not in {"changed", "terminal-no-change"}
             or evidence.get("visibility", {}).get("evaluation_artifacts_read") != 0
             or evidence.get("visibility", {}).get("verifier_output_visible") is not False
         ):
@@ -165,6 +169,13 @@ def _load_corrections(
         evidence_by_id[identifier] = evidence
     if len(evidence_by_id) != completed:
         raise ValueError("correction evidence count differs from the report")
+    if (
+        report.get("changed_corrections")
+        != sum(row["outcome"] == "changed" for row in evidence_by_id.values())
+        or report.get("terminal_no_change_corrections")
+        != sum(row["outcome"] == "terminal-no-change" for row in evidence_by_id.values())
+    ):
+        raise ValueError("correction outcome counts differ from sealed evidence")
     ignored_ids = [item.get("id") for item in ignored if isinstance(item, dict)]
     if (
         len(ignored_ids) != ignored_count
@@ -250,12 +261,16 @@ def _load_corrections(
             "parent_candidate_sha256": evidence["parent_candidate_sha256"],
             "corrected_candidate_sha256": evidence["corrected_candidate_sha256"],
             "correction_class": correction_class,
+            "outcome": evidence["outcome"],
             "correction_evidence_sha256": evidence["evidence_sha256"],
             "critic_run_evidence_sha256": run["run_evidence_sha256"],
         }
         expected["teacher_evidence"] = expected_teacher
         if replacement != expected:
             raise ValueError(f"{identifier}: corrected candidate differs from sealed critic output")
+        same_content = evidence["parent_candidate_sha256"] == evidence["corrected_candidate_sha256"]
+        if (evidence["outcome"] == "terminal-no-change") != same_content:
+            raise ValueError(f"{identifier}: correction outcome disagrees with candidate hashes")
     if set(evidence_by_id) - set(original_by_id):
         raise ValueError("correction evidence references an unknown original candidate")
     if set(runs) != {row["critic_run_evidence_sha256"] for row in evidence_by_id.values()}:
@@ -621,6 +636,7 @@ def build_envelopes(
                 "correction_evidence_sha256": correction_input["evidence_sha256"],
                 "critic_run_evidence_sha256": correction_run["run_evidence_sha256"],
                 "parent_candidate_sha256": correction_input["parent_candidate_sha256"],
+                "outcome": correction_input["outcome"],
             }
             teacher_body["parent_assistant_sha256"] = sha256_text(
                 parent_candidate["messages"][1]["content"],
@@ -681,6 +697,7 @@ def build_envelopes(
                 "candidate_sha256": candidate_sha,
                 "parent_candidate_sha256": parent_sha,
                 "correction_class": correction_class,
+                "outcome": correction_input["outcome"],
                 "correction_evidence_sha256": correction_input["evidence_sha256"],
                 "critic_run_evidence_sha256": correction_run["run_evidence_sha256"],
             })

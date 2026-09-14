@@ -240,16 +240,20 @@ def test_sealed_admission_envelopes_preserve_input_binding_and_correction_closur
     queue, rows = fixture(tmp_path)
     envelopes = []
     for index, row in enumerate(rows):
+        candidate = {
+            "id": row["id"], "lane": row["lane"], "task_type": row["task_type"],
+        }
         correction = None
         correction_passes = 1 if index == 0 else 0
         if correction_passes:
-            correction = {"candidate_sha256": "a" * 64, "parent_candidate_sha256": "b" * 64}
+            correction = {
+                "candidate_sha256": hashlib.sha256(canonical_json(candidate)).hexdigest(),
+                "parent_candidate_sha256": "b" * 64, "outcome": "changed",
+            }
             correction["evidence_sha256"] = hashlib.sha256(canonical_json(correction)).hexdigest()
         envelopes.append({
             "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
-            "candidate": {
-                "id": row["id"], "lane": row["lane"], "task_type": row["task_type"],
-            },
+            "candidate": candidate,
             "qualification": {
                 "queue_id": row["id"], "cell_id": row["cell_id"],
                 "primary_capability": row["primary_capability"],
@@ -289,3 +293,36 @@ def test_envelope_with_unsealed_or_second_correction_fails_closed(tmp_path: Path
     write_jsonl(candidate_path, [envelope])
     with pytest.raises(ValueError, match="correction passes exceed"):
         summarize(queue, [candidate_path], [])
+
+
+def test_terminal_no_change_envelope_cannot_be_reported_admitted(tmp_path: Path) -> None:
+    queue, rows = fixture(tmp_path)
+    envelopes = []
+    for index, row in enumerate(rows):
+        candidate = {"id": row["id"], "lane": row["lane"], "task_type": row["task_type"]}
+        candidate_sha = hashlib.sha256(canonical_json(candidate)).hexdigest()
+        correction = None
+        passes = 1 if index == 0 else 0
+        if passes:
+            correction = {
+                "candidate_sha256": candidate_sha, "parent_candidate_sha256": candidate_sha,
+                "outcome": "terminal-no-change",
+            }
+            correction["evidence_sha256"] = hashlib.sha256(canonical_json(correction)).hexdigest()
+        envelopes.append({
+            "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
+            "candidate": candidate,
+            "qualification": {
+                "queue_id": row["id"], "cell_id": row["cell_id"],
+                "primary_capability": row["primary_capability"],
+                "correction_passes": passes, "correction": correction,
+            },
+        })
+    candidate_path = tmp_path / "terminal-no-change-envelopes.jsonl"
+    write_jsonl(candidate_path, envelopes)
+    admission = tmp_path / "terminal-no-change-admission.json"
+    make_capability_report(
+        admission, candidate_path, [row["id"] for row in rows if row["id"].endswith("-2")],
+    )
+    with pytest.raises(ValueError, match="terminal no-change correction was admitted"):
+        summarize(queue, [candidate_path], [admission])

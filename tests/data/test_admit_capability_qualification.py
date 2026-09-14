@@ -208,6 +208,26 @@ def test_accepts_direct_training_candidate_with_qualification_metadata() -> None
     assert metadata["queue_record_sha256"] == canonical_sha256(queue_row())
 
 
+def test_terminal_no_change_correction_is_rejected_without_execution() -> None:
+    value = envelope()
+    candidate_sha = canonical_sha256(value["candidate"])
+    value["qualification"]["correction_passes"] = 1
+    value["qualification"]["correction"] = seal({
+        "candidate_sha256": candidate_sha,
+        "parent_candidate_sha256": candidate_sha,
+        "outcome": "terminal-no-change",
+    })
+
+    def must_not_execute(*_args):
+        raise AssertionError("terminal no-change must not execute")
+
+    admitted, rejected = admit_qualification(
+        [value], plan(), {"queue-0": queue_row()}, config(), Path("runtime.json"), must_not_execute,
+    )
+    assert admitted == []
+    assert rejected[0]["reason"] == "terminal no-change correction attempt is not admissible"
+
+
 def test_exact_non_timeout_evidence_is_reused_but_corrected_candidate_executes(tmp_path: Path) -> None:
     config_path, runtime_path, runtime = reuse_files(tmp_path)
     contract = execution_contract(config_path, runtime_path)
@@ -256,6 +276,7 @@ def test_exact_non_timeout_evidence_is_reused_but_corrected_candidate_executes(t
     corrected["qualification"]["correction"] = seal({
         "candidate_sha256": canonical_sha256(corrected["candidate"]),
         "parent_candidate_sha256": "f" * 64,
+        "outcome": "changed",
     })
     calls: list[str] = []
 

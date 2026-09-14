@@ -153,17 +153,45 @@ def test_architect_cannot_change_frozen_specification(monkeypatch) -> None:
         )
 
 
-def test_critic_must_make_a_real_change(monkeypatch) -> None:
+def test_no_change_exhausts_attempt_and_is_terminal(monkeypatch) -> None:
     original = candidate()
 
     def invoke(*_args):
         return ({"items": [{"id": "q-1", "test_code": correction._test_file(original)["content"]}]}, run_evidence("test"))
 
     monkeypatch.setattr(correction, "invoke_codex", invoke)
-    with pytest.raises(ValueError, match="produced no candidate change"):
-        correction.correct_candidates(
-            [original], [{"id": "q-1", "reason": "reference solution failed behavioral verification"}], {}, "codex",
-        )
+    output, evidence, _runs = correction.correct_candidates(
+        [original], [{"id": "q-1", "reason": "reference solution failed behavioral verification"}], {}, "codex",
+    )
+    assert correction.candidate_sha256(output[0]) == correction.candidate_sha256(original)
+    assert output[0]["teacher_evidence"]["correction_passes"] == 1
+    assert output[0]["teacher_evidence"]["correction"]["outcome"] == "terminal-no-change"
+    assert evidence[0]["outcome"] == "terminal-no-change"
+
+
+def test_mixed_batch_preserves_noop_and_applies_changed_sibling(monkeypatch) -> None:
+    originals = [candidate("q-1"), candidate("q-2")]
+
+    def invoke(_binary, _config, _schema, prompt, kind, _lane):
+        items = _prompt_items(prompt)
+        return ({"items": [
+            {
+                "id": item["id"],
+                "test_code": item["test_code"] + ("" if item["id"] == "q-1" else "\n# corrected"),
+            }
+            for item in items
+        ]}, {"run_kind": kind, "prompt": prompt})
+
+    monkeypatch.setattr(correction, "invoke_codex", invoke)
+    output, evidence, runs = correction.correct_candidates(
+        originals,
+        [{"id": row["id"], "reason": "reference solution failed behavioral verification"} for row in originals],
+        {}, "codex", critic_workers=1,
+    )
+    assert [row["outcome"] for row in evidence] == ["terminal-no-change", "changed"]
+    assert correction.candidate_sha256(output[0]) == correction.candidate_sha256(originals[0])
+    assert correction.candidate_sha256(output[1]) != correction.candidate_sha256(originals[1])
+    assert len(runs) == 1
 
 
 def _prompt_items(prompt: str) -> list[dict]:

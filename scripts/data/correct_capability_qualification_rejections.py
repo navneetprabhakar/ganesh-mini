@@ -222,8 +222,7 @@ def _mark_correction(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     parent_sha = candidate_sha256(parent)
     corrected_sha = candidate_sha256(replacement)
-    if corrected_sha == parent_sha:
-        raise ValueError(f"{parent['id']}: critic produced no candidate change")
+    outcome = "changed" if corrected_sha != parent_sha else "terminal-no-change"
     evidence: dict[str, Any] = {
         "schema_version": EVIDENCE_SCHEMA,
         "id": parent["id"],
@@ -236,6 +235,7 @@ def _mark_correction(
         },
         "correction_passes": 1,
         "correction_class": correction_class,
+        "outcome": outcome,
         "parent_candidate_sha256": parent_sha,
         "corrected_candidate_sha256": corrected_sha,
         "rejection_evidence_sha256": canonical_sha256(rejection),
@@ -256,6 +256,7 @@ def _mark_correction(
         "parent_candidate_sha256": parent_sha,
         "corrected_candidate_sha256": corrected_sha,
         "correction_class": correction_class,
+        "outcome": outcome,
         "correction_evidence_sha256": evidence["evidence_sha256"],
         "critic_run_evidence_sha256": run["run_evidence_sha256"],
     }
@@ -432,7 +433,12 @@ def main() -> int:
         "ignored_unsupported": ignored_rejections,
         "critic_workers": args.critic_workers,
         "critic_batches": critic_batches,
+        "attempted_corrections": len(records),
         "completed_corrections": len(records),
+        "changed_corrections": sum(record["outcome"] == "changed" for record in records),
+        "terminal_no_change_corrections": sum(
+            record["outcome"] == "terminal-no-change" for record in records
+        ),
         "corrections": records,
         "runs": runs,
         "output_sha256": hashlib.sha256(payload).hexdigest() if payload else None,

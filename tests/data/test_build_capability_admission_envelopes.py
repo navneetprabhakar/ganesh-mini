@@ -192,6 +192,8 @@ def test_assembles_one_pass_corrected_candidate_from_sealed_parent_and_critic(tm
         "source_rejections": 1, "selection_mode": "all-must-be-supported",
         "ignored_unsupported_count": 0, "ignored_unsupported": [], "critic_workers": 1,
         "requested_corrections": 1, "completed_corrections": 1,
+        "attempted_corrections": 1, "changed_corrections": 1,
+        "terminal_no_change_corrections": 0,
         "corrections": [correction_evidence], "runs": [critic],
         "critic_batches": [{
             "ordinal": 0, "lane": "python", "correction_class": "reference-verification",
@@ -248,6 +250,8 @@ def test_rejects_tampered_corrected_candidate(tmp_path: Path) -> None:
         "source_rejections": 1, "selection_mode": "all-must-be-supported",
         "ignored_unsupported_count": 0, "ignored_unsupported": [], "critic_workers": 1,
         "requested_corrections": 1, "completed_corrections": 1,
+        "attempted_corrections": 1, "changed_corrections": 1,
+        "terminal_no_change_corrections": 0,
         "corrections": [correction_evidence], "runs": [critic],
         "critic_batches": [{
             "ordinal": 0, "lane": "python", "correction_class": "reference-verification",
@@ -267,6 +271,58 @@ def test_rejects_tampered_corrected_candidate(tmp_path: Path) -> None:
         load_teacher_candidates(
             {queue_row()["id"]: queue_row()}, [candidate_path], [evidence_path],
             correction_report_path=report_path,
+        )
+
+
+def test_terminal_no_change_reaches_envelope_as_terminal_rejection(tmp_path: Path) -> None:
+    candidate_path, evidence_path, generated = artifacts(tmp_path)
+    test_item = {"id": generated["id"], "test_code": fixture_test_code()}
+    critic = sealed_run(
+        "capability-reference-test-critic",
+        reference_test_critic_prompt("python", [generated]), {"items": [test_item]},
+    )
+    rejection = {"id": generated["id"], "reason": "reference solution failed behavioral verification"}
+    corrected, correction_evidence = _mark_correction(
+        _replace_tests(generated, test_item["test_code"]), generated,
+        "reference-verification", critic, rejection,
+    )
+    assert correction_evidence["outcome"] == "terminal-no-change"
+    corrected_path = tmp_path / "terminal-corrected.jsonl"
+    corrected_path.write_bytes(json.dumps(corrected, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+    report = {
+        "schema_version": CORRECTION_REPORT_SCHEMA,
+        "status": "corrected-not-reviewed-not-admitted",
+        "input": {"sha256": hashlib.sha256(candidate_path.read_bytes()).hexdigest(), "records": 1},
+        "source_rejections": 1, "selection_mode": "all-must-be-supported",
+        "ignored_unsupported_count": 0, "ignored_unsupported": [], "critic_workers": 1,
+        "requested_corrections": 1, "attempted_corrections": 1, "completed_corrections": 1,
+        "changed_corrections": 0, "terminal_no_change_corrections": 1,
+        "corrections": [correction_evidence], "runs": [critic],
+        "critic_batches": [{
+            "ordinal": 0, "lane": "python", "correction_class": "reference-verification",
+            "candidate_ids": [generated["id"]], "records": 1,
+            "run_evidence_sha256": critic["run_evidence_sha256"],
+        }],
+        "output_sha256": hashlib.sha256(corrected_path.read_bytes()).hexdigest(),
+        "output": {"path": str(corrected_path), "bytes": corrected_path.stat().st_size, "records": 1,
+                   "sha256": hashlib.sha256(corrected_path.read_bytes()).hexdigest()},
+        "evaluation_artifacts_read": 0, "failure": None,
+    }
+    report["report_sha256"] = canonical_sha256(report)
+    report_path = tmp_path / "terminal-correction-report.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    candidates, derived, _ = load_teacher_candidates(
+        {queue_row()["id"]: queue_row()}, [candidate_path], [evidence_path],
+        correction_report_path=report_path,
+    )
+    semantic, separation = external_reports(corrected)
+    envelopes = build_envelopes(
+        {queue_row()["id"]: queue_row()}, candidates, derived, semantic, separation,
+    )
+    with pytest.raises(ValueError, match="terminal no-change correction attempt is not admissible"):
+        validate_envelope(
+            envelopes[0], {"matrix": {"cell_contracts": []}},
+            {queue_row()["id"]: queue_row()}, config(),
         )
 
 

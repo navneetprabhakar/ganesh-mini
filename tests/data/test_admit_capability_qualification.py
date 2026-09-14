@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from copy import deepcopy
 from pathlib import Path
@@ -9,10 +10,14 @@ import pytest
 from scripts.data.admit_capability_qualification import (
     admit_qualification,
     build_report,
+    candidate_execution_fingerprint,
+    execution_contract,
+    load_execution_reuse,
     validate_envelope,
 )
 from scripts.data.build_capability_corpus_plan import canonical_sha256
-from scripts.eval.contracts import sha256_text
+from scripts.eval.contracts import sha256_object, sha256_text
+from scripts.verify.sandbox import SANDBOX_CONTRACT
 
 
 def plan() -> dict:
@@ -156,6 +161,36 @@ def verifier(task: dict, code: str, runtime: Path) -> dict:
     return {"exit_codes": [0 if passed else 1], "timed_out": False, "stderr": "", "stdout": ""}
 
 
+def reuse_files(tmp_path: Path) -> tuple[Path, Path, dict]:
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config()) + "\n", encoding="utf-8")
+    runtime = {
+        "language": "python", "image": "fixture-python:locked",
+        "image_id": "sha256:" + "1" * 64, "manifest_digest": "sha256:" + "2" * 64,
+        "rootfs_layers": ["sha256:" + "3" * 64], "platform": "linux/amd64",
+        "candidate_path": "solution.py", "commands": [["python", "test_solution.py"]],
+    }
+    runtime_path = tmp_path / "runtime.json"
+    runtime_path.write_text(json.dumps({
+        "schema_version": "3.0", "platform": "linux/amd64",
+        "runtimes": {"python-3.11.15": runtime},
+    }) + "\n", encoding="utf-8")
+    return config_path, runtime_path, runtime
+
+
+def reusable_result(task: dict, code: str, runtime: dict) -> dict:
+    passed = code == task["validation"]["reference"]["code"]
+    return {
+        "runtime_id": task["runtime_id"],
+        "image": f"fixture-python@{runtime['manifest_digest']}",
+        "image_id": runtime["image_id"], "commands": runtime["commands"],
+        "exit_codes": [0 if passed else 1], "timed_out": False,
+        "stdout": "", "stdout_sha256": sha256_text(""),
+        "stderr": "", "stderr_sha256": sha256_text(""), "duration_ms": 1,
+        "sandbox_contract_sha256": sha256_object(SANDBOX_CONTRACT),
+    }
+
+
 def test_accepts_wrapped_existing_candidate_and_executes_contract() -> None:
     output, rejected = admit_qualification(
         [envelope()], plan(), {"queue-0": queue_row()}, config(), Path("runtime.json"), verifier,
@@ -171,6 +206,147 @@ def test_accepts_direct_training_candidate_with_qualification_metadata() -> None
     )
     assert candidate_value["schema_version"] == "ganesh-mini-expansion-candidate/v1"
     assert metadata["queue_record_sha256"] == canonical_sha256(queue_row())
+
+
+def test_exact_non_timeout_evidence_is_reused_but_corrected_candidate_executes(tmp_path: Path) -> None:
+    config_path, runtime_path, runtime = reuse_files(tmp_path)
+    contract = execution_contract(config_path, runtime_path)
+    item = candidate()
+    task = item["verification_task"]
+    reference = task["validation"]["reference"]
+    known_bad = task["validation"]["known_bad"][0]
+    reuse_index = {
+        item["id"]: {
+            "fingerprint": candidate_execution_fingerprint(item, contract),
+            "results": {
+                reference["sha256"]: reusable_result(task, reference["code"], runtime),
+                known_bad["sha256"]: reusable_result(task, known_bad["code"], runtime),
+            },
+            "prior_outcome": "admitted",
+        },
+    }
+    ledger: dict = {}
+
+    def must_not_execute(task_value: dict, code: str, runtime_value: Path) -> dict:
+        raise AssertionError("exact prior evidence should be reused")
+
+    admitted, rejected = admit_qualification(
+        [envelope()], plan(), {"queue-0": queue_row()}, config(), runtime_path,
+        must_not_execute, reuse_index=reuse_index, reuse_contract=contract, reuse_ledger=ledger,
+    )
+    assert len(admitted) == 1 and rejected == []
+    assert ledger["reused_candidate_ids"] == ["queue-0"]
+    assert ledger["executed"] == 0
+
+    stale_semantics = envelope()
+    semantic = stale_semantics["qualification"]["evidence"]["semantic_review"]
+    semantic.pop("evidence_sha256")
+    semantic["verdict"] = "reject"
+    seal(semantic)
+    ledger = {}
+    admitted, rejected = admit_qualification(
+        [stale_semantics], plan(), {"queue-0": queue_row()}, config(), runtime_path,
+        must_not_execute, reuse_index=reuse_index, reuse_contract=contract, reuse_ledger=ledger,
+    )
+    assert admitted == [] and "semantic review" in rejected[0]["reason"]
+    assert ledger["reused"] == 0
+
+    corrected = envelope()
+    corrected["qualification"]["correction_passes"] = 1
+    corrected["qualification"]["correction"] = seal({
+        "candidate_sha256": canonical_sha256(corrected["candidate"]),
+        "parent_candidate_sha256": "f" * 64,
+    })
+    calls: list[str] = []
+
+    def execute(task_value: dict, code: str, runtime_value: Path) -> dict:
+        calls.append(sha256_text(code))
+        return reusable_result(task_value, code, runtime)
+
+    ledger = {}
+    admitted, rejected = admit_qualification(
+        [corrected], plan(), {"queue-0": queue_row()}, config(), runtime_path,
+        execute, reuse_index=reuse_index, reuse_contract=contract, reuse_ledger=ledger,
+    )
+    assert len(admitted) == 1 and rejected == []
+    assert set(calls) == {reference["sha256"], known_bad["sha256"]}
+    assert ledger["reused"] == 0 and ledger["executed_candidate_ids"] == ["queue-0"]
+
+    replacement_queue = queue_row()
+    replacement_queue.update(
+        replacement_attempt=1,
+        replacement_for_cell_id=replacement_queue["cell_id"],
+    )
+    replacement_envelope = envelope()
+    replacement_evidence = replacement_envelope["qualification"]["evidence"]
+    replacement_teacher = replacement_evidence["teacher"]
+    replacement_teacher.pop("evidence_sha256")
+    replacement_teacher["queue_record_sha256"] = canonical_sha256(replacement_queue)
+    seal(replacement_teacher)
+    replacement_lineage = replacement_evidence["lineage"]
+    replacement_lineage.pop("evidence_sha256")
+    replacement_lineage["queue_record_sha256"] = canonical_sha256(replacement_queue)
+    replacement_lineage["teacher_evidence_sha256"] = replacement_teacher["evidence_sha256"]
+    seal(replacement_lineage)
+    calls.clear()
+    ledger = {}
+    admitted, rejected = admit_qualification(
+        [replacement_envelope], plan(), {"queue-0": replacement_queue}, config(), runtime_path,
+        execute, reuse_index=reuse_index, reuse_contract=contract, reuse_ledger=ledger,
+    )
+    assert len(admitted) == 1 and rejected == []
+    assert set(calls) == {reference["sha256"], known_bad["sha256"]}
+    assert ledger["reused"] == 0 and ledger["executed_candidate_ids"] == ["queue-0"]
+
+
+def test_loads_only_sealed_exact_prior_execution_evidence(tmp_path: Path) -> None:
+    config_path, runtime_path, runtime = reuse_files(tmp_path)
+    contract = execution_contract(config_path, runtime_path)
+    envelope_path = tmp_path / "prior-envelopes.jsonl"
+    envelope_path.write_text(json.dumps(envelope()) + "\n", encoding="utf-8")
+    admitted, rejected = admit_qualification(
+        [envelope()], plan(), {"queue-0": queue_row()}, config(), runtime_path,
+        lambda task, code, _: reusable_result(task, code, runtime),
+    )
+    admitted_path = tmp_path / "prior-admitted.jsonl"
+    admitted_path.write_text("".join(json.dumps(row) + "\n" for row in admitted), encoding="utf-8")
+    rejected_path = tmp_path / "prior-rejected.json"
+    rejected_path.write_text(json.dumps(rejected) + "\n", encoding="utf-8")
+    report = build_report(
+        mode="final", plan=plan(), queue_manifest={"manifest_sha256": "d" * 64},
+        input_path=envelope_path, output_path=admitted_path, rejected_path=rejected_path,
+        admitted=admitted, rejected=rejected, verifier_workers=1, record_workers=1,
+        queue_by_id={"queue-0": queue_row()}, execution_contract_value=contract,
+    )
+    report_path = tmp_path / "prior-report.json"
+    report_path.write_text(json.dumps(report) + "\n", encoding="utf-8")
+    reuse, source = load_execution_reuse(report_path, contract)
+    assert list(reuse) == ["queue-0"]
+    assert source["eligible_candidate_ids"] == ["queue-0"]
+
+    mismatched = dict(contract)
+    mismatched["sandbox_contract_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="execution contract"):
+        load_execution_reuse(report_path, mismatched)
+
+    admitted[0]["record"]["verification"]["reference"]["timed_out"] = True
+    admitted_path.write_text("".join(json.dumps(row) + "\n" for row in admitted), encoding="utf-8")
+    with pytest.raises(ValueError, match="artifact binding changed"):
+        load_execution_reuse(report_path, contract)
+
+    verification = admitted[0]["record"]["verification"]
+    verification.pop("evidence_sha256")
+    verification["evidence_sha256"] = sha256_object(verification)
+    admitted_path.write_text("".join(json.dumps(row) + "\n" for row in admitted), encoding="utf-8")
+    report["outputs"]["admitted"] = {
+        "path": str(admitted_path), "bytes": admitted_path.stat().st_size,
+        "sha256": hashlib.sha256(admitted_path.read_bytes()).hexdigest(),
+    }
+    report.pop("report_sha256")
+    report["report_sha256"] = canonical_sha256(report)
+    report_path.write_text(json.dumps(report) + "\n", encoding="utf-8")
+    reuse, _ = load_execution_reuse(report_path, contract)
+    assert reuse == {}
 
 
 @pytest.mark.parametrize(

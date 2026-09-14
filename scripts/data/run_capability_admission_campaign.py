@@ -17,8 +17,12 @@ if str(ROOT) not in sys.path:
 from scripts.data.admit_capability_qualification import (  # noqa: E402
     admit_qualification,
     build_report as build_admission_report,
+    execution_contract,
+    file_binding,
+    load_execution_reuse,
     load_queue as load_admission_queue,
     verify,
+    write_reuse_ledger,
 )
 from scripts.data.admit_expansion import canonical_json, read_jsonl  # noqa: E402
 from scripts.data.build_capability_admission_envelopes import (  # noqa: E402
@@ -62,6 +66,7 @@ def input_bindings(
     record_workers: int, verifier_workers: int,
     correction_report_path: Path | None = None,
     replacement_manifest_path: Path | None = None,
+    reuse_admission_report_path: Path | None = None,
 ) -> dict[str, Any]:
     bindings = {
         "plan": artifact(plan_path), "queue": artifact(queue_path),
@@ -92,6 +97,10 @@ def input_bindings(
         bindings["bounded_replacements"] = {
             "manifest": artifact(replacement_manifest_path),
             "queue": artifact(Path(queue_output["path"])),
+        }
+    if reuse_admission_report_path is not None:
+        bindings["executable_evidence_reuse"] = {
+            "prior_admission_report": artifact(reuse_admission_report_path),
         }
     return bindings
 
@@ -258,6 +267,7 @@ def _campaign_report(
         "resumption": {"assembly_reused": reused_assembly, "admission_reused": reused_admission},
         "assembly_report_sha256": assembly_report["report_sha256"],
         "admission_report_sha256": admission_report["report_sha256"],
+        "executable_evidence_reuse": admission_report.get("executable_evidence_reuse"),
         "outputs": {name: artifact(path) for name, path in paths.items() if name != "campaign_report"},
     }
     report["report_sha256"] = canonical_sha256(report)
@@ -270,6 +280,7 @@ def run_campaign(
     config_path: Path, runtime_config_path: Path, output_root: Path,
     correction_report_path: Path | None = None,
     replacement_manifest_path: Path | None = None,
+    reuse_admission_report_path: Path | None = None,
     record_workers: int = 4, verifier_workers: int = 2,
     verifier_fn: Callable[[dict[str, Any], str, Path], dict[str, Any]] = verify,
 ) -> dict[str, Any]:
@@ -301,6 +312,7 @@ def run_campaign(
         record_workers=record_workers, verifier_workers=verifier_workers,
         correction_report_path=correction_report_path,
         replacement_manifest_path=replacement_manifest_path,
+        reuse_admission_report_path=reuse_admission_report_path,
     )
     output_root.mkdir(parents=True, exist_ok=True)
     paths = {
@@ -311,6 +323,8 @@ def run_campaign(
         "admission_report": output_root / "admission-report.json",
         "campaign_report": output_root / "campaign-report.json",
     }
+    if reuse_admission_report_path is not None:
+        paths["reuse_ledger"] = output_root / "executable-reuse-ledger.json"
     if paths["campaign_report"].exists():
         report = _load_exact_report(paths["campaign_report"], CAMPAIGN_SCHEMA)
         if report.get("inputs") != bindings:
@@ -345,18 +359,32 @@ def run_campaign(
     )
     if existing is None:
         config = json.loads(config_path.read_text(encoding="utf-8"))
+        contract = execution_contract(config_path, runtime_config_path)
+        reuse_index = None
+        reuse_source = None
+        reuse_summary = None
+        if reuse_admission_report_path is not None:
+            reuse_index, reuse_source = load_execution_reuse(reuse_admission_report_path, contract)
+            reuse_summary = {}
         admitted, rejected = admit_qualification(
             envelopes, plan, queue_by_id, config, runtime_config_path, verifier_fn,
             verifier_workers=verifier_workers, record_workers=record_workers,
+            reuse_index=reuse_index, reuse_contract=contract, reuse_ledger=reuse_summary,
         )
         paths["admitted"].write_bytes(b"".join(canonical_json(row) + b"\n" for row in admitted))
         paths["rejected"].write_text(json.dumps(rejected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        reuse_ledger_binding = None
+        if reuse_summary is not None and reuse_source is not None:
+            write_reuse_ledger(paths["reuse_ledger"], reuse_source, reuse_summary, contract)
+            reuse_ledger_binding = file_binding(paths["reuse_ledger"])
         admission_report = build_admission_report(
             mode="final", plan=plan, queue_manifest=queue_manifest,
             input_path=paths["envelopes"], output_path=paths["admitted"], rejected_path=paths["rejected"],
             admitted=admitted, rejected=rejected,
             verifier_workers=verifier_workers, record_workers=record_workers,
             queue_by_id=queue_by_id,
+            execution_contract_value=contract, reuse_summary=reuse_summary,
+            reuse_ledger_binding=reuse_ledger_binding,
         )
         paths["admission_report"].write_text(json.dumps(admission_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         admission_reused = False
@@ -382,6 +410,7 @@ def main() -> int:
     parser.add_argument("--separation-report", type=Path, required=True)
     parser.add_argument("--correction-report", type=Path)
     parser.add_argument("--replacement-manifest", type=Path)
+    parser.add_argument("--reuse-admission-report", type=Path)
     parser.add_argument("--config", type=Path, default=Path("configs/data/expansion_v1.json"))
     parser.add_argument("--runtime-config", type=Path, default=Path("configs/eval/runtimes.json"))
     parser.add_argument("--output-root", type=Path, required=True)
@@ -395,6 +424,7 @@ def main() -> int:
         config_path=args.config, runtime_config_path=args.runtime_config,
         correction_report_path=args.correction_report,
         replacement_manifest_path=args.replacement_manifest,
+        reuse_admission_report_path=args.reuse_admission_report,
         output_root=args.output_root, record_workers=args.record_workers,
         verifier_workers=args.verifier_workers,
     )

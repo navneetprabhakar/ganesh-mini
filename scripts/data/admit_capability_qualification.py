@@ -10,9 +10,11 @@ validation to :mod:`scripts.data.admit_expansion`.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import sys
+import threading
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,12 +32,14 @@ from scripts.data.admit_expansion import (  # noqa: E402
     verify,
 )
 from scripts.data.build_capability_corpus_plan import canonical_sha256, load_sealed  # noqa: E402
-from scripts.eval.contracts import sha256_text  # noqa: E402
+from scripts.eval.contracts import sha256_object, sha256_text  # noqa: E402
+from scripts.verify.sandbox import SANDBOX_CONTRACT, infrastructure_failure  # noqa: E402
 
 
 SCHEMA_VERSION = "ganesh-mini-capability-qualification-envelope/v1"
 OUTPUT_SCHEMA_VERSION = "ganesh-mini-capability-qualified-record/v1"
 REPORT_SCHEMA_VERSION = "ganesh-mini-capability-qualification-admission/v1"
+REUSE_LEDGER_SCHEMA_VERSION = "ganesh-mini-capability-executable-reuse-ledger/v1"
 EMPTY_EVALUATION_INDEX = {
     "prompts": {}, "prompt_simhashes": [], "code_hashes": {}, "inspected": [],
 }
@@ -70,6 +74,220 @@ def _required_true(value: dict[str, Any], fields: Iterable[str], where: str) -> 
 def _required_zero(value: dict[str, Any], field: str, where: str) -> None:
     if value.get(field) != 0:
         raise AdmissionFailure(f"{where}.{field}: must be exactly zero")
+
+
+def file_binding(path: Path) -> dict[str, Any]:
+    payload = path.read_bytes()
+    return {"path": str(path), "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}
+
+
+def execution_contract(config_path: Path, runtime_config_path: Path) -> dict[str, Any]:
+    """Bind every non-candidate input capable of changing verifier meaning."""
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    runtimes = json.loads(runtime_config_path.read_text(encoding="utf-8"))
+    if not isinstance(config, dict) or not isinstance(runtimes, dict):
+        raise ValueError("admission config and runtime config must be objects")
+    return {
+        "admission_config": file_binding(config_path),
+        "admission_config_sha256": canonical_sha256(config),
+        "runtime_config": file_binding(runtime_config_path),
+        "runtime_config_sha256": canonical_sha256(runtimes),
+        "sandbox_contract_sha256": sha256_object(SANDBOX_CONTRACT),
+    }
+
+
+def _validate_execution_contract(contract: Any) -> dict[str, Any]:
+    if not isinstance(contract, dict) or contract.get("sandbox_contract_sha256") != sha256_object(SANDBOX_CONTRACT):
+        raise ValueError("execution contract does not bind the current sandbox contract")
+    config_path = _verify_bound_artifact(contract.get("admission_config"), "admission config")
+    runtime_path = _verify_bound_artifact(contract.get("runtime_config"), "runtime config")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    runtimes = json.loads(runtime_path.read_text(encoding="utf-8"))
+    if (
+        contract.get("admission_config_sha256") != canonical_sha256(config)
+        or contract.get("runtime_config_sha256") != canonical_sha256(runtimes)
+    ):
+        raise ValueError("execution contract canonical config binding mismatch")
+    return runtimes
+
+
+def candidate_execution_fingerprint(candidate: dict[str, Any], contract: dict[str, Any]) -> dict[str, Any]:
+    task = candidate["verification_task"]
+    runtime_document = _validate_execution_contract(contract)
+    runtime = runtime_document.get("runtimes", {}).get(task.get("runtime_id"))
+    if not isinstance(runtime, dict):
+        raise AdmissionFailure("candidate runtime is absent from the bound runtime config")
+    return {
+        "candidate_sha256": canonical_sha256(candidate),
+        "verification_task_sha256": sha256_object(task),
+        "reference_sha256": task["validation"]["reference"]["sha256"],
+        "known_bad": [
+            {"label": item["label"], "sha256": item["sha256"]}
+            for item in task["validation"]["known_bad"]
+        ],
+        "files": [
+            {"path": item["path"], "role": item["role"], "sha256": item["sha256"]}
+            for item in task["files"]
+        ],
+        "runtime": {
+            "runtime_id": task["runtime_id"], "image": runtime.get("image"),
+            "image_id": runtime.get("image_id"), "manifest_digest": runtime.get("manifest_digest"),
+            "rootfs_layers": runtime.get("rootfs_layers"), "platform": runtime.get("platform"),
+            "commands": runtime.get("commands"),
+        },
+        "limits": task["limits"],
+        "admission_config_sha256": contract["admission_config_sha256"],
+        "runtime_config_sha256": contract["runtime_config_sha256"],
+        "sandbox_contract_sha256": contract["sandbox_contract_sha256"],
+    }
+
+
+def _verify_bound_artifact(binding: Any, where: str) -> Path:
+    if not isinstance(binding, dict) or not isinstance(binding.get("path"), str):
+        raise ValueError(f"{where}: artifact binding is absent")
+    path = Path(binding["path"])
+    payload = path.read_bytes()
+    if (
+        binding.get("sha256") != hashlib.sha256(payload).hexdigest()
+        or ("bytes" in binding and binding.get("bytes") != len(payload))
+    ):
+        raise ValueError(f"{where}: artifact binding changed")
+    return path
+
+
+def _result_matches_contract(result: Any, fingerprint: dict[str, Any]) -> bool:
+    runtime = fingerprint["runtime"]
+    expected_image = f"{str(runtime['image']).rsplit(':', 1)[0]}@{runtime['manifest_digest']}"
+    return (
+        isinstance(result, dict)
+        and result.get("timed_out") is False
+        and result.get("runtime_id") == runtime["runtime_id"]
+        and result.get("image") == expected_image
+        and result.get("image_id") == runtime["image_id"]
+        and result.get("commands") == runtime["commands"]
+        and result.get("sandbox_contract_sha256") == fingerprint["sandbox_contract_sha256"]
+        and isinstance(result.get("exit_codes"), list)
+        and infrastructure_failure(result) is None
+    )
+
+
+def load_execution_reuse(
+    prior_report_path: Path, current_contract: dict[str, Any],
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Load a sealed prior run and expose only complete, non-timeout verifier evidence."""
+    _validate_execution_contract(current_contract)
+    report = load_sealed(prior_report_path, "report_sha256")
+    if (
+        report.get("schema_version") != REPORT_SCHEMA_VERSION
+        or report.get("mode") != "final"
+        or report.get("evaluation_artifacts_read") != 0
+        or report.get("execution_contract") != current_contract
+    ):
+        raise ValueError("prior admission report does not match the current execution contract")
+    envelope_path = _verify_bound_artifact(report.get("input"), "prior admission input")
+    admitted_path = _verify_bound_artifact(report.get("outputs", {}).get("admitted"), "prior admitted output")
+    rejected_path = _verify_bound_artifact(report.get("outputs", {}).get("rejected"), "prior rejected output")
+    envelopes = read_jsonl(envelope_path)
+    candidates: dict[str, dict[str, Any]] = {}
+    for envelope in envelopes:
+        candidate, _ = _candidate_from_envelope(envelope)
+        identifier = candidate.get("id")
+        if not isinstance(identifier, str) or identifier in candidates:
+            raise ValueError("prior admission envelopes have missing or duplicate candidate IDs")
+        candidates[identifier] = candidate
+    admitted = read_jsonl(admitted_path)
+    rejected = json.loads(rejected_path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(rejected, list)
+        or report.get("accepted") != len(admitted)
+        or report.get("rejected") != len(rejected)
+    ):
+        raise ValueError("prior admission artifact counts do not match the sealed report")
+
+    outcome_by_id: dict[str, tuple[str, dict[str, Any]]] = {}
+    disposition_ids: set[str] = set()
+    for row in admitted:
+        identifier = row.get("record", {}).get("id") if isinstance(row, dict) else None
+        evidence = row.get("record", {}).get("verification") if isinstance(row, dict) else None
+        if not isinstance(identifier, str) or not isinstance(evidence, dict) or identifier in outcome_by_id:
+            raise ValueError("prior admitted artifact has invalid candidate identity or evidence")
+        body = dict(evidence)
+        claimed = body.pop("evidence_sha256", None)
+        if claimed != sha256_object(body):
+            raise ValueError("prior admitted executable evidence seal mismatch")
+        outcome_by_id[identifier] = ("admitted", evidence)
+        disposition_ids.add(identifier)
+    for row in rejected:
+        identifier = row.get("id") if isinstance(row, dict) else None
+        if not isinstance(identifier, str) or identifier in disposition_ids:
+            raise ValueError("prior rejection identities do not exactly partition outcomes")
+        disposition_ids.add(identifier)
+        evidence = row.get("evidence")
+        if isinstance(evidence, dict):
+            outcome_by_id[identifier] = ("rejected", evidence)
+    if disposition_ids != set(candidates):
+        raise ValueError("prior admission outcomes do not exactly partition prior envelopes")
+
+    reusable: dict[str, dict[str, Any]] = {}
+    for identifier, (outcome, evidence) in outcome_by_id.items():
+        candidate = candidates.get(identifier)
+        if candidate is None:
+            raise ValueError("prior executable outcome is not bound to a prior envelope")
+        fingerprint = candidate_execution_fingerprint(candidate, current_contract)
+        task = candidate["verification_task"]
+        if outcome == "admitted" and evidence.get("task_sha256") != fingerprint["verification_task_sha256"]:
+            raise ValueError("prior admitted evidence has a mismatched verification task hash")
+        reference = evidence.get("reference")
+        known_bad_rows = evidence.get("known_bad")
+        expected_bad = fingerprint["known_bad"]
+        if (
+            not _result_matches_contract(reference, fingerprint)
+            or not isinstance(known_bad_rows, list)
+            or [row.get("label") for row in known_bad_rows if isinstance(row, dict)]
+               != [row["label"] for row in expected_bad]
+            or any(
+                not isinstance(row, dict) or not _result_matches_contract(row.get("result"), fingerprint)
+                for row in known_bad_rows
+            )
+        ):
+            continue
+        results = {fingerprint["reference_sha256"]: copy.deepcopy(reference)}
+        for expected, evidence_row in zip(expected_bad, known_bad_rows, strict=True):
+            results[expected["sha256"]] = copy.deepcopy(evidence_row["result"])
+        reusable[identifier] = {
+            "fingerprint": fingerprint, "results": results, "prior_outcome": outcome,
+        }
+    binding = {
+        "prior_report": file_binding(prior_report_path),
+        "prior_report_sha256": report["report_sha256"],
+        "eligible_candidate_ids": sorted(reusable),
+    }
+    return reusable, binding
+
+
+def write_reuse_ledger(
+    path: Path, source_binding: dict[str, Any], summary: dict[str, Any],
+    contract: dict[str, Any],
+) -> dict[str, Any]:
+    ledger: dict[str, Any] = {
+        "schema_version": REUSE_LEDGER_SCHEMA_VERSION,
+        "status": "complete",
+        "source": source_binding,
+        "execution_contract_sha256": canonical_sha256(contract),
+        "eligible_candidate_ids": summary.get("eligible_candidate_ids", []),
+        "reused_candidate_ids": summary.get("reused_candidate_ids", []),
+        "executed_candidate_ids": summary.get("executed_candidate_ids", []),
+        "counts": {
+            "eligible": summary.get("eligible", 0),
+            "reused": summary.get("reused", 0),
+            "executed": summary.get("executed", 0),
+        },
+        "evaluation_artifacts_read": 0,
+    }
+    ledger["ledger_sha256"] = canonical_sha256(ledger)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return ledger
 
 
 def load_queue(queue_path: Path, manifest_path: Path, plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -310,6 +528,9 @@ def admit_qualification(
     verifier: Callable[[dict[str, Any], str, Path], dict[str, Any]] = verify,
     verifier_workers: int = 1,
     record_workers: int = 1,
+    reuse_index: dict[str, dict[str, Any]] | None = None,
+    reuse_contract: dict[str, Any] | None = None,
+    reuse_ledger: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     rows = list(envelopes)
     valid: list[dict[str, Any]] = []
@@ -317,6 +538,7 @@ def admit_qualification(
     input_lines: list[int] = []
     rejected: list[dict[str, Any]] = []
     seen_queue_ids: set[str] = set()
+    selected_reuse: dict[str, dict[str, Any]] = {}
     for line, envelope in enumerate(rows, 1):
         record_id = f"line-{line}"
         if isinstance(envelope, dict):
@@ -331,14 +553,43 @@ def admit_qualification(
             if item_metadata["queue_id"] in seen_queue_ids:
                 raise AdmissionFailure("sealed queue assignment reused by multiple candidates")
             seen_queue_ids.add(item_metadata["queue_id"])
+            prior = (reuse_index or {}).get(candidate["id"])
+            replacement = queue_by_id[item_metadata["queue_id"]].get("replacement_attempt") is not None
+            if prior is not None and item_metadata["correction_passes"] == 0 and not replacement:
+                if reuse_contract is None:
+                    raise AdmissionFailure("executable reuse contract is absent")
+                current_fingerprint = candidate_execution_fingerprint(candidate, reuse_contract)
+                if prior.get("fingerprint") != current_fingerprint:
+                    raise AdmissionFailure("prior executable evidence fingerprint mismatch")
+                selected_reuse[candidate["id"]] = prior
             valid.append(candidate)
             metadata.append(item_metadata)
             input_lines.append(line)
         except (AdmissionFailure, KeyError, TypeError, ValueError) as exc:
             rejected.append({"line": line, "id": record_id, "reason": str(exc)})
 
+    reused_calls: dict[str, set[str]] = {}
+    executed_ids: set[str] = set()
+    reuse_lock = threading.Lock()
+
+    def verifier_with_reuse(task: dict[str, Any], code: str, runtime: Path) -> dict[str, Any]:
+        identifier = task.get("task_id")
+        entry = selected_reuse.get(identifier)
+        code_sha256 = sha256_text(code)
+        if entry is not None:
+            result = entry["results"].get(code_sha256)
+            if result is None:
+                raise AdmissionFailure(f"{identifier}: prior executable evidence lacks an exact code-hash result")
+            with reuse_lock:
+                reused_calls.setdefault(identifier, set()).add(code_sha256)
+            return copy.deepcopy(result)
+        with reuse_lock:
+            if isinstance(identifier, str):
+                executed_ids.add(identifier)
+        return verifier(task, code, runtime)
+
     admitted_rows, execution_rejections = admit_records(
-        valid, config, EMPTY_EVALUATION_INDEX, runtime_config, verifier,
+        valid, config, EMPTY_EVALUATION_INDEX, runtime_config, verifier_with_reuse,
         verifier_workers=verifier_workers, record_workers=record_workers,
     )
     admitted_by_id = {row["id"]: row for row in admitted_rows}
@@ -360,6 +611,18 @@ def admit_qualification(
             "record": admitted,
         })
     rejected.sort(key=lambda item: item["line"])
+    if reuse_ledger is not None:
+        fully_reused = sorted(
+            identifier for identifier, entry in selected_reuse.items()
+            if reused_calls.get(identifier) == set(entry["results"])
+        )
+        reuse_ledger.update({
+            "eligible_candidate_ids": sorted(selected_reuse),
+            "reused_candidate_ids": fully_reused,
+            "executed_candidate_ids": sorted(executed_ids),
+            "eligible": len(selected_reuse), "reused": len(fully_reused),
+            "executed": len(executed_ids),
+        })
     return output, rejected
 
 
@@ -369,6 +632,9 @@ def build_report(
     admitted: list[dict[str, Any]], rejected: list[dict[str, Any]],
     verifier_workers: int, record_workers: int,
     queue_by_id: dict[str, dict[str, Any]] | None = None,
+    execution_contract_value: dict[str, Any] | None = None,
+    reuse_summary: dict[str, Any] | None = None,
+    reuse_ledger_binding: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     counts = Counter(row["qualification"]["cell_id"] for row in admitted)
     all_cells = {row["cell_id"] for row in plan["matrix"]["cell_contracts"]}
@@ -452,7 +718,7 @@ def build_report(
         "mode": mode,
         "plan_sha256": plan["plan_sha256"],
         "queue_manifest_sha256": queue_manifest["manifest_sha256"],
-        "input": {"path": str(input_path), "sha256": hashlib.sha256(input_path.read_bytes()).hexdigest()},
+        "input": file_binding(input_path),
         "accepted": len(admitted),
         "rejected": len(rejected),
         "counts_by_cell": dict(sorted(counts.items())),
@@ -480,6 +746,14 @@ def build_report(
             "verifier_workers_per_record": verifier_workers,
             "maximum_parallel_verifiers": record_workers * verifier_workers,
         },
+        "execution_contract": execution_contract_value,
+        "executable_evidence_reuse": {
+            "requested": reuse_summary is not None,
+            "eligible": (reuse_summary or {}).get("eligible", 0),
+            "reused": (reuse_summary or {}).get("reused", 0),
+            "executed": (reuse_summary or {}).get("executed", len(admitted) + len(rejected)),
+            "ledger": reuse_ledger_binding,
+        },
         "outputs": {
             "admitted": {"path": str(output_path), "bytes": len(output_payload), "sha256": hashlib.sha256(output_payload).hexdigest()},
             "rejected": {"path": str(rejected_path), "bytes": len(rejected_payload), "sha256": hashlib.sha256(rejected_payload).hexdigest()},
@@ -504,6 +778,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", choices=("candidate", "final"), default="candidate")
     parser.add_argument("--verifier-workers", type=int, default=1)
     parser.add_argument("--record-workers", type=int, default=1)
+    parser.add_argument("--reuse-admission-report", type=Path)
+    parser.add_argument("--reuse-ledger", type=Path)
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
 
     plan = load_sealed(args.plan, "plan_sha256")
@@ -514,14 +790,28 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("unsupported capability qualification plan")
     queue_by_id = load_queue(args.queue, args.queue_manifest, plan)
     config = json.loads(args.config.read_text(encoding="utf-8"))
+    contract = execution_contract(args.config, args.runtime_config)
+    reuse_index: dict[str, dict[str, Any]] | None = None
+    reuse_source: dict[str, Any] | None = None
+    reuse_summary: dict[str, Any] | None = None
+    if (args.reuse_admission_report is None) != (args.reuse_ledger is None):
+        raise ValueError("reuse admission report and reuse ledger must be provided together")
+    if args.reuse_admission_report is not None:
+        reuse_index, reuse_source = load_execution_reuse(args.reuse_admission_report, contract)
+        reuse_summary = {}
     admitted, rejected = admit_qualification(
         read_jsonl(args.input), plan, queue_by_id, config, args.runtime_config,
         verifier_workers=args.verifier_workers, record_workers=args.record_workers,
+        reuse_index=reuse_index, reuse_contract=contract, reuse_ledger=reuse_summary,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(b"".join(canonical_json(row) + b"\n" for row in admitted))
     args.rejected_output.parent.mkdir(parents=True, exist_ok=True)
     args.rejected_output.write_text(json.dumps(rejected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    reuse_ledger_binding = None
+    if reuse_summary is not None and reuse_source is not None and args.reuse_ledger is not None:
+        write_reuse_ledger(args.reuse_ledger, reuse_source, reuse_summary, contract)
+        reuse_ledger_binding = file_binding(args.reuse_ledger)
     queue_manifest = load_sealed(args.queue_manifest, "manifest_sha256")
     report = build_report(
         mode=args.mode, plan=plan, queue_manifest=queue_manifest,
@@ -529,6 +819,8 @@ def main(argv: list[str] | None = None) -> int:
         admitted=admitted, rejected=rejected,
         verifier_workers=args.verifier_workers, record_workers=args.record_workers,
         queue_by_id=queue_by_id,
+        execution_contract_value=contract, reuse_summary=reuse_summary,
+        reuse_ledger_binding=reuse_ledger_binding,
     )
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

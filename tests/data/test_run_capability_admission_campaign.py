@@ -105,6 +105,26 @@ def test_optional_correction_report_binds_report_and_corrected_artifact(tmp_path
     assert bindings["correction"]["corrected_candidates"]["sha256"] == hashlib.sha256(corrected.read_bytes()).hexdigest()
 
 
+def test_optional_executable_reuse_is_a_hash_bound_campaign_input(tmp_path: Path) -> None:
+    candidates, evidence = teacher_dirs(tmp_path)
+    candidate_paths, evidence_paths = discover_batches(candidates, evidence)
+    value = inputs(tmp_path)
+    prior = tmp_path / "prior-admission-report.json"
+    prior.write_text('{"sealed":"fixture"}\n', encoding="utf-8")
+    bindings = input_bindings(
+        plan_path=value["plan"], queue_path=value["queue"],
+        queue_manifest_path=value["queue_manifest"], candidate_paths=candidate_paths,
+        evidence_paths=evidence_paths, semantic_path=value["semantic"],
+        separation_path=value["separation"], config_path=value["config"],
+        runtime_config_path=value["runtime"], record_workers=4, verifier_workers=2,
+        reuse_admission_report_path=prior,
+    )
+    assert bindings["executable_evidence_reuse"]["prior_admission_report"] == {
+        "path": str(prior), "bytes": prior.stat().st_size,
+        "sha256": hashlib.sha256(prior.read_bytes()).hexdigest(),
+    }
+
+
 def test_runs_final_campaign_and_exact_completed_campaign_is_resumable(tmp_path: Path) -> None:
     kwargs = campaign_kwargs(tmp_path)
     queue = {}

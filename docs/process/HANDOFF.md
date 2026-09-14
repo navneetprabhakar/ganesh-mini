@@ -1,5 +1,31 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 2 v3 repair-delta plan ready — 2026-09-14
+
+Navneet authorized creation of a new plan after the sealed v2 no-go. The new
+contract is `capability-stratified-v3-repair-delta/v1`, frozen in
+`docs/plans/GATE2_REPAIR_DELTA_QUALIFICATION_PLAN_20260914.md` at file SHA-256
+`4023a896300112f9f93f2a16698d549f203e3e75b4e71ae054f3a98463e2f0f0`.
+
+V3 does not retry only the observed Python cell. It requalifies the complete
+changed surface: all 60 capability/language repair cells, one fresh candidate
+per cell, with at most six uniformly governed reserves. The absolute candidate
+budget is 66. The revised contract requires the known-bad implementation to
+fail primary-capability tests while already passing the scheduled secondary
+cross-cutting tests. It carries the unchanged 60-cell v2 generation surface
+only through a sealed equivalence audit; v2 remains recorded as failed.
+
+Current state is READY FOR LOCAL GATE 2 V3 IMPLEMENTATION. Intended paths are
+the Gate 2 data pipeline and focused tests plus a new
+`measurement/gate2/capability-stratified-v3-repair-delta/` evidence root. No
+training or GCloud action is authorized by the plan. Warm execution after
+implementation is estimated at 2–4 hours; the low-confidence warm-path estimate
+for implementation plus qualification and evidence closure is 4–8 hours.
+Project delivery remains 1–3
+weeks if Gate 2 passes and later training transfer succeeds. Historical process
+progress remains training 84%, release 58%, and overall delivery 72% until v3
+produces executed evidence.
+
 ## Gate 2 capability qualification terminal no-go — 2026-09-14
 
 The capability-stratified qualification campaign is complete under the sealed

@@ -1,5 +1,30 @@
 # Decisions
 
+## 2026-09-14 — Requalify the complete repair surface under a v3 delta contract
+
+Adopt `capability-stratified-v3-repair-delta/v1` as the next Gate 2
+construction experiment. Preserve the v2 no-go unchanged. Do not retry only
+`numeric_reasoning/python/repair`: all 18 final semantic rejects were repair
+candidates, while all 120 generation candidates passed semantic review and all
+60 generation cells retained an admission. The observed mechanism is therefore
+a repair-construction defect, not a defensible one-cell exception.
+
+Requalify all 60 capability/language repair cells with one fresh candidate per
+cell. The sole known-bad defect must exercise the primary capability; the
+scheduled cross-cutting dimension must be concrete but already correct in the
+known-bad implementation. Require split executable tests to prove both facts.
+Permit at most six reserves, uniformly and only after the complete first pass
+meets its frozen aggregate, per-lane, per-capability, and per-dimension gates.
+Absolute candidate budget is 66, with no correction pass or content-based
+rerun.
+
+Carry forward the v2 generation surface only through an explicit sealed
+equivalence report. V3 passes only with all 60 fresh repair cells and all 60
+equivalent generation cells covered. Passing qualifies the construction
+method; it does not authorize scaling, training, GCloud, or release. Plan file
+SHA-256:
+`4023a896300112f9f93f2a16698d549f203e3e75b4e71ae054f3a98463e2f0f0`.
+
 ## 2026-09-14 — Honor the sealed Gate 2 no-go; do not scale or train
 
 The capability-stratified qualification completed with 217/247 candidates

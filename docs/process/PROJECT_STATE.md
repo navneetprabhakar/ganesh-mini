@@ -1,5 +1,27 @@
 # Project state
 
+## Gate 2 v3 repair-delta contract ready — 2026-09-14
+
+A new versioned construction contract is ready at
+`docs/plans/GATE2_REPAIR_DELTA_QUALIFICATION_PLAN_20260914.md`, file SHA-256
+`4023a896300112f9f93f2a16698d549f203e3e75b4e71ae054f3a98463e2f0f0`.
+It preserves v2 as a failed result and requalifies all 60 repair cells rather
+than retrying only the observed empty cell. The first pass is exactly 60 fresh
+candidates. At most six reserves become eligible only if the frozen first-pass
+thresholds pass, for an absolute budget of 66.
+
+Current state is READY FOR LOCAL GATE 2 V3 IMPLEMENTATION. The next work is to
+implement the source-affinity, repair-delta, split-test, semantic-review,
+generation-equivalence, and reporting contracts; seal the fresh source queue;
+then execute the bounded local qualification. No compute is running. No model
+training or GCloud use is authorized by this plan.
+
+Progress remains training 84%, release 58%, and overall delivery 72% because
+these are historical process-completion estimates and no new executed evidence
+exists yet. The low-confidence warm-path ETA is 4–8 hours for v3 implementation
+and Gate 2 closure, then approximately 1–3 weeks to complete the remaining training and
+release gates if v3 passes and the trained model demonstrates transfer.
+
 ## Gate 2 capability qualification failed after bounded recovery — 2026-09-14
 
 Gate 2 is terminal under the current sealed construction contract. The final

@@ -1,5 +1,24 @@
 # Project state
 
+## Gate 2 qualification source queue ready — 2026-09-14
+
+The sealed 120-cell contract now has a deterministic 240-row source-assignment
+queue: two fresh training-only stimuli per cell, 240 globally unique source
+identities, and all 2,996 source identities used by the prior corpus excluded.
+Queue SHA-256 is
+`0cf1a51055d58c4ae0c454aad0f6b8e844cae27517a16516f59bbe428a967c9f`;
+manifest seal is
+`53a2465181f10a19a2fe3cbf9d562d5d74d7a19aa9984c878dfbeace559708af`.
+Focused tests and an independent seal/distribution replay pass.
+
+Current state is ACTIVE LOCAL GATE 2 IMPLEMENTATION. The 240 rows are drafting
+requests, not candidates, so generated and qualified candidate counts remain
+zero. The next work item is the capability-specific isolated teacher and
+admission pipeline. No GCloud resource is active or authorized by this work;
+no model training is running. Progress remains training 84%, release 58%, and
+overall delivery 72%. ETA remains 1–3 weeks, conditional on qualification
+yield and the later executable transfer gates.
+
 ## Capability-stratified qualification contract sealed — 2026-09-14
 
 Gate 2 now has a sealed replacement construction contract at

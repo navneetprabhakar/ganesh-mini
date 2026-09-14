@@ -1,5 +1,22 @@
 # Decisions
 
+## 2026-09-14 — Assign qualification sources deterministically and without reuse
+
+Build the 240 qualification drafting requests by seeded SHA-256 ordering over
+unused, same-language and same-task-type training sources. Bind exactly two
+fresh source identities to every sealed capability cell and prohibit global
+source reuse. Exclude every source identity already represented in the prior
+3,225-row corpus. This preserves reproducibility and forces fresh stimuli
+without consulting an evaluation surface.
+
+The resulting queue has 240 unique sources across all 120 cells. Its SHA-256
+is `0cf1a51055d58c4ae0c454aad0f6b8e844cae27517a16516f59bbe428a967c9f`;
+manifest seal is
+`53a2465181f10a19a2fe3cbf9d562d5d74d7a19aa9984c878dfbeace559708af`.
+Queue membership is not candidate admission. The next stage must use the new
+capability-specific isolated teacher and independent admission contract, not
+the prior generic all-edge-cases teacher prompt.
+
 ## 2026-09-14 — Qualify a 120-cell capability matrix before rebuilding Gate 4 data
 
 Use ten training-only primary capabilities crossed with six languages and both

@@ -1,5 +1,25 @@
 # Ganesh Mini 1.0 handoff
 
+## Gate 2 qualification source queue sealed — 2026-09-14
+
+The deterministic qualification source-assignment queue is complete. It binds
+240 fresh training-only source stimuli to the sealed 120-cell capability
+matrix, exactly two assignments per cell and 240 unique source identities.
+All 2,996 source identities already used by the 3,225-row corpus were excluded.
+The ignored working queue hashes to
+`0cf1a51055d58c4ae0c454aad0f6b8e844cae27517a16516f59bbe428a967c9f`;
+the tracked manifest seal is
+`53a2465181f10a19a2fe3cbf9d562d5d74d7a19aa9984c878dfbeace559708af`.
+Independent replay confirmed the queue hash, manifest seal, record count,
+source uniqueness, cell count, and two-per-cell distribution.
+
+These are source assignments, not generated or admitted candidates. Qualified
+records remain zero. Next implement the capability-specific isolated teacher,
+independent test-author, semantic-review, executable-admission, and reporting
+path; do not reuse the old all-edge-cases teacher prompt unchanged. No GCloud
+action or model training occurred. Progress remains training 84%, release 58%,
+overall 72%; delivery ETA remains conditional at roughly 1–3 weeks.
+
 ## Capability-stratified Gate 2 contract sealed — 2026-09-14
 
 The next training-only construction contract is sealed at

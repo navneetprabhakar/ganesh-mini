@@ -2921,3 +2921,20 @@ This plan authorizes no inspection, compute, infrastructure, training or
 evaluation. Exact approval is required before upload. After upload and exact-
 generation roundtrip, a fresh read-only inspection and then a separately
 sealed execution proposal remain required. No Ganesh compute is active.
+
+## 34. Corrected rerun inputs uploaded; inspection approval pending — 2026-09-14
+
+Navneet approved upload-only plan
+`b3cc9c24470a0efa851c986f6dfe9125fe7c627f80f2463d887871542267c0ce`.
+All five objects were created under prefix `input/c01a99b8`, assigned immutable
+generations, downloaded by exact generation and matched to their sealed sizes
+and SHA-256 values. Receipt seal:
+`96a76d12f8d8e5e54556514e83194e7edc4cbe9fccf7144a5c60e0d590ea9e11`.
+No compute or infrastructure operation occurred.
+
+A fresh read-only plan binds attempt `20260914T003000Z`, four new resource
+names and all ten generation-pinned inputs. Its seal is
+`e7b1602ca2c01b785cc5f93b9d3b8543e81affecf14c3787ce219cf2bf367c66`.
+It authorizes only provider, resource-absence, IAM, input-metadata and current
+price reads. Exact approval is required; it authorizes no resource mutation or
+execution. No Ganesh compute is active.

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +34,11 @@ def load_sealed(path: Path, field: str) -> dict[str, Any]:
     return value
 
 
-def build(receipt_path: Path, prior_report_path: Path) -> dict[str, Any]:
+def build(
+    receipt_path: Path,
+    prior_report_path: Path,
+    attempt_id: str = "20260911T020000Z",
+) -> dict[str, Any]:
     receipt = load_sealed(receipt_path, "receipt_sha256")
     prior = load_sealed(prior_report_path, "report_sha256")
     if receipt.get("schema_version") != "ganesh-mini-gradient-conflict-probe-gcloud-upload-receipt/v1" or receipt.get("status") != "complete-exact-generation-roundtrip-verified":
@@ -52,8 +57,9 @@ def build(receipt_path: Path, prior_report_path: Path) -> dict[str, Any]:
         }
     if set(inputs) != {*REUSED_INPUTS, *UPLOADED_INPUTS.values()}:
         raise ValueError("inspection input inventory is incomplete")
-    attempt_id = "20260911T020000Z"
-    stem = "ganesh-mini-g4-grad-20260911t020000z"
+    if not re.fullmatch(r"[0-9]{8}T[0-9]{6}Z", attempt_id):
+        raise ValueError("attempt id must be an uppercase UTC basic timestamp")
+    stem = f"ganesh-mini-g4-grad-{attempt_id.lower()}"
     plan: dict[str, Any] = {
         "schema_version": "ganesh-mini-gradient-conflict-probe-gcloud-readonly-plan/v1",
         "status": "pending-explicit-gcloud-readonly-approval",
@@ -89,9 +95,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--receipt", type=Path, default=root / "measurement/gate4/gradient-conflict-probe-20260911/upload/upload-receipt.json")
     parser.add_argument("--prior-report", type=Path, default=root / "measurement/gate4/capacity-probe-20260909/gcloud-readonly-inspection-report.json")
+    parser.add_argument("--attempt-id", default="20260911T020000Z")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    plan = build(args.receipt, args.prior_report)
+    plan = build(args.receipt, args.prior_report, args.attempt_id)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"status": plan["status"], "inspection_plan_sha256": plan["inspection_plan_sha256"]}, sort_keys=True))

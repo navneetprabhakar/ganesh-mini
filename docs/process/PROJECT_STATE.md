@@ -2630,3 +2630,16 @@ Upload-only plan
 binds five new immutable objects totaling 7,424,694 bytes. State is
 WAITING FOR EXACT UPLOAD APPROVAL; no Ganesh compute is active. Upload approval
 does not authorize cloud inspection or a rerun.
+
+# Corrected gradient-conflict inputs uploaded — 2026-09-14
+
+Upload-only plan
+`b3cc9c24470a0efa851c986f6dfe9125fe7c627f80f2463d887871542267c0ce`
+completed: five create-only objects, 7,424,694 bytes, with exact-generation
+byte roundtrips. Receipt seal:
+`96a76d12f8d8e5e54556514e83194e7edc4cbe9fccf7144a5c60e0d590ea9e11`.
+No compute or infrastructure action occurred.
+
+State is WAITING FOR EXACT READ-ONLY INSPECTION APPROVAL on plan
+`e7b1602ca2c01b785cc5f93b9d3b8543e81affecf14c3787ce219cf2bf367c66`.
+It binds fresh attempt `20260914T003000Z`; no Ganesh compute is active.

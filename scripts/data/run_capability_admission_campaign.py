@@ -31,6 +31,7 @@ from scripts.data.build_capability_admission_envelopes import (  # noqa: E402
 )
 from scripts.data.build_capability_corpus_plan import canonical_sha256, load_sealed  # noqa: E402
 from scripts.data.generate_capability_qualification import LANES, load_queue as load_teacher_queue  # noqa: E402
+from scripts.data.generate_capability_replacements import MANIFEST_SCHEMA as REPLACEMENT_MANIFEST_SCHEMA  # noqa: E402
 
 
 CAMPAIGN_SCHEMA = "ganesh-mini-capability-admission-campaign/v1"
@@ -60,6 +61,7 @@ def input_bindings(
     semantic_path: Path, separation_path: Path, config_path: Path, runtime_config_path: Path,
     record_workers: int, verifier_workers: int,
     correction_report_path: Path | None = None,
+    replacement_manifest_path: Path | None = None,
 ) -> dict[str, Any]:
     bindings = {
         "plan": artifact(plan_path), "queue": artifact(queue_path),
@@ -82,7 +84,71 @@ def input_bindings(
             "report": artifact(correction_report_path),
             "corrected_candidates": artifact(Path(output["path"])),
         }
+    if replacement_manifest_path is not None:
+        replacement_manifest = json.loads(replacement_manifest_path.read_text(encoding="utf-8"))
+        queue_output = replacement_manifest.get("queue_output", {}) if isinstance(replacement_manifest, dict) else {}
+        if not isinstance(queue_output.get("path"), str):
+            raise ValueError("replacement manifest lacks its queue artifact")
+        bindings["bounded_replacements"] = {
+            "manifest": artifact(replacement_manifest_path),
+            "queue": artifact(Path(queue_output["path"])),
+        }
     return bindings
+
+
+def load_replacement_artifacts(
+    manifest_path: Path, original_queue: list[dict[str, Any]], semantic: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[Path], list[Path], dict[str, Any]]:
+    manifest = load_sealed(manifest_path, "manifest_sha256")
+    queue_binding = manifest.get("queue_output")
+    if (
+        manifest.get("schema_version") != REPLACEMENT_MANIFEST_SCHEMA
+        or manifest.get("status") != "replacement-generation-complete-not-reviewed-not-admitted"
+        or manifest.get("replacement_attempt") != 1
+        or not isinstance(manifest.get("semantic_report_sha256"), str)
+        or len(manifest["semantic_report_sha256"]) != 64
+        or manifest.get("evaluation_artifacts_read") != 0
+        or not isinstance(queue_binding, dict)
+        or not isinstance(queue_binding.get("path"), str)
+    ):
+        raise ValueError("bounded replacement manifest is incomplete or unbound")
+    queue_path = Path(queue_binding["path"])
+    rows = read_jsonl(queue_path)
+    originals = {row["id"]: row for row in original_queue}
+    original_sources = {
+        (row["source"]["dataset"], row["source"]["revision"], row["source"]["record_id"])
+        for row in original_queue
+    }
+    if (
+        queue_binding.get("sha256") != file_sha256(queue_path)
+        or manifest.get("records") != len(rows)
+        or manifest.get("candidate_ids") != [row.get("id") for row in rows]
+        or manifest.get("empty_cells") != [row.get("cell_id") for row in rows]
+        or len({row.get("id") for row in rows}) != len(rows)
+        or len({row.get("cell_id") for row in rows}) != len(rows)
+    ):
+        raise ValueError("bounded replacement queue differs from its manifest")
+    for row in rows:
+        source = row.get("source", {})
+        identity = (source.get("dataset"), source.get("revision"), source.get("record_id"))
+        parent_ids = row.get("original_queue_ids")
+        if (
+            row.get("replacement_attempt") != 1
+            or row.get("replacement_for_cell_id") != row.get("cell_id")
+            or row.get("id") in originals
+            or identity in original_sources
+            or not isinstance(parent_ids, list) or len(parent_ids) != 2
+            or any(parent not in originals or originals[parent]["cell_id"] != row["cell_id"] for parent in parent_ids)
+        ):
+            raise ValueError("bounded replacement identity, source, or parent binding is invalid")
+    batches = manifest.get("batches")
+    if not isinstance(batches, list) or sum(item.get("records", 0) for item in batches if isinstance(item, dict)) != len(rows):
+        raise ValueError("bounded replacement batch inventory is incomplete")
+    candidates = [Path(item["candidates"]) for item in batches]
+    evidence = [Path(item["evidence"]) for item in batches]
+    if not all(path.is_file() for path in [*candidates, *evidence]):
+        raise ValueError("bounded replacement teacher artifacts are absent")
+    return rows, candidates, evidence, manifest
 
 
 def _load_exact_report(path: Path, schema: str) -> dict[str, Any]:
@@ -125,6 +191,7 @@ def _load_or_build_assembly(
     queue_by_id: dict[str, dict[str, Any]], candidate_paths: list[Path], evidence_paths: list[Path],
     queue_path: Path, queue_manifest: dict[str, Any], semantic: dict[str, Any], separation: dict[str, Any],
     correction_report_path: Path | None = None,
+    replacement_manifest_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if output_path.exists() or report_path.exists():
         if not output_path.is_file() or not report_path.is_file():
@@ -197,12 +264,30 @@ def run_campaign(
     candidate_dir: Path, evidence_dir: Path, semantic_path: Path, separation_path: Path,
     config_path: Path, runtime_config_path: Path, output_root: Path,
     correction_report_path: Path | None = None,
+    replacement_manifest_path: Path | None = None,
     record_workers: int = 4, verifier_workers: int = 2,
     verifier_fn: Callable[[dict[str, Any], str, Path], dict[str, Any]] = verify,
 ) -> dict[str, Any]:
     if not 1 <= record_workers <= 8 or not 1 <= verifier_workers <= 4 or record_workers * verifier_workers > 16:
         raise ValueError("parallel verifier bounds exceeded")
     candidate_paths, evidence_paths = discover_batches(candidate_dir, evidence_dir)
+    plan = load_sealed(plan_path, "plan_sha256")
+    if plan.get("schema_version") != "ganesh-mini-capability-stratified-corpus-plan/v1" or plan.get("matrix", {}).get("cells") != 120:
+        raise ValueError("unsupported capability qualification plan")
+    queue_rows, queue_manifest = load_teacher_queue(queue_path, queue_manifest_path)
+    queue_by_id = load_admission_queue(queue_path, queue_manifest_path, plan)
+    semantic = load_report(semantic_path, "report_sha256", SEMANTIC_SCHEMA)
+    separation = load_report(separation_path, "report_sha256", SEPARATION_SCHEMA)
+    if replacement_manifest_path is not None:
+        replacement_rows, replacement_candidates, replacement_evidence, _ = load_replacement_artifacts(
+            replacement_manifest_path, queue_rows, semantic,
+        )
+        candidate_paths.extend(replacement_candidates)
+        evidence_paths.extend(replacement_evidence)
+        for row in replacement_rows:
+            if row["id"] in queue_by_id:
+                raise ValueError("bounded replacement reuses an existing queue ID")
+            queue_by_id[row["id"]] = row
     bindings = input_bindings(
         plan_path=plan_path, queue_path=queue_path, queue_manifest_path=queue_manifest_path,
         candidate_paths=candidate_paths, evidence_paths=evidence_paths,
@@ -210,6 +295,7 @@ def run_campaign(
         config_path=config_path, runtime_config_path=runtime_config_path,
         record_workers=record_workers, verifier_workers=verifier_workers,
         correction_report_path=correction_report_path,
+        replacement_manifest_path=replacement_manifest_path,
     )
     output_root.mkdir(parents=True, exist_ok=True)
     paths = {
@@ -239,15 +325,8 @@ def run_campaign(
             raise ValueError("existing campaign does not bind its nested reports")
         return report
 
-    plan = load_sealed(plan_path, "plan_sha256")
-    if plan.get("schema_version") != "ganesh-mini-capability-stratified-corpus-plan/v1" or plan.get("matrix", {}).get("cells") != 120:
-        raise ValueError("unsupported capability qualification plan")
-    queue_rows, queue_manifest = load_teacher_queue(queue_path, queue_manifest_path)
-    queue_by_id = load_admission_queue(queue_path, queue_manifest_path, plan)
-    if set(queue_by_id) != {row["id"] for row in queue_rows}:
+    if not {row["id"] for row in queue_rows}.issubset(queue_by_id):
         raise ValueError("teacher and admission queue validation disagree")
-    semantic = load_report(semantic_path, "report_sha256", SEMANTIC_SCHEMA)
-    separation = load_report(separation_path, "report_sha256", SEPARATION_SCHEMA)
 
     assembly_preexisting = paths["envelopes"].exists() and paths["assembly_report"].exists()
     envelopes, assembly_report = _load_or_build_assembly(
@@ -297,6 +376,7 @@ def main() -> int:
     parser.add_argument("--semantic-review", type=Path, required=True)
     parser.add_argument("--separation-report", type=Path, required=True)
     parser.add_argument("--correction-report", type=Path)
+    parser.add_argument("--replacement-manifest", type=Path)
     parser.add_argument("--config", type=Path, default=Path("configs/data/expansion_v1.json"))
     parser.add_argument("--runtime-config", type=Path, default=Path("configs/eval/runtimes.json"))
     parser.add_argument("--output-root", type=Path, required=True)
@@ -309,6 +389,7 @@ def main() -> int:
         semantic_path=args.semantic_review, separation_path=args.separation_report,
         config_path=args.config, runtime_config_path=args.runtime_config,
         correction_report_path=args.correction_report,
+        replacement_manifest_path=args.replacement_manifest,
         output_root=args.output_root, record_workers=args.record_workers,
         verifier_workers=args.verifier_workers,
     )

@@ -295,3 +295,47 @@ def test_final_mode_alone_enforces_overall_and_every_cell(tmp_path: Path) -> Non
     )
     assert corrupt_report["status"] == "failed"
     assert corrupt_report["queue_disposition"]["input_binding_failures"][0]["reason"] == "cell or source binding mismatch"
+
+    replacement_id = "replacement-cell-0"
+    replacement_source = {"dataset": "fixture", "revision": "abc", "record_id": replacement_id}
+    replacement_row = {
+        "id": replacement_id, "cell_id": "cap-0/python/generation", "primary_capability": "cap-0",
+        "assigned_cross_cutting_dimension": "malformed_input", "source_queue_id": "replacement-source-0",
+        "lane": "python", "task_type": "generation", "source": replacement_source,
+        "replacement_attempt": 1, "replacement_for_cell_id": "cap-0/python/generation",
+    }
+    replacement_envelope = {
+        "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
+        "candidate": {"id": replacement_id, "lane": "python", "task_type": "generation", "source": replacement_source},
+        "qualification": {
+            "queue_id": replacement_id, "cell_id": replacement_row["cell_id"], "primary_capability": "cap-0",
+            "assigned_cross_cutting_dimension": "malformed_input", "source_queue_id": "replacement-source-0",
+        },
+    }
+    augmented_queue = {**queue, replacement_id: replacement_row}
+    augmented_envelopes = [*envelopes, replacement_envelope]
+    input_path.write_text("".join(json.dumps(row) + "\n" for row in augmented_envelopes), encoding="utf-8")
+    replacement_rejections = [*disposition_rejections, {"line": 241, "id": replacement_id, "reason": "not admitted"}]
+    replacement_report = build_report(
+        mode="final", plan=plan(), queue_manifest=queue_manifest,
+        input_path=input_path, output_path=admitted_path, rejected_path=rejected_path,
+        admitted=complete, rejected=replacement_rejections, verifier_workers=1, record_workers=1,
+        queue_by_id=augmented_queue,
+    )
+    assert replacement_report["status"] == "passed"
+    assert replacement_report["queue_disposition"]["bounded_replacements"] == 1
+
+    second = deepcopy(replacement_row); second["id"] = "replacement-cell-0-again"
+    second["source_queue_id"] = "replacement-source-0-again"
+    second["source"] = {"dataset": "fixture", "revision": "abc", "record_id": second["id"]}
+    second_envelope = deepcopy(replacement_envelope)
+    second_envelope["candidate"].update(id=second["id"], source=second["source"])
+    second_envelope["qualification"].update(queue_id=second["id"], source_queue_id=second["source_queue_id"])
+    input_path.write_text("".join(json.dumps(row) + "\n" for row in [*augmented_envelopes, second_envelope]), encoding="utf-8")
+    second_report = build_report(
+        mode="final", plan=plan(), queue_manifest=queue_manifest,
+        input_path=input_path, output_path=admitted_path, rejected_path=rejected_path,
+        admitted=complete, rejected=[*replacement_rejections, {"line": 242, "id": second["id"], "reason": "not admitted"}],
+        verifier_workers=1, record_workers=1, queue_by_id={**augmented_queue, second["id"]: second},
+    )
+    assert second_report["status"] == "failed"

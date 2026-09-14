@@ -404,12 +404,23 @@ def build_report(
             input_binding_failures.append({"line": line, "queue_id": queue_id, "reason": "cell or source binding mismatch"})
     queue_id_counts = Counter(input_queue_ids)
     expected_queue_ids = set(queue_by_id or {})
+    original_queue_ids = {
+        identifier for identifier, row in (queue_by_id or {}).items()
+        if row.get("replacement_attempt") is None
+    }
+    replacement_rows = [
+        row for row in (queue_by_id or {}).values()
+        if row.get("replacement_attempt") is not None
+    ]
+    replacement_cells = [row.get("replacement_for_cell_id") for row in replacement_rows]
     missing_queue_ids = sorted(expected_queue_ids - set(queue_id_counts))
     unexpected_queue_ids = sorted(set(queue_id_counts) - expected_queue_ids)
     duplicate_queue_ids = sorted(identifier for identifier, count in queue_id_counts.items() if count != 1)
     full_queue_dispositioned = (
         queue_by_id is not None
-        and len(expected_queue_ids) == plan["qualification"]["drafts"]
+        and len(original_queue_ids) == plan["qualification"]["drafts"]
+        and all(row.get("replacement_attempt") == 1 for row in replacement_rows)
+        and len(replacement_cells) == len(set(replacement_cells))
         and len(input_rows) == len(expected_queue_ids)
         and not missing_queue_ids
         and not unexpected_queue_ids
@@ -441,7 +452,9 @@ def build_report(
         "counts_by_cell": dict(sorted(counts.items())),
         "missing_cells": missing_cells,
         "queue_disposition": {
-            "expected_originals": len(expected_queue_ids),
+            "expected_originals": len(original_queue_ids),
+            "sealed_originals": len(original_queue_ids),
+            "bounded_replacements": len(replacement_rows),
             "input_envelopes": len(input_rows),
             "unique_queue_ids": len(queue_id_counts),
             "missing_queue_ids": missing_queue_ids,

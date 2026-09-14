@@ -405,11 +405,22 @@ def load_teacher_candidates(
             "teacher_evidence": {"path": str(evidence_path), "sha256": file_sha256(evidence_path), "evidence_sha256": evidence["evidence_sha256"]},
         })
     if correction_report_path is not None:
+        correction_header = load_sealed(correction_report_path, "report_sha256")
+        correction_input = correction_header.get("input", {})
+        correction_count = correction_input.get("records") if isinstance(correction_input, dict) else None
+        if (
+            type(correction_count) is not int or not 1 <= correction_count <= len(generated_candidates)
+            or any(
+                derived[row["id"]]["queue_row"].get("replacement_attempt") != 1
+                for row in generated_candidates[correction_count:]
+            )
+        ):
+            raise ValueError("correction report input cannot be separated from bounded replacements")
         corrected, correction_by_id, correction_report = _load_corrections(
-            correction_report_path, generated_candidates,
+            correction_report_path, generated_candidates[:correction_count],
         )
         corrected_bases: list[dict[str, Any]] = []
-        for generated in corrected:
+        for generated in [*corrected, *generated_candidates[correction_count:]]:
             identifier = generated["id"]
             base = _base_candidate(generated)
             context = derived[identifier]

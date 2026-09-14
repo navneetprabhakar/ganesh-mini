@@ -59,8 +59,9 @@ def input_bindings(
     candidate_paths: list[Path], evidence_paths: list[Path],
     semantic_path: Path, separation_path: Path, config_path: Path, runtime_config_path: Path,
     record_workers: int, verifier_workers: int,
+    correction_report_path: Path | None = None,
 ) -> dict[str, Any]:
-    return {
+    bindings = {
         "plan": artifact(plan_path), "queue": artifact(queue_path),
         "queue_manifest": artifact(queue_manifest_path),
         "teacher_batches": [
@@ -72,6 +73,16 @@ def input_bindings(
         "execution": {"record_workers": record_workers, "verifier_workers_per_record": verifier_workers},
         "evaluation_artifacts_read": 0,
     }
+    if correction_report_path is not None:
+        correction = json.loads(correction_report_path.read_text(encoding="utf-8"))
+        output = correction.get("output") if isinstance(correction, dict) else None
+        if not isinstance(output, dict) or not isinstance(output.get("path"), str):
+            raise ValueError("correction report lacks its corrected candidate artifact")
+        bindings["correction"] = {
+            "report": artifact(correction_report_path),
+            "corrected_candidates": artifact(Path(output["path"])),
+        }
+    return bindings
 
 
 def _load_exact_report(path: Path, schema: str) -> dict[str, Any]:
@@ -113,6 +124,7 @@ def _load_or_build_assembly(
     *, output_path: Path, report_path: Path, bindings: dict[str, Any],
     queue_by_id: dict[str, dict[str, Any]], candidate_paths: list[Path], evidence_paths: list[Path],
     queue_path: Path, queue_manifest: dict[str, Any], semantic: dict[str, Any], separation: dict[str, Any],
+    correction_report_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if output_path.exists() or report_path.exists():
         if not output_path.is_file() or not report_path.is_file():
@@ -130,6 +142,7 @@ def _load_or_build_assembly(
         queue_by_id, candidate_paths, evidence_paths,
         queue_file_sha256=file_sha256(queue_path),
         queue_manifest_sha256=queue_manifest["manifest_sha256"],
+        correction_report_path=correction_report_path,
     )
     envelopes = build_envelopes(queue_by_id, candidates, derived, semantic, separation)
     output_path.write_bytes(b"".join(canonical_json(row) + b"\n" for row in envelopes))
@@ -183,6 +196,7 @@ def run_campaign(
     *, plan_path: Path, queue_path: Path, queue_manifest_path: Path,
     candidate_dir: Path, evidence_dir: Path, semantic_path: Path, separation_path: Path,
     config_path: Path, runtime_config_path: Path, output_root: Path,
+    correction_report_path: Path | None = None,
     record_workers: int = 4, verifier_workers: int = 2,
     verifier_fn: Callable[[dict[str, Any], str, Path], dict[str, Any]] = verify,
 ) -> dict[str, Any]:
@@ -195,6 +209,7 @@ def run_campaign(
         semantic_path=semantic_path, separation_path=separation_path,
         config_path=config_path, runtime_config_path=runtime_config_path,
         record_workers=record_workers, verifier_workers=verifier_workers,
+        correction_report_path=correction_report_path,
     )
     output_root.mkdir(parents=True, exist_ok=True)
     paths = {
@@ -239,6 +254,7 @@ def run_campaign(
         output_path=paths["envelopes"], report_path=paths["assembly_report"], bindings=bindings,
         queue_by_id=queue_by_id, candidate_paths=candidate_paths, evidence_paths=evidence_paths,
         queue_path=queue_path, queue_manifest=queue_manifest, semantic=semantic, separation=separation,
+        correction_report_path=correction_report_path,
     )
     existing = _load_existing_admission(
         paths["envelopes"], paths["admitted"], paths["rejected"], paths["admission_report"],
@@ -256,6 +272,7 @@ def run_campaign(
             input_path=paths["envelopes"], output_path=paths["admitted"], rejected_path=paths["rejected"],
             admitted=admitted, rejected=rejected,
             verifier_workers=verifier_workers, record_workers=record_workers,
+            queue_by_id=queue_by_id,
         )
         paths["admission_report"].write_text(json.dumps(admission_report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         admission_reused = False
@@ -279,6 +296,7 @@ def main() -> int:
     parser.add_argument("--teacher-evidence-dir", type=Path, required=True)
     parser.add_argument("--semantic-review", type=Path, required=True)
     parser.add_argument("--separation-report", type=Path, required=True)
+    parser.add_argument("--correction-report", type=Path)
     parser.add_argument("--config", type=Path, default=Path("configs/data/expansion_v1.json"))
     parser.add_argument("--runtime-config", type=Path, default=Path("configs/eval/runtimes.json"))
     parser.add_argument("--output-root", type=Path, required=True)
@@ -290,6 +308,7 @@ def main() -> int:
         candidate_dir=args.candidate_dir, evidence_dir=args.teacher_evidence_dir,
         semantic_path=args.semantic_review, separation_path=args.separation_report,
         config_path=args.config, runtime_config_path=args.runtime_config,
+        correction_report_path=args.correction_report,
         output_root=args.output_root, record_workers=args.record_workers,
         verifier_workers=args.verifier_workers,
     )

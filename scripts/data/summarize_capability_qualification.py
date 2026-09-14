@@ -14,6 +14,7 @@ from typing import Any, Iterable
 EXPECTED_DRAFTS = 240
 EXPECTED_CELLS = 120
 MINIMUM_ADMITTED = 120
+ENVELOPE_SCHEMA = "ganesh-mini-capability-qualification-envelope/v1"
 
 
 def canonical_json(value: Any) -> bytes:
@@ -74,6 +75,18 @@ def _candidate_binding(row: dict[str, Any], original_ids: set[str], cells: set[s
     raise ValueError(f"{identifier}: candidate is not bound to a qualification draft or replacement")
 
 
+def _candidate_view(row: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    if row.get("schema_version") != ENVELOPE_SCHEMA:
+        return row, None
+    candidate = row.get("candidate", row.get("training_candidate"))
+    qualification = row.get("qualification")
+    if not isinstance(candidate, dict) or not isinstance(qualification, dict):
+        raise ValueError("qualification envelope lacks candidate or qualification metadata")
+    if qualification.get("queue_id") != candidate.get("id"):
+        raise ValueError(f"{candidate.get('id')}: qualification envelope queue binding mismatch")
+    return candidate, qualification
+
+
 def _sealed_report(path: Path) -> dict[str, Any]:
     report = json.loads(path.read_text(encoding="utf-8"))
     claimed = report.get("report_sha256")
@@ -119,7 +132,8 @@ def _admitted_id(row: dict[str, Any], capability_report: bool) -> str:
 
 def _dimension_rows(
     dimensions: Iterable[str], cells: dict[str, dict[str, Any]], generated: set[str],
-    original_generated_ids: set[str], disposition: dict[str, str], identity_cell: dict[str, str],
+    original_generated_ids: set[str], corrected_ids: set[str], disposition: dict[str, str],
+    identity_cell: dict[str, str],
 ) -> dict[str, dict[str, int | float | None]]:
     result: dict[str, dict[str, int | float | None]] = {}
     dimension_names = tuple(dimensions)
@@ -132,6 +146,7 @@ def _dimension_rows(
         drafted = 2 * len(matching_cells)
         generated_count = sum(1 for item in generated if identity_cell[item] in matching_cells)
         original_generated = sum(1 for item in original_generated_ids if identity_cell[item] in matching_cells)
+        corrected = sum(1 for item in corrected_ids if identity_cell[item] in matching_cells)
         admitted = sum(1 for item, state in disposition.items() if state == "admitted" and identity_cell[item] in matching_cells)
         rejected = sum(1 for item, state in disposition.items() if state == "rejected" and identity_cell[item] in matching_cells)
         disposed = admitted + rejected
@@ -140,6 +155,7 @@ def _dimension_rows(
             "generated": generated_count,
             "original_generated": original_generated,
             "replacement_generated": generated_count - original_generated,
+            "corrected": corrected,
             "dispositioned": disposed,
             "admitted": admitted,
             "rejected": rejected,
@@ -148,6 +164,33 @@ def _dimension_rows(
             "admission_yield_from_dispositioned": _rate(admitted, disposed),
         }
     return result
+
+
+def _combine_metric_rows(rows: Iterable[dict[str, int | float | None]]) -> dict[str, int | float | None]:
+    count_fields = (
+        "drafted", "generated", "original_generated", "replacement_generated",
+        "corrected", "dispositioned", "admitted", "rejected",
+    )
+    values = list(rows)
+    result: dict[str, int | float | None] = {
+        field: sum(int(row[field]) for row in values) for field in count_fields
+    }
+    result.update({
+        "generation_yield": _rate(int(result["original_generated"]), int(result["drafted"])),
+        "admission_yield_from_generated": _rate(int(result["admitted"]), int(result["generated"])),
+        "admission_yield_from_dispositioned": _rate(int(result["admitted"]), int(result["dispositioned"])),
+    })
+    return result
+
+
+def _five_families(by_lane: dict[str, dict[str, int | float | None]]) -> dict[str, dict[str, int | float | None]]:
+    return {
+        "go": _combine_metric_rows((by_lane["go"],)),
+        "java": _combine_metric_rows((by_lane["java"],)),
+        "javascript_typescript": _combine_metric_rows((by_lane["javascript"], by_lane["typescript"])),
+        "python": _combine_metric_rows((by_lane["python"],)),
+        "rust": _combine_metric_rows((by_lane["rust"],)),
+    }
 
 
 def summarize(
@@ -179,6 +222,7 @@ def summarize(
     generated: set[str] = set()
     original_generated_refs: set[str] = set()
     candidate_original_ref: dict[str, str] = {}
+    corrected_ids: set[str] = set()
     replacements: dict[str, str] = {}
     candidate_inputs: list[dict[str, Any]] = []
     candidate_sha_to_ids: dict[str, tuple[Path, list[str]]] = {}
@@ -186,7 +230,8 @@ def summarize(
         rows = read_jsonl(path)
         identifiers: list[str] = []
         for row in rows:
-            identifier, role, original_ref = _candidate_binding(row, original_ids, set(cells))
+            candidate, envelope_qualification = _candidate_view(row)
+            identifier, role, original_ref = _candidate_binding(candidate, original_ids, set(cells))
             if identifier in generated:
                 raise ValueError(f"{identifier}: duplicate generated candidate")
             if role == "original":
@@ -198,9 +243,9 @@ def summarize(
                 identity_cell[identifier] = identity_cell[original_ref]
                 expected = cells[identity_cell[original_ref]]
                 for key in ("cell_id", "primary_capability", "lane", "task_type"):
-                    if key in row and row[key] != expected[key]:
+                    if key in candidate and candidate[key] != expected[key]:
                         raise ValueError(f"{identifier}: generated candidate conflicts with queue field {key}")
-                assignment = row.get("qualification_assignment")
+                assignment = candidate.get("qualification_assignment")
                 if assignment is not None:
                     if not isinstance(assignment, dict):
                         raise ValueError(f"{identifier}: qualification_assignment must be an object")
@@ -214,8 +259,28 @@ def summarize(
                     claimed_assignment = body.pop("assignment_sha256", None)
                     if claimed_assignment != hashlib.sha256(canonical_json(body)).hexdigest():
                         raise ValueError(f"{identifier}: qualification_assignment seal mismatch")
+                if envelope_qualification is not None:
+                    if (
+                        envelope_qualification.get("cell_id") != expected["cell_id"]
+                        or envelope_qualification.get("primary_capability") != expected["primary_capability"]
+                    ):
+                        raise ValueError(f"{identifier}: qualification envelope conflicts with queue cell")
+                    correction_passes = envelope_qualification.get("correction_passes")
+                    if type(correction_passes) is not int or correction_passes not in (0, 1):
+                        raise ValueError(f"{identifier}: correction passes exceed the qualification contract")
+                    if correction_passes == 1:
+                        correction = envelope_qualification.get("correction")
+                        if not isinstance(correction, dict):
+                            raise ValueError(f"{identifier}: corrected envelope lacks correction evidence")
+                        correction_body = dict(correction)
+                        correction_seal = correction_body.pop("evidence_sha256", None)
+                        if correction_seal != hashlib.sha256(canonical_json(correction_body)).hexdigest():
+                            raise ValueError(f"{identifier}: correction evidence seal mismatch")
+                        corrected_ids.add(identifier)
+                    elif envelope_qualification.get("correction") is not None:
+                        raise ValueError(f"{identifier}: uncorrected envelope carries correction evidence")
             else:
-                cell_id = row["cell_id"]
+                cell_id = candidate["cell_id"]
                 if cell_id in replacements:
                     raise ValueError(f"{cell_id}: more than one bounded replacement")
                 replacements[cell_id] = identifier
@@ -331,8 +396,16 @@ def summarize(
     }
     original_dispositioned = len(original_dispositioned_refs)
     all_generated_dispositioned = generated.issubset(disposition)
+    all_corrections_dispositioned = corrected_ids.issubset(disposition)
+    all_replacements_dispositioned = set(replacements.values()).issubset(disposition)
     admitted = sum(state == "admitted" for state in disposition.values())
-    complete = original_generated == EXPECTED_DRAFTS and original_dispositioned == EXPECTED_DRAFTS and all_generated_dispositioned
+    complete = (
+        original_generated == EXPECTED_DRAFTS
+        and original_dispositioned == EXPECTED_DRAFTS
+        and all_generated_dispositioned
+        and all_corrections_dispositioned
+        and all_replacements_dispositioned
+    )
     passed = complete and admitted >= MINIMUM_ADMITTED and not empty_cells
     failed = bool(exhausted) or (complete and bool(empty_cells) and not eligible and not replacement_pending)
     status = "qualification-passed" if passed else "qualification-failed" if failed else "qualification-in-progress"
@@ -354,6 +427,7 @@ def summarize(
         "totals": {
             "drafted": len(queue), "generated": len(generated),
             "original_generated": original_generated, "replacement_generated": len(replacements),
+            "corrected": len(corrected_ids),
             "dispositioned": len(disposition), "admitted": admitted,
             "rejected": sum(state == "rejected" for state in disposition.values()),
             "generation_yield": _rate(original_generated, len(queue)),
@@ -367,18 +441,21 @@ def summarize(
             "eligible_cells": eligible, "pending_cells": replacement_pending,
             "exhausted_cells": exhausted, "generated_by_cell": dict(sorted(replacements.items())),
         },
-        "by_primary_capability": _dimension_rows(("primary_capability",), cells, generated, set(candidate_original_ref), disposition, identity_cell),
-        "by_lane": _dimension_rows(("lane",), cells, generated, set(candidate_original_ref), disposition, identity_cell),
-        "by_task_type": _dimension_rows(("task_type",), cells, generated, set(candidate_original_ref), disposition, identity_cell),
-        "by_cell": _dimension_rows(("cell_id",), cells, generated, set(candidate_original_ref), disposition, identity_cell),
+        "by_primary_capability": _dimension_rows(("primary_capability",), cells, generated, set(candidate_original_ref), corrected_ids, disposition, identity_cell),
+        "by_lane": _dimension_rows(("lane",), cells, generated, set(candidate_original_ref), corrected_ids, disposition, identity_cell),
+        "by_task_type": _dimension_rows(("task_type",), cells, generated, set(candidate_original_ref), corrected_ids, disposition, identity_cell),
+        "by_cell": _dimension_rows(("cell_id",), cells, generated, set(candidate_original_ref), corrected_ids, disposition, identity_cell),
         "pass_requirements": {
             "all_original_drafts_generated": original_generated == EXPECTED_DRAFTS,
             "all_original_drafts_dispositioned": original_dispositioned == EXPECTED_DRAFTS,
             "all_generated_candidates_dispositioned": all_generated_dispositioned,
+            "all_corrections_dispositioned": all_corrections_dispositioned,
+            "all_replacements_dispositioned": all_replacements_dispositioned,
             "minimum_admitted_met": admitted >= MINIMUM_ADMITTED,
             "every_cell_admitted": not empty_cells,
         },
     }
+    report["by_family"] = _five_families(report["by_lane"])
     report["report_sha256"] = canonical_sha256(report)
     return report
 

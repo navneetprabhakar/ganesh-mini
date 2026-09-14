@@ -362,11 +362,66 @@ def build_report(
     input_path: Path, output_path: Path, rejected_path: Path,
     admitted: list[dict[str, Any]], rejected: list[dict[str, Any]],
     verifier_workers: int, record_workers: int,
+    queue_by_id: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     counts = Counter(row["qualification"]["cell_id"] for row in admitted)
     all_cells = {row["cell_id"] for row in plan["matrix"]["cell_contracts"]}
     missing_cells = sorted(all_cells - set(counts))
-    final_gate_passed = len(admitted) >= plan["qualification"]["minimum_admitted"] and not missing_cells
+    input_rows = read_jsonl(input_path)
+    input_queue_ids: list[str] = []
+    input_binding_failures: list[dict[str, Any]] = []
+    for line, envelope in enumerate(input_rows, 1):
+        qualification = envelope.get("qualification") if isinstance(envelope, dict) else None
+        candidate = None
+        if isinstance(envelope, dict) and envelope.get("schema_version") == SCHEMA_VERSION:
+            candidate = envelope.get("candidate", envelope.get("training_candidate"))
+        elif isinstance(envelope, dict):
+            candidate = {key: value for key, value in envelope.items() if key != "qualification"}
+        queue_id = qualification.get("queue_id") if isinstance(qualification, dict) else None
+        if isinstance(queue_id, str) and queue_id:
+            input_queue_ids.append(queue_id)
+        else:
+            input_binding_failures.append({"line": line, "reason": "missing qualification.queue_id"})
+            continue
+        queue_row = queue_by_id.get(queue_id) if queue_by_id is not None else None
+        if not isinstance(queue_row, dict) or not isinstance(candidate, dict):
+            input_binding_failures.append({"line": line, "queue_id": queue_id, "reason": "queue or candidate binding absent"})
+            continue
+        expected_qualification = {
+            "cell_id": queue_row["cell_id"],
+            "primary_capability": queue_row["primary_capability"],
+            "assigned_cross_cutting_dimension": queue_row["assigned_cross_cutting_dimension"],
+            "source_queue_id": queue_row["source_queue_id"],
+        }
+        expected_candidate = {
+            "id": queue_row["id"], "lane": queue_row["lane"],
+            "task_type": queue_row["task_type"], "source": queue_row["source"],
+        }
+        if (
+            any(qualification.get(key) != value for key, value in expected_qualification.items())
+            or any(candidate.get(key) != value for key, value in expected_candidate.items())
+        ):
+            input_binding_failures.append({"line": line, "queue_id": queue_id, "reason": "cell or source binding mismatch"})
+    queue_id_counts = Counter(input_queue_ids)
+    expected_queue_ids = set(queue_by_id or {})
+    missing_queue_ids = sorted(expected_queue_ids - set(queue_id_counts))
+    unexpected_queue_ids = sorted(set(queue_id_counts) - expected_queue_ids)
+    duplicate_queue_ids = sorted(identifier for identifier, count in queue_id_counts.items() if count != 1)
+    full_queue_dispositioned = (
+        queue_by_id is not None
+        and len(expected_queue_ids) == plan["qualification"]["drafts"]
+        and len(input_rows) == len(expected_queue_ids)
+        and not missing_queue_ids
+        and not unexpected_queue_ids
+        and not duplicate_queue_ids
+        and not input_binding_failures
+        and len(admitted) + len(rejected) == len(input_rows)
+    )
+    final_gate_passed = (
+        len(admitted) >= plan["qualification"]["minimum_admitted"]
+        and not missing_cells
+        and full_queue_dispositioned
+    )
     status = (
         "passed" if mode == "final" and final_gate_passed
         else "failed" if mode == "final"
@@ -385,6 +440,16 @@ def build_report(
         "rejected": len(rejected),
         "counts_by_cell": dict(sorted(counts.items())),
         "missing_cells": missing_cells,
+        "queue_disposition": {
+            "expected_originals": len(expected_queue_ids),
+            "input_envelopes": len(input_rows),
+            "unique_queue_ids": len(queue_id_counts),
+            "missing_queue_ids": missing_queue_ids,
+            "unexpected_queue_ids": unexpected_queue_ids,
+            "duplicate_queue_ids": duplicate_queue_ids,
+            "input_binding_failures": input_binding_failures,
+            "all_originals_dispositioned": full_queue_dispositioned,
+        },
         "final_gate": {
             "minimum_admitted": plan["qualification"]["minimum_admitted"],
             "minimum_per_cell": plan["qualification"]["minimum_admitted_per_cell"],
@@ -444,6 +509,7 @@ def main(argv: list[str] | None = None) -> int:
         input_path=args.input, output_path=args.output, rejected_path=args.rejected_output,
         admitted=admitted, rejected=rejected,
         verifier_workers=args.verifier_workers, record_workers=args.record_workers,
+        queue_by_id=queue_by_id,
     )
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

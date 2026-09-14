@@ -28,7 +28,7 @@ def plan() -> dict:
     value = {
         "schema_version": "ganesh-mini-capability-stratified-corpus-plan/v1",
         "matrix": {"cells": 120, "cell_contracts": cells},
-        "qualification": {"minimum_admitted": 120, "minimum_admitted_per_cell": 1},
+        "qualification": {"drafts": 240, "minimum_admitted": 120, "minimum_admitted_per_cell": 1},
     }
     value["plan_sha256"] = canonical_sha256(value)
     return value
@@ -233,14 +233,65 @@ def test_final_mode_alone_enforces_overall_and_every_cell(tmp_path: Path) -> Non
     body = dict(final_report); seal_value = body.pop("report_sha256")
     assert canonical_sha256(body) == seal_value
 
-    complete = [
-        {"qualification": {"cell_id": f"cap-{index}/python/generation"}}
+    complete = []
+    queue = {}
+    envelopes = []
+    for index in range(120):
+        for ordinal in range(2):
+            identifier = f"queue-{index}-{ordinal}"
+            source = {"dataset": "fixture", "revision": "abc", "record_id": identifier}
+            queue[identifier] = {
+                "id": identifier, "cell_id": f"cap-{index}/python/generation",
+                "primary_capability": f"cap-{index}",
+                "assigned_cross_cutting_dimension": "malformed_input",
+                "source_queue_id": f"source-{index}-{ordinal}",
+                "lane": "python", "task_type": "generation", "source": source,
+            }
+            envelopes.append({
+                "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
+                "candidate": {"id": identifier, "lane": "python", "task_type": "generation", "source": source},
+                "qualification": {
+                    "queue_id": identifier, "cell_id": f"cap-{index}/python/generation",
+                    "primary_capability": f"cap-{index}",
+                    "assigned_cross_cutting_dimension": "malformed_input",
+                    "source_queue_id": f"source-{index}-{ordinal}",
+                },
+            })
+        complete.append({"qualification": {"cell_id": f"cap-{index}/python/generation"}})
+    input_path.write_text("".join(json.dumps(row) + "\n" for row in envelopes), encoding="utf-8")
+    disposition_rejections = [
+        {"line": index + 121, "id": f"queue-{index}-1", "reason": "not admitted"}
         for index in range(120)
     ]
     passing_report = build_report(
         mode="final", plan=plan(), queue_manifest=queue_manifest,
         input_path=input_path, output_path=admitted_path, rejected_path=rejected_path,
-        admitted=complete, rejected=[], verifier_workers=1, record_workers=1,
+        admitted=complete, rejected=disposition_rejections, verifier_workers=1, record_workers=1,
+        queue_by_id=queue,
     )
     assert passing_report["status"] == "passed"
     assert passing_report["final_gate"]["passed"] is True
+    assert passing_report["queue_disposition"]["all_originals_dispositioned"] is True
+
+    one_per_cell = envelopes[::2]
+    input_path.write_text("".join(json.dumps(row) + "\n" for row in one_per_cell), encoding="utf-8")
+    subset_report = build_report(
+        mode="final", plan=plan(), queue_manifest=queue_manifest,
+        input_path=input_path, output_path=admitted_path, rejected_path=rejected_path,
+        admitted=complete, rejected=[], verifier_workers=1, record_workers=1,
+        queue_by_id=queue,
+    )
+    assert subset_report["status"] == "failed"
+    assert len(subset_report["queue_disposition"]["missing_queue_ids"]) == 120
+
+    corrupt = deepcopy(envelopes)
+    corrupt[0]["candidate"]["source"] = {"dataset": "fixture", "revision": "abc", "record_id": "wrong"}
+    input_path.write_text("".join(json.dumps(row) + "\n" for row in corrupt), encoding="utf-8")
+    corrupt_report = build_report(
+        mode="final", plan=plan(), queue_manifest=queue_manifest,
+        input_path=input_path, output_path=admitted_path, rejected_path=rejected_path,
+        admitted=complete, rejected=disposition_rejections, verifier_workers=1, record_workers=1,
+        queue_by_id=queue,
+    )
+    assert corrupt_report["status"] == "failed"
+    assert corrupt_report["queue_disposition"]["input_binding_failures"][0]["reason"] == "cell or source binding mismatch"

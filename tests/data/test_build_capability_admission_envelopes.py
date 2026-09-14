@@ -13,6 +13,12 @@ from scripts.data.build_capability_admission_envelopes import (
     load_teacher_candidates,
 )
 from scripts.data.build_capability_corpus_plan import canonical_sha256
+from scripts.data.correct_capability_qualification_rejections import (
+    REPORT_SCHEMA as CORRECTION_REPORT_SCHEMA,
+    _mark_correction,
+    _replace_tests,
+    reference_test_critic_prompt,
+)
 from scripts.data.generate_capability_qualification import (
     architect_prompt,
     build_candidate,
@@ -164,6 +170,92 @@ def test_assembles_exact_admission_envelope_from_sealed_teacher_and_external_rev
     assert inputs[0]["teacher_evidence"]["evidence_sha256"]
 
 
+def test_assembles_one_pass_corrected_candidate_from_sealed_parent_and_critic(tmp_path: Path) -> None:
+    candidate_path, evidence_path, generated = artifacts(tmp_path)
+    test_item = {"id": generated["id"], "test_code": fixture_test_code() + "\nassert parse_flag('yes')"}
+    critic = sealed_run(
+        "capability-reference-test-critic",
+        reference_test_critic_prompt("python", [generated]),
+        {"items": [test_item]},
+    )
+    rejection = {"id": generated["id"], "reason": "reference solution failed behavioral verification"}
+    replacement = _replace_tests(generated, test_item["test_code"])
+    corrected, correction_evidence = _mark_correction(
+        replacement, generated, "reference-verification", critic, rejection,
+    )
+    corrected_path = tmp_path / "corrected.jsonl"
+    corrected_path.write_bytes(json.dumps(corrected, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+    report = {
+        "schema_version": CORRECTION_REPORT_SCHEMA,
+        "status": "corrected-not-reviewed-not-admitted",
+        "input": {"sha256": hashlib.sha256(candidate_path.read_bytes()).hexdigest(), "records": 1},
+        "requested_corrections": 1, "completed_corrections": 1,
+        "corrections": [correction_evidence], "runs": [critic],
+        "output_sha256": hashlib.sha256(corrected_path.read_bytes()).hexdigest(),
+        "output": {
+            "path": str(corrected_path), "bytes": corrected_path.stat().st_size, "records": 1,
+            "sha256": hashlib.sha256(corrected_path.read_bytes()).hexdigest(),
+        },
+        "evaluation_artifacts_read": 0, "failure": None,
+    }
+    report["report_sha256"] = canonical_sha256(report)
+    report_path = tmp_path / "correction-report.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    candidates, derived, _ = load_teacher_candidates(
+        {queue_row()["id"]: queue_row()}, [candidate_path], [evidence_path],
+        correction_report_path=report_path,
+    )
+    semantic, separation = external_reports(corrected)
+    envelopes = build_envelopes(
+        {queue_row()["id"]: queue_row()}, candidates, derived, semantic, separation,
+    )
+    candidate_value, metadata, qualification = validate_envelope(
+        envelopes[0], {"matrix": {"cell_contracts": []}},
+        {queue_row()["id"]: queue_row()}, config(),
+    )
+    assert candidate_value["verification_task"]["files"][-1]["sha256"] == sha256_text(test_item["test_code"] + "\n")
+    assert metadata["correction_passes"] == 1
+    assert qualification["correction"]["parent_candidate_sha256"] == correction_evidence["parent_candidate_sha256"]
+
+
+def test_rejects_tampered_corrected_candidate(tmp_path: Path) -> None:
+    candidate_path, evidence_path, generated = artifacts(tmp_path)
+    test_item = {"id": generated["id"], "test_code": fixture_test_code() + "\nassert parse_flag('yes')"}
+    critic = sealed_run(
+        "capability-reference-test-critic",
+        reference_test_critic_prompt("python", [generated]),
+        {"items": [test_item]},
+    )
+    rejection = {"id": generated["id"], "reason": "reference solution failed behavioral verification"}
+    corrected, correction_evidence = _mark_correction(
+        _replace_tests(generated, test_item["test_code"]), generated,
+        "reference-verification", critic, rejection,
+    )
+    corrected_path = tmp_path / "corrected.jsonl"
+    corrected_path.write_bytes(json.dumps(corrected, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+    report = {
+        "schema_version": CORRECTION_REPORT_SCHEMA,
+        "status": "corrected-not-reviewed-not-admitted",
+        "input": {"sha256": hashlib.sha256(candidate_path.read_bytes()).hexdigest(), "records": 1},
+        "requested_corrections": 1, "completed_corrections": 1,
+        "corrections": [correction_evidence], "runs": [critic],
+        "output_sha256": hashlib.sha256(corrected_path.read_bytes()).hexdigest(),
+        "output": {"path": str(corrected_path), "bytes": corrected_path.stat().st_size, "records": 1,
+                   "sha256": hashlib.sha256(corrected_path.read_bytes()).hexdigest()},
+        "evaluation_artifacts_read": 0, "failure": None,
+    }
+    report["report_sha256"] = canonical_sha256(report)
+    report_path = tmp_path / "correction-report.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    corrected_path.write_text(json.dumps({**corrected, "lane": "go"}) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="differs from its sealed report"):
+        load_teacher_candidates(
+            {queue_row()["id"]: queue_row()}, [candidate_path], [evidence_path],
+            correction_report_path=report_path,
+        )
+
+
 def test_rejects_teacher_hash_tampering_and_non_specification_only_test_prompt(tmp_path: Path) -> None:
     candidate_path, evidence_path, _ = artifacts(tmp_path)
     evidence = json.loads(evidence_path.read_text())
@@ -185,7 +277,6 @@ def test_rejects_teacher_hash_tampering_and_non_specification_only_test_prompt(t
     [
         ("semantic", "verifier_outputs_visible", True, "semantic review"),
         ("semantic", "correction_passes", 2, "correction passes"),
-        ("separation", "fuzzy_evaluation_passed", False, "separation"),
         ("separation", "candidate_sha256", "c" * 64, "separation"),
     ],
 )
@@ -212,3 +303,28 @@ def test_requires_identical_candidate_sets_in_all_external_attestations(tmp_path
     separation["records"] = []
     with pytest.raises(ValueError, match="identities differ"):
         build_envelopes({queue_row()["id"]: queue_row()}, candidates, derived, semantic, separation)
+
+
+def test_candidate_level_semantic_or_separation_failure_reaches_admission_as_rejection(tmp_path: Path) -> None:
+    candidate_path, evidence_path, generated = artifacts(tmp_path)
+    candidates, derived, _ = load_teacher_candidates(
+        {queue_row()["id"]: queue_row()}, [candidate_path], [evidence_path],
+    )
+    semantic, separation = external_reports(generated)
+    semantic["records"][0].update(
+        verdict="reject",
+        primary_capability_is_substantive=False,
+        generic_edge_case_boilerplate_is_primary=True,
+    )
+    separation["status"] = "failed"
+    separation["records"][0]["fuzzy_evaluation_passed"] = False
+
+    envelopes = build_envelopes(
+        {queue_row()["id"]: queue_row()}, candidates, derived, semantic, separation,
+    )
+
+    with pytest.raises(Exception, match="semantic review"):
+        validate_envelope(
+            envelopes[0], {"matrix": {"cell_contracts": []}},
+            {queue_row()["id"]: queue_row()}, config(),
+        )

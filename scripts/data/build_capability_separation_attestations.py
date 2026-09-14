@@ -128,7 +128,11 @@ def _code_values(candidate: dict[str, Any]) -> list[str]:
     task = candidate["verification_task"]
     values = [candidate["messages"][1]["content"], task["validation"]["reference"]["code"]]
     values.extend(item["code"] for item in task["validation"]["known_bad"])
-    values.extend(item["content"] for item in task["files"])
+    # Runtime support files (for example the identical Go module scaffold)
+    # are pinned verifier plumbing, not authored candidate semantics. Comparing
+    # them as candidate code would reject every member of that lane as a peer
+    # duplicate. Independently authored tests remain part of separation.
+    values.extend(item["content"] for item in task["files"] if item.get("role") != "support")
     # Preserve order while removing the duplicated assistant/reference value.
     return list(dict.fromkeys(values))
 
@@ -295,7 +299,7 @@ def build_report(
     manifest: dict[str, Any] = {
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "policy": {
-            "exact": "raw SHA-256 equality for prompts and all candidate reference/test/known-bad code",
+            "exact": "raw SHA-256 equality for prompts and all candidate reference/test/known-bad code; pinned runtime support files excluded",
             "normalized": "NFKC casefolded whitespace-normalized SHA-256 equality for prompts and code",
             "fuzzy": "prompt SimHash only, including peer candidates",
             "prompt_simhash_max_hamming": fuzzy_limit,

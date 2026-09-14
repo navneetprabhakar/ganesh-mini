@@ -161,7 +161,10 @@ def exact_review_items(payload: dict[str, Any], expected_ids: list[str]) -> list
 
 
 def candidate_sha256(candidate: dict[str, Any]) -> str:
-    return canonical_sha256(candidate)
+    return canonical_sha256({
+        key: value for key, value in candidate.items()
+        if key not in {"qualification_assignment", "teacher_evidence"}
+    })
 
 
 def build_semantic_evidence(

@@ -53,12 +53,16 @@ def make_report(path: Path, candidate_path: Path, rejected: list[str]) -> None:
 
 def make_capability_report(path: Path, candidate_path: Path, rejected: list[str]) -> None:
     rows = [json.loads(line) for line in candidate_path.read_text().splitlines()]
-    accepted_rows = [row for row in rows if row["id"] not in set(rejected)]
+    item = lambda row: row.get("candidate", row)
+    identifier = lambda row: item(row)["id"]
+    accepted_rows = [row for row in rows if identifier(row) not in set(rejected)]
     admitted_path = path.with_suffix(".admitted.jsonl")
-    cell = lambda row: row.get("cell_id", row.get("qualification_assignment", {}).get("cell_id"))
+    cell = lambda row: row.get("qualification", {}).get(
+        "cell_id", item(row).get("cell_id", item(row).get("qualification_assignment", {}).get("cell_id")),
+    )
     admitted = [{
-        "qualification": {"queue_id": row["id"], "cell_id": cell(row)},
-        "record": {"id": row["id"]},
+        "qualification": {"queue_id": identifier(row), "cell_id": cell(row)},
+        "record": {"id": identifier(row)},
     } for row in accepted_rows]
     write_jsonl(admitted_path, admitted)
     rejected_path = path.with_suffix(".rejected.json")
@@ -118,6 +122,13 @@ def test_gate_pass_requires_all_original_dispositions_and_every_cell(tmp_path: P
     assert report["status"] == "qualification-passed"
     assert report["totals"]["admitted"] == 120
     assert report["coverage"]["admitted_cells"] == 120
+    assert report["by_family"]["javascript_typescript"] == {
+        "drafted": 80, "generated": 80, "original_generated": 80,
+        "replacement_generated": 0, "corrected": 0, "dispositioned": 80,
+        "admitted": 40, "rejected": 40, "generation_yield": 1.0,
+        "admission_yield_from_generated": 0.5,
+        "admission_yield_from_dispositioned": 0.5,
+    }
     assert all(report["pass_requirements"].values())
 
 
@@ -223,3 +234,58 @@ def test_capability_report_output_hash_mismatch_fails_closed(tmp_path: Path) -> 
 
     with pytest.raises(ValueError, match="artifact hash mismatch"):
         summarize(queue, [candidates], [admission])
+
+
+def test_sealed_admission_envelopes_preserve_input_binding_and_correction_closure(tmp_path: Path) -> None:
+    queue, rows = fixture(tmp_path)
+    envelopes = []
+    for index, row in enumerate(rows):
+        correction = None
+        correction_passes = 1 if index == 0 else 0
+        if correction_passes:
+            correction = {"candidate_sha256": "a" * 64, "parent_candidate_sha256": "b" * 64}
+            correction["evidence_sha256"] = hashlib.sha256(canonical_json(correction)).hexdigest()
+        envelopes.append({
+            "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
+            "candidate": {
+                "id": row["id"], "lane": row["lane"], "task_type": row["task_type"],
+            },
+            "qualification": {
+                "queue_id": row["id"], "cell_id": row["cell_id"],
+                "primary_capability": row["primary_capability"],
+                "correction_passes": correction_passes, "correction": correction,
+            },
+        })
+    candidate_path = tmp_path / "qualification-envelopes.jsonl"
+    write_jsonl(candidate_path, envelopes)
+    admission = tmp_path / "final-admission.json"
+    make_capability_report(
+        admission, candidate_path, [row["id"] for row in rows if row["id"].endswith("-2")],
+    )
+
+    report = summarize(queue, [candidate_path], [admission])
+
+    assert report["status"] == "qualification-passed"
+    assert report["totals"]["corrected"] == 1
+    assert report["pass_requirements"]["all_corrections_dispositioned"] is True
+    assert report["inputs"]["admission_reports"][0]["candidate_input_sha256"] == hashlib.sha256(
+        candidate_path.read_bytes(),
+    ).hexdigest()
+
+
+def test_envelope_with_unsealed_or_second_correction_fails_closed(tmp_path: Path) -> None:
+    queue, rows = fixture(tmp_path)
+    row = rows[0]
+    envelope = {
+        "schema_version": "ganesh-mini-capability-qualification-envelope/v1",
+        "candidate": {"id": row["id"], "lane": row["lane"], "task_type": row["task_type"]},
+        "qualification": {
+            "queue_id": row["id"], "cell_id": row["cell_id"],
+            "primary_capability": row["primary_capability"],
+            "correction_passes": 2, "correction": {},
+        },
+    }
+    candidate_path = tmp_path / "bad-envelope.jsonl"
+    write_jsonl(candidate_path, [envelope])
+    with pytest.raises(ValueError, match="correction passes exceed"):
+        summarize(queue, [candidate_path], [])

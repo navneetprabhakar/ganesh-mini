@@ -185,6 +185,30 @@ def test_training_normalized_and_peer_fuzzy_collisions_fail_both_peers(tmp_path:
     assert not by_id["candidate-2"]["fuzzy_training_passed"]
 
 
+def test_shared_runtime_support_scaffold_is_not_a_peer_collision(tmp_path: Path) -> None:
+    first = candidate(
+        "candidate-1", "Implement a stable bucket index for twelve labels while retaining insertion order.",
+        "def bucketize(xs):\n    return list(dict.fromkeys(xs))\n",
+        "from solution import bucketize\nassert bucketize(['a']) == ['a']\n",
+        "def bucketize(xs):\n    return []\n",
+    )
+    second = candidate(
+        "candidate-2", "Implement a bounded numeric accumulator over a sequence of signed integer deltas.",
+        "def accumulate(xs):\n    return sum(xs)\n",
+        "from solution import accumulate\nassert accumulate([1, 2]) == 3\n",
+        "def accumulate(xs):\n    return xs[-1]\n",
+    )
+    shared = file_item("module ganesh.invalid/expansion\n", path="go.mod", role="support")
+    first["verification_task"]["files"].append(shared)
+    second["verification_task"]["files"].append(shared)
+    candidates, training, evaluation = surfaces(tmp_path, [first, second])
+
+    report = build_report(candidates, [training], [evaluation])
+
+    assert report["status"] == "passed"
+    assert all(row["exact_training_passed"] for row in report["records"])
+
+
 def test_fails_closed_on_bad_candidate_code_hash_and_empty_surfaces(tmp_path: Path) -> None:
     row = candidate(
         "candidate-1", "Implement a stable Unicode bucketizer for twelve independent labels and preserve order.",

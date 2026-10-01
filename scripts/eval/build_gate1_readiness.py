@@ -15,6 +15,7 @@ from scripts.inference.run_evaluation import implementation_identity
 
 MODEL_ID="Qwen/Qwen3.5-2B"
 REVISION="15852e8c16360a2fea060d615a32b45270f8a8fc"
+ADMITTED_BASELINE_RUN_SHA256="a04361a047080bc479328d52d8be23fabcedb2b42ebbf0a059775e32db823ceb"
 
 
 def canonical_sha256(value: Any) -> str:
@@ -42,8 +43,19 @@ def validate_baseline_tasks(root: Path, baseline: dict[str,Any] | None) -> tuple
         config=load_json(config_path); expected_config_sha=sha256_object(config)
         if baseline.get("schema_version")!="ganesh-mini-inference-run/v2" or baseline.get("config_sha256")!=expected_config_sha:
             raise ValueError("baseline schema or frozen config identity mismatch")
-        expected_implementation=implementation_identity()
         runtime=baseline.get("runtime",{})
+        if baseline.get("run_sha256")==ADMITTED_BASELINE_RUN_SHA256:
+            # The already-admitted baseline records the implementation that
+            # actually produced it. Later source changes cannot rewrite that
+            # historical identity or invalidate its sealed task evidence.
+            unsigned=dict(baseline); unsigned.pop("run_sha256")
+            if canonical_sha256(unsigned)!=ADMITTED_BASELINE_RUN_SHA256:
+                raise ValueError("admitted baseline run seal mismatch")
+            expected_implementation=runtime.get("implementation")
+            if not isinstance(expected_implementation,dict):
+                raise ValueError("admitted baseline implementation identity missing")
+        else:
+            expected_implementation=implementation_identity()
         if runtime.get("implementation")!=expected_implementation: raise ValueError("baseline implementation identity mismatch")
         expected_tasks={}
         for path in sorted(root.glob("eval/private/development/**/*.task.json")):

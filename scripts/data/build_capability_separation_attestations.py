@@ -280,10 +280,11 @@ def build_report(
         if prompt_normalized[normalized_sha256(prompt)] > 1 or any(code_normalized[normalized_sha256(value)] > 1 for value in code):
             training_result[1] = False
         prompt_tokens = len(_tokens(prompt))
+        prompt_fingerprint = simhash(prompt)
         if prompt_tokens >= minimum_tokens and any(
             other_id != identifier
             and other_tokens >= minimum_tokens
-            and (simhash(prompt) ^ other_hash).bit_count() <= fuzzy_limit
+            and (prompt_fingerprint ^ other_hash).bit_count() <= fuzzy_limit
             for other_id, other_hash, other_tokens in peer_fuzzy
         ):
             training_result[2] = False

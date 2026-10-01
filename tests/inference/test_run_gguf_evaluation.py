@@ -7,6 +7,7 @@ from scripts.inference.run_gguf_evaluation import (
     LlamaCppServerBackend,
     canonical_sha256,
     load_artifact,
+    metal_device_name,
 )
 
 
@@ -63,3 +64,14 @@ def test_backend_rejects_disabled_kv_cache() -> None:
     backend = object.__new__(LlamaCppServerBackend)
     with pytest.raises(ValueError, match="KV cache"):
         backend.generate_batch([[1]], 1, False)
+
+
+def test_metal_device_name_uses_exposed_llama_cpp_identifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Result:
+        stdout = "Available devices:\n  MTL0: Apple M4 (18186 MiB)\n"
+
+    monkeypatch.setattr(
+        "scripts.inference.run_gguf_evaluation.subprocess.run",
+        lambda *args, **kwargs: Result(),
+    )
+    assert metal_device_name(Path("llama-server")) == "MTL0"

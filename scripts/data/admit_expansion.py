@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import tempfile
 import time
 import sys
@@ -33,6 +34,25 @@ RECORD_KEYS = {
 SOURCE_KEYS = {
     "dataset", "uri", "revision", "record_id", "license", "license_uri",
     "source_record_sha256", "transformation",
+}
+COMMITPACKFT_DATASET = "bigcode/commitpackft"
+COMMITPACKFT_SOURCE_KEYS = SOURCE_KEYS | {
+    "source_file", "source_file_sha256", "source_file_bytes", "raw_line_sha256",
+    "commit", "old_file", "new_file", "repositories_raw", "repositories",
+    "subject_sha256", "message_sha256", "old_contents_sha256",
+}
+COMMITPACKFT_V4_NATIVE_FILES = {
+    "data/go/data.jsonl", "data/python/data.jsonl", "data/rust/data.jsonl",
+}
+COMMITPACKFT_V4_NATIVE_SOURCE_KEYS = COMMITPACKFT_SOURCE_KEYS | {
+    "quarantined_record_sha256", "selection_rank",
+}
+COMMITPACKFT_HASH_FIELDS = {
+    "source_record_sha256", "source_file_sha256", "raw_line_sha256",
+    "subject_sha256", "message_sha256", "old_contents_sha256",
+}
+COMMITPACKFT_V4_NATIVE_HASH_FIELDS = COMMITPACKFT_HASH_FIELDS | {
+    "quarantined_record_sha256",
 }
 
 
@@ -112,6 +132,68 @@ def _sha(value: Any, where: str) -> str:
     return value
 
 
+def _validate_source(source: Any, config: dict[str, Any]) -> None:
+    if not isinstance(source, dict):
+        raise AdmissionFailure("source keys do not match provenance contract")
+    dataset = source.get("dataset")
+    source_file = source.get("source_file")
+    if dataset == COMMITPACKFT_DATASET and source_file in COMMITPACKFT_V4_NATIVE_FILES:
+        expected_keys = COMMITPACKFT_V4_NATIVE_SOURCE_KEYS
+    else:
+        expected_keys = COMMITPACKFT_SOURCE_KEYS if dataset == COMMITPACKFT_DATASET else SOURCE_KEYS
+    if set(source) != expected_keys:
+        raise AdmissionFailure("source keys do not match provenance contract")
+    if dataset != COMMITPACKFT_DATASET:
+        if any(not isinstance(source[key], str) or not source[key] for key in SOURCE_KEYS - {"source_record_sha256"}):
+            raise AdmissionFailure("source provenance fields must be non-empty")
+        _sha(source["source_record_sha256"], "source.source_record_sha256")
+        configured_source = config.get("sources", {}).get(dataset)
+        if not isinstance(configured_source, dict) or configured_source.get("revision") != source["revision"]:
+            raise AdmissionFailure("source dataset/revision is not admitted")
+        if source["license"] not in config["allowed_licenses"] or configured_source.get("license") != source["license"]:
+            raise AdmissionFailure("source license is not admitted")
+        return
+
+    configured_source = config.get("sources", {}).get(COMMITPACKFT_DATASET)
+    configured_files = configured_source.get("source_files") if isinstance(configured_source, dict) else None
+    configured_licenses = configured_source.get("licenses") if isinstance(configured_source, dict) else None
+    pinned_file = configured_files.get(source_file) if isinstance(configured_files, dict) else None
+    hash_fields = (
+        COMMITPACKFT_V4_NATIVE_HASH_FIELDS
+        if source_file in COMMITPACKFT_V4_NATIVE_FILES
+        else COMMITPACKFT_HASH_FIELDS
+    )
+    string_fields = expected_keys - hash_fields - {"source_file_bytes", "repositories", "selection_rank"}
+    if (
+        not isinstance(configured_source, dict)
+        or configured_source.get("revision") != source.get("revision")
+        or configured_source.get("uri") != source.get("uri")
+        or not isinstance(configured_licenses, list) or not configured_licenses
+        or len(configured_licenses) != len(set(configured_licenses))
+        or source.get("license") not in configured_licenses
+        or source.get("license") not in config.get("allowed_licenses", [])
+        or not isinstance(pinned_file, dict)
+        or pinned_file.get("sha256") != source.get("source_file_sha256")
+        or pinned_file.get("bytes") != source.get("source_file_bytes")
+        or type(source.get("source_file_bytes")) is not int or source["source_file_bytes"] <= 0
+        or any(not isinstance(source.get(key), str) or not source[key] for key in string_fields)
+        or any(not isinstance(source.get(key), str) for key in hash_fields)
+        or (
+            source_file in COMMITPACKFT_V4_NATIVE_FILES
+            and (type(source.get("selection_rank")) is not int or not 1 <= source["selection_rank"] <= 1000)
+        )
+        or not isinstance(source.get("repositories"), list) or not source["repositories"]
+        or any(not isinstance(item, str) or not item for item in source["repositories"])
+        or source["repositories"] != [item.strip() for item in source["repositories_raw"].split(",") if item.strip()]
+        or re.fullmatch(r"[0-9a-f]{40}", source["commit"]) is None
+        or source.get("record_id") != f"{source_file}:" + source.get("record_id", "").rsplit(":", 1)[-1]
+        or re.fullmatch(r"line-[0-9]{8}", source.get("record_id", "").rsplit(":", 1)[-1]) is None
+    ):
+        raise AdmissionFailure("CommitPackFT source provenance does not match its pinned dataset-specific contract")
+    for field in hash_fields:
+        _sha(source[field], f"source.{field}")
+
+
 def evaluation_index(paths: Iterable[Path]) -> dict[str, Any]:
     prompts: dict[str, str] = {}
     prompt_simhashes: list[tuple[int, str, int]] = []
@@ -149,16 +231,9 @@ def validate_candidate(record: Any, config: dict[str, Any]) -> dict[str, Any]:
     if any(set(message) != {"role", "content"} or not isinstance(message["content"], str) or not message["content"] for message in messages):
         raise AdmissionFailure("invalid message content")
     source = record["source"]
-    if not isinstance(source, dict) or set(source) != SOURCE_KEYS:
-        raise AdmissionFailure("source keys do not match provenance contract")
-    if any(not isinstance(source[key], str) or not source[key] for key in SOURCE_KEYS - {"source_record_sha256"}):
-        raise AdmissionFailure("source provenance fields must be non-empty")
-    _sha(source["source_record_sha256"], "source.source_record_sha256")
-    configured_source = config.get("sources", {}).get(source["dataset"])
-    if not isinstance(configured_source, dict) or configured_source.get("revision") != source["revision"]:
-        raise AdmissionFailure("source dataset/revision is not admitted")
-    if source["license"] not in config["allowed_licenses"] or configured_source.get("license") != source["license"]:
-        raise AdmissionFailure("source license is not admitted")
+    _validate_source(source, config)
+    if source.get("dataset") == COMMITPACKFT_DATASET and source.get("source_file") != f"data/{record['lane']}/data.jsonl":
+        raise AdmissionFailure("CommitPackFT source file does not match the candidate lane")
     rights = record["rights"]
     if not isinstance(rights, dict) or set(rights) != set(config["required_rights"]) or not all(value is True for value in rights.values()):
         raise AdmissionFailure("all required rights must be explicitly true")

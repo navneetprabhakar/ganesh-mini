@@ -1,5 +1,1388 @@
 # Project state
 
+## Final public diagnostic and local session closure — 2026-10-02 IST
+
+The full local public MultiPL-E HumanEval assessment is complete. All 12
+candidate/upstream lane runs have completed generation and executed the pinned
+network-disabled verifier. The fail-closed paired report is
+`artifacts/public-benchmark/full-humaneval-20261001/full-six-lane-paired-report.json`,
+seal `753181b3042e5445d8e70bcba3de5a15244c9fbaa76e896deef314af64788fb2`.
+It covers 952 public tasks: Ganesh Mini 338 passes, correctly served Qwen
+upstream 339, with 8 paired wins and 9 losses. Per-lane candidate/upstream
+passes are Go 45/43, Java 51/52, JavaScript 64/64, TypeScript 59/59,
+Python 84/86, and Rust 35/35. The full report and exact public method were
+published under `Executespec/ganesh-mini-1.0` at commit
+`f3aa8dadc583621da8a7a9561036804b085a8d04`; the three changed files
+matched remote bytes and the Q8 LFS hash was unchanged. No private
+evaluation material was uploaded. This is a local public diagnostic, not an
+official leaderboard result, and it does not establish model improvement.
+
+The benchmark controller exited normally. The exact localhost tracker was
+stopped, port 8765 has no listener, and no benchmark model server remains.
+All raw benchmark outputs and verifier evidence remain under the ignored
+local artifact directory. The earlier 30-task sample is a subset, not an
+additional 180 independent tasks. The selected pilot's frozen Gate 3 quality
+failure and Gate 8 NO-GO release eligibility remain unchanged; Gates 4–7
+were not run, the private decision set remains unopened, and the Gate 0B
+raw-report gap remains open. The user-directed public artifact is an
+experimental checkpoint publication, not a gate-passed release. No GCloud
+resources were used for this public run or report publication.
+
+All benchmark-specific tests passed (11/11). The broader data/eval/train/
+inference/release/benchmark test run has two failures in
+`tests/inference/test_gate1_gcloud_preparation.py`: its historical sealed
+evaluation workspace no longer matches the current source hash of
+`scripts/campaign/run_host.py`. The fail-closed test and historical seal were
+not relaxed or rewritten for closure. All other tests in that run passed;
+this is an unresolved reproducibility gap, not a public benchmark failure.
+
+The entries below are historical snapshots of the running campaign; their
+PID and live-status claims are no longer current.
+
+## Local public benchmark tracker live — 2026-10-01 IST
+
+A read-only localhost tracker for the active full MultiPL-E run is available
+at `http://127.0.0.1:8765/`. Its server is
+`scripts/benchmarks/serve_public_progress.py`, restarted as PID `41434`,
+exec session `26961`, bound only to `127.0.0.1`. It reads public benchmark
+artifact counts and the exact controller PID `38260`; it does not execute
+generated code, start model servers, or expose prompts/outputs. It now
+distinguishes generated outputs, correctness tests executed, and `OK` passes
+from parsed verifier results. Live pass counts are explicitly provisional;
+the final paired report still requires the sealed scorer.
+The page auto-refreshes every five seconds and also supports manual browser
+refresh. Tests and browser verification passed. Keep the tracker process
+running alongside the benchmark; if it stops, the benchmark controller is a
+separate process and must not be duplicated just to restore the page.
+
+## Full local public MultiPL-E HumanEval assessment running — 2026-10-01 IST
+
+Navneet requested identifying runnable public benchmarks and starting a local
+assessment. A single sequential full-suite controller is active in exec
+session `1302`, PID `38260`, protected from idle sleep by `caffeinate -i`.
+Run root: `artifacts/public-benchmark/full-humaneval-20261001`, prefix
+`full-humaneval-v1`; lane order JS, TS, Rust, Python, Java, Go. It compares
+the published Q8_0 checkpoint to the pinned upstream Q8_0 under the same
+8,192-context/non-thinking/temperature-zero serving contract, then executes
+programs only in the pinned network-disabled, resource-limited MultiPL-E
+container. Full pinned task counts are 161, 159, 156, 164, 158 and 154
+respectively. The Rust published stop token is applied prospectively to
+full-program responses for both models. Do not start a second controller or
+model server; inspect this exact process and per-lane manifests before any
+recovery. The prior 30-task sample and its public report remain immutable.
+No GCloud usage or private evaluation opening is involved. A full-suite
+score is not yet available and must not be inferred from the earlier sample.
+
+## Public six-lane assessment published under Executespec — 2026-10-01 IST
+
+The user-directed public checkpoint and local paired public diagnostic are
+published at `https://huggingface.co/Executespec/ganesh-mini-1.0`, commit
+`86cee3536304bdd83bdc8e996ee1a489d3a71600`. Anonymous reads of the
+card, method and paired report matched local SHA-256 hashes; the public Q8
+LFS hash remained `f4a3a394e4551211b4de0a58ad5cea1382e5b88ff450c996f1452d3c22388d89`.
+The sealed public report is
+`artifacts/public-benchmark/20261001/six-lane-paired-report.json`, report
+seal `9619bb5dabbf3f7d335c41a28ce52ae3db8d475d65027571caebb8a60f5efa1c`.
+It covers 30 deterministic public tasks per lane: Ganesh Mini 70/180,
+pinned upstream 71/180; paired 2 wins, 3 losses, 175 ties. Per-lane passes
+(candidate/upstream): Go 9/8, Java 12/13, JavaScript 12/12, TypeScript
+13/14, Python 18/18, Rust 6/6. This is a sampled local public diagnostic,
+not an official leaderboard or an improvement claim. The original Rust
+`sha30-v2` 0/30-per-side result was caused by duplicate closing-brace
+assembly and remains excluded evidence; `sha30-v3` re-executed the same
+saved outputs with the dataset's published stop token and is disclosed in
+the method. No private assessment was uploaded. The frozen Gate 3 no-go and
+Gate 8 release-gate state remain unchanged. No GCloud usage was made for
+this public assessment or upload.
+
+## Historical: public benchmark paired run active — 2026-10-01 IST
+
+The public checkpoint and all model exports are live under Executespec.
+Public assessment is now a deterministic 30-task-per-lane sample from the
+pinned MultiPL-E HumanEval translations (Go, Java, JavaScript, TypeScript,
+Rust) plus the pinned HumanEvalPlus Python file in the MultiPL-E repository.
+This is a new public diagnostic under the user's publication direction, not
+an alteration of the earlier frozen Gate 1 public-admission result.
+Candidate and pinned upstream use local Q8_0 GGUF exports, the same pinned
+llama.cpp non-thinking 8,192-context/temperature-zero serving contract, and
+the same sample, prompt, output cap and stop-token postprocessing. Generated
+programs run only in the pinned MultiPL-E image with no network and explicit
+CPU, memory, PID, capability and privilege limits. The first uncorrected Go
+format pilot is preserved locally and excluded from scoring. A single
+sequential controller, `scripts/benchmarks/execute_public_suite.py`, is active
+in exec session `59609`; inspect that process and exact per-run manifests
+before restarting it. No public score has been reported or published yet.
+
+## Public checkpoint publication directed despite Gate 3 no-go — 2026-10-01 IST
+
+Navneet explicitly requested publishing the existing model without a
+categorical failure label and using public benchmarks for subsequent
+evaluation. He then specified the Executespec organization and directed that
+the public card share public-assessment results, not our private development
+assessment. The public repo is
+`https://huggingface.co/Executespec/ganesh-mini-1.0`, with the LoRA adapter,
+merged BF16, tokenizer, F16 GGUF, Q8_0 GGUF, license and card anonymously
+verified at commit `5cba9d01cf4fb99e8ff1964c4877320d187c2d09`. All
+remote large-file SHA-256 values matched local staging. Its current card has no
+private development scores and makes no improvement claim. Earlier public
+commits containing those scores were squashed out of the repo's reachable
+history, though prior exposure or external caches cannot be ruled out.
+This user-directed checkpoint publication does **not** change the sealed
+negative Gate 3 result or the original Gate 8 NO-GO decision. Keep the
+private assessment internal; publish only executed, pinned public benchmark
+results. Local BF16 merge and GGUF F16/Q8 artifacts were built
+from the selected `1e-5` adapter; the first converter output failed to load
+because PEFT omitted the unused MTP head. A corrected `--no-mtp` target export
+passed local BF16, F16 and Q8 text-only smoke. Publication staging is under
+`artifacts/hf-staging/20261001-selected-1e-5`. No new GCloud usage was needed
+for publication. Public benchmark evidence is pending; the MultiPL-E dataset
+revision `28441b6024e71d4a1c1c0f6bf171c935cd5a43f2` and pinned local
+llama.cpp are being prepared for an upstream-paired assessment.
+
+## Work resumed after no-go closure — 2026-10-01 IST
+
+Navneet explicitly directed continuation after the no-go closure. The
+closure record remains preserved historical state, but its stop-work
+instruction is superseded. Gate 3 still has a sealed quality failure; no
+quality gate is waived or retrospectively passed by resuming. Continue with
+local, read-only artifact and downstream-readiness checks while the intended
+path is resolved: either a prospective correction toward the original gates
+or an explicitly labelled failed-experiment publication scope. No new GCloud
+usage, private decision-set opening, Gate 4 training, or `ganesh-mini-1.0`
+release follows from the word “continue” alone.
+
+## Project closure: no public model release — 2026-10-01 IST
+
+Navneet stopped improvement work and directed project closure today. The
+frozen Gate 3 selected pilot failed its 180-task development quality checks;
+therefore Gate 3 is **not passed**, Gates 4–7 were not run, and Gate 8 model
+release is **NO-GO**. Do not publish `ganesh-mini-1.0` weights, adapter, GGUF,
+or a claimed improvement. The private 360-task decision set remains unopened.
+The independent Gate 0B raw-report gap also remains unresolved. Closure does
+not relabel any failed or incomplete gate as passed. The evidence and precise
+restart conditions are recorded in
+`docs/process/GANESH_MINI_1_0_NO_GO_CLOSURE_20261001.md`. The Gate 3 recurring
+monitor is to be paused; no new training, candidate generation, GCloud job, or
+release preparation is authorized by this closure entry.
+
+## Gate 3 selected pilot failed frozen development quality criteria — 2026-10-01 IST
+
+The exact selected `1e-5` 180-task development run `20261001T020646Z`
+finished with evaluation exit 0. Its 375 terminal GCS objects and 167 local
+control-mirror objects were independently verified; the exact VM, disk,
+network, and subnet were removed and absent twice. The frozen adjudication
+report at `measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T020646Z/development-adjudication.json`
+is sealed as `4177c8e5782481877d0de5e20b861e46886a3c93138bf2d3a8037e4cfe088cd3`
+with status `quality-criteria-failed`. Against the admitted upstream 180-task
+baseline, the candidate had 3 paired wins, 4 losses, 173 ties; only Python
+improved at the product-family level, below the required four of five, and
+Java plus TypeScript each regressed by one passed task. The candidate did not
+increase malformed/non-code/repetitive/truncated output failures, and
+save/reload passed, but these do not override the two failed quality checks.
+**Gate 3 is not passed, Gate 4 training and model publication remain blocked.**
+The 360 private decision tasks remain closed. Preserve both candidates and all
+failed evidence. Do not rerun a candidate or relax criteria; the frozen plan
+requires a prospective data or mechanism change before scaling, with a new
+bounded evaluation plan and budget check before further GCloud use. The older
+Gate 0B raw-report recovery gap remains an independent release hold.
+
+## Gate 3 selected-adapter 180-task VM active — 2026-10-01 IST
+
+After four backed-up/cleaned pre-allocation L4 stockouts, exact development
+attempt `20261001T020646Z` allocated one `g2-standard-8` L4 VM
+`ganesh-g3-eval-20261001t020646z` in `us-central1-c`. Sealed card
+`24569f6a90742f23502d3e55c0c8c3ead6908d393d4e4de7b4a0fa8723c36451`.
+Provider RUNNING began 2026-10-01T02:12:52Z under two-hour STOP. Exactly one
+watcher, PID `82840`, started 02:13:29Z. **Do not allocate another VM or
+start a second watcher.** This is the selected `1e-5` adapter against all 180
+frozen private development tasks, with decision tasks still closed. Prior
+conservative allocated reserve is $5.00; card's two-hour plus staging and
+support bound is $13.263870928 under $15, with repeated pre-allocation
+transfers to be reconciled. No development quality verdict exists yet.
+
+## Gate 3 development retry in `us-central1-c` — 2026-10-01 IST
+
+Selected `1e-5` development requests in `us-central1-a`, `us-east1-b/c/d`
+all returned pre-allocation L4 stockouts. Each exact attempt has a verified
+78-object GCS refusal backup, cleaned temporary network/subnet, and exact
+VM/disk/network/subnet absence twice. No 180-task result exists; conservative
+allocated prior reserve remains $5.00. One sequential preparation is now
+active at `measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T020646Z`
+in approved `us-central1-c`. Do not duplicate it. Repeated transfer/operations
+remain under the retained support allowance but must be counted within the
+$15 absolute ceiling. Gate 3 and release remain open.
+
+## Gate 3 development fourth sequential capacity attempt — 2026-10-01 IST
+
+Three selected-adapter development VM requests (`20261001T011522Z` in
+`us-central1-a`, `20261001T012619Z` in `us-east1-b`, and `20261001T014614Z`
+in `us-east1-c`) each hit pre-allocation L4 stockout. Each refusal has a
+78-object independently verified GCS control backup and exact VM/disk/network/
+subnet absence twice. No development tasks ran. One sequential preparation is
+active at `measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T015703Z`
+in approved `us-east1-d`; do not duplicate it. Conservative allocated prior
+reserve remains $5.00; account repeated transfer/operations under the $15
+absolute ceiling before any further retry. Gate 3 quality remains open.
+
+## Gate 3 development retry in provider-suggested zone — 2026-10-01 IST
+
+The selected `1e-5` 180-task development attempts `20261001T011522Z`
+(`us-central1-a`) and `20261001T012619Z` (`us-east1-b`) both received
+pre-allocation L4 stockouts, not quality results. Each exact refusal has a
+78-object independently verified GCS control backup and VM/disk/network/subnet
+absence checked twice after cleanup. Prior conservative allocated reserve
+remains $5.00. A single sequential preparation is active at
+`measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T014614Z`
+in approved, provider-suggested `us-east1-c`. Do not duplicate it. Gate 3
+quality and Gate 8 release remain open; decision tasks stay closed.
+
+## Gate 3 development capacity retry — 2026-10-01 IST
+
+Selected-adapter `1e-5` development attempt `20261001T011522Z` got a
+pre-allocation `g2-standard-8` L4 stockout in `us-central1-a`. Its 78 refusal
+control objects were independently downloaded/hash-verified before exact
+subnet/network cleanup; VM, disk, network, and subnet absence passed twice.
+No development task ran. Conservative allocated prior reserve remains $5.00.
+One sequential replacement preparation is now active at
+`measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T012619Z`
+in approved `us-east1-b`. Do not duplicate preparation, VM, or watcher.
+The 30-task canary selected `1e-5` only for 180-task development; Gate 3
+quality remains open and the decision set remains closed.
+
+## Gate 3 selected-adapter development preparation — 2026-10-01 IST
+
+The v2 canary VM `20261001T002557Z` completed both frozen 30-task runs with
+evaluation exit 0. All 136 terminal GCS objects and 140 local control objects
+were independently downloaded/hash-verified; exact VM, disk, network, and
+subnet absence passed twice. The sealed selection report
+`1eb78aa5949923013b6d5fe776a3648ed9f3d1b707574391b949c6e632fb9331`
+finds upstream and both adapters at 5/30 with identical lane totals, so the
+frozen conservative rule selects `1e-5` **only for full 180-task development**.
+This is not a Gate 3 quality pass. Selected evaluation staging is sealed at
+`measurement/gate3/capability-scale-v1/full-pilot-eval/candidate-staging-selected-v1`,
+card `477d0c069fc4f913a9d698b1039d65106e6d70471691cb0c051a21e8255c324e`.
+One sequential development preparation is active at
+`measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T011522Z`
+in `us-central1-a`. Do not duplicate it. Prior conservative allocated reserve
+is $5.00; the unchanged $15 ceiling and decision-set closure remain binding.
+
+## Gate 3 two-adapter canary VM active — 2026-10-01 IST
+
+The sequential v2 retry `20261001T002557Z` allocated one `g2-standard-8`
+L4 VM `ganesh-g3-eval-20261001t002557z` in `us-central1-a` under sealed card
+`4e2cc2cf9f7fb5561dd2abfe4f9c6eb6e1871c0075add60d25239a038ccb5539`.
+Provider RUNNING began 2026-10-01T00:36:53Z with two-hour STOP. Exactly one
+watcher, PID `26066`, started at 00:37:28Z. **Do not duplicate the watcher or
+allocate another VM.** It must independently verify all terminal GCS evidence
+before exact teardown and double absence. The preceding v2 zone stockout is
+finalized, backed up, and resource-absent. The prior conservative cost reserve
+is $4.00; this attempt's two-hour plus support and staging upper bound totals
+$12.263870928 under the unchanged $15 ceiling. No canary quality result or
+Gate 3 pass exists yet; the 360-task decision set remains closed.
+
+## Gate 3 sequential canary capacity retry — 2026-10-01 IST
+
+Both full-epoch training candidates remain sealed. The v2 canary attempt
+`20261001T000513Z` reached `ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS` in
+`us-central1-b` before VM allocation. Its bounded refusal controls were
+independently downloaded and hash-verified; the exact VM, disk, network, and
+subnet are absent on two post-cleanup checks. The refusal is not a candidate
+quality result. Under the unchanged approved plan SHA
+`d4659d3b503d4eb0a0a38d5af6129f668ccef7994a7f678e920ced1a5e55dd09`
+and $15 absolute incremental ceiling, one sequential replacement preparation
+is running at `measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T002557Z`
+in `us-central1-a`. Do not duplicate preparation, VM, or watcher. Gate 3
+quality is still open; the private 360-task decision set remains closed, and
+Hugging Face release remains held by Gates 4–8 and the Gate 0B raw-report gap.
+
+## Gate 3 canary replacement inputs preparing — 2026-10-01 IST
+
+The failed first canary's terminal backup, exact double resource absence and
+clean `local-evidence-controls-v2` mirror are independently verified: 135
+control objects matched local SHA-256 inventory. The first mirror's exclude
+syntax had copied redundant roundtrips and timed out; that partial prefix is
+preserved, not used as the control seal. A prospective provider v2 pins and
+overlays the single missing materializer dependency into the ephemeral
+evaluation-only tree; 29 focused evaluation tests and local import rehearsal
+pass. A sequential new canary preparation is active at
+`measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20261001T000513Z`
+in `us-central1-b`, under the unchanged approved $15 ceiling and $4.00 prior
+reserve. **No new VM has allocated yet.** Do not duplicate preparation or
+start another attempt. Gate 3 quality and release remain open.
+
+## Gate 3 canary startup stopped before evaluation — 2026-10-01 IST
+
+The one allocated canary attempt `20260930T231842Z` terminated with startup
+exit 1 before model loading or any canary result. All pinned inputs downloaded
+and hash-checked on host, and the 587-file evaluation workspace plus adapter
+overlay passed verification. The model materializer then failed because its
+hash-pinned `scripts.train.preflight_gate3_capability_pilot` dependency was
+not included in the separate evaluation workspace. The later `docker: command
+not found` message came from exit cleanup and is secondary. This is a launcher
+packaging defect, **not a candidate quality result**. Eight terminal GCS
+objects were independently downloaded/verified; `finalization.json` records
+terminal backup and exact VM/disk/network/subnet absence twice. A single
+watcher is still mirroring local control evidence to GCS; do not allocate
+another VM until it ends and the failure is fully reconciled. The immutable
+failed card seal is
+`08ed09f4362a6bd293a488c63e47ac2971b224635d08e5afadfcc31bbe7a1b17`.
+The conservative allocated cost reserve is $0.75, bringing accounted prior
+reserve to $4.00 under the unchanged $15 absolute ceiling. The watcher then
+timed out while redundantly mirroring the 876-MB local verifier roundtrip;
+this happened **after** terminal backup, finalization and double absence.
+Fresh project-wide checks again found no VM or disk and only the default
+network. A targeted control-evidence mirror (excluding already pinned or
+terminal-backed large roundtrips) and a prospective one-file dependency
+correction are being tested. The failed attempt will not be rewritten or
+counted as canary evidence.
+
+## Gate 3 two-adapter canary VM allocated — 2026-10-01 IST
+
+The approved $15 full-pilot plan now has one evaluation-only canary attempt at
+`measurement/gate3/capability-scale-v1/full-pilot-eval/gcloud/20260930T231842Z`.
+The sealed execution card is
+`08ed09f4362a6bd293a488c63e47ac2971b224635d08e5afadfcc31bbe7a1b17`.
+After an interrupted large input transfer and a launch-path correction, its
+single `g2-standard-8` L4 VM `ganesh-g3-eval-20260930t231842z` allocated in
+`us-central1-b`. One watcher (PID `1714`, exec session `19974`) started at
+2026-09-30T23:41:01Z. Do not duplicate the VM or watcher. The provider has a
+two-hour STOP; the watcher must independently verify complete terminal GCS
+evidence before exact teardown and double absence. Both 30-task candidate
+canaries are intended to run sequentially in this evaluation-only workspace.
+No executable quality result or Gate 3 pass is yet established. Keep the
+360-task decision set closed, preserve all evidence, and leave Gate 0B and
+Gates 4–8 as release holds.
+
+## Gate 3 candidate evaluation inputs prepared locally — 2026-10-01 IST
+
+The fail-closed local staging generator bound both sealed full-epoch runs,
+adapter file hashes, 54-object terminal backups, the separate 180-task
+workspace and all 30 frozen canary task hashes. It emitted two canary configs
+and an evaluation-only adapter bundle under
+`measurement/gate3/capability-scale-v1/full-pilot-eval/candidate-staging-v1/`.
+The `prepared-only` card seal is
+`2c2ead6df00e2e9769ee1562216d8d6340b1d99ad1f079ec6bee9dceb502a8ff`.
+This is **not** an executable provider card or a quality result. A separate
+GCloud evaluation controller, runtime/verifier preflight, bounded budget,
+terminal backup and exact teardown contract must pass before allocation.
+
+## Separate Gate 3 evaluation workspace locally sealed — 2026-10-01 IST
+
+The checked-in development-only packager produced
+`measurement/gate3/capability-scale-v1/full-pilot-eval/evaluation-workspace-v1.tar.gz`
+and manifest seal
+`8ed2f45d87b3b867a59c6eca03be6e9d991bd1070037bd52311ed63a07585edc`.
+It contains 587 allowlisted files and exactly 180 development tasks, with
+no training artifacts, seed rows, or private decision tasks. This is local
+workspace preparation only; no candidate canary or development inference
+has run. An evaluation execution card, verified adapter binding, runtime
+and terminal evidence are still required before Gate 3 quality can be judged.
+
+## Both Gate 3 LR epochs complete; executable quality pending — 2026-10-01 IST
+
+The frozen second `3e-5` attempt `20260930T220936Z` completed all 900
+unique rows, 651,639 input tokens and 113 optimizer steps with training exit
+0. Adapter save/reload passed at zero maximum logit difference. The verified
+run-evidence seal is
+`19daa16303a72a195329cc1bf06984f12414d76a1dc85e343f25bafe94f86ed2`.
+Its one watcher independently downloaded and verified 54 terminal GCS
+objects, then deleted exact VM/disk/network/subnet and checked absence twice.
+Fresh project-wide VM/disk/address inventories are empty; only the default
+network remains. The first `1e-5` candidate is separately sealed under
+`21d78a7e339fb75dd89bdd9ada83a53bdbb10678bd7c3c9b09d182786b698537`.
+Both training lifecycles passed, **not Gate 3 model quality**. Next seal a
+separate evaluation workspace, run the frozen 30-task canary on each adapter,
+select by the existing no-regression rule, then run 180 development tasks on
+the selected adapter. Do not open the 360-task decision surface. Gate 0B raw
+report recovery, Gates 4–8 and Hugging Face release remain downstream.
+
+## Second Gate 3 LR allocated with one watcher — 2026-10-01 IST
+
+After independently backed and double-absence-finalized pre-allocation
+stockouts in `us-central1-c` (`20260930T220004Z`) and `us-east1-c`
+(`20260930T220454Z`), the unchanged `3e-5` candidate
+`20260930T220936Z` allocated `ganesh-g3-pilot-20260930t220936z` in
+`us-east1-b`. Card seal is
+`f629892c135020cf9e7dbca75ae8442b25b5b9be274df30ce4ad794699de3ad9`.
+Provider RUNNING began 2026-09-30T22:12:20Z with a two-hour STOP. Exactly
+one watcher, PID `88102` / exec session `63139`, started 22:12:26Z. Do not
+launch another watcher or VM while it is active. On termination, let the
+watcher independently verify complete GCS backup before deleting exact
+VM/disk/network/subnet and checking absence twice. The first LR passed its
+full training epoch/save-reload lifecycle; no second LR result or Gate 3
+model-quality pass yet. The $15 ceiling and conservative $3 prior reserve
+remain in force.
+
+## Second LR first capacity refusal — 2026-10-01 IST
+
+The frozen `3e-5` attempt `20260930T220004Z` staged with card seal
+`e297d127086e1a0572ea2a913ff6100967b8118a2f734597936c59d02aec4316`
+but `us-central1-c` returned a pre-allocation L4 stockout. Its refusal was
+backed to GCS, independently downloaded and verified; exact resources were
+cleaned and absent twice (`refusal-finalized`). No second LR optimizer step
+or GPU runtime occurred. A sequential retry may proceed only after the same
+resource and budget checks; the first LR's sealed result remains unchanged.
+
+## First Gate 3 LR full epoch sealed; second LR staging — 2026-10-01 IST
+
+Corrected `1e-5` attempt `20260930T205829Z` completed its unique 900-row,
+651,639-input-token epoch: 113 optimizer steps, training exit 0, and adapter
+save/reload passed with zero maximum logit difference. Its run-evidence seal is
+`21d78a7e339fb75dd89bdd9ada83a53bdbb10678bd7c3c9b09d182786b698537`.
+The single watcher independently verified all 54 terminal GCS objects before
+deleting exact VM/disk/network/subnet and confirming absence twice. Project
+VM/disk/address inventories are empty and only the default network remains.
+The fail-closed prior-allocation check admitted the frozen second `3e-5` LR
+with a conservative $3 prior-cost reserve inside its $6 candidate slice and
+the $15 absolute incremental ceiling. This is a training-lifecycle result,
+**not** a Gate 3 model-quality pass: both-candidate canary, selected-candidate
+development evaluation, Gates 4–8, and Gate 0B raw-report recovery remain.
+
+## Corrected first LR L4 allocation running — 2026-10-01 IST
+
+Scheduled attempt `20260930T205829Z` in `us-central1-c` allocated
+`ganesh-g3-pilot-20260930t205829z` for the corrected `1e-5` candidate.
+Execution card seal is
+`8133a95f3fde266a36cde45d0792f574c930c926519953f25c692bec42e32744`.
+One watcher, PID `72123` / exec session `49372`, started at 21:01:30Z;
+provider status was `RUNNING` with VM start 21:01:20Z. Do not duplicate
+watcher or allocation. Provider STOP is two hours. The card carries the
+conservative $0.75 reserve from the prior paid pre-training failure within
+the $3 candidate slice and $15 overall ceiling. No optimizer step or full
+epoch is verified yet. Watcher must independently verify terminal GCS backup
+before deleting exact VM/disk/network/subnet and confirm absence twice.
+Gate 3 quality, Gates 4–8 and Gate 0B raw-report recovery remain open.
+
+## Scheduled capacity check unchanged — 2026-10-01 IST
+
+Attempt `20260930T202822Z` staged the corrected `1e-5` candidate in
+`us-central1-a` but received pre-allocation L4 stockout. Its GCS refusal
+backup was independently verified, exact resources were absent twice, and
+project VM/disk/address inventories remain empty. No additional GPU runtime
+or training result. The prior conservative $0.75 reserve and overall $15
+ceiling remain; the 30-minute continuation stays active.
+
+## First allocated Gate 3 pilot stopped before training; backed and cleaned — 2026-10-01 IST
+
+Attempt `20260930T192827Z` ran one L4 for 808 seconds and stopped with startup
+exit 1 before an optimizer step. Its actual-host 16-row probe **passed** at
+314.457 input tokens/s, and the GCloud provider/card binding passed. The
+training CLI then rejected a validation-file path that differed from the
+frozen config: startup passed `artifacts/train/gate3-capability-pilot-v2/prepared-validation.jsonl`
+while config pins `artifacts/train/expansion-pilot-v1/prepared-validation.jsonl`.
+The latter exists in sealed workspace-v8 and matches its pinned SHA256
+`6a9d3aa37b30bc2672517f6d63113011de5f8156aa1049e588fdc70a36b77f46`.
+No training result or model-quality result was produced. The watcher verified
+all 17 terminal GCS objects independently, then deleted exact VM/disk/network/
+subnet and confirmed absence twice. Project VM/disk/address inventories are
+empty. The failure remains immutable.
+
+The startup argument alone was corrected prospectively and covered by a
+regression test; workspace-v8 and plan SHA are unchanged. The retry controller
+now derives a conservative $0.75 prior-cost reserve from the sealed provider
+runtime, $0.50 transfer and $0.05 operation allowance, and requires prior
+backup/teardown evidence before admitting a retry within the candidate $3
+slice and overall $15. Corrected attempt `20260930T200133Z` staged but got
+pre-allocation L4 stockout in `us-east1-c`; its GCS refusal is independently
+verified and exact resources absent twice. No VM is currently running. The
+30-minute automation remains active for one sequential bounded retry at a
+time. Gate 3 quality, Gates 4–8 and Gate 0B raw-report recovery still block
+Hugging Face release; ETA depends on L4 capacity and subsequent gate results.
+
+## Full Gate 3 first LR VM allocated; one watcher active — 2026-10-01 IST
+
+After seven clean pre-allocation stockouts, the scheduled `us-east1-c`
+attempt `measurement/gate3/capability-scale-v1/full-pilot-gcloud/20260930T192827Z`
+allocated `ganesh-g3-pilot-20260930t192827z` for the unchanged `1e-5`
+candidate. Execution card seal is
+`11547ac26ad5831bb6f6cbd021cc7329e7c821a57c0ed5c828297a5050296085`.
+One controller watcher was started in exec session `5732`; the first provider
+status was `RUNNING` at 2026-09-30T19:30:41Z and startup serial output showed
+normal boot/network initialization. Do not start another watcher or VM while
+this allocation exists. Provider STOP is two hours. No actual-host probe,
+optimizer step, full epoch or quality result is yet verified. The watcher must
+independently download/hash terminal GCS evidence before resource deletion and
+double-check exact absence. The $15 incremental ceiling remains; this
+allocation consumes a conservative $1.762043024 VM+disk upper plus transfer
+reserve, regardless of outcome. Gates 3–8 and Gate 0B raw-report recovery
+still block HF release.
+
+## Scheduled L4 capacity retry: seventh clean stockout — 2026-10-01 IST
+
+The first 30-minute continuation revalidated all six prior refusal seals,
+plan/workspace hashes, CLI project and empty project compute inventories.
+Attempt `20260930T185836Z` retried `us-central1-b` for the unchanged `1e-5`
+candidate and again received pre-allocation
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS`. Its GCS refusal backup was
+independently verified; exact VM/disk/network/subnet absence passed twice.
+Another project-wide check found no VM, disk or reserved address and only
+the default network. No training occurred, no GPU runtime cost was incurred,
+and the $15 ceiling remains in force; GCS operation/storage charges may exist.
+The same-task 30-minute retry automation remains active. Gate 3 quality and
+Hugging Face release remain blocked.
+
+## Full Gate 3 VM pilot approved; six L4 capacity refusals — 2026-09-30
+
+Navneet approved plan SHA256
+`d4659d3b503d4eb0a0a38d5af6129f668ccef7994a7f678e920ced1a5e55dd09`
+and its $15 absolute incremental GCloud ceiling, and authorized retries
+without re-asking while within budget. Training candidate `1e-5` was staged
+and sequentially requested in `us-central1-b`, `-c`, `-a`, then `us-east1-c`,
+`-b`, `-d`. All six returned `ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS`
+**before VM allocation**. Each attempt has its own immutable execution card,
+GCS refusal backup, independent two-download verification, exact cleanup,
+and double resource-absence finalization under
+`measurement/gate3/capability-scale-v1/full-pilot-gcloud/`. Two further
+project-wide inventories showed instances, disks and reserved addresses empty;
+only the default network remains. No full training token was processed and no
+Gate 3 quality result exists. GCS storage/operations may incur small charges;
+do not call the entire effort free or claim a live billing invoice.
+
+The same `g2-standard-8` L4 has the same published $0.853624312/hour price in
+both US regions, so the fixed $0.881021512/hour VM+disk STOP bound and $15
+ceiling remain unchanged. No larger GPU or altered recipe was used. A same-task
+30-minute capacity retry automation, `ganesh-mini-gate-3-capacity-retry`, is
+active and must stay quiet on unchanged stockout. It must reconcile all prior
+resources and budget before another sequential attempt. Gate 3 and Gates 4–8
+remain open; historical Gate 0B raw-report recovery still holds release.
+
+## Full Gate 3 VM controller locally sealed; spending ceiling pending — 2026-09-30
+
+The user requested VM execution as soon as feasible. The prospective full-pilot
+plan is `docs/plans/GATE3_FULL_PILOT_GCLOUD_EXECUTION_20260930.md`, SHA256
+`d4659d3b503d4eb0a0a38d5af6129f668ccef7994a7f678e920ced1a5e55dd09`.
+Its **new $15 absolute incremental ceiling has not yet been accepted**. Do not
+prepare, upload, inspect GCloud, or allocate against that plan until it is.
+The prior $5 authorization was qualification-only and is closed.
+
+Local training-only `workspace-v8.tar.gz` is sealed at
+`a9eee2d31de0cf3728d10c8ee5652615006df83dbb371cf942a4e4ee79a036d8`.
+The new prospective one-candidate-per-VM controller and startup path implement
+actual-host throughput/card binding, a two-hour provider STOP, periodic
+checkpoint upload, terminal GCS backup, independent two-download verification,
+backup-before-delete and double exact resource-absence checks. Nineteen focused
+tests, shell syntax, and diff whitespace checks pass; the path has **not been
+live executed**. The second LR is blocked unless the first has a verified,
+sealed 651,639-token full-epoch report with save/reload pass. The separate
+evaluation workspace/controller is still outstanding. No full candidate or
+quality evaluation has run. Gate 3 remains open, Gates 4–8 and the historical
+Gate 0B raw-report recovery remain release holds. Do not publish the model.
+
+## Full Gate 3 VM pilot requested; local execution path under construction — 2026-09-30
+
+Navneet requested VM execution to accelerate Hugging Face publication. The
+previous $5 GCloud approval covered qualification only and is consumed; no
+new VM has been created under this request. A versioned prospective full-pilot
+scope and $15 incremental ceiling is recorded in
+`docs/plans/GATE3_FULL_PILOT_GCLOUD_EXECUTION_20260930.md`; its ceiling is not
+yet accepted. The new fail-closed GCloud provider binding and runner checks
+have focused local tests, and a 73-file evaluation-free workspace is sealed
+as `workspace-v6`, archive SHA
+`4473c7decea8ec7b2649a9b4e9f4cdfb0e3e78d657c2b505f7e1efc1cfa85d1d`.
+This is not a runnable full-pilot controller: actual-host card creation,
+periodic checkpoint backup, terminal verification/teardown, and separate
+evaluation orchestration still need implementation and tests. No full
+candidate epoch or executable quality evaluation has run. Gate 3 remains
+open; publication remains blocked by Gates 3–8 and the Gate 0B raw-report
+recovery gap.
+
+## No live VM; local full-pilot readiness assessed — 2026-09-30
+
+Navneet asked to save artifacts, kill any VM, and continue locally. Fresh
+`executespecv1` inventories returned no instances, disks, or reserved
+addresses; only the default network remained. The prior qualification's 12
+terminal GCS objects are still present, and its independent verified backup
+and double resource-absence finalization remain intact. Nothing was deleted
+because no Ganesh VM or related temporary resource existed. Local static
+preflight passed 900 training rows, 651,639 input tokens, and 50 validation
+rows; draft card remains intentionally non-executable on Darwin/no CUDA.
+Focused tests passed. See
+`docs/plans/GATE3_POST_QUALIFICATION_LOCAL_READINESS_20260930.md` for the
+measured-throughput estimate and GCloud-specific full-pilot implementation
+gaps. No full candidate training, canary, or development evaluation occurred;
+Gate 3 remains open. No new GCloud allocation is authorized by this check.
+
+## Gate 3 L4 qualification passed and fully finalized — 2026-09-30
+
+The single approved allocated retry `20260930T131906Z` completed the exact
+16-longest-unique-row, two-optimizer-step throughput probe, exit 0. The
+hash-sealed `terminal-roundtrip/output/throughput.json` reports `passed`,
+finite loss, 37,480 input tokens in 113.691 training seconds (329.666 input
+tokens/second), 4,634,705,920 peak-VRAM bytes, and no retained adapter.
+Its preceding hardware preflight passed on one BF16-capable NVIDIA L4 with
+23,659,151,360 CUDA-visible bytes against the approved 23,622,320,128-byte
+floor. The report seal is
+`380c96b93ba1b7d8272c8e1c04823432309610b0cc21e6e4afb71f7a456a9b47`.
+The pinned model revision, prepared train hash, manifest, and recipe hashes
+match the execution report. This is qualification, not model quality.
+
+The watcher independently verified all 12 terminal GCS objects, runtime file
+hashes, and exit code before deleting the VM/disk/network/subnet. Exact
+resource absence passed twice; project-wide VM, disk, and reserved-address
+inventories were empty afterward. Provider RUNNING interval was 695.234
+seconds, within the two-hour STOP bound. The same cumulative $5 ceiling and
+$2.50 conservative prior-use reserve remain; this allocated retry is consumed
+and no further GCloud allocation is implied. Data admission remains 900/900,
+but no full Gate 3 model-quality pilot has run, Gates 4–8 remain open, and HF
+model release is blocked. The historical Gate 0B raw-report recovery gap is
+also unresolved. Next local work: bind actual-host throughput into a bounded
+full-pilot card and its two LR candidates; any new GCloud usage needs a fresh
+explicit scope and budget approval. Do not treat the qualification as Gate 3.
+
+## Gate 3 L4 retry RUNNING under one watcher — 2026-09-30
+
+CLI authentication was restored for `admin@executespec.ai` in `executespecv1`.
+Preallocation project inventories showed no VMs, disks, or reserved addresses;
+only the default network/subnets remained. The exact approved plan and all
+local provenance file hashes matched. The first bounded zone,
+`us-central1-a`, refused capacity without a GPU allocation; attempt
+`20260930T131318Z` has independent GCS backup and verified exact resource
+absence twice. Its zero-runtime refusal permitted a zone change.
+
+The next bounded zone, `us-central1-b`, allocated the ONE approved L4 retry:
+`ganesh-g3-qual-20260930t131906z`, evidence directory
+`measurement/gate3/capability-scale-v1/gcloud-qualification/20260930T131906Z`,
+execution card seal `e37df182b74d65b5629ad01afd434afa797132f8c98d0c07a237efaa217f3045`.
+Watcher PID `10161` started at `2026-09-30T13:21:16Z`; the first provider
+status was RUNNING. Do not duplicate the watcher or allocation. The same
+cumulative $5 boundary includes a $2.50 conservative reserve for all three
+prior allocated attempts. This allocation consumes the additional-start
+permission regardless of probe outcome. No throughput or optimizer result is
+yet verified, no full quality pilot has run, and HF release remains blocked.
+The watcher must verify complete terminal GCS backup before teardown and
+double-check exact absence. The Gate 0B raw-report recovery gap remains.
+
+## Gate 3 L4 retry locally staged; GCloud CLI reauthentication required — 2026-09-30
+
+The 22-GiB usable-floor change was approved and locally implemented. Fifty-seven
+focused tests, shell syntax, workspace-v4 sealing and three-prior-attempt budget
+binding pass. Local source provenance is sealed at
+`measurement/gate3/capability-scale-v1/usable-floor-retry-v1/local-provenance-manifest.json`,
+seal `7a5280d6053fcf2341003347df8ba1b49b6e1448257812487605c3531df49770`.
+The first read-only preallocation `gcloud compute instances list` failed because
+CLI token refresh requires interactive `gcloud auth login`. No new VM, disk,
+network or qualified GPU probe was created by this turn. Preserve the same $5
+cumulative ceiling and all prior attempts; do not bypass authentication or
+claim resource absence was rechecked today. Await Navneet's login confirmation,
+then verify current project resources before any allocation. Gate 3 remains
+open, current probe still has zero optimizer steps, and HF release is blocked.
+
+## Gate 3 L4 usable-floor retry approved; preallocation checks — 2026-09-30
+
+Navneet approved plan SHA
+`3bee60eb0987eccd8147d638b31beb5f4322539c32f68537b6c06d2943573de7`.
+The qualification, later SFT actual-host check, and card builder now share an
+explicit L4 22-GiB CUDA-visible/BF16/single-device contract; other GPU classes
+retain the 24-billion-byte floor. The preflight writes separate sealed operands
+before model load, including failure. Workspace-v4 is 73 evaluation-free
+files; seal `93441a457ed91769ae52bdc497a0b001021f75f088c6496b5ec1b2b99b34bae1`.
+Fifty-seven focused tests, shell syntax, source diff, real prior-attempt binding,
+and workspace-manifest checks pass. No new VM has been allocated yet. One
+allocation maximum, same cumulative $5 with $2.50 prior reserve. Gate 3 still
+has no current optimizer result. Raw Gate 0B report recovery remains unresolved
+and blocks final release evidence.
+
+## Retry requested; hardware-floor clarification required before allocation — 2026-09-29
+
+Navneet said “ok try again.” No new VM has started. Repeating workspace-v3
+unchanged would repeat its literal 24-billion-byte CUDA guard. The prospective
+clarification is `docs/plans/GATE3_L4_USABLE_MEMORY_RETRY_20260929.md`: same
+nominal L4 class, explicit 22-GiB usable-memory floor and BF16, separate operand
+diagnostics, unchanged recipe/data/quality gates, same cumulative $5 carrying
+all three prior starts. The floor interpretation still needs explicit direction;
+do not silently reduce the frozen hardware floor or allocate another failed run.
+The admitted passed Gate 0B summary remains local, but its original pinned raw
+report is not currently recoverable from the recorded GCS URL, current object,
+historical prefix or all-version lookup. Related archive roots checked did not
+yield a replacement. Do not claim universal loss or reconstruct missing raw
+evidence. Raw-evidence recovery is now an additional release-readiness gap.
+Current qualification has zero optimizer steps. Gate 3 is open; release blocked.
+
+## Gate 3 qualification stopped at GPU preflight; finalized — 2026-09-29
+
+Attempt `20260929T133600Z` exited 1 before model loading or optimizer steps.
+Canonical materialization passed on the VM: all 13 upstream files, seal
+`fe540d05ffa45b1392b87d83885dda21d9598a6dc6b7f2b19a126b088bd98402`.
+The intended probe stopped at its combined BF16 / 24,000,000,000-byte CUDA
+memory guard. It did not record the actual CUDA memory or BF16 operands;
+do not claim a measured OOM, unsupported BF16, throughput or model-quality result.
+Host nvidia-smi showed one L4, 23,034 MiB total and 471 MiB reserved. Historical
+L4 CUDA observations had 23,659,151,360 bytes and a 22-GiB historical recipe
+floor, so nominal-versus-usable memory is a supported mismatch hypothesis,
+not a new current-device measurement. Reconcile prospectively before compute.
+All ten terminal objects passed independent downloads and runtime inventory.
+VM/disk/network/subnet were deleted and absent twice; project VM/disk/reserved
+address inventories were empty. Watcher session 21750 completed successfully.
+The one allocated correction exception is exhausted; no new paid retry.
+Gate 3 remains open; 900-row data admission is unchanged and release is blocked.
+
+## Gate 3 corrected qualification RUNNING; one watcher — 2026-09-29
+
+The approved canonical-input exception allocated
+`ganesh-g3-qual-20260929t133600z` in us-central1-a. Evidence directory:
+`measurement/gate3/capability-scale-v1/gcloud-qualification/20260929T133600Z`.
+Card seal `f5a61b95a48fddf25e941613446d3e82ff259120dabb19e096f4abee542d21d5`.
+Watcher PID 85859 / exec session 21750 started 13:37:58Z; it verifies terminal
+inventory and independent GCS downloads before exact teardown and double
+absence. Do not duplicate a watcher or allocation. This allocated start consumes
+the exception; failure does not permit another paid retry. Same cumulative $5,
+$2 prior reserve, pinned materializer and evaluation-free workspace-v3.
+Forty-nine focused tests pass; implementation provenance is backed to GCS.
+Startup is running; no throughput result or model-quality pass yet. Gate 3
+remains open; no full pilot or HF release is authorized by this qualification.
+
+## Gate 3 canonical-input exception approved; staging qualification — 2026-09-29
+
+Navneet approved proposal SHA
+`0cb94af6f12bae840c6657c7d7f6402759b0313d7301b81c96afcb9fb5fb342e`.
+The launcher now binds both prior paid starts and $2 prior reserve within the
+same cumulative $5, and prevents another allocated retry under this exception.
+Startup uses a separately hash-pinned CPU canonical materializer before the
+unchanged offline CUDA probe. Forty-nine focused tests pass; shell syntax,
+actual historical evidence binding and diff checks pass. No new VM is launched
+yet, no optimizer step or quality result exists. Current work: staging one
+qualification in bounded US regions. Preserve historical attempts and seals.
+
+## Gate 3 metadata remedy verified locally; prospective paid exception pending — 2026-09-29
+
+The exact model archive passed full CPU byte verification: 13 canonical files,
+47 AppleDouble sidecars and 29 bounded Hugging Face download-cache files.
+Canonical-only materialization was executed on the real archive and passed the
+unchanged model inventory checker (13 files). Forty-five focused tests pass.
+All paid starts/refusals are backed, deleted and absent twice; there is no live
+VM, disk or reserved address in the inspected project inventories. No model
+load, optimizer step or current throughput measurement occurred.
+
+The prospective exception is
+`docs/plans/GATE3_CANONICAL_MODEL_MATERIALIZATION_RESCUE_20260929.md`, SHA-256
+`0cb94af6f12bae840c6657c7d7f6402759b0313d7301b81c96afcb9fb5fb342e`.
+It proposes one further allocated qualification start after wiring the tested
+canonical materializer, with $2 prior-spend reserve within the SAME cumulative
+$5 ceiling. It is not approved; do not launch another paid start under the
+exhausted one-rescue contract. No corpus, recipe, teacher-cap, evaluation or
+quality-gate concession. Gate 3 remains open; HF release remains blocked.
+
+## Gate 3: second preprobe failure finalized; CPU archive diagnosis — 2026-09-29
+
+`gcloud-qualification/20260929T114450Z` reached the intended throughput script,
+but exact model-directory inventory rejected archive extras before model load
+or optimizer steps. Its terminal backup passed independent verification, all
+temporary resources were deleted, and absence passed twice. Project instance,
+disk and reserved-address lists are empty. No qualification throughput exists.
+The local cached archive matches the exact pinned GCS object SHA-256. Partial
+header inspection showed AppleDouble sidecars; full archive listing also shows
+Hugging Face download-cache metadata. A CPU byte verifier is checking all 13
+canonical upstream files and classifying excluded metadata. Do not relax the
+model inventory or count this as a quality result. No more paid chained
+startup retries under the current execution contract; resolve prospectively.
+The admitted 900-row corpus, 1,060/1,200 draft count and evaluation separation
+are unchanged. Gate 3 remains open; public model release is still blocked.
+
+## Gate 3: corrected startup rescue launching in recommended zone — 2026-09-29
+
+Current attempt `gcloud-qualification/20260929T114450Z` launched successfully in
+us-central1-a, card seal `464bb74ce4eda39dcc939d8da5ff920202f6a3c57afccf0aac1af036cd0e4ce1`.
+VM `ganesh-g3-qual-20260929t114450z` is RUNNING. Bounded watcher PID 75202 /
+session 17524 handles verified terminal backup and cleanup. Thirty-seven
+focused tests pass. Never duplicate that VM, watcher or finalizer while live.
+The previous corrected us-central1-b capacity refusal is completely finalized.
+The first paid startup failure and all capacity-refusal evidence remain
+immutable and backed up. No training-only probe has executed. Preserve the
+$1 prior-spend reserve and cumulative $5 ceiling; no chained paid startup
+rescues or full quality pilots. Do not duplicate a pending/running allocation.
+
+## Gate 3: preprobe launcher failure preserved; entrypoint correction — 2026-09-29
+
+The us-central1-b VM loaded the pinned image, but its historical image
+entrypoint invoked missing `scripts/cuda/qualify.py` instead of the intended
+training-only throughput probe. Exit 2 occurred before any training steps or
+throughput measurement. It stopped automatically; complete terminal backup
+verification and exact cleanup completed, with resource absence checked twice.
+The corrected bootstrap rescue at `gcloud-qualification/20260929T114020Z`
+was refused for capacity in us-central1-b, without GPU runtime. Its refusal
+backup/cleanup is running. Google explicitly suggested us-central1-a as
+currently available; try that only after verified refusal finalization, keeping
+the same $1 prior-cost reserve and the same cumulative $5 ceiling.
+The watcher exited because the
+serial endpoint became unavailable after STOP; authoritative VM status was
+TERMINATED. The inspector now treats serial as best-effort and skips stopped
+VMs; startup explicitly overrides the old entrypoint with `python3`.
+Thirty-five focused tests pass, including exact entrypoint command checking.
+One prospective bootstrap-only rescue may proceed only after verified teardown,
+under the same cumulative $5 ceiling with a $1 prior-cost reserve and no
+chained paid retries. This is not a second trained/measured probe. Preserve all
+failed attempt evidence. Gate 3 remains open, no model-quality result exists.
+
+## Gate 3: L4 qualification VM launched in us-central1-b — 2026-09-29
+
+Attempt `gcloud-qualification/20260929T112030Z` received the exact
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS` response. No GPU runtime or model
+measurement occurred. Its refusal backup, cleanup and double absence checks
+are complete. The current attempt is `gcloud-qualification/20260929T112530Z`
+in us-central1-b: launch succeeded for `ganesh-g3-qual-20260929t112530z`.
+Card seal `f0268ab2cb3fede3034bb081e01a8e50b30dec141f218b75a919b256cbdf739a`.
+Startup is being checked; no throughput result yet. Do not duplicate this VM.
+The bounded local watcher (PID 69510, session 23671) handles terminal evidence
+verification and cleanup after STOP; never duplicate its finalization while
+the process is alive. Thirty-three focused tests pass.
+All attempts remain under the same cumulative $5
+qualification-only ceiling. No current pilot or release-readiness result.
+
+## Gate 3: all us-east1 capacity refusals finalized; US fallback staging — 2026-09-29
+
+The three east-region qualification attempts all refused L4 capacity. Each
+backup passed independent immutable-generation verification before exact
+network/subnet cleanup; VM/disk/network/subnet absence passed twice. No GPU
+runtime was incurred. The current attempt is
+`gcloud-qualification/20260929T112030Z` in us-central1-a, staging under the
+same cumulative $5 qualification-only ceiling with $0.50 of the existing
+support reserve assigned to inter-region input transfer. Thirty-one focused
+tests pass. No quality pilot, Gate 3 quality result, or release exists yet.
+
+## Gate 3 qualification: third same-budget zone attempt — 2026-09-29
+
+Both us-east1-c (`20260929T110307Z`) and us-east1-b (`20260929T110950Z`)
+refused allocation for capacity. Both refusal backups passed independent GCS
+verification, with VM/disk/network/subnet absence checked twice after cleanup;
+neither consumed GPU runtime. The current attempt is
+`measurement/gate3/capability-scale-v1/gcloud-qualification/20260929T111500Z`
+in us-east1-d, card seal
+`81a6b75ef81d48d786f46a64520c7e0024b518a95b54609b4cf855432016529e`.
+Its launch is pending. All attempts share the cumulative $5 qualification-only
+ceiling. Do not duplicate a pending/running allocation. Gate 3 remains open;
+no model-quality pilot or release has run.
+
+## Gate 3 first GPU allocation refused; same-budget zone retry staging — 2026-09-29
+
+Attempt `gcloud-qualification/20260929T110307Z` was refused with
+`ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS` in us-east1-c. No VM or disk was
+created; this is infrastructure evidence, not a model-quality result.
+All launch evidence passed two independent immutable-generation GCS downloads,
+and exact VM/disk/network/subnet absence passed twice after cleanup.
+The next attempt is `measurement/gate3/capability-scale-v1/gcloud-qualification/20260929T110950Z`
+in us-east1-b, using the same pinned inputs and the same cumulative $5
+qualification-only ceiling. Thirty focused tests pass. No GPU probe has run;
+Gate 3 remains open and full quality pilots remain outside this ceiling.
+
+## Gate 3 GCP qualification authorized and being staged — 2026-09-29
+
+Navneet authorized GCP GPU usage and approved a $5 absolute incremental
+qualification-only ceiling. Authenticated read-only inspection succeeded;
+the existing model, CUDA image and Docker-bundle GCS generations are present,
+and the pinned Ubuntu/NVIDIA boot image is READY. New isolated qualification
+launcher/startup scripts bind the evaluation-free workspace, one L4, two-hour
+provider STOP limit, 30-minute training-only probe, and verified terminal
+backup before exact teardown. No full-epoch model-quality pilot or release
+is authorized by this qualification ceiling. Gate 3 remains open.
+
+## Gate 3 bounded throughput qualifier staged; no CUDA run — 2026-09-24
+
+`scripts/train/measure_gate3_capability_throughput.py` now provides a
+training-only 16-row/two-optimizer-step CUDA measurement on the longest
+source-unique admitted rows. It binds exact model bytes, rank-8 attention
+LoRA, BF16/fused loss, the frozen response-only weights, peak VRAM, host
+instance ID, and an explicit hourly price plus absolute incremental ceiling;
+it has a 30-minute wall bound and 10-minute finalization reserve. This is a
+qualification instrument, not a model-quality pilot, and has not run.
+The provider-card binder now rejects throughput evidence not bound to the
+prepared manifest and train bytes. The refreshed 72-file evaluation-free
+workspace is `artifacts/train/gate3-capability-pilot-v2/workspace-v3.tar.gz`,
+manifest seal `b5f83fef4b87bdcb21de5a7bd9756928d84cc54b3ffc42a4539bd0cf5a3ca924`.
+Its archive hash verifies and it contains zero evaluation files. Twenty-six
+focused tests pass. No CUDA host/account or provider-specific spending ceiling
+has been supplied; Gate 3 remains open. No GCloud service access occurred.
+
+## Gate 3 non-GCloud pilot staging hardened; no qualified compute — 2026-09-24
+
+The capability pilot now has a host-bound non-GCloud card builder, a
+hash-bound runtime and exact upstream model-inventory check before model load,
+and an evaluation-free training workspace. The local pinned model's 13 files
+passed actual byte verification. A first inventory check exposed that the
+weight file's Git OID names its LFS pointer, not downloaded bytes; the verifier
+now correctly uses the pinned SHA-256 for LFS content and Git blob hashes for
+ordinary files. The 24 GB GPU minimum also now uses the plan's decimal GB,
+not an incorrect 24 GiB threshold that could reject an L4.
+
+Current static preflight: `measurement/gate3/capability-scale-v1/pilot-readiness-v1/static-preflight-v2.json`,
+seal `e921f11edfb59f1d1fbf57336b36652b1ad142189071e20c213caf53f8272831`.
+The latest local draft card is `pilot-readiness-v1/local-draft-card-v3.json`,
+seal `7ab68ae1be9e8bc1876bcf89a5c7921755d44d6d8e6a9990ea3a4d38b4108166`,
+status `prepared-not-executable`. The refreshed 71-file training archive
+`artifacts/train/gate3-capability-pilot-v2/workspace-v2.tar.gz` has manifest
+seal `0af157f1d1ecf0bbb8673fd17211b28d520cf58b94c330d715712317f368048a`;
+its hash verifies and it contains zero evaluation files. Twenty-five focused
+tests pass. No configured non-GCloud GPU provider credential or local CUDA
+device was found, so no measured host throughput, ready card, or training run
+exists. No GCloud access occurred. Gate 3 remains open.
+
+## Gate 3 capability runner path versioned; static report sealed — 2026-09-24
+
+The SFT runner now recognizes only a separate capability-pilot card/schema for
+the 900-row cohort and rejects old card schemas, altered recipe, dataset paths,
+token budget, and provider/cost mismatches before model load. It still requires
+an actual ready card, Linux single-CUDA host with at least 24 GB VRAM, and a
+qualified provider throughput measurement; none exists locally. The static
+preflight report is
+`measurement/gate3/capability-scale-v1/pilot-readiness-v1/static-preflight.json`,
+seal `c0b4e4ec9b2967faac984792a96b75e30ffaee223c51705983cb24d4b7313250`:
+900 rows and 651,639 tokens pass, but `execution_card_ready=false` and
+`training_executed=false`. Nineteen focused runner/preflight tests pass.
+No GCloud action or model training occurred; Gate 3 remains open.
+
+## Gate 3 capability pilot static preflight passed; host and card pending — 2026-09-24
+
+`configs/train/gate3_capability_pilot_v1.json` now binds the 900-row,
+651,639-token package, frozen validation, model revision, conservative recipe,
+and executable evaluation thresholds. The separate static verifier
+`scripts/train/preflight_gate3_capability_pilot.py` passed the exact file
+identities, row counts, source-disjoint validation, response-only labels,
+2,944-token envelope, and lane objective weights; four focused tests passed.
+Its local result explicitly reports `execution_card_ready=false` and
+`training_executed=false`: Darwin has no CUDA device. This is not a runnable
+host execution card or Gate 3 model-quality result. The runner extension,
+actual-host VRAM/throughput/cost/retention preflight, and pilot remain.
+No GCloud action occurred.
+
+## Gate 3 pilot preparation verified; CUDA execution contract pending — 2026-09-24
+
+The sealed 900-row data package has been deterministically prepared for the
+response-only training objective under
+`artifacts/train/gate3-capability-pilot-v2/prepared-manifest.json`, manifest
+seal `4bae0de2096ce8ae973d0f7b3ecc9214d8b6ef2e3addfb31cc4afd37446c2d01`.
+It contains 900 unique rows and 651,639 input tokens; the existing frozen
+50-row prepared validation file was independently re-encoded and found
+byte-identical (SHA-256
+`6a9d3aa37b30bc2672517f6d63113011de5f8156aa1049e588fdc70a36b77f46`).
+The earlier v1 preparation remains preserved. No model training occurred.
+
+The current SFT runner and execution-card schemas are pinned to earlier
+1,399-/3,225-row pilot contracts and cannot honestly be reused as-is for this
+900-row, 651,639-token cohort. A versioned pilot config/card, runtime
+preflight, qualified single-CUDA host, bounded cost/retention plan, and frozen
+executable promotion assessment are still required. Local MPS does not meet
+the CUDA recipe. No GCloud usage is authorized. Gate 3 remains open; this is
+not a model-quality result or release authorization.
+The prospective runtime requirements are recorded in
+`docs/plans/GATE3_CAPABILITY_PILOT_EXECUTION_CONTRACT_20260924.md`; that
+document is not a ready execution card.
+
+## Gate 3 corrected 900-row data package passed; pilot pending — 2026-09-24
+
+Navneet approved exact token-length replacement plan SHA-256
+`1844d190adcdc47496fc18fa9ec94babaeb469931985b384ac0c575726d4b13c`.
+The prebound TypeScript repair `reserve-06` was activated under seal
+`13254cad9b1165c399c1a829a0aa200b2df484875b95f8d4a2c6dc793a5ef925`.
+Its one teacher draft raised counted usage to 1,060/1,200 and measured 1,151
+untruncated tokens (precheck seal
+`770537b9346aac29b3e7edf7af4d745c423a554ce4ff85ecc56810f2a6436369`).
+Semantic, independent V9 test-author, blind delta, and executable checks all
+passed; final matrix seal
+`bbe9bf8bfb16fd1b5f491a2b89003d30be4abdf68e85b27007f93424ad7771d9`.
+The new 720 cohort replaced only the 3,032-token row, retained six per cell
+and 720 unique IDs/sources, and passed new scale separation and two fresh
+blind AI reviews for the affected capability. Corrected 720 seal:
+`cfe5877afcf6a78cb26aa55ee2f59b1e82026436e9b8bbb646e55b7cb7b7ae3e`.
+The 180 replay JSONL bytes were unchanged but independently resealed.
+Package-level exact/normalized/fuzzy separation passed all 900 rows with
+zero failures (seal
+`c2ac02d92a4b3b0a0612b38b56fea505ed0daf3d1313bb04b197e9a10faa700c`).
+All 900 rows tokenized without truncation and met frozen lane objective
+weighting (seal
+`f530ccdf44e09eec1ac7baea9f962e59ec17633148d07e80b962ed026aaf7c30`).
+The final validator accepted 720 capability plus 180 replay rows; the
+canonical training JSONL SHA-256 is
+`57bf0b35f16f7e846fe9548553124cabc175f969f9bfe6a2a398227056a93df1`.
+Data-package admission seal:
+`149b030f11bc0eb054f0a4d511432f33b4123e3b65fab77c2166dca23d1190aa`.
+This is not a Gate 3 pilot or model-quality pass. No training or GCloud action
+occurred. Local PyTorch reports no CUDA device; only MPS is available, which
+does not satisfy the frozen CUDA pilot contract. The old overlength package and
+failed tokenization remain immutable historical evidence. Reviewer evidence
+is AI, not human sign-off. Hugging Face release remains ineligible.
+
+## Gate 3 HARD STOP: one row exceeds the frozen token envelope — 2026-09-24
+
+The exact 720+180 package passed content-free exact/normalized/fuzzy
+separation with zero failures against 3,045 remaining prior training rows,
+package peers, and 540 frozen private evaluation tasks (report seal
+`e1df396fd714c9b984649630d03da22efc816245841e80dbdb2e637dc0c805d8`).
+Untruncated tokenization then found one failing TypeScript repair row at
+3,032 tokens versus the 2,944-token maximum (failed report seal
+`4e44bd293e5a7d5404ed44600c7534cf0fcf12bb46da60d835281e8449456927`).
+No final 900-row admission, training, or release is allowed. Two same-cell
+prebound reserves are unused, but the frozen activation rule does not clearly
+cover a post-executable token-length failure; the final-corpus failure is a
+hard stop. See `docs/process/GATE3_TOKEN_LENGTH_HARD_STOP_20260924.md` for
+the exact evidence and recommended prospective one-cell remedy. Do not
+generate or activate a reserve without that resolution. No GCloud action.
+
+## Gate 3 capability 720 sealed; broad replay selected — 2026-09-24
+
+The deterministic 20-row quality sample passed content-level review by two
+independent blind Codex CLI reviewers (one generation and one repair sample per
+primary capability), with zero failed checks. This is AI review, not human
+sign-off. Quality report seal:
+`863190b2519742ec2b16e404910fcad9749b9d38f5af4ef82c1aecbd234101bf`.
+The 720-row capability cohort passed its fail-closed admission binder under
+manifest seal `1bf0e65c4704fcab266f97da4af793ff9d7fdcd3a37df792be9cfc1271e1b448`:
+six rows in each of 120 cells, 720 unique IDs and sources, bound to the
+174-row retained entry, 546 verified scale rows, passed content-free scale
+separation, and blind reviews. The original duplicate-reserve failure remains
+failed and is not counted. The deterministic broad-replay selector chose 180
+byte-preserved prior training rows, fifteen per lane/task-type pair, with
+unique sources disjoint from capability rows; selection manifest seal
+`5b98721409b514e0ea830d24721aa327cecbad4a8fd6d16259af96b3b902fb65`.
+Replay selection is not final training admission. Package-level 900-row
+separation, tokenization/weighting, final validation, and Gate 3 pilot remain.
+No GCloud action or model training occurred. The final 900-row training
+inventory remains unsealed; release is ineligible.
+
+## Gate 3 prospective one-row repair executable admission — 2026-09-24
+
+Navneet approved a source-unique, one-cell replacement for the duplicate
+canary reserve. The original failed 546-row assembly and 711-request queue
+remain unchanged. A new Python repair request is prebound to unused source
+`exp-v1-python-repair-0365` under one-row manifest seal
+`92e32585027a80c3637383d0c0c025f3c943529c6953ef95b0e857e4c0b89a18`.
+The one allowed teacher draft was generated, bringing counted usage to
+1,059/1,200. Blind semantic review passed under seal
+`ed6e4ffdf4088f26e2e66996d5f2c03016901a78e65ae9c89785b9927bd99e88`;
+independent V9 test-author structure passed under
+`87f6d8c57ef52198153fa9f53d28c1783e2e9c771caa39227c88f199fc886fed`;
+fresh blind delta passed under
+`37a037420739179778d7ce0529b2548f7f4473c49991f32b5c9b4e3f3744b3ff`;
+and the one-worker executable matrix admitted the row under
+`c031e579820a77953eba18816060f681f01e089f450c3ea58bbf5b8d5276e134`.
+The new provisional assembly contains 546 candidate- and source-unique rows,
+exactly filling all cell deficits, under report seal
+`4f5845d95193e3cbb5df7ff32a1c47c7b432bf484229b7162251addd81384e40`.
+The first separation attempt stopped before any evaluation read because
+pre-test envelopes lacked independent test files. The separate materialization
+bound all 546 rows to their exact admitted matrix envelopes, including two
+independent test roles each, under report seal
+`8f27cb55c1b6fedea24b2a2e7d086a78203b327c94022fa18f08a213a0a1023b`.
+The content-free separation comparison of those 546 against 3,225 prior
+training rows, the retained 174, and 540 frozen private evaluation tasks
+passed all exact, normalized, and fuzzy checks with zero failures under report
+seal `c59b89500390781b21a520983a68f5c33830427e7eef4ea6108b07491dde3475`.
+The current provisional 720-row capability cohort (174 retained plus 546
+materialized) is six per cell and 720/720 ID/source unique under report seal
+`5cd935997b35647e111ed809329c5831c498e762d449fb33cad4caab22c206cc`.
+The earlier `provisional-capability-720-v1` contains pre-test scale envelopes
+and must not be used for downstream package admission; use v2 only.
+This is construction-stage admission, not final training admission: blind
+quality review, 180 broad replay rows, package-level separation,
+tokenization/weighting, and final 900-row package validation remain pending.
+The prospective plan file SHA-256 is
+`81ba26cbe4b6557bc693ac63e261e6c6d787f08c669b6b42f1415a4649f8d3ad`.
+The authoritative training inventory remains 174/900. The old queue remains
+hard stopped, and training/release remain blocked until all new and original
+gates pass. No GCloud action occurred.
+
+## Gate 3 HARD STOP: canary reserve reused — 2026-09-24
+
+The proposed 546-row scale assembly rejected at 546 rows / 545 unique
+candidate IDs. `cap-scale-associative_aggregation-python-repair-reserve-06`
+was already admitted in the canary and was reused by the later 16-reserve
+ledger. Both attempts share the same source identity; their candidate content
+differs. The frozen queue allocates no other reserve in that cell, which has
+only five unique rows against the six-row target when combined with the
+retained training-entry anchor. The first-pass failure in the cell is not
+eligible for blind test reauthor. No provisional 546 or final 720/900 corpus
+was sealed. Preserve all completed executable evidence but grant no second
+admission credit to the reused reserve. Stop further generation, separation,
+packaging, and training pending a prospective resolution. See
+`docs/process/GATE3_DUPLICATE_RESERVE_HARD_STOP_20260924.md`. Counted teacher
+drafts remain 1,058/1,200; authoritative training inventory is 174/900.
+No GCloud action occurred.
+
+## Gate 3 Go requalification accepted; 16 reserves active — 2026-09-24
+
+The uniform 89-candidate local Go requalification completed under matrix seal
+`1f7f770109b5c54b1d83746e181d63db81b7900d63e47c21a3d9c28df6d0c0d7`:
+83 admitted, 6 rejected, zero unresolved. The frozen assessor accepted all 89
+input hashes with no regression of the original 51 Go admissions (assessment
+seal `49ae1b356c318513da0fb034f1602bf0046ff65cc3f527091913e305b5b8524f`).
+The derived complete first-pass matrix is 508 admitted / 26 rejected, seal
+`fdbf0430508bee0b71ee5f4c7310c54bc22c149c3abc48f5b70b21e75fc19138`.
+
+The one allowed blind test-reauthor outcomes were reconciled with the entire
+derived cohort: 518 provisional executable admissions and 16 terminal rejects,
+zero unresolved, under reconciliation seal
+`fc3cdd3285be248dd01021898ce42229f06de841e62576e4c0e3033faff3c0ee`.
+These are not yet training admissions; global separation and package sealing
+remain pending. The 16 rejects fit the frozen per-cell reserve allocations.
+Reserve-chain ledger seal:
+`895bb5ac34499b9722a767c057654a1f4bcb66e8cf32005f99c6a99b1def73ae`;
+teacher activation report seal:
+`26ceb5e58f8153021fb21e5291d28a1a3118c1ca43df03ca5f7e18d4a4205117`.
+A 16-request local reserve cohort is recorded under
+`measurement/gate3/capability-scale-v1/first-pass-v2/go-single-worker-v1/reserve-v1/`.
+It sealed 16/16 generated under report
+`fa45f4608663d90dc30718c289517348226414dcd63d149a5e8f0cae3fb03e0d`.
+Semantic review passed 16/16 (seal
+`85cfa62b63732aa9c2560983542bb87ae98d7221d629b843eaf26a2482869947`),
+independent test-author structure passed 16/16 (seal
+`7e226e6559a432b45c7a8b4d21ced854994eb862508600168b636d70160d2720`),
+and fresh blind delta passed 16/16 (seal
+`b0b216a046e2c987e4350db1a396f8337b7e8f4c01fd530fbc5bdff3248bed51`).
+Conservative teacher draft usage after this phase is 1,058/1,200.
+The one-worker executable matrix sealed 15 admitted / 1 rejected (seal
+`f0d4cfba3059b179050af25e0df8741157c7549abd794df29968a7500c540eb4`).
+The one rejected Go reference-primary case used its sole blind test-reauthor
+correction; fresh delta passed and its isolated executable matrix admitted it
+under seal `ce68d2f3ad1c6dc9cfe15d2f8bb88f4db30c1d93ca6b92f4a16571ea32758b75`.
+Thus all 16 activated reserve slots have provisional executable admissions.
+They still require aggregate integrity, global separation, quality, and
+900-row package sealing before training entry.
+Authoritative training inventory remains 174/900; model training has not
+started. No GCloud action occurred in this continuation.
+
+## Gate 3 first-pass matrix failed; Go requalification active — 2026-09-23
+
+The exact first-pass 534-candidate matrix is complete under seal
+`01ab1d4b460a922e81b61497a923e2ac0c577eceb607288f9734a5a7f951f5e3`:
+476 admitted, 24 rejected, 34 unresolved. All unresolved are Go timeouts.
+Eighteen blind test-reauthor corrections were activated for reference failures;
+17 passed structural review and fresh delta audit, and their new matrix admitted
+10, rejected 7 (seal
+`d8425db28fcffbbd052d70d7677d42c3db8f7803303415c7a63cdc36b8c9af91`).
+One reauthor was structurally rejected. No failed row is counted as admitted.
+
+A separate uniform single-worker requalification of all 89 Go first-pass
+candidates is ACTIVE locally under
+`measurement/gate3/capability-scale-v1/first-pass-v2/go-single-worker-v1/`.
+Its input manifest is sealed at
+`d35ec1d47706d409b92260d21f4595d9431f9f2eeabcb33cef4a61e199fc7ea0`.
+The original matrix is preserved. Until the Go campaign is complete and a
+derived aggregate passes, the authoritative training inventory remains
+174/900 and model training has not started. No GCloud usage is active.
+
+## Gate 3 first-pass qualification at executable matrix — 2026-09-23
+
+The 534-request remainder is complete: merged teacher 534/534, semantic
+534/534, independent test-author structural check 534/534, and blind delta
+534/534 after a separately sealed retry of 127 CLI transport-classification
+failures. Controlling report seals are respectively
+`f53ab8e2da3182819874b67aaf6de21d5c131f6fb7d1175221dfc5399ec49f6c`,
+`357627f4f5ea43eb99578c9eb81fb47cb1d09084d5f09c91034029ad60d79e82`,
+`c4961be372d978e8f79b2b9313c044964c84366a4ede9b0ae16dfa30ff03a3ca`,
+and `97d41488f34db77e1831f528d8f27e5cd45ca6d33e50ef7b5a596554e5e094e7`.
+Original failed evidence is retained, not rewritten. The exact executable
+matrix is ACTIVE locally under
+`measurement/gate3/capability-scale-v1/first-pass-v2/final-matrix-v1/`.
+The authoritative inventory is still 174/900 pending full matrix, reserves,
+separation, and package sealing. No GCloud usage or training job is active.
+
+## Gate 3 scale canary passed; 534-request teacher campaign active — 2026-09-18
+
+The complete construction canary is 12/12 admitted under seal
+`dc239958fc66b793830a19c254c54cdfad316263cc0eb04607a0e76454a13ad3`.
+The original canary consumed 12 first-pass drafts; seven terminal delta failures
+activated seven source-unique reserves. The corrected primary-delta teacher
+prompt produced 7/7 semantic and delta passes. Five reserves passed their first
+matrix; two passed after their single permitted blind test reauthor. No result
+is unresolved and no evaluation artifact was read.
+
+Current status is ACTIVE LOCAL CONSTRUCTION. A resumable 534-request remaining
+first-pass teacher campaign is running with 12 workers under prompt contract
+`capability-scale-primary-delta-teacher-prompt/v2`. The sealed training-entry
+inventory remains 174/900 until the scale admissions are packaged. No GCloud
+resource or training job is active.
+
+## Capability-scale source queue sealed — 2026-09-17
+
+The deterministic source queue is complete at 711 unique requests: 546 first
+pass and 165 reserve. Queue SHA-256:
+`a8d9eb96cdbdb8ccd4ec126b512c71ae832856beff9dd46a799c99571eefba51`;
+manifest seal:
+`f3e3e312625ec85f067c0089f40b16ed4591fe320745445e34f23825a3dc6d55`.
+All prior-corpus, historical-teacher, qualified-inventory, and within-queue
+source collisions are excluded. Current state is ACTIVE LOCAL CONSTRUCTION
+CONTROLLER IMPLEMENTATION. No candidate call, training job, GCloud resource,
+or billable compute is active.
+
+## Training entry passed for corpus construction — 2026-09-17
+
+The unified qualified inventory is sealed at 174 records and 174 unique source
+identities: 114 V2 generation admissions plus 60 V9 repair admissions. It
+covers all 120 capability/language/task-type cells and marks one deterministic
+anchor per cell. Training-entry manifest seal:
+`fbf45982984c2c669e03abf1c773d768019651184547104271de12c42f79318c`.
+
+Current state is ACTIVE LOCAL CORPUS CONSTRUCTION PLANNING. The exact remaining
+capability deficit is 546 admissions—246 generation and 300 repair—followed by
+180 broad replay records for a 900-row pilot corpus. No training, untouched
+evaluation opening, publication action, GCloud resource, or billable compute
+is active. The scale contract is frozen at
+`docs/plans/GATE3_CAPABILITY_SCALE_CONSTRUCTION_PLAN_20260917.md`, SHA-256
+`d0e2b112eaa17eb96d2a0284964c9d107bc94b3fcd8edc6369cf7792026100ee`;
+deterministic unused-source queue sealing is next.
+
+## Gate 2 passed under V9; training-entry assessment next — 2026-09-17
+
+The Gate 2 repair-corpus qualification is complete. V9 reconstructed the exact
+60-cell repair cohort from 58 sealed V7 admissions, the accepted V8 Python
+cross-cutting role, and one fresh Rust primary role. It ran fresh blind delta
+audits for the two changed candidates, reran content-free separation across all
+60, and passed the exact executable matrix for both corrections. Final state:
+60 admitted, 0 rejected, 0 unresolved. Qualification seal:
+`cb0eafa84cbd76ff90c72456883c854d22356bb87da7a1ecf6a7bd4cf50ade0e`.
+
+V2 generation equivalence remains passed for all 60 generation cells, so the
+qualified combined surface is 120/120 generation/repair cells. Evaluation
+artifacts read outside the content-free boundary remain zero. The result
+narrative is `docs/process/GATE2_V9_RESULT_20260917.md`, file SHA-256
+`328fd26edf953a1369847179d92246adf927a72c6df4c92f46b52dcd597b47a6`.
+
+The preserved terminal sequence is:
+
+- V6 pre-campaign readiness failed on impossible JSON member-order validation,
+  seal `39a8264850aafb9c8b8db6ed9de4f8d6e0d46b4ad331329a4e2c21c6cce3f778`;
+- V7 completed at 58/60 admitted and 0 unresolved, seal
+  `1bbdd82b8558542547f0476e8b753089a0c93e73221f4db4c6b6b9787dde3f06`;
+- V8 stopped before delta/execution on an over-broad Rust validator, seal
+  `ff2de8bc59f6f0da95e53bb020470df3b2abbda5b1f76c83f03f6814f6648af5`;
+  and
+- V9 passed at 60/60 with zero unresolved and 120/120 combined coverage.
+
+Current state is GATE 2 PASSED; TRAINING-ENTRY ASSESSMENT PENDING. No new
+training using this qualified corpus has been executed, and qualification does
+not itself authorize training. No GCloud resource, training job, untouched
+evaluation opening, publication action, or release action is active.
+
+## Gate 2 V5 terminal no-go; V6 implementation active — 2026-09-17
+
+V5 is sealed as `qualification-failed`. Its exact ordered first pass contains
+60/60 terminal dispositions: 29 admitted, 31 rejected, and 0 unresolved. The
+54/60 aggregate gate and all three distribution gates failed, so reserves are
+forbidden. The canonical admission report seal is
+`3b112519be6c3f122499d137983a58288bdad16bdfaea8c7c83f34c45dc58b11`;
+the qualification seal is
+`f169894cc32557388ec7812180d1524502af1ae35c310e8f31f3c4177e5452e5`.
+The result narrative is
+`docs/process/GATE2_REPAIR_DELTA_V5_RESULT_20260917.md`, file SHA-256
+`0e7571e0b345568dcbc073d4c7086ec33ee58d73327dfeeea2ae33c0e3e53ca0`.
+
+The terminal taxonomy is 14 strict test-author contract rejects, 17
+final-admission executable rejects, and 29 admissions. The final lane counts
+are Go 8, Java 5, JavaScript 1, TypeScript 4, Python 10, and Rust 1. A complete
+post-run audit classifies all 31 rejects as test-author/validator/staging
+interface failures: 10 over-broad syntax-heuristic false positives, 4 Java
+role-path collisions, and 17 authored-suite runtime-binding failures. No
+reject demonstrates a bad reference candidate. Global separation passed for
+all 46 post-test candidates, all final-attempt model calls completed at the
+transport/runtime layer, and evaluation artifacts read outside the
+content-free boundary remain zero. V5 therefore improved recorded yield over
+V4 but did not qualify the repair construction method.
+
+V5 reserves, candidate relabeling, and same-contract reruns are prohibited.
+The adopted successor is the V6 canonical-test replay plan at
+`docs/plans/GATE2_REPAIR_DELTA_V6_CANONICAL_TEST_REPLAY_PLAN_20260917.md`,
+SHA-256
+`4fe6a1374c01a0a682bf256c91a141b36b26680bdb5279049070f4f143418ec1`.
+It uniformly carries all 60 exact teacher candidates and semantic outcomes,
+runs 60 fresh independent test authors and fresh blind delta audits under
+controller-owned paths, replaces
+syntax adjudication with the exact executable matrix, and permits at most six
+structural-only reauthor calls after frozen eligibility gates. It generates no
+teacher candidate. Current state is ACTIVE LOCAL GATE 2 V6 IMPLEMENTATION.
+No training, GCloud resource, evaluation opening, publication action, or
+release action is active. Historical process estimates remain training 84%,
+release 58%, and overall delivery 72%; they are not readiness scores and
+remain blocked at Gate 2.
+
+## Gate 2 v4 terminal no-go; v5 interface replay implementation active — 2026-09-16
+
+The complete V4 first pass is sealed as `qualification-failed`. All 60 primary
+candidates are terminally accounted for: 5 final admissions, 55 rejections,
+and 0 unresolved. The frozen aggregate and distribution thresholds failed, so
+reserves are forbidden. The admission report seal is
+`bfc80e399b44fb350048ed459c2bb611801757fb2c73286389d5c4c98aca99d2`;
+the qualification seal is
+`af2ce7ea3cab939ea219eef840af9e42bcb379f0f5de7002bcdf7e688da8c2e5`.
+V2 generation equivalence remains passed for all 60 generation cells.
+The complete result narrative is
+`docs/process/GATE2_REPAIR_DELTA_V4_RESULT_20260916.md`, file SHA-256
+`1c550c9fe5141d63d21b3b92a7002293464cebbf80e7b052e51f05d263b40433`.
+
+The terminal taxonomy is 30 independent-test-author contract rejects, 23
+post-teacher cross-witness rejects, 2 final-validator rejects, and 5 admitted.
+Most rejects are construction-interface findings: 27 test authors emitted more
+than the exact two required role files; 3 Java tests missed the required entry
+point; all 10 JavaScript witnesses looked for an unstaged `reference.js`; all
+10 Rust witnesses used `main` while the runtime compiled them as a test
+harness; and one Java VM working-directory failure was classified as semantic.
+Two TypeScript witnesses and the two final-validator rejects remain
+candidate-local findings. This is a failed corpus-construction qualification,
+not a model-training result.
+
+The original ordered-60 inventory seal is
+`8fc2c4ea31628287ae5b8eb83353f13e1e5aebb1fa93af97256d255c3120e087`.
+Two final-admission rejects initially omitted their already sealed retry
+ledgers from the terminal wrapper. A narrow evidence-only correction restored
+those exact ledgers without changing candidate bytes, executions, reasons, or
+dispositions; correction seal:
+`05cb34251ceaca6c3c4289779128e208ddd0d238ac2f8aa594253ff5cd1aee51`.
+
+The V4 run also exposed a contract discrepancy: Go used a 120-second limit per
+suite attempt, while the sealed plan says 120 seconds per candidate. Therefore
+the evidence must not be described as aggregate-120 compliant. The numerical
+no-go is unaffected because only 5/60 candidates were admitted, far below the
+54/60 threshold.
+
+The sealed successor is
+`docs/plans/GATE2_REPAIR_DELTA_V5_INTERFACE_REPLAY_PLAN_20260916.md`, file
+SHA-256
+`132501466e58e88b6aaebc412aac37e561b103ae8df8f50a9ac43d3aab7cc04b`.
+It freezes a full ordered 60-cell requalification: 58 byte-identical V4
+teacher carries, exactly two fresh TypeScript primaries from new content-blind
+sources, and a uniform downstream rerun under corrected interfaces. It carries
+no V4 execution or admission status.
+
+Current state is ACTIVE LOCAL GATE 2 V5 IMPLEMENTATION. No training, GCloud
+resource, or publication action is active. Historical process estimates remain
+training 84%, release 58%, and overall delivery 72%; they are not readiness
+scores and remain blocked at Gate 2. The next contract must correct the measured
+interfaces, replace the ambiguous Go wording with an explicit bounded
+suite-attempt contract, and predeclare uniform replay versus fresh-generation
+rules. Readiness fixtures must pass before any V5 model call.
+
+## Gate 2 v3 terminal no-go; v4 tooling and source repair active — 2026-09-16
+
+V3 is completely sealed as `qualification-failed`. Its 60-record first pass
+contains 0 final admissions, 52 rejections, and 8 unresolved Go candidates
+after the single permitted infrastructure replay. No reserve was eligible or
+generated. Terminal qualification seal:
+`b2b718a1d61f3a6858b28f9b9938438548a89eb37e04a091ace5036f914c3727`;
+terminal admission seal:
+`48961ecc86e732afd1fd293d100e214a30e78ad4f692dc248be36f49ea89d8be`.
+
+Root cause is now measured. Forty of the 41 executable contract failures came
+from arbitrary hashed test paths being staged while Java, JavaScript,
+TypeScript, Python, and Rust runtimes expected canonical filenames. The one
+remaining executable failure is a real Go cross-witness defect. Eight
+CommitPackFT candidates hit a strict-schema gap, and eight Go candidates
+exhausted 64/64 attempts under concurrent amd64 emulation. None of this changes
+the v3 result.
+
+The clean v4 contract is
+`docs/plans/GATE2_REPAIR_DELTA_V4_QUALIFICATION_PLAN_20260916.md`, SHA-256
+`79849d2f8b70ba69572b4c3fa1761bdb413562c6f6d9a12537d93a1724812ef6`.
+Current state is ACTIVE LOCAL GATE 2 V4 PREFLIGHT. Before any teacher call:
+finish and seal canonical test staging, compilation/cross-witness checks,
+dataset-specific provenance, lane-aware verifier limits, and six-lane/all-
+provenance end-to-end fixtures. The fresh classified pool is currently
+infeasible at 55/60 queueable cells, so v4 also freezes one non-adaptive native
+CommitPackFT tranche of 1,000 Go, 1,000 Python, and 1,000 Rust sources before
+ontology classification and queue construction.
+
+No model training or GCloud action is active or authorized. Historical process
+estimates remain training 84%, release 58%, and overall delivery 72%; they are
+not model-quality or release-readiness scores. Local Gate 2 ETA is 18–36 hours
+if the fixed source tranche closes all five deficits. Project delivery ETA is
+2–4 weeks after that and remains conditional on later executable transfer.
+
 ## Gate 2 v3 repair-delta contract ready — 2026-09-14
 
 A new versioned construction contract is ready at

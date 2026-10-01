@@ -17,6 +17,7 @@ from scripts.model.gate0 import validate_local_files
 
 QWEN_MODEL_ID = "Qwen/Qwen3.5-2B"
 QWEN_REVISION = "15852e8c16360a2fea060d615a32b45270f8a8fc"
+GGUF_TARGET_FLAGS = ("--no-mtp",)
 
 
 def canonical_sha256(value: Any) -> str:
@@ -78,6 +79,19 @@ def validate_selected_run(path: Path, adapter: Path) -> dict[str,Any]:
     return selected
 
 
+def save_optional_processor(processor_class: Any, base_model: Path, merged: Path) -> bool:
+    """Copy vision processor metadata only when its optional backends exist.
+
+    The release serving contract is text-only. The tokenizer is mandatory and
+    saved separately; missing Pillow/torchvision must not invalidate a merge.
+    """
+    try:
+        processor_class.from_pretrained(base_model, local_files_only=True).save_pretrained(merged)
+    except (ImportError, OSError, ValueError):
+        return False
+    return True
+
+
 def build(args: argparse.Namespace) -> dict[str,Any]:
     selected=validate_selected_run(args.selected_run_evidence,args.adapter)
     base_identity=validate_base_model(args.base_model,args.base_inventory,args.gate0_readiness)
@@ -99,13 +113,14 @@ def build(args: argparse.Namespace) -> dict[str,Any]:
     base_license=args.base_model/"LICENSE"
     if not base_license.is_file(): raise FileNotFoundError("pinned base LICENSE is missing")
     base=AutoModelForImageTextToText.from_pretrained(args.base_model,local_files_only=True,dtype=torch.bfloat16,device_map="cpu"); model=PeftModel.from_pretrained(base,args.adapter).merge_and_unload(safe_merge=True); model.save_pretrained(merged,safe_serialization=True,max_shard_size="4GB"); AutoTokenizer.from_pretrained(args.base_model,local_files_only=True).save_pretrained(merged); shutil.copyfile(base_license,merged/"LICENSE")
-    try: AutoProcessor.from_pretrained(args.base_model,local_files_only=True).save_pretrained(merged)
-    except (ValueError,OSError): pass
-    subprocess.run([sys.executable,str(converter),str(merged),"--outfile",str(f16),"--outtype","f16"],check=True)
+    save_optional_processor(AutoProcessor,args.base_model,merged)
+    # PEFT's merged inference checkpoint omits the untouched speculative MTP
+    # head. The target GGUF must not advertise a 25th decoder block.
+    subprocess.run([sys.executable,str(converter),str(merged),"--outfile",str(f16),"--outtype","f16",*GGUF_TARGET_FLAGS],check=True)
     subprocess.run([str(quantizer),str(f16),str(q8),"Q8_0"],check=True)
     merged_files=inventory(merged)
     artifacts={"merged_bf16_hf":{"path":str(merged),"sha256":canonical_sha256(merged_files),"files":merged_files},"gguf_f16":{"path":str(f16),"bytes":f16.stat().st_size,"sha256":sha256(f16)},"gguf_q8":{"path":str(q8),"bytes":q8.stat().st_size,"sha256":sha256(q8)}}
-    report={"schema_version":"ganesh-mini-release-artifacts/v1","status":"built","model_name":"ganesh-mini-1.0","base_model":base_identity,"selected_run_evidence_sha256":selected["evidence_sha256"],"llama_cpp":{"revision":observed_revision,"converter_sha256":sha256(converter),"quantizer_sha256":sha256(quantizer),"llama_cli_sha256":sha256(llama_cli)},"artifacts":artifacts}; report["manifest_sha256"]=canonical_sha256(report); (args.output/"manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n"); return report
+    report={"schema_version":"ganesh-mini-release-artifacts/v1","status":"built","model_name":"ganesh-mini-1.0","base_model":base_identity,"selected_run_evidence_sha256":selected["evidence_sha256"],"llama_cpp":{"revision":observed_revision,"converter_sha256":sha256(converter),"quantizer_sha256":sha256(quantizer),"llama_cli_sha256":sha256(llama_cli),"target_conversion_flags":list(GGUF_TARGET_FLAGS)},"artifacts":artifacts}; report["manifest_sha256"]=canonical_sha256(report); (args.output/"manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n"); return report
 
 
 def main() -> int:

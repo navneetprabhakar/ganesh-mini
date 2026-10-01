@@ -7,9 +7,11 @@ import pytest
 from scripts.release.build_artifacts import (
     QWEN_MODEL_ID,
     QWEN_REVISION,
+    GGUF_TARGET_FLAGS,
     canonical_sha256,
     validate_base_model,
     validate_selected_run,
+    save_optional_processor,
 )
 
 
@@ -72,3 +74,16 @@ def test_release_adapter_requires_complete_v2_run_and_exact_hashes(tmp_path: Pat
     path.write_text(json.dumps(run))
     with pytest.raises(ValueError, match="repaired-recipe"):
         validate_selected_run(path, adapter)
+
+
+def test_text_only_merge_skips_missing_optional_processor_backend(tmp_path: Path) -> None:
+    class MissingVisionBackend:
+        @staticmethod
+        def from_pretrained(*args: object, **kwargs: object) -> object:
+            raise ImportError("torchvision and Pillow are unavailable")
+
+    assert save_optional_processor(MissingVisionBackend, tmp_path, tmp_path) is False
+
+
+def test_target_gguf_does_not_advertise_missing_speculative_mtp_layer() -> None:
+    assert GGUF_TARGET_FLAGS == ("--no-mtp",)

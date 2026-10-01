@@ -200,9 +200,27 @@ def _evidence_text(value: bytes) -> str:
         return "base64:" + base64.b64encode(value).decode("ascii")
 
 
-def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, Any]:
-    validate_task(task)
+def verify_commands(
+    task: dict[str, Any], code: str, runtime_config: Path,
+    commands: list[list[str]],
+) -> dict[str, Any]:
+    """Execute an explicitly supplied, already-frozen command list.
+
+    This is used by versioned pre-admission contracts whose compile and
+    witness commands intentionally differ from the normal test harness.  The
+    caller remains responsible for binding the commands into sealed evidence.
+    """
+    validate_task(task, require_files=False, require_test_file=False)
     runtime = load_runtime(runtime_config, task["runtime_id"], task["language"], task["candidate_path"])
+    if (
+        not isinstance(commands, list) or not commands
+        or any(
+            not isinstance(command, list) or not command
+            or any(not isinstance(part, str) or not part for part in command)
+            for command in commands
+        )
+    ):
+        raise ContractError("sandbox commands must be non-empty argv arrays")
     image_id = _inspect_image(
         runtime["image"], runtime["image_id"], runtime["manifest_digest"],
         runtime["rootfs_layers"], runtime["platform"],
@@ -227,7 +245,7 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
         candidate.write_text(code, encoding="utf-8")
 
         deadline = start + limits["timeout_seconds"]
-        for command in runtime["commands"]:
+        for command in commands:
             container_name = f"ganesh-verifier-{os.getpid()}-{uuid.uuid4().hex[:12]}"
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -266,7 +284,7 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
         "runtime_id": task["runtime_id"],
         "image": f"{runtime['image'].rsplit(':', 1)[0]}@{runtime['manifest_digest']}",
         "image_id": image_id,
-        "commands": runtime["commands"],
+        "commands": commands,
         "exit_codes": exit_codes,
         "timed_out": timed_out,
         "stdout": stdout,
@@ -276,3 +294,9 @@ def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, A
         "duration_ms": duration_ms,
         "sandbox_contract_sha256": sha256_object(SANDBOX_CONTRACT),
     }
+
+
+def verify(task: dict[str, Any], code: str, runtime_config: Path) -> dict[str, Any]:
+    validate_task(task)
+    runtime = load_runtime(runtime_config, task["runtime_id"], task["language"], task["candidate_path"])
+    return verify_commands(task, code, runtime_config, runtime["commands"])

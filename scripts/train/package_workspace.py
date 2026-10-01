@@ -25,6 +25,11 @@ ALLOWLIST = (
     "scripts/train/qwen_runtime.py",
     "scripts/train/response_only.py",
     "scripts/train/run_sft.py",
+    "scripts/train/preflight_gate3_capability_pilot.py",
+    "scripts/train/build_gate3_capability_card.py",
+    "scripts/train/build_gate3_gcloud_provider_evidence.py",
+    "scripts/train/cuda_host_floor.py",
+    "scripts/train/measure_gate3_capability_throughput.py",
     "scripts/train/verify_expansion_pilot.py",
     "data/seed", "manifests/datasets", "schemas/train",
     "artifacts/train/seed-pilot/prepared-train.jsonl",
@@ -43,10 +48,16 @@ ALLOWLIST = (
     "artifacts/train/expansion-lane-stratified-probe-v3/prepared-dataset-manifest.json",
     "artifacts/train/expansion-lane-stratified-probe-v3/local-execution-card.json",
     "artifacts/train/gradient-conflict-probe-v4/local-execution-card.json",
+    "artifacts/train/gate3-capability-pilot-v2/prepared-train.jsonl",
+    "artifacts/train/gate3-capability-pilot-v2/prepared-manifest.json",
+    "measurement/gate3/capability-scale-v1/token-length-replacement-v1/final-package/data-package-seal.json",
     "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
 )
 FORBIDDEN_PARTS = {"eval", "measurement", "outputs", ".git", ".gcloud-staging", "__pycache__"}
-SAFE_MEASUREMENT = Path("measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json")
+SAFE_MEASUREMENTS = {
+    Path("measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json"),
+    Path("measurement/gate3/capability-scale-v1/token-length-replacement-v1/final-package/data-package-seal.json"),
+}
 
 
 def sha256(path: Path) -> str:
@@ -65,7 +76,7 @@ def collect(root: Path) -> list[Path]:
     result=[]
     for path in sorted(files):
         relative=path.relative_to(root)
-        if FORBIDDEN_PARTS & set(relative.parts) and relative != SAFE_MEASUREMENT: continue
+        if FORBIDDEN_PARTS & set(relative.parts) and relative not in SAFE_MEASUREMENTS: continue
         result.append(path)
     if not result: raise ValueError("training workspace allowlist is empty")
     if any("eval" in path.relative_to(root).parts for path in result): raise ValueError("evaluation data escaped training workspace isolation")

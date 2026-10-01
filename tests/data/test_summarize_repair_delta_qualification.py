@@ -26,6 +26,7 @@ def seal(value: dict, field: str = "report_sha256") -> dict:
 
 def admission(
     path: Path, envelopes: Path, rejected_ids: set[str], unresolved_ids: set[str] | None = None,
+    contract_version: str = "v3",
 ) -> Path:
     unresolved_ids = unresolved_ids or set()
     rows = [json.loads(line) for line in envelopes.read_text().splitlines()]
@@ -37,9 +38,15 @@ def admission(
         if candidate["id"] in rejected_ids:
             rejected_rows.append({"id": candidate["id"], "reason": "measured reject"})
         else:
-            if row.get("schema_version") == "ganesh-mini-repair-delta-envelope/v1":
+            if row.get("schema_version") in {
+                "ganesh-mini-repair-delta-envelope/v1",
+                "ganesh-mini-repair-delta-v4-envelope/v1",
+            }:
                 admitted_rows.append({
-                    "schema_version": "ganesh-mini-repair-delta-admitted/v1",
+                    "schema_version": (
+                        "ganesh-mini-repair-delta-admitted/v1" if contract_version == "v3"
+                        else "ganesh-mini-repair-delta-v4-admitted/v1"
+                    ),
                     "id": candidate["id"], "cell_id": qualification["cell_id"],
                     "lane": candidate["lane"],
                     "primary_capability": qualification["primary_capability"],
@@ -75,13 +82,17 @@ def admission(
     write_jsonl(admitted_path, admitted_rows)
     rejected_path.write_text(json.dumps(rejected_rows) + "\n")
     unresolved_path.write_text(json.dumps(unresolved_rows) + "\n")
-    is_v3 = bool(rows) and rows[0].get("schema_version") == "ganesh-mini-repair-delta-envelope/v1"
+    is_repair = bool(rows) and rows[0].get("schema_version") in {
+        "ganesh-mini-repair-delta-envelope/v1",
+        "ganesh-mini-repair-delta-v4-envelope/v1",
+    }
+    spec = subject.contract_spec(contract_version)
     report = {
         "schema_version": (
-            "ganesh-mini-repair-delta-admission-report/v1" if is_v3
+            spec["admission_schema"] if is_repair
             else "ganesh-mini-capability-qualification-admission/v1"
         ),
-        "status": ("admission-complete" if not rejected_rows else "failed") if is_v3 else (
+        "status": ("admission-complete" if not rejected_rows else "failed") if is_repair else (
             "passed" if not rejected_rows else "failed"
         ),
         "input": {
@@ -100,9 +111,9 @@ def admission(
             },
         },
     }
-    if is_v3:
+    if is_repair:
         report.update({
-            "contract_id": subject.CONTRACT_ID, "unresolved": len(unresolved_rows),
+            "contract_id": spec["contract_id"], "unresolved": len(unresolved_rows),
             "runtime_config_sha256": "1" * 64, "admission_config_sha256": "2" * 64,
             "sandbox_contract_sha256": "3" * 64, "separation_contract_sha256": "4" * 64,
             "counts_by_lane": dict(sorted(__import__("collections").Counter(
@@ -202,14 +213,19 @@ def setup_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str,
     }
 
 
-def cohort_envelopes(tmp_path: Path, queue_rows: list[dict], cohort: str) -> Path:
+def cohort_envelopes(
+    tmp_path: Path, queue_rows: list[dict], cohort: str, contract_version: str = "v3",
+) -> Path:
     path = tmp_path / f"{cohort}-envelopes.jsonl"
     rows = []
     for row in queue_rows:
         if row["cohort"] != cohort:
             continue
         rows.append({
-            "schema_version": "ganesh-mini-repair-delta-envelope/v1",
+            "schema_version": (
+                "ganesh-mini-repair-delta-envelope/v1" if contract_version == "v3"
+                else "ganesh-mini-repair-delta-v4-envelope/v1"
+            ),
             "candidate": {
                 "id": row["id"], "lane": row["lane"], "task_type": "repair",
                 "qualification_assignment": {
@@ -218,7 +234,8 @@ def cohort_envelopes(tmp_path: Path, queue_rows: list[dict], cohort: str) -> Pat
                 },
             },
             "assignment": {
-                "contract_id": subject.CONTRACT_ID, "cell_id": row["cell_id"],
+                "contract_id": subject.contract_spec(contract_version)["contract_id"],
+                "cell_id": row["cell_id"],
                 "primary_capability": row["primary_capability"],
                 "assigned_cross_cutting_dimension": row["assigned_cross_cutting_dimension"],
             },
@@ -270,6 +287,64 @@ def test_six_reserves_close_all_cells_after_passing_first_pass(tmp_path: Path, m
     assert body.pop("report_sha256") == canonical_sha256(body)
 
 
+def test_v4_summary_requires_v4_plan_queue_evidence_and_report_contract(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    paths = setup_contract(tmp_path, monkeypatch)
+    spec = subject.contract_spec("v4")
+    v4_plan = Path(__file__).resolve().parents[2] / "docs/plans/GATE2_REPAIR_DELTA_V4_QUALIFICATION_PLAN_20260916.md"
+    assert subject.file_sha256(v4_plan) == spec["plan_sha256"]
+    paths["plan"] = v4_plan
+
+    queue_rows = [
+        {
+            **row,
+            "schema_version": "ganesh-mini-repair-delta-v4-assignment/v1",
+            "contract_id": spec["contract_id"],
+        }
+        for row in paths["queue_rows"]
+    ]
+    write_jsonl(paths["queue"], queue_rows)
+    paths["queue_rows"] = queue_rows
+    manifest_value = {
+        "schema_version": spec["queue_schema"], "plan_sha256": spec["plan_sha256"],
+        "contract_version": "v4", "contract_id": spec["contract_id"],
+        "status": "sealed-primary-generation-eligible", "seed": spec["queue_seed"],
+        "queue_sha256": subject.file_sha256(paths["queue"]),
+        "assignments": 120, "primary_assignments": 60, "cell_bound_reserves": 60,
+        "initial_generation_eligible": 60, "maximum_reserve_generation_eligible": 6,
+        "absolute_candidate_budget": 66, "unique_source_identities": 120,
+        "dataset_counts": {"primary": {"source-a": 30, "source-b": 30},
+                           "reserve": {"source-a": 30, "source-b": 30}},
+        "evaluation_artifacts_read": 0,
+    }
+    paths["manifest"].write_text(json.dumps(seal(manifest_value, "manifest_sha256")))
+    first = cohort_envelopes(tmp_path, queue_rows, subject.FIRST_PASS, "v4")
+    first_report = admission(
+        tmp_path / "v4-first-report.json", first, set(), contract_version="v4",
+    )
+
+    report = call(
+        paths, first_envelopes_path=first, first_admission_path=first_report,
+        contract_version="v4",
+    )
+
+    assert report["status"] == "qualification-passed-via-v4-repair-delta"
+    assert report["contract"] == {
+        "identifier": spec["contract_id"], "version": "v4",
+        "first_pass_candidates": 60, "maximum_reserves": 6,
+        "absolute_candidate_budget": 66, "repair_cells": 60, "combined_cells": 120,
+    }
+
+    v3_first = cohort_envelopes(tmp_path, queue_rows, subject.FIRST_PASS)
+    v3_report = admission(tmp_path / "v3-first-report.json", v3_first, set())
+    with pytest.raises(ValueError, match="admission schema|relabeled"):
+        call(
+            paths, first_envelopes_path=v3_first, first_admission_path=v3_report,
+            contract_version="v4",
+        )
+
+
 def test_partial_first_pass_is_in_progress_and_reserves_are_not_eligible(tmp_path: Path, monkeypatch) -> None:
     paths = setup_contract(tmp_path, monkeypatch)
     selected = [row for row in paths["queue_rows"] if row["cohort"] == subject.FIRST_PASS][:20]
@@ -283,7 +358,7 @@ def test_partial_first_pass_is_in_progress_and_reserves_are_not_eligible(tmp_pat
     assert report["reserves"]["eligible_cells"] == []
 
 
-def test_unresolved_first_pass_is_not_rejected_or_terminally_dispositioned(tmp_path: Path, monkeypatch) -> None:
+def test_exhausted_unresolved_first_pass_is_terminally_failed(tmp_path: Path, monkeypatch) -> None:
     paths = setup_contract(tmp_path, monkeypatch)
     first = cohort_envelopes(tmp_path, paths["queue_rows"], subject.FIRST_PASS)
     unresolved_id = next(
@@ -295,12 +370,13 @@ def test_unresolved_first_pass_is_not_rejected_or_terminally_dispositioned(tmp_p
 
     report = call(paths, first_envelopes_path=first, first_admission_path=first_report)
 
-    assert report["status"] == "qualification-in-progress"
+    assert report["status"] == "qualification-failed"
     assert report["first_pass"]["generated"] == 60
     assert report["first_pass"]["dispositioned"] == 59
     assert report["first_pass"]["rejected"] == 0
     assert report["first_pass"]["unresolved"] == 1
-    assert report["first_pass"]["thresholds"]["complete_60"] is False
+    assert report["first_pass"]["thresholds"]["complete_60"] is True
+    assert report["first_pass"]["thresholds"]["zero_unresolved"] is False
     assert report["reserves"]["eligible_cells"] == []
 
 
@@ -368,3 +444,28 @@ def test_more_than_six_reserves_fails_closed(tmp_path: Path, monkeypatch) -> Non
             paths, first_envelopes_path=first, first_admission_path=first_report,
             reserve_envelopes_path=reserve, reserve_admission_path=reserve_report,
         )
+
+
+def test_exhausted_unresolved_replay_is_a_complete_failed_first_pass(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    paths = setup_contract(tmp_path, monkeypatch)
+    first = cohort_envelopes(tmp_path, paths["queue_rows"], subject.FIRST_PASS)
+    rows = [json.loads(line) for line in first.read_text().splitlines()]
+    unresolved_id = rows[0]["candidate"]["id"]
+    rejected_ids = {row["candidate"]["id"] for row in rows[1:7]}
+    first_report = admission(
+        tmp_path / "first-report-unresolved.json", first, rejected_ids,
+        unresolved_ids={unresolved_id},
+    )
+
+    report = call(
+        paths, first_envelopes_path=first, first_admission_path=first_report,
+    )
+
+    assert report["status"] == "qualification-failed"
+    assert report["first_pass"]["generated"] == 60
+    assert report["first_pass"]["dispositioned"] == 59
+    assert report["first_pass"]["unresolved"] == 1
+    assert report["first_pass"]["thresholds"]["complete_60"] is True
+    assert report["first_pass"]["thresholds_passed"] is False

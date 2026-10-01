@@ -194,6 +194,15 @@ def parse_events(stdout: str) -> tuple[list[dict[str, Any]], dict[str, Any] | No
         item = event.get("item")
         if isinstance(item, dict):
             item_type = item.get("type")
+            # Codex can emit an informational error item when its WebSocket
+            # transport falls back to HTTPS. This is not a tool invocation;
+            # retain the raw event but do not reject an otherwise completed run.
+            if (
+                item_type == "error"
+                and isinstance(item.get("message"), str)
+                and item["message"].startswith("Falling back from WebSockets to HTTPS transport.")
+            ):
+                continue
             if item_type not in {None, "reasoning", "agent_message"}:
                 disallowed.append(str(item_type))
     return events, usage, disallowed

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import socket
 import subprocess
 import time
@@ -56,6 +57,16 @@ def free_loopback_port() -> int:
         return int(handle.getsockname()[1])
 
 
+def metal_device_name(server: Path) -> str:
+    listed = subprocess.run(
+        [str(server), "--list-devices"], check=True, capture_output=True, text=True,
+    ).stdout
+    match = re.search(r"^\s*(MTL\d+):", listed, re.MULTILINE)
+    if match is None:
+        raise RuntimeError("llama-server did not expose a Metal device")
+    return match.group(1)
+
+
 class LlamaCppServerBackend:
     """BatchBackend implementation backed by one pinned local llama-server."""
 
@@ -90,7 +101,7 @@ class LlamaCppServerBackend:
         if device == "cpu":
             command.extend(["--device", "none", "--gpu-layers", "0"])
         else:
-            command.extend(["--device", "Metal", "--gpu-layers", "all"])
+            command.extend(["--device", metal_device_name(server), "--gpu-layers", "all"])
         started = time.perf_counter()
         self._process = subprocess.Popen(
             command,

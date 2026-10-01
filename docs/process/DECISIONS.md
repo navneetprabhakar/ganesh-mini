@@ -1,5 +1,457 @@
 # Decisions
 
+## 2026-09-30 — Approved prospective L4 usable-memory clarification
+
+Navneet explicitly replied “APPROVE” to
+`docs/plans/GATE3_L4_USABLE_MEMORY_RETRY_20260929.md`, SHA-256
+`3bee60eb0987eccd8147d638b31beb5f4322539c32f68537b6c06d2943573de7`.
+This accepts the nominal 24-GB NVIDIA L4 class with at least 22 GiB
+CUDA-visible memory, BF16 and exactly one CUDA device. Non-L4 devices keep
+the literal 24-billion-byte floor. It also permits one further allocated
+qualification start within the SAME cumulative $5, with $2.50 reserved for
+all three earlier starts; no quality-pilot or release authorization is inferred.
+Hardware operands must be sealed before model load, including on failure.
+The 73-file evaluation-free workspace-v4 binds this change. Frozen data,
+model identity, 2,944-token envelope, rank-8 mechanism, peak-VRAM ceiling,
+and executable quality gates remain unchanged. Historical Gate 0B raw-report
+recovery gap remains a separate release hold.
+
+## 2026-09-29 — Another retry requested; hardware interpretation not inferred
+
+Navneet authorized trying again. Do not repeat the unresolved literal CUDA
+memory guard or infer permission to reduce a frozen minimum. The prospective
+L4-class / 22-GiB usable-floor clarification is separately documented, keeping
+the same cumulative $5 and carrying all three prior starts. No allocation or
+runtime contract change occurred. The locally admitted passed Gate 0B summary
+exists, but its original raw report was unavailable by generation/current/all-
+version checks; retain the recovery evidence and resolve that gap before release.
+
+## 2026-09-29 — Allocated canonical correction stopped at hardware guard
+
+The approved correction's 13-file canonical materialization passed on the VM.
+The probe then stopped before model loading at a combined BF16 / 24-billion-
+byte CUDA-visible memory check, without logging either operand separately.
+This is not a model, corpus, throughput or measured-OOM result. Historical L4
+CUDA memory was below that literal floor, so reconcile nominal versus usable
+memory and add explicit diagnostics prospectively; do not silently relax it.
+Complete terminal backup was independently verified before deletion, and exact
+resource absence passed twice. The allocated exception is consumed and no
+further paid retry is authorized. Data admission and Gate 3 quality requirements
+are unchanged; Gate 3 remains open and public model release is blocked.
+
+## 2026-09-29 — Approved one canonical-input qualification exception
+
+Navneet explicitly approved proposal SHA
+`0cb94af6f12bae840c6657c7d7f6402759b0313d7301b81c96afcb9fb5fb342e`.
+One additional allocated qualification start may use the tested, hash-pinned
+canonical materializer, preserving strict model inventory checks. Carry both
+previous starts with a $2 prior-spend reserve inside the SAME cumulative $5.
+Zero-runtime capacity refusals require backup and exact cleanup before another
+zone. A successful allocation consumes this exception, even if the probe fails.
+No further paid retry, full quality pilot, evaluation opening or release is
+authorized here. Forty-nine focused tests pass; startup syntax and real prior
+evidence bindings pass. The approved proposal itself remains immutable.
+
+## 2026-09-29 — Canonical model archive remedy is tested, not yet GCP-approved
+
+The second paid start's strict file-inventory stop was caused by packaging
+extras, not corrupt upstream model bytes. Full CPU verification proved the
+exact pinned archive's 13 upstream files; 47 AppleDouble and 29 Hugging Face
+cache entries were classified separately. Canonical-only extraction on the
+real archive passed the unchanged checker. Preserve the original archive and
+all failed startup evidence; do not weaken identity or quality checks.
+Forty-five focused tests pass. The materializer is implemented and locally
+tested, but its next GCP startup wiring and allocated correction are only
+prospective. Proposal SHA is
+`0cb94af6f12bae840c6657c7d7f6402759b0313d7301b81c96afcb9fb5fb342e`.
+This requests a single explicit exception to the exhausted one-rescue limit,
+within the same cumulative $5, carrying a $2 conservative prior-cost reserve.
+No new GCP paid start, current-pilot training result or release approval is
+inferred. Prior runtime intervals are 571.334 and 566.191 seconds; all related
+VM/disk/network/subnet resources were backed and verified absent twice.
+
+## 2026-09-29 — One bootstrap-only rescue within the existing $5 qualification ceiling
+
+The first allocated qualification VM (`20260929T112530Z`) stopped before the
+intended throughput script ran: the preserved image's historical entrypoint
+invoked a missing qualification file. This was a launcher defect, not a model
+or corpus result. Preserve its complete exit-2 evidence and verified teardown.
+Actual provider RUNNING interval was 571.334 seconds; the retry controller
+requires it to be under 900 seconds. Reserve $1 for this first attempt and
+preceding staging/refusal costs within the same cumulative $5 ceiling. A
+corrected bootstrap may execute the still-unrun 16-row/two-step qualification
+only after independently verified terminal backup and double resource absence.
+Do not chain paid bootstrap retries or repeat a measured/trained probe. No full
+quality pilot is authorized. The startup now explicitly overrides the image
+entrypoint, leaving model identity, recipe, data, evaluation separation and
+the two-hour provider STOP bound unchanged.
+
+## 2026-09-29 — Same-budget US GPU capacity fallback
+
+All three us-east1 zones refused the exact L4 qualification allocation without
+creating a GPU VM. After each refusal is independently backed up and cleaned
+up, allow us-central1 as a capacity fallback within Navneet's existing cumulative
+$5 qualification-only authorization. This changes location, not recipe or scope.
+Official on-demand g2-standard-8 pricing for Iowa is $0.853624312/hour.
+Cloud Storage North-America inter-region access is $0.02/GiB; the pinned input
+archives total about 11.12 GiB (about $0.23 transfer). Allocate $0.50 of the
+existing $3.237956976 support reserve for this transfer, not extra spending.
+The two-hour provider STOP and complete backup-before-teardown rules remain.
+Sources checked 2026-09-29: https://cloud.google.com/products/compute/pricing/accelerator-optimized
+and https://cloud.google.com/storage/pricing. No successful compute allocation
+may be duplicated. A measured/trained qualification may not be repeated under
+this approval; the separately documented exact preprobe startup rescue does
+not reset the cumulative budget or authorize a second measured probe.
+
+## 2026-09-29 — Authorize GCP GPU qualification with $5 incremental ceiling
+
+Navneet explicitly said “you can use GCP GPUs” and answered “yes” to a
+$5 absolute incremental ceiling for GPU qualification only. This permits
+inspection, create-only input uploads, one bounded L4 qualification, complete
+GCS evidence backup/verification, and exact temporary-resource teardown.
+It does not authorize either full-epoch quality pilot under this ceiling.
+Use the existing US-EAST1 bucket and a US-EAST1 VM to avoid cross-region
+input-transfer charges. One g2-standard-8 has a two-hour provider STOP bound;
+the 16-row/two-step probe is limited to 30 minutes and no adapter is retained.
+The support reserve must cover disk finalization and small GCS operations.
+Never delete the evidence disk before terminal inventory verification; never
+claim no remaining billing merely because the GPU VM is stopped.
+The current sealed 900-row data package and evaluation separation are unchanged.
+
+## 2026-09-24 — Approve one-cell token-length replacement, not a sequence-length increase
+
+Navneet explicitly approved the prospective one-cell plan at
+`docs/plans/GATE3_TOKEN_LENGTH_ONE_CELL_REPLACEMENT_20260924.md`, SHA-256
+`1844d190adcdc47496fc18fa9ec94babaeb469931985b384ac0c575726d4b13c`.
+The approval permits only the prebound `binary_and_bitwise/typescript/repair`
+`reserve-06` source as a replacement for the admitted but overlength
+`first_pass-01` row. Keep the prior 720 cohort and failed 900-row tokenization
+immutable. The 2,944-token training limit and 1,200 teacher-draft cap are
+unchanged. This decision does not authorize GCloud, truncation, `reserve-07`,
+or Hugging Face publication. A higher sequence length would be a separate
+training/memory requalification, not an interpretation of this approval.
+
+The single new draft measured 1,151 tokens and passed semantic, independent
+test-author, blind delta, executable, scale separation, and the two repeated
+affected-capability blind AI reviews. Conservative draft count is 1,060/1,200.
+The rebuilt 720 cohort and identical 180 replay rows passed complete 900-row
+separation and tokenization/weighting. Final data-package admission seal is
+`149b030f11bc0eb054f0a4d511432f33b4123e3b65fab77c2166dca23d1190aa`.
+This is data admission only: no bounded model pilot, model-quality result,
+Gate 3 pass, or release decision is inferred. Reviewers were AI, not humans.
+
+## 2026-09-24 — Prospectively repair one Gate 3 duplicate-reserve deficit
+
+Navneet approved the recommended one-cell source-unique replacement after the
+sealed 546-row assembly correctly rejected a reused canary reserve. Preserve
+the failed assembly, original 711-request queue, canary result, and later
+duplicate teacher/executable evidence unchanged. Count the later duplicate
+draft in the 1,058 historical-plus-scale teacher drafts but grant it no second
+training admission. The original reserve ledger is not final-admission
+authority because it omitted canary reserve ownership.
+
+Adopt the one-cell prospective protocol at
+`docs/plans/GATE3_DUPLICATE_RESERVE_PROSPECTIVE_REPLACEMENT_20260924.md`,
+file SHA-256 `81ba26cbe4b6557bc693ac63e261e6c6d787f08c669b6b42f1415a4649f8d3ad`.
+It makes an explicit exception to the original 165 prebound-reserve and
+two-replacement-draft limits for `associative_aggregation/python/repair`
+only; the global 1,200-draft cap and every semantic, executable, separation,
+quality, and package gate remain unchanged. Prebind exactly one fresh source
+without editing the frozen queue. The local one-row source manifest is sealed
+at `92e32585027a80c3637383d0c0c025f3c943529c6953ef95b0e857e4c0b89a18`.
+This decision authorizes at most one new teacher draft and its normal local
+qualification stages. A failure stops this version; it does not authorize a
+further source, training, GCloud usage, or premature Hugging Face publication.
+
+## 2026-09-24 — Accept uniform Go requalification and activate bounded reserves
+
+Accept the separate 89-candidate Go requalification under assessment seal
+`49ae1b356c318513da0fb034f1602bf0046ff65cc3f527091913e305b5b8524f`.
+Its 83 admissions and 6 rejections have zero unresolved outcomes and do not
+regress any of the 51 original Go admissions. Replace the entire Go slice,
+not cherry-picked rows, in the derived 534-candidate first-pass matrix sealed
+at `fdbf0430508bee0b71ee5f4c7310c54bc22c149c3abc48f5b70b21e75fc19138`.
+Preserve the original failed matrix as evidence.
+
+Accept the one-correction reconciliation as a construction-stage disposition,
+not a training seal: 518 provisional executable admissions / 16 terminal
+failures, report seal
+`fc3cdd3285be248dd01021898ce42229f06de841e62576e4c0e3033faff3c0ee`.
+Activate exactly 16 same-cell source-unique reserves under ledger seal
+`895bb5ac34499b9722a767c057654a1f4bcb66e8cf32005f99c6a99b1def73ae`.
+Projected cumulative teacher drafts are 1,058/1,200 if all 16 return; no
+extra draft or release claim is authorized by this disposition. Global
+separation and final corpus gates remain mandatory. No GCloud action is
+authorized by this decision.
+
+## 2026-09-23 — Preserve failed matrix and uniformly requalify Go in isolation
+
+The complete first-pass executable matrix is sealed under report
+`01ab1d4b460a922e81b61497a923e2ac0c577eceb607288f9734a5a7f951f5e3`:
+476 admitted, 24 rejected, 34 unresolved. All unresolved outcomes are Go
+60-second verifier timeouts after one identical replay. The original report is
+failed and remains immutable. A single diagnostic-only Go replay with identical
+input completed at one worker but rejected a reference test; it grants no
+admission credit. The first allowed blind reauthor correction activated 18
+reference-failing rejects, produced 17 structurally valid tests, and admitted
+10 after fresh delta and executable checks. Its failed outcomes remain failed.
+
+Adopt the prospective, uniform 89-candidate Go single-worker requalification
+plan at `docs/plans/GATE3_GO_SINGLE_WORKER_REQUALIFICATION_20260923.md`, file
+SHA-256 `02fbf288b00700227bb3dd606032327b969413058d65013b8f0667385c10e86c`.
+The input-cohort seal is
+`d35ec1d47706d409b92260d21f4595d9431f9f2eeabcb33cef4a61e199fc7ea0`.
+Do not cherry-pick the 34 timeouts: the new result must cover all 89 original
+Go candidates under unchanged candidate, test, image, command, and task-limit
+bytes. Only host scheduling changes to one worker. Preserve the 1,200 teacher
+draft cap and zero evaluation reads. This decision authorizes no GCloud usage.
+
+## 2026-09-18 — Pass the scale construction canary and adopt teacher prompt v2
+
+Accept the resolved 12-cell Gate 3 construction canary under result seal
+`dc239958fc66b793830a19c254c54cdfad316263cc0eb04607a0e76454a13ad3`.
+It admits one generation and one repair candidate in every lane with 12 unique
+sources, zero unresolved outcomes, and zero evaluation reads. Preserve the
+seven original blind-delta rejects and two initial executable rejects as valid
+construction evidence; do not relabel them.
+
+Adopt `capability-scale-primary-delta-teacher-prompt/v2` prospectively. The v1
+prompt allowed the sole known-bad defect in either the primary capability or
+scheduled cross-cutting dimension, causing seven correct delta-audit rejects.
+V2 requires the defect to be primary-capability-specific and the known-bad
+implementation to already satisfy the scheduled cross-cutting behavior. Seven
+source-unique reserves passed semantic, test-author, and delta review under V2.
+Two candidates used the single allowed correction as blind test reauthorship;
+both fresh downstream paths passed. Continue with the remaining 534 first-pass
+requests. No GCloud action or training is authorized by this decision.
+
+## 2026-09-17 — Seal the capability-scale source queue
+
+Accept the deterministic Gate 3 scale queue under manifest seal
+`f3e3e312625ec85f067c0089f40b16ed4591fe320745445e34f23825a3dc6d55`.
+It contains 711 source-unique requests: 546 first-pass requests matching the
+exact cell deficits and 165 bounded reserves. Historical model-call accounting
+is conservatively fixed at 489 drafts, so the queue exhausts but does not
+exceed the global 1,200-draft ceiling. No source overlaps the prior 3,225-row
+corpus, the historical V2–V5 teacher drafts, or the 174 qualified inventory.
+
+The superseded ten-drafts-per-cell field is inapplicable across all V2–V5
+contract attempts because it would make the five-record repair deficit
+mathematically impossible. The scale contract replaces it prospectively with
+the exact cell deficit plus at most two scale-phase replacements while
+preserving the stricter 1,200 global cap.
+
+## 2026-09-17 — Pass training entry for construction, not training
+
+Accept the unified Gate 3/4 training-entry lineage under manifest seal
+`fbf45982984c2c669e03abf1c773d768019651184547104271de12c42f79318c`.
+It preserves all 174 qualified records: 114 V2 generation admissions across
+all 60 generation cells and all 60 V9 repair admissions. Record IDs and source
+identities are 174/174 unique, and the deterministic anchor matrix covers all
+120 cells.
+
+Count these records toward the six-per-cell target. Construct exactly the
+remaining 546 capability admissions—246 generation and 300 repair—then add
+180 broad replay records to reach 900. Proceed with local source-queue and
+corpus construction, but do not train until the final corpus, tokenization,
+weighting, retention, runtime, and bounded-pilot contracts are sealed. No
+GCloud action is authorized by this decision. The scale construction contract
+is `docs/plans/GATE3_CAPABILITY_SCALE_CONSTRUCTION_PLAN_20260917.md`, file
+SHA-256 `d0e2b112eaa17eb96d2a0284964c9d107bc94b3fcd8edc6369cf7792026100ee`.
+
+## 2026-09-17 — Accept V9 and close Gate 2
+
+Accept `capability-stratified-v9-literal-key-guard/v1` as the terminal passing
+repair-corpus qualification. The complete reconstructed cohort is 60/60
+admitted with zero unresolved outcomes. V2 generation equivalence remains
+passed for all 60 generation cells, producing 120/120 combined
+generation/repair coverage. The V9 qualification seal is
+`cb0eafa84cbd76ff90c72456883c854d22356bb87da7a1ecf6a7bd4cf50ade0e`.
+The result narrative is
+`docs/process/GATE2_V9_RESULT_20260917.md`, file SHA-256
+`328fd26edf953a1369847179d92246adf927a72c6df4c92f46b52dcd597b47a6`.
+
+Preserve the complete version chain as terminal evidence: V6 stopped at
+pre-campaign readiness under seal
+`39a8264850aafb9c8b8db6ed9de4f8d6e0d46b4ad331329a4e2c21c6cce3f778`;
+V7 stopped at 58/60 admissions and zero unresolved under seal
+`1bbdd82b8558542547f0476e8b753089a0c93e73221f4db4c6b6b9787dde3f06`;
+V8 stopped before delta audit or execution on an over-broad Rust validator
+under seal
+`ff2de8bc59f6f0da95e53bb020470df3b2abbda5b1f76c83f03f6814f6648af5`;
+and V9 corrected only that prospective literal-key guard, carried the accepted
+V8 Python role, authored one fresh Rust role, reran both delta audits and
+complete-cohort separation, and admitted both corrected candidates.
+
+Gate 2 is closed. This qualification makes the corpus eligible for an explicit
+Gate 3/4 training-entry assessment, but it does not itself authorize or execute
+training, untouched evaluation opening, publication, or release. No training
+or GCloud resource is active.
+
+## 2026-09-17 — Adopt V6 canonical-test replay
+
+Adopt `capability-stratified-v6-canonical-test-replay/v1` as the prospective
+successor to the sealed V5 no-go. The controlling plan is
+`docs/plans/GATE2_REPAIR_DELTA_V6_CANONICAL_TEST_REPLAY_PLAN_20260917.md`,
+file SHA-256
+`4fe6a1374c01a0a682bf256c91a141b36b26680bdb5279049070f4f143418ec1`.
+
+Carry all 60 exact V5 teacher candidates, proofs, and passing semantic outcomes
+uniformly and byte-for-byte. Carry no V5 test, executable result, admission
+status, or terminal disposition into V6. Run 60 fresh independent test authors
+under a provider-compatible no-path schema. The controller owns distinct role
+paths; the author receives exact candidate filenames, execution commands, and
+lane import bindings. Delete syntax heuristics from decision authority and use
+the exact executable matrix: reference primary/cross pass, known-bad primary
+fails, and known-bad cross passes. Run one fresh blind delta audit for every
+structurally valid final test-author result because new tests change the
+candidate envelope hash; permit no delta-audit correction.
+
+Permit at most six structural-only reauthor calls, only after the raw first
+pass meets the frozen aggregate and distribution gates and only before any
+semantic/executable adjudication. No correction follows an assertion outcome.
+V6 passes only at 60/60 executable admissions, zero unresolved, clean
+separation/lineage, and retained 120/120 combined generation/repair coverage.
+It generates no teacher candidate and has no candidate reserve.
+
+Implementation, readiness, canaries, and local qualification are authorized
+under standing non-GCloud scope. This decision authorizes no GCloud action,
+training, untouched evaluation opening, publication, or release claim.
+
+## 2026-09-17 — Seal V5 failed and forbid its reserves
+
+Treat `capability-stratified-v5-interface-replay/v1` as a terminal
+corpus-construction no-go. Its exact ordered first pass generated or immutably
+carried and dispositioned all 60 candidates: 29 were admitted, 31 rejected,
+and none unresolved. The frozen 54/60 aggregate gate and the per-lane,
+per-capability, and per-dimension gates failed. V5 reserves are therefore
+forbidden. Admission and qualification seals are
+`3b112519be6c3f122499d137983a58288bdad16bdfaea8c7c83f34c45dc58b11`
+and
+`f169894cc32557388ec7812180d1524502af1ae35c310e8f31f3c4177e5452e5`.
+The result narrative is sealed at
+`0e7571e0b345568dcbc073d4c7086ec33ee58d73327dfeeea2ae33c0e3e53ca0`.
+
+Preserve the result as construction evidence, not a training or model-quality
+failure. Fourteen candidates failed the strict test-author contract, 17
+failed executable admission, and 29 passed. The post-run audit attributes all
+31 rejects to interface mechanisms: 10 over-broad validator false positives,
+4 Java role-path collisions, and 17 authored-test/runtime binding failures.
+It demonstrates no bad reference candidate. Final lane admissions are Go 8,
+Java 5, JavaScript 1, TypeScript 4, Python 10, and Rust 1. The final attempt
+had zero unresolved API or sandbox outcomes, global separation passed, and
+zero evaluation artifacts were read outside the content-free boundary.
+
+Do not rerun, relabel, edit, or reserve-replace V5 candidates. A successor may
+be planned locally under standing scope, but it must be prospective and must
+prequalify controller-owned paths, lane import bindings, and the exact
+reference/known-bad executable outcome matrix before a full campaign. This
+decision authorizes no training, GCloud action, untouched evaluation opening,
+publication, or release claim.
+
+## 2026-09-16 — Adopt a full V5 interface replay with two fresh primaries
+
+Adopt `capability-stratified-v5-interface-replay/v1` as the bounded successor
+to the sealed V4 no-go. The controlling plan is
+`docs/plans/GATE2_REPAIR_DELTA_V5_INTERFACE_REPLAY_PLAN_20260916.md`, file
+SHA-256
+`132501466e58e88b6aaebc412aac37e561b103ae8df8f50a9ac43d3aab7cc04b`.
+
+Freeze one complete ordered 60-cell cohort before execution. Carry exactly 58
+V4 teacher candidates and proofs byte-for-byte. Replace only the two invalid
+TypeScript teacher outputs (`numeric_reasoning` and `stateful_workflows`) with
+one fresh candidate each from deterministic, content-blind, newly prebound
+sources that exclude the complete V4 queue. Carry no V4 test-author,
+executable, admission, or ready status.
+
+Rerun post-teacher preflight across all 60 under corrected JavaScript
+dual-artifact, Rust binary-witness, and Java infrastructure-replay contracts.
+Discard every V4 test-author artifact and run exactly one strict two-role test
+author for every V5 primary. Rerun affected review, delta, separation,
+execution, lineage, and final admission evidence under exact ordered-60
+accounting. Preserve the V4 numerical thresholds and permit up to six newly
+prebound reserves only after every first-pass threshold passes. Absolute V5
+new-teacher budget is eight: two required primaries plus at most six
+conditional reserves.
+
+Go is explicitly bounded per suite attempt, not by an aggregate 120-second
+candidate claim: concurrency one, four sequential final suites, 120 seconds
+per attempt, and at most one byte-identical replay only for classified
+infrastructure. Readiness fixtures must pass before any model call. This
+decision authorizes local V5 implementation and bounded qualification only;
+it authorizes no training, GCloud action, evaluation opening, publication, or
+release claim.
+
+## 2026-09-16 — Seal v4 as failed and forbid its reserves
+
+Treat `capability-stratified-v4-repair-delta/v1` as a terminal construction
+no-go. Its exact ordered first pass generated and dispositioned all 60 primary
+candidates: 5 were admitted, 55 rejected, and none unresolved. The minimum
+54/60 aggregate gate and every distribution gate failed. V4 reserves are
+therefore forbidden. Final admission and qualification seals are
+`bfc80e399b44fb350048ed459c2bb611801757fb2c73286389d5c4c98aca99d2`
+and
+`af2ce7ea3cab939ea219eef840af9e42bcb379f0f5de7002bcdf7e688da8c2e5`.
+The complete result narrative is sealed at
+`1c550c9fe5141d63d21b3b92a7002293464cebbf80e7b052e51f05d263b40433`.
+
+Preserve the result as a construction-interface finding. Thirty candidates
+failed the independent-test-author contract, 23 failed post-teacher
+cross-witness preflight, 2 failed final admission, and 5 passed. The dominant
+causes are exact-role output and language-runtime interface mismatches, not an
+executed training regression. The two final-admission terminal wrappers were
+augmented only with their already sealed retry ledgers under correction seal
+`05cb34251ceaca6c3c4289779128e208ddd0d238ac2f8aa594253ff5cd1aee51`;
+no outcome was reinterpreted.
+
+Do not describe this run as satisfying the plan's 120-second per-candidate Go
+envelope. Execution used 120 seconds per suite attempt. This drift requires a
+new versioned contract before any successor qualification. It does not change
+the V4 no-go because 5/60 is independently terminal.
+
+A successor may be planned locally under standing scope, but it must
+predeclare uniform tooling-only replay and fresh-generation cohorts, correct
+the measured language interfaces, and replace the ambiguous Go wording with an
+explicit bounded suite-attempt and replay contract. This decision authorizes no
+V4 reserve, training, GCloud action, evaluation opening, publication, or
+release claim.
+
+## 2026-09-16 — Seal v3 failed and adopt a clean v4 construction reset
+
+Treat the complete v3 repair-delta first pass as a terminal no-go. Sixty
+candidates were generated; final admission accepted 0, rejected 52, and
+retained 8 Go candidates as unresolved after their one permitted identical
+infrastructure replay. No reserve is eligible and none was generated. The
+terminal admission and qualification seals are
+`48961ecc86e732afd1fd293d100e214a30e78ad4f692dc248be36f49ea89d8be`
+and
+`b2b718a1d61f3a6858b28f9b9938438548a89eb37e04a091ace5036f914c3727`.
+
+The dominant failure mechanism is a pipeline contract defect: 40 executable
+reference failures used content-addressed test paths while the pinned runtimes
+looked for fixed filenames. Eight additional candidates had valid extended
+CommitPackFT lineage that the generic admission schema did not represent. The
+eight Go unresolved outcomes are 64/64 empty-output timeouts under concurrent
+amd64 emulation. One Go known-bad/cross-cutting failure is a genuine witness
+orthogonality defect. These findings do not convert any v3 candidate into an
+admission or authorize its forbidden reserves.
+
+Adopt `capability-stratified-v4-repair-delta/v1` as a wholly fresh
+qualification. Exclude all 120 v3 source assignments, retain the numerical v3
+gates, and require canonical per-lane test staging, candidate compilation and
+cross-witness preflights, exact dataset-specific provenance, final-validator
+readiness, lane-aware verifier limits, and complete terminal accounting before
+any v4 teacher call. The currently classified fresh pool covers only 55/60
+cells, so first freeze and classify one content-blind native CommitPackFT
+extension of 1,000 Go, 1,000 Python, and 1,000 Rust records from exact pinned
+files. Do not top up after observing labels. Plan file SHA-256:
+`79849d2f8b70ba69572b4c3fa1761bdb413562c6f6d9a12537d93a1724812ef6`.
+
+This decision authorizes local non-GCloud implementation, exact-revision
+downloads, source classification, and bounded qualification under standing
+scope. It authorizes no training, GCloud action, evaluation opening, or public
+release.
+
 ## 2026-09-14 — Requalify the complete repair surface under a v3 delta contract
 
 Adopt `capability-stratified-v3-repair-delta/v1` as the next Gate 2
@@ -2789,3 +3241,28 @@ Attempt `20260910T043000Z` is closed. All terminal evidence and the final
 adapter were independently recovered and hash-verified before deletion. The
 named VM, disk, subnet, and network are absent twice. Ganesh compute billing is
 closed; the unrelated `laxmi-wmv2-training-01` disk remains outside scope.
+# 2026-09-30 — Full Gate 3 VM pilot ceiling and bounded retry authority
+
+Navneet approved the exact full-pilot plan SHA256
+`d4659d3b503d4eb0a0a38d5af6129f668ccef7994a7f678e920ced1a5e55dd09`
+and its $15 absolute incremental GCloud ceiling. He also explicitly permits
+retries without re-asking while cumulative spend stays under that ceiling.
+This supersedes only the plan's no-paid-retry approval rule, not the frozen
+candidate set, evaluation separation, evidence/backup-before-teardown duties,
+provider STOP, or $15 ceiling. Every retry still needs a separately sealed
+attempt, reconciled spend, complete terminal backup and double exact resource
+absence; no overlapping allocation. If a retry would require a larger host,
+longer runtime, changed training/evaluation contract or exceed the ceiling,
+stop. No such VM allocation or retry had occurred at decision recording.
+
+The first three `g2-standard-8` L4 requests in `us-central1-b`, `-c`, and
+`-a` all returned pre-allocation `ZONE_RESOURCE_POOL_EXHAUSTED`; each was
+backed to GCS and finalized with double exact absence. The equivalent
+`us-east1-b/c/d` zones are in the frozen capability-pilot provider allowlist
+and the GCloud qualification controller's bounded US-zone list. Google's
+published on-demand g2-standard-8 price is the same $0.853624312/hour in
+`us-east1` and `us-central1`; the unchanged $0.881021512/hour VM+disk model,
+single L4, 2-hour STOP, $0.50 cross-region reserve per stage, and $15 ceiling
+therefore still apply. The full-pilot controller extends only its zone allowlist
+to those three equivalents for Navneet's under-budget retry direction; the
+approved plan file and SHA remain immutable.

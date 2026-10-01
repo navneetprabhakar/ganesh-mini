@@ -32,7 +32,26 @@ def sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def _load_summary(path: Path, evidence_path: Path) -> dict[str, Any]:
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str) and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _source_map(path: Path) -> dict[str, dict[str, Any]]:
+    sources: dict[str, dict[str, Any]] = {}
+    for source in read_jsonl(path):
+        identifier = source.get("id")
+        if not isinstance(identifier, str) or not identifier or identifier in sources:
+            raise ValueError("source queue contains a malformed or duplicate ID")
+        sources[identifier] = source
+    return sources
+
+
+def _load_summary(
+    path: Path, evidence_path: Path, allowed_plan_sha256s: set[str],
+) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     body = dict(value)
     claimed = body.pop("summary_sha256", None)
@@ -40,7 +59,7 @@ def _load_summary(path: Path, evidence_path: Path) -> dict[str, Any]:
     if (
         claimed != canonical_sha256(body)
         or value.get("schema_version") != CAMPAIGN_SCHEMA
-        or value.get("plan_sha256") != PLAN_SHA256
+        or value.get("plan_sha256") not in allowed_plan_sha256s
         or value.get("output_sha256") != sha256_bytes(evidence_bytes)
         or value.get("evaluation_artifacts_read") != 0
         or value.get("status") not in {"complete", "failed"}
@@ -57,6 +76,7 @@ def _load_summary(path: Path, evidence_path: Path) -> dict[str, Any]:
 
 def _validate_evidence_row(
     row: dict[str, Any], sources: dict[str, dict[str, Any]], separation_sha256: str,
+    allowed_plan_sha256s: set[str],
 ) -> tuple[dict[str, Any], tuple[str, str, str]]:
     body = dict(row)
     claimed = body.pop("evidence_sha256", None)
@@ -72,7 +92,7 @@ def _validate_evidence_row(
     if (
         claimed != canonical_sha256(body)
         or row.get("schema_version") != SCHEMA_VERSION
-        or row.get("plan_sha256") != PLAN_SHA256
+        or row.get("plan_sha256") not in allowed_plan_sha256s
         or row.get("separation_attestation_sha256") != separation_sha256
         or row.get("evaluation_artifacts_read") != 0
         or source is None or source.get("lane") != row.get("lane")
@@ -110,32 +130,171 @@ def _validate_evidence_row(
     return source, source_key(source)
 
 
+def _coverage(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    nested = {lane: {capability: [] for capability in CAPABILITIES} for lane in LANES}
+    for row in rows:
+        for verdict in row["verdicts"]:
+            if verdict["decision"] == "accept":
+                nested[row["lane"]][verdict["primary_capability"]].append(row["source_queue_id"])
+    cells: dict[str, dict[str, Any]] = {}
+    for lane in LANES:
+        for capability in CAPABILITIES:
+            identifiers = sorted(set(nested[lane][capability]))
+            cell_id = f"{capability}/{lane}/repair"
+            cells[cell_id] = {
+                "accepted_unique_sources": len(identifiers),
+                "source_queue_ids": identifiers,
+                "meets_minimum": len(identifiers) >= MINIMUM_SOURCES_PER_CELL,
+            }
+    by_lane = {
+        lane: {
+            "accepted_source_edges": sum(
+                cells[f"{capability}/{lane}/repair"]["accepted_unique_sources"]
+                for capability in CAPABILITIES
+            ),
+            "cells_meeting_minimum": sum(
+                cells[f"{capability}/{lane}/repair"]["meets_minimum"]
+                for capability in CAPABILITIES
+            ),
+            "cells_total": len(CAPABILITIES),
+        }
+        for lane in LANES
+    }
+    by_capability = {
+        capability: {
+            "accepted_source_edges": sum(
+                cells[f"{capability}/{lane}/repair"]["accepted_unique_sources"] for lane in LANES
+            ),
+            "cells_meeting_minimum": sum(
+                cells[f"{capability}/{lane}/repair"]["meets_minimum"] for lane in LANES
+            ),
+            "cells_total": len(LANES),
+        }
+        for capability in CAPABILITIES
+    }
+    all_cells = all(value["meets_minimum"] for value in cells.values())
+    return {
+        "cells": cells,
+        "by_lane": by_lane,
+        "by_capability": by_capability,
+        "cells_meeting_minimum": sum(value["meets_minimum"] for value in cells.values()),
+        "cells_total": len(cells),
+        "all_cells_meet_minimum": all_cells,
+    }
+
+
+def _load_carry_forward_summary(
+    summary_path: Path, evidence_path: Path, source_queue_path: Path,
+    compatible_plan_sha256s: set[str],
+) -> dict[str, Any]:
+    value = json.loads(summary_path.read_text(encoding="utf-8"))
+    body = dict(value)
+    claimed = body.pop("aggregate_sha256", None)
+    waves = value.get("waves")
+    if (
+        claimed != canonical_sha256(body)
+        or value.get("schema_version") != AGGREGATE_SCHEMA
+        or value.get("plan_sha256") not in compatible_plan_sha256s
+        or value.get("source_queue_sha256") != sha256_bytes(source_queue_path.read_bytes())
+        or value.get("combined_evidence_sha256") != sha256_bytes(evidence_path.read_bytes())
+        or value.get("evaluation_artifacts_read") != 0
+        or type(value.get("unique_sources")) is not int
+        or type(value.get("unique_lineages")) is not int
+        or not isinstance(value.get("separation_attestation_sha256s"), list)
+        or not all(_valid_sha256(item) for item in value["separation_attestation_sha256s"])
+        or not isinstance(waves, list) or value.get("wave_count") != len(waves)
+    ):
+        raise ValueError(f"ontology aggregate carry-forward is invalid: {summary_path}")
+    for wave in waves:
+        campaign = wave.get("campaign_manifest") if isinstance(wave, dict) else None
+        campaign_body = dict(campaign) if isinstance(campaign, dict) else {}
+        campaign_claimed = campaign_body.pop("summary_sha256", None)
+        if (
+            campaign_claimed != canonical_sha256(campaign_body)
+            or campaign.get("plan_sha256") != value["plan_sha256"]
+            or campaign.get("evaluation_artifacts_read") != 0
+            or not _valid_sha256(wave.get("evidence_sha256"))
+            or not _valid_sha256(wave.get("summary_file_sha256"))
+        ):
+            raise ValueError(f"ontology aggregate carry-forward wave is invalid: {summary_path}")
+    return value
+
+
 def aggregate(
     source_queue_path: Path,
     waves: list[tuple[Path, Path]],
+    plan_sha256: str = PLAN_SHA256,
+    compatible_plan_sha256s: tuple[str, ...] = (),
+    carry_forwards: tuple[tuple[Path, Path, Path], ...] = (),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    if not waves:
-        raise ValueError("at least one ontology wave is required")
-    source_rows = read_jsonl(source_queue_path)
-    sources: dict[str, dict[str, Any]] = {}
-    for source in source_rows:
-        identifier = source.get("id")
-        if not isinstance(identifier, str) or not identifier or identifier in sources:
-            raise ValueError("source queue contains a malformed or duplicate ID")
-        sources[identifier] = source
+    if not waves and not carry_forwards:
+        raise ValueError("at least one ontology wave or carry-forward is required")
+    allowed_plan_sha256s = {plan_sha256, *compatible_plan_sha256s}
+    if any(
+        len(value) != 64 or any(character not in "0123456789abcdef" for character in value)
+        for value in allowed_plan_sha256s
+    ):
+        raise ValueError("ontology aggregate plan SHA-256 is malformed")
+    sources = _source_map(source_queue_path)
 
     combined: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
     seen_lineage: set[tuple[str, str, str]] = set()
-    separation_sha256: str | None = None
+    separation_sha256s: list[str] = []
     wave_manifests: list[dict[str, Any]] = []
+    carry_forward_manifests: list[dict[str, Any]] = []
+    explicitly_compatible = set(compatible_plan_sha256s)
+    for index, (evidence_path, summary_path, predecessor_source_queue_path) in enumerate(carry_forwards):
+        summary = _load_carry_forward_summary(
+            summary_path, evidence_path, predecessor_source_queue_path, explicitly_compatible,
+        )
+        predecessor_sources = _source_map(predecessor_source_queue_path)
+        rows = read_jsonl(evidence_path)
+        if len(rows) != summary["unique_sources"]:
+            raise ValueError("carry-forward source count differs from its aggregate summary")
+        predecessor_lineages: set[tuple[str, str, str]] = set()
+        batch_members: dict[tuple[str, ...], set[str]] = defaultdict(set)
+        for row in rows:
+            separation_sha256 = row.get("separation_attestation_sha256")
+            if separation_sha256 not in summary["separation_attestation_sha256s"]:
+                raise ValueError("carry-forward row uses an unbound separation attestation")
+            _old_source, old_lineage = _validate_evidence_row(
+                row, predecessor_sources, separation_sha256, {summary["plan_sha256"]},
+            )
+            _new_source, new_lineage = _validate_evidence_row(
+                row, sources, separation_sha256, {summary["plan_sha256"]},
+            )
+            identifier = row["source_queue_id"]
+            if old_lineage != new_lineage or identifier in seen_ids or new_lineage in seen_lineage:
+                raise ValueError(f"duplicate or changed carry-forward source lineage: {identifier}")
+            seen_ids.add(identifier); seen_lineage.add(new_lineage); predecessor_lineages.add(old_lineage)
+            batch_members[tuple(row["batch_source_queue_ids"])].add(identifier)
+            combined.append(row)
+        for batch_ids, observed_ids in batch_members.items():
+            if observed_ids != set(batch_ids):
+                raise ValueError(f"ontology carry-forward contains a partial successful batch: {batch_ids}")
+        if len(predecessor_lineages) != summary["unique_lineages"]:
+            raise ValueError("carry-forward lineage count differs from its aggregate summary")
+        if _coverage(rows) != summary.get("coverage"):
+            raise ValueError("carry-forward coverage differs from its aggregate summary")
+        for separation_sha256 in summary["separation_attestation_sha256s"]:
+            if separation_sha256 not in separation_sha256s:
+                separation_sha256s.append(separation_sha256)
+        carry_forward_manifests.append({
+            "carry_forward_index": index,
+            "plan_sha256": summary["plan_sha256"],
+            "evidence_sha256": sha256_bytes(evidence_path.read_bytes()),
+            "summary_file_sha256": sha256_bytes(summary_path.read_bytes()),
+            "source_queue_sha256": sha256_bytes(predecessor_source_queue_path.read_bytes()),
+            "aggregate_sha256": summary["aggregate_sha256"],
+            "unique_sources": summary["unique_sources"],
+            "unique_lineages": summary["unique_lineages"],
+        })
     for index, (evidence_path, summary_path) in enumerate(waves):
-        summary = _load_summary(summary_path, evidence_path)
+        summary = _load_summary(summary_path, evidence_path, allowed_plan_sha256s)
         current_separation = summary["separation_attestation_sha256"]
-        if separation_sha256 is None:
-            separation_sha256 = current_separation
-        elif current_separation != separation_sha256:
-            raise ValueError("ontology waves use different separation attestations")
+        if current_separation not in separation_sha256s:
+            separation_sha256s.append(current_separation)
         rows = read_jsonl(evidence_path)
         if len(rows) != summary["completed"]:
             raise ValueError(f"ontology campaign completed count differs from evidence: {summary_path}")
@@ -143,7 +302,9 @@ def aggregate(
         wave_coverage = {lane: {capability: 0 for capability in CAPABILITIES} for lane in LANES}
         batch_members: dict[tuple[str, ...], set[str]] = defaultdict(set)
         for row in rows:
-            source, lineage = _validate_evidence_row(row, sources, current_separation)
+            source, lineage = _validate_evidence_row(
+                row, sources, current_separation, allowed_plan_sha256s,
+            )
             identifier = row["source_queue_id"]
             if identifier in wave_ids or identifier in seen_ids:
                 raise ValueError(f"duplicate source queue ID across ontology waves: {identifier}")
@@ -169,64 +330,29 @@ def aggregate(
 
     lane_index = {lane: index for index, lane in enumerate(LANES)}
     combined.sort(key=lambda row: (lane_index[row["lane"]], row["selection_rank"], row["source_queue_id"]))
-    cell_sources: dict[str, list[str]] = {}
-    nested = {lane: {capability: [] for capability in CAPABILITIES} for lane in LANES}
-    for row in combined:
-        for verdict in row["verdicts"]:
-            if verdict["decision"] == "accept":
-                nested[row["lane"]][verdict["primary_capability"]].append(row["source_queue_id"])
-    cells: dict[str, dict[str, Any]] = {}
-    for lane in LANES:
-        for capability in CAPABILITIES:
-            identifiers = sorted(set(nested[lane][capability]))
-            cell_id = f"{capability}/{lane}/repair"
-            cell_sources[cell_id] = identifiers
-            cells[cell_id] = {
-                "accepted_unique_sources": len(identifiers),
-                "source_queue_ids": identifiers,
-                "meets_minimum": len(identifiers) >= MINIMUM_SOURCES_PER_CELL,
-            }
-    by_lane = {
-        lane: {
-            "accepted_source_edges": sum(cells[f"{capability}/{lane}/repair"]["accepted_unique_sources"] for capability in CAPABILITIES),
-            "cells_meeting_minimum": sum(cells[f"{capability}/{lane}/repair"]["meets_minimum"] for capability in CAPABILITIES),
-            "cells_total": len(CAPABILITIES),
-        }
-        for lane in LANES
-    }
-    by_capability = {
-        capability: {
-            "accepted_source_edges": sum(cells[f"{capability}/{lane}/repair"]["accepted_unique_sources"] for lane in LANES),
-            "cells_meeting_minimum": sum(cells[f"{capability}/{lane}/repair"]["meets_minimum"] for lane in LANES),
-            "cells_total": len(LANES),
-        }
-        for capability in CAPABILITIES
-    }
-    all_cells = all(value["meets_minimum"] for value in cells.values())
+    coverage = _coverage(combined)
+    all_cells = coverage["all_cells_meet_minimum"]
     evidence_payload = b"".join(canonical_json(row) + b"\n" for row in combined)
     report: dict[str, Any] = {
         "schema_version": AGGREGATE_SCHEMA,
-        "plan_sha256": PLAN_SHA256,
+        "plan_sha256": plan_sha256,
+        "compatible_plan_sha256s": sorted(allowed_plan_sha256s - {plan_sha256}),
         "status": "coverage-complete" if all_cells else "insufficient-coverage",
         "source_queue_sha256": sha256_bytes(source_queue_path.read_bytes()),
-        "separation_attestation_sha256": separation_sha256,
+        "separation_attestation_sha256s": separation_sha256s,
         "waves": wave_manifests,
         "wave_count": len(wave_manifests),
         "failed_wave_count": sum(item["campaign_manifest"]["status"] == "failed" for item in wave_manifests),
         "unique_sources": len(combined),
         "unique_lineages": len(seen_lineage),
         "minimum_sources_per_cell": MINIMUM_SOURCES_PER_CELL,
-        "coverage": {
-            "cells": cells,
-            "by_lane": by_lane,
-            "by_capability": by_capability,
-            "cells_meeting_minimum": sum(value["meets_minimum"] for value in cells.values()),
-            "cells_total": len(cells),
-            "all_cells_meet_minimum": all_cells,
-        },
+        "coverage": coverage,
         "combined_evidence_sha256": sha256_bytes(evidence_payload),
         "evaluation_artifacts_read": 0,
     }
+    if carry_forward_manifests:
+        report["carry_forwards"] = carry_forward_manifests
+        report["carry_forward_count"] = len(carry_forward_manifests)
     report["aggregate_sha256"] = canonical_sha256(report)
     return combined, report
 
@@ -238,10 +364,20 @@ def main() -> int:
         "--wave", type=Path, nargs=2, action="append", required=True,
         metavar=("EVIDENCE_JSONL", "SUMMARY_JSON"),
     )
+    parser.add_argument(
+        "--carry-forward", type=Path, nargs=3, action="append", default=[],
+        metavar=("AGGREGATE_EVIDENCE_JSONL", "AGGREGATE_SUMMARY_JSON", "SOURCE_QUEUE_JSONL"),
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
+    parser.add_argument("--plan-sha256", default=PLAN_SHA256)
+    parser.add_argument("--compatible-plan-sha256", action="append", default=[])
     args = parser.parse_args()
-    rows, summary = aggregate(args.source_queue, [(wave[0], wave[1]) for wave in args.wave])
+    rows, summary = aggregate(
+        args.source_queue, [(wave[0], wave[1]) for wave in args.wave],
+        args.plan_sha256, tuple(args.compatible_plan_sha256),
+        tuple((item[0], item[1], item[2]) for item in args.carry_forward),
+    )
     payload = b"".join(canonical_json(row) + b"\n" for row in rows)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(payload)

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -113,11 +114,11 @@ def validate_payload(payload: Any, expected_ids: list[str]) -> list[dict[str, An
 def build_row(
     source: dict[str, Any], item: dict[str, Any], prompt: str, run: dict[str, Any],
     config: dict[str, Any], cli_identity: str, attestation_sha256: str, rank: int,
-    batch_sources: list[dict[str, Any]],
+    batch_sources: list[dict[str, Any]], plan_sha256: str = PLAN_SHA256,
 ) -> dict[str, Any]:
     run_body = dict(run); run_body.pop("run_evidence_sha256", None)
     value: dict[str, Any] = {
-        "schema_version": SCHEMA_VERSION, "plan_sha256": PLAN_SHA256,
+        "schema_version": SCHEMA_VERSION, "plan_sha256": plan_sha256,
         "source_queue_id": source["id"], "lane": source["lane"], "selection_rank": rank,
         "source_identity": {key: source["source"].get(key) for key in ("dataset", "revision", "record_id")},
         "source_record_sha256": source["source"]["source_record_sha256"],
@@ -139,11 +140,16 @@ def build_row(
 def select_sources(
     source_rows: list[dict[str, Any]], eligible_ids: set[str], excluded: set[tuple[str, str, str]],
     per_lane: int, offset: int, lanes: tuple[str, ...] = LANES, dataset: str | None = None,
+    excluded_source_queue_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
+    if len(set(lanes)) != len(lanes):
+        raise ValueError("ontology lane selection contains duplicates")
+    excluded_ids = excluded_source_queue_ids or set()
     selected: list[dict[str, Any]] = []
     for lane in lanes:
         choices = [row for row in source_rows if (
             row.get("lane") == lane and row.get("task_type") == "repair" and row.get("id") in eligible_ids
+            and row.get("id") not in excluded_ids
             and source_key(row) not in excluded
             and row.get("source", {}).get("dataset") == (dataset or REQUIRED_DATASET[lane])
         )]
@@ -155,6 +161,54 @@ def select_sources(
     return selected
 
 
+def load_excluded_source_queue_ids(bound_rows: list[dict[str, Any]], paths: list[Path]) -> set[str]:
+    bound_ids = {row.get("id") for row in bound_rows}
+    excluded_ids: set[str] = set()
+    for path in paths:
+        rows = read_jsonl(path)
+        identifiers = [row.get("id") for row in rows]
+        if any(not isinstance(identifier, str) or not identifier for identifier in identifiers):
+            raise ValueError(f"{path}: exclusion source queue contains a missing or malformed ID")
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError(f"{path}: exclusion source queue IDs are not unique")
+        unknown = set(identifiers) - bound_ids
+        if unknown:
+            raise ValueError(f"{path}: exclusion source queue references IDs absent from the bound source queue")
+        excluded_ids.update(identifiers)
+    return excluded_ids
+
+
+def ensure_attestation(path: Path, attestation: dict[str, Any]) -> None:
+    """Validate an existing attestation or create it atomically without overwriting."""
+    if path.exists():
+        expected = json.loads(path.read_text(encoding="utf-8"))
+        if expected != attestation:
+            raise ValueError("source-separation attestation differs from the sealed comparison")
+        return
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as handle:
+            json.dump(attestation, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+            temporary_path = Path(handle.name)
+        try:
+            os.link(temporary_path, path)
+        except FileExistsError:
+            expected = json.loads(path.read_text(encoding="utf-8"))
+            if expected != attestation:
+                raise ValueError("source-separation attestation differs from the sealed comparison")
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
 def decision_path(root: Path, row: dict[str, Any]) -> Path:
     return root / row["lane"] / f"{row['id']}.json"
 
@@ -163,6 +217,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--teacher-config", type=Path, default=Path("configs/data/expansion_teacher.json"))
     parser.add_argument("--source-queue", type=Path, required=True)
+    parser.add_argument("--exclude-source-queue", type=Path, action="append", default=[])
     parser.add_argument("--prior-corpus", type=Path, required=True)
     parser.add_argument("--v2-artifact", type=Path, action="append", required=True)
     parser.add_argument("--content-free-comparison", type=Path, required=True)
@@ -177,19 +232,25 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=5)
     parser.add_argument("--workers", type=int, default=12)
     parser.add_argument("--codex-bin", default="codex")
+    parser.add_argument("--plan-sha256", default=PLAN_SHA256)
     args = parser.parse_args()
     if not 1 <= args.batch_size <= 8 or not 1 <= args.workers <= 12 or args.per_lane <= 0 or args.offset < 0:
         raise ValueError("invalid ontology campaign bounds")
+    if (
+        len(args.plan_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in args.plan_sha256)
+    ):
+        raise ValueError("ontology plan SHA-256 is malformed")
     config = json.loads(args.teacher_config.read_text(encoding="utf-8"))
     cli_identity = verify_codex_version(args.codex_bin, config["codex_cli_version"])
     attestation = build_attestation(args.source_queue, args.content_free_comparison)
-    expected_attestation = json.loads(args.attestation.read_text(encoding="utf-8"))
-    if expected_attestation != attestation:
-        raise ValueError("source-separation attestation differs from the sealed comparison")
+    ensure_attestation(args.attestation, attestation)
+    source_rows = read_jsonl(args.source_queue)
+    excluded_source_queue_ids = load_excluded_source_queue_ids(source_rows, args.exclude_source_queue)
     selected = select_sources(
-        read_jsonl(args.source_queue), set(attestation["eligible_source_queue_ids"]),
+        source_rows, set(attestation["eligible_source_queue_ids"]),
         excluded_identities(args.prior_corpus, args.v2_artifact), args.per_lane, args.offset,
-        tuple(args.lane) if args.lane else LANES, args.dataset,
+        tuple(args.lane) if args.lane else LANES, args.dataset, excluded_source_queue_ids,
     )
     batches = [selected[index:index + args.batch_size] for index in range(0, len(selected), args.batch_size)]
     completed: dict[str, dict[str, Any]] = {}
@@ -213,7 +274,8 @@ def main() -> int:
         run["run_evidence_sha256"] = canonical_sha256(run)
         items = validate_payload(payload, [row["id"] for row in rows])
         outputs = [build_row(row, item, prompt, run, config, cli_identity, attestation["attestation_sha256"],
-                             args.offset + selected.index(row), rows) for row, item in zip(rows, items, strict=True)]
+                             args.offset + selected.index(row), rows, args.plan_sha256)
+                   for row, item in zip(rows, items, strict=True)]
         for row, value in zip(rows, outputs, strict=True):
             path = decision_path(args.decision_root, row); path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -243,11 +305,13 @@ def main() -> int:
             if verdict["decision"] == "accept":
                 coverage[row["lane"]][verdict["primary_capability"]] += 1
     summary: dict[str, Any] = {
-        "schema_version": CAMPAIGN_SCHEMA, "plan_sha256": PLAN_SHA256,
+        "schema_version": CAMPAIGN_SCHEMA, "plan_sha256": args.plan_sha256,
         "status": "complete" if not failures and all(value >= 2 for lane in coverage.values() for value in lane.values()) else "failed",
         "selected": len(selected), "completed": len(ordered), "failures": failures,
         "coverage": coverage, "output_sha256": hashlib.sha256(payload).hexdigest(),
         "offset": args.offset, "per_lane": args.per_lane, "batch_size": args.batch_size,
+        "excluded_source_queue_ids_sha256": canonical_sha256(sorted(excluded_source_queue_ids)),
+        "excluded_source_queue_id_count": len(excluded_source_queue_ids),
         "separation_attestation_sha256": attestation["attestation_sha256"], "evaluation_artifacts_read": 0,
     }
     summary["summary_sha256"] = canonical_sha256(summary)

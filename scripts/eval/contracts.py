@@ -107,7 +107,9 @@ def _validate_hashed_text(value: Any, where: str, *, allow_empty: bool = False) 
         raise ContractError(f"{where}: content hash mismatch")
 
 
-def validate_task(task: Any) -> dict[str, Any]:
+def validate_task(
+    task: Any, *, require_files: bool = True, require_test_file: bool = True,
+) -> dict[str, Any]:
     task = _dict(task, "task")
     _exact_keys(
         task,
@@ -138,8 +140,11 @@ def validate_task(task: Any) -> dict[str, Any]:
     _string(task["runtime_id"], "task.runtime_id", nonempty=True)
 
     files = task["files"]
-    if not isinstance(files, list) or not files:
-        raise ContractError("task.files: expected non-empty array")
+    if not isinstance(files, list) or require_files and not files:
+        raise ContractError(
+            "task.files: expected non-empty array" if require_files
+            else "task.files: expected array"
+        )
     seen_paths: set[str] = set()
     test_count = 0
     for index, raw_file in enumerate(files):
@@ -158,7 +163,7 @@ def validate_task(task: Any) -> dict[str, Any]:
         content = _string(item["content"], f"{where}.content")
         if _sha(item["sha256"], f"{where}.sha256") != sha256_text(content):
             raise ContractError(f"{where}: content hash mismatch")
-    if test_count == 0:
+    if require_test_file and test_count == 0:
         raise ContractError("task.files: at least one test file is required")
 
     limits = _dict(task["limits"], "task.limits")

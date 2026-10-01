@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.eval.build_gate1_readiness import build, canonical_sha256
+from scripts.eval.build_gate1_readiness import build, canonical_sha256, validate_baseline_tasks
 
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -16,6 +16,23 @@ def test_repository_gate1_is_open_on_admitted_exact_base_baseline() -> None:
     assert report["checks"][2]["evidence"]["task_evidence"]["validated_task_evidence"]==180
     unsigned=dict(report); claimed=unsigned.pop("evidence_sha256")
     assert canonical_sha256(unsigned)==claimed
+
+
+def test_historical_identity_exception_requires_exact_admitted_run_seal() -> None:
+    baseline=json.loads((ROOT/"measurement/inference/development/qwen3.5-2b-base-v1/run.json").read_text())
+    baseline["runtime"]["implementation"]["runner_sha256"]="0"*64
+    passed,evidence=validate_baseline_tasks(ROOT,baseline)
+    assert passed is False
+    assert evidence["reason"]=="admitted baseline run seal mismatch"
+
+
+def test_new_baseline_must_use_current_implementation_identity() -> None:
+    baseline=json.loads((ROOT/"measurement/inference/development/qwen3.5-2b-base-v1/run.json").read_text())
+    baseline["run_id"]="prospective-baseline"
+    baseline["run_sha256"]=canonical_sha256({key:value for key,value in baseline.items() if key!="run_sha256"})
+    passed,evidence=validate_baseline_tasks(ROOT,baseline)
+    assert passed is False
+    assert evidence["reason"]=="baseline implementation identity mismatch"
 
 
 @patch("scripts.eval.build_gate1_readiness.validate_baseline_tasks",return_value=(True,{"validated_task_evidence":180}))

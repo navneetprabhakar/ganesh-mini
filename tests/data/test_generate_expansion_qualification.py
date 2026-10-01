@@ -55,6 +55,25 @@ def test_parse_events_extracts_usage_and_rejectable_tools() -> None:
     assert disallowed == ["command_execution"]
 
 
+def test_parse_events_accepts_only_the_specific_completed_transport_fallback() -> None:
+    stdout = "\n".join([
+        json.dumps({"type": "item.completed", "item": {
+            "type": "error",
+            "message": "Falling back from WebSockets to HTTPS transport. unexpected status 403 Forbidden",
+        }}),
+        json.dumps({"type": "turn.completed", "usage": {"input_tokens": 1}}),
+    ])
+    _, usage, disallowed = parse_events(stdout)
+    assert usage == {"input_tokens": 1}
+    assert disallowed == []
+
+    unrelated = json.dumps({"type": "item.completed", "item": {
+        "type": "error", "message": "Tool execution failed",
+    }})
+    _, _, disallowed = parse_events(unrelated)
+    assert disallowed == ["error"]
+
+
 def test_test_critic_never_receives_reference_or_known_bad() -> None:
     architecture = [{
         "id": "x", "problem": "Implement x.", "reference_code": "SECRET_REFERENCE",

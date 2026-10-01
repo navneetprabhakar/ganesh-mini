@@ -17,6 +17,7 @@ import time
 from decimal import Decimal
 from datetime import datetime, timezone
 from pathlib import Path
+from scripts.train.cuda_host_floor import assess_cuda_host
 from typing import Any
 
 from scripts.train.gradient_conflict import (
@@ -36,6 +37,8 @@ EXPANSION_CARD_SCHEMAS = {
     "ganesh-mini-expansion-pilot-config/v3": "ganesh-mini-expansion-pilot-card/v3",
     "ganesh-mini-expansion-pilot-config/v4": "ganesh-mini-expansion-pilot-card/v4",
 }
+CAPABILITY_CONFIG_SCHEMA = "ganesh-mini-capability-pilot-config/v1"
+CAPABILITY_CARD_SCHEMA = "ganesh-mini-capability-pilot-card/v1"
 
 
 def canonical_sha256(value: Any) -> str:
@@ -62,6 +65,91 @@ def load_sealed(path: Path, field: str) -> dict[str,Any]:
     value=json.loads(path.read_text()); claimed=value.pop(field,None)
     if claimed!=canonical_sha256(value): raise ValueError(f"invalid {field}: {path}")
     value[field]=claimed; return value
+
+
+def validate_capability_pilot_invocation(args: argparse.Namespace, card: dict[str,Any], config: dict[str,Any], config_sha: str) -> None:
+    """Bind the separate capability cohort before any model is loaded."""
+    from scripts.train.preflight_gate3_capability_pilot import assess, file_sha, resolve, sealed, verify_model_inventory
+    from scripts.train.build_gate3_capability_card import (EVIDENCE_FILES, PROVIDER_SCHEMA,
+        GCLOUD_PROVIDER_SCHEMA, GCLOUD_TEARDOWN_SCHEMA, GCLOUD_PROJECT,
+        GCLOUD_BUCKET, GCLOUD_ZONES)
+
+    if config.get("schema_version") != CAPABILITY_CONFIG_SCHEMA or card.get("schema_version") != CAPABILITY_CARD_SCHEMA:
+        raise RuntimeError("capability pilot requires its separate card/config schema")
+    static = assess(args.config)
+    if not static["static_inputs_passed"] or not static["host_os_and_cuda_detected"]:
+        raise RuntimeError("capability pilot requires a Linux single-CUDA host")
+    data = config["data"]
+    root = Path(__file__).resolve().parents[2]
+    expected_paths = {
+        "prepared_manifest_path": args.prepared_manifest,
+        "prepared_train_path": args.prepared_data,
+        "prepared_validation_path": args.validation_data,
+    }
+    if any(resolve(root, data[key]) != path.resolve() for key, path in expected_paths.items()):
+        raise RuntimeError("capability pilot CLI data paths differ from config")
+    inputs = card.get("inputs") or {}
+    if (inputs.get("config_sha256") != config_sha or
+        inputs.get("prepared_manifest_sha256") != data["prepared_manifest_sha256"] or
+        inputs.get("package_seal_sha256") != data["package_seal_sha256"] or
+        card.get("model", {}).get("revision") != config["model"]["revision"]):
+        raise RuntimeError("capability pilot card identities differ")
+    verify_model_inventory(args.model_dir, resolve(root, config["model"]["inventory_path"]))
+    source_recipe = resolve(root, config["recipe"]["qualified_seed_recipe_path"])
+    if file_sha(source_recipe) != config["recipe"]["qualified_seed_recipe_file_sha256"]:
+        raise RuntimeError("qualified seed recipe changed")
+    expected_recipe = json.loads(source_recipe.read_text())["recipes"]["primary"]
+    expected_recipe["lr_selection_budget_seen_tokens_per_candidate"] = data["input_tokens"]
+    if card.get("selected_recipe") != expected_recipe:
+        raise RuntimeError("capability pilot recipe differs from qualified conservative recipe")
+    runtime = card.get("runtime") or {}
+    for name, path in (("uv_lock_sha256", "uv.lock"),
+                       ("pyproject_sha256", "pyproject.toml"),
+                       ("runner_sha256", "scripts/train/run_sft.py")):
+        if runtime.get(name) != file_sha(resolve(root, path)):
+            raise RuntimeError(f"capability pilot runtime identity differs: {name}")
+    if args.phase != "lr-candidate" or args.maximum_seen_tokens != data["input_tokens"]:
+        raise RuntimeError("capability pilot must run one full-epoch LR candidate")
+    provider = card.get("provider_execution") or {}
+    gcloud = provider.get("schema_version") == GCLOUD_PROVIDER_SCHEMA
+    gcloud_prefix = f"gs://{GCLOUD_BUCKET}/ganesh-mini-1.0/gate3/capability-pilot/"
+    gcloud_suffix = provider.get("durable_backup_uri", "").removeprefix(gcloud_prefix)
+    gcloud_ok = (gcloud and provider.get("provider") == "gcloud" and
+                 provider.get("project") == GCLOUD_PROJECT and
+                 provider.get("bucket") == GCLOUD_BUCKET and
+                 provider.get("zone") in GCLOUD_ZONES and
+                 provider.get("region") == provider.get("zone", "").rsplit("-", 1)[0] and
+                 bool(provider.get("instance_id")) and
+                 provider.get("maximum_vm_seconds") == 7200 and
+                 provider.get("durable_backup_uri", "").startswith(gcloud_prefix) and
+                 all(part not in {"", ".", ".."} for part in gcloud_suffix.split("/")))
+    external_ok = (provider.get("schema_version") == PROVIDER_SCHEMA and
+                   provider.get("provider", "").lower() not in {"", "gcloud", "google-cloud", "gcp"} and
+                   provider.get("durable_backup_uri") and
+                   not provider["durable_backup_uri"].startswith("gs://") and
+                   "storage.googleapis.com" not in provider["durable_backup_uri"])
+    if (not (gcloud_ok or external_ok) or
+        provider.get("measured_input_tokens_per_second", 0) <= 0 or
+        (Decimal(str(args.hourly_cost_usd)), Decimal(str(args.prior_cost_usd)), Decimal(str(args.cost_ceiling_usd))) !=
+        (Decimal(str(provider.get("hourly_cost_usd", 0))), Decimal(str(provider.get("prior_cost_usd", -1))), Decimal(str(provider.get("cost_ceiling_usd", 0))))):
+        raise RuntimeError("capability pilot provider, throughput, or cost envelope is unqualified")
+    for path_key, hash_key in EVIDENCE_FILES:
+        if file_sha(resolve(root, provider[path_key])) != provider[hash_key]:
+            raise RuntimeError(f"capability pilot provider evidence differs: {path_key}")
+    if gcloud:
+        throughput = sealed(resolve(root, provider["throughput_evidence_path"]), "report_sha256")
+        teardown = sealed(resolve(root, provider["teardown_plan_path"]), "report_sha256")
+        if (throughput.get("status") != "passed" or
+            throughput.get("instance_id") != provider["instance_id"] or
+            throughput.get("model_revision") != card["model"]["revision"] or
+            throughput.get("prepared_train_sha256") != card["inputs"]["prepared_data_sha256"] or
+            teardown.get("schema_version") != GCLOUD_TEARDOWN_SCHEMA or
+            teardown.get("durable_backup_uri") != provider["durable_backup_uri"] or
+            teardown.get("instance_id") != provider["instance_id"] or
+            teardown.get("backup_before_delete") is not True or
+            teardown.get("double_exact_resource_absence") is not True or
+            teardown.get("provider_stop_seconds") != 7200):
+            raise RuntimeError("GCloud capability pilot execution evidence differs")
 
 
 def validate_gradient_conflict_audit(audit: dict[str,Any], identities: dict[str,str]) -> None:
@@ -215,10 +303,12 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     if card.get("status")!="ready" or card.get("failed_checks"): raise RuntimeError("training execution card is not ready")
     config=json.loads(args.config.read_text()); config_sha=file_sha256(args.config)
     expansion=config.get("schema_version") in EXPANSION_CARD_SCHEMAS
-    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5",*EXPANSION_CARD_SCHEMAS}: raise RuntimeError("unsupported training config schema")
+    capability=config.get("schema_version")==CAPABILITY_CONFIG_SCHEMA
+    if config.get("schema_version") not in {"ganesh-mini-train-config/v4","ganesh-mini-train-config/v5",CAPABILITY_CONFIG_SCHEMA,*EXPANSION_CARD_SCHEMAS}: raise RuntimeError("unsupported training config schema")
     expected_expansion_card=EXPANSION_CARD_SCHEMAS.get(config.get("schema_version"))
     if expansion and card.get("schema_version")!=expected_expansion_card: raise RuntimeError("expansion card/config contract mismatch")
     if card["inputs"]["config_sha256"]!=config_sha: raise RuntimeError("card/config identity mismatch")
+    if capability: validate_capability_pilot_invocation(args,card,config,config_sha)
     prepared_manifest=load_sealed(args.prepared_manifest,"manifest_sha256")
     if card["inputs"]["prepared_manifest_sha256"]!=prepared_manifest["manifest_sha256"]: raise RuntimeError("card/prepared manifest mismatch")
     rows=load_rows(args.prepared_data); validation_rows=load_rows(args.validation_data); recipe=card["selected_recipe"]; lr=args.learning_rate
@@ -227,6 +317,12 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     from peft import LoraConfig,PeftModel,get_peft_model,prepare_model_for_kbit_training
     from transformers import AutoModelForImageTextToText,BitsAndBytesConfig,get_cosine_schedule_with_warmup
     if not torch.cuda.is_available() or torch.cuda.device_count()!=1: raise RuntimeError("SFT requires exactly one CUDA GPU")
+    if capability:
+        device=torch.cuda.get_device_properties(0)
+        assess_cuda_host(torch,args.output/"gpu-hardware-preflight.json")
+        if (card.get("host",{}).get("gpu_name")!=device.name or
+            card.get("host",{}).get("gpu_vram_bytes")!=device.total_memory):
+            raise RuntimeError("capability pilot actual CUDA host differs from the pinned card")
     permitted_lrs=[recipe["learning_rate"]] if expansion else recipe["learning_rate_candidates"]
     if lr not in permitted_lrs: raise RuntimeError("learning rate escaped predeclared candidates")
     if expansion and (args.phase!="expansion-pilot" or args.maximum_seen_tokens!=config["control"]["maximum_seen_tokens"]): raise RuntimeError("expansion pilot phase or token budget changed")
@@ -236,7 +332,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
         if not selection or selection.get("selected_learning_rate")!=lr or selection.get("rule")!=recipe["lr_selection_rule"]: raise RuntimeError("main SFT requires sealed LR selection evidence")
         if args.maximum_seen_tokens!=config["control"]["maximum_seen_tokens"]: raise RuntimeError("main SFT token budget changed")
     hourly=Decimal(str(args.hourly_cost_usd)); prior=Decimal(str(args.prior_cost_usd)); ceiling=Decimal(str(args.cost_ceiling_usd))
-    if expansion:
+    if expansion or capability:
         provider=card.get("provider_execution") or {}
         cost_ok=(hourly,prior,ceiling)==(Decimal(str(provider.get("hourly_cost_usd",0))),Decimal(str(provider.get("prior_cost_usd",-1))),Decimal(str(provider.get("cost_ceiling_usd",0))))
     else:
@@ -294,7 +390,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
         optimizer.load_state_dict(saved["optimizer"]); scheduler.load_state_dict(saved["scheduler"]); torch.set_rng_state(saved["torch_rng"]); torch.cuda.set_rng_state_all(saved["cuda_rng"])
     maximum=int(recipe.get("maximum_peak_vram_gb",23)*1024**3)
     anomaly_contract=recipe.get("loss_anomaly_detector")
-    if config["schema_version"] in {"ganesh-mini-train-config/v5",*EXPANSION_CARD_SCHEMAS} and not anomaly_contract: raise RuntimeError("current recipe requires optimizer-group anomaly detection")
+    if config["schema_version"] in {"ganesh-mini-train-config/v5",CAPABILITY_CONFIG_SCHEMA,*EXPANSION_CARD_SCHEMAS} and not anomaly_contract: raise RuntimeError("current recipe requires optimizer-group anomaly detection")
     detector=RollingLossGuard(anomaly_contract,state.get("anomaly_detector",{}).get("history",[]),state.get("anomaly_detector",{}).get("streak",0)) if anomaly_contract else None
     configured_checkpoint=config["control"].get("checkpoint_every_tokens") or min(config["control"]["checkpoint_tokens"])
     checkpoint_interval=min(configured_checkpoint,max(1,sum(sum(row["attention_mask"]) for row in rows)//6)); next_checkpoint=(state["seen_tokens"]//checkpoint_interval+1)*checkpoint_interval; started=time.monotonic(); optimizer.zero_grad(set_to_none=True); group_raw_losses=[]; group_weighted_loss=0.0; group_weight=0.0
@@ -400,7 +496,7 @@ def run(args: argparse.Namespace) -> dict[str,Any]:
     if peak>maximum: raise RuntimeError(f"peak VRAM {peak} exceeds {maximum}")
     state["completed_at"]=datetime.now(timezone.utc).isoformat(); state["wall_seconds"]=time.monotonic()-started
     run_status="gradient-audit-stop" if audit_only_stop else "complete" if completed_training else "bounded-stop"
-    evidence={"schema_version":"ganesh-mini-sft-run/v2" if config["schema_version"].endswith("v5") or expansion else "ganesh-mini-sft-run/v1","status":run_status,"identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"lora_target_policy":recipe.get("target_policy",{"scope":"all-language-model-linears"}),"trainable_parameter_names":trainable_names,"base_validation_loss_diagnostic":base_validation,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
+    evidence={"schema_version":"ganesh-mini-sft-run/v2" if config["schema_version"].endswith("v5") or expansion or capability else "ganesh-mini-sft-run/v1","status":run_status,"identities":identities,"planned_end_row":end_row,"cuda_allocator":allocator,"training_structure":training_structure,"fused_training_loss":fused_training_loss,"lora_target_policy":recipe.get("target_policy",{"scope":"all-language-model-linears"}),"trainable_parameter_names":trainable_names,"base_validation_loss_diagnostic":base_validation,"validation_loss_diagnostic":validation,"save_reload":{**save_reload,"lifecycle":reload_lifecycle},"state":state,"cost":{"hourly_usd":str(hourly),"prior_usd":str(prior),"ceiling_usd":str(ceiling),"cost_bounded_wall_seconds":cost_wall_seconds,"training_wall_limit_seconds":wall_limit,"finalization_reserve_seconds":finalization_reserve_seconds,"projected_final_usd":str(prior+hourly*Decimal(str(state["wall_seconds"]))/Decimal(3600))},"cuda":{"name":torch.cuda.get_device_name(0),"peak_vram_bytes":peak,"maximum_peak_vram_bytes":maximum},"adapter_files":files,"peak_rss_bytes":resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*1024}; evidence["evidence_sha256"]=canonical_sha256(evidence); atomic_json(output/"run-evidence.json",evidence); del reloaded; gc.collect(); torch.cuda.empty_cache(); return evidence
 
 
 def main() -> int:

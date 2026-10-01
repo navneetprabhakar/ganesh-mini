@@ -53,4 +53,12 @@ def test_repository_workspace_contains_expansion_pilot_inputs(tmp_path: Path) ->
         "artifacts/train/expansion-lane-stratified-probe-v3/local-execution-card.json",
         "artifacts/train/gradient-conflict-probe-v4/local-execution-card.json",
         "measurement/data/expansion-v1/PILOT_SUFFICIENCY_AND_THROUGHPUT_20260909.json",
+        "artifacts/train/gate3-capability-pilot-v2/prepared-train.jsonl",
+        "artifacts/train/gate3-capability-pilot-v2/prepared-manifest.json",
+        "scripts/train/preflight_gate3_capability_pilot.py",
+        "scripts/train/build_gate3_capability_card.py",
+        "scripts/train/measure_gate3_capability_throughput.py",
+        "scripts/train/cuda_host_floor.py",
+        "measurement/gate3/capability-scale-v1/token-length-replacement-v1/final-package/data-package-seal.json",
     } <= names
+    assert not any(name.startswith("eval/") for name in names)

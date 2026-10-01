@@ -26,7 +26,10 @@ def source(identifier: str, lane: str, record_id: str | None = None) -> dict:
     }
 
 
-def evidence(source_row: dict, capability: str, rank: int, separation: str = "a" * 64) -> dict:
+def evidence(
+    source_row: dict, capability: str, rank: int, separation: str = "a" * 64,
+    plan_sha256: str = PLAN_SHA256,
+) -> dict:
     verdicts = []
     for name in CAPABILITIES:
         accepted = name == capability
@@ -43,13 +46,14 @@ def evidence(source_row: dict, capability: str, rank: int, separation: str = "a"
     run["run_evidence_sha256"] = canonical_sha256(run)
     return build_row(
         source_row, item, ontology_affinity_prompt([source_row]), run,
-        {"fixture": True}, "codex fixture", separation, rank, [source_row],
+        {"fixture": True}, "codex fixture", separation, rank, [source_row], plan_sha256,
     )
 
 
 def write_wave(
     root: Path, name: str, rows: list[dict], *, status: str = "complete",
     failures: list[dict] | None = None, selected: int | None = None,
+    separation: str = "a" * 64, plan_sha256: str = PLAN_SHA256,
 ) -> tuple[Path, Path]:
     evidence_path = root / f"{name}.jsonl"
     payload = b"".join(canonical_json(row) + b"\n" for row in rows)
@@ -61,7 +65,7 @@ def write_wave(
                 coverage[row["lane"]][verdict["primary_capability"]] += 1
     summary = {
         "schema_version": CAMPAIGN_SCHEMA,
-        "plan_sha256": PLAN_SHA256,
+        "plan_sha256": plan_sha256,
         "status": status,
         "selected": selected if selected is not None else len(rows),
         "completed": len(rows),
@@ -71,7 +75,7 @@ def write_wave(
         "offset": 0,
         "per_lane": 1,
         "batch_size": 1,
-        "separation_attestation_sha256": "a" * 64,
+        "separation_attestation_sha256": separation,
         "evaluation_artifacts_read": 0,
     }
     summary["summary_sha256"] = canonical_sha256(summary)
@@ -123,6 +127,36 @@ def test_rejects_duplicate_source_id_across_waves(tmp_path: Path) -> None:
     wave2 = write_wave(tmp_path, "wave-2", [value])
     with pytest.raises(ValueError, match="duplicate source queue ID"):
         aggregate(source_path, [wave1, wave2])
+
+
+def test_combines_waves_bound_to_different_separation_attestations(tmp_path: Path) -> None:
+    first = source("source-1", "python")
+    second = source("source-2", "python")
+    source_path = tmp_path / "sources.jsonl"; write_sources(source_path, [first, second])
+    first_sha = "a" * 64
+    second_sha = "b" * 64
+    wave1 = write_wave(
+        tmp_path, "wave-1", [evidence(first, "numeric_reasoning", 0, first_sha)], separation=first_sha,
+    )
+    wave2 = write_wave(
+        tmp_path, "wave-2", [evidence(second, "numeric_reasoning", 1, second_sha)], separation=second_sha,
+    )
+
+    rows, summary = aggregate(source_path, [wave1, wave2])
+
+    assert len(rows) == 2
+    assert summary["separation_attestation_sha256s"] == [first_sha, second_sha]
+    assert [row["separation_attestation_sha256"] for row in rows] == [first_sha, second_sha]
+
+
+def test_rejects_wave_row_bound_to_different_attestation_than_summary(tmp_path: Path) -> None:
+    row = source("source-1", "python")
+    source_path = tmp_path / "sources.jsonl"; write_sources(source_path, [row])
+    wave = write_wave(
+        tmp_path, "wave", [evidence(row, "numeric_reasoning", 0, "b" * 64)], separation="a" * 64,
+    )
+    with pytest.raises(ValueError, match="incomplete or unsealed"):
+        aggregate(source_path, [wave])
 
 
 def test_rejects_duplicate_lineage_under_different_ids(tmp_path: Path) -> None:
@@ -180,3 +214,88 @@ def test_rejects_partial_successful_batch(tmp_path: Path) -> None:
     wave = write_wave(tmp_path, "wave", [value])
     with pytest.raises(ValueError, match="partial successful batch"):
         aggregate(source_path, [wave])
+
+
+def test_v4_carries_sealed_v3_aggregate_and_merges_new_wave(tmp_path: Path) -> None:
+    v4_plan = "b" * 64
+    old = source("v3-source", "python")
+    new = source("v4-source", "python")
+    predecessor_queue = tmp_path / "v3-sources.jsonl"; write_sources(predecessor_queue, [old])
+    predecessor_wave = write_wave(
+        tmp_path, "v3-wave", [evidence(old, "numeric_reasoning", 0)],
+    )
+    carried_rows, carried_summary = aggregate(predecessor_queue, [predecessor_wave])
+    carried_evidence = tmp_path / "v3-final-evidence.jsonl"; write_sources(carried_evidence, carried_rows)
+    carried_summary_path = tmp_path / "v3-final-summary.json"
+    carried_summary_path.write_text(json.dumps(carried_summary, sort_keys=True) + "\n", encoding="utf-8")
+
+    union_queue = tmp_path / "v4-union.jsonl"; write_sources(union_queue, [old, new])
+    v4_wave = write_wave(
+        tmp_path, "v4-wave", [evidence(new, "numeric_reasoning", 1, "c" * 64, v4_plan)],
+        separation="c" * 64, plan_sha256=v4_plan,
+    )
+    rows, summary = aggregate(
+        union_queue, [v4_wave], v4_plan, (PLAN_SHA256,),
+        ((carried_evidence, carried_summary_path, predecessor_queue),),
+    )
+
+    assert [row["source_queue_id"] for row in rows] == ["v3-source", "v4-source"]
+    assert summary["plan_sha256"] == v4_plan
+    assert summary["compatible_plan_sha256s"] == [PLAN_SHA256]
+    assert summary["carry_forward_count"] == 1
+    assert summary["carry_forwards"][0]["aggregate_sha256"] == carried_summary["aggregate_sha256"]
+    assert summary["coverage"]["cells"]["numeric_reasoning/python/repair"]["accepted_unique_sources"] == 2
+
+
+def test_v4_carry_forward_requires_explicit_compatibility_and_exact_union_binding(tmp_path: Path) -> None:
+    v4_plan = "b" * 64
+    old = source("v3-source", "python")
+    new = source("v4-source", "python")
+    predecessor_queue = tmp_path / "v3-sources.jsonl"; write_sources(predecessor_queue, [old])
+    predecessor_wave = write_wave(tmp_path, "v3-wave", [evidence(old, "numeric_reasoning", 0)])
+    carried_rows, carried_summary = aggregate(predecessor_queue, [predecessor_wave])
+    carried_evidence = tmp_path / "v3-final-evidence.jsonl"; write_sources(carried_evidence, carried_rows)
+    carried_summary_path = tmp_path / "v3-final-summary.json"
+    carried_summary_path.write_text(json.dumps(carried_summary) + "\n", encoding="utf-8")
+    union_queue = tmp_path / "v4-union.jsonl"; write_sources(union_queue, [old, new])
+    v4_wave = write_wave(
+        tmp_path, "v4-wave", [evidence(new, "numeric_reasoning", 1, "c" * 64, v4_plan)],
+        separation="c" * 64, plan_sha256=v4_plan,
+    )
+
+    with pytest.raises(ValueError, match="carry-forward is invalid"):
+        aggregate(
+            union_queue, [v4_wave], v4_plan, (),
+            ((carried_evidence, carried_summary_path, predecessor_queue),),
+        )
+
+    changed = deepcopy(old); changed["stimulus"] = "changed carried stimulus"
+    write_sources(union_queue, [changed, new])
+    with pytest.raises(ValueError, match="incomplete or unsealed"):
+        aggregate(
+            union_queue, [v4_wave], v4_plan, (PLAN_SHA256,),
+            ((carried_evidence, carried_summary_path, predecessor_queue),),
+        )
+
+
+def test_v4_carry_forward_rejects_tampered_aggregate_summary(tmp_path: Path) -> None:
+    v4_plan = "b" * 64
+    old = source("v3-source", "python")
+    new = source("v4-source", "python")
+    predecessor_queue = tmp_path / "v3-sources.jsonl"; write_sources(predecessor_queue, [old])
+    predecessor_wave = write_wave(tmp_path, "v3-wave", [evidence(old, "numeric_reasoning", 0)])
+    carried_rows, carried_summary = aggregate(predecessor_queue, [predecessor_wave])
+    carried_evidence = tmp_path / "v3-final-evidence.jsonl"; write_sources(carried_evidence, carried_rows)
+    carried_summary["unique_sources"] = 2
+    carried_summary_path = tmp_path / "v3-final-summary.json"
+    carried_summary_path.write_text(json.dumps(carried_summary) + "\n", encoding="utf-8")
+    union_queue = tmp_path / "v4-union.jsonl"; write_sources(union_queue, [old, new])
+    v4_wave = write_wave(
+        tmp_path, "v4-wave", [evidence(new, "numeric_reasoning", 1, "c" * 64, v4_plan)],
+        separation="c" * 64, plan_sha256=v4_plan,
+    )
+    with pytest.raises(ValueError, match="carry-forward is invalid"):
+        aggregate(
+            union_queue, [v4_wave], v4_plan, (PLAN_SHA256,),
+            ((carried_evidence, carried_summary_path, predecessor_queue),),
+        )
